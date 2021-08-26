@@ -740,7 +740,7 @@ public static class Randomizer
                 }
                 else
                 {
-                    text = text + " @SS@ (" + RandomizerBonus.SunstoneShards().ToString() + "/3)";
+                    text = text + "@SS@ (" + RandomizerBonus.SunstoneShards().ToString() + "/3)";
                 }
             }
             if (Randomizer.fragsEnabled)
