@@ -64,7 +64,7 @@ public static class RandomizerClues
 			"GS: ",
 			array[1],
 			text2,
-			"  ",
+			" ",
 			text3,
 			"SS: ",
 			array[2],
