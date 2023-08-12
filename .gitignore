@@ -1,0 +1,32 @@
+﻿# Auto detect text files and perform LF normalization
+* text=auto
+
+# Custom for Visual Studio
+*.cs     diff=csharp
+
+# Standard to msysgit
+*.doc	 diff=astextplain
+*.DOC	 diff=astextplain
+*.docx diff=astextplain
+*.DOCX diff=astextplain
+*.dot  diff=astextplain
+*.DOT  diff=astextplain
+*.pdf  diff=astextplain
+*.PDF	 diff=astextplain
+*.rtf	 diff=astextplain
+*.RTF	 diff=astextplain
+
+seed_gen/seeds/*
+seed_gen/spoilers/*
+seed_gen/seeds.zip
+seed_gen/seed_gen.zip
+seed_gen/ignore/*
+seed_gen/*.csv
+
+obj/*
+
+# Ignore compiled python files
+*.pyc
+
+# ignore dlls (commonly added to make dnspy less of a PITA)
+*.dll
