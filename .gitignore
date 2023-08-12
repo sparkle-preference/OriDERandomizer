@@ -23,8 +23,9 @@ seed_gen/seed_gen.zip
 seed_gen/ignore/*
 seed_gen/*.csv
 
-obj/*
-
+obj
+bin
+.idea
 # Ignore compiled python files
 *.pyc
 
