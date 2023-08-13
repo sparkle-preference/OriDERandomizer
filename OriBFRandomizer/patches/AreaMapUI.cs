@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using RandoExts;
-using UnityEngine;
+using Logger = BFModLoader.ModLoader.Logger;
+using Object = UnityEngine.Object;
 
 namespace OriBFRandomizer.patches
 {
@@ -48,13 +50,13 @@ namespace OriBFRandomizer.patches
             __instance.Navigation.Advance();
             __instance.DebugNavigation.Advance();
             AccessTools.Method(typeof(AreaMapUI), "UpdatePlayerPositionMarker").Invoke(__instance, new object[0]);
-            AccessTools.Method(typeof(AreaMapUI), "UpdateSoulFlameMarker").Invoke(__instance, new object[0]);
+            AccessTools.Method(typeof(AreaMapUI), "UpdateSoulFlamePositionMarker").Invoke(__instance, new object[0]);
             __instance.UpdateCurrentArea();
             if (!GameMapUI.Instance.ShowingObjective)
             {
                 string text = string.Format("#{0}#: {1}\n{2}", __instance.ObjectiveMessageProvider,
                     RandomizerText.GetObjectiveText(), RandomizerText.MapFilterText);
-                if (text.Count((char c) => c == '\n') > 1)
+                if (text.Count(c => c == '\n') > 1)
                 {
                     text = "\n" + text;
                 }
