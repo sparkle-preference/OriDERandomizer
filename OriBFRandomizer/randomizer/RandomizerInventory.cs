@@ -29,8 +29,8 @@ public class RandomizerInventory : SaveSerialize
 
 	public int GetRandomizerItem(int code)
 	{
-		if (randomizerItems.ContainsKey(code))
-			return randomizerItems[code];
+		if (randomizerItems.TryGetValue(code, out var item))
+			return item;
             
 		return 0;
 	}
