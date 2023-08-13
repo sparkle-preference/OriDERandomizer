@@ -416,10 +416,22 @@ public static class Randomizer
         Randomizer.log(message);
     }
 
+    public static void reloadSeed()
+    {
+        initialize();
+        if (RandomizerSettings.Dev)
+            log("Reset and loaded seed: " + SeedMeta);
+        showSeedInfo();
+    }
+
     public static void Update()
     {
         if (!initialized)
+        {
+            Logger.Log("not inited yet!");
+//            InitializeOnce();
             return;
+        }
 
         Randomizer.UpdateMessages();
         if (Characters.Sein && SkillTreeManager.Instance != null &&
@@ -516,55 +528,10 @@ public static class Randomizer
 
         if (CreditsActive)
             return;
-        if (RandomizerRebinding.ReloadSeed.IsPressed())
-        {
-            Randomizer.initialize();
-            if (RandomizerSettings.Dev)
-            {
-                Randomizer.log("Reset and loaded seed: " + SeedMeta);
-            }
-
-            Randomizer.showSeedInfo();
-            return;
-        }
 
         if (Characters.Sein)
         {
-            if (RandomizerRebinding.ShowStats.IsPressed())
-            {
-                RandomizerStatsManager.ShowStats(10);
-                if (BingoController.Active)
-                    Randomizer.log("Current bingo state: \n" + BingoController.GetJson());
-                return;
-            }
 
-            if (RandomizerRebinding.ListTrees.IsPressed())
-            {
-                Randomizer.MessageQueueTime = 0;
-                RandomizerTrackedDataManager.ListTrees();
-                return;
-            }
-
-            if (RandomizerRebinding.ListRelics.IsPressed())
-            {
-                Randomizer.MessageQueueTime = 0;
-                RandomizerTrackedDataManager.ListRelics();
-                return;
-            }
-
-            if (RandomizerRebinding.ListMapAltars.IsPressed())
-            {
-                Randomizer.MessageQueueTime = 0;
-                RandomizerTrackedDataManager.ListMapstones();
-                return;
-            }
-
-            if (RandomizerRebinding.ListTeleporters.IsPressed())
-            {
-                Randomizer.MessageQueueTime = 0;
-                RandomizerTrackedDataManager.ListTeleporters();
-                return;
-            }
 
             if (RandomizerRebinding.ShowBonuses.IsPressed())
             {
@@ -1683,7 +1650,6 @@ public static class Randomizer
             {
                 spawnItem = new RandomizerAction(SpawnWith.Substring(0, 2), int.Parse(SpawnWith.Substring(2)));
             }
-
             RandomizerSwitch.GivePickup(spawnItem, 2, true);
         }
     }

@@ -2,6 +2,7 @@ using Core;
 using Game;
 using HarmonyLib;
 using UnityEngine;
+using Logger = BFModLoader.ModLoader.Logger;
 
 namespace OriBFRandomizer.patches
 {

@@ -93,6 +93,7 @@ public static class RandomizerTrackedDataManager
 	}
 
 	public static void ListTeleporters() {
+		Randomizer.MessageQueueTime = 0;
 		UpdateBitfields();
 		List<string> owned = new List<string>();
 		List<string> unowned = new List<string>();
@@ -109,7 +110,9 @@ public static class RandomizerTrackedDataManager
 		Randomizer.printInfo(output);
 	}
 
-	public static void ListTrees() {
+	public static void ListTrees()
+	{
+		Randomizer.MessageQueueTime = 0;
 		UpdateBitfields();
 		List<string> owned = new List<string>();
 		List<string> unowned = new List<string>();
@@ -130,6 +133,7 @@ public static class RandomizerTrackedDataManager
 	}
 
 	public static void ListRelics() {
+		Randomizer.MessageQueueTime = 0;
 		UpdateBitfields();
 		List<string> owned = new List<string>();
 		List<string> unowned = new List<string>();
@@ -157,6 +161,7 @@ public static class RandomizerTrackedDataManager
 
 	public static void ListMapstones() {
 		try {
+			Randomizer.MessageQueueTime = 0;
 			UpdateBitfields();
 			var owned = new List<string>();
 			var unowned = new List<string>();

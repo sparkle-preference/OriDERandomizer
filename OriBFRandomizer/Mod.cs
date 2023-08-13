@@ -14,10 +14,6 @@ namespace OriBFRandomizer
 
         public override void FixedUpdate()
         {
-            if (Keybinds.REPLAY_MESSAGE.IsJustPressed())
-            {
-                Randomizer.playLastMessage();
-            }
         }
 
         public override List<SettingsScreenConfig> GetSettings() => new List<SettingsScreenConfig>
