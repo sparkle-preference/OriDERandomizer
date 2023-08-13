@@ -1,4 +1,5 @@
 using HarmonyLib;
+using OriBFRandomizer.settings;
 using UnityEngine;
 
 namespace OriBFRandomizer.patches
@@ -10,7 +11,7 @@ namespace OriBFRandomizer.patches
         [HarmonyPatch("get_WantToGrab")]
         public static void InvertClimbPatch(ref bool __result)
         {
-            __result ^= RandomizerSettings.Controls.InvertClimb;
+            __result ^= ControlSettings.INVERT_CLIMB.Value;
         }
 
         [HarmonyPatch(typeof(SeinGrabWall))]
