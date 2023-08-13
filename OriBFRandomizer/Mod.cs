@@ -1,7 +1,7 @@
 ﻿using System;
 using OriDeModLoader;
 
-namespace OriBFRandomizerDUMMY
+namespace OriBFRandomizer
 {
     public class BFRandomizer: BaseMod 
     {
