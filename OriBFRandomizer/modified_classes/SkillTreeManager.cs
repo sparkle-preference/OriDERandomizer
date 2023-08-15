@@ -2,7 +2,39 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Game;
+using HarmonyLib;
 using UnityEngine;
+using Logger = BFModLoader.ModLoader.Logger;
+
+namespace OriBFRandomizer.patches
+{
+    [HarmonyPatch(typeof(SkillTreeManager))]
+    public static class SkillTreeManagerPatches
+    {
+	    
+	    // this doesn't seem to do anything?
+        [HarmonyPrefix]
+        [HarmonyPatch(nameof(SkillTreeManager.NameText))]
+		public static bool NameTextReplacement(ref string __result, SkillItem skillItem) {
+			if (skillItem.HasSkillItem)
+				__result = "$" + skillItem.Name() + "$";
+			else if (skillItem.CanEarnSkill)
+				__result = "#" + skillItem.Name() + "#";
+			else
+				__result = "@" + skillItem.Name() + "@";
+			return false;
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(nameof(SkillTreeManager.UpdateRequirementsText))]
+		public static void RequirementsTextPostfix(SkillTreeManager __instance) {
+			if (__instance.CurrentSkillItem) {
+				__instance.AbilityTitle.SetMessageProvider(__instance.CurrentSkillItem.Name());
+				__instance.AbilityDescription.SetMessageProvider(__instance.CurrentSkillItem.Description());
+			}
+		}
+    }
+}
 
 //TODO
 // public class SkillTreeManager : MenuScreen
@@ -132,26 +164,7 @@ using UnityEngine;
 // 			this.OnCantEarnSkill.Perform(null);
 // 		}
 // 	}
-//
-// 	public MessageDescriptor AbilityMastered
-// 	{
-// 		get
-// 		{
-// 			return new MessageDescriptor("$" + this.AbilityMasteredMessageProvider + "$");
-// 		}
-// 	}
-//
-// 	public MessageProvider AbilityName(AbilityType ability)
-// 	{
-// 		foreach (SkillTreeManager.AbilityMessageProvider abilityMessageProvider in this.AbilityMessages)
-// 		{
-// 			if (abilityMessageProvider.AbilityType == ability)
-// 			{
-// 				return abilityMessageProvider.MessageProvider;
-// 			}
-// 		}
-// 		return null;
-// 	}
+
 //
 // 	public string RequiredAbilitiesText(SkillItem skillItem)
 // 	{
@@ -180,40 +193,7 @@ using UnityEngine;
 // 		}
 // 		return "@" + this.RequiresMessageProvider.ToString().Replace("[Requirements]", "@" + stringBuilder + "@") + "@";
 // 	}
-//
-// 	public void UpdateRequirementsText()
-// 	{
-// 		this.CurrentSkillItem = this.NavigationManager.CurrentMenuItem.GetComponent<SkillItem>();
-// 		if (this.CurrentSkillItem)
-// 		{
-// 			this.AbilityTitle.SetMessageProvider(this.CurrentSkillItem.Name);
-// 			this.AbilityDescription.SetMessageProvider(this.CurrentSkillItem.Description);
-// 			if (this.CurrentSkillItem.HasSkillItem)
-// 			{
-// 				this.RequirementsLineA.SetMessage(this.AbilityMastered);
-// 				return;
-// 			}
-// 			if (this.CurrentSkillItem.RequiresAbilitiesOrItems)
-// 			{
-// 				this.RequirementsLineA.SetMessage(new MessageDescriptor(this.RequiredAbilitiesText(this.CurrentSkillItem) + "\n" + this.RequiredSoulsText(this.CurrentSkillItem)));
-// 				return;
-// 			}
-// 			this.RequirementsLineA.SetMessage(new MessageDescriptor(this.RequiredSoulsText(this.CurrentSkillItem)));
-// 		}
-// 	}
-//
-// 	public string NameText(SkillItem skillItem)
-// 	{
-// 		if (skillItem.HasSkillItem)
-// 		{
-// 			return "$" + skillItem.Name + "$";
-// 		}
-// 		if (skillItem.CanEarnSkill)
-// 		{
-// 			return "#" + skillItem.Name + "#";
-// 		}
-// 		return "@" + skillItem.Name + "@";
-// 	}
+
 //
 // 	public string RequiredSoulsText(SkillItem skillItem)
 // 	{

@@ -19,15 +19,11 @@ namespace OriBFRandomizer.patches
         public static Dictionary<SkillItem, int> TotalRequiredSkillPoints = new Dictionary<SkillItem, int>();
         public static Dictionary<SkillItem, int> TotalRequiredHardSkillPoints = new Dictionary<SkillItem, int>();
         
-        public static MessageProvider Name(this SkillItem _this)
-        {
-            return RandomizerText.GetAbilityName(_this.Ability) ?? _this.NameMessageProvider;
-        }
+        public static MessageProvider Name(this SkillItem _this) => 
+            RandomizerText.GetAbilityName(_this.Ability) ?? _this.NameMessageProvider;
 
-        public static MessageProvider Description(this SkillItem _this)
-        {
-            return RandomizerText.GetAbilityDescription(_this.Ability) ?? _this.DescriptionMessageProvider;
-        }
+        public static MessageProvider Description(this SkillItem _this) =>
+            RandomizerText.GetAbilityDescription(_this.Ability) ?? _this.DescriptionMessageProvider;
     }
 
     [HarmonyPatch(typeof(SkillItem))]
