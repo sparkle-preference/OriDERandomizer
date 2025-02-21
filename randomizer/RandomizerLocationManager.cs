@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Game;
 using Protogen;
 using Sein.World;
 using UnityEngine;
-using System.Threading;
+
 public class RandomizerLocationManager
 {
 	public static void Initialize()
@@ -31,11 +32,16 @@ public class RandomizerLocationManager
 			}
 			line = reader.ReadLine();
 		}
-		if(!HaveDownloadedAreas && (DLThread == null)) {
+
+		for (var index = 0; index < RandomizerLocationData.KeystoneDoors.Count; ++index)
+		{
+			RandomizerLocationManager.KeystoneDoors.Add(new KeystoneDoor(index, RandomizerLocationData.KeystoneDoors[index]));
+		}
+
+		if (!HaveDownloadedAreas && (DLThread == null)) {
 			DLThread = new Thread(DownloadAreas);
 			DLThread.Start();
 		}
-
 	}
 
 	public static void InitializeLogic()
@@ -114,7 +120,6 @@ public class RandomizerLocationManager
 			break;
 		}
 
-
 		if (!File.Exists("areas.ori"))
 		{
 			RandomizerLocationManager.Areas = null;
@@ -126,9 +131,9 @@ public class RandomizerLocationManager
 		}
 
 		spawnNodeName = null;
-		if(Randomizer.SpawnWith.Contains("WS")){
-			foreach(var kvp in stupidBullshit) {
-				if(Randomizer.SpawnWith.EndsWith(kvp.Key)){
+		if (Randomizer.SpawnWith.Contains("WS")) {
+			foreach (var kvp in stupidBullshit) {
+				if (Randomizer.SpawnWith.EndsWith(kvp.Key)) {
 					spawnNodeName = kvp.Value;
 					break;
 				}
@@ -222,90 +227,101 @@ public class RandomizerLocationManager
 		}
 	}
 
+	public static void OpenDoorByGuid(MoonGuid doorGuid)
+	{
+		foreach (KeystoneDoor door in KeystoneDoors)
+		{
+			if (door.MoonGuid == doorGuid)
+			{
+				int current = Characters.Sein.Inventory.GetRandomizerItem(72);
+				Characters.Sein.Inventory.SetRandomizerItem(72, current + 1 << door.Index);
+				break;
+			}
+		}
+	}
+
 	public static void UpdateReachable()
 	{
-		if(LogicThread != null && LogicThread.IsAlive) {
+		if (LogicThread != null && LogicThread.IsAlive) {
 			LogicThread.Abort();
 			Randomizer.log("Killing existing logic thread");
 		}
 		LogicThread = new Thread(UpdateReachableWorker);
 		LogicThread.Start();
-		
 	}
 
 	public static void DownloadAreas() {
 		var webClient = new WebClient();
 		try {
-			if(File.Exists("areas.ori")) File.Move("areas.ori", "areas.ori.old"); // backup
+			if (File.Exists("areas.ori")) File.Move("areas.ori", "areas.ori.old"); // backup
 			ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
 			webClient.DownloadFile(AreasURL, "areas.ori");
-			if(File.Exists("areas.ori.old")) File.Delete("areas.ori.old"); // clean backup
+			if (File.Exists("areas.ori.old")) File.Delete("areas.ori.old"); // clean backup
 		} catch(Exception e) {
 			Randomizer.LogError($"Failed to download areas.ori: ${e}");
-			if(File.Exists("areas.ori")) File.Delete("areas.ori");  					 // remove broken / failed
-			if(File.Exists("areas.ori.old")) File.Move("areas.ori.old", "areas.ori");    // restore backup
+			if (File.Exists("areas.ori")) File.Delete("areas.ori");  					 // remove broken / failed
+			if (File.Exists("areas.ori.old")) File.Move("areas.ori.old", "areas.ori");    // restore backup
 		}
 		HaveDownloadedAreas = true;
 		InitializeLogic();
 	}
 
 	public static void UpdateReachableWorker() {
-			Inventory currentInventory = Inventory.FromCharacter();
-			currentInventory.Unlocks.Add("Mapstone");
+		Inventory currentInventory = Inventory.FromCharacter();
+		currentInventory.Unlocks.Add("Mapstone");
 
-			if (Characters.Sein.Inventory.GetRandomizerItem(70) > currentInventory.Keystones)
-			{
-				currentInventory.Keystones = Characters.Sein.Inventory.GetRandomizerItem(70);
-			}
+		if (Characters.Sein.Inventory.GetRandomizerItem(70) > currentInventory.Keystones)
+		{
+			currentInventory.Keystones = Characters.Sein.Inventory.GetRandomizerItem(70);
+		}
 
-			if (Characters.Sein.Inventory.GetRandomizerItem(71) > currentInventory.Mapstones)
-			{
-				currentInventory.Mapstones = Characters.Sein.Inventory.GetRandomizerItem(71);
-			}
+		if (Characters.Sein.Inventory.GetRandomizerItem(71) > currentInventory.Mapstones)
+		{
+			currentInventory.Mapstones = Characters.Sein.Inventory.GetRandomizerItem(71);
+		}
 
-			if (Randomizer.OpenMode)
-			{
-				currentInventory.Unlocks.Add("Open");
-			}
+		if (Randomizer.OpenMode)
+		{
+			currentInventory.Unlocks.Add("Open");
+		}
 
-			if (Randomizer.OpenWorld)
-			{
-				currentInventory.Unlocks.Add("OpenWorld");
-			}
+		if (Randomizer.OpenWorld)
+		{
+			currentInventory.Unlocks.Add("OpenWorld");
+		}
 
-            if (Randomizer.InLogicWarps)
-			{
-				currentInventory.Unlocks.Add("InLogicWarps");
-			}
-			
-			HashSet<string> reachable = null;
-
-			if (RandomizerLocationManager.Areas != null)
-			{
-				reachable = OriReachable.Reachable(RandomizerLocationManager.Areas, currentInventory, spawnNodeName);
-				if(reachable.Contains("FronkeyFight")) { // hacky hack hack
-					reachable.Add("FirstEnergyCell");
-					reachable.Add("Sein");
-				}
-
-				if (reachable.Contains("ForlornEscape"))
-					reachable.Add("ForlornEscapePlant");
-				foreach (var item in RandomizerLocationManager.LocationsByName) 
-					item.Value.Reachable = reachable.Contains(item.Key);
-/* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
-				{
-					if (reachable.Contains(item.Key))
-					{
-						item.Value.Reachable = true;
-					}
-					else if (item.Value.Reachable)
-					{
-						Randomizer.log("!!!! " + item.Key + " became unreachable!"); // can toggle this on for debugging but logging in a thread is spoopy
-						item.Value.Reachable = false;
-					}
-				}*/
-			}
+        if (Randomizer.InLogicWarps)
+		{
+			currentInventory.Unlocks.Add("InLogicWarps");
+		}
 		
+		HashSet<string> reachable = null;
+
+		if (RandomizerLocationManager.Areas != null)
+		{
+			reachable = OriReachable.Reachable(RandomizerLocationManager.Areas, currentInventory, spawnNodeName);
+			if (reachable.Contains("FronkeyFight")) { // hacky hack hack
+				reachable.Add("FirstEnergyCell");
+				reachable.Add("Sein");
+			}
+
+			if (reachable.Contains("ForlornEscape"))
+				reachable.Add("ForlornEscapePlant");
+			foreach (var item in RandomizerLocationManager.LocationsByName) 
+				item.Value.Reachable = reachable.Contains(item.Key);
+/* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
+			{
+				if (reachable.Contains(item.Key))
+				{
+					item.Value.Reachable = true;
+				}
+				else if (item.Value.Reachable)
+				{
+					Randomizer.log("!!!! " + item.Key + " became unreachable!"); // can toggle this on for debugging but logging in a thread is spoopy
+					item.Value.Reachable = false;
+				}
+			}*/
+		}
 	}
 
 	public static Dictionary<MoonGuid, Location> LocationsByGuid = new Dictionary<MoonGuid, Location>();
@@ -346,6 +362,7 @@ public class RandomizerLocationManager
 
 	private static string spawnNodeName = null;
 
+	private static List<KeystoneDoor> KeystoneDoors = new List<KeystoneDoor>();
 
 	public class Location
 	{
@@ -426,7 +443,7 @@ public class RandomizerLocationManager
 			}
 
 			BingoController.OnLoc(this.Key);
-			if(this.Key == -7320236) {
+			if (this.Key == -7320236) {
 				Characters.Sein.Inventory.SetRandomizerItem(1106, 1);
 			}
 			RandomizerSwitch.GivePickup(this.Pickup, this.Key);
@@ -498,5 +515,25 @@ public class RandomizerLocationManager
 			Cutscene,
 			ProgressiveMap
 		}
+	}
+
+	public class KeystoneDoor
+	{
+		public KeystoneDoor(int index, string doorData)
+		{
+			string[] parts = doorData.Split();
+			this.Index = index;
+			this.Source = parts[0];
+			this.Destination = parts[1];
+			this.MoonGuid = new MoonGuid(int.Parse(parts[2]), int.Parse(parts[3]), int.Parse(parts[4]), int.Parse(parts[5]));
+		}
+
+		public int Index;
+
+		public string Source;
+
+		public string Destination;
+
+		public MoonGuid MoonGuid;
 	}
 }
