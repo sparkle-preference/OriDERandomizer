@@ -196,6 +196,7 @@ public class DoorWithSlots : SaveSerialize
 					this.OnOpenedAction.Perform(null);
 					this.Unhighlight();
 					BingoController.OnKSDoor(this.MoonGuid);
+					RandomizerLocationManager.OpenDoorByGuid(this.MoonGuid);
 					this.CurrentState = DoorWithSlots.State.Opened;
 					if (this.OpenDoorSoundProvider)
 					{

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 public class RandomizerLocationData
 {
@@ -271,7 +272,7 @@ Map9 0 56 ProgressiveMap 8 Mapstone 0 0 0 0";
 
 	// order matters, do not reorder or add entries in the middle
 	// ...also, do not add entries. there are only 12 key doors. what are you even doing this is a video game
-	public static List<string> KeystoneDoors = {
+	public static List<string> KeystoneDoors = new List<string>{
 		"GladesFirstKeyDoor GladesFirstKeyDoorOpened -1232154268 1164352171 -836255810 -1590216903",
 		"SpiritCavernsDoor SpiritCavernsDoorOpened 594661726 1329767267 -1704907880 -27301018",
 		"SpiritTreeDoor SpiritTreeDoorOpened 1795834119 1281161926 -2078449998 1300906360",

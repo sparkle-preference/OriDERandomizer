@@ -40,6 +40,7 @@
 
 70 - Total keystones collected
 71 - Total mapstones collected
+72 - Keystone doors opened (bitfield)
 
 80 - Spent AP Counter
 81 - Stomp/Grenade Hint
