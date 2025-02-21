@@ -268,4 +268,21 @@ Map6 0 44 ProgressiveMap 5 Mapstone 0 0 0 0
 Map7 0 48 ProgressiveMap 6 Mapstone 0 0 0 0
 Map8 0 52 ProgressiveMap 7 Mapstone 0 0 0 0
 Map9 0 56 ProgressiveMap 8 Mapstone 0 0 0 0";
+
+	// order matters, do not reorder or add entries in the middle
+	// ...also, do not add entries. there are only 12 key doors. what are you even doing this is a video game
+	public static List<string> KeystoneDoors = {
+		"GladesFirstKeyDoor GladesFirstKeyDoorOpened -1232154268 1164352171 -836255810 -1590216903",
+		"SpiritCavernsDoor SpiritCavernsDoorOpened 594661726 1329767267 -1704907880 -27301018",
+		"SpiritTreeDoor SpiritTreeDoorOpened 1795834119 1281161926 -2078449998 1300906360",
+		"BashTreeDoorClosed BashTreeDoorOpened 378303650 1322384872 242472089 -1590736948",
+		"UpperGinsoDoorClosed UpperGinsoDoorOpened 1873996457 1258667073 -902258499 -2125303602",
+		"GumoHideout DoubleJumpKeyDoor -1932550571 1250172391 -1917455943 -1939528727",
+		"SwampKeyDoorPlatform SwampKeyDoorOpened -11481148 1140648064 412034978 -613375286",
+		"ForlornKeyDoor ForlornLaserRoom -234272614 1227199594 1013218476 1564745183",
+		"LowerSorrow LeftSorrowLowerDoor 1974125039 1165165912 119656890 137757679",
+		"LeftSorrowMiddleDoorClosed LeftSorrowMiddleDoorOpened 1472759010 1273700124 616551597 280271352",
+		"ChargeJumpDoor ChargeJumpDoorOpen -1909990366 1163800373 1858164881 1500718794",
+		"MistyBeforeMiniBoss MistyOrbRoom 1509405999 1211109047 -376011127 -1110353735"
+	};
 }
