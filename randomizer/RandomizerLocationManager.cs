@@ -46,7 +46,7 @@ public class RandomizerLocationManager
 
 	public static void InitializeLogic()
 	{
-		if(!HaveDownloadedAreas) return; //Areas thread hasn't returned yet, skip. It'll run this on its own on completion.
+		if (!HaveDownloadedAreas) return; //Areas thread hasn't returned yet, skip. It'll run this on its own on completion.
 		
 		HashSet<string> paths = new HashSet<string>();
 		int firstComma = Randomizer.SeedMeta.IndexOf(',');
@@ -57,7 +57,7 @@ public class RandomizerLocationManager
 			preset = Randomizer.SeedMeta.Substring(firstComma + 1, Randomizer.SeedMeta.IndexOf(',', firstComma + 1) - firstComma - 1);
 		}
 
-		switch(preset)
+		switch (preset)
 		{
 		case "Casual":
 			paths.Add("casual-core");
@@ -130,7 +130,7 @@ public class RandomizerLocationManager
 			return;
 		}
 
-		spawnNodeName = null;
+		spawnNodeName = "SunkenGladesRunaway";
 		if (Randomizer.SpawnWith.Contains("WS")) {
 			foreach (var kvp in stupidBullshit) {
 				if (Randomizer.SpawnWith.EndsWith(kvp.Key)) {
@@ -267,13 +267,11 @@ public class RandomizerLocationManager
 	}
 
 	public static void UpdateReachableWorker() {
+		if (RandomizerLocationManager.Areas == null)
+			return;
+
 		Inventory currentInventory = Inventory.FromCharacter();
 		currentInventory.Unlocks.Add("Mapstone");
-
-		if (Characters.Sein.Inventory.GetRandomizerItem(70) > currentInventory.Keystones)
-		{
-			currentInventory.Keystones = Characters.Sein.Inventory.GetRandomizerItem(70);
-		}
 
 		if (Characters.Sein.Inventory.GetRandomizerItem(71) > currentInventory.Mapstones)
 		{
@@ -290,38 +288,58 @@ public class RandomizerLocationManager
 			currentInventory.Unlocks.Add("OpenWorld");
 		}
 
+		Dictionary<string, HashSet<string>> primedPaths = new Dictionary<string, HashSet<string>>();
+		int keystoneDoorsOpened = Characters.Sein.Inventory.GetRandomizerItem(72);
+
+		for (int i = 0; i < KeystoneDoors.Count; ++i)
+		{
+			if ((keystoneDoorsOpened & 1 << i) == 0)
+				continue;
+
+			if (!primedPaths.ContainsKey(KeystoneDoors[i].Source))
+				primedPaths[KeystoneDoors[i].Source] = new HashSet<string>();
+
+			primedPaths[KeystoneDoors[i].Source].Add(KeystoneDoors[i].Destination);
+		}
+
         if (Randomizer.InLogicWarps)
 		{
-			currentInventory.Unlocks.Add("InLogicWarps");
+			foreach (GameMapTeleporter teleporter in TeleporterController.Instance.Teleporters)
+            {
+            	if (Randomizer.WarpLogicLocations.Contains(teleporter.Identifier))
+                {
+                    if (!primedPaths.ContainsKey(spawnNodeName))
+                    	primedPaths[spawnNodeName] = new HashSet<string>();
+
+                    primedPaths[spawnNodeName].Add((string)Randomizer.WarpLogicLocations[teleporter.Identifier]);
+                }
+            }
 		}
-		
-		HashSet<string> reachable = null;
 
-		if (RandomizerLocationManager.Areas != null)
-		{
-			reachable = OriReachable.Reachable(RandomizerLocationManager.Areas, currentInventory, spawnNodeName);
-			if (reachable.Contains("FronkeyFight")) { // hacky hack hack
-				reachable.Add("FirstEnergyCell");
-				reachable.Add("Sein");
-			}
+		HashSet<string> reachable = OriReachable.Reachable(RandomizerLocationManager.Areas, currentInventory, spawnNodeName, primedPaths);
 
-			if (reachable.Contains("ForlornEscape"))
-				reachable.Add("ForlornEscapePlant");
-			foreach (var item in RandomizerLocationManager.LocationsByName) 
-				item.Value.Reachable = reachable.Contains(item.Key);
+		if (reachable.Contains("FronkeyFight")) { // hacky hack hack
+			reachable.Add("FirstEnergyCell");
+			reachable.Add("Sein");
+		}
+
+		if (reachable.Contains("ForlornEscape"))
+			reachable.Add("ForlornEscapePlant");
+
+		foreach (var item in RandomizerLocationManager.LocationsByName) 
+			item.Value.Reachable = reachable.Contains(item.Key);
 /* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
+		{
+			if (reachable.Contains(item.Key))
 			{
-				if (reachable.Contains(item.Key))
-				{
-					item.Value.Reachable = true;
-				}
-				else if (item.Value.Reachable)
-				{
-					Randomizer.log("!!!! " + item.Key + " became unreachable!"); // can toggle this on for debugging but logging in a thread is spoopy
-					item.Value.Reachable = false;
-				}
-			}*/
-		}
+				item.Value.Reachable = true;
+			}
+			else if (item.Value.Reachable)
+			{
+				Randomizer.log("!!!! " + item.Key + " became unreachable!"); // can toggle this on for debugging but logging in a thread is spoopy
+				item.Value.Reachable = false;
+			}
+		}*/
 	}
 
 	public static Dictionary<MoonGuid, Location> LocationsByGuid = new Dictionary<MoonGuid, Location>();

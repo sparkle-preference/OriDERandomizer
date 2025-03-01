@@ -32,90 +32,106 @@ namespace Protogen
             return reachableOrder;
         }
 
-        public static HashSet<string> Reachable(AreaGraph graph, Inventory inventory, string startNode = null)
+        public static HashSet<string> Reachable(AreaGraph graph, Inventory inventory, string startNode = null, Dictionary<string, HashSet<string>> primedPaths = null)
         {
-            if(startNode == null || !graph.OutgoingConnections.ContainsKey(startNode))
+            if (startNode == null || !graph.OutgoingConnections.ContainsKey(startNode))
                 startNode = graph.Origin.Name;
-            HashSet<string> reachable = new HashSet<string>();
-            reachable.Add(startNode);
 
-            HashSet<string> newNodes = reachable;
+            HashSet<string> reachable = new HashSet<string>();
+            Dictionary<string, int> reachedWithKeystones = new Dictionary<string, int>();
+            reachable.Add(startNode);
+            reachedWithKeystones[startNode] = 0;
 
             List<Node> accessibleMapstones = new List<Node>();
             int accessedMapstones = 0;
 
-            List<Connection> keystoneConnections = new List<Connection>();
-            List<Connection> usedKeystoneConnections = new List<Connection>();
+            HashSet<string> newNodes = new HashSet<string>();
+            bool foundAny = true;
 
-            bool openWorld = inventory.Unlocks.Contains("OpenWorld");
-            if (openWorld && startNode == graph.Origin.Name)
+            while (foundAny)
             {
-                reachable.Add("GladesMain");
-            }
+                foundAny = false;
 
-            if (inventory.Unlocks.Contains("InLogicWarps")) 
-            {
-                foreach (string unlock in inventory.Unlocks) {
-                    if (unlock.StartsWith("WARPTO:"))
-                    {
-                        reachable.Add(unlock.Remove(0, "WARPTO:".Length));
-                    }
-                }
-            }
-
-            do
-            {
-                foreach (var connection in newNodes.SelectMany(node => graph.OutgoingConnections[node]?.Where(conn =>
-                    conn.Requirement.Keystones > 0 && !usedKeystoneConnections.Contains(conn))))
+                // First expand available primed paths until we exhaust those
+                do
                 {
-                    if (!openWorld || connection.Source.Name != "GladesFirstKeyDoor" || connection.Destination.Name != "GladesFirstKeyDoorOpened")
+                    newNodes.Clear();
+                    foreach (string node in primedPaths.Keys)
                     {
-                        keystoneConnections.Add(connection);
+                        if (reachable.Contains(node))
+                        {
+                            foreach (string target in primedPaths[node])
+                            {
+                                foundAny = true;
+                                newNodes.Add(target);
+                                int destinationKeystonesUsed = reachedWithKeystones.ContainsKey(target) ? reachedWithKeystones[target] : 9999;
+                                if (reachedWithKeystones[node] < destinationKeystonesUsed)
+                                    reachedWithKeystones[target]  = reachedWithKeystones[node];
+                            }
+                        }
                     }
-                }
 
-                newNodes = new HashSet<string>(newNodes.SelectMany(node => graph.OutgoingConnections[node]?.Where(conn =>
-                        !reachable.Contains(conn.Destination.Name) && conn.Requirement.Mapstones == 0 &&
-                        conn.Requirement.Keystones == 0 && inventory.Contains(conn.Requirement)))
-                    .Select(conn =>
-                    {
-                        if (conn.Requirement.Unlocks.Contains("Mapstone"))
-                            accessibleMapstones.Add(conn.Destination);
+                    reachable.UnionWith(newNodes);
+                } while (newNodes.Count != 0);
 
-                        return conn.Destination.Name;
-                    }));
+                // Then expand all other paths (except KS doors) until we exhaust those
+                do
+                {
+                    newNodes = new HashSet<string>(reachable.SelectMany(node => graph.OutgoingConnections[node]?.Where(conn =>
+                            !reachable.Contains(conn.Destination.Name) && conn.Requirement.Mapstones == 0 &&
+                            conn.Requirement.Keystones == 0 && inventory.Contains(conn.Requirement)))
+                        .Select(conn =>
+                        {
+                            if (conn.Requirement.Unlocks.Contains("Mapstone"))
+                                accessibleMapstones.Add(conn.Destination);
 
-                //Mapstone Logic
-                var mapstonesReachable = Math.Min(inventory.Mapstones, accessibleMapstones.Count);
+                            int destinationKeystonesUsed = reachedWithKeystones.ContainsKey(conn.Destination.Name) ? reachedWithKeystones[conn.Destination.Name] : 9999;
+
+                            if (reachedWithKeystones[conn.Source.Name] < destinationKeystonesUsed)
+                                reachedWithKeystones[conn.Destination.Name] = reachedWithKeystones[conn.Source.Name];
+
+                            foundAny = true;
+                            return conn.Destination.Name;
+                        }));
+
+                    reachable.UnionWith(newNodes);
+                } while (newNodes.Count != 0);
+
+                // Accumulate progressive map locations
+                int mapstonesReachable = Math.Min(inventory.Mapstones, accessibleMapstones.Count);
                 if (accessedMapstones < mapstonesReachable)
                 {
                     foreach (var connection in graph.OutgoingConnections[startNode].Where(conn =>
                         conn.Requirement.Mapstones > accessedMapstones &&
                         conn.Requirement.Mapstones <= mapstonesReachable))
                     {
-                        newNodes.Add(connection.Destination.Name);
+                        foundAny = true;
+                        reachable.Add(connection.Destination.Name);
                     }
+
                     accessedMapstones = mapstonesReachable;
                 }
 
-                //Keystone Logic
-                if (newNodes.Count == 0 &&
-                    keystoneConnections.Union(usedKeystoneConnections).Sum(conn => conn.Requirement.Keystones) <=
-                    inventory.Keystones)
+                // Finally, find and open keystone doors (if inventory is sufficient) that open new areas
+                newNodes.Clear();
+                foreach (var conn in reachable.SelectMany(node => graph.OutgoingConnections[node]?.Where(conn =>
+                    !reachable.Contains(conn.Destination.Name) && conn.Requirement.Keystones > 0)))
                 {
-                    foreach (var connection in keystoneConnections)
+                    int keystonesNeeded = reachedWithKeystones[conn.Source.Name] + conn.Requirement.Keystones;
+
+                    if (inventory.Keystones >= keystonesNeeded)
                     {
-                        usedKeystoneConnections.Add(connection);
-                        newNodes.Add(connection.Destination.Name);
+                        foundAny = true;
+                        newNodes.Add(conn.Destination.Name);
+
+                        int destinationKeystonesUsed = reachedWithKeystones.ContainsKey(conn.Destination.Name) ? reachedWithKeystones[conn.Destination.Name] : 9999;
+                        if (keystonesNeeded < destinationKeystonesUsed)
+                            reachedWithKeystones[conn.Destination.Name] = keystonesNeeded;
                     }
-                    keystoneConnections.Clear();
                 }
 
-                foreach (var node in newNodes)
-                {
-                    reachable.Add(node);
-                }
-            } while (newNodes.Count != 0);
+                reachable.UnionWith(newNodes);
+            }
 
             return reachable;
         }
