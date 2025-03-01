@@ -233,10 +233,6 @@ namespace Protogen
                         break;
                     }
                 }
-                if (Randomizer.WarpLogicLocations.Contains(teleporter.Identifier))
-                {
-                    currentInventory.Unlocks.Add("WARPTO:" + Randomizer.WarpLogicLocations[teleporter.Identifier]);
-                }
             }
 
             return currentInventory;
