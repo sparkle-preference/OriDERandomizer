@@ -234,7 +234,8 @@ public class RandomizerLocationManager
 			if (door.MoonGuid == doorGuid)
 			{
 				int current = Characters.Sein.Inventory.GetRandomizerItem(72);
-				Characters.Sein.Inventory.SetRandomizerItem(72, current + 1 << door.Index);
+				Characters.Sein.Inventory.SetRandomizerItem(72, current + (1 << door.Index));
+				RandomizerLocationManager.UpdateReachable();
 				break;
 			}
 		}
@@ -302,7 +303,7 @@ public class RandomizerLocationManager
 
 		for (int i = 0; i < KeystoneDoors.Count; ++i)
 		{
-			if ((keystoneDoorsOpened & 1 << i) == 0)
+			if ((keystoneDoorsOpened & (1 << i)) == 0)
 				continue;
 
 			if (!primedPaths.ContainsKey(KeystoneDoors[i].Source))
