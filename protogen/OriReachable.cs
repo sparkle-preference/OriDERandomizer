@@ -62,11 +62,14 @@ namespace Protogen
                         {
                             foreach (string target in primedPaths[node])
                             {
-                                foundAny = true;
-                                newNodes.Add(target);
-                                int destinationKeystonesUsed = reachedWithKeystones.ContainsKey(target) ? reachedWithKeystones[target] : 9999;
-                                if (reachedWithKeystones[node] < destinationKeystonesUsed)
-                                    reachedWithKeystones[target]  = reachedWithKeystones[node];
+                                if (!reachable.Contains(target))
+                                {
+                                    foundAny = true;
+                                    newNodes.Add(target);
+                                    int destinationKeystonesUsed = reachedWithKeystones.ContainsKey(target) ? reachedWithKeystones[target] : 9999;
+                                    if (reachedWithKeystones[node] < destinationKeystonesUsed)
+                                        reachedWithKeystones[target]  = reachedWithKeystones[node];
+                                }
                             }
                         }
                     }
@@ -110,6 +113,12 @@ namespace Protogen
                     }
 
                     accessedMapstones = mapstonesReachable;
+                }
+
+                // Only do keystone doors if we have no other options to progress
+                if (foundAny)
+                {
+                    continue;
                 }
 
                 // Finally, find and open keystone doors (if inventory is sufficient) that open new areas
