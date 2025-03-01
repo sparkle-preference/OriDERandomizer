@@ -22,6 +22,7 @@ public class NewGameAction : ActionMethod
 		if (Randomizer.OpenWorld)
 		{
 			Game.Checkpoint.SaveGameData.LoadCustomData(Randomizer.GladesData);
+			Characters.Sein.Inventory.SetRandomizerItem(72, 1);
 			Game.Checkpoint.SaveGameData.LoadCustomData(Randomizer.ValleyStompDoorData);
 		}
 		GameController.Instance.RequireInitialValues = true;
