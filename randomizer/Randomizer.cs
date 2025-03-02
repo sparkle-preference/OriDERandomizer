@@ -1514,6 +1514,7 @@ public static class Randomizer
         if (Randomizer.OpenWorld)
         {
             set(800, 1);
+            set(72, 1); // mark the first keystone door as already opened
         }
 
         if (!Randomizer.OpenMode)
@@ -1534,8 +1535,9 @@ public static class Randomizer
                 spawnItem = new RandomizerAction(SpawnWith.Substring(0, 2), int.Parse(SpawnWith.Substring(2)));
             }
             RandomizerSwitch.GivePickup(spawnItem, 2, true);
-            RandomizerLocationManager.UpdateReachable();
         }
+
+        RandomizerLocationManager.UpdateReachable();
     }
 
     public static string ExpName(int p) {
