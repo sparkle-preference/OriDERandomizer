@@ -73,7 +73,7 @@ public class RandomizerWorldMapIconManager
 
         public RandomizerWorldMapIcon(RandomizerWorldMapIconType type, Vector3 position, string name)
         {
-            Guid = RandomizerLocationManager.LocationsByName[name].MoonGuid;
+            Guid = RandomizerLocationManager.LocationsByName[name].WorldMapGuid;
             Type = type;
             Position = position;
         }
