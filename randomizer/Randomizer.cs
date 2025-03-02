@@ -1487,6 +1487,7 @@ public static class Randomizer
         if (Randomizer.OpenWorld)
         {
             set(800, 1);
+            set(72, 1); // mark the first keystone door as already opened
         }
 
         if (!Randomizer.OpenMode)
