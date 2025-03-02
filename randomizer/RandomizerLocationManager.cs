@@ -507,8 +507,6 @@ public class RandomizerLocationManager
 
 		public MoonGuid WorldMapGuid;
 
-		public bool HasWorldMapGuid;
-
 		public RandomizerAction Pickup;
 
 		public bool Repeatable;
