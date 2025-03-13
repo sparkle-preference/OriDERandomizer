@@ -185,7 +185,6 @@ public static class RandomizerSettings {
 		Dev = new BoolSetting("Dev", false, "", false, true);
 
 		DevSettings.AreasOri = new BoolSetting("Keep Areas.Ori Updated", true, "Update areas.ori from the server. Set to False to disable for local development.", false, true);
-		DevSettings.ImprovedSpiritFlame = new BoolSetting("Improved Spirit Flame", true, "", false, true);
 		DevSettings.BlackrootOrbRoomClimbAssist = new BoolSetting("Blackroot Orb Room Climb Assist", true, "", false, true);
 	}
 
@@ -292,7 +291,6 @@ public static class RandomizerSettings {
 
 	public static class DevSettings {
 		public static BoolSetting AreasOri;
-		public static BoolSetting ImprovedSpiritFlame;
 		public static BoolSetting BlackrootOrbRoomClimbAssist;
 	}
 
