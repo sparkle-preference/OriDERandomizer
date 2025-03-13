@@ -73,7 +73,7 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver
 		if (this.m_isAutofiring)
 		{
 			float scaledTime = Mathf.Round(Time.time * 120f);
-			if (scaledTime - this.m_lastAutofire >= 12f)
+			if (scaledTime - this.m_lastAutofire >= 6f)
 			{
 				this.m_lastAutofire = scaledTime;
 				return true;
@@ -127,10 +127,6 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver
 		{
 			this.ProcessRapidFire(pressed);
 		}
-		else if (RandomizerSettings.DevSettings.ImprovedSpiritFlame)
-		{
-			this.ProcessImprovedSpiritFlame(pressed);
-		}
 		else
 		{
 			this.ProcessBaseSpiritFlame(pressed);
@@ -172,25 +168,6 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver
 				this.m_sein.Abilities.SpiritFlame.ThrowSpiritFlames(currentSpiritFlame);
 				Core.Input.SpiritFlame.Used = true;
 			}
-		}
-	}
-
-	private void ProcessImprovedSpiritFlame(bool pressed)
-	{
-		this.m_improvedShotCombo.SetQuickFlame(this.m_sein.PlayerAbilities.QuickFlame.HasAbility);
-		this.m_improvedShotCombo.Update(Time.deltaTime);
-
-		if (pressed)
-		{
-			this.m_improvedShotCombo.OnShootInput();
-			Characters.Ori.ShootAnimation.Restart();
-			Core.Input.SpiritFlame.Used = true;
-		}
-
-		if (this.m_improvedShotCombo.ProcessBuffer() && !this.LockShootingSpiritFlame)
-		{
-			SpiritFlame currentSpiritFlame = this.CurrentSpiritFlame;
-			this.m_sein.Abilities.SpiritFlame.ThrowSpiritFlames(currentSpiritFlame);
 		}
 	}
 
@@ -247,8 +224,6 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver
 	}
 
 	public ShotCombo StandardSpiritFlameShotCombo = new ShotCombo();
-
-	private ImprovedShotCombo m_improvedShotCombo = new ImprovedShotCombo();
 
 	public SeinStandardSpiritFlameAbility.PoisonSettings Poison = new SeinStandardSpiritFlameAbility.PoisonSettings();
 
