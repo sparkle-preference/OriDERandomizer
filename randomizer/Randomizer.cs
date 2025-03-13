@@ -1526,7 +1526,7 @@ public static class Randomizer
             if(spawnItems.Count == 1) 
                 RandomizerSwitch.GivePickup(spawnItems[0], 2, true);
             else if(spawnItems.Count > 1)
-               RandomizerSwitch.GivePickup(RandomizerAction.AsMulti(spawnItems), 2, true);
+                RandomizerSwitch.GivePickup(RandomizerAction.AsMulti(spawnItems), 2, true);
         }
         Characters.Sein.Energy.Max += spawnECs;
         Characters.Sein.Mortality.Health.MaxHealth += 4*spawnHCs;
