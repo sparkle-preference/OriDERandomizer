@@ -126,7 +126,7 @@ public class RandomizerLocationManager
             RandomizerLocationManager.s_logicLastUpdated = DateTime.MinValue;
             RandomizerLocationManager.s_lastLogicPaths = paths;
             Randomizer.log("No areas.ori found, will not update logic.");
-            RandomizerSettings.CurrentFilter = RandomizerSettings.MapFilterMode.All;
+            RandomizerSettings.CurrentFilter = RandomizerSettings.MapFilterMode.Uncollected;
             return;
         }
 
