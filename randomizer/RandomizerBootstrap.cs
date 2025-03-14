@@ -691,6 +691,35 @@ public class RandomizerBootstrap
 		collisionTrigger.Condition = compoundCondition;
 	}
 
+	private static void BootstrapGinsoUpperMiniboss(SceneRoot sceneRoot)
+	{
+		if (!Randomizer.OpenMode)
+			return;
+
+		// Prevent the entry door from closing when you enter the room
+		PlayerCollisionStayTrigger trigger = sceneRoot.transform.FindChild("*turretEnemyPuzzle/*doorASetup/triggerCollider").GetComponent<PlayerCollisionStayTrigger>();
+		trigger.Active = false;
+
+		// Start the moving platforms moving
+		TimelineSequence timeline = sceneRoot.transform.FindChild("*turretEnemyPuzzle/*doorASetup/timelinePlatformsBefore").GetComponent<TimelineSequence>();
+		timeline.AnimatorDriver.IsPlaying = true;
+
+		// Force the exit door open and remove the stray ring graphics
+		Transform exitDoor = sceneRoot.transform.FindChild("*turretEnemyPuzzle/*enemyPuzzle/doorSetup/sidewaysDoor");
+		LegacyTranslateAnimator animator = exitDoor.FindChild("puzzleDoorLeftGinso").GetComponent<LegacyTranslateAnimator>();
+		animator.TimeOffset = animator.TimeOfLastCurvePoint;
+		animator.SampleFirstFrameOnStart = true;
+		animator = exitDoor.FindChild("puzzleDoorRightGinso").GetComponent<LegacyTranslateAnimator>();
+		animator.TimeOffset = animator.TimeOfLastCurvePoint;
+		animator.SampleFirstFrameOnStart = true;
+		exitDoor.FindChild("keyrings").gameObject.active = false;
+
+		// Prevent the exit door from reopening after defeating the miniboss
+		ActionSequence sequence = sceneRoot.transform.FindChild("*turretEnemyPuzzle/*enemyPuzzle/*enemyPuzzle/actionSequence").GetComponent<ActionSequence>();
+		sequence.Actions.RemoveAt(13);
+		ActionSequence.Rename(sequence.Actions);
+	}
+
 	private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>>
 	{
 		{ "moonGrottoRopeBridge", new Action<SceneRoot>(RandomizerBootstrap.BootstrapMoonGrottoBridge) },
@@ -708,6 +737,7 @@ public class RandomizerBootstrap
 		{ "sunkenGladesOriRoom", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSeinRoomHint) },
 		{ "sunkenGladesEnemyIntroductionC", new Action<SceneRoot>(RandomizerBootstrap.BootstrapRhinoBeforeSein) },
 		{ "sorrowPassForestB", new Action<SceneRoot>(RandomizerBootstrap.BootstrapMistyPedestal) },
+		{ "ginsoTreeResurrection", new Action<SceneRoot>(RandomizerBootstrap.BootstrapGinsoUpperMiniboss) },
 	};
 
 	private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();
