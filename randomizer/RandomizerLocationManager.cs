@@ -252,13 +252,7 @@ public class RandomizerLocationManager
     }
 
     public static void DownloadAreas() {
-        bool checkAreasOri;
-        try {
-            checkAreasOri = RandomizerSettings.DevSettings.AreasOri.Value;
-        }catch(Exception) {
-            checkAreasOri = RandomizerSettings.DevSettings.AreasOri.Default;
-        }
-        if (checkAreasOri)
+        if (RandomizerSettings.DevSettings.AreasOri)
         {
             var webClient = new WebClient();
             try {
