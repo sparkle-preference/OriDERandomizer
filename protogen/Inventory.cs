@@ -231,6 +231,9 @@ namespace Protogen
                     case "sunkenGlades":
 						currentInventory.Unlocks.Add("TPGlades");
                         break;
+                    case "mangroveFalls":
+                        currentInventory.Unlocks.Add("TPBlackroot");
+                        break;
                     }
                 }
             }
