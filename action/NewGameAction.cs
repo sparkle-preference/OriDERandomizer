@@ -15,7 +15,6 @@ public class NewGameAction : ActionMethod
 		}
 		if (Randomizer.OpenMode)
 		{
-			Game.Checkpoint.SaveGameData.LoadCustomData(Randomizer.GinsoData);
 			Game.Checkpoint.SaveGameData.LoadCustomData(Randomizer.ForlornData);
 			Game.Checkpoint.SaveGameData.LoadCustomData(Randomizer.HoruData);
 		}
