@@ -85,7 +85,6 @@ public static class Randomizer
             Randomizer.OpenMode = true;
             Randomizer.OpenWorld = false;
             RandomizerDataMaps.LoadGladesData();
-            RandomizerDataMaps.LoadGinsoData();
             RandomizerDataMaps.LoadForlornData();
             RandomizerDataMaps.LoadHoruData();
             RandomizerDataMaps.LoadValleyData();
@@ -1581,7 +1580,6 @@ public static class Randomizer
     public static bool fragsEnabled;
     public static int fragKeyFinish;
     public static int maxFrags;
-    public static ArrayList GinsoData;
     public static ArrayList ForlornData;
     public static ArrayList HoruData;
     public static bool OpenMode;
