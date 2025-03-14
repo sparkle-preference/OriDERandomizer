@@ -232,6 +232,25 @@ public class RandomizerBootstrap
 		}
 	}
 
+	private static void BootstrapBlackrootBoulderArea(SceneRoot sceneRoot)
+	{
+		foreach (Transform child in sceneRoot.transform.FindChild("*gateSetup"))
+		{
+			if (child.name == "lever")
+			{
+				ActionLeverSystem leverSystem = child.GetComponent<ActionLeverSystem>();
+				leverSystem.LeverLeftAction = null;
+				leverSystem.LeverMiddleAction = null;
+				leverSystem.LeverRightAction = null;
+			}
+			else if (child.name == "gate")
+			{
+				LegacyTranslateAnimator doorAnimator = child.GetComponent<LegacyTranslateAnimator>();
+				doorAnimator.TimeOffset = doorAnimator.TimeOfLastCurvePoint;
+			}
+		}
+	}
+
 	private static void BootstrapSpiritTree(SceneRoot sceneRoot)
 	{
 		// Unlike most other pickups, which are permanent placeholders that spawn an object with a DestroyOnRestoreCheckpoint component,
@@ -678,6 +697,7 @@ public class RandomizerBootstrap
 		{ "mountHoruHubMid", new Action<SceneRoot>(RandomizerBootstrap.BootstrapMountHoruHub) },
 		{ "mountHoruLaserPuzzle", new Action<SceneRoot>(RandomizerBootstrap.BootstrapMountHoruLaserPuzzle) },
 		{ "northMangroveFallsLanternIntro", new Action<SceneRoot>(RandomizerBootstrap.BootstrapBlackrootLanternRoom) },
+		{ "mangroveFallsDashIntro", new Action<SceneRoot>(RandomizerBootstrap.BootstrapBlackrootBoulderArea) },
 		{ "spiritTreeRefined", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSpiritTree) },
 		{ "sunkenGladesIntroSplitB", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSunkenGladesSpiritWell) },
 		{ "thornfeltSwampActTwoStart", new Action<SceneRoot>(RandomizerBootstrap.BootstrapThornfeltSwampMain) },
