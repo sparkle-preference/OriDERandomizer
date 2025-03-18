@@ -10,37 +10,29 @@ public static class RandomizerCreditsManager {
 	{
 		CreditsDone = false;
 		Credits = new List<KeyValuePair<string, int>>();
-		if(BingoController.Active)
-			Credits.Add(new KeyValuePair<string, int>(
+Credits.Add(new KeyValuePair<string, int>(
 @"ANCHORTOPPARAMS_20_7.5_2_Ori DE Randomizer (" + Randomizer.VERSION + @")
 Developed by:
-Torin
-*Eiko*  #Melody#  @Vulajin@
-
-Bingo by *Eiko*", 14));
-		else
-			Credits.Add(new KeyValuePair<string, int>(
-@"ANCHORTOPPARAMS_20_7.5_2_Ori DE Randomizer (" + Randomizer.VERSION + @")
-
-Developed by:
-Torin
-*Eiko*  #Melody#  @Vulajin@", 14));
+Torin  *Eiko*  @Vulajin@
+$d265f27$  #Kirefel#" + 
+(BingoController.Active ? "\n\nBingo by *Eiko*" : ""), 14));
 
 		Credits.Add(new KeyValuePair<string, int>(
 @"ANCHORTOPPARAMS_20_7.5_2_Major contributions by:
 DevilSquirrel
-RefinedSpite
 Xemsys
-Kirefel
+jeflefou
+Melody
+
 
 Community Contributions by:
-GreeZ  Hydra  Jitaenow  LusTher
+GreeZ  Hydra  Jitaenow  LusTher  AsmPrgmC3 
 Kiara_TV  Skulblaka  Terra  2Kil", 16));
 		Credits.Add(new KeyValuePair<string, int>(
 @"ANCHORTOPPARAMS_20_12_2_Additional community contributions by:
 Athos213    AvengedRuler    Cereberon    Cleanfel
 CovertMuffin   Grimelios   iRobin   JHobz   Roryrai
-Jitaenow    shedd    madinsane    Mattermonkey
+Jitaenow    Nari    madinsane    Mattermonkey
 RainbowPoogle   UncleRonny   Wingheart   spinesheath
 SeaAverage   DireKrow   Eph   xaviershay", 16));
 
