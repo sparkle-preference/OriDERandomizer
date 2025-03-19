@@ -270,9 +270,25 @@ public class RandomizerBootstrap
 		}
 	}
 
+	private static void BootstrapValleyEntry(SceneRoot sceneRoot)
+	{
+		// Apply open world patches
+		if (Randomizer.Inventory.GetRandomizerItem(800) > 0)
+		{
+			// Disconnect the stomp post from the door; leave it to be stomped for funsies
+			StompPost stompPost = sceneRoot.transform.FindChild("*simpleStompPostPuzzle/simpleStompPost").GetComponent<StompPost>();
+			stompPost.AllTheWayInAction = null;
+
+			// Force the door open
+			LegacyTranslateAnimator doorAnimator = sceneRoot.transform.FindChild("*simpleStompPostPuzzle/sunkenGladesStompTree").GetComponent<LegacyTranslateAnimator>();
+			doorAnimator.TimeOffset = doorAnimator.TimeOfLastCurvePoint;
+		}
+	}
+
 	private static void BootstrapValleyThreeBirdArea(SceneRoot sceneRoot)
 	{
-		if (Characters.Sein && Characters.Sein.Inventory && Characters.Sein.Inventory.GetRandomizerItem(800) > 0)
+		// Apply open world patches
+		if (Randomizer.Inventory.GetRandomizerItem(800) > 0)
 		{
 			Transform leverSetup = sceneRoot.transform.FindChild("*leverSetup");
 
@@ -398,6 +414,48 @@ public class RandomizerBootstrap
 
 		doorSequence.Actions.Insert(3, conditionPickupAction);
 		ActionSequence.Rename(doorSequence.Actions);
+
+		// Apply lava patches unless closed dungeons flag is set
+		if (Randomizer.Inventory.GetRandomizerItem(801) == 0)
+		{
+			List<string> deactivateObjects = new List<string>{
+				"lavaStreamA",
+				"lavaStreamB",
+				"lavaStreamC",
+				"lavaStreamD",
+				"lavaStreamE",
+				"lavaStreamF",
+				"LavaFGElements",
+				"uberLavaBottom"
+			};
+
+			foreach (string deactivate in deactivateObjects)
+			{
+				sceneRoot.transform.FindChild(deactivate).gameObject.active = false;
+			}
+		}
+	}
+
+	private static void BootstrapSunkenGladesKeystoneDoor(SceneRoot sceneRoot)
+	{
+		// Apply open world patches
+		if (Randomizer.Inventory.GetRandomizerItem(800) > 0)
+		{
+			// Open the keystone door and remove the "hey look it's a keystone door" cutscene
+			DoorWithSlots doorComponent = sceneRoot.transform.FindChild("doorWithTwoSlots/door").GetComponent<DoorWithSlots>();
+			doorComponent.NumberOfOrbsUsed = 2;
+			doorComponent.CurrentState = DoorWithSlots.State.Opened;
+
+			LegacyTranslateAnimator animator = doorComponent.transform.FindChild("doorPieces/doorLeft").GetComponent<LegacyTranslateAnimator>();
+			animator.TimeOffset = animator.TimeOfLastCurvePoint;
+			animator.SampleFirstFrameOnStart = true;
+			animator = doorComponent.transform.FindChild("doorPieces/doorRight").GetComponent<LegacyTranslateAnimator>();
+			animator.TimeOffset = animator.TimeOfLastCurvePoint;
+			animator.SampleFirstFrameOnStart = true;
+
+			PlayerCollisionStayTrigger trigger = sceneRoot.transform.FindChild("*allEnemiesKilled/activated/*objectiveSetup/objectiveSetupTrigger").GetComponent<PlayerCollisionStayTrigger>();
+			trigger.Active = false;
+		}
 	}
 
 	private static void BootstrapSunkenGladesSpiritWell(SceneRoot sceneRoot)
@@ -693,31 +751,77 @@ public class RandomizerBootstrap
 
 	private static void BootstrapGinsoUpperMiniboss(SceneRoot sceneRoot)
 	{
-		if (!Randomizer.OpenMode)
-			return;
+		// Apply miniboss room patches unless closed dungeons flag is set
+		if (Randomizer.Inventory.GetRandomizerItem(801) == 0)
+		{
+			// Prevent the entry door from closing when you enter the room
+			PlayerCollisionStayTrigger trigger = sceneRoot.transform.FindChild("*turretEnemyPuzzle/*doorASetup/triggerCollider").GetComponent<PlayerCollisionStayTrigger>();
+			trigger.Active = false;
 
-		// Prevent the entry door from closing when you enter the room
-		PlayerCollisionStayTrigger trigger = sceneRoot.transform.FindChild("*turretEnemyPuzzle/*doorASetup/triggerCollider").GetComponent<PlayerCollisionStayTrigger>();
-		trigger.Active = false;
+			// Start the moving platforms moving
+			TimelineSequence timeline = sceneRoot.transform.FindChild("*turretEnemyPuzzle/*doorASetup/timelinePlatformsBefore").GetComponent<TimelineSequence>();
+			timeline.AnimatorDriver.IsPlaying = true;
 
-		// Start the moving platforms moving
-		TimelineSequence timeline = sceneRoot.transform.FindChild("*turretEnemyPuzzle/*doorASetup/timelinePlatformsBefore").GetComponent<TimelineSequence>();
-		timeline.AnimatorDriver.IsPlaying = true;
+			// Force the exit door open and remove the stray ring graphics
+			Transform exitDoor = sceneRoot.transform.FindChild("*turretEnemyPuzzle/*enemyPuzzle/doorSetup/sidewaysDoor");
+			LegacyTranslateAnimator animator = exitDoor.FindChild("puzzleDoorLeftGinso").GetComponent<LegacyTranslateAnimator>();
+			animator.TimeOffset = animator.TimeOfLastCurvePoint;
+			animator.SampleFirstFrameOnStart = true;
+			animator = exitDoor.FindChild("puzzleDoorRightGinso").GetComponent<LegacyTranslateAnimator>();
+			animator.TimeOffset = animator.TimeOfLastCurvePoint;
+			animator.SampleFirstFrameOnStart = true;
+			exitDoor.FindChild("keyrings").gameObject.active = false;
 
-		// Force the exit door open and remove the stray ring graphics
-		Transform exitDoor = sceneRoot.transform.FindChild("*turretEnemyPuzzle/*enemyPuzzle/doorSetup/sidewaysDoor");
-		LegacyTranslateAnimator animator = exitDoor.FindChild("puzzleDoorLeftGinso").GetComponent<LegacyTranslateAnimator>();
-		animator.TimeOffset = animator.TimeOfLastCurvePoint;
-		animator.SampleFirstFrameOnStart = true;
-		animator = exitDoor.FindChild("puzzleDoorRightGinso").GetComponent<LegacyTranslateAnimator>();
-		animator.TimeOffset = animator.TimeOfLastCurvePoint;
-		animator.SampleFirstFrameOnStart = true;
-		exitDoor.FindChild("keyrings").gameObject.active = false;
+			// Prevent the exit door from reopening after defeating the miniboss
+			ActionSequence sequence = sceneRoot.transform.FindChild("*turretEnemyPuzzle/*enemyPuzzle/*enemyPuzzle/actionSequence").GetComponent<ActionSequence>();
+			sequence.Actions.RemoveAt(13);
+			ActionSequence.Rename(sequence.Actions);
+		}
+	}
 
-		// Prevent the exit door from reopening after defeating the miniboss
-		ActionSequence sequence = sceneRoot.transform.FindChild("*turretEnemyPuzzle/*enemyPuzzle/*enemyPuzzle/actionSequence").GetComponent<ActionSequence>();
-		sequence.Actions.RemoveAt(13);
-		ActionSequence.Rename(sequence.Actions);
+	private static void BootstrapForlornRuinsBridge(SceneRoot sceneRoot)
+	{
+		// Apply bridge room patches unless closed dungeons flag is set
+		if (Randomizer.Inventory.GetRandomizerItem(801) == 0)
+		{
+			Transform setupGravity = sceneRoot.transform.FindChild("*setupGravity");
+
+			// Open the door to the laser room
+			TransformAnimator doorAnimator = setupGravity.FindChild("solidWallSetup/bombableSolidWallSetup").GetComponent<TransformAnimator>();
+			doorAnimator.AnimatorDriver.CurrentTime = doorAnimator.AnimatorDriver.Duration;
+			doorAnimator.Initialize();
+			doorAnimator.SampleValue(doorAnimator.AnimatorDriver.CurrentTime, true);
+
+			// Deactivate one specific laser animation (not the others with the same name, for some reason)
+			ActivateAction action = setupGravity.FindChild("pedestalAction/*setups/actions/mainAction").GetComponent<ActionSequence>().Actions[15] as ActivateAction;
+			action.Target.active = false;
+
+			// Deactivate the cutscene where you give up the orb
+			PlayerCollisionStayTrigger trigger = setupGravity.FindChild("pedestalAction/*setups/triggers/cutsceneCollisionTrigger").GetComponent<PlayerCollisionStayTrigger>();
+			trigger.Active = false;
+
+			// Force the bridge timeline to the end and activate its colliders
+			// Everything about TimelineSequence sucks and if I have to sledgehammer every goddamn animator to the end I will so help me god
+			TimelineSequence sequence = setupGravity.FindChild("timelineSequence").GetComponent<TimelineSequence>();
+			foreach (TimelineSequence.SequenceEntry sequenceEntry in sequence.Entries)
+			{
+				if (sequenceEntry.Animator.GetType() == typeof(TimelineSequence))
+				{
+					foreach (TimelineSequence.SequenceEntry subSequenceEntry in (sequenceEntry.Animator as TimelineSequence).Entries)
+					{
+						subSequenceEntry.Animator.AnimatorDriver.IsPlaying = true;
+						subSequenceEntry.Animator.AnimatorDriver.CurrentTime = subSequenceEntry.Animator.AnimatorDriver.Duration;
+					}
+				}
+				else
+				{
+					sequenceEntry.Animator.AnimatorDriver.IsPlaying = true;
+					sequenceEntry.Animator.AnimatorDriver.CurrentTime = sequenceEntry.Animator.AnimatorDriver.Duration;
+				}
+			}
+
+			setupGravity.FindChild("timelineSequence/bridgeColliders").GetComponent<GameObjectActivator>().ActiveAtStart = true;
+		}
 	}
 
 	private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>>
@@ -728,9 +832,11 @@ public class RandomizerBootstrap
 		{ "northMangroveFallsLanternIntro", new Action<SceneRoot>(RandomizerBootstrap.BootstrapBlackrootLanternRoom) },
 		{ "mangroveFallsDashIntro", new Action<SceneRoot>(RandomizerBootstrap.BootstrapBlackrootBoulderArea) },
 		{ "spiritTreeRefined", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSpiritTree) },
+		{ "sunkenGladesIntroSplitA", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSunkenGladesKeystoneDoor) },
 		{ "sunkenGladesIntroSplitB", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSunkenGladesSpiritWell) },
 		{ "thornfeltSwampActTwoStart", new Action<SceneRoot>(RandomizerBootstrap.BootstrapThornfeltSwampMain) },
 		{ "titleScreenSwallowsNest", new Action<SceneRoot>(RandomizerBootstrap.BootstrapTitleScreen) },
+		{ "westGladesMistyWoodsCaveTransition", new Action<SceneRoot>(RandomizerBootstrap.BootstrapValleyEntry) },
 		{ "westGladesFireflyAreaA", new Action<SceneRoot>(RandomizerBootstrap.BootstrapValleyThreeBirdArea) },
 		{ "sunkenGladesRunaway", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSunkenGladesRunaway) },
 		{ "sunkenGladesSpiritCavernWalljumpB", new Action<SceneRoot>(RandomizerBootstrap.BootstrapWallJumpTreeHint) },
@@ -738,6 +844,7 @@ public class RandomizerBootstrap
 		{ "sunkenGladesEnemyIntroductionC", new Action<SceneRoot>(RandomizerBootstrap.BootstrapRhinoBeforeSein) },
 		{ "sorrowPassForestB", new Action<SceneRoot>(RandomizerBootstrap.BootstrapMistyPedestal) },
 		{ "ginsoTreeResurrection", new Action<SceneRoot>(RandomizerBootstrap.BootstrapGinsoUpperMiniboss) },
+		{ "forlornRuinsC", new Action<SceneRoot>(RandomizerBootstrap.BootstrapForlornRuinsBridge) },
 	};
 
 	private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();
