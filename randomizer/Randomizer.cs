@@ -426,6 +426,13 @@ public static class Randomizer
     public static void Update()
     {
         Randomizer.UpdateMessages();
+        Randomizer.Tick();
+
+        if (GameStateMachine.Instance.CurrentState == GameStateMachine.State.Prologue)
+        {
+            return;
+        }
+
         if (Characters.Sein && SkillTreeManager.Instance != null && SkillTreeManager.Instance.NavigationManager.IsVisible)
         {
             if (Characters.Sein.IsSuspended)
@@ -437,7 +444,6 @@ public static class Randomizer
                 SkillTreeManager.Instance.NavigationManager.FadeAnimator.SetParentOpacity(RandomizerSettings.QOL.AbilityMenuOpacity);
             }
         }
-        Randomizer.Tick();
         if (Characters.Sein && !Characters.Sein.IsSuspended)
         {
             RandomizerBonus.Update();
@@ -968,6 +974,10 @@ public static class Randomizer
             {
                 if(RandomizerSettings.QOL.CursorLock)
                     Cursor.lockState = CursorLockMode.Confined;
+
+                if (GameStateMachine.Instance.CurrentState == GameStateMachine.State.Prologue)
+                    return;
+
                 BingoController.Tick();
                 if(ResetVolume == 1)
                 {
