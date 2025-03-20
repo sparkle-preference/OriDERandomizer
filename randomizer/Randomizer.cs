@@ -12,7 +12,7 @@ using UnityEngine;
 
 public static class Randomizer
 {
-    public static string VERSION = "4.0.15";
+    public static string VERSION = "4.1.0";
     public static void initialize()
     {
         try {
@@ -84,10 +84,6 @@ public static class Randomizer
             Randomizer.HotColdSaveId = 2000;
             Randomizer.OpenMode = true;
             Randomizer.OpenWorld = false;
-            RandomizerDataMaps.LoadGladesData();
-            RandomizerDataMaps.LoadForlornData();
-            RandomizerDataMaps.LoadHoruData();
-            RandomizerDataMaps.LoadValleyData();
             RandomizerColorManager.Initialize();
             RandomizerRebinding.ParseRebinding();
             RandomizerSettings.ParseSettings();
@@ -430,7 +426,7 @@ public static class Randomizer
         Randomizer.UpdateMessages();
         Randomizer.Tick();
 
-        if (GameStateMachine.Instance.CurrentState == GameStateMachine.State.Prologue)
+        if (GameStateMachine.Instance?.CurrentState == GameStateMachine.State.Prologue)
         {
             return;
         }
@@ -982,7 +978,7 @@ public static class Randomizer
                 if(RandomizerSettings.QOL.CursorLock)
                     Cursor.lockState = CursorLockMode.Confined;
 
-                if (GameStateMachine.Instance.CurrentState == GameStateMachine.State.Prologue)
+                if (GameStateMachine.Instance?.CurrentState == GameStateMachine.State.Prologue)
                     return;
 
                 BingoController.Tick();
@@ -1590,13 +1586,9 @@ public static class Randomizer
     public static bool fragsEnabled;
     public static int fragKeyFinish;
     public static int maxFrags;
-    public static ArrayList ForlornData;
-    public static ArrayList HoruData;
     public static bool OpenMode;
 
     public static long LastTick;
-
-    public static ArrayList GladesData;
 
     public static int LockedCount;
 
@@ -1621,8 +1613,6 @@ public static class Randomizer
     public static Dictionary<string, string> RelicZoneLookup;
 
     public static int RelicCount;
-
-    public static ArrayList ValleyStompDoorData;
 
     public static List<String> RandomExpNames;
 

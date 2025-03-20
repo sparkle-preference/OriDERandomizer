@@ -143,6 +143,12 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
 		return false;
 	}
 
+	public void ForceActivate()
+	{
+		this.m_activated = true;
+		base.transform.localPosition = base.transform.localPosition + Vector3.down * this.StompIntoGroundAmount;
+	}
+
 	public int NumberOfStomps = 3;
 
 	public float StompIntoGroundAmount = 0.1f;
