@@ -37,6 +37,9 @@ namespace Protogen
             if (startNode == null || !graph.OutgoingConnections.ContainsKey(startNode))
                 startNode = graph.Origin.Name;
 
+            if (primedPaths == null)
+                primedPaths = new Dictionary<string, HashSet<string>>();
+
             HashSet<string> reachable = new HashSet<string>();
             Dictionary<string, int> reachedWithKeystones = new Dictionary<string, int>();
             reachable.Add(startNode);
