@@ -275,9 +275,11 @@ public class RandomizerBootstrap
 		// Apply open world patches
 		if (Randomizer.Inventory.GetRandomizerItem(800) > 0)
 		{
-			// Disconnect the stomp post from the door; leave it to be stomped for funsies
+			// Disconnect the stomp post from the door; force it to be already stomped and deactivate the highlight
 			StompPost stompPost = sceneRoot.transform.FindChild("*simpleStompPostPuzzle/simpleStompPost").GetComponent<StompPost>();
 			stompPost.AllTheWayInAction = null;
+			stompPost.ForceActivate();
+			stompPost.transform.FindChild("sunkenGladesStompTreeHighlight").gameObject.active = false;
 
 			// Force the door open
 			LegacyTranslateAnimator doorAnimator = sceneRoot.transform.FindChild("*simpleStompPostPuzzle/sunkenGladesStompTree").GetComponent<LegacyTranslateAnimator>();
