@@ -608,6 +608,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable
 		CleverMenuItem cleverMenuItem = UnityEngine.Object.Instantiate<CleverMenuItem>(this.MenuItems[0]);
 		cleverMenuItem.gameObject.name = label;
 		cleverMenuItem.transform.SetParent(this.MenuItems[1].transform.parent);
+		TransparencyAnimator.Register(cleverMenuItem.transform);
 		cleverMenuItem.PressedCallback += onPress;
 		cleverMenuItem.gameObject.GetComponentInChildren<MessageBox>().SetMessage(new MessageDescriptor(label));
 		cleverMenuItem.ApplyColors();
