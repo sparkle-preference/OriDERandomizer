@@ -181,6 +181,7 @@ public static class RandomizerSettings {
 		Accessibility.ApplySoundCompression = new BoolSetting("Apply Sound Compression", false, "True: Caps sound from getting too loud (relevant when e.g. charge jumping very echo-y areas, like Spirit Caverns).\nFalse (default): Vanilla behavior.", false);
 		Accessibility.SoundCompressionFactor = new FloatSetting("Sound Compression Factor", 0.6f, "(0.0-1.0) Higher values mean more sound compression (fewer sounds louder than the rest of them).", false);
 		Accessibility.CameraShakeFactor = new FloatSetting("Camera Shake Factor", 1f, "(0.0-1.0) Reduce the intensity of camera shake effects in the game. Set to 0 to disable camera shake entirely.", false);
+		Accessibility.DisableMenuBlur = new BoolSetting("Disable Menu Blur", false, "True: Disables the blur effect applied to the game during Save Anywhere.\nFalse (default): Vanilla behavior.", false);
 
 		Dev = new BoolSetting("Dev", false, "", false, true);
 
@@ -286,6 +287,8 @@ public static class RandomizerSettings {
 		public static FloatSetting SoundCompressionFactor;
 
 		public static FloatSetting CameraShakeFactor;
+
+		public static BoolSetting DisableMenuBlur;
 	}
 
 

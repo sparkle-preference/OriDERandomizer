@@ -436,10 +436,12 @@ public static class Randomizer
             if (Characters.Sein.IsSuspended)
             {
                 SkillTreeManager.Instance.NavigationManager.FadeAnimator.SetParentOpacity(1f);
+                UberPostProcess.Instance.SetDoBlur(true);
             }
             else
             {
                 SkillTreeManager.Instance.NavigationManager.FadeAnimator.SetParentOpacity(RandomizerSettings.QOL.AbilityMenuOpacity);
+                UberPostProcess.Instance.SetDoBlur(!RandomizerSettings.Accessibility.DisableMenuBlur);
             }
         }
         if (Characters.Sein && !Characters.Sein.IsSuspended)
