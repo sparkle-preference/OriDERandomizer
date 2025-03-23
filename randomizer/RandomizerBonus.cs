@@ -402,6 +402,76 @@ public static class RandomizerBonus
                 g_color = "$";
             RandomizerSwitch.PickupMessage(s_color + "Stomp: " + Randomizer.StompZone + s_color + g_color+ "    Grenade: "+ Randomizer.GrenadeZone + g_color, 480);
             break;
+        case 410:
+            if (!flag)
+            {
+                Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $W$*a*#l#$l$ *J*#u#$m$*p*");
+            }
+            break;
+        case 411:
+            if (!flag)
+            {
+                Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $F$*l*#a#$m$*e*");
+            }
+            break;
+        case 412:
+            if (!flag)
+            {
+                Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*o*#u#$b$*l*#e# $J$*u*#m#$p$");
+            }
+            break;
+        case 413:
+            if (!flag)
+            {
+                Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $B$*a*#s#$h$");
+            }
+            break;
+        case 414:
+            if (!flag)
+            {
+                Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*t*#o#$m$*p*");
+            }
+            break;
+        case 415:
+            if (!flag)
+            {
+                Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*l*#i#$d$*e*");
+            }
+            break;
+        case 416:
+            if (!flag)
+            {
+                Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*l*#i#$m$*b*");
+            }
+            break;
+        case 417:
+            if (!flag)
+            {
+                Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $J$*u*#m#$p$");
+            }
+            break;
+        case 418:
+            if (!flag)
+            {
+                Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*a*#s#$h$");
+            }
+            break;
+        case 419:
+            if (!flag)
+            {
+                Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*r*#e#$n$*a*#d#$e$");
+            }
+            break;
         case 1102:
             if (!flag)
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
@@ -641,6 +711,21 @@ public static class RandomizerBonus
             var msg = $"ALIGNRIGHTANCHORTOPPARAMS_12_14_1_{string.Join("\n", bonuses.ToArray())}";
             Randomizer.printInfo(msg);
         } else Randomizer.printInfo("No bonus passives");
+    }
+
+    public static bool EnhancedWallJump { get { return Randomizer.Inventory.GetRandomizerItem(410) > 0; } }
+    public static bool EnhancedChargeFlame { get { return Randomizer.Inventory.GetRandomizerItem(411) > 0; } }
+    public static bool EnhancedDoubleJump { get { return Randomizer.Inventory.GetRandomizerItem(412) > 0; } }
+    public static bool EnhancedBash { get { return Randomizer.Inventory.GetRandomizerItem(413) > 0; } }
+    public static bool EnhancedStomp { get { return Randomizer.Inventory.GetRandomizerItem(414) > 0; } }
+    public static bool EnhancedGlide { get { return Randomizer.Inventory.GetRandomizerItem(415) > 0; } }
+    public static bool EnhancedClimb { get { return Randomizer.Inventory.GetRandomizerItem(416) > 0; } }
+    public static bool EnhancedChargeJump { get { return Randomizer.Inventory.GetRandomizerItem(417) > 0; } }
+    public static bool EnhancedDash { get { return Randomizer.Inventory.GetRandomizerItem(418) > 0; } }
+    public static bool EnhancedGrenade { get { return Randomizer.Inventory.GetRandomizerItem(419) > 0; } }
+
+    public static bool EnhancedStomp() {
+        return Randomizer.Inventory.GetRandomizerItem(414) > 0;
     }
 
     private static Dictionary<int, String> BonusNames = new Dictionary<int, String>() {

@@ -89,6 +89,9 @@ public class SeinStomp : CharacterState, ISeinReceiver
 	{
 		this.Sein.PlatformBehaviour.Gravity.ModifyGravityPlatformMovementSettingsEvent += this.ModifyVerticalPlatformMovementSettings;
 		this.PlatformMovement.OnCollisionGroundEvent += this.OnCollisionGround;
+		this.PlatformMovement.OnCollisionCeilingEvent += this.OnCollisionOther;
+		this.PlatformMovement.OnCollisionWallLeftEvent += this.OnCollisionOther;
+		this.PlatformMovement.OnCollisionWallRightEvent += this.OnCollisionOther;
 	}
 
 	public override void OnExit()
@@ -131,13 +134,23 @@ public class SeinStomp : CharacterState, ISeinReceiver
 				IAttackable attackable = collider.gameObject.FindComponent<IAttackable>();
 				if (attackable != null && attackable.CanBeStomped())
 				{
-					Damage damage = new Damage(this.StompDamage, Vector3.down * 3f, Characters.Sein.Position, DamageType.Stomp, base.gameObject);
+					Damage damage = new Damage(this.StompDamage, this.StompDirection * 3f, Characters.Sein.Position, DamageType.Stomp, base.gameObject);
 					damage.DealToComponents(collider.gameObject);
 				}
 				this.DoBlastRadius(attackable);
 			}
 			this.Logic.ChangeState(this.State.StompFinished);
 		}
+	}
+
+	public void OnCollisionOther(Vector3 normal, Collider collider)
+	{
+		if (this.Logic.CurrentState != this.State.StompDown || !RandomizerBonus.EnhancedStomp())
+		{
+			return;
+		}
+
+		this.OnCollisionGround(normal, collider);
 	}
 
 	public void DoBlastRadius(IAttackable landedStompAttackable)
@@ -157,7 +170,7 @@ public class SeinStomp : CharacterState, ISeinReceiver
 						float magnitude = vector.magnitude;
 						if (magnitude < this.StompBlashRadius)
 						{
-							Vector3 normalized = (vector.normalized + Vector3.up * 2f).normalized;
+							Vector3 normalized = (vector.normalized + this.StompDirection * -2f).normalized;
 							GameObject gameObject = ((Component)attackable).gameObject;
 							float stompDamage = this.StompDamage;
 							Damage damage = new Damage(stompDamage, normalized * 3f, attackable.Position, DamageType.StompBlast, gameObject);
@@ -205,6 +218,9 @@ public class SeinStomp : CharacterState, ISeinReceiver
 	{
 		this.Sein.PlatformBehaviour.Gravity.ModifyGravityPlatformMovementSettingsEvent -= this.ModifyVerticalPlatformMovementSettings;
 		this.PlatformMovement.OnCollisionGroundEvent -= this.OnCollisionGround;
+		this.PlatformMovement.OnCollisionCeilingEvent -= this.OnCollisionOther;
+		this.PlatformMovement.OnCollisionWallLeftEvent -= this.OnCollisionOther;
+		this.PlatformMovement.OnCollisionWallRightEvent -= this.OnCollisionOther;
 		this.Logic.ChangeState(this.State.Inactive);
 		Game.Checkpoint.Events.OnPostRestore.Remove(new Action(this.OnRestoreCheckpoint));
 		base.OnDestroy();
@@ -331,13 +347,27 @@ public class SeinStomp : CharacterState, ISeinReceiver
 			this.EndStomp();
 			return;
 		}
-		if (this.Logic.CurrentStateTime > this.StompDownDuration && !Core.Input.Stomp.Pressed)
+
+		bool inputProvided = RandomizerBonus.EnhancedStomp() ? Core.Input.Axis != Vector2.zero : Core.Input.Stomp.Pressed;
+		if (this.Logic.CurrentStateTime > this.StompDownDuration && !inputProvided)
 		{
 			this.EndStomp();
 			return;
 		}
-		this.PlatformMovement.LocalSpeed = new Vector2(0f, -( this.StompSpeed + this.StompSpeed * 0.2f * RandomizerBonus.Velocity()));
+
+		if (RandomizerBonus.EnhancedStomp())
+		{
+			this.m_stompDirection = (Core.Input.Axis.normalized + this.PlatformMovement.LocalSpeed.normalized).normalized;
+		}
+		else
+		{
+			this.m_stompDirection = Vector2.down;
+		}
+
+		float targetVelocity = this.StompSpeed * RandomizerBonus.Veloscale;
+		this.PlatformMovement.LocalSpeed = this.m_stompDirection * targetVelocity;
 		this.Sein.Mortality.DamageReciever.MakeInvincibleToEnemies(0.2f);
+
 		if (this.Sein.Controller.IsSwimming)
 		{
 			this.EndStomp();
@@ -351,18 +381,18 @@ public class SeinStomp : CharacterState, ISeinReceiver
 				{
 					if (attackable.IsStompBouncable())
 					{
-						Vector3 a = Characters.Sein.Position + Vector3.down;
+						Vector3 a = Characters.Sein.Position + this.StompDirection;
 						if (Vector3.Distance(a, attackable.Position) < 1.5f && this.Logic.CurrentState == this.State.StompDown)
 						{
 							GameObject gameObject = ((Component)attackable).gameObject;
-							Damage damage = new Damage(this.StompDamage, Vector3.down * 3f, Characters.Sein.Position, DamageType.Stomp, base.gameObject);
+							Damage damage = new Damage(this.StompDamage, this.StompDirection * 3f, Characters.Sein.Position, DamageType.Stomp, base.gameObject);
 							damage.DealToComponents(gameObject);
 							if (attackable.IsDead())
 							{
 								return;
 							}
 							this.EndStomp();
-							this.PlatformMovement.LocalSpeedY = 17f;
+							this.PlatformMovement.LocalSpeed = this.StompDirection * -17f;
 							this.Sein.PlatformBehaviour.UpwardsDeceleration.Deceleration = 20f;
 							this.Sein.Animation.Play(this.StompBounceAnimation, 111, null);
 							this.Sein.ResetAirLimits();
@@ -396,6 +426,14 @@ public class SeinStomp : CharacterState, ISeinReceiver
 	{
 		this.Logic.Serialize(ar);
 		base.Serialize(ar);
+	}
+
+	public Vector3 StompDirection
+	{
+		get
+		{
+			return new Vector3(this.m_stompDirection.x, this.m_stompDirection.y, 0f);
+		}
 	}
 
 	public float IdleDuration;
@@ -447,6 +485,8 @@ public class SeinStomp : CharacterState, ISeinReceiver
 	public float UpwardDeceleration;
 
 	public List<IAttackable> m_stompBlastAttackables = new List<IAttackable>();
+
+	private Vector2 m_stompDirection;
 
 	public class States
 	{
