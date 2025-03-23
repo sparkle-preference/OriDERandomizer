@@ -364,7 +364,7 @@ public class SeinStomp : CharacterState, ISeinReceiver
 			this.m_stompDirection = Vector2.down;
 		}
 
-		float targetVelocity = this.StompSpeed * RandomizerBonus.Veloscale;
+		float targetVelocity = this.StompSpeed + this.StompSpeed * 0.2f * RandomizerBonus.Velocity();
 		this.PlatformMovement.LocalSpeed = this.m_stompDirection * targetVelocity;
 		this.Sein.Mortality.DamageReciever.MakeInvincibleToEnemies(0.2f);
 

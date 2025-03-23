@@ -267,12 +267,17 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 		}
 		this.ApplyFrictionToSpeed.SpeedFactor = 0f;
 		this.IsBashing = false;
+		this.m_isEnhancedBashing = false;
 	}
 
 	public void MovePlayerToTargetAndCreateEffect()
 	{
 		Component component = this.Target as Component;
 		Vector3 vector = (!InstantiateUtility.IsDestroyed(component)) ? component.transform.position : this.PlatformMovement.Position;
+		if (this.m_isEnhancedBashing)
+		{
+			vector = this.m_enhancedBashTarget;
+		}
 		GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(this.BashFromFx);
 		gameObject.transform.position = vector;
 		Vector3 localScale = gameObject.transform.localScale;
@@ -289,8 +294,16 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		this.m_timeRemainingOfBashButtonPress = 0f;
 		this.IsBashing = true;
-		this.Target.OnEnterBash();
-		Transform transform = this.TargetAsComponent.transform;
+		Vector3 target;
+		if (this.m_isEnhancedBashing)
+		{
+			target = this.m_enhancedBashTarget = this.PlatformMovement.Position + Vector3.up;
+		}
+		else
+		{
+			this.Target.OnEnterBash();
+			target = this.TargetAsComponent.transform.position;
+		}
 		Sound.Play((!this.Sein.PlayerAbilities.BashBuff.HasAbility) ? this.BashStartSound.GetSound(null) : this.UpgradedBashStartSound.GetSound(null), this.m_seinTransform.position, null);
 		if (GameController.Instance)
 		{
@@ -303,14 +316,15 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 			this.m_bashSuspendables.Clear();
 		}
 		this.PlatformMovement.LocalSpeed = Vector2.zero;
+		Vector3 vectorToTarget = target - this.PlatformMovement.Position;
 		GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(this.BashAttackGamePrefab);
 		this.m_bashAttackGame = gameObject.GetComponent<BashAttackGame>();
-		this.m_bashAttackGame.SendDirection(transform.position - this.PlatformMovement.Position);
+		this.m_bashAttackGame.SendDirection(vectorToTarget);
 		this.m_bashAttackGame.BashGameComplete += this.BashGameComplete;
-		this.m_bashAttackGame.transform.position = transform.position;
-		Vector3 b = Vector3.ClampMagnitude(transform.position - this.PlatformMovement.Position, 2f);
-		this.m_playerTargetPosition = transform.position - b;
-		this.m_directionToTarget = b.normalized;
+		this.m_bashAttackGame.transform.position = target;
+		vectorToTarget = Vector3.ClampMagnitude(vectorToTarget, 2f);
+		this.m_playerTargetPosition = target - vectorToTarget;
+		this.m_directionToTarget = vectorToTarget.normalized;
 		SeinBashAttack.OnBashBegin();
 		this.Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(this.BashChargeAnimation, 10, new Func<bool>(this.ShouldBashChargeAnimationKeepPlaying), false);
 	}
@@ -380,6 +394,10 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 			{
 				this.BeginBashThroughEnemies();
 			}
+		}
+		else if (this.m_isEnhancedBashing && this.Sein.PlayerAbilities.BashBuff.HasAbility)
+		{
+			this.BeginBashThroughEnemies();
 		}
 	}
 
@@ -467,6 +485,11 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 			if (Core.Input.Bash.Released || this.m_timeRemainingOfBashButtonPress <= 0f)
 			{
 				this.m_timeRemainingOfBashButtonPress = 0f;
+			}
+			if (RandomizerBonus.EnhancedBash && this.m_timeRemainingOfBashButtonPress <= 0.3f)
+			{
+				this.m_isEnhancedBashing = true;
+				this.BeginBash();
 			}
 		}
 		if ((this.m_timeRemainingOfBashButtonPress > 0f || Randomizer.BashWasQueued) && this.CanBash)
@@ -679,39 +702,43 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 
 	public IBashAttackable Target;
 
-	public Vector3 m_directionToTarget;
+	private Vector3 m_directionToTarget;
 
-	public float m_bashAngle;
+	private float m_bashAngle;
 
-	public Vector3 m_playerTargetPosition;
+	private Vector3 m_playerTargetPosition;
 
-	public BashAttackGame m_bashAttackGame;
+	private BashAttackGame m_bashAttackGame;
 
-	public float m_frictionTimeRemaining;
+	private float m_frictionTimeRemaining;
 
-	public IBashAttackable m_lastTarget;
+	private IBashAttackable m_lastTarget;
 
-	public Transform m_seinTransform;
+	private Transform m_seinTransform;
 
-	public bool m_spriteMirrorLock;
+	private bool m_spriteMirrorLock;
 
-	public float m_timeRemainingTillNextBash;
+	private float m_timeRemainingTillNextBash;
 
-	public float m_timeRemainingOfBashButtonPress;
+	private float m_timeRemainingOfBashButtonPress;
 
-	public readonly HashSet<ISuspendable> m_bashSuspendables = new HashSet<ISuspendable>();
+	private readonly HashSet<ISuspendable> m_bashSuspendables = new HashSet<ISuspendable>();
 
 	public GameObject NoBashTargetEffect;
 
 	public bool IsBashing;
 
-	public float m_bashThroughEnemiesRemainingTime;
+	private float m_bashThroughEnemiesRemainingTime;
 
-	public HashSet<IAttackable> m_enemiesBashedThrough = new HashSet<IAttackable>();
+	private HashSet<IAttackable> m_enemiesBashedThrough = new HashSet<IAttackable>();
 
-	public bool m_hasStarted;
+	private bool m_hasStarted;
 
 	public float BackFlipSpeed = 5f;
+
+	private Vector3 m_enhancedBashTarget;
+
+	private bool m_isEnhancedBashing = false;
 
 	[Serializable]
 	public class DirectionalAnimationSet
