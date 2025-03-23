@@ -207,6 +207,26 @@ public class SeinGlide : CharacterState, ISeinReceiver
 				return;
 			}
 		}
+		
+		if (RandomizerBonus.EnhancedGlide)
+		{
+			PlatformMovement platformMovement = this.Sein.PlatformBehaviour.PlatformMovement;
+			Vector2 b = Vector2.up * this.Sein.PlatformBehaviour.Gravity.CurrentSettings.GravityStrength * Time.deltaTime;
+			platformMovement.LocalSpeed += b;
+			Vector2 localSpeed = platformMovement.LocalSpeed;
+			if (localSpeed.y < 0f)
+			{
+				localSpeed.y = MoonMath.Float.ClampedAdd(localSpeed.y, 1000f * Time.deltaTime, 0f, 0f);
+			}
+			if (localSpeed.y >= 0f)
+			{
+				localSpeed.y = MoonMath.Float.ClampedAdd(localSpeed.y, 20f * Time.deltaTime, 0f, 10f);
+				localSpeed.y = MoonMath.Float.ClampedSubtract(localSpeed.y, 1000f * Time.deltaTime, 0f, 10f);
+			}
+			platformMovement.LocalSpeed = localSpeed;
+			this.Sein.ResetAirLimits();
+			return;
+		}
 	}
 
 	public override void UpdateCharacterState()
