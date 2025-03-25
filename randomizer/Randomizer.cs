@@ -105,6 +105,7 @@ public static class Randomizer
             Randomizer.TeleportersLockedByClues = false;
             Randomizer.WarpLogicLocations = new Hashtable();
             Keysanity.Initialize();
+            Randomizer.EnhancedMode = false;
 
             if (Randomizer.SeedFilePath == null)
             {
@@ -1290,6 +1291,8 @@ public static class Randomizer
             if (flag == "keysanity")
                 Keysanity.IsActive = true;
 
+            if (flag == "enhanced")
+                Randomizer.EnhancedMode = true;
         }
         return doBingo;
     }
@@ -1683,4 +1686,6 @@ public static class Randomizer
     public static bool PlayedGoodLuckOnce;
 
     private static System.Random unseededRandom;
+
+    public static bool EnhancedMode;
 }
