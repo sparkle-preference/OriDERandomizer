@@ -170,6 +170,11 @@ public class SeinWallSlide : CharacterState, ISeinReceiver
 			{
 				this.Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(this.SlideDownAnimation, 23, new Func<bool>(this.ShouldWallSlideDownAnimationKeepPlaying), false);
 			}
+
+			if (this.Sein.PlayerAbilities.WallJump.HasAbility && this.ShouldStopSliding)
+			{
+				this.PlatformMovement.LocalSpeedY = 0f;
+			}
 		}
 		this.HandleSounds();
 	}
@@ -255,6 +260,11 @@ public class SeinWallSlide : CharacterState, ISeinReceiver
 		if (this.Sein.Abilities.WallJump && this.Sein.Abilities.WallJump.Active)
 		{
 			this.m_inputLockTimeRemaining = this.InputLockDuration;
+
+			if (this.ShouldStopSliding)
+			{
+				this.PlatformMovement.LocalSpeedY = 0f;
+			}
 		}
 		else
 		{
@@ -326,6 +336,14 @@ public class SeinWallSlide : CharacterState, ISeinReceiver
 	{
 		ar.Serialize(ref this.m_inputLockTimeRemaining);
 		base.Serialize(ar);
+	}
+
+	public bool ShouldStopSliding
+	{
+		get
+		{
+			return RandomizerBonus.EnhancedWallJump && this.PlatformMovement.LocalSpeedY < 0f && this.Sein.Input.Vertical >= 0f;
+		}
 	}
 
 	public SeinWallSlide.State CurrentState;
