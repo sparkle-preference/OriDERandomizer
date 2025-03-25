@@ -106,6 +106,23 @@ public class MessageControllerB : MonoBehaviour
 		return this.ShowMessageBox(this.SpiritTreeText, messageProvider, position, 0f);
 	}
 
+	public MessageBox ShowEnhancedSpiritFlameMessage(MessageProvider messageProvider)
+	{
+		UI.Hints.HideExistingHint();
+
+		if (!RandomizerBonus.EnhancedSpiritFlame || RandomizerBonus.SuppressEnhancedSpiritFlame)
+		{
+			this.m_currentMessageBox = null;
+		}
+		else
+		{
+			GameObject gameObject = this.ShowMessageBox(this.StoryMessage, messageProvider, Vector3.zero, float.PositiveInfinity);
+			this.m_currentMessageBox = (!gameObject) ? null : gameObject.GetComponentInChildren<MessageBox>();
+		}
+		
+		return this.m_currentMessageBox;
+	}
+
 	public float DefaultDuration;
 
 	public GameObject AreaMessage;

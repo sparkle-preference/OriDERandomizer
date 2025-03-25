@@ -414,10 +414,18 @@ public class GameController : SaveSerialize, ISuspendable
 	public void Update()
 	{
 		Randomizer.Update();
-		if ((MoonInput.GetKey(KeyCode.LeftAlt) || MoonInput.GetKey(KeyCode.RightAlt)) && MoonInput.GetKeyDown(KeyCode.U))
+
+		bool shiftHeld = MoonInput.GetKey(KeyCode.LeftShift) || MoonInput.GetKey(KeyCode.RightShift);
+		bool altHeld = MoonInput.GetKey(KeyCode.LeftAlt) || MoonInput.GetKey(KeyCode.RightAlt);
+		if (altHeld && !shiftHeld && MoonInput.GetKeyDown(KeyCode.U))
 		{
 			UI.SeinUI.ShowUI = true;
 			SeinUI.DebugHideUI = !SeinUI.DebugHideUI;
+		}
+		if (altHeld && shiftHeld && MoonInput.GetKeyDown(KeyCode.U) && RandomizerBonus.EnhancedSpiritFlame)
+		{
+			RandomizerBonus.SuppressEnhancedSpiritFlame = !RandomizerBonus.SuppressEnhancedSpiritFlame;
+			Randomizer.printInfo("Enhanced Spirit Flame text " + (RandomizerBonus.SuppressEnhancedSpiritFlame ? "disabled :(" : "enabled :)"));
 		}
 	}
 

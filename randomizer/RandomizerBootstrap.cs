@@ -578,13 +578,36 @@ public class RandomizerBootstrap
 	{
 		// This adds an alt-r hint into the getting-sein animation.
 		ActionSequence getSeinSequence = sceneRoot.transform.FindChild("*setups/*story/findingOri/seinInterestZone/trigger/activateSequence").GetComponent<ActionSequence>();	
-		ShowHintAction hint = getSeinSequence.gameObject.AddComponent<ShowHintAction>();
+		
+		GameObject obj = new GameObject("hintAction");
+		obj.transform.parent = getSeinSequence.transform;
+
+		ShowHintAction hint = obj.AddComponent<ShowHintAction>();
 		RandomizerMessageProvider message = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
 		string text = "Tip: You can Warp (" + RandomizerRebinding.ReturnToStart.FirstBindName() + ") away without fighting these Fronkeys";
 		message.SetMessage(text);
 		hint.HintMessage = message;
 		hint.Duration = 10f;
 		getSeinSequence.Actions.Insert(17, hint);
+
+		if (Randomizer.EnhancedMode)
+		{
+			obj = new GameObject("textAction");
+			obj.transform.parent = getSeinSequence.transform;
+
+			ShowEnhancedSpiritFlameTextAction textAction = obj.AddComponent<ShowEnhancedSpiritFlameTextAction>();
+			textAction.Messages = new MessageDescriptor[3] {
+				new MessageDescriptor("My voice... is returning...\nAt last, I can speak once more, after 8 years of silence."),
+				new MessageDescriptor("I am #Sein#, the light and eyes of the randomizer developers. I will be happy to waste your time during your journey."),
+				new MessageDescriptor("But if you really cannot stand my presence, then you can silence me once more by pressing #Shift+Alt+U#.")
+			};
+			textAction.FreezeGame = false;
+
+			getSeinSequence.Actions[27] = textAction;
+			(getSeinSequence.Actions[28] as WaitAction).LastAction = textAction;
+		}
+
+		ActionSequence.Rename(getSeinSequence.Actions);
 	}
 
 	private static void BootstrapMoonGrottoMiniboss(SceneRoot sceneRoot)

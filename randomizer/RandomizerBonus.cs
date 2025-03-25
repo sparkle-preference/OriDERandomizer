@@ -406,7 +406,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $W$*a*#l#$l$ *J*#u#$m$*p*");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $W$*a*#l#$l$ *J*#u#$m$*p*\nThose pesky walls will be a lot easier to handle now.");
             }
             break;
         case 411:
@@ -427,21 +427,21 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $B$*a*#s#$h$");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $B$*a*#s#$h$\nWas it not already broken enough for you? How about now?");
             }
             break;
         case 414:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*t*#o#$m$*p*");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*t*#o#$m$*p*\nIs it still considered a \"stomp\" if you're going sideways?");
             }
             break;
         case 415:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*l*#i#$d$*e*");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*l*#i#$d$*e*\nYou are the wind beneath your wings. Er...feather.");
             }
             break;
         case 416:
@@ -470,6 +470,13 @@ public static class RandomizerBonus
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*r*#e#$n$*a*#d#$e$");
+            }
+            break;
+        case 420:
+            if (!flag)
+            {
+                Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*p*#i#$r$*i*#t# $F$*l*#a#$m$*e*\nSome of Sein's lost power has been restored!");
             }
             break;
         case 1102:
@@ -723,10 +730,7 @@ public static class RandomizerBonus
     public static bool EnhancedChargeJump { get { return Randomizer.Inventory.GetRandomizerItem(417) > 0; } }
     public static bool EnhancedDash { get { return Randomizer.Inventory.GetRandomizerItem(418) > 0; } }
     public static bool EnhancedGrenade { get { return Randomizer.Inventory.GetRandomizerItem(419) > 0; } }
-
-    public static bool EnhancedStomp() {
-        return Randomizer.Inventory.GetRandomizerItem(414) > 0;
-    }
+    public static bool EnhancedSpiritFlame { get { return Randomizer.Inventory.GetRandomizerItem(420) > 0; } }
 
     private static Dictionary<int, String> BonusNames = new Dictionary<int, String>() {
         {6, "Attack Upgrade"},
@@ -796,6 +800,8 @@ public static class RandomizerBonus
     public static float EnergyRegenAmount = 1f;
 
     public static float EnergyRegenTimeSeconds = 60f;
+
+    public static bool SuppressEnhancedSpiritFlame = false;
 
     private class Ability
     {

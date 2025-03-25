@@ -419,6 +419,7 @@ public class RandomizerLocationManager
             {
                 RandomizerTrackedDataManager.SetTree(0);
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.SpiritFlame, true);
+                RandomizerBonus.UpgradeID(420);
                 TeleporterController.Activate("sunkenGlades");
                 return;
             }
