@@ -308,8 +308,7 @@ public class AreaMapNavigation : MonoBehaviour
 					continue;
 				}
 
-				if (!RandomizerLocationManager.LocationsByWorldMapGuid.ContainsKey(runtimeIcon.Guid))
-				{
+				if (!RandomizerLocationManager.LocationsByWorldMapGuid.ContainsKey(runtimeIcon.Guid) && !RandomizerLocationManager.KeystoneDoorMapGuidToMoonGuid.ContainsKey(runtimeIcon.Guid)) {
 					continue;
 				}
 
@@ -336,15 +335,18 @@ public class AreaMapNavigation : MonoBehaviour
 		candidatePosition.y -= 0.35f;
 		AreaMapUI.Instance.RandomizerTooltip.transform.position = candidatePosition;
 
-		RandomizerLocationManager.Location pickupLocation = RandomizerLocationManager.LocationsByWorldMapGuid[candidate.Guid];
-		AreaMapUI.Instance.RandomizerTooltip.OverrideText = pickupLocation.FriendlyName;
+		if(RandomizerLocationManager.LocationsByWorldMapGuid.TryGetValue(candidate.Guid, out var pickupLocation)) {
+			AreaMapUI.Instance.RandomizerTooltip.OverrideText = pickupLocation.FriendlyName;
+			if (DebugMenuB.DebugControlsEnabled && (MoonInput.GetKey(KeyCode.LeftShift) || MoonInput.GetKey(KeyCode.RightShift)) && Core.Input.RightClick.OnPressed) {
+				candidate.Hide();
+				RandomizerLocationManager.GivePickupByWorldMapGuid(candidate.Guid);
+			}
+		} else {
+			AreaMapUI.Instance.RandomizerTooltip.OverrideText = Randomizer.Keysanity.MapHintForDoor(RandomizerLocationManager.KeystoneDoorMapGuidToMoonGuid[candidate.Guid]);
+		}
+
 		AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(true);
 
-		if (DebugMenuB.DebugControlsEnabled && (MoonInput.GetKey(KeyCode.LeftShift) || MoonInput.GetKey(KeyCode.RightShift)) && Core.Input.RightClick.OnPressed)
-		{
-			candidate.Hide();
-			RandomizerLocationManager.GivePickupByWorldMapGuid(candidate.Guid);
-		}
 	}
 
 	public Transform MapPivot;

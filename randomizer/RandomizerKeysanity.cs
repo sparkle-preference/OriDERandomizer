@@ -70,24 +70,36 @@ public class RandomizerKeysanity {
             return;
         }
 
-        if (_doorKeyMap.TryGetValue(guid, out var value)) {
-            Characters.Sein.Inventory.Keystones = _inventory.GetRandomizerItem(value) - numberUsed;
+        if (_doorKeyMap.TryGetValue(guid, out var id)) {
+            if(!GetDoorHint(guid)) SetDoorHint(guid);
+            var count = _inventory.GetRandomizerItem(id);
+            Characters.Sein.Inventory.Keystones = count - numberUsed;
 
-            var hint = string.Empty;
-            foreach (var hintInfo in _keyClueMap[value]) {
-                if (!Randomizer.HaveCoord(hintInfo.Coords)) {
-                    hint += $" {hintInfo.Area}";
-                    hint.Trim();
-                }
+            if (count < countForDoor(id)) {
+                Randomizer.showHint($"{_hintMap[id]} ({count}/{countForDoor(id)}): {hintsForDoor(id)}");
             }
-
-            if (!string.IsNullOrEmpty(hint)) {
-                Randomizer.showHint(String.Join(" ", _keyClueMap[value].Where(rkhi => !Randomizer.HaveCoord(rkhi.Coords)).Select(rkhi => rkhi.Area).ToArray()));
-            }
-                        
             return;
         }
         Characters.Sein.Inventory.Keystones = 0;
+    }
+
+    private bool GetDoorHint(MoonGuid guid) => 1 == (1 & (_inventory.GetRandomizerItem(312) >> RandomizerLocationManager.KeystoneDoors[guid].Index));
+
+    private void SetDoorHint(MoonGuid guid) =>  _inventory.SetRandomizerItem(312, _inventory.GetRandomizerItem(312) | (1 << RandomizerLocationManager.KeystoneDoors[guid].Index));
+
+    public string MapHintForDoor(MoonGuid guid) {
+        if (_doorKeyMap.TryGetValue(guid, out var id)) {
+            var count = _inventory.GetRandomizerItem(id);
+            if(count == countForDoor(id)) 
+                return $"${_hintMap[id]} {count}/{count}\n(Openable!)$";
+
+            if(GetDoorHint(guid))
+                return $"{_hintMap[id]} ({count}/{countForDoor(id)})\n{hintsForDoor(id)}";
+
+            return $"{_hintMap[id]} {count}/{countForDoor(id)}\n(Touch door to get hint!)";
+        }
+        Randomizer.log($"Unknown door {guid}");
+        return "?Unknown Door?";
     }
 
     public void ResetKeystoneCount() {
@@ -98,14 +110,18 @@ public class RandomizerKeysanity {
         Characters.Sein.Inventory.Keystones = 0;
     }
 
+    private string hintsForDoor(int id) => String.Join(", ", _keyClueMap[id].Where(rkhi => !Randomizer.HaveCoord(rkhi.Coords)).Select(rkhi => rkhi.Area).ToArray());
+
+    private int countForDoor(int id) => id < 304 ? 2 : 4;
+
     private string GetProgress(int id, bool printKeystone) {
         if (_hintMap.TryGetValue(id, out var baseHint)) {
-            var canOpen = (_inventory.GetRandomizerItem(id) - (id < 304 ? 2 : 4)) == 0;
+            var canOpen = (_inventory.GetRandomizerItem(id) - countForDoor(id)) == 0;
             if (canOpen) {
-                return $"${baseHint}{(printKeystone ? " Keystone " : " ")}({_inventory.GetRandomizerItem(id)}/{(id < 304 ? 2 : 4)})$";
+                return $"${baseHint}{(printKeystone ? " Keystone " : " ")}({_inventory.GetRandomizerItem(id)}/{countForDoor(id)})$";
             }
 
-            return $"{baseHint}{(printKeystone ? " Keystone " : " ")}({_inventory.GetRandomizerItem(id)}/{(id < 304 ? 2 : 4)})";
+            return $"{baseHint}{(printKeystone ? " Keystone " : " ")}({_inventory.GetRandomizerItem(id)}/{countForDoor(id)})";
         }
         return string.Empty;
     }

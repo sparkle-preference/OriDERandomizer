@@ -140,6 +140,8 @@
 310 - Mid Sorrow (4)
 311 - Upper Sorrow (4)
 
+312 - Door Hints Gotten (bitfield)
+
 800 - Open World
 801 - Closed Dungeons
 
