@@ -33,9 +33,10 @@ public class RandomizerLocationManager
             line = reader.ReadLine();
         }
 
-        for (var index = 0; index < RandomizerLocationData.KeystoneDoors.Count; ++index)
-        {
-            RandomizerLocationManager.KeystoneDoors.Add(new KeystoneDoor(index, RandomizerLocationData.KeystoneDoors[index]));
+        for (var index = 0; index < RandomizerLocationData.KeystoneDoors.Count; ++index){
+            var ksDoor = new KeystoneDoor(index, RandomizerLocationData.KeystoneDoors[index]);
+            KeystoneDoors[ksDoor.MoonGuid] = ksDoor;
+            RandomizerLocationManager.KeystoneDoorMapGuidToMoonGuid[ksDoor.MapGuid] = ksDoor.MoonGuid;
         }
 
         if (!HaveDownloadedAreas && (DLThread == null)) {
@@ -229,16 +230,10 @@ public class RandomizerLocationManager
 
     public static void OpenDoorByGuid(MoonGuid doorGuid)
     {
-        foreach (KeystoneDoor door in KeystoneDoors)
-        {
-            if (door.MoonGuid == doorGuid)
-            {
-                int current = Characters.Sein.Inventory.GetRandomizerItem(72);
-                Characters.Sein.Inventory.SetRandomizerItem(72, current + (1 << door.Index));
-                RandomizerLocationManager.UpdateReachable();
-                break;
-            }
-        }
+        var door = KeystoneDoors[doorGuid];
+        int current = Characters.Sein.Inventory.GetRandomizerItem(72);
+        Characters.Sein.Inventory.SetRandomizerItem(72, current | (1 << door.Index));
+        RandomizerLocationManager.UpdateReachable();
     }
 
     public static void UpdateReachable()
@@ -295,15 +290,15 @@ public class RandomizerLocationManager
         Dictionary<string, HashSet<string>> primedPaths = new Dictionary<string, HashSet<string>>();
         int keystoneDoorsOpened = Characters.Sein.Inventory.GetRandomizerItem(72);
 
-        for (int i = 0; i < KeystoneDoors.Count; ++i)
+        foreach (var ksDoor in KeystoneDoors.Values)
         {
-            if ((keystoneDoorsOpened & (1 << i)) == 0)
+            if ((keystoneDoorsOpened & (1 << ksDoor.Index)) == 0)
                 continue;
 
-            if (!primedPaths.ContainsKey(KeystoneDoors[i].Source))
-                primedPaths[KeystoneDoors[i].Source] = new HashSet<string>();
+            if (!primedPaths.ContainsKey(ksDoor.Source))
+                primedPaths[ksDoor.Source] = new HashSet<string>();
 
-            primedPaths[KeystoneDoors[i].Source].Add(KeystoneDoors[i].Destination);
+            primedPaths[ksDoor.Source].Add(ksDoor.Destination);
         }
 
         if (Randomizer.InLogicWarps)
@@ -384,7 +379,9 @@ public class RandomizerLocationManager
 
     private static string spawnNodeName = null;
 
-    private static List<KeystoneDoor> KeystoneDoors = new List<KeystoneDoor>();
+    public static Dictionary<MoonGuid, KeystoneDoor> KeystoneDoors = new Dictionary<MoonGuid, KeystoneDoor>();
+
+    public static Dictionary<MoonGuid, MoonGuid> KeystoneDoorMapGuidToMoonGuid = new Dictionary<MoonGuid, MoonGuid>();
 
     public class Location
     {
@@ -546,6 +543,7 @@ public class RandomizerLocationManager
             this.Source = parts[0];
             this.Destination = parts[1];
             this.MoonGuid = new MoonGuid(int.Parse(parts[2]), int.Parse(parts[3]), int.Parse(parts[4]), int.Parse(parts[5]));
+            this.MapGuid = new MoonGuid(int.Parse(parts[6]), int.Parse(parts[7]), int.Parse(parts[8]), int.Parse(parts[9]));
         }
 
         public int Index;
@@ -555,5 +553,7 @@ public class RandomizerLocationManager
         public string Destination;
 
         public MoonGuid MoonGuid;
+
+        public MoonGuid MapGuid;
     }
 }
