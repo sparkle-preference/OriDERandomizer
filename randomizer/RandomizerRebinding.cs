@@ -21,7 +21,7 @@ public static class RandomizerRebinding {
 		streamWriter.WriteLine("");
 		foreach(KeyValuePair<string, BindSet> bindparts in rebindMap) {
 			if(bindparts.Value.HasBind())
-				streamWriter.WriteLine($"{bindparts.Key}: {bindparts.Value}");
+				streamWriter.WriteLine($"{bindparts.Key}: {bindparts.Value}{(bindparts.Key == "Double Bash" && Randomizer.BashTap ? ", Tap" : "")}");
 			else
 				streamWriter.WriteLine($"{bindparts.Key}: {DefaultBinds[bindparts.Key]}");
 		}
