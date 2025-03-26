@@ -1,5 +1,6 @@
 using Game;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -81,7 +82,7 @@ public class RandomizerKeysanity {
             }
 
             if (!string.IsNullOrEmpty(hint)) {
-                Randomizer.showHint(_keyClueMap[value]);
+                Randomizer.showHint(String.Join(" ", _keyClueMap[value].Where(rkhi => !Randomizer.HaveCoord(rkhi.Coords)).Select(rkhi => rkhi.Area).ToArray()));
             }
                         
             return;
