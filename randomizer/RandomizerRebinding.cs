@@ -68,6 +68,10 @@ public static class RandomizerRebinding {
 			// parse step 2: load defaults for missing binds
 			foreach (string missingAction in unseenActions) {
 				AssignBind(missingAction, null, writeList);
+				if(missingAction == "Show Keysanity Progress") {
+					AssignBind("Toggle Chaos", null, writeList);
+					dirty = true;
+				}
 			}
 
 			if (writeList.Count > 0) {
