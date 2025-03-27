@@ -142,17 +142,18 @@
 
 312 - Door Hints Gotten (bitfield)
 
-April Fools items
-410 - Enhanced Wall Jump
-411 - Enhanced Charge Flame
-412 - Enhanced Double Jump
-413 - Enhanced Bash
-414 - Enhanced Stomp
-415 - Enhanced Glide
-416 - Enhanced Climb
-417 - Enhanced Charge Jump
-418 - Enhanced Dash
-419 - Enhanced Grenade
+Enhanced mode -- April Fools :)
+410 - Enhanced Spirit Flame
+411 - Enhanced Wall Jump
+412 - Enhanced Charge Flame
+413 - Enhanced Double Jump
+414 - Enhanced Bash
+415 - Enhanced Stomp
+416 - Enhanced Glide
+417 - Enhanced Climb
+418 - Enhanced Charge Jump
+419 - Enhanced Dash
+420 - Enhanced Grenade
 
 800 - Open World
 801 - Closed Dungeons
