@@ -406,77 +406,77 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $W$*a*#l#$l$ *J*#u#$m$*p*\nThose pesky walls will be a lot easier to handle now.");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*p*#i#$r$*i*#t# $F$*l*#a#$m$*e*\nSome of Sein's lost power has been restored!", 300);
             }
             break;
         case 411:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $F$*l*#a#$m$*e*");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $W$*a*#l#$l$ *J*#u#$m$*p*\nThose pesky walls will be a lot easier to handle now.", 300);
             }
             break;
         case 412:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*o*#u#$b$*l*#e# $J$*u*#m#$p$");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $F$*l*#a#$m$*e*", 300);
             }
             break;
         case 413:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $B$*a*#s#$h$\nWas it not already broken enough for you? How about now?");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*o*#u#$b$*l*#e# $J$*u*#m#$p$", 300);
             }
             break;
         case 414:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*t*#o#$m$*p*\nIs it still considered a \"stomp\" if you're going sideways?");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $B$*a*#s#$h$\nWas it not already broken enough for you? How about now?", 300);
             }
             break;
         case 415:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*l*#i#$d$*e*\nYou are the wind beneath your wings. Er...feather.");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*t*#o#$m$*p*\nIs it still considered a \"stomp\" if you're going sideways?", 300);
             }
             break;
         case 416:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*l*#i#$m$*b*");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*l*#i#$d$*e*\nYou are the wind beneath your wings. Er...feather.", 300);
             }
             break;
         case 417:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $J$*u*#m#$p$");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*l*#i#$m$*b*\nNow comes with protective gear for hazardous surfaces!", 300);
             }
             break;
         case 418:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*a*#s#$h$");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $J$*u*#m#$p$", 300);
             }
             break;
         case 419:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*r*#e#$n$*a*#d#$e$");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*a*#s#$h$", 300);
             }
             break;
         case 420:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*p*#i#$r$*i*#t# $F$*l*#a#$m$*e*\nSome of Sein's lost power has been restored!");
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*r*#e#$n$*a*#d#$e$", 300);
             }
             break;
         case 1102:
@@ -720,17 +720,17 @@ public static class RandomizerBonus
         } else Randomizer.printInfo("No bonus passives");
     }
 
-    public static bool EnhancedWallJump { get { return Randomizer.Inventory.GetRandomizerItem(410) > 0; } }
-    public static bool EnhancedChargeFlame { get { return Randomizer.Inventory.GetRandomizerItem(411) > 0; } }
-    public static bool EnhancedDoubleJump { get { return Randomizer.Inventory.GetRandomizerItem(412) > 0; } }
-    public static bool EnhancedBash { get { return Randomizer.Inventory.GetRandomizerItem(413) > 0; } }
-    public static bool EnhancedStomp { get { return Randomizer.Inventory.GetRandomizerItem(414) > 0; } }
-    public static bool EnhancedGlide { get { return Randomizer.Inventory.GetRandomizerItem(415) > 0; } }
-    public static bool EnhancedClimb { get { return Randomizer.Inventory.GetRandomizerItem(416) > 0; } }
-    public static bool EnhancedChargeJump { get { return Randomizer.Inventory.GetRandomizerItem(417) > 0; } }
-    public static bool EnhancedDash { get { return Randomizer.Inventory.GetRandomizerItem(418) > 0; } }
-    public static bool EnhancedGrenade { get { return Randomizer.Inventory.GetRandomizerItem(419) > 0; } }
-    public static bool EnhancedSpiritFlame { get { return Randomizer.Inventory.GetRandomizerItem(420) > 0; } }
+    public static bool EnhancedSpiritFlame { get { return Randomizer.Inventory.GetRandomizerItem(410) > 0; } }
+    public static bool EnhancedWallJump { get { return Randomizer.Inventory.GetRandomizerItem(411) > 0; } }
+    public static bool EnhancedChargeFlame { get { return Randomizer.Inventory.GetRandomizerItem(412) > 0; } }
+    public static bool EnhancedDoubleJump { get { return Randomizer.Inventory.GetRandomizerItem(413) > 0; } }
+    public static bool EnhancedBash { get { return Randomizer.Inventory.GetRandomizerItem(414) > 0; } }
+    public static bool EnhancedStomp { get { return Randomizer.Inventory.GetRandomizerItem(415) > 0; } }
+    public static bool EnhancedGlide { get { return Randomizer.Inventory.GetRandomizerItem(416) > 0; } }
+    public static bool EnhancedClimb { get { return Randomizer.Inventory.GetRandomizerItem(417) > 0; } }
+    public static bool EnhancedChargeJump { get { return Randomizer.Inventory.GetRandomizerItem(418) > 0; } }
+    public static bool EnhancedDash { get { return Randomizer.Inventory.GetRandomizerItem(419) > 0; } }
+    public static bool EnhancedGrenade { get { return Randomizer.Inventory.GetRandomizerItem(420) > 0; } }
 
     private static Dictionary<int, String> BonusNames = new Dictionary<int, String>() {
         {6, "Attack Upgrade"},

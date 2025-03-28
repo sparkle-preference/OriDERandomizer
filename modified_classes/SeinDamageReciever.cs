@@ -118,6 +118,10 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
 		{
 			damage.SetAmount(0f);
 		}
+		if (damage.Amount < 100f && this.Sein.Abilities.GrabWall && RandomizerBonus.EnhancedClimb && (damage.Type == DamageType.Spikes || damage.Type == DamageType.Lava))
+		{
+			damage.SetAmount(0f);
+		}
 		if (damage.Amount == 0f)
 		{
 			return;

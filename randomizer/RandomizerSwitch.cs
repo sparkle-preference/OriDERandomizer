@@ -63,48 +63,81 @@ public static class RandomizerSwitch
         switch (Ability)
         {
         case 0:
-            PickupMessage("$Bash$", 300);
             Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Bash, true);
+            if (Randomizer.EnhancedMode)
+                RandomizerBonus.UpgradeID(414);
+            else
+                PickupMessage("$Bash$", 300);
             break;
         case 2:
-            PickupMessage("$Charge Flame$", 300);
             Characters.Sein.PlayerAbilities.SetAbility(AbilityType.ChargeFlame, true);
+            if (Randomizer.EnhancedMode)
+                RandomizerBonus.UpgradeID(412);
+            else
+                PickupMessage("$Charge Flame$", 300);
             break;
         case 3:
-            PickupMessage("$Wall Jump$", 300);
             Characters.Sein.PlayerAbilities.SetAbility(AbilityType.WallJump, true);
+            if (Randomizer.EnhancedMode)
+                RandomizerBonus.UpgradeID(411);
+            else
+                PickupMessage("$Wall Jump$", 300);
             break;
         case 4:
-            PickupMessage("$Stomp$", 300);
             Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Stomp, true);
+            if (Randomizer.EnhancedMode)
+                RandomizerBonus.UpgradeID(415);
+            else
+                PickupMessage("$Stomp$", 300);
             break;
         case 5:
-            PickupMessage("$Double Jump$", 300);
             Characters.Sein.PlayerAbilities.SetAbility(AbilityType.DoubleJump, true);
+            if (Randomizer.EnhancedMode)
+                RandomizerBonus.UpgradeID(413);
+            else
+                PickupMessage("$Double Jump$", 300);
             break;
         case 8:
-            PickupMessage("$Charge Jump$", 300);
             Characters.Sein.PlayerAbilities.SetAbility(AbilityType.ChargeJump, true);
+            if (Randomizer.EnhancedMode)
+                RandomizerBonus.UpgradeID(418);
+            else
+                PickupMessage("$Charge Jump$", 300);
             break;
         case 12:
-            PickupMessage("$Climb$", 300);
             Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Climb, true);
+            if (Randomizer.EnhancedMode)
+                RandomizerBonus.UpgradeID(417);
+            else
+                PickupMessage("$Climb$", 300);
             break;
         case 14:
-            PickupMessage("$Glide$", 300);
             Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Glide, true);
+            if (Randomizer.EnhancedMode)
+                RandomizerBonus.UpgradeID(416);
+            else
+                PickupMessage("$Glide$", 300);
             break;
         case 15:
-            PickupMessage("$Spirit Flame$", 300);
             Characters.Sein.PlayerAbilities.SetAbility(AbilityType.SpiritFlame, true);
+            if (Randomizer.EnhancedMode)
+                RandomizerBonus.UpgradeID(410);
+            else
+                PickupMessage("$Spirit Flame$", 300);
             break;
         case 50:
-            PickupMessage("$Dash$", 300);
             Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Dash, true);
+            if (Randomizer.EnhancedMode)
+                RandomizerBonus.UpgradeID(419);
+            else
+                PickupMessage("$Dash$", 300);
             break;
         case 51:
-            PickupMessage("$Grenade$", 300);
             Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Grenade, true);
+            if (Randomizer.EnhancedMode)
+                RandomizerBonus.UpgradeID(420);
+            else
+                PickupMessage("$Grenade$", 300);
             break;
         }
         RandomizerStatsManager.FoundSkill(Ability);
@@ -117,7 +150,6 @@ public static class RandomizerSwitch
             case 0:
                 PickupMessage("*Water Vein*", 300);
                 Keys.GinsoTree = true;
-
                 break;
             case 1:
                 PickupMessage("*Clean Water*#", 300);
