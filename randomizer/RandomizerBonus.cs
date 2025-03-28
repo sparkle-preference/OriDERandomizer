@@ -406,14 +406,14 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*p*#i#$r$*i*#t# $F$*l*#a#$m$*e*\nSome of Sein's lost power has been restored!", 300);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*p*#i#$r$*i*#t# $F$*l*#a#$m$*e*\nSome of Sein's lost power has been restored! Specifically, the mouth.", 300);
             }
             break;
         case 411:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $W$*a*#l#$l$ *J*#u#$m$*p*\nThose pesky walls will be a lot easier to handle now.", 300);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $W$*a*#l#$l$ *J*#u#$m$*p*\nNow comes with bonus Climb! ...look, it's hard to improve something this simple, ok?", 300);
             }
             break;
         case 412:

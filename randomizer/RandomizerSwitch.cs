@@ -63,81 +63,81 @@ public static class RandomizerSwitch
         switch (Ability)
         {
         case 0:
-            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Bash, true);
             if (Randomizer.EnhancedMode)
                 RandomizerBonus.UpgradeID(414);
             else
                 PickupMessage("$Bash$", 300);
+            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Bash, true);
             break;
         case 2:
-            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.ChargeFlame, true);
             if (Randomizer.EnhancedMode)
                 RandomizerBonus.UpgradeID(412);
             else
                 PickupMessage("$Charge Flame$", 300);
+            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.ChargeFlame, true);
             break;
         case 3:
-            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.WallJump, true);
             if (Randomizer.EnhancedMode)
                 RandomizerBonus.UpgradeID(411);
             else
                 PickupMessage("$Wall Jump$", 300);
+            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.WallJump, true);
             break;
         case 4:
-            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Stomp, true);
             if (Randomizer.EnhancedMode)
                 RandomizerBonus.UpgradeID(415);
             else
                 PickupMessage("$Stomp$", 300);
+            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Stomp, true);
             break;
         case 5:
-            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.DoubleJump, true);
             if (Randomizer.EnhancedMode)
                 RandomizerBonus.UpgradeID(413);
             else
                 PickupMessage("$Double Jump$", 300);
+            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.DoubleJump, true);
             break;
         case 8:
-            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.ChargeJump, true);
             if (Randomizer.EnhancedMode)
                 RandomizerBonus.UpgradeID(418);
             else
                 PickupMessage("$Charge Jump$", 300);
+            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.ChargeJump, true);
             break;
         case 12:
-            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Climb, true);
             if (Randomizer.EnhancedMode)
                 RandomizerBonus.UpgradeID(417);
             else
                 PickupMessage("$Climb$", 300);
+            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Climb, true);
             break;
         case 14:
-            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Glide, true);
             if (Randomizer.EnhancedMode)
                 RandomizerBonus.UpgradeID(416);
             else
                 PickupMessage("$Glide$", 300);
+            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Glide, true);
             break;
         case 15:
-            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.SpiritFlame, true);
             if (Randomizer.EnhancedMode)
                 RandomizerBonus.UpgradeID(410);
             else
                 PickupMessage("$Spirit Flame$", 300);
+            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.SpiritFlame, true);
             break;
         case 50:
-            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Dash, true);
             if (Randomizer.EnhancedMode)
                 RandomizerBonus.UpgradeID(419);
             else
                 PickupMessage("$Dash$", 300);
+            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Dash, true);
             break;
         case 51:
-            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Grenade, true);
             if (Randomizer.EnhancedMode)
                 RandomizerBonus.UpgradeID(420);
             else
                 PickupMessage("$Grenade$", 300);
+            Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Grenade, true);
             break;
         }
         RandomizerStatsManager.FoundSkill(Ability);

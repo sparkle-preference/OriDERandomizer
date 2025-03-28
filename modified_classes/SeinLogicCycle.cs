@@ -382,7 +382,7 @@ public class SeinLogicCycle : MonoBehaviour
 	{
 		get
 		{
-			return this.Sein.PlayerAbilities.Climb.HasAbility && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation;
+			return (this.Sein.PlayerAbilities.Climb.HasAbility || (RandomizerBonus.EnhancedWallJump && this.Sein.PlayerAbilities.WallJump.HasAbility)) && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation;
 		}
 	}
 
@@ -414,7 +414,7 @@ public class SeinLogicCycle : MonoBehaviour
 	{
 		get
 		{
-			return this.Sein.PlayerAbilities.WallJump.HasAbility && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsGliding && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation;
+			return (this.Sein.PlayerAbilities.WallJump.HasAbility || (RandomizerBonus.EnhancedClimb && this.Sein.PlayerAbilities.Climb.HasAbility)) && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsGliding && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation;
 		}
 	}
 

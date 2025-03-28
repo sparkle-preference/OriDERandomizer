@@ -75,12 +75,12 @@ public class SeinPrefabFactory : SaveSerialize, ISeinReceiver
 
 	public void EnsureRightPrefabsAreThereForAbilities()
 	{
-		this.WallJump.IsInstantiated = this.Sein.PlayerAbilities.WallJump.HasAbility;
+		this.WallJump.IsInstantiated = this.Sein.PlayerAbilities.WallJump.HasAbility || (RandomizerBonus.EnhancedClimb && this.Sein.PlayerAbilities.Climb.HasAbility);
 		this.WallSlide.IsInstantiated = true;
 		this.Stomp.IsInstantiated = this.Sein.PlayerAbilities.Stomp.HasAbility;
 		this.DoubleJump.IsInstantiated = this.Sein.PlayerAbilities.DoubleJump.HasAbility;
 		this.ChargeJump.IsInstantiated = this.Sein.PlayerAbilities.ChargeJump.HasAbility;
-		this.GrabWall.IsInstantiated = this.Sein.PlayerAbilities.Climb.HasAbility;
+		this.GrabWall.IsInstantiated = this.Sein.PlayerAbilities.Climb.HasAbility || (RandomizerBonus.EnhancedWallJump && this.Sein.PlayerAbilities.WallJump.HasAbility);
 		this.Bash.IsInstantiated = this.Sein.PlayerAbilities.Bash.HasAbility;
 		this.Glide.IsInstantiated = this.Sein.PlayerAbilities.Glide.HasAbility;
 		this.Dash.IsInstantiated = this.Sein.PlayerAbilities.Dash.HasAbility;
