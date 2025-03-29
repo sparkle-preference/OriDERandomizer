@@ -420,7 +420,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $F$*l*#a#$m$*e*", 300);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $F$*l*#a#$m$*e*\nWouldn't it be nice if you could hold onto projectiles for later?", 300);
             }
             break;
         case 413:

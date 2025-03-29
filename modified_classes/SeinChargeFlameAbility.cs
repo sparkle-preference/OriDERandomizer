@@ -51,7 +51,8 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 		};
 		this.State.Charged = new State
 		{
-			UpdateStateEvent = new Action(this.UpdateChargedState)
+			UpdateStateEvent = new Action(this.UpdateChargedState),
+			OnEnterEvent = new Action(this.OnEnterChargedState)
 		};
 		this.Logic.RegisterStates(new IState[]
 		{
@@ -215,6 +216,51 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 			this.Logic.ChangeState(this.State.Start);
 			this.RestoreEnergy();
 			UI.SeinUI.ShakeEnergyOrbBar();
+			return;
+		}
+
+		if (RandomizerBonus.EnhancedChargeFlame)
+		{
+			for (int i = 0; i < Targets.Attackables.Count; i++)
+			{
+				IAttackable attackable = Targets.Attackables[i];
+				if (!InstantiateUtility.IsDestroyed(attackable as Component) && !this.m_capturedProjectiles.ContainsKey(attackable) && attackable.CanBeChargeFlamed() && attackable is Projectile)
+				{
+					Vector3 distance = attackable.Position - Characters.Ori.transform.position;
+					if (distance.magnitude <= this.m_captureRadius)
+					{
+						CapturedProjectile capturedProjectile = new CapturedProjectile();
+						capturedProjectile.Direction = distance.normalized;
+						capturedProjectile.CapturedVelocity = (attackable as Projectile).Speed;
+						this.m_capturedProjectiles[attackable] = capturedProjectile;
+
+						(attackable as Component).GetComponent<Collider>().enabled = false;
+					}
+				}
+			}
+
+			foreach (var item in this.m_capturedProjectiles)
+			{
+				if (InstantiateUtility.IsDestroyed(item.Key as Component))
+				{
+					continue;
+				}
+
+				Projectile projectile = item.Key as Projectile;
+				Vector3 targetPosition = Characters.Ori.transform.position;
+				Vector3 direction = targetPosition - projectile.Position;
+
+				if (direction.magnitude > 0.2f)
+				{
+					projectile.Direction = (projectile.Direction + direction).normalized;
+					projectile.Speed = Mathf.Lerp(1f, 30f, direction.magnitude / this.m_captureRadius);
+				}
+				else
+				{
+					projectile.SpeedVector = Vector3.zero;
+					projectile.Position = targetPosition;
+				}
+			}
 		}
 	}
 
@@ -279,6 +325,19 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 		return this.ChargingSoundLevelA;
 	}
 
+	public Dictionary<IAttackable, CapturedProjectile> CapturedProjectiles
+	{
+		get
+		{
+			return this.m_capturedProjectiles;
+		}
+	}
+
+	public void OnEnterChargedState()
+	{
+		this.m_capturedProjectiles.Clear();
+	}
+
 	public SoundSource ChargingSoundLevelA;
 
 	public SoundSource ChargingSoundLevelB;
@@ -303,6 +362,10 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 
 	private SeinCharacter m_sein;
 
+	private float m_captureRadius = 9f;
+
+	private Dictionary<IAttackable, CapturedProjectile> m_capturedProjectiles = new Dictionary<IAttackable, CapturedProjectile>();
+
 	[Serializable]
 	public class ChargeFlameDefinitions
 	{
@@ -326,5 +389,12 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 		public State Charging;
 
 		public State Charged;
+	}
+
+	public class CapturedProjectile
+	{
+		public Vector3 Direction;
+
+		public float CapturedVelocity;
 	}
 }

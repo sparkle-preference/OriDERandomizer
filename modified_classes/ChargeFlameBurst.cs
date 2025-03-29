@@ -64,6 +64,13 @@ public class ChargeFlameBurst : MonoBehaviour, IPooled, ISuspendable
 			{
 				Vector3 position2 = attackable.Position;
 				Vector3 vector = position2 - position;
+				if (Characters.Sein.Abilities.ChargeFlame.CapturedProjectiles.ContainsKey(attackable))
+				{
+					vector = Characters.Sein.Abilities.ChargeFlame.CapturedProjectiles[attackable].Direction;
+					(attackable as Projectile).Speed = Characters.Sein.Abilities.ChargeFlame.CapturedProjectiles[attackable].CapturedVelocity;
+					Characters.Sein.Abilities.ChargeFlame.CapturedProjectiles.Remove(attackable);
+					(attackable as Projectile).GetComponent<Collider>().enabled = true;
+				}
 				if (vector.magnitude <= this.BurstRadius)
 				{
 					this.m_damageAttackables.Add(attackable);
