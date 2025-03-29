@@ -458,6 +458,11 @@ public class RandomizerBootstrap
 			PlayerCollisionStayTrigger trigger = sceneRoot.transform.FindChild("*allEnemiesKilled/activated/*objectiveSetup/objectiveSetupTrigger").GetComponent<PlayerCollisionStayTrigger>();
 			trigger.Active = false;
 		}
+
+		if (Randomizer.EnhancedMode)
+		{
+			RandomizerEnhancedMode.BootstrapSunkenGladesKeystoneDoorText(sceneRoot);
+		}
 	}
 
 	private static void BootstrapSunkenGladesSpiritWell(SceneRoot sceneRoot)
@@ -566,12 +571,18 @@ public class RandomizerBootstrap
 		message.SetMessage(text);
 		hint.HintMessage = message;
 		hint.Duration = 5f;
+
 		// The hint only shows when we don't have a casual skill set able to get out.
 		RandomizerWallJumpHintCondition condition = treeSequence.gameObject.AddComponent<RandomizerWallJumpHintCondition>();
 		RunActionCondition action = treeSequence.gameObject.AddComponent<RunActionCondition>();
 		action.Action = hint;
 		action.Condition = condition;
 		treeSequence.Actions.Add(action);
+
+		if (Randomizer.EnhancedMode)
+		{
+			RandomizerEnhancedMode.BootstrapWallJumpTreeText(sceneRoot, treeSequence);
+		}
 	}
 
 	private static void BootstrapSeinRoomHint(SceneRoot sceneRoot)
@@ -592,19 +603,7 @@ public class RandomizerBootstrap
 
 		if (Randomizer.EnhancedMode)
 		{
-			obj = new GameObject("textAction");
-			obj.transform.parent = getSeinSequence.transform;
-
-			ShowEnhancedSpiritFlameTextAction textAction = obj.AddComponent<ShowEnhancedSpiritFlameTextAction>();
-			textAction.Messages = new MessageDescriptor[3] {
-				new MessageDescriptor("My voice... is returning...\nAt last, I can speak once more, after 8 years of silence."),
-				new MessageDescriptor("I am #Sein#, the light and eyes of the randomizer developers. I will be happy to waste your time during your journey."),
-				new MessageDescriptor("But if you really cannot stand my presence, then you can silence me once more by pressing #Shift+Alt+U#.")
-			};
-			textAction.FreezeGame = false;
-
-			getSeinSequence.Actions[27] = textAction;
-			(getSeinSequence.Actions[28] as WaitAction).LastAction = textAction;
+			RandomizerEnhancedMode.BootstrapSeinRoomText(sceneRoot, getSeinSequence);
 		}
 
 		ActionSequence.Rename(getSeinSequence.Actions);
@@ -849,6 +848,14 @@ public class RandomizerBootstrap
 		}
 	}
 
+	private static void BootstrapGladesMap(SceneRoot sceneRoot)
+	{
+		if (Randomizer.EnhancedMode)
+		{
+			RandomizerEnhancedMode.BootstrapGladesMapText(sceneRoot);
+		}
+	}
+
 	private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>>
 	{
 		{ "moonGrottoRopeBridge", new Action<SceneRoot>(RandomizerBootstrap.BootstrapMoonGrottoBridge) },
@@ -864,6 +871,7 @@ public class RandomizerBootstrap
 		{ "westGladesMistyWoodsCaveTransition", new Action<SceneRoot>(RandomizerBootstrap.BootstrapValleyEntry) },
 		{ "westGladesFireflyAreaA", new Action<SceneRoot>(RandomizerBootstrap.BootstrapValleyThreeBirdArea) },
 		{ "sunkenGladesRunaway", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSunkenGladesRunaway) },
+		{ "sunkenGladesSpiritCavernSaveRoomB", new Action<SceneRoot>(RandomizerBootstrap.BootstrapGladesMap) },
 		{ "sunkenGladesSpiritCavernWalljumpB", new Action<SceneRoot>(RandomizerBootstrap.BootstrapWallJumpTreeHint) },
 		{ "sunkenGladesOriRoom", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSeinRoomHint) },
 		{ "sunkenGladesEnemyIntroductionC", new Action<SceneRoot>(RandomizerBootstrap.BootstrapRhinoBeforeSein) },
