@@ -63,52 +63,59 @@ public class SeinChargeJump : CharacterState, ISeinReceiver
 		this.m_stateCurrentTime = 0f;
 		this.m_attackablesIgnore.Clear();
 		SeinChargeJump.State currentState = this.CurrentState;
-		if (currentState != SeinChargeJump.State.Normal)
-		{
-			if (currentState != SeinChargeJump.State.Jumping)
-			{
-			}
-		}
 	}
 
 	public void UpdateState()
 	{
 		SeinChargeJump.State currentState = this.CurrentState;
-		if (currentState != SeinChargeJump.State.Normal)
+		if (currentState == SeinChargeJump.State.Jumping)
 		{
-			if (currentState == SeinChargeJump.State.Jumping)
+			if (this.m_stateCurrentTime > this.JumpDuration)
 			{
-				if (this.m_stateCurrentTime > this.JumpDuration)
+				this.ChangeState(SeinChargeJump.State.Normal);
+			}
+
+			for (int i = 0; i < Targets.Attackables.Count; i++)
+			{
+				IAttackable attackable = Targets.Attackables[i];
+				if (!InstantiateUtility.IsDestroyed(attackable as Component) && !this.m_attackablesIgnore.Contains(attackable) && attackable.CanBeStomped())
 				{
-					this.ChangeState(SeinChargeJump.State.Normal);
-				}
-				for (int i = 0; i < Targets.Attackables.Count; i++)
-				{
-					IAttackable attackable = Targets.Attackables[i];
-					if (!InstantiateUtility.IsDestroyed(attackable as Component))
+					Vector3 vector = attackable.Position - this.Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
+					float magnitude = vector.magnitude;
+					if (magnitude < 3f && Vector2.Dot(vector.normalized, this.PlatformMovement.LocalSpeed.normalized) > 0f)
 					{
-						if (!this.m_attackablesIgnore.Contains(attackable))
+						this.m_attackablesIgnore.Add(attackable);
+						Damage damage = new Damage((float)this.Damage, this.PlatformMovement.WorldSpeed.normalized * 3f, this.Sein.Position, DamageType.Stomp, base.gameObject);
+						damage.DealToComponents(((Component)attackable).gameObject);
+						if (attackable.IsDead() && attackable is IStompAttackable && ((IStompAttackable)attackable).CountsTowardsSuperJumpAchievement())
 						{
-							if (attackable.CanBeStomped())
-							{
-								Vector3 vector = attackable.Position - this.Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
-								float magnitude = vector.magnitude;
-								if (magnitude < 3f && Vector2.Dot(vector.normalized, this.PlatformMovement.LocalSpeed.normalized) > 0f)
-								{
-									this.m_attackablesIgnore.Add(attackable);
-									Damage damage = new Damage((float)this.Damage, this.PlatformMovement.WorldSpeed.normalized * 3f, this.Sein.Position, DamageType.Stomp, base.gameObject);
-									damage.DealToComponents(((Component)attackable).gameObject);
-									if (attackable.IsDead() && attackable is IStompAttackable && ((IStompAttackable)attackable).CountsTowardsSuperJumpAchievement())
-									{
-										AchievementsLogic.Instance.OnSuperJumpedThroughEnemy();
-									}
-									if (this.ExplosionEffect)
-									{
-										InstantiateUtility.Instantiate(this.ExplosionEffect, Vector3.Lerp(base.transform.position, attackable.Position, 0.5f), Quaternion.identity);
-									}
-									break;
-								}
-							}
+							AchievementsLogic.Instance.OnSuperJumpedThroughEnemy();
+						}
+						if (this.ExplosionEffect)
+						{
+							InstantiateUtility.Instantiate(this.ExplosionEffect, Vector3.Lerp(base.transform.position, attackable.Position, 0.5f), Quaternion.identity);
+						}
+						break;
+					}
+				}
+			}
+		}
+		else if (this.Sein.Abilities.ChargeJumpCharging.IsCharged && RandomizerBonus.EnhancedChargeJump)
+		{
+			for (int i = 0; i < Targets.Attackables.Count; i++)
+			{
+				IAttackable attackable = Targets.Attackables[i];
+				if (!InstantiateUtility.IsDestroyed(attackable as Component) && attackable.CanBeStomped())
+				{
+					Vector3 vector = attackable.Position - this.Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
+					float magnitude = vector.magnitude;
+					if (magnitude < 3f)
+					{
+						Damage damage = new Damage((float)this.Damage, this.PlatformMovement.WorldSpeed.normalized * 3f, this.Sein.Position, DamageType.Stomp, base.gameObject);
+						damage.DealToComponents(((Component)attackable).gameObject);
+						if (this.ExplosionEffect)
+						{
+							InstantiateUtility.Instantiate(this.ExplosionEffect, Vector3.Lerp(base.transform.position, attackable.Position, 0.5f), Quaternion.identity);
 						}
 					}
 				}

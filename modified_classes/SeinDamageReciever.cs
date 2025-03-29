@@ -101,7 +101,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
 		}
 		damage.SetAmount(Mathf.Round(damage.Amount * Randomizer.DamageModifier));
 		bool flag = this.m_invincibleTimeRemaining > 0f;
-		bool flag2 = this.m_invincibleToEnemiesTimeRemaining > 0f;
+		bool flag2 = this.m_invincibleToEnemiesTimeRemaining > 0f || (RandomizerBonus.EnhancedChargeJump && this.Sein.Abilities.ChargeJumpCharging && this.Sein.Abilities.ChargeJumpCharging.IsCharged);
 		if (this.Sein.Abilities.Stomp && this.Sein.Abilities.Stomp.Logic.CurrentState == this.Sein.Abilities.Stomp.State.StompDown)
 		{
 			flag = true;
