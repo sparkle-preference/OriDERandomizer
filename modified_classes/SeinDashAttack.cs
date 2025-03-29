@@ -24,8 +24,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			float num = RandomizerBonus.ChargeDashEfficiency() ? 0.5f : 0f;
-			return this.m_sein.Energy.CanAfford(this.EnergyCost - num);
+			return this.m_sein.Energy.CanAfford(this.AdjustedEnergyCost);
 		}
 	}
 
@@ -71,14 +70,12 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 
 	public void SpendEnergy()
 	{
-		float num = RandomizerBonus.ChargeDashEfficiency() ? 0.5f : 0f;
-		this.m_sein.Energy.Spend(this.EnergyCost - num);
+		this.m_sein.Energy.Spend(this.AdjustedEnergyCost);
 	}
 
 	public void RestoreEnergy()
 	{
-		float num = RandomizerBonus.ChargeDashEfficiency() ? 0.5f : 0f;
-		this.m_sein.Energy.Gain(this.EnergyCost - num);
+		this.m_sein.Energy.Gain(this.AdjustedEnergyCost);
 	}
 
 	public void SetReferenceToSein(SeinCharacter sein)
@@ -147,6 +144,10 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 			{
 				this.m_attackablesIgnore.Add(attackable);
 				Vector3 v = (!this.m_chargeDashAtTarget) ? (((!this.m_faceLeft) ? Vector3.right : Vector3.left) * 3f) : (this.m_chargeDashDirection * 3f);
+				if (RandomizerBonus.EnhancedDash)
+				{
+					v = this.m_enhancedDashDirection * 3f;
+				}
 				new Damage((float)this.Damage, v, this.m_sein.Position, DamageType.ChargeFlame, base.gameObject).DealToComponents(((Component)attackable).gameObject);
 				this.m_hasHitAttackable = true;
 				if (this.ExplosionEffect && Time.time - this.m_timeOfLastExplosionEffect > 0.1f)
@@ -205,6 +206,11 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		}
 		this.m_sein.FaceLeft = this.m_faceLeft;
 		this.m_stopAnimation = false;
+		if (!this.m_chargeDashAtTarget && RandomizerBonus.EnhancedDash)
+		{
+			this.m_enhancedDashDirection = Core.Input.Axis.normalized;
+			this.SpriteRotation = Mathf.Atan2(this.m_enhancedDashDirection.y, this.m_enhancedDashDirection.x) * 57.29578f - (float)((!this.m_faceLeft) ? 0 : 180);
+		}
 		if (dashSound)
 		{
 			Sound.Play(dashSound.GetSound(null), this.m_sein.Position, null);
@@ -439,6 +445,10 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 			Vector2 newSpeed = new Vector2(velocity, 0f);
 			platformMovement.LocalSpeed = newSpeed.Rotate(this.m_sein.Abilities.Swimming.SwimAngle);
 		}
+		else if (RandomizerBonus.EnhancedDash)
+		{
+			platformMovement.LocalSpeed = this.m_enhancedDashDirection * velocity;
+		}
 		else
 		{
 			platformMovement.LocalSpeedX = (float)((!this.m_faceLeft) ? 1 : -1) * velocity;
@@ -510,6 +520,10 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		if (this.m_chargeDashAtTarget)
 		{
 			platformMovement.LocalSpeed = this.m_chargeDashDirection * velocity;
+		}
+		else if (RandomizerBonus.EnhancedDash)
+		{
+			platformMovement.LocalSpeed = this.m_enhancedDashDirection * velocity;
 		}
 		else
 		{
@@ -604,6 +618,16 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 	{
 		this.m_hasDashed = false;
 		RandomizerBonus.DoubleAirDashUsed = false;
+	}
+
+	public float AdjustedEnergyCost
+	{
+		get
+		{
+			float efficiencyDiscount = RandomizerBonus.ChargeDashEfficiency() ? 0.5f : 0f;
+			float enhancedDiscount = RandomizerBonus.EnhancedDash ? 0.5f : 0f;
+			return this.EnergyCost - efficiencyDiscount - enhancedDiscount;
+		}
 	}
 
 	public AnimationCurve DashSpeedOverTime;
@@ -703,6 +727,8 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 	private bool m_chargeDashAtTarget;
 
 	private Vector3 m_chargeDashAtTargetPosition;
+
+	private Vector3 m_enhancedDashDirection;
 
 	public enum State
 	{
