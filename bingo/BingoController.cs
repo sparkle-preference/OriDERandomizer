@@ -701,7 +701,7 @@ public static class BingoController
                 });
                 MultiBoolGoal.mk("GetAbility", new List<BoolGoal>() {
                     new BoolGoal("Ultra Defense", 2577), 
-                    new BoolGoal("Spirit Light Efficiency", 2578), 
+                    new BoolGoal("Spirit Potency", 2578), 
                     new BoolGoal("Ultra Stomp", 2579)
                 });
                 MultiBoolGoal.mk("StompPeg", new List<BoolGoal>() {
