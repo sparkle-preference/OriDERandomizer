@@ -187,6 +187,10 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
 
 	public void OnRecieveDamage(Damage damage)
 	{
+		if (damage.Type == DamageType.Bash && RandomizerBonus.EnhancedBash)
+		{
+			return;
+		}
 		if (damage.Type == DamageType.Spikes || damage.Type == DamageType.Lava || damage.Type == DamageType.Laser || damage.Type == DamageType.Bash)
 		{
 			this.Explode();

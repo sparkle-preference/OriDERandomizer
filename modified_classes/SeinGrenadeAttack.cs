@@ -543,7 +543,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver
 				{
 					this.m_inputPressed = false;
 					this.m_lockPressingInputTime = 0.2f;
-					this.SpawnGrenade(this.VelocityToAimAtTarget(this.m_autoTarget)).Bashable = false;
+					this.SpawnGrenade(this.VelocityToAimAtTarget(this.m_autoTarget)).Bashable = RandomizerBonus.EnhancedBash ? true : false;
 					this.SpendEnergy();
 					this.PlayFastThrowAnimation();
 					this.PlayThrowSound();
@@ -558,7 +558,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver
 					{
 						quickThrowSpeed.x *= -1f;
 					}
-					this.SpawnGrenade(quickThrowSpeed).Bashable = false;
+					this.SpawnGrenade(quickThrowSpeed).Bashable = RandomizerBonus.EnhancedBash ? true : false;
 					this.SpendEnergy();
 					this.PlayFastThrowAnimation();
 					this.PlayThrowSound();
