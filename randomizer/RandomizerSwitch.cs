@@ -152,7 +152,10 @@ public static class RandomizerSwitch
                 Keys.GinsoTree = true;
                 break;
             case 1:
-                PickupMessage("*Clean Water*#", 300);
+                if (Randomizer.EnhancedMode)
+                    RandomizerBonus.UpgradeID(422);
+                else
+                    PickupMessage("*Clean Water*", 300);
                 Sein.World.Events.WaterPurified = true;
                 break;
             case 2:
