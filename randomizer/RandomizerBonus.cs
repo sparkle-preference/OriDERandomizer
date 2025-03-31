@@ -738,18 +738,18 @@ public static class RandomizerBonus
         } else Randomizer.printInfo("No bonus passives");
     }
 
-    public static bool EnhancedSpiritFlame { get { return Randomizer.Inventory.GetRandomizerItem(410) > 0 && !RandomizerBonusSkill.IsActive(415); } }
-    public static bool EnhancedWallJump { get { return Randomizer.Inventory.GetRandomizerItem(411) > 0 && !RandomizerBonusSkill.IsActive(415); } }
-    public static bool EnhancedChargeFlame { get { return Randomizer.Inventory.GetRandomizerItem(412) > 0 && !RandomizerBonusSkill.IsActive(415); } }
-    public static bool EnhancedDoubleJump { get { return Randomizer.Inventory.GetRandomizerItem(413) > 0 && !RandomizerBonusSkill.IsActive(415); } }
-    public static bool EnhancedBash { get { return Randomizer.Inventory.GetRandomizerItem(414) > 0 && !RandomizerBonusSkill.IsActive(415); } }
-    public static bool EnhancedStomp { get { return Randomizer.Inventory.GetRandomizerItem(415) > 0 && !RandomizerBonusSkill.IsActive(415); } }
-    public static bool EnhancedGlide { get { return Randomizer.Inventory.GetRandomizerItem(416) > 0 && !RandomizerBonusSkill.IsActive(415); } }
-    public static bool EnhancedClimb { get { return Randomizer.Inventory.GetRandomizerItem(417) > 0 && !RandomizerBonusSkill.IsActive(415); } }
-    public static bool EnhancedChargeJump { get { return Randomizer.Inventory.GetRandomizerItem(418) > 0 && !RandomizerBonusSkill.IsActive(415); } }
-    public static bool EnhancedDash { get { return Randomizer.Inventory.GetRandomizerItem(419) > 0 && !RandomizerBonusSkill.IsActive(415); } }
-    public static bool EnhancedGrenade { get { return Randomizer.Inventory.GetRandomizerItem(420) > 0 && !RandomizerBonusSkill.IsActive(415); } }
-    public static bool EnhancedCleanWater { get { return Randomizer.Inventory.GetRandomizerItem(422) > 0 && !RandomizerBonusSkill.IsActive(415); } }
+    public static bool EnhancedSpiritFlame { get { return Randomizer.Inventory.GetRandomizerItem(410) > 0; } }
+    public static bool EnhancedWallJump { get { return Randomizer.Inventory.GetRandomizerItem(411) > 0 && !RandomizerBonusSkill.IsActive(115); } }
+    public static bool EnhancedChargeFlame { get { return Randomizer.Inventory.GetRandomizerItem(412) > 0 && !RandomizerBonusSkill.IsActive(115); } }
+    public static bool EnhancedDoubleJump { get { return Randomizer.Inventory.GetRandomizerItem(413) > 0 && !RandomizerBonusSkill.IsActive(115); } }
+    public static bool EnhancedBash { get { return Randomizer.Inventory.GetRandomizerItem(414) > 0 && !RandomizerBonusSkill.IsActive(115); } }
+    public static bool EnhancedStomp { get { return Randomizer.Inventory.GetRandomizerItem(415) > 0 && !RandomizerBonusSkill.IsActive(115); } }
+    public static bool EnhancedGlide { get { return Randomizer.Inventory.GetRandomizerItem(416) > 0 && !RandomizerBonusSkill.IsActive(115); } }
+    public static bool EnhancedClimb { get { return Randomizer.Inventory.GetRandomizerItem(417) > 0 && !RandomizerBonusSkill.IsActive(115); } }
+    public static bool EnhancedChargeJump { get { return Randomizer.Inventory.GetRandomizerItem(418) > 0 && !RandomizerBonusSkill.IsActive(115); } }
+    public static bool EnhancedDash { get { return Randomizer.Inventory.GetRandomizerItem(419) > 0 && !RandomizerBonusSkill.IsActive(115); } }
+    public static bool EnhancedGrenade { get { return Randomizer.Inventory.GetRandomizerItem(420) > 0 && !RandomizerBonusSkill.IsActive(115); } }
+    public static bool EnhancedCleanWater { get { return Randomizer.Inventory.GetRandomizerItem(422) > 0 && !RandomizerBonusSkill.IsActive(115); } }
 
     private static Dictionary<int, String> BonusNames = new Dictionary<int, String>() {
         {6, "Attack Upgrade"},
