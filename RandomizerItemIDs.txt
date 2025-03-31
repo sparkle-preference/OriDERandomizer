@@ -64,6 +64,7 @@
 111 - Wither
 112 - Warp to Credits
 113 - Toggle Bash/Stomp Damage
+115 - Toggle Enhanced Effects
 
 200 - Quick Flame
 201 - Spark Flame

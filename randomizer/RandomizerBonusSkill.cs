@@ -281,6 +281,20 @@ public static class RandomizerBonusSkill
             }
             return;
         break;
+        case 115:
+            if (IsActive(ab))
+            {
+                Deactivate(ab);
+                BonusSkillText("Enhanced Effects on");
+            }
+            else
+            {
+                Activate(ab);
+                BonusSkillText("Enhanced Effects off");
+            }
+            Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
+            return;
+        break;
         case 1587:
             if (!Characters.Sein.Controller.CanMove || !Characters.Sein.Active)
                 return;
@@ -368,7 +382,7 @@ public static class RandomizerBonusSkill
 
     public static void FoundBonusSkill(int ID)
     {
-        bool psuedo = (ID == 108 || ID == 1587);
+        bool psuedo = (ID == 108 || ID == 115 || ID == 1587);
         if(get(ID) > 0) {
             if(!psuedo)
                 RandomizerSwitch.PickupMessage(RandomizerBonusSkill.BonusSkillNames[ID] + " (duplicate)");
@@ -545,6 +559,7 @@ public static class RandomizerBonusSkill
         { 112, "Pokeball" },
         { 113, "Toggle Bash/Stomp Damage" },
         { 114, "Summon Mom" },
+        { 115, "Toggle Enhanced Effects" },
         { 1587, "Warp to Credits" },
     };
     public static Dictionary <int, float> DrainRates = new Dictionary<int, float>

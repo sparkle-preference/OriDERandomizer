@@ -413,6 +413,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerBonusSkill.FoundBonusSkill(115);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $W$*a*#l#$l$ *J*#u#$m$*p*\nNow comes with bonus Climb! ...yeah, sorry, that's it for this one.", 300);
             }
             break;
@@ -420,6 +421,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerBonusSkill.FoundBonusSkill(115);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $F$*l*#a#$m$*e*\nPowerful enough to capture nearby projectiles in its gravity!", 300);
             }
             break;
@@ -427,6 +429,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerBonusSkill.FoundBonusSkill(115);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*o*#u#$b$*l*#e# $J$*u*#m#$p$\nLook, we were running out of ideas, so just...have infinite jumps, I guess.", 300);
             }
             break;
@@ -434,6 +437,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerBonusSkill.FoundBonusSkill(115);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $B$*a*#s#$h$\nMuch more balanced now that it doesn't require a target.", 300);
             }
             break;
@@ -441,6 +445,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerBonusSkill.FoundBonusSkill(115);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*t*#o#$m$*p*\nWhy should we be limited to only stomping downwards?", 300);
             }
             break;
@@ -448,6 +453,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerBonusSkill.FoundBonusSkill(115);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*l*#i#$d$*e*\nYou are the wind beneath your wings. Er...feather.", 300);
             }
             break;
@@ -455,6 +461,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerBonusSkill.FoundBonusSkill(115);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*l*#i#$m$*b*\nNow comes with protective gear for hazardous surfaces!", 300);
             }
             break;
@@ -462,6 +469,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerBonusSkill.FoundBonusSkill(115);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $J$*u*#m#$p$\nYour very aura is now enough to protect from enemies. Or kill them.", 300);
             }
             break;
@@ -469,6 +477,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerBonusSkill.FoundBonusSkill(115);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*a*#s#$h$\nBe freed from the limitations of the horizontal axis!", 300);
             }
             break;
@@ -476,6 +485,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerBonusSkill.FoundBonusSkill(115);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*r*#e#$n$*a*#d#$e$", 300);
             }
             break;
@@ -483,6 +493,7 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerBonusSkill.FoundBonusSkill(115);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*l*#e#$a$*n* #W#$a$*t*#e#$r$\nIt isn't just clean - it's been cleaned out!", 300);
             }
             break;
@@ -727,17 +738,18 @@ public static class RandomizerBonus
         } else Randomizer.printInfo("No bonus passives");
     }
 
-    public static bool EnhancedSpiritFlame { get { return Randomizer.Inventory.GetRandomizerItem(410) > 0; } }
-    public static bool EnhancedWallJump { get { return Randomizer.Inventory.GetRandomizerItem(411) > 0; } }
-    public static bool EnhancedChargeFlame { get { return Randomizer.Inventory.GetRandomizerItem(412) > 0; } }
-    public static bool EnhancedDoubleJump { get { return Randomizer.Inventory.GetRandomizerItem(413) > 0; } }
-    public static bool EnhancedBash { get { return Randomizer.Inventory.GetRandomizerItem(414) > 0; } }
-    public static bool EnhancedStomp { get { return Randomizer.Inventory.GetRandomizerItem(415) > 0; } }
-    public static bool EnhancedGlide { get { return Randomizer.Inventory.GetRandomizerItem(416) > 0; } }
-    public static bool EnhancedClimb { get { return Randomizer.Inventory.GetRandomizerItem(417) > 0; } }
-    public static bool EnhancedChargeJump { get { return Randomizer.Inventory.GetRandomizerItem(418) > 0; } }
-    public static bool EnhancedDash { get { return Randomizer.Inventory.GetRandomizerItem(419) > 0; } }
-    public static bool EnhancedGrenade { get { return Randomizer.Inventory.GetRandomizerItem(420) > 0; } }
+    public static bool EnhancedSpiritFlame { get { return Randomizer.Inventory.GetRandomizerItem(410) > 0 && !RandomizerBonusSkill.IsActive(415); } }
+    public static bool EnhancedWallJump { get { return Randomizer.Inventory.GetRandomizerItem(411) > 0 && !RandomizerBonusSkill.IsActive(415); } }
+    public static bool EnhancedChargeFlame { get { return Randomizer.Inventory.GetRandomizerItem(412) > 0 && !RandomizerBonusSkill.IsActive(415); } }
+    public static bool EnhancedDoubleJump { get { return Randomizer.Inventory.GetRandomizerItem(413) > 0 && !RandomizerBonusSkill.IsActive(415); } }
+    public static bool EnhancedBash { get { return Randomizer.Inventory.GetRandomizerItem(414) > 0 && !RandomizerBonusSkill.IsActive(415); } }
+    public static bool EnhancedStomp { get { return Randomizer.Inventory.GetRandomizerItem(415) > 0 && !RandomizerBonusSkill.IsActive(415); } }
+    public static bool EnhancedGlide { get { return Randomizer.Inventory.GetRandomizerItem(416) > 0 && !RandomizerBonusSkill.IsActive(415); } }
+    public static bool EnhancedClimb { get { return Randomizer.Inventory.GetRandomizerItem(417) > 0 && !RandomizerBonusSkill.IsActive(415); } }
+    public static bool EnhancedChargeJump { get { return Randomizer.Inventory.GetRandomizerItem(418) > 0 && !RandomizerBonusSkill.IsActive(415); } }
+    public static bool EnhancedDash { get { return Randomizer.Inventory.GetRandomizerItem(419) > 0 && !RandomizerBonusSkill.IsActive(415); } }
+    public static bool EnhancedGrenade { get { return Randomizer.Inventory.GetRandomizerItem(420) > 0 && !RandomizerBonusSkill.IsActive(415); } }
+    public static bool EnhancedCleanWater { get { return Randomizer.Inventory.GetRandomizerItem(422) > 0 && !RandomizerBonusSkill.IsActive(415); } }
 
     private static Dictionary<int, String> BonusNames = new Dictionary<int, String>() {
         {6, "Attack Upgrade"},

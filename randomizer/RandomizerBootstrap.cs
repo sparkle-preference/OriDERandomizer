@@ -49,6 +49,16 @@ public class RandomizerBootstrap
 			RandomizerBootstrap.s_bootstrappedScenesPreEnabled.Add(sceneRoot.name);
 			RandomizerBootstrap.s_bootstrapPreEnabled[sceneRoot.name].Invoke(sceneRoot);
 		}
+
+		if (RandomizerEnhancedMode.TextBootstrapScenes.ContainsKey(sceneRoot.name) && Randomizer.EnhancedMode)
+		{
+			RandomizerEnhancedMode.TextBootstrapScenes[sceneRoot.name].Invoke(sceneRoot);
+		}
+
+		if (RandomizerEnhancedMode.WaterBootstrapScenes.ContainsKey(sceneRoot.name))
+		{
+			RandomizerEnhancedMode.BootstrapSceneWater(sceneRoot);
+		}
 	}
 
 	private static void BootstrapSceneAfterSerialize(SceneRoot sceneRoot)
@@ -458,11 +468,6 @@ public class RandomizerBootstrap
 			PlayerCollisionStayTrigger trigger = sceneRoot.transform.FindChild("*allEnemiesKilled/activated/*objectiveSetup/objectiveSetupTrigger").GetComponent<PlayerCollisionStayTrigger>();
 			trigger.Active = false;
 		}
-
-		if (Randomizer.EnhancedMode)
-		{
-			RandomizerEnhancedMode.BootstrapSunkenGladesKeystoneDoorText(sceneRoot);
-		}
 	}
 
 	private static void BootstrapSunkenGladesSpiritWell(SceneRoot sceneRoot)
@@ -578,11 +583,6 @@ public class RandomizerBootstrap
 		action.Action = hint;
 		action.Condition = condition;
 		treeSequence.Actions.Add(action);
-
-		if (Randomizer.EnhancedMode)
-		{
-			RandomizerEnhancedMode.BootstrapWallJumpTreeText(sceneRoot, treeSequence);
-		}
 	}
 
 	private static void BootstrapSeinRoomHint(SceneRoot sceneRoot)
@@ -600,11 +600,6 @@ public class RandomizerBootstrap
 		hint.HintMessage = message;
 		hint.Duration = 10f;
 		getSeinSequence.Actions.Insert(17, hint);
-
-		if (Randomizer.EnhancedMode)
-		{
-			RandomizerEnhancedMode.BootstrapSeinRoomText(sceneRoot, getSeinSequence);
-		}
 
 		ActionSequence.Rename(getSeinSequence.Actions);
 	}
@@ -848,14 +843,6 @@ public class RandomizerBootstrap
 		}
 	}
 
-	private static void BootstrapGladesMap(SceneRoot sceneRoot)
-	{
-		if (Randomizer.EnhancedMode)
-		{
-			RandomizerEnhancedMode.BootstrapGladesMapText(sceneRoot);
-		}
-	}
-
 	private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>>
 	{
 		{ "moonGrottoRopeBridge", new Action<SceneRoot>(RandomizerBootstrap.BootstrapMoonGrottoBridge) },
@@ -871,7 +858,6 @@ public class RandomizerBootstrap
 		{ "westGladesMistyWoodsCaveTransition", new Action<SceneRoot>(RandomizerBootstrap.BootstrapValleyEntry) },
 		{ "westGladesFireflyAreaA", new Action<SceneRoot>(RandomizerBootstrap.BootstrapValleyThreeBirdArea) },
 		{ "sunkenGladesRunaway", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSunkenGladesRunaway) },
-		{ "sunkenGladesSpiritCavernSaveRoomB", new Action<SceneRoot>(RandomizerBootstrap.BootstrapGladesMap) },
 		{ "sunkenGladesSpiritCavernWalljumpB", new Action<SceneRoot>(RandomizerBootstrap.BootstrapWallJumpTreeHint) },
 		{ "sunkenGladesOriRoom", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSeinRoomHint) },
 		{ "sunkenGladesEnemyIntroductionC", new Action<SceneRoot>(RandomizerBootstrap.BootstrapRhinoBeforeSein) },
