@@ -406,42 +406,42 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*p*#i#$r$*i*#t# $F$*l*#a#$m$*e*\nSome of Sein's lost power has been restored! Specifically, the mouth.", 300);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*p*#i#$r$*i*#t# $F$*l*#a#$m$*e*\nSein's voice has been restored!", 300);
             }
             break;
         case 411:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $W$*a*#l#$l$ *J*#u#$m$*p*\nNow comes with bonus Climb! ...look, it's hard to improve something this simple, ok?", 300);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $W$*a*#l#$l$ *J*#u#$m$*p*\nNow comes with bonus Climb! ...yeah, sorry, that's it for this one.", 300);
             }
             break;
         case 412:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $F$*l*#a#$m$*e*\nWouldn't it be nice if you could hold onto projectiles for later?", 300);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $F$*l*#a#$m$*e*\nPowerful enough to capture nearby projectiles in its gravity!", 300);
             }
             break;
         case 413:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*o*#u#$b$*l*#e# $J$*u*#m#$p$", 300);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*o*#u#$b$*l*#e# $J$*u*#m#$p$\nLook, we were running out of ideas, so just...have infinite jumps, I guess.", 300);
             }
             break;
         case 414:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $B$*a*#s#$h$\nWas it not already broken enough for you? How about now?", 300);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $B$*a*#s#$h$\nMuch more balanced now that it doesn't require a target.", 300);
             }
             break;
         case 415:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*t*#o#$m$*p*\nIs it still considered a \"stomp\" if you're going sideways?", 300);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*t*#o#$m$*p*\nWhy should we be limited to only stomping downwards?", 300);
             }
             break;
         case 416:
@@ -462,14 +462,14 @@ public static class RandomizerBonus
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $J$*u*#m#$p$\nYour very aura is now enough to repel enemies.", 300);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $J$*u*#m#$p$\nYour very aura is now enough to protect from enemies. Or kill them.", 300);
             }
             break;
         case 419:
             if (!flag)
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*a*#s#$h$\nBe freed from the limitations of the horizontal dash!", 300);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*a*#s#$h$\nBe freed from the limitations of the horizontal axis!", 300);
             }
             break;
         case 420:
@@ -477,6 +477,13 @@ public static class RandomizerBonus
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                 RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*r*#e#$n$*a*#d#$e$", 300);
+            }
+            break;
+        case 422:
+            if (!flag)
+            {
+                Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*l*#e#$a$*n* #W#$a$*t*#e#$r$\nIt isn't just clean - it's been cleaned out!", 300);
             }
             break;
         case 1102:
