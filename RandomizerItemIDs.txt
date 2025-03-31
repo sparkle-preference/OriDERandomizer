@@ -156,8 +156,6 @@ Enhanced mode -- April Fools :)
 419 - Enhanced Dash
 420 - Enhanced Grenade
 422 - Enhanced Clean Water
-424 - Enhanced Wind Restored
-426 - Enhanced Warmth Returned
 
 800 - Open World
 801 - Closed Dungeons

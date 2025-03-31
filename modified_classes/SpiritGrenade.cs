@@ -187,10 +187,6 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
 
 	public void OnRecieveDamage(Damage damage)
 	{
-		if (damage.Type == DamageType.Bash && RandomizerBonus.EnhancedBash)
-		{
-			return;
-		}
 		if (damage.Type == DamageType.Spikes || damage.Type == DamageType.Lava || damage.Type == DamageType.Laser || damage.Type == DamageType.Bash)
 		{
 			this.Explode();
@@ -201,9 +197,15 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
     {
         // If the collision causes it explode then the explosion happens before this collision callback.
         PetrifiedPlant plant = collision.gameObject.GetComponent<PetrifiedPlant>();
-        if (plant != null && !HasExploded)
+        if (plant != null && !this.HasExploded)
         {
             Explode();
+        }
+        
+        StompableFloor floor = collision.gameObject.GetComponent<StompableFloor>();
+        if (RandomizerBonus.EnhancedGrenade && floor != null && !this.HasExploded)
+        {
+        	Explode();
         }
     }
 

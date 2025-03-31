@@ -486,7 +486,7 @@ public static class RandomizerBonus
             {
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                 RandomizerBonusSkill.FoundBonusSkill(115);
-                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*r*#e#$n$*a*#d#$e$", 300);
+                RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*r*#e#$n$*a*#d#$e$\nI guess it can break floors and walls now? For some reason?", 300);
             }
             break;
         case 422:

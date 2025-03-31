@@ -73,6 +73,23 @@ public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable
 					}
 				}
 			}
+			else if (RandomizerBonus.EnhancedGrenade && !InstantiateUtility.IsDestroyed(attackable as Component) && !this.m_damageAttackables.Contains(attackable) && attackable.CanBeStomped())
+			{
+				Vector3 position2 = attackable.Position;
+				Vector3 vector = position2 - position;
+				if (vector.magnitude <= this.BurstRadius + 1f + (float)RandomizerBonus.SpiritFlameLevel())
+				{
+					this.m_damageAttackables.Add(attackable);
+					GameObject gameObject = ((Component)attackable).gameObject;
+					new Damage(this.DamageAmount + (float)(3 * RandomizerBonus.SpiritFlameLevel()), vector.normalized * 3f, position, DamageType.Stomp, base.gameObject).DealToComponents(gameObject);
+					if (!attackable.IsDead())
+					{
+						GameObject gameObject2 = (GameObject)InstantiateUtility.Instantiate(this.BurstImpactEffectPrefab, position2, Quaternion.identity);
+						gameObject2.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(vector.normalized));
+						gameObject2.GetComponent<FollowPositionRotation>().SetTarget(gameObject.transform);
+					}
+				}
+			}
 		}
 		this.m_waitDelay = 0.1f;
 	}

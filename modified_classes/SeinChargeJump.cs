@@ -109,7 +109,7 @@ public class SeinChargeJump : CharacterState, ISeinReceiver
 				{
 					Vector3 vector = attackable.Position - this.Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
 					float magnitude = vector.magnitude;
-					if (magnitude < 3f)
+					if (magnitude < 3.75f)
 					{
 						Damage damage = new Damage((float)this.Damage, this.PlatformMovement.WorldSpeed.normalized * 3f, this.Sein.Position, DamageType.Stomp, base.gameObject);
 						damage.DealToComponents(((Component)attackable).gameObject);
