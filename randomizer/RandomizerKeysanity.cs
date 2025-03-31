@@ -13,7 +13,7 @@ public class RandomizerKeysanity {
     private Dictionary<int, string> hintMap;
     private RandomizerInventory inventory;
 
-    public RandomizerKeysanity(RandomizerInventory inventory) {
+    public RandomizerKeysanity(RandomizerInventory inv) {
         doorKeyMap = new Dictionary<MoonGuid, int>() {
             { new MoonGuid(-1232154268, 1164352171, -836255810, -1590216903), 300 },
             { new MoonGuid(594661726, 1329767267, -1704907880, -27301018), 301 },
@@ -44,7 +44,7 @@ public class RandomizerKeysanity {
             { 311, "Upper Sorrow"},
         };
 
-        inventory = inventory;
+        inventory = inv;
     }
 
     public void Initialize() {
