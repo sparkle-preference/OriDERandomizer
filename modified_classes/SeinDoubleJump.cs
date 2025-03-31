@@ -31,7 +31,7 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver
 		get
 		{
 			int bonus = RandomizerBonus.DoubleJumpUpgrades();
-			if (CheatsHandler.InfiniteDoubleJumps)
+			if (CheatsHandler.InfiniteDoubleJumps || RandomizerBonus.EnhancedDoubleJump)
 			{
 				return 999999;
 			}
