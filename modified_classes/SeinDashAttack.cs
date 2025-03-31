@@ -208,7 +208,28 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		this.m_stopAnimation = false;
 		if (!this.m_chargeDashAtTarget && RandomizerBonus.EnhancedDash)
 		{
-			this.m_enhancedDashDirection = Core.Input.Axis.normalized;
+			if (Core.Input.Axis.magnitude > 0f)
+			{
+				this.m_enhancedDashDirection = Core.Input.Axis.normalized;
+
+				if (this.m_sein.IsOnGround)
+				{
+					float dot = Vector3.Dot(this.m_enhancedDashDirection, Vector3.left);
+					if (dot >= 0.94f)
+					{
+						this.m_enhancedDashDirection = Vector3.left;
+					}
+					else if (dot <= -0.94f)
+					{
+						this.m_enhancedDashDirection = Vector3.right;
+					}
+				}
+			}
+			else
+			{
+				this.m_enhancedDashDirection = this.m_faceLeft ? Vector3.left : Vector3.right;
+			}
+
 			this.SpriteRotation = Mathf.Atan2(this.m_enhancedDashDirection.y, this.m_enhancedDashDirection.x) * 57.29578f - (float)((!this.m_faceLeft) ? 0 : 180);
 		}
 		if (dashSound)
@@ -445,7 +466,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 			Vector2 newSpeed = new Vector2(velocity, 0f);
 			platformMovement.LocalSpeed = newSpeed.Rotate(this.m_sein.Abilities.Swimming.SwimAngle);
 		}
-		else if (RandomizerBonus.EnhancedDash)
+		else if (RandomizerBonus.EnhancedDash && this.m_enhancedDashDirection.y != 0f)
 		{
 			platformMovement.LocalSpeed = this.m_enhancedDashDirection * velocity;
 		}
@@ -521,7 +542,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		{
 			platformMovement.LocalSpeed = this.m_chargeDashDirection * velocity;
 		}
-		else if (RandomizerBonus.EnhancedDash)
+		else if (RandomizerBonus.EnhancedDash && this.m_enhancedDashDirection.y != 0f)
 		{
 			platformMovement.LocalSpeed = this.m_enhancedDashDirection * velocity;
 		}
