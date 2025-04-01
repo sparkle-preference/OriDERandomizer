@@ -718,7 +718,7 @@ public static class Randomizer
                 text += $"{g}Trees ({trees}/10){g}  ";
             }    
             if (Randomizer.WorldTour && Characters.Sein) {
-                int relics = get(302);
+                int relics = get(402);
                 g = relics >= Randomizer.RelicCount ? "$" : "";
                 text += $"{g}Relics ({relics}/{Randomizer.RelicCount}){g}  ";
             }
@@ -862,7 +862,7 @@ public static class Randomizer
             return false;
         }
         if (Randomizer.WorldTour) {
-            int relics = get(302);
+            int relics = get(402);
             if(relics < Randomizer.RelicCount) {
                 if(verbose)
                     Randomizer.printInfo("Relics (" + relics.ToString() + "/" + Randomizer.RelicCount.ToString() + ")");

@@ -202,7 +202,7 @@ public static class RandomizerTrackedDataManager
 
 	public static bool SetRelic(string zone) {
 		if(!GetRelic(zone)) {
-            Characters.Sein.Inventory.IncRandomizerItem(302, 1);
+            Characters.Sein.Inventory.IncRandomizerItem(402, 1);
 			RelicBitfield = Characters.Sein.Inventory.IncRandomizerItem(1002, 1 << RelicFound[zone]);
 			return true;
 		}

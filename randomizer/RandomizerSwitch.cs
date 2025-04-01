@@ -304,7 +304,7 @@ public static class RandomizerSwitch
                     break;
                 case "WT":
                     RandomizerTrackedDataManager.SetRelic(Randomizer.RelicZoneLookup[(string)action.Value]);
-                    int relics = Characters.Sein.Inventory.GetRandomizerItem(302);
+                    int relics = Characters.Sein.Inventory.GetRandomizerItem(402);
                     string relicStr = "\n("+relics.ToString() + "/" + Randomizer.RelicCount.ToString() + ")";
                     if(relics >= Randomizer.RelicCount) {
                         relicStr = "$" + relicStr + "$";

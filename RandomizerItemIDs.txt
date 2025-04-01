@@ -143,6 +143,8 @@
 
 312 - Door Hints Gotten (bitfield)
 
+402 - World Tour relics collected
+
 Enhanced mode -- April Fools :)
 410 - Enhanced Spirit Flame
 411 - Enhanced Wall Jump
