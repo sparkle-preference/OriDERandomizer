@@ -75,7 +75,7 @@ public class SeinPrefabFactory : SaveSerialize, ISeinReceiver
 
 	public void EnsureRightPrefabsAreThereForAbilities()
 	{
-		this.WallJump.IsInstantiated = this.Sein.PlayerAbilities.WallJump.HasAbility || (RandomizerBonus.EnhancedClimb && this.Sein.PlayerAbilities.Climb.HasAbility);
+		this.WallJump.IsInstantiated = this.Sein.PlayerAbilities.WallJump.HasAbility;
 		this.WallSlide.IsInstantiated = true;
 		this.Stomp.IsInstantiated = this.Sein.PlayerAbilities.Stomp.HasAbility;
 		this.DoubleJump.IsInstantiated = this.Sein.PlayerAbilities.DoubleJump.HasAbility;
