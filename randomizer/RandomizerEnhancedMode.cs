@@ -41,6 +41,47 @@ public class RandomizerEnhancedMode
                 activate.Condition = condition;
             }
         }
+
+        if (sceneRoot.name == "thornfeltSwampMoonGrottoTransition")
+        {
+            // make the drain instantly complete if enhanced water is on
+            ActionSequence sequence = sceneRoot.transform.FindChild("*releaseWaterSequence/actionSequence").GetComponent<ActionSequence>();
+            GameObject timeline = sceneRoot.transform.FindChild("*releaseWaterSequence/timelineSequence").gameObject;
+            GameObject actionObj = new GameObject("drainAction");
+            actionObj.transform.parent = sequence.transform;
+
+            GameObject enhancedChild = new GameObject("enhancedDrainAction");
+            enhancedChild.transform.parent = actionObj.transform;
+            BaseAnimatorAction enhancedAction = enhancedChild.AddComponent<BaseAnimatorAction>();
+            enhancedAction.Target = timeline;
+            enhancedAction.AnimatorsMode = BaseAnimatorAction.FindAnimatorsMode.GameObject;
+            enhancedAction.Command = BaseAnimatorAction.PlayMode.StopAtEnd;
+
+            GameObject baseChild = new GameObject("baseAction");
+            baseChild.transform.parent = actionObj.transform;
+            BaseAnimatorAction baseAction = baseChild.AddComponent<BaseAnimatorAction>();
+            baseAction.Target = timeline;
+            baseAction.AnimatorsMode = BaseAnimatorAction.FindAnimatorsMode.GameObject;
+            baseAction.Command = BaseAnimatorAction.PlayMode.Restart;
+
+            RunActionCondition runAction = actionObj.AddComponent<RunActionCondition>();
+            runAction.Action = enhancedAction;
+            runAction.ElseAction = baseAction;
+            runAction.Condition = condition;
+
+            // don't play the sound if enhanced water is on
+            GameObject soundActionObj = sequence.Actions[1].gameObject;
+            NotCondition notCondition = soundActionObj.AddComponent<NotCondition>();
+            notCondition.Condition = condition;
+
+            RunActionCondition runSoundAction = soundActionObj.AddComponent<RunActionCondition>();
+            runSoundAction.Action = sequence.Actions[1];
+            runSoundAction.Condition = notCondition;
+
+            sequence.Actions[1] = runSoundAction;
+            sequence.Actions[5] = runAction;
+            ActionSequence.Rename(sequence.Actions);
+        }
     }
 
     private static string GetItemHintForPickup(string pickupName)
@@ -810,7 +851,7 @@ public class RandomizerEnhancedMode
                 "earlyZParent",
                 "kuroMomentRaineffectA",
                 "particles",
-                "soundSpots"
+                "soundSpots",
             } },
         { "thornfeltSwampE", new List<string>
             {
@@ -822,16 +863,16 @@ public class RandomizerEnhancedMode
                 "art/foregroundClose/lights",
                 "art/foregroundClose/waterfall",
                 "art/foregroundFar/waterfall",
-                "water"
+                "water",
             } },
         { "thornfeltSwampMoonGrottoTransition", new List<string>
             {
-                "water",
-                "releaseWaterSequence/timelineSequence",
-                "unsorted",
+                "*releaseWaterSequence/timelineSequence",
+                "*unsorted",
                 "art/backgroundNear/effects",
                 "art/backgroundNear/fog",
-                "art/backgroundNear/flowers"
+                "art/backgroundNear/flowers",
+                "water",
             } },
         { "thornfeltSwampStompAbility", new List<string>
             {
@@ -842,7 +883,7 @@ public class RandomizerEnhancedMode
                 "art/backgroundNear/textures",
                 "art/foregroundClose/lights",
                 "art/center/effects",
-                "art/center/textures"
+                "art/center/textures",
             } },
         { "thornfeltSwampA", new List<string>
             {
@@ -852,36 +893,36 @@ public class RandomizerEnhancedMode
                 "soundSpots/drippingWaterMedSoundSpot",
                 "soundSpots/drippingWaterBigSoundSpot",
                 "soundSpots/drippingBackgroundWaterSoundSpot",
-                "art/backgroundNear/waterplants"
+                "art/backgroundNear/waterplants",
             } },
         { "thornfeltSwampB", new List<string>
             {
-                "water"
+                "water",
             } },
         { "sunkenGladesIntroSplitA", new List<string>
             {
                 "water",
-                "soundSpots"
+                "soundSpots",
             } },
         { "sunkenGladesSpiritCavernSaveRoomB", new List<string>
             {
                 "water",
                 "art/center/fog",
-                "art/center/masks"
+                "art/center/masks",
             } },
         { "sunkenGladesRunning", new List<string>
             {
                 "water",
                 "soundSpots",
                 "art/backgroundNear/textures",
-                "art/foregroundClose/textures"
+                "art/foregroundClose/textures",
             } },
         { "moonGrottoDoubleJumpIntroductionArt", new List<string>
             {
                 "uberWater",
                 "soundSpots",
                 "art/center/textures",
-                "art/center/effects"
+                "art/center/effects",
             } },
         { "moonGrottoDoubleJump", new List<string>
             {
@@ -890,14 +931,14 @@ public class RandomizerEnhancedMode
                 "art/backgroundNear/mushrooms",
                 "art/backgroundNear/fog",
                 "art/center/mushrooms",
-                "art/foregroundClose/mushrooms"
+                "art/foregroundClose/mushrooms",
             } },
         { "moonGrottoLaserPuzzleB", new List<string>
             {
                 "water",
                 "waterfall",
                 "soundSpots",
-                "earlyZParent"
+                "earlyZParent",
             } },
         { "moonGrottoBackgroundScene", new List<string>
             {
@@ -906,20 +947,20 @@ public class RandomizerEnhancedMode
                 "soundSpots",
                 "earlyZParent",
                 "art/backgroundMid/waterfall",
-                "art/waterfall"
+                "art/waterfall",
             } },
         { "moonGrottoLaserPuzzle", new List<string>
             {
                 "soundSpots",
                 "art/backgroundMid/textures",
                 "particles/particleRainSplash",
-                "particles/particleWaterDrops"
+                "particles/particleWaterDrops",
             } },
         { "moonGrottoAdvancedDoubleJump", new List<string>
             {
                 "soundSpots",
                 "particles/particleRainSplash",
-                "particles/particleWaterDrops"
+                "particles/particleWaterDrops",
             } },
         { "moonGrottoGumosHideoutB", new List<string>
             {
@@ -927,14 +968,14 @@ public class RandomizerEnhancedMode
                 "soundSpots",
                 "art/backgroundNear/waterfall",
                 "particles/particleRainSplash",
-                "particles/particleWaterDrops"
+                "particles/particleWaterDrops",
             } },
         { "moonGrottoRopeBridge", new List<string>
             {
                 "particles/particleWaterDrops",
                 "water",
                 "art/backgroundMid/waterfall",
-                "art/foregroundClose/effects"
+                "art/foregroundClose/effects",
             } },
         { "moonGrottoMovingPlatformVertical", new List<string>
             {
@@ -943,7 +984,7 @@ public class RandomizerEnhancedMode
                 "particles/particleWaterDrops",
                 "art/backgroundMid/textures",
                 "art/backgroundMid/waterfall",
-                "art/backgroundNear/textures"
+                "art/backgroundNear/textures",
             } },
         { "moonGrottoShortcutA", new List<string>
             {
@@ -951,15 +992,16 @@ public class RandomizerEnhancedMode
             } },
         { "moonGrottoStomperIntroduction", new List<string>
             {
-                "water",
+                "art/center/effects",
                 "particles/particleRainSplash",
                 "particles/particleWaterDrops",
-                "soundSpots"
+                "soundSpots",
+                "water",
             } },
         { "moonGrottoSecretAreaA", new List<string>
             {
                 "art/center/masks",
-                "water"
+                "water",
             } },
         { "moonGrottoBasin", new List<string>
             {
@@ -967,12 +1009,12 @@ public class RandomizerEnhancedMode
                 "art/backgroundNear/mushrooms/moonGrottoWaterMushroomsA",
                 "art/waterfall",
                 "particles/particleRainSplash",
-                "water"
+                "water",
             } },
         { "westGladesOverworldForestA", new List<string>
             {
                 "waterGroupA",
-                "art/center/lights"
+                "art/center/lights",
             } },
         { "westGladesWaterStomp", new List<string>
             {
@@ -980,7 +1022,7 @@ public class RandomizerEnhancedMode
                 "soundSpots",
                 "particles/bubbles",
                 "art/backgroundNear/clouds",
-                "art/center/clouds"
+                "art/center/clouds",
             } },
         { "westGladesBashCave", new List<string>
             {
@@ -988,14 +1030,14 @@ public class RandomizerEnhancedMode
                 "art/backgroundMid/fog",
                 "art/center/fog",
                 "water",
-                "soundSpots"
+                "soundSpots",
             } },
         { "forlornRuinsKuroHideStreamlined", new List<string>
             {
                 "water",
                 "earlyZParent/earyZMesh0",
                 "soundSpots",
-                "art/backgroundMid/props/forlornRuinsIceBridgeA"
+                "art/backgroundMid/props/forlornRuinsIceBridgeA",
             } },
         { "upperGladesSpiderIntroduction", new List<string>
             {
@@ -1005,15 +1047,19 @@ public class RandomizerEnhancedMode
                 "art/backgroundMid/fog",
                 "art/backgroundMid/waterplants",
                 "art/backgroundNear/fog",
-                "art/backgroundNear/waterplants"
+                "art/backgroundNear/waterplants",
             } },
         { "upperGladesSpiderCavernPuzzle", new List<string>
             {
-                "soundSpots"
+                "soundSpots",
             } },
-        {"upperGladesHollowTreeBackground", new List<string>
+        { "upperGladesHollowTreeSplitA", new List<string>
             {
-                "uberWater"
+                "waterZone",
+            } },
+        { "upperGladesHollowTreeBackground", new List<string>
+            {
+                "uberWater",
             } },
         { "southMangroveFallsGrenadeEscalationB", new List<string>
             {
@@ -1023,11 +1069,11 @@ public class RandomizerEnhancedMode
                 "art/center/lights",
                 "art/foregroundClose/textures",
                 "art/foregroundFar/textures",
-                "water"
+                "water",
             } },
         { "southMangroveFallsBackgroundB", new List<string>
             {
-                "water"
+                "water",
             } },
         { "southMangroveFallsGrenadeEscalationBR", new List<string>
             {
@@ -1035,7 +1081,7 @@ public class RandomizerEnhancedMode
                 "art/foregroundClose/effects",
                 "art/foregroundClose/textures",
                 "art/foregroundFar/effects",
-                "water"
+                "water",
             } },
         { "catAndMouseMid", new List<string>
             {
@@ -1046,7 +1092,7 @@ public class RandomizerEnhancedMode
                 "art/backgroundNear/masks",
                 "art/backgroundNear/waterplants",
                 "art/center/masks",
-                "earlyZParent"
+                "earlyZParent",
             } }
     };
 }
