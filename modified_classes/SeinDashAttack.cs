@@ -208,29 +208,29 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		this.m_stopAnimation = false;
 		if (!this.m_chargeDashAtTarget && RandomizerBonus.EnhancedDash)
 		{
+			this.m_enhancedDashDirection = this.m_faceLeft ? Vector3.left : Vector3.right;
+
 			if (Core.Input.Axis.magnitude > 0f)
 			{
-				this.m_enhancedDashDirection = Core.Input.Axis.normalized;
-
-				if (this.m_sein.IsOnGround)
+				if (!this.m_sein.IsOnGround)
 				{
-					float dot = Vector3.Dot(this.m_enhancedDashDirection, Vector3.left);
-					if (dot >= 0.94f)
+					this.m_enhancedDashDirection = Core.Input.Axis.normalized;
+				}
+				else if (Core.Input.Axis.y > 0f)
+				{
+					float dot = Vector3.Dot(Core.Input.Axis, Vector3.left);
+					if (dot < 0.94f && dot > -0.94f)
 					{
-						this.m_enhancedDashDirection = Vector3.left;
-					}
-					else if (dot <= -0.94f)
-					{
-						this.m_enhancedDashDirection = Vector3.right;
+						this.m_enhancedDashDirection = Core.Input.Axis.normalized;
 					}
 				}
 			}
-			else
-			{
-				this.m_enhancedDashDirection = this.m_faceLeft ? Vector3.left : Vector3.right;
-			}
 
-			this.SpriteRotation = Mathf.Atan2(this.m_enhancedDashDirection.y, this.m_enhancedDashDirection.x) * 57.29578f - (float)((!this.m_faceLeft) ? 0 : 180);
+			this.SpriteRotation = Mathf.Atan2(this.m_enhancedDashDirection.y, this.m_enhancedDashDirection.x) * 57.29578f;
+			if (this.m_faceLeft)
+			{
+				this.SpriteRotation = Mathf.Repeat(this.SpriteRotation, 360f) - 180f;
+			}
 		}
 		if (dashSound)
 		{
@@ -362,7 +362,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 
 	public bool CanPerformNormalDash()
 	{
-		return	((this.HasAirDashSkill() || this.m_sein.IsOnGround || (RandomizerBonus.GravitySuit() &&  Characters.Sein.Abilities.Swimming.IsSwimming)) && !this.AgainstWall() && this.DashHasCooledDown && !this.m_hasDashed);
+		return	((this.HasAirDashSkill() || this.m_sein.IsOnGround || (RandomizerBonus.GravitySuit() && Characters.Sein.Abilities.Swimming.IsSwimming)) && !this.AgainstWall() && this.DashHasCooledDown && !this.m_hasDashed);
 	}
 
 	private bool DashHasCooledDown
@@ -461,7 +461,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		UI.Cameras.Current.ChaseTarget.CameraSpeedMultiplier.x = Mathf.Clamp01(this.m_stateCurrentTime / this.DashTime);
 		float velocity = this.DashSpeedOverTime.Evaluate(this.m_stateCurrentTime);
 		velocity *= 1.0f + .2f*RandomizerBonus.Velocity();
-		if ((RandomizerBonus.GravitySuit() && Characters.Sein.Abilities.Swimming.IsSwimming))
+		if (RandomizerBonus.GravitySuit() && Characters.Sein.Abilities.Swimming.IsSwimming)
 		{
 			Vector2 newSpeed = new Vector2(velocity, 0f);
 			platformMovement.LocalSpeed = newSpeed.Rotate(this.m_sein.Abilities.Swimming.SwimAngle);
@@ -473,6 +473,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		else
 		{
 			platformMovement.LocalSpeedX = (float)((!this.m_faceLeft) ? 1 : -1) * velocity;
+			platformMovement.LocalSpeedY = -this.DashDownwardSpeed;
 		}
 		this.m_sein.FaceLeft = this.m_faceLeft;
 		if (this.AgainstWall())
@@ -489,6 +490,13 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 			if (Core.Input.Horizontal < 0f && !this.m_faceLeft)
 			{
 				this.StopDashing();
+			}
+
+			if (!this.m_isOnGround && RandomizerBonus.EnhancedDash)
+			{
+				this.m_isOnGround = true;
+				this.m_enhancedDashDirection = this.m_faceLeft ? Vector3.left : Vector3.right;
+				this.SpriteRotation = this.m_sein.PlatformBehaviour.PlatformMovement.GroundAngle;
 			}
 		}
 		if (this.m_stateCurrentTime > this.DashTime)
@@ -549,6 +557,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		else
 		{
 			platformMovement.LocalSpeedX = (float)((!this.m_faceLeft) ? 1 : -1) * velocity;
+			platformMovement.LocalSpeedY = -this.DashDownwardSpeed;
 		}
 		if (this.m_hasHitAttackable)
 		{
@@ -569,6 +578,13 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 			if (Core.Input.Horizontal < 0f && !this.m_faceLeft)
 			{
 				this.StopDashing();
+			}
+
+			if (!this.m_isOnGround && RandomizerBonus.EnhancedDash)
+			{
+				this.m_isOnGround = true;
+				this.m_enhancedDashDirection = this.m_faceLeft ? Vector3.left : Vector3.right;
+				this.SpriteRotation = this.m_sein.PlatformBehaviour.PlatformMovement.GroundAngle;
 			}
 		}
 		if (this.m_stateCurrentTime > this.ChargeDashTime)
