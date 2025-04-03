@@ -39,6 +39,7 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 		this.Gravity = this.m_originalGravity;
 		this.Direction = Vector3.left;
 		this.Speed = 0f;
+		this.m_collider.enabled = this.m_colliderEnabledAtStart;
 		this.m_explode = false;
 		this.m_explodeLater = false;
 		this.m_lastLoop = null;
@@ -70,6 +71,7 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 		this.Direction = Vector3.left;
 		this.Speed = 0f;
 		this.m_collider = base.GetComponent<Collider>();
+		this.m_colliderEnabledAtStart = this.m_collider.enabled;
 		this.Rigidbody = base.GetComponent<Rigidbody>();
 		DamageDealer component = base.GetComponent<DamageDealer>();
 		if (component)
@@ -415,6 +417,8 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 	protected Rigidbody Rigidbody;
 
 	private Collider m_collider;
+
+	private bool m_colliderEnabledAtStart;
 
 	[SerializeField]
 	[HideInInspector]

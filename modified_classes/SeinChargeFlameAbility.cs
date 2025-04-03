@@ -206,6 +206,7 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 			this.ReleaseChargeBurst();
 			return;
 		}
+
 		if (Core.Input.SoulFlame.OnPressed)
 		{
 			Core.Input.SoulFlame.Used = true;
@@ -213,6 +214,15 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 			{
 				this.CurrentChargingSound().StopAndFadeOut(0.5f);
 			}
+
+			foreach (var item in this.m_capturedProjectiles)
+			{
+				if (!InstantiateUtility.IsDestroyed(item.Key as Component))
+				{
+					(item.Key as Component).GetComponent<Collider>().enabled = true;
+				}
+			}
+
 			this.Logic.ChangeState(this.State.Start);
 			this.RestoreEnergy();
 			UI.SeinUI.ShakeEnergyOrbBar();
@@ -224,16 +234,35 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 			for (int i = 0; i < Targets.Attackables.Count; i++)
 			{
 				IAttackable attackable = Targets.Attackables[i];
-				if (!InstantiateUtility.IsDestroyed(attackable as Component) && !this.m_capturedProjectiles.ContainsKey(attackable) && attackable.CanBeChargeFlamed() && attackable is Projectile)
+				if (InstantiateUtility.IsDestroyed(attackable as Component))
+				{
+					continue;
+				}
+
+				if (attackable.CanBeChargeFlamed() && attackable is Projectile)
 				{
 					Vector3 distance = attackable.Position - Characters.Ori.transform.position;
 					if (distance.magnitude <= this.m_captureRadius)
 					{
-						CapturedProjectile capturedProjectile = new CapturedProjectile();
+						SeinChargeFlameAbility.CapturedProjectile capturedProjectile = null;
+
+						if (!this.m_capturedProjectiles.ContainsKey(attackable))
+						{
+							capturedProjectile = new SeinChargeFlameAbility.CapturedProjectile();
+							this.m_capturedProjectiles[attackable] = capturedProjectile;
+						}
+						else
+						{
+							capturedProjectile = this.m_capturedProjectiles[attackable];
+							if (!capturedProjectile.IsDestroyed)
+							{
+								continue;
+							}
+						}
+
 						capturedProjectile.Direction = distance.normalized;
 						capturedProjectile.CapturedVelocity = (attackable as Projectile).Speed;
-						this.m_capturedProjectiles[attackable] = capturedProjectile;
-
+						capturedProjectile.IsDestroyed = false;
 						(attackable as Component).GetComponent<Collider>().enabled = false;
 					}
 				}
@@ -243,6 +272,7 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 			{
 				if (InstantiateUtility.IsDestroyed(item.Key as Component))
 				{
+					item.Value.IsDestroyed = true;
 					continue;
 				}
 
@@ -396,5 +426,7 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 		public Vector3 Direction;
 
 		public float CapturedVelocity;
+
+		public bool IsDestroyed;
 	}
 }
