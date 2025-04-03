@@ -473,7 +473,6 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		else
 		{
 			platformMovement.LocalSpeedX = (float)((!this.m_faceLeft) ? 1 : -1) * velocity;
-			platformMovement.LocalSpeedY = -this.DashDownwardSpeed;
 		}
 		this.m_sein.FaceLeft = this.m_faceLeft;
 		if (this.AgainstWall())
@@ -557,7 +556,6 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		else
 		{
 			platformMovement.LocalSpeedX = (float)((!this.m_faceLeft) ? 1 : -1) * velocity;
-			platformMovement.LocalSpeedY = -this.DashDownwardSpeed;
 		}
 		if (this.m_hasHitAttackable)
 		{
