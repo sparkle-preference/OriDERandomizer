@@ -113,7 +113,7 @@ public class SeinChargeJump : CharacterState, ISeinReceiver
 					{
 						Damage damage = new Damage((float)this.Damage, this.PlatformMovement.WorldSpeed.normalized * 3f, this.Sein.Position, DamageType.Stomp, base.gameObject);
 						damage.DealToComponents(((Component)attackable).gameObject);
-						if (this.ExplosionEffect)
+						if (this.ExplosionEffect && attackable is EntityTargetting)
 						{
 							InstantiateUtility.Instantiate(this.ExplosionEffect, Vector3.Lerp(base.transform.position, attackable.Position, 0.5f), Quaternion.identity);
 						}
