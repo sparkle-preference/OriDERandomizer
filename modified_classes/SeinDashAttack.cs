@@ -218,7 +218,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 				}
 				else if (Core.Input.Axis.y > 0f)
 				{
-					float dot = Vector3.Dot(Core.Input.Axis, Vector3.left);
+					float dot = Vector3.Dot(Core.Input.Axis.normalized, Vector3.left);
 					if (dot < 0.94f && dot > -0.94f)
 					{
 						this.m_enhancedDashDirection = Core.Input.Axis.normalized;
