@@ -196,6 +196,10 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver
 		{
 			this.UpdateDashingRotation();
 		}
+		else if (this.Sein.Controller.IsStomping)
+		{
+			this.UpdateStompingRotation();
+		}
 		else if (this.Sein.Controller.IsSwimming && this.Sein.Abilities.Swimming.IsUnderwater && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsStomping)
 		{
 			this.UpdateUnderwaterRotation();
@@ -218,6 +222,12 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver
 		{
 			this.CenterAngle = this.Sein.Abilities.Dash.SpriteRotation;
 		}
+	}
+
+	public void UpdateStompingRotation()
+	{
+		this.FeetAngle = (this.HeadAngle = (this.CenterAngle = 0f));
+		this.CenterAngle = this.Sein.Abilities.Stomp.SpriteRotation;
 	}
 
 	public void UpdateRotation()

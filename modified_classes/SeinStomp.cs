@@ -145,7 +145,7 @@ public class SeinStomp : CharacterState, ISeinReceiver
 
 	public void OnCollisionOther(Vector3 normal, Collider collider)
 	{
-		if (this.Logic.CurrentState != this.State.StompDown || !RandomizerBonus.EnhancedStomp())
+		if (this.Logic.CurrentState != this.State.StompDown || !RandomizerBonus.EnhancedStomp)
 		{
 			return;
 		}
@@ -302,6 +302,7 @@ public class SeinStomp : CharacterState, ISeinReceiver
 
 	public void OnEnterInactive()
 	{
+		this.SpriteRotation = 0f;
 	}
 
 	public void UpdateStompIdleState()
@@ -348,20 +349,22 @@ public class SeinStomp : CharacterState, ISeinReceiver
 			return;
 		}
 
-		bool inputProvided = RandomizerBonus.EnhancedStomp() ? Core.Input.Axis != Vector2.zero : Core.Input.Stomp.Pressed;
+		bool inputProvided = RandomizerBonus.EnhancedStomp ? Core.Input.Axis != Vector2.zero : Core.Input.Stomp.Pressed;
 		if (this.Logic.CurrentStateTime > this.StompDownDuration && !inputProvided)
 		{
 			this.EndStomp();
 			return;
 		}
 
-		if (RandomizerBonus.EnhancedStomp())
+		if (RandomizerBonus.EnhancedStomp && Core.Input.Axis != Vector2.zero)
 		{
 			this.m_stompDirection = (Core.Input.Axis.normalized + this.PlatformMovement.LocalSpeed.normalized).normalized;
+			this.SpriteRotation = Mathf.Atan2(this.m_stompDirection.y, this.m_stompDirection.x) * 57.29578f + 90f;
 		}
 		else
 		{
 			this.m_stompDirection = Vector2.down;
+			this.SpriteRotation = 0f;
 		}
 
 		float targetVelocity = this.StompSpeed + this.StompSpeed * 0.2f * RandomizerBonus.Velocity();
@@ -487,6 +490,8 @@ public class SeinStomp : CharacterState, ISeinReceiver
 	public List<IAttackable> m_stompBlastAttackables = new List<IAttackable>();
 
 	private Vector2 m_stompDirection;
+
+	public float SpriteRotation;
 
 	public class States
 	{
