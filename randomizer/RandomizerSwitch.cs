@@ -277,7 +277,7 @@ public static class RandomizerSwitch
                     EventPickup((int)action.Value);
                     break;
                 case "RB":
-                    RandomizerBonus.UpgradeID((int)action.Value);
+                    RandomizerBonus.UpgradeID((int)action.Value, coords);
                     break;
                 case "TP":
                     TeleportPickup((string)action.Value);

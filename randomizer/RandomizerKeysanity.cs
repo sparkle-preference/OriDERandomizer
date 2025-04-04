@@ -9,6 +9,7 @@ public class RandomizerKeysanity {
 
     public bool IsActive;
     private Dictionary<MoonGuid, int> doorKeyMap;
+    private Dictionary<int, MoonGuid> reverseDoorKeyMap;
     private Dictionary<int, List<RandomizerKeysanityHintInfo>> keyClueMap;
     private Dictionary<int, string> hintMap;
     private RandomizerInventory inventory;
@@ -29,6 +30,8 @@ public class RandomizerKeysanity {
             { new MoonGuid(-1909990366, 1163800373, 1858164881, 1500718794), 311 },
         };
 
+        reverseDoorKeyMap = doorKeyMap.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
+
         hintMap = new Dictionary<int, string>() {
             { 300, "Glades Pool"},
             { 301, "Lower Spirit Caverns"},
@@ -36,7 +39,7 @@ public class RandomizerKeysanity {
             { 303, "Swamp"},
             { 304, "Upper Spirit Caverns"},
             { 305, "Lower Ginso"},
-            { 306, "Upper Ginso"},            
+            { 306, "Upper Ginso"},
             { 307, "Misty"},
             { 308, "Forlorn"},
             { 309, "Lower Sorrow"},
@@ -85,6 +88,8 @@ public class RandomizerKeysanity {
 
     private bool GetDoorHint(MoonGuid guid) => 1 == (1 & (inventory.GetRandomizerItem(312) >> RandomizerLocationManager.KeystoneDoors[guid].Index));
 
+    private bool GetDoorHint(int id) => GetDoorHint(reverseDoorKeyMap[id]);
+
     private void SetDoorHint(MoonGuid guid) =>  inventory.SetRandomizerItem(312, inventory.GetRandomizerItem(312) | (1 << RandomizerLocationManager.KeystoneDoors[guid].Index));
 
     public string MapHintForDoor(MoonGuid guid) {
@@ -112,24 +117,35 @@ public class RandomizerKeysanity {
         Characters.Sein.Inventory.Keystones = 0;
     }
 
-    private string hintsForDoor(int id) => String.Join(", ", keyClueMap[id].Where(rkhi => !Randomizer.HaveCoord(rkhi.Coords)).Select(rkhi => rkhi.Area).ToArray());
+    // Me when I'm using LINQ responsibly (<- me when I lie)
+    private string hintsForDoor(int id, int skipCoords = -1) => String.Join(", ", keyClueMap[id] 
+        .Where(rkhi => !(rkhi.Coords == skipCoords || Randomizer.HaveCoord(rkhi.Coords))) // only look at hints we still need
+        .GroupBy(rkhi => rkhi.Area)                                                       // group them by their areas
+        .OrderBy(grp=>$"{4-grp.Count()}{grp.Key}")                                        // sort by count and then area alphabetically
+        .Select(grp => grp.Count() == 1 ? grp.Key : $"{grp.Key} x{grp.Count()}")          // format for display (with x[NUM] for multiples)
+        .ToArray());  // ^^^ me when I at least comment and format my LINQ bullshit reasonably?
+
 
     private int countForDoor(int id) => id < 304 ? 2 : 4;
 
     private string GetProgress(int id, bool printKeystone) {
         if (hintMap.TryGetValue(id, out var baseHint)) {
             var canOpen = (inventory.GetRandomizerItem(id) - countForDoor(id)) == 0;
+            var hint = $"{baseHint}{(printKeystone ? " Keystone " : " ")}({inventory.GetRandomizerItem(id)}/{countForDoor(id)})";
             if (canOpen) {
-                return $"${baseHint}{(printKeystone ? " Keystone " : " ")}({inventory.GetRandomizerItem(id)}/{countForDoor(id)})$";
+                return $"${hint}$";
             }
-
-            return $"{baseHint}{(printKeystone ? " Keystone " : " ")}({inventory.GetRandomizerItem(id)}/{countForDoor(id)})";
+            return hint;
         }
         return string.Empty;
     }
 
-    public void ShowPickupHint(int id) {
-        RandomizerSwitch.PickupMessage($"{GetProgress(id, true)}");
+    public void ShowPickupHint(int id, int foundAt) {
+        var progress = GetProgress(id, true);
+        if(progress.Length > 0 && GetDoorHint(id))
+            progress +=  $"\n(Remaining: {hintsForDoor(id, foundAt)})";
+
+        RandomizerSwitch.PickupMessage(progress);
     }
 
     public void ShowKeyProgress() {

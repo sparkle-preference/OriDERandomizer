@@ -6,7 +6,10 @@ using UnityEngine;
 
 public static class RandomizerBonus
 {
-    public static void UpgradeID(int ID)
+    // this instead of a default argument bc dnspy hates us and there is no light nor love
+    public static void UpgradeID(int ID) => UpgradeID(ID, -1);
+
+    public static void UpgradeID(int ID, int coords)
     {
         bool flag = ID < 0;
         if (flag)
@@ -25,7 +28,7 @@ public static class RandomizerBonus
                 Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
             else
                 Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-            Randomizer.Keysanity.ShowPickupHint(ID);
+            Randomizer.Keysanity.ShowPickupHint(ID, coords);
             return;
         }
 
