@@ -51,6 +51,9 @@
 86 - Last Soul Link x position
 86 - Last Soul Link y position
 
+
+--- bonus skills
+
 101 - Polarity Shift
 102 - Gravity Swap
 103 - Extreme Speed
@@ -65,6 +68,11 @@
 112 - Warp to Credits
 113 - Toggle Bash/Stomp Damage
 115 - Toggle Enhanced Effects
+
+--- if ID is less than 130, sync will consider it a bonus skill. 
+--- IF IT'S ACTUALLY A BONUS SKILL, THINGS WILL BE BAD.
+--- DO NOT USE IDS WITHIN 100-130 FOR NONBONUS SKILLS
+
 
 200 - Quick Flame
 201 - Spark Flame

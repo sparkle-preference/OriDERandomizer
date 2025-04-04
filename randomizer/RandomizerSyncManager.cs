@@ -185,21 +185,21 @@ public static class RandomizerSyncManager
 						}
 						int id = int.Parse(splitpair[0]);
 						int cnt = int.Parse(splitpair[1]);
-						if(id >= 100) {
-							if(id >= 900) {
-								if(id < 910) {
-									int tree = id-899;
-									string treeName =  RandomizerTrackedDataManager.Trees[tree];
-									if(RandomizerTrackedDataManager.SetTree(tree))
-										Randomizer.showHint(treeName +  " tree (activated by teammate)");
-								} else if(id < 922) {
-									string relicZone = RandomizerTrackedDataManager.Zones[id-911];
-									if(RandomizerTrackedDataManager.SetRelic(relicZone))
-										Randomizer.showHint("#" + relicZone + " relic# (found by teammate)", 300);
-								}
-							} else if(!RandomizerBonusSkill.UnlockedBonusSkills.ContainsValue(id) && cnt > 0) {
-								RandomizerBonus.UpgradeID(id);
-							}
+						// 900-909: tree progress
+						if(id >= 900 && id < 910) {
+							int tree = id-899;
+							string treeName =  RandomizerTrackedDataManager.Trees[tree];
+							if(RandomizerTrackedDataManager.SetTree(tree))
+								Randomizer.showHint(treeName +  " tree (activated by teammate)");
+						// 911-921: relic progress
+						} else if(id >= 911 && id < 922) {
+							string relicZone = RandomizerTrackedDataManager.Zones[id-911];
+							if(RandomizerTrackedDataManager.SetRelic(relicZone))
+								Randomizer.showHint("#" + relicZone + " relic# (found by teammate)", 300);
+						// 100-129: bonus skills
+						} else if(id >= 100 && id < 130 && !RandomizerBonusSkill.UnlockedBonusSkills.ContainsValue(id) && cnt > 0) {
+							RandomizerBonus.UpgradeID(id);
+						// everything else!
 						} else if(RandomizerBonus.UpgradeCount(id) < cnt) {
 							RandomizerBonus.UpgradeID(id);
 							mustRefreshLogic = true;
@@ -334,7 +334,7 @@ public static class RandomizerSyncManager
 		try
 		{
 			if(TPIds.ContainsKey(identifier) && !isTeleporterActivated(identifier, false))
-				FoundPickup(TPIds[identifier], -1);
+				FoundPickup(TPIds[identifier], 1); // this used to be -1 but multiworlds need that
 		}
 		catch (Exception e)
 		{
