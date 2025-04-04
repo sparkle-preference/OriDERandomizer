@@ -99,7 +99,6 @@ public static class Randomizer
             Randomizer.IgnoreEnemyExp = false;
             Randomizer.RelicCountOverride = false;
             Randomizer.AllowOrbWarps = false;
-            Randomizer.RandomizedFirstEnergy = false;
             Randomizer.NightBerryWarpPosition = new Vector3(-910f, -300f);
             Randomizer.InLogicWarps = false;
             Randomizer.TeleportersLockedByClues = false;
@@ -1275,9 +1274,6 @@ public static class Randomizer
             else if (flag == "orbwarp")
                 Randomizer.AllowOrbWarps = true;
 
-            else if (flag == "randomizedfirstenergy")
-                Randomizer.RandomizedFirstEnergy = true;
-
             else if (flag == "inlogicwarps")
                 Randomizer.InLogicWarps = true;
 
@@ -1497,9 +1493,6 @@ public static class Randomizer
         TeleporterController.RemoveCustomTeleporters();
         int spawnHCs = 0;
         int spawnECs = 0;
-        // start everyone with 1 energy on all difficulties if "RandomizedFirstEnergy" flag set
-        if (Randomizer.RandomizedFirstEnergy)
-            spawnECs += 1;
 
         // relaxed difficulty players start with +1 health and +1 energy, plus the first ability in each tree
         if (DifficultyController.Instance.Difficulty == DifficultyMode.Easy)
@@ -1670,8 +1663,6 @@ public static class Randomizer
     public static float GrabForgivenessFrames;
 
     public static bool IsUsingRandomizerTeleportAnywhere;
-
-    public static bool RandomizedFirstEnergy;
 
     public static string SeedFilePath;
 
