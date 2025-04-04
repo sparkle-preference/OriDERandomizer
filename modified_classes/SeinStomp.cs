@@ -128,6 +128,11 @@ public class SeinStomp : CharacterState, ISeinReceiver
 	{
 		if (this.Logic.CurrentState == this.State.StompDown)
 		{
+			if (Vector3.Dot(this.StompDirection, normal) > -0.17365f)
+			{
+				return;
+			}
+
 			this.LandStomp();
 			if (!this.Sein.Controller.IsSwimming)
 			{
@@ -319,6 +324,14 @@ public class SeinStomp : CharacterState, ISeinReceiver
 		}
 		this.PlatformMovement.LocalSpeedX = 0f;
 		this.PlatformMovement.LocalSpeedY = 0f;
+		if (RandomizerBonus.EnhancedStomp && Core.Input.Axis != Vector2.zero)
+		{
+			this.m_stompDirection = Core.Input.Axis.normalized;
+		}
+		else
+		{
+			this.m_stompDirection = Vector2.down;
+		}
 	}
 
 	public void UpdateStompInactiveState()
