@@ -50,7 +50,7 @@ public class RandomizerBootstrap
 			RandomizerBootstrap.s_bootstrapPreEnabled[sceneRoot.name].Invoke(sceneRoot);
 		}
 
-		if (RandomizerEnhancedMode.TextBootstrapScenes.ContainsKey(sceneRoot.name) && Randomizer.EnhancedMode)
+		if (RandomizerEnhancedMode.TextBootstrapScenes.ContainsKey(sceneRoot.name) && (Randomizer.EnhancedMode || Randomizer.EnhancedSeinInSeed))
 		{
 			RandomizerEnhancedMode.TextBootstrapScenes[sceneRoot.name].Invoke(sceneRoot);
 		}

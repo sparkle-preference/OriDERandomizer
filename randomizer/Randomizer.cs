@@ -106,6 +106,7 @@ public static class Randomizer
             Randomizer.WarpLogicLocations = new Hashtable();
             Keysanity.Initialize();
             Randomizer.EnhancedMode = false;
+            Randomizer.EnhancedSeinInSeed = false;
 
             if (Randomizer.SeedFilePath == null)
             {
@@ -1293,6 +1294,9 @@ public static class Randomizer
 
             if (flag == "enhanced")
                 Randomizer.EnhancedMode = true;
+ 
+            if (flag == "seintalks")
+                Randomizer.EnhancedSeinInSeed = true;
         }
         return doBingo;
     }
@@ -1395,6 +1399,9 @@ public static class Randomizer
         if (Keysanity.IsActive && code == "RB") {
             Keysanity.AddClue(id_number, coords, area);
         }
+
+        if (code == "RB" && id_number == 410)
+            Randomizer.EnhancedSeinInSeed = true;
 
         if (code == "TW")
         {
@@ -1688,4 +1695,6 @@ public static class Randomizer
     private static System.Random unseededRandom;
 
     public static bool EnhancedMode;
+
+    public static bool EnhancedSeinInSeed;
 }
