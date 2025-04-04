@@ -1184,32 +1184,28 @@ public static class Randomizer
             if (flag == "ohko")
                 Randomizer.OHKO = true;
 
-            if (flag == "race") 
+            else if (flag == "race") 
                 SeedMeta = $"{String.Join(",", rawFlags.Select(f => f.ToLower().StartsWith("sync") ? "Sync" + cct(f.Skip(f.IndexOf('.') - 1)) : f).ToArray())}|{cct(seed.Skip(1).SkipWhile(c => Char.IsLower(c)))}"; // yeah that's right we're LINQ wizards baby anyways this is just a bit of censorship to make things a bit harder for people trying to cheat
 
-            if (flag.StartsWith("worldtour"))
-            {
+            else if (flag.StartsWith("worldtour")) {
                 Randomizer.WorldTour = true;
                 if(flag.Contains("=")) {
                     Randomizer.RelicCountOverride = true;
                     Randomizer.RelicCount = int.Parse(flag.Substring(10));
                 }
             }
-            if (flag.StartsWith("sync"))
-            {
+            else if (flag.StartsWith("sync")) {
                 Randomizer.Sync = true;
                 Randomizer.SyncId = flag.Substring(4);
                 RandomizerSyncManager.Initialize();
             }
-            if (flag.StartsWith("frags/"))
-            {
+            else if (flag.StartsWith("frags/")) {
                 Randomizer.fragsEnabled = true;
                 string[] fragParams = flag.Split(new char[]{'/'});
                 Randomizer.maxFrags =  int.Parse(fragParams[2]);
                 Randomizer.fragKeyFinish = int.Parse(fragParams[1]);
             }
-            if (flag.StartsWith("mode="))
-            {
+            else if (flag.StartsWith("mode=")) {
                 string modeStr = flag.Substring(5).ToLower();
                 int syncMode;
                 if (modeStr == "shared")
@@ -1221,78 +1217,77 @@ public static class Randomizer
                     syncMode = int.Parse(modeStr);
                 }
                 Randomizer.SyncMode = syncMode;
+
             }
-            if(flag == "bingo")
+            else if(flag == "bingo")
                 doBingo = true;
 
-            if (flag == "noextraexp")
+            else if (flag == "noextraexp")
                 Randomizer.IgnoreEnemyExp = true;
 
-            if (flag == "0xp") {
+            else if (flag == "0xp") {
                 Randomizer.IgnoreEnemyExp = true;
                 Randomizer.ZeroXP = true;                
             }
-
-            if (flag == "nobonus")
+            else if (flag == "nobonus")
                 Randomizer.BonusActive = false;
 
-            if (flag == "nonprogressivemapstones")
+            else if (flag == "nonprogressivemapstones")
                 Randomizer.ProgressiveMapStones = false;
 
-            if (flag == "forcetrees")
+            else if (flag == "forcetrees")
                 Randomizer.ForceTrees = true;
 
-            if (flag == "forcemaps")
+            else if (flag == "forcemaps")
                 Randomizer.ForceMaps = true;
 
-            if (flag == "clues")
+            else if (flag == "clues")
                 Randomizer.CluesMode = true;
 
-            if (flag == "shards")
+            else if (flag == "shards")
                 Randomizer.Shards = true;
 
-            if (flag == "entrance")
+            else if (flag == "entrance")
                 Randomizer.Entrance = true;
 
-            if (flag == "closeddungeons")
+            else if (flag == "closeddungeons")
                 Randomizer.OpenMode = false;
 
-            if (flag == "openworld")
+            else if (flag == "openworld")
                 Randomizer.OpenWorld = true;
 
-            if (flag.StartsWith("hotcold="))
-            {
+            else if (flag.StartsWith("hotcold=")) {
                 Randomizer.HotCold = true;
                 Randomizer.HotColdTypes = new HashSet<string>(rawFlag.Substring(8).Split(new char[]{'+'}).ToList<string>());
             }
-            if (flag.StartsWith("sense="))
+            else if (flag.StartsWith("sense="))
                 Randomizer.HotColdTypes = new HashSet<string>(rawFlag.Substring(6).Split(new char[]{'+'}).ToList<string>());
 
-            if (flag == "noaltr")
+            else if (flag == "noaltr")
                 Randomizer.AltRDisabled = true;
 
-            if (flag == "stomptriggers")
+            else if (flag == "stomptriggers")
                 Randomizer.StompTriggers = true;
 
-            if (flag == "goalmodefinish")
+            else if (flag == "goalmodefinish")
                 Randomizer.GoalModeFinish = true;
 
-            if (flag == "orbwarp")
+            else if (flag == "orbwarp")
                 Randomizer.AllowOrbWarps = true;
 
-            if (flag == "randomizedfirstenergy")
+            else if (flag == "randomizedfirstenergy")
                 Randomizer.RandomizedFirstEnergy = true;
 
-            if (flag == "inlogicwarps")
+            else if (flag == "inlogicwarps")
                 Randomizer.InLogicWarps = true;
 
-            if (flag == "cluelockedtps")
+            else if (flag == "cluelockedtps")
                 Randomizer.TeleportersLockedByClues = true;
             
-            if (flag == "keysanity")
+            else if (flag == "keysanity")
                 Keysanity.IsActive = true;
 
-            if (flag == "enhanced")
+            else if (flag == "enhanced")
                 Randomizer.EnhancedMode = true;
  
             if (flag == "seintalks")
