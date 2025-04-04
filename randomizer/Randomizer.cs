@@ -173,7 +173,6 @@ public static class Randomizer
         Game.Events.Scheduler.OnGameSerializeLoad.Add(new Action(Randomizer.OnGameSerializeLoad));
 
         RandomizerSettings.ParseSettings();
-        RandomizerExpNames.ParseExpNames();
         RandomizerLocationManager.Initialize();
         RandomizerUI.Initialize();
         RandomizerBootstrap.Initialize();

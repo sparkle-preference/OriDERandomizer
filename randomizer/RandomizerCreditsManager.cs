@@ -27,14 +27,14 @@ Melody
 
 Community Contributions by:
 GreeZ  Hydra  Jitaenow  LusTher  AsmPrgmC3 
-Kiara_TV  Skulblaka  Terra  2Kil jmal116", 16));
+Kiara_TV  Skulblaka  Terra  2Kil", 16));
 		Credits.Add(new KeyValuePair<string, int>(
 @"ANCHORTOPPARAMS_20_12_2_Additional community contributions by:
 Athos213    AvengedRuler    Cereberon    Cleanfel
 CovertMuffin   Grimelios   iRobin   JHobz   Roryrai
 Jitaenow    Nari    madinsane    Mattermonkey
 RainbowPoogle   UncleRonny   Wingheart   spinesheath
-SeaAverage   DireKrow   Eph   xaviershay", 16));
+SeaAverage   DireKrow   Eph   xaviershay   jmal116", 16));
 
 		Credits.Add(new KeyValuePair<string, int>(
 @"ANCHORTOPPARAMS_20_10_2_Ori DE Randomizer inspired by:

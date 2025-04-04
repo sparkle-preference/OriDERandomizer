@@ -11,7 +11,7 @@ public static class RandomizerExpNames {
 			"Exalted Orbs",  "Experience",  "Farthings",  "Fish",  "Fun",  "GP",  "Gallons",  "Geo",  "Gil",  "Glod",  "Gold",  "Hryvnia",  "Hugs",  "Kalganids",  "Leaves",  "Likes",
 			"Marbles",  "Minerals",  "Money",  "Munny",  "Nobles",  "Notes",  "Nuts",  "Nuyen",  "Ori Money",  "Pesos",  "Pieces of Eight",  "Points",  "Poké",  "Pons",  "Pounds Sterling", 
 			"Quatloos",  "Quills",  "Rings",  "Rubies",  "Runes",  "Rupees",  "Sapphires",  "Sheep",  "Shillings",  "Silver",  "Slivers",  "Socks",  "Solari",  "Souls",  "Sovereigns", 
-			"Spheres",  "Spirit Bucks",  "Spirit Light",  "Stamps",  "Stonks",  "Strawberries",  "Subs",  "Tickets",  "Tokens",  "Vespine Gas",  "Wheat",  "Widgets",  "Wood",  "XP",
+			"Spheres",  "Spirit Bucks",  "Spirit Light",  "Stamps",  "Stonks",  "Strawberries",  "Subs",  "Tickets",  "Tokens",  "Vespene Gas",  "Wheat",  "Widgets",  "Wood",  "XP",
 			"Yen",  "Zenny",  "Zloty"};
 
 	public static List<String> ExpNames;
@@ -24,7 +24,7 @@ public static class RandomizerExpNames {
 		try {
 			ExpNames = new List<string>(File.ReadAllLines(FileName));
 			if (ExpNames.Count == 0) {
-				ExpNames = new List<String> {""};
+				ExpNames = DefaultList;
 			}
 		}
 		catch (Exception e) {
