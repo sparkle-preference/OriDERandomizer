@@ -30,3 +30,5 @@ seed_gen/*.csv
 *.dll
 # ...don't ignore the important one, though
 !Assembly-Csharp.dll
+
+/.vscode/
