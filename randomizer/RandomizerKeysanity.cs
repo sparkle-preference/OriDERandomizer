@@ -142,7 +142,7 @@ public class RandomizerKeysanity {
 
     public void ShowPickupHint(int id, int foundAt) {
         var progress = GetProgress(id, true);
-        if(progress.Length > 0 && GetDoorHint(id))
+        if(progress.Length > 0 && progress[0] != '$' && GetDoorHint(id))
             progress +=  $"\n(Remaining: {hintsForDoor(id, foundAt)})";
 
         RandomizerSwitch.PickupMessage(progress);
