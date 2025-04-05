@@ -424,6 +424,7 @@ public static class RandomizerSyncManager
 		{"forlorn", new RandomizerAction("TP", "Forlorn")},
 		{"mountHoru", new RandomizerAction("TP", "Horu")},
 		{"mangroveFalls", new RandomizerAction("TP", "Blackroot")},
+		{"sunkenGlades", new RandomizerAction("TP", "Glades")},
 	};
 
 	public class Pickup
