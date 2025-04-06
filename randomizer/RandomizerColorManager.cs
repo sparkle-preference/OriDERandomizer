@@ -183,6 +183,7 @@ public static class RandomizerColorManager
 	public static void UpdateHotColdTarget()
 	{
 		float minimum = float.MaxValue;
+		HotColdTarget = new Vector3(5000f, 5000f);
 		foreach (RandomizerHotColdItem target in Randomizer.HotColdItems.Values)
 		{
 			if (Characters.Sein.Inventory.GetRandomizerItem(target.Id) == 0)
