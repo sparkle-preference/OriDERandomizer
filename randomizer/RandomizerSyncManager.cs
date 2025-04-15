@@ -197,8 +197,9 @@ public static class RandomizerSyncManager
 							if(RandomizerTrackedDataManager.SetRelic(relicZone))
 								Randomizer.showHint("#" + relicZone + " relic# (found by teammate)", 300);
 						// 100-129: bonus skills
-						} else if(id >= 100 && id < 130 && !RandomizerBonusSkill.UnlockedBonusSkills.ContainsValue(id) && cnt > 0) {
-							RandomizerBonus.UpgradeID(id);
+						} else if(id >= 100 && id < 130) {
+							if(cnt > 0 && RandomizerBonus.UpgradeCount(id) == 0)
+								RandomizerBonus.UpgradeID(id);
 						// everything else!
 						} else if(RandomizerBonus.UpgradeCount(id) < cnt) {
 							RandomizerBonus.UpgradeID(id);
