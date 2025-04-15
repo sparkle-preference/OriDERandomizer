@@ -614,6 +614,11 @@ public static class RandomizerBonus
 
     public static int UpgradeCount(int ID)
     {
+        if(ID >= 200 && ID <= 230) {
+            int abilityId = (ID - 200) % 30;
+            Ability ability = abilities[abilityId];
+            return ability.Has() ? 1 : 0;            
+        }
         if(ID == 17 || ID == 19 || ID == 21)
             return Math.Min(Characters.Sein.Inventory.GetRandomizerItem(ID), 3); 
         return Characters.Sein.Inventory.GetRandomizerItem(ID);
@@ -850,6 +855,7 @@ public static class RandomizerBonus
             RandomizerSwitch.PickupMessage("@" + this.name + " Lost!!@", 240);
             this.selector(Characters.Sein.PlayerAbilities).HasAbility = false;
         }
+        public bool Has() => Characters.Sein && this.selector(Characters.Sein.PlayerAbilities).HasAbility;
         private string name;
         private Func<PlayerAbilities, CharacterAbility> selector;
     }
