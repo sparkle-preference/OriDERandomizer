@@ -75,6 +75,16 @@ public class AreaMapUI : MonoBehaviour, ISuspendable
 			this.RandomizerTooltip.MessageProvider = null;
 			this.RandomizerTooltip.OverrideText = "Unknown";
 		}
+		if (this.KeysanityDoorTooltips.Count == 0) {
+			for(var i = 0; i < 12; i++) {
+				GameObject obj = UnityEngine.Object.Instantiate<GameObject>(this.transform.FindChild("legend/player").gameObject);
+				obj.transform.parent = this.transform.FindChild("legend");
+				var doorTTip = obj.GetComponent<MessageBox>();
+				doorTTip.MessageProvider = null;
+				doorTTip.OverrideText = "Unknown";
+				this.KeysanityDoorTooltips.Add(doorTTip);
+			}
+		}
 	}
 
 	public void OnDestroy()
@@ -211,6 +221,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable
 
 	public List<AreaMapCanvas> Canvases = new List<AreaMapCanvas>();
 
+
 	public GameObject PlayerPositionMarkerPrefab;
 
 	public GameObject SoulFlamePositionMarkerPrefab;
@@ -241,4 +252,8 @@ public class AreaMapUI : MonoBehaviour, ISuspendable
 
 	[NonSerialized]
 	public MessageBox RandomizerTooltip;
+
+	[NonSerialized]
+	public List<MessageBox> KeysanityDoorTooltips = new List<MessageBox>();
+
 }

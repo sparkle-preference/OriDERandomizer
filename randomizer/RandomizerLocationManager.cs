@@ -236,7 +236,7 @@ public class RandomizerLocationManager
         RandomizerLocationManager.UpdateReachable();
     }
 
-    public static bool IsDoorOpen(MoonGuid doorGuid) => 1 == 1 & Randomizer.Inventory.GetRandomizerItem(72) >> KeystoneDoors[doorGuid].Index;
+    public static bool IsDoorOpen(MoonGuid doorGuid) => 1 == (1 & Randomizer.Inventory.GetRandomizerItem(72) >> KeystoneDoors[doorGuid].Index);
 
     public static void UpdateReachable()
     {

@@ -289,10 +289,15 @@ public class AreaMapNavigation : MonoBehaviour
 
 	public void HandleRandomizerTooltip()
 	{
+		try {
 		Vector2 cursorPositionWorld = (Vector2)this.MapToWorldPosition(Core.Input.CursorPositionUI);
 		RuntimeWorldMapIcon candidate = null;
 		string candidateArea = null;
 		float candidateDistance = Mathf.Infinity;
+		var doorCount = 0;
+		float zoomScaleFactor = (float)Math.Pow((this.Zoom / 0.04f), .45f);                    // please don't ask me how i got these numbers
+		float offset = .45f * (float)Math.Pow(zoomScaleFactor, 1.5f);                          // it's kind of a dumb story
+		Vector3 textScale = new Vector3(0.3f * zoomScaleFactor, 0.3f * zoomScaleFactor, 0.3f); // but they work well i prommy
 
 		foreach (RuntimeGameWorldArea runtimeArea in GameWorld.Instance.RuntimeAreas)
 		{
@@ -300,6 +305,17 @@ public class AreaMapNavigation : MonoBehaviour
 			{
 				if (!runtimeIcon.IsVisible(this.m_areaMapUi) || runtimeIcon.Icon == WorldMapIconType.Invisible)
 				{
+					continue;
+				}
+				if(RandomizerSettings.Customization.AlwaysShowDoorHints.Value && RandomizerLocationManager.KeystoneDoorMapGuidToMoonGuid.ContainsKey(runtimeIcon.Guid)) {
+					string text = Randomizer.Keysanity.MapHintForDoor(RandomizerLocationManager.KeystoneDoorMapGuidToMoonGuid[runtimeIcon.Guid]).Replace("\n(Touch door to get hint!)", "");
+					Vector3 pos = this.WorldToMapPosition(runtimeIcon.Position);
+					pos.y -= (text.Contains("\n") ? offset : (offset * 0.6f)); // smaller offset for 1 liners
+					AreaMapUI.Instance.KeysanityDoorTooltips[doorCount].transform.localScale = textScale;
+					AreaMapUI.Instance.KeysanityDoorTooltips[doorCount].transform.position = pos;
+					AreaMapUI.Instance.KeysanityDoorTooltips[doorCount].OverrideText = text;
+					AreaMapUI.Instance.KeysanityDoorTooltips[doorCount].gameObject.SetActive(true);
+					doorCount++;
 					continue;
 				}
 
@@ -332,8 +348,9 @@ public class AreaMapNavigation : MonoBehaviour
 		}
 
 		Vector3 candidatePosition = this.WorldToMapPosition(candidate.Position);
-		candidatePosition.y -= 0.35f;
+		candidatePosition.y -= offset;
 		AreaMapUI.Instance.RandomizerTooltip.transform.position = candidatePosition;
+		AreaMapUI.Instance.RandomizerTooltip.transform.localScale = textScale;
 
 		if(RandomizerLocationManager.LocationsByWorldMapGuid.TryGetValue(candidate.Guid, out var pickupLocation)) {
 			AreaMapUI.Instance.RandomizerTooltip.OverrideText = pickupLocation.FriendlyName;
@@ -346,6 +363,10 @@ public class AreaMapNavigation : MonoBehaviour
 		}
 
 		AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(true);
+
+        } catch(Exception e) {
+            Randomizer.log("HandleRandomizerTooltip: " + e.Message);
+        }
 
 	}
 

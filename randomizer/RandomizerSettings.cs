@@ -11,6 +11,8 @@ public static class RandomizerSettings {
 		dirty = true;
 		WriteSettings();
 	}
+
+	public static string LastAddedSetting = "Always Show Keysanity Door Hints";
  
 	public static void ParseSettings() {
 		if (!File.Exists("RandomizerSettings.txt")) {
@@ -31,7 +33,7 @@ public static class RandomizerSettings {
 					line = line.Split(new string[]{"//"}, StringSplitOptions.None)[0].Trim();
 
 				if (!line.Contains(":"))
-					continue;				
+					continue;
 
 				string[] parts = line.Split(new char[]{':'}, 2);
 				string setting = parts[0].Trim();
@@ -59,6 +61,9 @@ public static class RandomizerSettings {
 			foreach (string missing in unseenSettings) {
 				All[missing].Reset();
 				writeList.Add(missing);
+				if(missing == LastAddedSetting) {
+					dirty = true;
+				}
 			}
 
 			if (writeList.Count > 0 && !dirty) {
@@ -117,7 +122,6 @@ public static class RandomizerSettings {
 			writer.WriteLine("");
 			writer.WriteLine("// If you have any questions, please ask for help in the discord (orirando.com/discord, #bf-randomizer)");
 			writer.WriteLine("");
-			writer.WriteLine("");
 			foreach (var setting in All) {
 				if (setting.Value.Hidden && !Dev.Value && setting.Value.IsDefault())
 					continue;
@@ -172,6 +176,7 @@ public static class RandomizerSettings {
 		Customization.DefaultMapFilter = new EnumSetting<MapFilterMode>("Default Map Filter", MapFilterMode.InLogic, "InLogic (default): Select the In Logic map filter when first opening the map.\nUncollected: Select the Uncollected map filter when first opening the map.", false);
 		Customization.HintLevel = new EnumSetting<HintLevels>("Hints", HintLevels.NewPlayer, "NewPlayer (default): Show loading tips intended for new rando players.\nExperienced: Show loading tips intended for more experienced rando players.\nDisabled: do not show loading screen tips.", false);
 		Customization.RandomizedExpNames = new BoolSetting("Randomized Experience Names", false, "True: Replace the word \"Experience\" with a random currency name whenever you gain experience from a pickup.\nFalse (default): Experience pickups are just called Experience.", false);
+		Customization.AlwaysShowDoorHints = new BoolSetting("Always Show Keysanity Door Hints", false, "True: Always show any unlocked Keysanity door hints when viewing the map.\nFalse (default): Only show Keysanity door hints in the map when hovering a door.");
 
 		QOL.AbilityMenuOpacity = new FloatSetting("Ability Menu Opacity", 0.5f, "(0.0-1.0) The opacity of the ability menu when performing a Save Anywhere.", false);
 		QOL.CursorLock = new BoolSetting("Cursor Lock", false, "True: Locks the mouse cursor inside the window\nFalse (default): Vanilla behavior (cursor can leave the Ori window in borderless / windowed mode).", false);
@@ -269,6 +274,8 @@ public static class RandomizerSettings {
 		public static EnumSetting<HintLevels> HintLevel;
 
 		public static BoolSetting RandomizedExpNames;
+
+		public static BoolSetting AlwaysShowDoorHints;
 	}
 
 	public static class QOL {

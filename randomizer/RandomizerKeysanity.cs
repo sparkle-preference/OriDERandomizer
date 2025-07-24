@@ -79,7 +79,7 @@ public class RandomizerKeysanity {
             Characters.Sein.Inventory.Keystones = count - numberUsed;
 
             if (count < countForDoor(id)) {
-                Randomizer.showHint($"{hintMap[id]} ({count}/{countForDoor(id)}): {hintsForDoor(id)}");
+                Randomizer.showHint($"{hintMap[id]} {count}/{countForDoor(id)}: {hintsForDoor(id)}");
             }
             return;
         }
@@ -94,6 +94,9 @@ public class RandomizerKeysanity {
 
     public string MapHintForDoor(MoonGuid guid) {
         if (doorKeyMap.TryGetValue(guid, out var id)) {
+            if(RandomizerLocationManager.IsDoorOpen(guid))
+                return $"${hintMap[id]} (opened)$";
+
             if(!IsActive) return hintMap[id];
 
             var count = inventory.GetRandomizerItem(id);
@@ -101,7 +104,7 @@ public class RandomizerKeysanity {
                 return $"${hintMap[id]} {count}/{count}\n(Openable!)$";
 
             if(GetDoorHint(guid))
-                return $"{hintMap[id]} ({count}/{countForDoor(id)})\n{hintsForDoor(id)}";
+                return $"{hintMap[id]} {count}/{countForDoor(id)}\n{hintsForDoor(id)}";
 
             return $"{hintMap[id]} {count}/{countForDoor(id)}\n(Touch door to get hint!)";
         }
@@ -153,7 +156,7 @@ public class RandomizerKeysanity {
         for (var id = 300; id < 312;) {
             sb.Append($"{GetProgress(id++, false)} {GetProgress(id++, false)} {GetProgress(id++, false)}\n");
         }
-        Randomizer.printInfo(sb.ToString());
+        Randomizer.printInfo(sb.ToString().TrimEnd());
     }
 
     public void AddClue(int id, int coords, string area) {
