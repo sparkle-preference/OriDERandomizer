@@ -231,10 +231,12 @@ public class RandomizerLocationManager
     public static void OpenDoorByGuid(MoonGuid doorGuid)
     {
         var door = KeystoneDoors[doorGuid];
-        int current = Characters.Sein.Inventory.GetRandomizerItem(72);
-        Characters.Sein.Inventory.SetRandomizerItem(72, current | (1 << door.Index));
+        int current = Randomizer.Inventory.GetRandomizerItem(72);
+        Randomizer.Inventory.SetRandomizerItem(72, current | (1 << door.Index));
         RandomizerLocationManager.UpdateReachable();
     }
+
+    public static bool IsDoorOpen(MoonGuid doorGuid) => 1 == 1 & Randomizer.Inventory.GetRandomizerItem(72) >> KeystoneDoors[doorGuid].Index;
 
     public static void UpdateReachable()
     {
@@ -272,9 +274,9 @@ public class RandomizerLocationManager
         Inventory currentInventory = Inventory.FromCharacter();
         currentInventory.Unlocks.Add("Mapstone");
 
-        if (Characters.Sein.Inventory.GetRandomizerItem(71) > currentInventory.Mapstones)
+        if (Randomizer.Inventory.GetRandomizerItem(71) > currentInventory.Mapstones)
         {
-            currentInventory.Mapstones = Characters.Sein.Inventory.GetRandomizerItem(71);
+            currentInventory.Mapstones = Randomizer.Inventory.GetRandomizerItem(71);
         }
 
         if (Randomizer.OpenMode)
@@ -288,7 +290,7 @@ public class RandomizerLocationManager
         }
 
         Dictionary<string, HashSet<string>> primedPaths = new Dictionary<string, HashSet<string>>();
-        int keystoneDoorsOpened = Characters.Sein.Inventory.GetRandomizerItem(72);
+        int keystoneDoorsOpened = Randomizer.Inventory.GetRandomizerItem(72);
 
         foreach (var ksDoor in KeystoneDoors.Values)
         {
@@ -467,19 +469,19 @@ public class RandomizerLocationManager
 
             BingoController.OnLoc(this.Key);
             if (this.Key == -7320236) {
-                Characters.Sein.Inventory.SetRandomizerItem(1106, 1);
+                Randomizer.Inventory.SetRandomizerItem(1106, 1);
             }
             RandomizerSwitch.GivePickup(this.Pickup, this.Key);
             RandomizerLocationManager.UpdateReachable();
 
             if (Randomizer.HotColdItems.ContainsKey(this.Key))
             {
-                Characters.Sein.Inventory.SetRandomizerItem(Randomizer.HotColdItems[this.Key].Id, 1);
+                Randomizer.Inventory.SetRandomizerItem(Randomizer.HotColdItems[this.Key].Id, 1);
                 RandomizerColorManager.UpdateHotColdTarget();
             }
             else if (Randomizer.HotColdFrags.ContainsKey(this.Key))
             {
-                Characters.Sein.Inventory.SetRandomizerItem(Randomizer.HotColdFrags[this.Key].Id, 1);
+                Randomizer.Inventory.SetRandomizerItem(Randomizer.HotColdFrags[this.Key].Id, 1);
                 RandomizerColorManager.UpdateHotColdTarget();
             }
 
