@@ -73,7 +73,7 @@ public static class RandomizerSettings {
 				}
 
 				if (nagList.Count > 0) {
-					Randomizer.printInfo("Default settings written for these missing settings: " + String.Join(", ", nagList.ToArray()), 480);
+					Randomizer.printInfo("Default settings written for: " + String.Join(", ", nagList.ToArray()), 120 + 60 * nagList.Count);
 				}
 
 				File.AppendAllText("RandomizerSettings.txt", writeText);
@@ -110,7 +110,7 @@ public static class RandomizerSettings {
 			writer.WriteLine("// Edit values of settings by changing the text after the \":\" and then saving the file.");
 			writer.WriteLine("// After saving, reload the randomizer (alt+L by default) to update your settings without restarting the game.");
 			writer.WriteLine("");
-			writer.WriteLine("// Words in square brackets ([]) are Ori base game binds (e.g. [Jump], [Climb]).");
+			writer.WriteLine("// Words in square brackets ([]) are Ori base game binds (e.g. [Jump], [Climb])");
 			writer.WriteLine("//    These binds can be changed in the in-game rebinding editor, or using the editor at orirando.com/rebinds");
 			writer.WriteLine("// Words double square brackets ([[]]) are rando-specific binds (e.g. [[Grenade Jump]])");
 			writer.WriteLine("//    and can be changed in RandomizerRebinding.txt");
@@ -160,14 +160,14 @@ public static class RandomizerSettings {
 		Controls.WallChargeMouseAim = new BoolSetting("Wall Charge Mouse Aim", true, "True (default): On Keyboard+Mouse, allows aiming Wall Charge Jumps with the mouse.\nFalse: Vanilla behavior.");
 		Controls.SwimmingMouseAim = new BoolSetting("Swimming Mouse Aim", false, "True: On Keyboard+Mouse, Ori will swim towards the mouse cursor.\nFalse (default): Vanilla behavior.");
 		Controls.SlowClimbVault = new BoolSetting("Slow Climb Vault", true, "True (default): slightly slows Climb vaults, making it easier to land on small vertical platforms with Climb.\nFalse: Vanilla behavior.");
-		Controls.Autofire = new EnumSetting<AutofireMode>("Autofire", AutofireMode.Off, "Hold: When [SpiritFlame] is held, autofire - (Charge Flame by holding [[Suppress Autofire]] and [SpiritFlame]).\nToggle: Press [SpiritFlame] to start autofiring. Press it again to stop. (Charge Flame as normal).\nOff: Vanilla behavior (no autofire).");
+		Controls.Autofire = new EnumSetting<AutofireMode>("Autofire", AutofireMode.Off, "Hold: When [SpiritFlame] is held, autofire. Charge Flame by holding [[Suppress Autofire]] and [SpiritFlame].\nToggle: Press [SpiritFlame] to start autofiring. Press it again to stop. (Charge Flame as normal).\nOff: Vanilla behavior (no autofire).");
 		Controls.LongerBashAimTime = new BoolSetting("Longer Bash Aim Time", false, "True: Allows holding [Bash] for about 3x as long, giving you more time to aim.\nFalse (default): Vanilla behavior (about 1.7 seconds of Bash aiming time).");
 
 		Customization.ColdColor = new ColorSetting("Cold Color", new Color(0f, 0.5f, 0.5f, 0.5f), 511f, "Red, Blue, Green, Transparency (0-255 for each): The color Ori turns when Sensing an item at max range.");
 		Customization.HotColor = new ColorSetting("Hot Color", new Color(0.5f, 0.1666667f, 0f, 0.5f), 511f, "Red, Blue, Green, Transparency (0-255 for each): The color Ori turns when Sensing an item at range 0.");
 		Customization.DiscoSense = new BoolSetting("Disco Sense", false, "True: Ignore sense colors, and instead speed up the color.txt rotation when sense is active.\nFalse (default): colors.txt rotation is overwritten by Sense colors.",false);
 		Customization.MultiplePickupMessages = new BoolSetting("Display Multiple Pickup Messages", false, "True: Shows up to 5 pickup messages at once on the left side of the screen. Hold [[Replay Message]] to show more.\nFalse (default): New pickup messages display one at a time at the top center of the screen.", false);
-		Customization.AlwaysShowLastFivePickups = new BoolSetting("Always Show Last Five Pickup Messages", false, "True: (Only works if Display Multiple PickAlways show the last 5 pickup messages.\nFalse (default): Only show pickups when found or on pressing [[Replay Message]].", false);
+		Customization.AlwaysShowLastFivePickups = new BoolSetting("Always Show Last Five Pickup Messages", false, "True: Always show the last 5 pickup messages. Only works if Display Multiple Pickups is set to True.\nFalse (default): Only show pickups when found or on pressing [[Replay Message]].", false);
 		Customization.WarpTeleporterColor = new ColorSetting("Warp Teleporter Color", new Color(202f/255f, 57f/255f, 243f/255f, 1f), 255f, "Red, Blue, Green, Transparency (0-255 for each): The color that Warp-created Teleporters are on the map.");
 		Customization.DefaultMapFilter = new EnumSetting<MapFilterMode>("Default Map Filter", MapFilterMode.InLogic, "InLogic (default): Select the In Logic map filter when first opening the map.\nUncollected: Select the Uncollected map filter when first opening the map.", false);
 		Customization.HintLevel = new EnumSetting<HintLevels>("Hints", HintLevels.NewPlayer, "NewPlayer (default): Show loading tips intended for new rando players.\nExperienced: Show loading tips intended for more experienced rando players.\nDisabled: do not show loading screen tips.", false);
