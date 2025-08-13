@@ -111,10 +111,15 @@ public static class Randomizer
             {
                 Randomizer.SeedFilePath = "randomizer.dat";
             }
-
+            var lastLine = "";
+            var lastLineNum = -1;
             try {
                 if(File.Exists(Randomizer.SeedFilePath)) {
                     List<String> allLines = File.ReadAllLines(Randomizer.SeedFilePath).ToList();
+
+                    lastLine = allLines[0];
+                    lastLineNum = 0;
+
                     string[] flagLine = allLines[0].Split('|');
                     string s = flagLine[1];
                     string[] flags = flagLine[0].Split(',');
@@ -133,6 +138,9 @@ public static class Randomizer
                     }
                     foreach (string line in allLines.Skip(1))
                     {
+                        lastLine = line;
+                        lastLineNum += 1;
+
                         string[] lineParts = line.Split('|');
                         int coords;
                         int.TryParse(lineParts[0], out coords);
@@ -164,7 +172,8 @@ public static class Randomizer
                 }
             }
             catch(Exception e) {
-                Randomizer.printInfo("Error parsing " + Randomizer.SeedFilePath + ":" + e.Message, 300);
+                Randomizer.printInfo($"Error parsing {Randomizer.SeedFilePath} at line {lastLineNum}: {e.Message}", 300);
+                Randomizer.log($"Couldn't parse \"{lastLine}\" (line {lastLineNum} of {Randomizer.SeedFilePath}): {e.Message}");
                 Randomizer.SeedFilePath = "randomizer.dat";
             }
 
