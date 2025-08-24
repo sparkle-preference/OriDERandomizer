@@ -273,20 +273,18 @@ public static class RandomizerBonus
                 RandomizerSwitch.PickupMessage("Energy Leech x" + RandomizerBonus.Manavamp().ToString());
             break;
         case 33:
+            int v;
             if (!flag)
             {
-                int v = Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
+                v = Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
                 RandomizerSwitch.PickupMessage("Skill Velocity Upgrade x" + v.ToString());
                 if(Characters.Sein.Inventory.GetRandomizerItem(108) == 0) 
                     RandomizerBonusSkill.FoundBonusSkill(108);
                 return;
             }
-            if (RandomizerBonus.Velocity() > 0)
-            {
-                int v = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                RandomizerSwitch.PickupMessage("Skill Velocity Upgrade x" + v.ToString());
-                return;
-            }
+            v = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
+            RandomizerSwitch.PickupMessage("Skill Velocity Upgrade x" + v.ToString());
+            return;
             break;
         case 34:
             Characters.Sein.Inventory.SetRandomizerItem(34, 1);
@@ -301,20 +299,18 @@ public static class RandomizerBonus
             Characters.Sein.Inventory.SetRandomizerItem(36, 1);
             break;
         case 37:
+            int j;
             if (!flag)
             {
-                int v = Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                RandomizerSwitch.PickupMessage("Jump Upgrade x" + v.ToString());
+                j = Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
+                RandomizerSwitch.PickupMessage("Jump Upgrade x" + j.ToString());
                 if(Characters.Sein.Inventory.GetRandomizerItem(108) == 0) 
                     RandomizerBonusSkill.FoundBonusSkill(108);
                 return;
             }
-            if (RandomizerBonus.Jumpgrades() > 0)
-            {
-                int v = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                RandomizerSwitch.PickupMessage("Jump Upgrade x" + v.ToString());
-                return;
-            }
+            j = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
+            RandomizerSwitch.PickupMessage("Jump Upgrade x" + j.ToString());
+            return;
             break;
         case 40:
             if (!Characters.Sein || flag)
