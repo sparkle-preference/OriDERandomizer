@@ -34,7 +34,7 @@ Athos213    AvengedRuler    Cereberon    Cleanfel
 CovertMuffin   Grimelios   iRobin   JHobz   Roryrai
 Jitaenow    Nari    madinsane    Mattermonkey
 RainbowPoogle   UncleRonny   Wingheart   spinesheath
-SeaAverage   DireKrow   Eph   xaviershay", 16));
+SeaAverage   DireKrow   Eph   xaviershay   jmal116", 16));
 
 		Credits.Add(new KeyValuePair<string, int>(
 @"ANCHORTOPPARAMS_20_10_2_Ori DE Randomizer inspired by:
