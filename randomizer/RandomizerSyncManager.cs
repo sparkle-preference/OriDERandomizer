@@ -12,7 +12,7 @@ public static class RandomizerSyncManager
 {
 	public static void Initialize()
 	{
-		Countdown = 60;
+		tslu = 0;
 		webClient = new WebClient();
 		webClient.DownloadStringCompleted += RetryOnFail;
 		getClient = new WebClient();
@@ -52,7 +52,7 @@ public static class RandomizerSyncManager
 		EventInfos.Add(new EventInfoLine(4, 4, () => Keys.MountHoru));
 		if(Randomizer.SyncId != "") {
 			string[] parts = Randomizer.SyncId.Split('.');
-			RootUrl = "http://orirandov3.appspot.com/netcode/game/" + parts[0] + "/player/" + parts[1]; 
+			RootUrl = $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/game/{parts[0]}/player/{parts[1]}";
 		}
 	}
 
@@ -69,16 +69,17 @@ public static class RandomizerSyncManager
 			{
 				UploadSeed();
 			}
-			Countdown--;
 			ChaosTimeoutCounter--;
 			if (ChaosTimeoutCounter < 0)
 			{
 				RandomizerChaosManager.ClearEffects();
 				ChaosTimeoutCounter = 216000;
 			}
-			if (Countdown <= 0 && !getClient.IsBusy)
+			tslu += Time.deltaTime;
+			if(tslu < PERIOD) return;
+			if (!getClient.IsBusy)
 			{
-				Countdown = 60 * PERIOD;
+				tslu = 0f;
 				NameValueCollection nvc = new NameValueCollection();
 				Vector3 pos = Characters.Sein.Position;
 				nvc["x"] = pos.x.ToString();
@@ -377,11 +378,11 @@ public static class RandomizerSyncManager
 		return false;
 	}
 
+	private static float tslu = 0f;
+
 	public static Pickup SendingPickup;
 
 	public static string RootUrl;
-
-	public static int Countdown;
 
 	public static int PERIOD = 1;
 

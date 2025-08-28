@@ -192,6 +192,7 @@ public static class RandomizerSettings {
 
 		DevSettings.AreasOri = new BoolSetting("Keep Areas.Ori Updated", true, "Update areas.ori from the server. Set to False to disable for local development.", false, true);
 		DevSettings.BlackrootOrbRoomClimbAssist = new BoolSetting("Blackroot Orb Room Climb Assist", true, "", false, true);
+		DevSettings.WebEndpoint = new UrlSetting("Root Netcode URL", "bfnc.orirando.com", "The base URL to connect to for sync code.\nIf you change this from the default ('bfnc.orirando.com') it is going to break all netcode. \nDO NOT PUT AN http:// IT", false, true);
 	}
 
 	public static Dictionary<string, SettingBase> All = new Dictionary<string, SettingBase>();
@@ -302,6 +303,7 @@ public static class RandomizerSettings {
 	public static class DevSettings {
 		public static BoolSetting AreasOri;
 		public static BoolSetting BlackrootOrbRoomClimbAssist;
+		public static UrlSetting WebEndpoint;
 	}
 
 	public abstract class SettingBase {
@@ -373,6 +375,16 @@ public static class RandomizerSettings {
 		}
 		public override string ValidValues() => "A decimal number";
 
+	}
+
+	public class UrlSetting : Setting<String> {
+		public UrlSetting(string name, string defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {}
+
+		public override void Parse(string Value) {
+			this.Value = Value;
+		}
+
+		public override string ValidValues() => "A url";
 	}
 
 	public class ColorSetting : Setting<Color> {
