@@ -255,7 +255,7 @@ public class RandomizerLocationManager
             try {
                 if(File.Exists("areas.ori")) File.Move("areas.ori", "areas.ori.old"); // backup
                 ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
-                webClient.DownloadFile(AreasURL, "areas.ori");
+                webClient.DownloadFile(AreasURL(), "areas.ori");
                 if(File.Exists("areas.ori.old")) File.Delete("areas.ori.old"); // clean backup
             } catch(Exception e) {
                 Randomizer.LogError($"Failed to download areas.ori: ${e}");
@@ -361,7 +361,7 @@ public class RandomizerLocationManager
 
     public static bool HaveDownloadedAreas = false;
 
-    public static string AreasURL = "http://orirandov3.appspot.com/netcode/areas";
+    public static string AreasURL() => $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/areas";
 
     private static DateTime s_logicLastUpdated = DateTime.MinValue;
 

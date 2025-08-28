@@ -541,7 +541,7 @@ public static class BingoController
                 return;
             }
             string[] idParts = Randomizer.SyncId.Split('.');
-            UpdateUrl = "http://orirandov3.appspot.com/netcode/game/" + idParts[0] + "/player/" + idParts[1] + "/bingo";
+            UpdateUrl = $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/game/{idParts[0]}/player/{idParts[1]}/bingo";
             if(!Active)
             {
                 UpdateClient = new WebClient();
