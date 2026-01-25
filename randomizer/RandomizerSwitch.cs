@@ -32,7 +32,7 @@ public static class RandomizerSwitch
 
     public static void ExpOrbPickup(int Value, int coords)
     {
-        PickupMessage(Value.ToString() + " " + Randomizer.ExpName(coords));
+        PickupMessage(Value.ToString() + " " + RandomizerExpNames.ExpName(coords));
         if(Randomizer.ZeroXP)
         {
             return;
