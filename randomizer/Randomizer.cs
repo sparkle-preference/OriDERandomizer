@@ -98,6 +98,7 @@ public static class Randomizer
             Randomizer.TeleportersLockedByClues = false;
             Randomizer.WarpLogicLocations = new Hashtable();
             Keysanity.Initialize();
+            RandomizerMW.Reset();
             Randomizer.EnhancedMode = false;
             Randomizer.EnhancedSeinInSeed = false;
 
@@ -138,7 +139,15 @@ public static class Randomizer
                         string[] lineParts = line.Split('|');
                         int coords;
                         int.TryParse(lineParts[0], out coords);
-                        
+
+                        if (RandomizerMW.IsManifestLine(coords, lineParts[1]))
+                        {
+                            // multiworld slot manifest: what our slots hold,
+                            // not a map location
+                            RandomizerMW.AddManifestEntry(coords, lineParts[2], lineParts[3]);
+                            continue;
+                        }
+
                         GetDataFromSeedLine(coords, lineParts[1], lineParts[2], lineParts[3]);
 
                         if (coords == 2)
@@ -1215,6 +1224,8 @@ public static class Randomizer
                     syncMode = 1;
                 } else if (modeStr == "none") {
                     syncMode = 4;
+                } else if (modeStr == "multiworld") {
+                    syncMode = 5;
                 } else {
                     syncMode = int.Parse(modeStr);
                 }

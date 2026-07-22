@@ -84,6 +84,7 @@ public static class RandomizerSyncManager
 				Vector3 pos = Characters.Sein.Position;
 				nvc["x"] = pos.x.ToString();
 				nvc["y"] = pos.y.ToString();
+				nvc["version"] = Randomizer.VERSION;
 				for(int i = 0; i < 8; i++) {
 					nvc["seen_" + i.ToString()] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(1560+i));
 					nvc["have_" + i.ToString()] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(930+i));
@@ -211,11 +212,14 @@ public static class RandomizerSyncManager
 						}
 					}
 				}
-				if (array.Length > 5)
+				// signals ride at index 5. In multiworld games the field is
+				// always present (possibly empty) so the slot bitfields can
+				// sit at a fixed index 6; legacy games omit it when empty.
+				if (array.Length > 5 && array[5] != "")
 				{
 					foreach (string text in array[5].Split(new char[] { '|' }))
 					{
-						if(CurrentSignals.Contains(text))
+						if(text == "" || CurrentSignals.Contains(text))
 							continue;
 						if (text == "stop")
 						{
@@ -254,14 +258,20 @@ public static class RandomizerSyncManager
 				} else {
 					CurrentSignals.Clear();
 				}
+				if (Randomizer.SyncMode == 5 && array.Length > 6)
+				{
+					// multiworld: our slot bitfields (what others found for us)
+					if (RandomizerMW.OnSlotsField(array[6]))
+						mustRefreshLogic = true;
+				}
 				if (mustRefreshLogic) {
-					RandomizerLocationManager.UpdateReachable();					
+					RandomizerLocationManager.UpdateReachable();
 				}
 				return;
 			}
 			if (e.Error.GetType().Name == "WebException" && ((HttpWebResponse)((WebException)e.Error).Response).StatusCode == HttpStatusCode.PreconditionFailed)
 			{
-				if(Randomizer.SyncMode == 1)
+				if(Randomizer.SyncMode == 1 || Randomizer.SyncMode == 5)
 					Randomizer.printInfo("Co-op server error, try reloading the seed (Alt+L)");
 				else
 					Randomizer.LogError("Co-op server error, try reloading the seed (Alt+L)");

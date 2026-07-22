@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class RandomizerAction
 {
-    public static List<string> StringValPickupTypes = new List<string> {"TP", "SH", "NO", "WT", "MU", "HN", "WP", "RP", "WS", "TW", "NB"};
+    public static List<string> StringValPickupTypes = new List<string> {"TP", "SH", "NO", "WT", "MU", "HN", "WP", "RP", "WS", "TW", "NB", "MW"};
 
     public RandomizerAction(string action, object value) {
         this.Action = action;
