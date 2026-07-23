@@ -340,6 +340,21 @@ public static class RandomizerSyncManager
 		}
 	}
 
+	// credits-roll ping: fire and forget (the server treats it as the real
+	// game end; in multiworld it releases our world's leftovers to their
+	// owners). No retry: a missed ping just means no release.
+	public static void SendGameComplete()
+	{
+		if (!Randomizer.Sync || Randomizer.SyncId == "")
+			return;
+		try {
+			var client = new WebClient();
+			client.DownloadStringAsync(new Uri(RootUrl + "/complete"));
+		} catch(Exception e) {
+			Randomizer.LogError("SendGameComplete: " + e.Message);
+		}
+	}
+
 	public static void FoundTP(string identifier) {
 		if(!Randomizer.Sync)
 			return;

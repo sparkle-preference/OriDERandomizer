@@ -331,6 +331,7 @@ public static class Randomizer
         if (Scenes.Manager.CurrentScene.Scene == "theSacrifice" && RandomizerStatsManager.Active)
         {
             RandomizerStatsManager.Finish();
+            RandomizerSyncManager.SendGameComplete();
             RandomizerCreditsManager.Initialize();
         }
     }
