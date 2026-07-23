@@ -234,7 +234,7 @@ public static class RandomizerMW
             if (ms > 0) counts.Add(Counted(ms, "Mapstone", "Mapstones"));
             if (rb > 0) counts.Add(Counted(rb, "Bonus Pickup", "Bonus Pickups"));
             if (other > 0) counts.Add(Counted(other, "other item", "other items"));
-            if (exp > 0) counts.Add(exp.ToString() + " Experience");
+            if (exp > 0) counts.Add(exp.ToString() + " Spirit Light");
             if (counts.Count > 0)
                 lines.Add(string.Join(", ", counts.ToArray()));
             if (lines.Count > 0)
