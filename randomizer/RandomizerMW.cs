@@ -57,6 +57,15 @@ public static class RandomizerMW
             entry.Id = parts[2];
             entry.Zone = zone;
             Manifest[slot] = entry;
+
+            // our dungeon keys living in someone else's world still get
+            // clues: the manifest knows whose world and which zone
+            if (Randomizer.CluesMode && entry.Code == "EV")
+            {
+                int evId;
+                if (int.TryParse(entry.Id, out evId) && evId % 2 == 0)
+                    RandomizerClues.AddClue($"P{entry.Finder} {zone}", evId / 2);
+            }
         }
         catch (Exception e)
         {
