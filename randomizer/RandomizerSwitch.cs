@@ -406,7 +406,12 @@ public static class RandomizerSwitch
 
 
     public static bool SilentMode = false;
+    // when set, appended to every pickup message; RandomizerMW uses it to
+    // render multiworld grants as "[pickup] from Player N" in one line
+    public static string MessageSuffix = null;
     public static void PickupMessage(string text, int frames=120) {
+        if(MessageSuffix != null)
+            text += MessageSuffix;
         if(SilentMode)
         {
             if(RandomizerSettings.Dev)

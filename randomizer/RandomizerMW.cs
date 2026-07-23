@@ -117,8 +117,16 @@ public static class RandomizerMW
             return false;
         }
         ManifestEntry entry = Manifest[slot];
-        RandomizerSwitch.GivePickup(new RandomizerAction(entry.Code, entry.Id), 0, false);
-        Randomizer.showHint($"received from Player {entry.Finder} ({entry.Zone})", 240);
+        // one combined line: "[pickup] from Player N"
+        RandomizerSwitch.MessageSuffix = $" from Player {entry.Finder}";
+        try
+        {
+            RandomizerSwitch.GivePickup(new RandomizerAction(entry.Code, entry.Id), 0, false);
+        }
+        finally
+        {
+            RandomizerSwitch.MessageSuffix = null;
+        }
         return true;
     }
 
