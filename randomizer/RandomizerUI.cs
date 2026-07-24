@@ -218,16 +218,16 @@ public class RandomizerUI : MonoBehaviour
 		}
 	}
 
-	public void QueueSideNotification(string message, float duration = 5f)
+	public void QueueSideNotification(Message message)
 	{
-		this.m_sideNotificationsAwaiting.Enqueue(new Message{ MessageString = message, Duration = duration });
+		this.m_sideNotificationsAwaiting.Enqueue(message);
 	}
 
 	// track a message for hold-alt+T without displaying it (side queue disabled:
 	// it already showed top-center)
-	public void RecordRecentNotification(string message, float duration = 5f)
+	public void RecordRecentNotification(Message message)
 	{
-		this.m_recentSideNotifications.Enqueue(new Message{ MessageString = message, Duration = duration });
+		this.m_recentSideNotifications.Enqueue(message);
 		while (this.m_recentSideNotifications.Count > 5)
 		{
 			this.m_recentSideNotifications.Dequeue();
@@ -260,8 +260,30 @@ public class RandomizerUI : MonoBehaviour
 
 	private bool m_extendedAltTShown;
 
-	private class Message
+	public class Message
 	{
+		public static Message InfoMessage(string message, float baseDuration = 1f)
+		{
+			return new Message(message, VanillaBgColor, baseDuration);
+		}
+
+		public static Message PickupMessage(string message, float baseDuration = 1f)
+		{
+			return new Message(message, RandomizerSettings.Customization.PickupMessageBgColor, baseDuration);
+		}
+
+		public static Message MwPickupMessage(string message, float baseDuration = 1f)
+		{
+			return new Message(message, RandomizerSettings.Customization.MwPickupMessageBgColor, baseDuration);
+		}
+
+		public Message(string message, Color bgColor, float baseDuration = 1f)
+		{
+			MessageString = message;
+			BaseDuration = baseDuration;
+			BgColor = bgColor;
+		}
+
 		public void Instantiate()
 		{
 			GameObject obj = (GameObject)InstantiateUtility.Instantiate(Message.SideNotificationPrefab);
@@ -272,18 +294,21 @@ public class RandomizerUI : MonoBehaviour
 			RandomizerMessageProvider messageProvider = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
 			messageProvider.SetMessage(this.MessageString);
 			this.MessageBox.SetMessageProvider(messageProvider);
+			this.MessageBox.SetBackgroundColor(BgColor);
 
 			if (this.MessageBox.Visibility)
 			{
-				this.MessageBox.SetWaitDuration(this.Duration);
+				this.MessageBox.SetWaitDuration(this.BaseDuration + 3f);
 			}
 		}
 
 		public static GameObject SideNotificationPrefab;
 
-		public string MessageString;
+		public static Color VanillaBgColor = new Color(0f, 0f, 0f, 0.5f);
 
-		public float Duration = 5f;
+		public string MessageString;
+		public Color BgColor;
+		public float BaseDuration;
 
 		public MessageBox MessageBox;
 	}

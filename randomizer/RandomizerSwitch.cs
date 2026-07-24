@@ -298,9 +298,9 @@ public static class RandomizerSwitch
                             else if(p[0] == "s")
                                 SilentMode = (p[1].Trim().ToLower() == "true");
                         }
-                        Randomizer.showHint(message, duration);
+                        Randomizer.showHint(RandomizerUI.Message.PickupMessage(message, duration));
                     } else 
-                        Randomizer.showHint(message);
+                        Randomizer.showHint(RandomizerUI.Message.PickupMessage(message));
                     break;
                 case "WT":
                     RandomizerTrackedDataManager.SetRelic(Randomizer.RelicZoneLookup[(string)action.Value]);
@@ -359,10 +359,10 @@ public static class RandomizerSwitch
                     if (mwPieces.Length == 3)
                     {
                         string playerName = int.TryParse(mwPieces[0], out int pid) ? RandomizerMW.PlayerName(pid) : $"Player {mwPieces[0]}";
-                        PickupMessage($"Found {playerName}'s {RandomizerMW.ColorWrap(mwPieces[2])}!");
+                        SentMwPickupMessage($"Found {playerName}'s {RandomizerMW.ColorWrap(mwPieces[2])}!");
                     }
                     else
-                        PickupMessage("Found another player's item!");
+                        SentMwPickupMessage("Found another player's item!");
                     break;
             }
             BingoController.OnItem(action, coords);
@@ -421,6 +421,19 @@ public static class RandomizerSwitch
                 Randomizer.log(text + " (squelched)");
             return;
         }
-        Randomizer.showHint(text, frames);
+
+        Randomizer.showHint(RandomizerUI.Message.PickupMessage(text, frames / 60f));
+    }
+
+    public static void SentMwPickupMessage(string text, int frames = 120)
+    {
+        if (SilentMode)
+        {
+            if(RandomizerSettings.Dev)
+                Randomizer.log(text + " (squelched)");
+            return;
+        }
+
+        Randomizer.showHint(RandomizerUI.Message.MwPickupMessage(text, frames / 60f));
     }
 }
