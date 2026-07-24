@@ -32,10 +32,39 @@ public static class RandomizerMW
 
     private static HashSet<int> warnedSlots = new HashSet<int>();
 
+    // tick field 7: ";"-joined "{pid}.{name}" pairs (name for unclaimed
+    // players is just "Player N")
+    public static Dictionary<int, string> PlayerNames = new Dictionary<int, string>();
+
     public static void Reset()
     {
         Manifest.Clear();
         warnedSlots.Clear();
+        PlayerNames.Clear();
+    }
+
+    public static string PlayerName(int pid)
+    {
+        string name;
+        return PlayerNames.TryGetValue(pid, out name) ? name : $"Player {pid}";
+    }
+
+    public static void OnNamesField(string field)
+    {
+        try
+        {
+            foreach (string pair in field.Split(';'))
+            {
+                int dot = pair.IndexOf('.');
+                int pid;
+                if (dot > 0 && int.TryParse(pair.Substring(0, dot), out pid) && pair.Length > dot + 1)
+                    PlayerNames[pid] = pair.Substring(dot + 1);
+            }
+        }
+        catch (Exception e)
+        {
+            Randomizer.LogError("MW.OnNamesField: " + e.Message);
+        }
     }
 
     public static bool IsManifestLine(int coords, string code)
@@ -181,8 +210,8 @@ public static class RandomizerMW
         }
         else
         {
-            // one combined line: "[pickup] from Player N"
-            RandomizerSwitch.MessageSuffix = $" from Player {entry.Finder}";
+            // one combined line: "[pickup] from [player]"
+            RandomizerSwitch.MessageSuffix = $" from {PlayerName(entry.Finder)}";
             try
             {
                 RandomizerSwitch.GivePickup(new RandomizerAction(entry.Code, entry.Id), coords, false);
@@ -295,8 +324,14 @@ public static class RandomizerMW
             if (exp > 0) counts.Add(exp.ToString() + " Spirit Light");
             if (counts.Count > 0)
                 lines.Add(string.Join(", ", counts.ToArray()));
-            if (lines.Count > 0) // TODO: add the player(s) from finders to this above the linebreak
-                RandomizerSwitch.PickupMessage("Received:\n" + string.Join("\n", lines.ToArray()), 480);
+            if (lines.Count > 0)
+            {
+                List<string> finderNames = new List<string>();
+                foreach (int f in finders)
+                    finderNames.Add(PlayerName(f));
+                finderNames.Sort();
+                RandomizerSwitch.PickupMessage($"Received from {string.Join(", ", finderNames.ToArray())}:\n" + string.Join("\n", lines.ToArray()), 480);
+            }
         }
         catch (Exception e)
         {

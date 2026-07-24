@@ -258,6 +258,12 @@ public static class RandomizerSyncManager
 				} else {
 					CurrentSignals.Clear();
 				}
+				if (Randomizer.SyncMode == 5 && array.Length > 7)
+				{
+					// multiworld: player names first, so slot grant messages
+					// on this same tick can already use them
+					RandomizerMW.OnNamesField(array[7]);
+				}
 				if (Randomizer.SyncMode == 5 && array.Length > 6)
 				{
 					// multiworld: our slot bitfields (what others found for us)
