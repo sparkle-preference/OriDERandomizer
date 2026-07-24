@@ -301,6 +301,7 @@ public static class RandomizerBonusSkill
             Randomizer.WarpTo(new Vector3(-2478,-593, 0), 0);
             GameController.Instance.RemoveGameplayObjects();
             RandomizerStatsManager.Active = false;
+            RandomizerSyncManager.SendGameComplete();            
             RandomizerCreditsManager.Initialize();
         break;
         case 113:
