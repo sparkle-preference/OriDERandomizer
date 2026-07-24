@@ -6,6 +6,9 @@ public class RandomizerWallJumpHintCondition : Condition
 {
 	public override bool Validate(IContext context)
 	{
+        if (RandomizerSettings.Customization.HintLevel.Value == RandomizerSettings.HintLevels.Disabled) {
+            return false;
+        }
         if (Characters.Sein.PlayerAbilities.HasAbility(AbilityType.WallJump)) {
             return false;
         }

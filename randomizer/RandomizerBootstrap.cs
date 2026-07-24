@@ -587,8 +587,11 @@ public class RandomizerBootstrap
 
 	private static void BootstrapSeinRoomHint(SceneRoot sceneRoot)
 	{
+		if (RandomizerSettings.Customization.HintLevel.Value == RandomizerSettings.HintLevels.Disabled) {
+			return;
+		}
 		// This adds an alt-r hint into the getting-sein animation.
-		ActionSequence getSeinSequence = sceneRoot.transform.FindChild("*setups/*story/findingOri/seinInterestZone/trigger/activateSequence").GetComponent<ActionSequence>();	
+		ActionSequence getSeinSequence = sceneRoot.transform.FindChild("*setups/*story/findingOri/seinInterestZone/trigger/activateSequence").GetComponent<ActionSequence>();
 		
 		GameObject obj = new GameObject("hintAction");
 		obj.transform.parent = getSeinSequence.transform;

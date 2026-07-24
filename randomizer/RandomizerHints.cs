@@ -59,7 +59,7 @@ public static class RandomizerHints {
 	public static void ShowTip() {
 		var hl = RandomizerSettings.Customization.HintLevel.Value;
 		if(hl == RandomizerSettings.HintLevels.Disabled) return;
-		if(hl == RandomizerSettings.HintLevels.Skilled) {
+		if(hl == RandomizerSettings.HintLevels.Experienced) {
 			if(SeenMiscs.Count == MiscTips.Count) SeenMiscs.Clear();
 			var h = hintRandom.Next(MiscTips.Count);
 			while(SeenMiscs.Contains(h)) h = (h + 1) % MiscTips.Count;
