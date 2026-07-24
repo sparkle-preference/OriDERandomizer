@@ -44,28 +44,24 @@ public static class RandomizerMW
         PlayerNames.Clear();
     }
 
-    public static string PlayerName(int pid)
+    public static string PlayerName(int pid, bool shortName = false)
     {
-        string name;
-        return PlayerNames.TryGetValue(pid, out name) ? name : $"Player {pid}";
+        if (PlayerNames.TryGetValue(pid, out var name)) {
+            return name;
+        }
+
+        return shortName ? $"P{pid}" : $"Player {pid}";
     }
 
     private static readonly Regex NameRef = new Regex(@"(?<![A-Za-z0-9])P(\d+)");
 
     // display-time substitution for clue/hint strings baked as "P<n>" at seed
-    // parse (names arrive later, via the tick). Unclaimed players stay "P<n>".
+    // parse (names arrive later, via the tick).
     public static string ResolveNames(string text)
     {
         try
         {
-            return NameRef.Replace(text, m =>
-            {
-                int pid;
-                string name;
-                if (int.TryParse(m.Groups[1].Value, out pid) && PlayerNames.TryGetValue(pid, out name) && name != $"Player {pid}")
-                    return name;
-                return m.Value;
-            });
+            return NameRef.Replace(text, m => int.TryParse(m.Groups[1].Value, out var pid) ? PlayerName(pid, true) : m.Value);
         }
         catch (Exception e)
         {
