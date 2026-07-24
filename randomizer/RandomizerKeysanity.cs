@@ -125,12 +125,12 @@ public class RandomizerKeysanity {
     private bool clueResolved(int coords) => (coords <= -2 && coords >= -257) ? RandomizerMW.ManifestLocGranted(coords) : Randomizer.HaveCoord(coords);
 
     // Me when I'm using LINQ responsibly (<- me when I lie)
-    private string hintsForDoor(int id, int skipCoords = -1) => String.Join(", ", keyClueMap[id]
+    private string hintsForDoor(int id, int skipCoords = -1) => RandomizerMW.ResolveNames(String.Join(", ", keyClueMap[id]
         .Where(rkhi => !(rkhi.Coords == skipCoords || clueResolved(rkhi.Coords)))         // only look at hints we still need
         .GroupBy(rkhi => rkhi.Area)                                                       // group them by their areas
         .OrderBy(grp=>$"{4-grp.Count()}{grp.Key}")                                        // sort by count and then area alphabetically
         .Select(grp => grp.Count() == 1 ? grp.Key : $"{grp.Key} x{grp.Count()}")          // format for display (with x[NUM] for multiples)
-        .ToArray());  // ^^^ me when I at least comment and format my LINQ bullshit reasonably?
+        .ToArray()));  // ^^^ me when I at least comment and format my LINQ bullshit reasonably?
 
 
     private int countForDoor(int id) => id < 304 ? 2 : 4;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Game;
 
 // Multiworld client logic: the owner-side half of the slot-bitfield grant
@@ -47,6 +48,30 @@ public static class RandomizerMW
     {
         string name;
         return PlayerNames.TryGetValue(pid, out name) ? name : $"Player {pid}";
+    }
+
+    private static readonly Regex NameRef = new Regex(@"(?<![A-Za-z0-9])P(\d+)");
+
+    // display-time substitution for clue/hint strings baked as "P<n>" at seed
+    // parse (names arrive later, via the tick). Unclaimed players stay "P<n>".
+    public static string ResolveNames(string text)
+    {
+        try
+        {
+            return NameRef.Replace(text, m =>
+            {
+                int pid;
+                string name;
+                if (int.TryParse(m.Groups[1].Value, out pid) && PlayerNames.TryGetValue(pid, out name) && name != $"Player {pid}")
+                    return name;
+                return m.Value;
+            });
+        }
+        catch (Exception e)
+        {
+            Randomizer.LogError("MW.ResolveNames: " + e.Message);
+            return text;
+        }
     }
 
     public static void OnNamesField(string field)

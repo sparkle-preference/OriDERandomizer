@@ -49,7 +49,7 @@ public static class RandomizerClues
 				array[i] = RandomizerClues.Clues[RandomizerClues.RevealOrder[i] - 1];
 			}
 		}
-		return string.Concat(new string[]
+		return RandomizerMW.ResolveNames(string.Concat(new string[]
 		{
 			text,
 			"WV: ",
@@ -65,7 +65,7 @@ public static class RandomizerClues
 			"SS: ",
 			array[2],
 			text3
-		});
+		}));
 	}
 	public static void FinishClues()
 	{
