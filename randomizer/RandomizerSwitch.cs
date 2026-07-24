@@ -357,7 +357,10 @@ public static class RandomizerSwitch
                     // the owner's slot bit and their client self-grants.
                     string[] mwPieces = ((string)action.Value).Split(new char[] { ',' }, 3);
                     if (mwPieces.Length == 3)
-                        PickupMessage($"Found Player {mwPieces[0]}'s {mwPieces[2]}!");
+                    {
+                        string playerName = int.TryParse(mwPieces[0], out int pid) ? RandomizerMW.PlayerName(pid) : $"Player {mwPieces[0]}";
+                        PickupMessage($"Found {playerName}'s {RandomizerMW.ColorWrap(mwPieces[2])}!");
+                    }
                     else
                         PickupMessage("Found another player's item!");
                     break;
