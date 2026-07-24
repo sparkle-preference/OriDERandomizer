@@ -266,7 +266,7 @@ public static class RandomizerMW
     private static HashSet<string> orangeStuff = new HashSet<string>() {"Gumon Seal", "Forlorn Teleporter", "Wind Restored"};
     private static HashSet<string> redStuff = new HashSet<string>() {"Sunstone", "Horu Teleporter", "Warmth Returned"};
 
-    private static string colorWrap(string input) {
+    public static string ColorWrap(string input) {
         if(SkillNames.ContainsValue(input)) return $"${input}$"; // skill names are green
         if(blueStuff.Contains(input)) return $"*{input}*";       // blue stuff is blue
         if(orangeStuff.Contains(input)) return $"#{input}#";     // orange stuff is orange
@@ -290,13 +290,13 @@ public static class RandomizerMW
                 switch (entry.Code)
                 {
                     case "SK":
-                        skills.Add(colorWrap(SkillNames.ContainsKey(entry.Id) ? SkillNames[entry.Id] : "Unknown Skill " + entry.Id));
+                        skills.Add(ColorWrap(SkillNames.ContainsKey(entry.Id) ? SkillNames[entry.Id] : "Unknown Skill " + entry.Id));
                         break;
                     case "EV":
-                        events.Add(colorWrap(EventNames.ContainsKey(entry.Id) ? EventNames[entry.Id] : "Unknown Event " + entry.Id));
+                        events.Add(ColorWrap(EventNames.ContainsKey(entry.Id) ? EventNames[entry.Id] : "Unknown Event " + entry.Id));
                         break;
                     case "TP":
-                        travel.Add(colorWrap(entry.Id + " Teleporter"));
+                        travel.Add(ColorWrap(entry.Id + " Teleporter"));
                         break;
                     case "TW":
                         travel.Add(entry.Id.Split(',')[0]);
