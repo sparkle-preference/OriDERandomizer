@@ -177,18 +177,18 @@ public static class RandomizerMW
 
     private static string Counted(int n, string singular, string plural, string wrap = "")
     {
-        return $"{wrap}{n}{(n == 1 ? singular : plural)}";
+        return $"{wrap}{n} {(n == 1 ? singular : plural)}{wrap}";
     }
 
-    private HashSet<string> blueStuff = new HashSet<string>() {"Water Vein", "Ginso Teleporter", "Clean Water"};
-    private HashSet<string> orangeStuff = new HashSet<string>() {"Gumon Seal", "Forlorn Teleporter", "Wind Restored"};
-    private HashSet<string> redStuff = new HashSet<string>() {"Sunstone", "Horu Teleporter", "Warmth Returned"};
+    private static HashSet<string> blueStuff = new HashSet<string>() {"Water Vein", "Ginso Teleporter", "Clean Water"};
+    private static HashSet<string> orangeStuff = new HashSet<string>() {"Gumon Seal", "Forlorn Teleporter", "Wind Restored"};
+    private static HashSet<string> redStuff = new HashSet<string>() {"Sunstone", "Horu Teleporter", "Warmth Returned"};
 
     private static string colorWrap(string input) {
-        if SkillNames.ContainsValue(input) return $"${input}$"; // skill names are green
-        if blueStuff.Contains(input) return $"*{input}*";       // blue stuff is blue
-        if orangeStuff.Contains(input) return $"#{input}#";     // orange stuff is orange
-        if redStuff.Contains(input) return $"@{input}@";        // red stuff is red
+        if(SkillNames.ContainsValue(input)) return $"${input}$"; // skill names are green
+        if(blueStuff.Contains(input)) return $"*{input}*";       // blue stuff is blue
+        if(orangeStuff.Contains(input)) return $"#{input}#";     // orange stuff is orange
+        if(redStuff.Contains(input)) return $"@{input}@";        // red stuff is red
         return input;                                           // this could have been a poem
     }
 
@@ -230,13 +230,13 @@ public static class RandomizerMW
                             exp += val;
                         break;
                     case "RB": 
-                        if(entity.Id == 17)
+                        if(entry.Id == "17")
                             wvs++;
-                        else if(entity.Id == 19)
+                        else if(entry.Id == "19")
                             gss++;
-                        else if(entity.Id == 21)
+                        else if(entry.Id == "21")
                             sss++;
-                        else if(entity.Id == 28)
+                        else if(entry.Id == "28")
                             wfg++;
                         else
                             rb++; 
@@ -256,12 +256,13 @@ public static class RandomizerMW
             if (travel.Count > 0)
                 lines.Add(string.Join(", ", travel.ToArray()));
             List<string> counts = new List<string>();
+            // TODO: maybe get their names even though it'll be so much work (probs a refactor on name handling in general misery emoji)
+            if (rb > 0) counts.Add(Counted(rb, "Bonus Pickup", "Bonus Pickups"));
             if (hc > 0) counts.Add(Counted(hc, "Health Cell", "Health Cells"));
             if (ec > 0) counts.Add(Counted(ec, "Energy Cell", "Energy Cells"));
             if (ac > 0) counts.Add(Counted(ac, "Ability Cell", "Ability Cells"));
             if (ks > 0) counts.Add(Counted(ks, "Keystone", "Keystones"));
             if (ms > 0) counts.Add(Counted(ms, "Mapstone", "Mapstones"));
-            if (rb > 0) counts.Add(Counted(rb, "Bonus Pickup", "Bonus Pickups"));
             if (other > 0) counts.Add(Counted(other, "other item", "other items"));
             if (exp > 0) counts.Add(exp.ToString() + " Spirit Light");
             if (counts.Count > 0)
