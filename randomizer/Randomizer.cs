@@ -349,6 +349,8 @@ public static class Randomizer
         else
         {
             Randomizer.MessageQueue.Enqueue(message);
+            if (RandomizerUI.Instance != null)
+                RandomizerUI.Instance.RecordRecentNotification(message);
         }
     }
 
@@ -365,6 +367,8 @@ public static class Randomizer
         else
         {
             Randomizer.MessageQueue.Enqueue(new object[] {message, frames});
+            if (RandomizerUI.Instance != null)
+                RandomizerUI.Instance.RecordRecentNotification(message, (float)frames / 60f + 3f);
         }
     }
 

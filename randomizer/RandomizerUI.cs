@@ -138,17 +138,14 @@ public class RandomizerUI : MonoBehaviour
 	public void FixedUpdate()
 	{
 		bool queueEnabled = RandomizerSettings.Customization.MultiplePickupMessages;
-		bool alwaysShowLastFive = RandomizerSettings.Customization.AlwaysShowLastFivePickups;
+		// only meaningful with the side queue; without it the hold state would wedge open
+		bool alwaysShowLastFive = RandomizerSettings.Customization.AlwaysShowLastFivePickups && queueEnabled;
 
 		// in any case where "hold alt+T" would show nothing, replay last message OnPressed to preserve snappy response
-		if (RandomizerRebinding.ReplayMessage.OnPressed && (!queueEnabled || alwaysShowLastFive || this.m_recentSideNotifications.Count == 0))
+		// (recents fill even with the side queue disabled, so holding shows the last 5 either way)
+		if (RandomizerRebinding.ReplayMessage.OnPressed && (alwaysShowLastFive || this.m_recentSideNotifications.Count == 0))
 		{
 			Randomizer.playLastMessage();
-		}
-
-		if (!queueEnabled)
-		{
-			return;
 		}
 
 		if (alwaysShowLastFive)
@@ -224,6 +221,17 @@ public class RandomizerUI : MonoBehaviour
 	public void QueueSideNotification(string message, float duration = 5f)
 	{
 		this.m_sideNotificationsAwaiting.Enqueue(new Message{ MessageString = message, Duration = duration });
+	}
+
+	// track a message for hold-alt+T without displaying it (side queue disabled:
+	// it already showed top-center)
+	public void RecordRecentNotification(string message, float duration = 5f)
+	{
+		this.m_recentSideNotifications.Enqueue(new Message{ MessageString = message, Duration = duration });
+		while (this.m_recentSideNotifications.Count > 5)
+		{
+			this.m_recentSideNotifications.Dequeue();
+		}
 	}
 
 	public void ClearRecentNotifications()
