@@ -175,12 +175,24 @@ public static class RandomizerMW
         {"0", "Water Vein"}, {"1", "Clean Water"}, {"2", "Gumon Seal"}, {"3", "Wind Restored"}, {"4", "Sunstone"}, {"5", "Warmth Returned"}
     };
 
-    private static string Counted(int n, string singular, string plural)
+    private static string Counted(int n, string singular, string plural, string wrap = "")
     {
-        return n.ToString() + " " + (n == 1 ? singular : plural);
+        return $"{wrap}{n}{(n == 1 ? singular : plural)}";
     }
 
-    // skills, then world events, then teleporters/warps, then a counts line
+    private HashSet<string> blueStuff = new HashSet<string>() {"Water Vein", "Ginso Teleporter", "Clean Water"};
+    private HashSet<string> orangeStuff = new HashSet<string>() {"Gumon Seal", "Forlorn Teleporter", "Wind Restored"};
+    private HashSet<string> redStuff = new HashSet<string>() {"Sunstone", "Horu Teleporter", "Warmth Returned"};
+
+    private static string colorWrap(string input) {
+        if SkillNames.ContainsValue(input) return $"${input}$"; // skill names are green
+        if blueStuff.Contains(input) return $"*{input}*";       // blue stuff is blue
+        if orangeStuff.Contains(input) return $"#{input}#";     // orange stuff is orange
+        if redStuff.Contains(input) return $"@{input}@";        // red stuff is red
+        return input;                                           // this could have been a poem
+    }
+
+    // skills, then world events (+ shards/frags), then teleporters/warps, then a counts line
     private static void ShowBatchMessage(List<ManifestEntry> entries)
     {
         try
@@ -188,19 +200,21 @@ public static class RandomizerMW
             List<string> skills = new List<string>();
             List<string> events = new List<string>();
             List<string> travel = new List<string>();
-            int hc = 0, ec = 0, ac = 0, ks = 0, ms = 0, exp = 0, rb = 0, other = 0;
+            int hc = 0, ec = 0, ac = 0, ks = 0, ms = 0, exp = 0, rb = 0, wvs = 0, gss = 0, sss = 0, wfg = 0, other = 0;
+            HashSet<int> finders = new HashSet<int>();
             foreach (ManifestEntry entry in entries)
             {
+                finders.Add(entry.Finder);
                 switch (entry.Code)
                 {
                     case "SK":
-                        skills.Add(SkillNames.ContainsKey(entry.Id) ? "$" + SkillNames[entry.Id] + "$" : "Skill " + entry.Id);
+                        skills.Add(colorWrap(SkillNames.ContainsKey(entry.Id) ? SkillNames[entry.Id] : "Unknown Skill " + entry.Id));
                         break;
                     case "EV":
-                        events.Add(EventNames.ContainsKey(entry.Id) ? "#" + EventNames[entry.Id] + "#" : "Event " + entry.Id);
+                        events.Add(colorWrap(EventNames.ContainsKey(entry.Id) ? EventNames[entry.Id] : "Unknown Event " + entry.Id));
                         break;
                     case "TP":
-                        travel.Add(entry.Id + " Teleporter");
+                        travel.Add(colorWrap(entry.Id + " Teleporter"));
                         break;
                     case "TW":
                         travel.Add(entry.Id.Split(',')[0]);
@@ -215,10 +229,25 @@ public static class RandomizerMW
                         if (int.TryParse(entry.Id, out val))
                             exp += val;
                         break;
-                    case "RB": rb++; break;
+                    case "RB": 
+                        if(entity.Id == 17)
+                            wvs++;
+                        else if(entity.Id == 19)
+                            gss++;
+                        else if(entity.Id == 21)
+                            sss++;
+                        else if(entity.Id == 28)
+                            wfg++;
+                        else
+                            rb++; 
+                        break;
                     default: other++; break;
                 }
             }
+            if(wvs > 0) events.Add(Counted(wvs, "Water Vein Shard", "Water Vein Shards", "*"));
+            if(gss > 0) events.Add(Counted(gss, "Gumon Seal Shard", "Gumon Seal Shards", "#"));
+            if(sss > 0) events.Add(Counted(sss, "Sunstone Shard", "Sunstone Shards", "@"));
+            if(wfg > 0) events.Add(Counted(wfg, "Warmth Fragment", "Warmth Fragments", "@"));
             List<string> lines = new List<string>();
             if (skills.Count > 0)
                 lines.Add(string.Join(", ", skills.ToArray()));
@@ -237,7 +266,7 @@ public static class RandomizerMW
             if (exp > 0) counts.Add(exp.ToString() + " Spirit Light");
             if (counts.Count > 0)
                 lines.Add(string.Join(", ", counts.ToArray()));
-            if (lines.Count > 0)
+            if (lines.Count > 0) // TODO: add the player(s) from finders to this above the linebreak
                 RandomizerSwitch.PickupMessage("Received:\n" + string.Join("\n", lines.ToArray()), 480);
         }
         catch (Exception e)
