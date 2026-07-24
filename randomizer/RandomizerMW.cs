@@ -43,6 +43,16 @@ public static class RandomizerMW
         return code == "MW" && coords <= -2 && coords >= -257;
     }
 
+    // has the item at this manifest pseudo-location already been granted to us?
+    public static bool ManifestLocGranted(int coords)
+    {
+        int slot = -coords - 2;
+        if (slot < 0 || slot > 255 || !Characters.Sein)
+            return false;
+        uint local = AsUint(Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + slot / 32));
+        return (local & (1u << (slot % 32))) != 0;
+    }
+
     // manifest line: <-(slot+2)>|MW|<finder>,<code>,<id>|<zone>
     // (id may itself contain commas, e.g. TW warps, so split at most twice)
     public static void AddManifestEntry(int coords, string value, string zone)
@@ -65,6 +75,15 @@ public static class RandomizerMW
                 int evId;
                 if (int.TryParse(entry.Id, out evId) && evId % 2 == 0)
                     RandomizerClues.AddClue($"P{entry.Finder} {zone}", evId / 2);
+            }
+
+            // same for keysanity door keys; the clue's coords are the manifest
+            // pseudo-location, resolved as found via the granted-slot bits
+            if (Randomizer.Keysanity.IsActive && entry.Code == "RB")
+            {
+                int rbId;
+                if (int.TryParse(entry.Id, out rbId))
+                    Randomizer.Keysanity.AddClue(rbId, coords, $"P{entry.Finder} {zone}");
             }
         }
         catch (Exception e)
@@ -105,17 +124,19 @@ public static class RandomizerMW
                 return false;
 
             bool batch = pending.Count > BatchMessageThreshold;
+            // grants during the credits roll happen silently
+            bool silent = Randomizer.CreditsActive;
             List<ManifestEntry> batched = new List<ManifestEntry>();
             foreach (int slot in pending)
             {
-                if (!GrantSlot(slot, batch, batched))
+                if (!GrantSlot(slot, batch || silent, batched))
                     continue;
                 int i = slot / 32;
                 uint local = AsUint(Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i));
                 Characters.Sein.Inventory.SetRandomizerItem(GrantedSlotsBase + i, AsInt(local | (1u << (slot % 32))));
                 granted = true;
             }
-            if (batched.Count > 0)
+            if (batched.Count > 0 && !silent)
                 ShowBatchMessage(batched);
         }
         catch (Exception e)
@@ -137,13 +158,20 @@ public static class RandomizerMW
             return false;
         }
         ManifestEntry entry = Manifest[slot];
+        // keysanity keys: pass the manifest pseudo-location, so the pickup
+        // hint can exclude this key from its own Remaining list (our granted
+        // bit for it isn't set until after GivePickup)
+        int coords = 0;
+        int rbId;
+        if (entry.Code == "RB" && int.TryParse(entry.Id, out rbId) && rbId >= 300 && rbId < 312)
+            coords = -(slot + 2);
         if (batch)
         {
             // squelch per-item messages; ShowBatchMessage summarizes after
             RandomizerSwitch.SilentMode = true;
             try
             {
-                RandomizerSwitch.GivePickup(new RandomizerAction(entry.Code, entry.Id), 0, false);
+                RandomizerSwitch.GivePickup(new RandomizerAction(entry.Code, entry.Id), coords, false);
             }
             finally
             {
@@ -157,7 +185,7 @@ public static class RandomizerMW
             RandomizerSwitch.MessageSuffix = $" from Player {entry.Finder}";
             try
             {
-                RandomizerSwitch.GivePickup(new RandomizerAction(entry.Code, entry.Id), 0, false);
+                RandomizerSwitch.GivePickup(new RandomizerAction(entry.Code, entry.Id), coords, false);
             }
             finally
             {

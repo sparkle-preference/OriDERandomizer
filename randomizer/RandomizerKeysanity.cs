@@ -120,9 +120,13 @@ public class RandomizerKeysanity {
         Characters.Sein.Inventory.Keystones = 0;
     }
 
+    // coords -2..-257 are multiworld manifest pseudo-locations: those keys sit
+    // in another world, so "found" means the server granted us that slot
+    private bool clueResolved(int coords) => (coords <= -2 && coords >= -257) ? RandomizerMW.ManifestLocGranted(coords) : Randomizer.HaveCoord(coords);
+
     // Me when I'm using LINQ responsibly (<- me when I lie)
-    private string hintsForDoor(int id, int skipCoords = -1) => String.Join(", ", keyClueMap[id] 
-        .Where(rkhi => !(rkhi.Coords == skipCoords || Randomizer.HaveCoord(rkhi.Coords))) // only look at hints we still need
+    private string hintsForDoor(int id, int skipCoords = -1) => String.Join(", ", keyClueMap[id]
+        .Where(rkhi => !(rkhi.Coords == skipCoords || clueResolved(rkhi.Coords)))         // only look at hints we still need
         .GroupBy(rkhi => rkhi.Area)                                                       // group them by their areas
         .OrderBy(grp=>$"{4-grp.Count()}{grp.Key}")                                        // sort by count and then area alphabetically
         .Select(grp => grp.Count() == 1 ? grp.Key : $"{grp.Key} x{grp.Count()}")          // format for display (with x[NUM] for multiples)
