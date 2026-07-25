@@ -58,7 +58,7 @@ public static class Randomizer
             Randomizer.Entrance = false;
             Randomizer.DoorTable = new Hashtable();
             Randomizer.ColorShift = false;
-            Randomizer.MessageQueue = new Queue();
+            Randomizer.MessageQueue = new Queue<RandomizerUI.Message>();
             Randomizer.MessageQueueTime = 0;
             Randomizer.QueueBash = false;
             Randomizer.BashWasQueued = false;
@@ -336,11 +336,12 @@ public static class Randomizer
         }
     }
 
-    public static void showHint(string message)
+    public static void showHint(RandomizerUI.Message message)
     {
         Randomizer.LastMessageCredits = false;
         Randomizer.PlayedGoodLuckOnce = false;
-        Randomizer.Message = message;
+        Randomizer.Message = message.MessageString;
+        Randomizer.MessageBgColor = message.BgColor;
 
         if (RandomizerSettings.Customization.MultiplePickupMessages)
         {
@@ -354,32 +355,14 @@ public static class Randomizer
         }
     }
 
-    public static void showHint(string message, int frames)
-    {
-        Randomizer.LastMessageCredits = false;
-        Randomizer.PlayedGoodLuckOnce = false;
-        Randomizer.Message = message;
-
-        if (RandomizerSettings.Customization.MultiplePickupMessages)
-        {
-            RandomizerUI.Instance.QueueSideNotification(message, (float)frames / 60f + 3f);
-        }
-        else
-        {
-            Randomizer.MessageQueue.Enqueue(new object[] {message, frames});
-            if (RandomizerUI.Instance != null)
-                RandomizerUI.Instance.RecordRecentNotification(message, (float)frames / 60f + 3f);
-        }
-    }
-
     public static void printInfo(string message)
     {
-        Randomizer.MessageQueue.Enqueue(message);
+        Randomizer.MessageQueue.Enqueue(RandomizerUI.Message.InfoMessage(message));
     }
 
     public static void printInfo(string message, int frames)
     {
-        Randomizer.MessageQueue.Enqueue(new object[] {message, frames});
+        Randomizer.MessageQueue.Enqueue(RandomizerUI.Message.InfoMessage(message, frames / 60f));
     }
 
     public static void playLastMessage()
@@ -404,18 +387,18 @@ public static class Randomizer
 
                 split[0] = split[0][0].ToString().ToUpper() + split[0].Substring(1);
                 var shuffled = String.Join(" ", split) + "!";
-                Randomizer.MessageQueue.Enqueue(shuffled);
+                Randomizer.MessageQueue.Enqueue(RandomizerUI.Message.PickupMessage(shuffled));
             }
             else
             {
-                Randomizer.MessageQueue.Enqueue(Randomizer.Message);
+                Randomizer.MessageQueue.Enqueue(RandomizerUI.Message.PickupMessage(Randomizer.Message));
             }
 
             Randomizer.PlayedGoodLuckOnce = true;
         }
         else
         {
-            Randomizer.MessageQueue.Enqueue(Randomizer.Message);
+            Randomizer.MessageQueue.Enqueue(new RandomizerUI.Message(Randomizer.Message, Randomizer.MessageBgColor));
         }
     }
 
@@ -435,7 +418,7 @@ public static class Randomizer
     public static void hintAndLog(float x, float y)
     {
         string message = ((int)x).ToString() + " " + ((int)y).ToString();
-        Randomizer.showHint(message);
+        Randomizer.showHint(RandomizerUI.Message.PickupMessage(message));
         Randomizer.log(message);
     }
 
@@ -809,21 +792,14 @@ public static class Randomizer
             {
                 return;
             }
-            object queueItem = Randomizer.MessageQueue.Dequeue();
-            string message;
-            if (queueItem is object[])
-            {
-                message = (string)((object[])queueItem)[0];
-                Randomizer.MessageQueueTime = (int)((object[])queueItem)[1] / 2;
-            }
-            else
-            {
-                message = (string)queueItem;
-                Randomizer.MessageQueueTime = 60;
-            }
+            var queueItem = Randomizer.MessageQueue.Dequeue();
+            var message = queueItem.MessageString;
+            Randomizer.MessageQueueTime = (int)(queueItem.BaseDuration * 30f);
+            Randomizer.MessageBgColor = queueItem.BgColor;
             if(message != "") {
                 Randomizer.MessageProvider.SetMessage(message);
-                Game.UI.Hints.Show(Randomizer.MessageProvider, HintLayer.Randomizer, (float)Randomizer.MessageQueueTime / 30f + 1f);
+                var msgBox = Game.UI.Hints.Show(Randomizer.MessageProvider, HintLayer.Randomizer, queueItem.BaseDuration + 1f);
+                msgBox.SetBackgroundColor(Randomizer.MessageBgColor);
             }
         }
         Randomizer.MessageQueueTime--;
@@ -970,10 +946,11 @@ public static class Randomizer
             if(setMessage)
             {
                 Message = text;
+                MessageBgColor = RandomizerUI.Message.VanillaBgColor;
                 LastMessageCredits = true;
             }            
         } else {
-            Randomizer.MessageQueue.Enqueue(new object[] {text, 60 * seconds});
+            Randomizer.MessageQueue.Enqueue(RandomizerUI.Message.InfoMessage(text, seconds));
             LastMessageCredits = false;
         }
     }
@@ -1121,7 +1098,7 @@ public static class Randomizer
                                 }
                                 else
                                 {
-                                    Randomizer.MessageQueue.Enqueue("*Ginso teleporter activated*");
+                                    Randomizer.MessageQueue.Enqueue(RandomizerUI.Message.PickupMessage("*Ginso teleporter activated*"));
                                 }
                             }
                             else if(gameMapTP.Identifier == "forlorn" && get(1025) == 1 && (RandomizerBonus.GumonSealShards() >= 2 || RandomizerClues.IsClueActive("GS")))
@@ -1133,7 +1110,7 @@ public static class Randomizer
                                 }
                                 else
                                 {
-                                    Randomizer.MessageQueue.Enqueue("#Forlorn teleporter activated#");
+                                    Randomizer.MessageQueue.Enqueue(RandomizerUI.Message.PickupMessage("#Forlorn teleporter activated#"));
                                 }
                             }
                             else if(gameMapTP.Identifier == "mountHoru" && get(1026) == 1 && (RandomizerBonus.SunstoneShards() >= 2 || RandomizerClues.IsClueActive("SS")))
@@ -1145,7 +1122,7 @@ public static class Randomizer
                                 }
                                 else
                                 {
-                                    Randomizer.MessageQueue.Enqueue("@Horu teleporter activated@");
+                                    Randomizer.MessageQueue.Enqueue(RandomizerUI.Message.PickupMessage("@Horu teleporter activated@"));
                                 }
                             }
                         }
@@ -1583,8 +1560,9 @@ public static class Randomizer
     public static bool CluesMode;
     public static bool Shards;
     public static bool ColorShift;
-    public static Queue MessageQueue;
+    public static Queue<RandomizerUI.Message> MessageQueue;
     public static int MessageQueueTime;
+    public static Color MessageBgColor;
     public static bool Sync;
     public static string SyncId;
     public static int SyncMode;

@@ -192,12 +192,12 @@ public static class RandomizerSyncManager
 							int tree = id-899;
 							string treeName =  RandomizerTrackedDataManager.Trees[tree];
 							if(RandomizerTrackedDataManager.SetTree(tree))
-								Randomizer.showHint(treeName +  " tree (activated by teammate)");
+								Randomizer.showHint(RandomizerUI.Message.PickupMessage(treeName +  " tree (activated by teammate)"));
 						// 911-921: relic progress
 						} else if(id >= 911 && id < 922) {
 							string relicZone = RandomizerTrackedDataManager.Zones[id-911];
 							if(RandomizerTrackedDataManager.SetRelic(relicZone))
-								Randomizer.showHint("#" + relicZone + " relic# (found by teammate)", 300);
+								Randomizer.showHint(RandomizerUI.Message.PickupMessage("#" + relicZone + " relic# (found by teammate)", 5f));
 						// 100-129: bonus skills
 						} else if(id >= 100 && id < 130) {
 							if(cnt > 0 && RandomizerBonus.UpgradeCount(id) == 0)

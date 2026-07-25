@@ -79,7 +79,7 @@ public class RandomizerKeysanity {
             Characters.Sein.Inventory.Keystones = count - numberUsed;
 
             if (count < countForDoor(id)) {
-                Randomizer.showHint($"{hintMap[id]} {count}/{countForDoor(id)}: {hintsForDoor(id)}");
+                Randomizer.printInfo($"{hintMap[id]} {count}/{countForDoor(id)}: {hintsForDoor(id)}");
             }
             return;
         }

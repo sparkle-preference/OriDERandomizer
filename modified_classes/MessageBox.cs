@@ -172,7 +172,7 @@ public class MessageBox : MonoBehaviour
 			{
 				this.TextBox.verticalAnchor = VerticalAnchorMode.Bottom;
 				text = text.Substring(9);
-			} 
+			}
 			if (text.StartsWith("ANCHORLEFT"))
 			{
 				this.TextBox.horizontalAnchor = HorizontalAnchorMode.Left;
@@ -181,7 +181,7 @@ public class MessageBox : MonoBehaviour
 			{
 				this.TextBox.horizontalAnchor = HorizontalAnchorMode.Right;
 				text = text.Substring(11);
-			} 
+			}
 			if (text.StartsWith("PADDING"))
 			{
 				Queue<string> p = new Queue<string>(text.Split(new char[]{'_'}));
@@ -200,6 +200,18 @@ public class MessageBox : MonoBehaviour
 				this.TextBox.width = float.Parse(p.Dequeue());
 				this.TextBox.TabSize = float.Parse(p.Dequeue());
 				text = string.Join("_", p.ToArray());
+			}
+			if (text.StartsWith("BGCOLOR"))
+			{
+				Queue<string> p = new Queue<string>(text.Split(new char[]{'_'}));
+				p.Dequeue();
+				var r = float.Parse(p.Dequeue()) / 510f;
+				var g = float.Parse(p.Dequeue()) / 510f;
+				var b = float.Parse(p.Dequeue()) / 510f;
+				var a = float.Parse(p.Dequeue()) / 510f;
+				text = string.Join("_", p.ToArray());
+				SetBackgroundColor(new Color(r, g, b, a));
+				m_hasBackgroundColor = true;
 			}
 			if (text.StartsWith("SHOWINFO"))
 			{
@@ -363,6 +375,36 @@ public class MessageBox : MonoBehaviour
 		}
 	}
 
+	public void SetBackgroundColor(Color bgColor)
+	{
+		if (m_hasBackgroundColor)
+		{
+			return;
+		}
+
+		var backgroundRenderer = Visibility.transform.FindChild("background/hintMessageBackground").GetComponent<Renderer>();
+		UberShaderAPI.SetMainTexture(backgroundRenderer, WhiteBackground, true);
+		UberShaderAPI.SetColor(backgroundRenderer, bgColor, true);
+	}
+
+	private static Texture2D _hintMessageBackgroundWhite;
+
+	private static Texture2D WhiteBackground
+	{
+		get
+		{
+			if (_hintMessageBackgroundWhite == null)
+			{
+				_hintMessageBackgroundWhite = new Texture2D(0, 0);
+				_hintMessageBackgroundWhite.LoadImage(
+					RandomizerResources.ReadResource("hintMessageBackgroundWhite.png")
+				);
+			}
+
+			return _hintMessageBackgroundWhite;
+		}
+	}
+
 	public const float WaitTimeBetweenMessages = 0.3f;
 
 	public MessageBoxLanguageStyles LanguageStyles;
@@ -404,4 +446,6 @@ public class MessageBox : MonoBehaviour
 	private MessageDescriptor[] m_messageDescriptors;
 
 	private MessageDescriptor m_currentMessage;
+
+	private bool m_hasBackgroundColor;
 }
