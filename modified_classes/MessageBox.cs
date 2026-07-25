@@ -201,42 +201,26 @@ public class MessageBox : MonoBehaviour
 				this.TextBox.TabSize = float.Parse(p.Dequeue());
 				text = string.Join("_", p.ToArray());
 			}
+			float r = 0f,g = 0f,b = 0f,a = 0f;
 			if (text.StartsWith("BGCOLOR"))
 			{
 				Queue<string> p = new Queue<string>(text.Split(new char[]{'_'}));
 				p.Dequeue();
-				var r = float.Parse(p.Dequeue()) / 510f;
-				var g = float.Parse(p.Dequeue()) / 510f;
-				var b = float.Parse(p.Dequeue()) / 510f;
-				var a = float.Parse(p.Dequeue()) / 510f;
+				r = float.Parse(p.Dequeue());
+				g = float.Parse(p.Dequeue());
+				b = float.Parse(p.Dequeue());
+				a = float.Parse(p.Dequeue());
 				text = string.Join("_", p.ToArray());
-				SetBackgroundColor(new Color(r, g, b, a));
+				SetBackgroundColor(new Color(r / 510f, g / 510f, b / 510f, a / 510f));
 				m_hasBackgroundColor = true;
 			}
 			if (text.StartsWith("SHOWINFO"))
 			{
-				text = string.Concat(new string[]
-				{
-					text.Substring(8),
-					"\nHeight: ",
-					this.TextBox.maxHeight.ToString(),
-					" width: ",
-					this.TextBox.width.ToString(),
-					"TabSize ",
-					this.TextBox.size.ToString(),
-					"\n Anchors ",
-					this.TextBox.horizontalAnchor.ToString(),
-					" ",
-					this.TextBox.verticalAnchor.ToString(),
-					"\nPadding: ",
-					this.TextBox.paddingBottom.ToString(),
-					"/",
-					this.TextBox.paddingLeft.ToString(),
-					"/",
-					this.TextBox.paddingRight.ToString(),
-					"/",
-					this.TextBox.paddingTop.ToString()
-				});
+				text = $"{text.Substring(8)}\nHeight: {TextBox.maxHeight},\nWidth: {TextBox.width}\n";
+				text += $"Anchors: {TextBox.horizontalAnchor} {TextBox.verticalAnchor}\n";
+				text += $"Padding: {TextBox.paddingBottom}/{TextBox.paddingLeft}/{TextBox.paddingRight}/{TextBox.paddingTop}\n";
+				if(r+g+b+a > 0f)
+					text += $"Color: {r},{g},{b},{a}";
 			}
 			if (this.FormatText)
 			{
