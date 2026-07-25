@@ -12,7 +12,7 @@ public static class RandomizerSettings {
 		WriteSettings();
 	}
 
-	public static string LastAddedSetting = "MultiWorld Sent Pickup Message Background Color";
+	public static string LastAddedSetting = "Multiworld Outbound Message Background Color";
  
 	public static void ParseSettings() {
 		if (!File.Exists("RandomizerSettings.txt")) {
@@ -178,7 +178,7 @@ public static class RandomizerSettings {
 		Customization.RandomizedExpNames = new BoolSetting("Randomized Experience Names", false, "True: Replace the word \"Experience\" with a random currency name whenever you gain experience from a pickup.\nFalse (default): Experience pickups are just called Experience.", false);
 		Customization.AlwaysShowDoorHints = new BoolSetting("Always Show Keysanity Door Hints", false, "True: Always show any unlocked Keysanity door hints when viewing the map.\nFalse (default): Only show Keysanity door hints in the map when hovering a door.");
 		Customization.PickupMessageBgColor = new ColorSetting("Pickup Message Background Color", new Color(0f, 0f, 0f, 0.5f), 510f, "Red, Blue, Green, Transparency (0-255 for each): Background color for pickup messages.\nDefault: 0, 0, 0, 255", false);
-		Customization.MwPickupMessageBgColor = new ColorSetting("MultiWorld Sent Pickup Message Background Color", new Color(64f / 510f, 64f / 510f, 64f / 510f, 255f / 510f), 510f, "Red, Blue, Green, Transparency (0-255 for each): Background color for pickup messages sent to another Player.\nBoth local pickups and pickups received from another player will use the \"Pickup Message Background Color\" color.\nThis is for pickups that you find in your seed and send to another player.\nDefault: 64, 64, 64, 255", false);
+		Customization.MwPickupMessageBgColor = new ColorSetting("Multiworld Outbound Message Background Color", new Color(64f / 510f, 64f / 510f, 64f / 510f, 255f / 510f), 510f, "Red, Blue, Green, Transparency (0-255 for each): Background color for pickup messages sent to another Player.\nBoth local pickups and pickups received from another player will use the \"Pickup Message Background Color\" color.\nThis is for pickups that you find in your seed and send to another player.\nDefault: 64, 64, 64, 255", false);
 
 		QOL.AbilityMenuOpacity = new FloatSetting("Ability Menu Opacity", 0.5f, "(0.0-1.0) The opacity of the ability menu when performing a Save Anywhere.", false);
 		QOL.CursorLock = new BoolSetting("Cursor Lock", false, "True: Locks the mouse cursor inside the window\nFalse (default): Vanilla behavior (cursor can leave the Ori window in borderless / windowed mode).", false);
@@ -194,7 +194,7 @@ public static class RandomizerSettings {
 
 		DevSettings.AreasOri = new BoolSetting("Keep Areas.Ori Updated", true, "Update areas.ori from the server. Set to False to disable for local development.", false, true);
 		DevSettings.BlackrootOrbRoomClimbAssist = new BoolSetting("Blackroot Orb Room Climb Assist", true, "", false, true);
-		DevSettings.WebEndpoint = new UrlSetting("Root Netcode URL", "bfnc.orirando.com", "The base URL to connect to for sync code.\nIf you change this from the default ('bfnc.orirando.com') it is going to break all netcode. \nDO NOT PUT AN http:// IT", false, true);
+		DevSettings.WebEndpoint = new UrlSetting("Root Netcode URL", "bfnc.orirando.com", "The base URL to connect to for sync code.\nIf you change this from the default ('bfnc.orirando.com') it is going to break all netcode. \nDO NOT PUT AN http:// IT WILL NOT WORK IF YOU DO.", false, true);
 	}
 
 	public static Dictionary<string, SettingBase> All = new Dictionary<string, SettingBase>();
