@@ -219,7 +219,7 @@ public class MessageBox : MonoBehaviour
 				text = $"{text.Substring(8)}\nHeight: {TextBox.maxHeight},\nWidth: {TextBox.width}\n";
 				text += $"Anchors: {TextBox.horizontalAnchor} {TextBox.verticalAnchor}\n";
 				text += $"Padding: {TextBox.paddingBottom}/{TextBox.paddingLeft}/{TextBox.paddingRight}/{TextBox.paddingTop}\n";
-				if(r+g+b+a > 0f)
+				if(m_hasBackgroundColor)
 					text += $"Color: {r},{g},{b},{a}";
 			}
 			if (this.FormatText)
