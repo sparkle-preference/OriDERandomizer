@@ -298,7 +298,7 @@ public static class RandomizerSwitch
                             else if(p[0] == "s")
                                 SilentMode = (p[1].Trim().ToLower() == "true");
                         }
-                        Randomizer.showHint(RandomizerUI.Message.PickupMessage(message, duration));
+                        Randomizer.showHint(RandomizerUI.Message.PickupMessage(message, duration / 60f));
                     } else 
                         Randomizer.showHint(RandomizerUI.Message.PickupMessage(message));
                     break;
