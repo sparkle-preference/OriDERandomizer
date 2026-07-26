@@ -49,77 +49,7 @@ public class RandomizerLocationManager
     {
         if (!HaveDownloadedAreas) return; //Areas thread hasn't returned yet, skip. It'll run this on its own on completion.
         
-        HashSet<string> paths = new HashSet<string>();
-        int firstComma = Randomizer.SeedMeta.IndexOf(',');
-        string preset = Randomizer.SeedMeta.Substring(0, firstComma);
-
-        if (preset.StartsWith("Sync"))
-        {
-            preset = Randomizer.SeedMeta.Substring(firstComma + 1, Randomizer.SeedMeta.IndexOf(',', firstComma + 1) - firstComma - 1);
-        }
-
-        switch (preset)
-        {
-        case "Casual":
-            paths.Add("casual-core");
-            paths.Add("casual-dboost");
-            break;
-        case "Standard":
-            paths.Add("casual-core");
-            paths.Add("casual-dboost");
-            paths.Add("standard-core");
-            paths.Add("standard-dboost");
-            paths.Add("standard-lure");
-            paths.Add("standard-abilities");
-            break;
-        case "Expert":
-            paths.Add("casual-core");
-            paths.Add("casual-dboost");
-            paths.Add("standard-core");
-            paths.Add("standard-dboost");
-            paths.Add("standard-lure");
-            paths.Add("standard-abilities");
-            paths.Add("expert-core");
-            paths.Add("expert-dboost");
-            paths.Add("expert-lure");
-            paths.Add("expert-abilities");
-            paths.Add("dbash");
-            break;
-        case "Master":
-            paths.Add("casual-core");
-            paths.Add("casual-dboost");
-            paths.Add("standard-core");
-            paths.Add("standard-dboost");
-            paths.Add("standard-lure");
-            paths.Add("standard-abilities");
-            paths.Add("expert-core");
-            paths.Add("expert-dboost");
-            paths.Add("expert-lure");
-            paths.Add("expert-abilities");
-            paths.Add("dbash");
-            paths.Add("master-core");
-            paths.Add("master-dboost");
-            paths.Add("master-lure");
-            paths.Add("master-abilities");
-            paths.Add("gjump");     
-            break;
-        default:
-            if (preset.StartsWith("Custom"))
-            {
-                int pathMask = 0;
-                if (int.TryParse(preset.Remove(0, "Custom".Length), out pathMask))
-                {
-                    HashSet<string> newPaths = OriParse.PathMaskToPathSet(pathMask);
-                    if (newPaths != null)
-                    {
-                        //Randomizer.log("Got custom pathset: " + OriParse.PathMaskToString(pathMask));
-                        paths = newPaths;
-                    }
-                }
-            }
-            paths.Add("casual-core");
-            break;
-        }
+        var paths = InitializePaths();
 
         if (!File.Exists("areas.ori"))
         {
@@ -152,6 +82,92 @@ public class RandomizerLocationManager
                 location.Reachable = false;
             }
         }       
+    }
+
+    private static HashSet<string> InitializePaths()
+    {
+        HashSet<string> paths = new HashSet<string>();
+
+        string flagLine = Randomizer.SeedMeta.Split(new[] { '|' }, 1)[0];
+        int firstComma = flagLine.IndexOf(',');
+        if (firstComma < 0)
+            return paths;
+
+        string preset = flagLine.Substring(0, firstComma);
+
+        if (preset.StartsWith("Sync"))
+        {
+            var secondComma = flagLine.IndexOf(',', firstComma + 1);
+            if (secondComma < 0)
+                return paths;
+
+            preset = flagLine.Substring(firstComma + 1, secondComma - firstComma - 1);
+        }
+
+        switch (preset)
+        {
+            case "Casual":
+                paths.Add("casual-core");
+                paths.Add("casual-dboost");
+                break;
+            case "Standard":
+                paths.Add("casual-core");
+                paths.Add("casual-dboost");
+                paths.Add("standard-core");
+                paths.Add("standard-dboost");
+                paths.Add("standard-lure");
+                paths.Add("standard-abilities");
+                break;
+            case "Expert":
+                paths.Add("casual-core");
+                paths.Add("casual-dboost");
+                paths.Add("standard-core");
+                paths.Add("standard-dboost");
+                paths.Add("standard-lure");
+                paths.Add("standard-abilities");
+                paths.Add("expert-core");
+                paths.Add("expert-dboost");
+                paths.Add("expert-lure");
+                paths.Add("expert-abilities");
+                paths.Add("dbash");
+                break;
+            case "Master":
+                paths.Add("casual-core");
+                paths.Add("casual-dboost");
+                paths.Add("standard-core");
+                paths.Add("standard-dboost");
+                paths.Add("standard-lure");
+                paths.Add("standard-abilities");
+                paths.Add("expert-core");
+                paths.Add("expert-dboost");
+                paths.Add("expert-lure");
+                paths.Add("expert-abilities");
+                paths.Add("dbash");
+                paths.Add("master-core");
+                paths.Add("master-dboost");
+                paths.Add("master-lure");
+                paths.Add("master-abilities");
+                paths.Add("gjump");
+                break;
+            default:
+                if (preset.StartsWith("Custom"))
+                {
+                    int pathMask = 0;
+                    if (int.TryParse(preset.Remove(0, "Custom".Length), out pathMask))
+                    {
+                        HashSet<string> newPaths = OriParse.PathMaskToPathSet(pathMask);
+                        if (newPaths != null)
+                        {
+                            //Randomizer.log("Got custom pathset: " + OriParse.PathMaskToString(pathMask));
+                            paths = newPaths;
+                        }
+                    }
+                }
+                paths.Add("casual-core");
+                break;
+        }
+
+        return paths;
     }
 
     public static RandomizerPickupAction AddPickupAction(GameObject parentObj, string pickupName, string actionName = null)
