@@ -12,7 +12,7 @@ using UnityEngine;
 
 public static class Randomizer
 {
-    public static string VERSION = "4.2.1";
+    public static string VERSION = "4.2.2";
     public static void initialize()
     {
         try {
@@ -425,6 +425,7 @@ public static class Randomizer
     public static void Update()
     {
         Randomizer.UpdateMessages();
+        Randomizer.UpdatePendingWin();
         Randomizer.Tick();
 
         if (GameStateMachine.Instance?.CurrentState == GameStateMachine.State.Prologue)
@@ -781,6 +782,32 @@ public static class Randomizer
         if (Characters.Sein)
         {
             Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color = new Color(FixedRandom.Values[0], FixedRandom.Values[1], FixedRandom.Values[2], 0.5f);
+        }
+    }
+
+    // Win messages wait for the player to be upright and in control: the box is
+    // torn down by the death/respawn sequence, and a death goal wins you the game
+    // at the exact moment you die. Deliberately NOT cleared by initialize(), so a
+    // mid-death alt+L can't eat it; NewGameAction clears it instead.
+    public static void QueueWinMessage(string message)
+    {
+        Randomizer.PendingWinMessage = message;
+        Randomizer.WinMessageStableFrames = 0;
+    }
+
+    public static void UpdatePendingWin()
+    {
+        if (Randomizer.PendingWinMessage == null)
+            return;
+        bool stable = Characters.Sein && Characters.Sein.Active && Characters.Sein.Controller.CanMove
+                      && !Characters.Sein.IsSuspended && !UI.MainMenuVisible;
+        // count stable frames, not just one: CanMove goes true before the respawn
+        // fade finishes, and a message printed under the fade is a message unseen
+        Randomizer.WinMessageStableFrames = stable ? Randomizer.WinMessageStableFrames + 1 : 0;
+        if (Randomizer.WinMessageStableFrames >= 60)
+        {
+            Randomizer.PrintImmediately(Randomizer.PendingWinMessage, 15, false, true, false);
+            Randomizer.PendingWinMessage = null;
         }
     }
 
@@ -1562,6 +1589,8 @@ public static class Randomizer
     public static bool ColorShift;
     public static Queue<RandomizerUI.Message> MessageQueue;
     public static int MessageQueueTime;
+    public static string PendingWinMessage;
+    public static int WinMessageStableFrames;
     public static Color MessageBgColor;
     public static bool Sync;
     public static string SyncId;

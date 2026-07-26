@@ -233,7 +233,7 @@ public static class RandomizerSyncManager
 						{
 							if(!RandomizerBonusSkill.UnlockCreditWarp(text.Substring(4)))
 							{
-								Randomizer.Print(text.Substring(4), 10, false, true, false, false);
+								Randomizer.QueueWinMessage(text.Substring(4));
 								RandomizerStatsManager.WriteStatsFile();
 							}
 						}

@@ -8,6 +8,7 @@ public class NewGameAction : ActionMethod
 		Game.Checkpoint.SaveGameData = new SaveGameData();
 		try {
 			Randomizer.initialize();
+			Randomizer.PendingWinMessage = null;
 			Randomizer.showSeedInfo();
 			RandomizerStatsManager.Activate();
 		} catch(Exception e) {

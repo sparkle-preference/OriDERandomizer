@@ -606,7 +606,7 @@ public static class RandomizerBonusSkill
         FoundBonusSkill(1587);
         ActiveBonus = 1587;
         message += "\nPress " + RandomizerRebinding.BonusToggle.FirstBindName() + " to warp to credits";
-        Randomizer.Print(message, 10, false, true, false, false);
+        Randomizer.QueueWinMessage(message);
         RandomizerStatsManager.WriteStatsFile();
         return true;
     }
