@@ -99,7 +99,7 @@ public static class RandomizerMW
         int slot = -coords - 2;
         if (slot < 0 || slot > 255 || !Characters.Sein)
             return false;
-        uint local = AsUint(Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + slot / 32));
+        uint local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + slot / 32);
         return (local & (1u << (slot % 32))) != 0;
     }
 
@@ -164,7 +164,7 @@ public static class RandomizerMW
             {
                 if (!uint.TryParse(parts[i], out serverFields[i]))
                     continue;
-                uint local = AsUint(Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i));
+                uint local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i);
                 uint diff = serverFields[i] & ~local;
                 for (int bit = 0; bit < 32 && diff != 0; bit++)
                     if ((diff & (1u << bit)) != 0)
@@ -182,8 +182,8 @@ public static class RandomizerMW
                 if (!GrantSlot(slot, batch || silent, batched))
                     continue;
                 int i = slot / 32;
-                uint local = AsUint(Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i));
-                Characters.Sein.Inventory.SetRandomizerItem(GrantedSlotsBase + i, AsInt(local | (1u << (slot % 32))));
+                uint local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i);
+                Characters.Sein.Inventory.SetRandomizerItem(GrantedSlotsBase + i, (int)(local | (1u << (slot % 32))));
                 granted = true;
             }
             if (batched.Count > 0 && !silent)
@@ -352,15 +352,5 @@ public static class RandomizerMW
         {
             Randomizer.LogError("MW.ShowBatchMessage: " + e.Message);
         }
-    }
-
-    public static uint AsUint(int value)
-    {
-        return BitConverter.ToUInt32(BitConverter.GetBytes(value), 0);
-    }
-
-    public static int AsInt(uint value)
-    {
-        return BitConverter.ToInt32(BitConverter.GetBytes(value), 0);
     }
 }
