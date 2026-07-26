@@ -237,6 +237,7 @@ public static class Randomizer
             Characters.Sein.Abilities.Carry.CurrentCarryable.Drop();
         if(Characters.Sein.Abilities.Dash && Characters.Sein.Abilities.Dash.IsDashingOrChangeDashing)
             Characters.Sein.Abilities.Dash.StopDashing();
+        BingoController.OnWarp();
         Characters.Sein.Position = position;
         Characters.Sein.Speed = new Vector3(0f, 0f);
         Characters.Ori.Position = new Vector3(position.x, position.y+5);
@@ -255,6 +256,7 @@ public static class Randomizer
             Characters.Sein.Abilities.Carry.CurrentCarryable.Drop();
         RandomizerStatsManager.WarpedToStart();
         RandomizerBonusSkill.LastAltR = Characters.Sein.Position;
+        BingoController.OnWarp();
         Randomizer.Returning = true;
         Characters.Sein.Position = new Vector3(189f, -215f);
         Characters.Sein.Speed = new Vector3(0f, 0f);

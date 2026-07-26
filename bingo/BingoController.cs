@@ -247,10 +247,60 @@ public static class BingoController
         set(2566+treeNum, 1);
     }
 
-    public static void OnActivateTeleporter(string identifier) {
+    public static void OnTouchTeleporter(string identifier, bool natural) {
         if(!Active || !MultiBoolGoals["ActivateTeleporter"].Subgoals.ContainsKey(identifier)) return;
         MultiBoolGoals["ActivateTeleporter"][identifier] = true;
     }
+
+    // index = bit position in the journey bitfields, and (+1) the LastTouched value,
+    // so 0 reads as "no origin". Both live in the save file: never reorder this.
+    public static readonly string[] Teleporters = new string[] {
+        "swamp", "sorrowPass", "sunkenGlades", "moonGrotto", "mangroveFalls", "valleyOfTheWind",
+        "spiritTree", "mangroveB", "horuFields", "ginsoTree", "forlorn", "mountHoru"
+    };
+    public const int LastTouchedId = 2626;
+    public const int JourneyBaseId = 2627;  // one bitfield per origin well: 2627-2638
+
+    public static string JourneyKey(string from, string to) { return from + "-" + to; }
+
+    public static int TeleporterIndex(string identifier) { return Array.IndexOf(Teleporters, identifier); }
+
+    public static string LastTouchedTeleporter() {
+        if(!Active || Characters.Sein == null)
+            return "";
+        int last = get(LastTouchedId);
+        return (last > 0 && last <= Teleporters.Length) ? Teleporters[last - 1] : "";
+    }
+
+    // Ori physically entered a well (SavePedestal.Highlight) -- deliberately not
+    // OnTouchTeleporter, which also fires for pickup-granted wells and the spawn
+    // activation of Glades, neither of which is a journey. Touching anything on the
+    // way overwrites the origin, so "without touching any in between" needs no
+    // extra bookkeeping.
+    public static void OnPedestalTouch(string identifier) {
+        try {
+            if(!Active || Characters.Sein == null) return;
+            int to = TeleporterIndex(identifier);
+            if(to < 0) return;
+            int from = get(LastTouchedId) - 1;
+            set(LastTouchedId, to + 1);
+            if(from < 0 || from == to) return;
+            MultiBoolGoals["Journey"][JourneyKey(Teleporters[from], identifier)] = true;
+        } catch(Exception e) {
+            Randomizer.LogError("OnPedestalTouch: " + e.Message);
+        }
+    }
+
+    // any arrival that isn't walking there breaks the chain
+    public static void OnWarp() {
+        try {
+            if(!Active || Characters.Sein == null) return;
+            set(LastTouchedId, 0);
+        } catch(Exception e) {
+            Randomizer.LogError("BingoController.OnWarp: " + e.Message);
+        }
+    }
+
 
     public static void OnTouchMapstone() {
         try {
@@ -327,18 +377,20 @@ public static class BingoController
     public class BoolGoal : BingoGoal {
         public int ItemId;
         public MultiBoolGoal Owner;
-        public bool Completed {
+        public virtual bool Completed {
             get { return get(this.ItemId) != 0; }
-            set { 
+            set {
                 bool prior = this.Completed;
                 set(this.ItemId, value ? 1 : 0);
                 if(prior != value)
-                    if(Owner == null)
-                        GoalChanged(this.Name, 0);
-                    else
-                        MultiGoalChanged(this.Owner.Name, this.Name);
-
+                    NotifyChanged();
             }
+        }
+        protected void NotifyChanged() {
+            if(Owner == null)
+                GoalChanged(this.Name, 0);
+            else
+                MultiGoalChanged(this.Owner.Name, this.Name);
         }
         public BoolGoal(string name, int id) {
             this.Name = name;
@@ -361,6 +413,24 @@ public static class BingoController
         }
         public void Handle() { this.Completed = true; }
         public void Set(bool newValue) { this.Completed = newValue; }
+    }
+
+    // one bit of a shared int, so the N*N journey pairs cost N item ids, not N*N
+    public class BitfieldBoolGoal : BoolGoal {
+        public int Bit;
+        public BitfieldBoolGoal(string name, int id, int bit) : base(name, id) {
+            this.Bit = bit;
+        }
+        public override bool Completed {
+            get { return (get(this.ItemId) & (1 << this.Bit)) != 0; }
+            set {
+                if(this.Completed == value)
+                    return;
+                int bits = get(this.ItemId);
+                set(this.ItemId, value ? bits | (1 << this.Bit) : bits & ~(1 << this.Bit));
+                NotifyChanged();
+            }
+        }
     }
 
     public class BoolGuidSwitchGoal : BoolGoal, SingleGuidSwitchListener {
@@ -451,6 +521,33 @@ public static class BingoController
                 jsonStr += subgoal.ToJson() + ",";
                 if(subgoal.Completed)
                     count++;
+            }
+            return jsonStr.TrimEnd(',') + "}, \"total\": " + count.ToString() + "}";
+        }
+    }
+
+    // Every ordered pair of spirit wells. Only completed journeys are serialized:
+    // 132 subgoals would otherwise ride along on every update, and the server reads
+    // a missing subgoal as incomplete.
+    public class JourneyGoal : MultiBoolGoal {
+        public JourneyGoal(string name, List<BoolGoal> subgoals) : base(name, subgoals) {}
+        public static void mk() {
+            List<BoolGoal> pairs = new List<BoolGoal>();
+            for(int from = 0; from < Teleporters.Length; from++)
+                for(int to = 0; to < Teleporters.Length; to++)
+                    if(from != to)
+                        pairs.Add(new BitfieldBoolGoal(JourneyKey(Teleporters[from], Teleporters[to]), JourneyBaseId + from, to));
+            JourneyGoal goal = new JourneyGoal("Journey", pairs);
+            MultiBoolGoals[goal.Name] = goal;
+        }
+        public override string ToJson() {
+            string jsonStr = "\"" + this.Name + "\": { \"value\": {";
+            int count = 0;
+            foreach(BoolGoal subgoal in this.Subgoals.Values) {
+                if(!subgoal.Completed)
+                    continue;
+                jsonStr += subgoal.ToJson() + ",";
+                count++;
             }
             return jsonStr.TrimEnd(',') + "}, \"total\": " + count.ToString() + "}";
         }
@@ -653,6 +750,8 @@ public static class BingoController
                     new BoolGoal("forlorn", 2541),
                     new BoolGoal("mountHoru", 2542)
                 });
+
+                JourneyGoal.mk();
 
                 MultiBoolGoal.mk("EnterArea", new List<BoolGoal>() {
                     new BoolMultiSceneGoal("Lost Grove", 2543, new HashSet<string>() { "southMangroveFallsStoryRoomA", "southMangroveFallsGrenadeEscalationB", "southMangroveFallsGrenadeEscalationBR"}),
@@ -902,6 +1001,9 @@ public static class BingoController
         foreach(MultiBoolGoal goal in MultiBoolGoals.Values) {
             jsonFrags.Add(goal.ToJson());
         }
+        // no goal tracks this; the board uses it to show whether a journey card is
+        // currently trackable from where the player stands
+        jsonFrags.Add("\"LastTouchedTeleporter\": { \"value\": \"" + LastTouchedTeleporter() + "\"}");
         jsonStr += String.Join(",\n", jsonFrags.ToArray()) + "\n}";
         return jsonStr;
 

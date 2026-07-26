@@ -176,7 +176,7 @@ public class TeleporterController : SaveSerialize, ISuspendable
 	{
 		if(natural)
 			RandomizerSyncManager.FoundTP(identifier);
-		BingoController.OnActivateTeleporter(identifier);
+		BingoController.OnTouchTeleporter(identifier, natural);
 		foreach (GameMapTeleporter gameMapTeleporter in TeleporterController.Instance.Teleporters)
 		{
 			if (gameMapTeleporter.Identifier == identifier)
@@ -197,6 +197,7 @@ public class TeleporterController : SaveSerialize, ISuspendable
 		{
 			return;
 		}
+		BingoController.OnWarp();
 		if (selectedTeleporter.Area.Area.AreaNameString == "Forlorn Ruins")
 		{
 			Randomizer.NightBerryWarpPosition = selectedTeleporter.WorldPosition;

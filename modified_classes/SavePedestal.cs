@@ -69,6 +69,7 @@ public class SavePedestal : SaveSerialize
 		if (this.m_sceneTeleporter)
 		{
 			TeleporterController.Activate(this.m_sceneTeleporter.Identifier);
+			BingoController.OnPedestalTouch(this.m_sceneTeleporter.Identifier);
 		}
 	}
 
