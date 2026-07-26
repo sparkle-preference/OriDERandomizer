@@ -208,13 +208,7 @@ public static class RandomizerMW
             return false;
         }
         ManifestEntry entry = Manifest[slot];
-        // keysanity keys: pass the manifest pseudo-location, so the pickup
-        // hint can exclude this key from its own Remaining list (our granted
-        // bit for it isn't set until after GivePickup)
-        int coords = 0;
-        int rbId;
-        if (entry.Code == "RB" && int.TryParse(entry.Id, out rbId) && rbId >= 300 && rbId < 312)
-            coords = -(slot + 2);
+        int coords = -slot - 2;
         if (batch)
         {
             // squelch per-item messages; ShowBatchMessage summarizes after
