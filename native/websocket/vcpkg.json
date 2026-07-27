@@ -1,0 +1,12 @@
+{
+  "name": "native-websocket",
+  "version-string": "1.0.0",
+  "builtin-baseline": "6d9d7df564a1ccdaa994e4ad39ccd4a32360867b",
+  "dependencies": [
+    {
+      "name": "ixwebsocket",
+      "default-features": false,
+      "features": ["mbedtls"]
+    }
+  ]
+}

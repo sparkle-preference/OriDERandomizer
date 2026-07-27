@@ -195,6 +195,8 @@ public static class RandomizerSettings {
 		DevSettings.AreasOri = new BoolSetting("Keep Areas.Ori Updated", true, "Update areas.ori from the server. Set to False to disable for local development.", false, true);
 		DevSettings.BlackrootOrbRoomClimbAssist = new BoolSetting("Blackroot Orb Room Climb Assist", true, "", false, true);
 		DevSettings.WebEndpoint = new UrlSetting("Root Netcode URL", "bfnc.orirando.com", "The base URL to connect to for sync code.\nIf you change this from the default ('bfnc.orirando.com') it is going to break all netcode. \nDO NOT PUT AN http:// IT WILL NOT WORK IF YOU DO.", false, true);
+		DevSettings.WsEndpoint = new UrlSetting("Websocket Netcode URL", "orirando.com", "The host the websocket netcode connects to (wss://).\nIf you change this from the default ('orirando.com') it is going to break all netcode.", false, true);
+		DevSettings.DisableWebsocket = new BoolSetting("Disable Websocket", false, "True: never use the websocket netcode transport; poll over http like older versions.\nFalse (default): use the websocket when available, falling back to http.", false, true);
 	}
 
 	public static Dictionary<string, SettingBase> All = new Dictionary<string, SettingBase>();
@@ -310,6 +312,8 @@ public static class RandomizerSettings {
 		public static BoolSetting AreasOri;
 		public static BoolSetting BlackrootOrbRoomClimbAssist;
 		public static UrlSetting WebEndpoint;
+		public static UrlSetting WsEndpoint;
+		public static BoolSetting DisableWebsocket;
 	}
 
 	public abstract class SettingBase {
