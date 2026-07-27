@@ -247,7 +247,7 @@ public static class BingoController
         set(2566+treeNum, 1);
     }
 
-    public static void OnTouchTeleporter(string identifier, bool natural) {
+    public static void OnActivateTeleporter(string identifier) {
         if(!Active || !MultiBoolGoals["ActivateTeleporter"].Subgoals.ContainsKey(identifier)) return;
         MultiBoolGoals["ActivateTeleporter"][identifier] = true;
     }

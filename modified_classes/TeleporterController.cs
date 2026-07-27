@@ -176,7 +176,7 @@ public class TeleporterController : SaveSerialize, ISuspendable
 	{
 		if(natural)
 			RandomizerSyncManager.FoundTP(identifier);
-		BingoController.OnTouchTeleporter(identifier, natural);
+		BingoController.OnActivateTeleporter(identifier);
 		foreach (GameMapTeleporter gameMapTeleporter in TeleporterController.Instance.Teleporters)
 		{
 			if (gameMapTeleporter.Identifier == identifier)
