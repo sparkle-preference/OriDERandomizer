@@ -12,7 +12,7 @@ using UnityEngine;
 
 public static class Randomizer
 {
-    public static string VERSION = "4.2.2";
+    public static string VERSION = "4.2.3";
     public static void initialize()
     {
         try {

@@ -53,7 +53,79 @@ public static class RandomizerSyncManager
 		if(Randomizer.SyncId != "") {
 			string[] parts = Randomizer.SyncId.Split('.');
 			RootUrl = $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/game/{parts[0]}/player/{parts[1]}";
+			// every websocket path is armored: a broken merge, missing
+			// setting, or native failure must never break seed loading
+			var wsHost = RandomizerSettings.DevSettings.WsEndpoint;
+			if (wsHost == null)
+				Randomizer.log("ws diag: WsEndpoint setting missing (RandomizerSettings not fully merged?); websocket off");
+			else
+			{
+				string url = $"wss://{wsHost.Value}/netcode/game/{parts[0]}/player/{parts[1]}/ws";
+				if (url != wsUrl)
+				{
+					wsUrl = url;
+					wsDead = false;
+					wsLoadAttempts = 0;
+				}
+				StartWebsocket(url);
+			}
 		}
+	}
+
+	// Idempotent: alt+L re-runs Initialize, but the socket only restarts
+	// when the game/player id actually changed. Reconnects within a game
+	// are the native side's job (auto-reconnect with backoff); *load*
+	// failures are retried from Update — a freshly extracted dll can lose
+	// a race with the AV scanner and be loadable moments later.
+	public static void StartWebsocket(string url)
+	{
+		try
+		{
+			wsNextTry = Time.realtimeSinceStartup + 3f;
+			var disable = RandomizerSettings.DevSettings.DisableWebsocket;
+			if (disable != null && disable.Value)
+			{
+				wsDead = true;
+				return;
+			}
+			if (disable == null)
+				Randomizer.log("ws diag: DisableWebsocket setting missing (RandomizerSettings not fully merged?); continuing");
+			if (wsStartedUrl == url)
+				return;
+			if (!NativeWebSocket.Load())
+			{
+				wsLoadAttempts++;
+				if (wsLoadAttempts >= 3)
+				{
+					wsDead = true;
+					Randomizer.log("ws diag: native load failed 3 times; using http this session");
+				}
+				return;
+			}
+			wsLoadAttempts = 0;
+			if (wsStartedUrl != null)
+				NativeWebSocket.Stop();
+			wsDead = false;
+			if (NativeWebSocket.CaPath != null)
+				NativeWebSocket.SetCaFile(NativeWebSocket.CaPath);
+			NativeWebSocket.SetUrl(url);
+			NativeWebSocket.SetPingInterval(30);
+			NativeWebSocket.SetAutoReconnect(true);
+			NativeWebSocket.Start();
+			wsStartedUrl = url;
+			Randomizer.log($"ws diag: socket started for {url} (ca: {(NativeWebSocket.CaPath ?? "none")})");
+		}
+		catch (Exception e)
+		{
+			// file-only: LogError renders on-screen and itself NREs during
+			// early seed parse (no UI yet) — that cascade broke seed loading
+			Randomizer.log($"StartWebsocket: {e}");
+			wsDead = true;
+		}
+	}
+
+	public static bool WsOpen {
+		get { return !wsDead && NativeWebSocket.Loaded && wsStartedUrl != null && NativeWebSocket.GetState() == NativeWebSocket.SocketState.Open; }
 	}
 
 	public static void Update()
@@ -75,9 +147,26 @@ public static class RandomizerSyncManager
 				RandomizerChaosManager.ClearEffects();
 				ChaosTimeoutCounter = 216000;
 			}
+			// retry a failed native load every few seconds (max 3 tries)
+			if (!wsDead && wsUrl != null && wsStartedUrl == null && Time.realtimeSinceStartup >= wsNextTry)
+				StartWebsocket(wsUrl);
+			// websocket frames are drained every frame, not at tick
+			// cadence — pushed signals should land with frame latency
+			CheckWebsocketHealth();
+			if (WsOpen)
+			{
+				string frame;
+				while ((frame = NativeWebSocket.GetPendingMessage()) != null)
+					ProcessFrame(frame);
+			}
 			tslu += Time.deltaTime;
 			if(tslu < PERIOD) return;
-			if (!getClient.IsBusy)
+			if (WsOpen)
+			{
+				tslu = 0f;
+				NativeWebSocket.SendText("tick:" + TickPayload());
+			}
+			else if (!getClient.IsBusy)
 			{
 				tslu = 0f;
 				NameValueCollection nvc = new NameValueCollection();
@@ -89,7 +178,7 @@ public static class RandomizerSyncManager
 					nvc["seen_" + i.ToString()] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(1560+i));
 					nvc["have_" + i.ToString()] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(930+i));
 				}
-				Uri uri = new Uri(RootUrl + "/tick/"); 
+				Uri uri = new Uri(RootUrl + "/tick/");
 				getClient.UploadValuesAsync(uri, nvc);
 			}
 		} catch(Exception e) {
@@ -139,8 +228,52 @@ public static class RandomizerSyncManager
 			{
 				if(!Characters.Sein)
 					return;
+				ProcessTickResponse(System.Text.Encoding.UTF8.GetString(e.Result));
+				return;
+			}
+			if (e.Error.GetType().Name == "WebException" && ((HttpWebResponse)((WebException)e.Error).Response).StatusCode == HttpStatusCode.PreconditionFailed)
+			{
+				if(Randomizer.SyncMode == 1 || Randomizer.SyncMode == 5)
+					Randomizer.printInfo("Co-op server error, try reloading the seed (Alt+L)");
+				else
+					Randomizer.LogError("Co-op server error, try reloading the seed (Alt+L)");
+				return;
+			}
+		}
+		catch (Exception e2)
+		{
+			Randomizer.LogError("CheckPickups threw error: " + e2.Message);
+		}
+	}
+
+	// One frame off the websocket. v1 frame kinds: "tick:<body>" where
+	// <body> is byte-identical to a /tick/ http response. Unknown kinds
+	// are logged and dropped so older dlls survive newer servers.
+	public static void ProcessFrame(string frame)
+	{
+		try
+		{
+			if(!Characters.Sein)
+				return;
+			int sep = frame.IndexOf(':');
+			string kind = sep < 0 ? frame : frame.Substring(0, sep);
+			if (kind == "tick" && sep >= 0)
+				ProcessTickResponse(frame.Substring(sep + 1));
+			else
+				Randomizer.LogError("ProcessFrame: unknown frame kind: " + kind);
+		}
+		catch (Exception e)
+		{
+			Randomizer.LogError("ProcessFrame threw error: " + e.Message);
+		}
+	}
+
+	public static void ProcessTickResponse(string data)
+	{
+		{
+			{
 				bool mustRefreshLogic = false;
-				string[] array = System.Text.Encoding.UTF8.GetString(e.Result).Split(new char[]
+				string[] array = data.Split(new char[]
 				{
 					','
 				});
@@ -273,20 +406,7 @@ public static class RandomizerSyncManager
 				if (mustRefreshLogic) {
 					RandomizerLocationManager.UpdateReachable();
 				}
-				return;
 			}
-			if (e.Error.GetType().Name == "WebException" && ((HttpWebResponse)((WebException)e.Error).Response).StatusCode == HttpStatusCode.PreconditionFailed)
-			{
-				if(Randomizer.SyncMode == 1 || Randomizer.SyncMode == 5)
-					Randomizer.printInfo("Co-op server error, try reloading the seed (Alt+L)");
-				else
-					Randomizer.LogError("Co-op server error, try reloading the seed (Alt+L)");
-				return;
-			}
-		}
-		catch (Exception e2)
-		{
-			Randomizer.LogError("CheckPickups threw error: " + e2.Message);
 		}
 	}
 
@@ -438,6 +558,47 @@ public static class RandomizerSyncManager
 	public static bool NetworkFree {
 		get { return Randomizer.SyncId == "" || (PickupQueue.Count == 0 && SendingPickup == null && !webClient.IsBusy); }
 	}
+
+	// Same fields the http tick sends, as a form-encoded body. The server's
+	// ws adapter must parse this identically to request.form.
+	private static string TickPayload()
+	{
+		Vector3 pos = Characters.Sein.Position;
+		var sb = new System.Text.StringBuilder();
+		sb.Append("x=").Append(pos.x.ToString());
+		sb.Append("&y=").Append(pos.y.ToString());
+		sb.Append("&version=").Append(Uri.EscapeDataString(Randomizer.VERSION));
+		for(int i = 0; i < 8; i++) {
+			sb.Append("&seen_").Append(i).Append('=').Append(fixInt(Characters.Sein.Inventory.GetRandomizerItem(1560+i)));
+			sb.Append("&have_").Append(i).Append('=').Append(fixInt(Characters.Sein.Inventory.GetRandomizerItem(930+i)));
+		}
+		return sb.ToString();
+	}
+
+	// A socket that has never connected and keeps erroring is written off
+	// for the session (bad TLS, old server, blocked port — http covers us).
+	// A socket that connected once keeps auto-reconnecting forever.
+	private static void CheckWebsocketHealth()
+	{
+		if (wsDead || wsStartedUrl == null || !NativeWebSocket.Loaded)
+			return;
+		if (NativeWebSocket.GetOpenCount() == 0 && NativeWebSocket.GetErrorCount() >= 8)
+		{
+			wsDead = true;
+			NativeWebSocket.Stop();
+			Randomizer.log($"websocket: giving up after {NativeWebSocket.GetErrorCount()} failures ({NativeWebSocket.GetLastError()}); using http");
+		}
+	}
+
+	private static string wsStartedUrl;
+
+	private static string wsUrl;
+
+	private static bool wsDead;
+
+	private static int wsLoadAttempts;
+
+	private static float wsNextTry;
 
 	public static string fixInt(int stupidFuckingSignedInt) {
 		if(stupidFuckingSignedInt < 0) {
