@@ -53,23 +53,56 @@ public static class RandomizerSyncManager
 		if(Randomizer.SyncId != "") {
 			string[] parts = Randomizer.SyncId.Split('.');
 			RootUrl = $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/game/{parts[0]}/player/{parts[1]}";
-			StartWebsocket($"wss://{RandomizerSettings.DevSettings.WsEndpoint.Value}/netcode/game/{parts[0]}/player/{parts[1]}/ws");
+			// every websocket path is armored: a broken merge, missing
+			// setting, or native failure must never break seed loading
+			var wsHost = RandomizerSettings.DevSettings.WsEndpoint;
+			if (wsHost == null)
+				Randomizer.log("ws diag: WsEndpoint setting missing (RandomizerSettings not fully merged?); websocket off");
+			else
+			{
+				string url = $"wss://{wsHost.Value}/netcode/game/{parts[0]}/player/{parts[1]}/ws";
+				if (url != wsUrl)
+				{
+					wsUrl = url;
+					wsDead = false;
+					wsLoadAttempts = 0;
+				}
+				StartWebsocket(url);
+			}
 		}
 	}
 
 	// Idempotent: alt+L re-runs Initialize, but the socket only restarts
 	// when the game/player id actually changed. Reconnects within a game
-	// are the native side's job (auto-reconnect with backoff).
+	// are the native side's job (auto-reconnect with backoff); *load*
+	// failures are retried from Update — a freshly extracted dll can lose
+	// a race with the AV scanner and be loadable moments later.
 	public static void StartWebsocket(string url)
 	{
-		if (RandomizerSettings.DevSettings.DisableWebsocket.Value)
-			return;
 		try
 		{
-			if (!NativeWebSocket.Load())
+			wsNextTry = Time.realtimeSinceStartup + 3f;
+			var disable = RandomizerSettings.DevSettings.DisableWebsocket;
+			if (disable != null && disable.Value)
+			{
+				wsDead = true;
 				return;
+			}
+			if (disable == null)
+				Randomizer.log("ws diag: DisableWebsocket setting missing (RandomizerSettings not fully merged?); continuing");
 			if (wsStartedUrl == url)
 				return;
+			if (!NativeWebSocket.Load())
+			{
+				wsLoadAttempts++;
+				if (wsLoadAttempts >= 3)
+				{
+					wsDead = true;
+					Randomizer.log("ws diag: native load failed 3 times; using http this session");
+				}
+				return;
+			}
+			wsLoadAttempts = 0;
 			if (wsStartedUrl != null)
 				NativeWebSocket.Stop();
 			wsDead = false;
@@ -80,10 +113,11 @@ public static class RandomizerSyncManager
 			NativeWebSocket.SetAutoReconnect(true);
 			NativeWebSocket.Start();
 			wsStartedUrl = url;
+			Randomizer.log($"ws diag: socket started for {url} (ca: {(NativeWebSocket.CaPath ?? "none")})");
 		}
 		catch (Exception e)
 		{
-			Randomizer.LogError("StartWebsocket: " + e.Message);
+			Randomizer.LogError($"StartWebsocket: {e}");
 			wsDead = true;
 		}
 	}
@@ -111,6 +145,9 @@ public static class RandomizerSyncManager
 				RandomizerChaosManager.ClearEffects();
 				ChaosTimeoutCounter = 216000;
 			}
+			// retry a failed native load every few seconds (max 3 tries)
+			if (!wsDead && wsUrl != null && wsStartedUrl == null && Time.realtimeSinceStartup >= wsNextTry)
+				StartWebsocket(wsUrl);
 			// websocket frames are drained every frame, not at tick
 			// cadence — pushed signals should land with frame latency
 			CheckWebsocketHealth();
@@ -553,7 +590,13 @@ public static class RandomizerSyncManager
 
 	private static string wsStartedUrl;
 
+	private static string wsUrl;
+
 	private static bool wsDead;
+
+	private static int wsLoadAttempts;
+
+	private static float wsNextTry;
 
 	public static string fixInt(int stupidFuckingSignedInt) {
 		if(stupidFuckingSignedInt < 0) {

@@ -12,9 +12,14 @@ public enum SocketState : int
 
 // P/Invoke surface of the native websocket sidecar (native/websocket/).
 // The native dll and the CA bundle mbedtls needs ride inside
-// Assembly-CSharp.dll as embedded resources; Load() extracts both next to
-// oriDE.exe and LoadLibrary's the dll by full path so the DllImports below
-// resolve without touching the search path.
+// Assembly-CSharp.dll as embedded resources (named exactly DllResource /
+// CaResource below); Load() extracts both next to oriDE.exe and
+// LoadLibrary's the dll by full path so the DllImports resolve without
+// touching the search path.
+//
+// Diagnostic note: on this Mono a DllNotFoundException's Message is just
+// the dll name, so "ws diag" breadcrumbs log every step — one run of a
+// broken merge should pinpoint the failing layer.
 public static class NativeWebSocket
 {
 	public const string DllResource = "NativeWebSocket.dll";
@@ -32,25 +37,47 @@ public static class NativeWebSocket
 			return true;
 		try
 		{
-			string dir = Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
+			string dir = ExeDir();
+			Randomizer.log($"ws diag: extracting to {dir}");
 			string dllPath = Extract(DllResource, Path.Combine(dir, DllResource));
 			CaPath = Extract(CaResource, Path.Combine(dir, CaResource));
 			if (dllPath == null)
 				return false;
-			if (LoadLibrary(dllPath) == IntPtr.Zero)
+			IntPtr handle = LoadLibrary(dllPath);
+			if (handle == IntPtr.Zero)
 			{
-				Randomizer.LogError($"NativeWebSocket: LoadLibrary failed, error {Marshal.GetLastWin32Error()}");
+				Randomizer.LogError($"ws diag: LoadLibrary({dllPath}) failed, Win32 error {Marshal.GetLastWin32Error()}");
 				return false;
 			}
+			Randomizer.log($"ws diag: LoadLibrary ok ({handle})");
 			InitializeNetwork();
+			Randomizer.log("ws diag: initialize_network ok");
 			Loaded = true;
 			return true;
 		}
 		catch (Exception e)
 		{
-			Randomizer.LogError($"NativeWebSocket.Load: {e.Message}");
+			Randomizer.LogError($"NativeWebSocket.Load: {e}");
 			return false;
 		}
+	}
+
+	// Application.dataPath is <install root>/oriDE_Data and never flakes;
+	// Process.MainModule on this Mono is not so dependable.
+	private static string ExeDir()
+	{
+		try
+		{
+			string dataPath = UnityEngine.Application.dataPath;
+			if (!string.IsNullOrEmpty(dataPath))
+				return Path.GetDirectoryName(dataPath);
+		}
+		catch (Exception e)
+		{
+			Randomizer.log($"ws diag: Application.dataPath unavailable ({e.GetType().Name}); using cwd");
+		}
+		// the game's cwd is its install root (randomizer.log lives there)
+		return Environment.CurrentDirectory;
 	}
 
 	// Writes the resource to disk if missing or stale. A locked stale file
@@ -61,16 +88,23 @@ public static class NativeWebSocket
 		byte[] bytes = RandomizerResources.ReadResource(resource);
 		if (bytes == null)
 		{
-			Randomizer.LogError($"NativeWebSocket: missing embedded resource {resource}");
+			string have = string.Join(", ", typeof(NativeWebSocket).Assembly.GetManifestResourceNames());
+			Randomizer.LogError($"ws diag: embedded resource '{resource}' not found; assembly has: [{have}]");
 			return null;
 		}
 		try
 		{
 			if (!File.Exists(target) || new FileInfo(target).Length != bytes.Length)
+			{
 				File.WriteAllBytes(target, bytes);
+				Randomizer.log($"ws diag: wrote {resource} ({bytes.Length} bytes) to {target}");
+			}
+			else
+				Randomizer.log($"ws diag: {target} already current ({bytes.Length} bytes)");
 		}
-		catch (IOException)
+		catch (IOException e)
 		{
+			Randomizer.log($"ws diag: can't write {target} ({e.Message}); {(File.Exists(target) ? "using existing file" : "giving up")}");
 			if (!File.Exists(target))
 				return null;
 		}
