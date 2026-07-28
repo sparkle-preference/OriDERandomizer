@@ -125,7 +125,7 @@ public static class RandomizerSyncManager
 	}
 
 	public static bool WsOpen {
-		get { return !wsDead && NativeWebSocket.Loaded && wsStartedUrl != null && NativeWebSocket.GetState() == SocketState.Open; }
+		get { return !wsDead && NativeWebSocket.Loaded && wsStartedUrl != null && NativeWebSocket.GetState() == NativeWebSocket.SocketState.Open; }
 	}
 
 	public static void Update()

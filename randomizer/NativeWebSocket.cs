@@ -2,14 +2,6 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-public enum SocketState : int
-{
-	Connecting = 0,
-	Open = 1,
-	Closing = 2,
-	Closed = 3,
-}
-
 // Managed face of the native websocket sidecar (native/websocket/). The
 // native dll and the CA bundle mbedtls needs ride inside Assembly-CSharp.dll
 // as embedded resources (named exactly DllResource / CaResource); Load()
@@ -28,6 +20,14 @@ public enum SocketState : int
 // renders on-screen — it writes its line and then NREs at that phase.
 public static class NativeWebSocket
 {
+	public enum SocketState : int
+	{
+		Connecting = 0,
+		Open = 1,
+		Closing = 2,
+		Closed = 3,
+	}
+
 	public const string DllResource = "NativeWebSocket.dll";
 	public const string CaResource = "cacert.pem";
 
