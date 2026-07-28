@@ -117,7 +117,9 @@ public static class RandomizerSyncManager
 		}
 		catch (Exception e)
 		{
-			Randomizer.LogError($"StartWebsocket: {e}");
+			// file-only: LogError renders on-screen and itself NREs during
+			// early seed parse (no UI yet) — that cascade broke seed loading
+			Randomizer.log($"StartWebsocket: {e}");
 			wsDead = true;
 		}
 	}

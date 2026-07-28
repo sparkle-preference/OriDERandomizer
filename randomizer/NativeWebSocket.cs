@@ -10,16 +10,22 @@ public enum SocketState : int
 	Closed = 3,
 }
 
-// P/Invoke surface of the native websocket sidecar (native/websocket/).
-// The native dll and the CA bundle mbedtls needs ride inside
-// Assembly-CSharp.dll as embedded resources (named exactly DllResource /
-// CaResource below); Load() extracts both next to oriDE.exe and
-// LoadLibrary's the dll by full path so the DllImports resolve without
-// touching the search path.
+// Managed face of the native websocket sidecar (native/websocket/). The
+// native dll and the CA bundle mbedtls needs ride inside Assembly-CSharp.dll
+// as embedded resources (named exactly DllResource / CaResource); Load()
+// extracts both next to oriDE.exe.
 //
-// Diagnostic note: on this Mono a DllNotFoundException's Message is just
-// the dll name, so "ws diag" breadcrumbs log every step — one run of a
-// broken merge should pinpoint the failing layer.
+// No [DllImport("NativeWebSocket.dll")] anywhere: this Mono can't resolve a
+// native dll that appeared on disk after process start (kernel32 LoadLibrary
+// by full path succeeded while the managed-to-native wrapper threw
+// DllNotFound; a pre-existing file worked on relaunch). Every export is
+// bound by hand off the module handle instead — GetProcAddress +
+// GetDelegateForFunctionPointer — which cannot be affected by Mono's
+// search behavior.
+//
+// Logging rule for this file: Randomizer.log ONLY. Load() runs during
+// line-0 seed parsing, before the UI exists, and Randomizer.LogError
+// renders on-screen — it writes its line and then NREs at that phase.
 public static class NativeWebSocket
 {
 	public const string DllResource = "NativeWebSocket.dll";
@@ -30,6 +36,38 @@ public static class NativeWebSocket
 
 	[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
 	private static extern IntPtr LoadLibrary(string path);
+
+	[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
+	private static extern IntPtr GetProcAddress(IntPtr module, string name);
+
+	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void VoidFn();
+	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void StrFn(string s);
+	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void IntFn(int v);
+	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void ByteFn(byte v);
+	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int RetIntFn();
+	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate byte RetByteFn();
+	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void BytesFn(byte[] data, int len);
+	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int BufFn(byte[] buf, int len);
+	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr PopMsgFn(out int len);
+
+	private static VoidFn initialize_network;
+	private static VoidFn finalize_network;
+	private static StrFn set_url;
+	private static StrFn set_ca_file;
+	private static IntFn set_ping_interval;
+	private static ByteFn set_auto_reconnect;
+	private static VoidFn start_fn;
+	private static VoidFn stop_fn;
+	private static StrFn send_text;
+	private static BytesFn send_binary;
+	private static RetIntFn get_state;
+	private static RetIntFn get_open_count;
+	private static RetIntFn get_error_count;
+	private static RetIntFn get_close_count;
+	private static BufFn get_last_error;
+	private static RetByteFn has_pending_message;
+	private static PopMsgFn get_pending_message;
+	private static VoidFn pop_pending_message;
 
 	public static bool Load()
 	{
@@ -43,23 +81,48 @@ public static class NativeWebSocket
 			CaPath = Extract(CaResource, Path.Combine(dir, CaResource));
 			if (dllPath == null)
 				return false;
-			IntPtr handle = LoadLibrary(dllPath);
-			if (handle == IntPtr.Zero)
+			IntPtr module = LoadLibrary(dllPath);
+			if (module == IntPtr.Zero)
 			{
-				Randomizer.LogError($"ws diag: LoadLibrary({dllPath}) failed, Win32 error {Marshal.GetLastWin32Error()}");
+				Randomizer.log($"ws diag: LoadLibrary({dllPath}) failed, Win32 error {Marshal.GetLastWin32Error()}");
 				return false;
 			}
-			Randomizer.log($"ws diag: LoadLibrary ok ({handle})");
-			InitializeNetwork();
-			Randomizer.log("ws diag: initialize_network ok");
+			initialize_network = (VoidFn)Bind(module, "initialize_network", typeof(VoidFn));
+			finalize_network = (VoidFn)Bind(module, "finalize_network", typeof(VoidFn));
+			set_url = (StrFn)Bind(module, "set_url", typeof(StrFn));
+			set_ca_file = (StrFn)Bind(module, "set_ca_file", typeof(StrFn));
+			set_ping_interval = (IntFn)Bind(module, "set_ping_interval", typeof(IntFn));
+			set_auto_reconnect = (ByteFn)Bind(module, "set_auto_reconnect", typeof(ByteFn));
+			start_fn = (VoidFn)Bind(module, "start", typeof(VoidFn));
+			stop_fn = (VoidFn)Bind(module, "stop", typeof(VoidFn));
+			send_text = (StrFn)Bind(module, "send_text", typeof(StrFn));
+			send_binary = (BytesFn)Bind(module, "send_binary", typeof(BytesFn));
+			get_state = (RetIntFn)Bind(module, "get_state", typeof(RetIntFn));
+			get_open_count = (RetIntFn)Bind(module, "get_open_count", typeof(RetIntFn));
+			get_error_count = (RetIntFn)Bind(module, "get_error_count", typeof(RetIntFn));
+			get_close_count = (RetIntFn)Bind(module, "get_close_count", typeof(RetIntFn));
+			get_last_error = (BufFn)Bind(module, "get_last_error", typeof(BufFn));
+			has_pending_message = (RetByteFn)Bind(module, "has_pending_message", typeof(RetByteFn));
+			get_pending_message = (PopMsgFn)Bind(module, "get_pending_message", typeof(PopMsgFn));
+			pop_pending_message = (VoidFn)Bind(module, "pop_pending_message", typeof(VoidFn));
+			initialize_network();
+			Randomizer.log("ws diag: exports bound, initialize_network ok");
 			Loaded = true;
 			return true;
 		}
 		catch (Exception e)
 		{
-			Randomizer.LogError($"NativeWebSocket.Load: {e}");
+			Randomizer.log($"NativeWebSocket.Load: {e}");
 			return false;
 		}
+	}
+
+	private static Delegate Bind(IntPtr module, string name, Type t)
+	{
+		IntPtr fn = GetProcAddress(module, name);
+		if (fn == IntPtr.Zero)
+			throw new MissingMethodException($"export {name} missing from {DllResource}");
+		return Marshal.GetDelegateForFunctionPointer(fn, t);
 	}
 
 	// Application.dataPath is <install root>/oriDE_Data and never flakes;
@@ -89,7 +152,7 @@ public static class NativeWebSocket
 		if (bytes == null)
 		{
 			string have = string.Join(", ", typeof(NativeWebSocket).Assembly.GetManifestResourceNames());
-			Randomizer.LogError($"ws diag: embedded resource '{resource}' not found; assembly has: [{have}]");
+			Randomizer.log($"ws diag: embedded resource '{resource}' not found; assembly has: [{have}]");
 			return null;
 		}
 		try
@@ -111,83 +174,53 @@ public static class NativeWebSocket
 		return target;
 	}
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "initialize_network", CallingConvention = CallingConvention.Cdecl)]
-	private static extern void InitializeNetwork();
+	public static void FinalizeNetwork() { finalize_network(); }
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "finalize_network", CallingConvention = CallingConvention.Cdecl)]
-	public static extern void FinalizeNetwork();
+	public static void SetUrl(string url) { set_url(url); }
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "set_url", CallingConvention = CallingConvention.Cdecl)]
-	public static extern void SetUrl([MarshalAs(UnmanagedType.LPStr)] string url);
+	public static void SetCaFile(string path) { set_ca_file(path); }
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "set_ca_file", CallingConvention = CallingConvention.Cdecl)]
-	public static extern void SetCaFile([MarshalAs(UnmanagedType.LPStr)] string path);
+	public static void SetPingInterval(int seconds) { set_ping_interval(seconds); }
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "set_ping_interval", CallingConvention = CallingConvention.Cdecl)]
-	public static extern void SetPingInterval(int seconds);
+	public static void SetAutoReconnect(bool enabled) { set_auto_reconnect(enabled ? (byte)1 : (byte)0); }
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "set_auto_reconnect", CallingConvention = CallingConvention.Cdecl)]
-	public static extern void SetAutoReconnect([MarshalAs(UnmanagedType.I1)] bool enabled);
+	public static void Start() { start_fn(); }
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "start", CallingConvention = CallingConvention.Cdecl)]
-	public static extern void Start();
+	public static void Stop() { stop_fn(); }
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "stop", CallingConvention = CallingConvention.Cdecl)]
-	public static extern void Stop();
+	public static void SendText(string data) { send_text(data); }
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "send_text", CallingConvention = CallingConvention.Cdecl)]
-	public static extern void SendText([MarshalAs(UnmanagedType.LPStr)] string data);
+	public static void SendBinary(byte[] data) { send_binary(data, data.Length); }
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "send_binary", CallingConvention = CallingConvention.Cdecl)]
-	private static extern void SendBinaryRaw(byte[] data, int length);
+	public static SocketState GetState() { return (SocketState)get_state(); }
 
-	public static void SendBinary(byte[] data)
-	{
-		SendBinaryRaw(data, data.Length);
-	}
+	public static int GetOpenCount() { return get_open_count(); }
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "get_state", CallingConvention = CallingConvention.Cdecl)]
-	public static extern SocketState GetState();
+	public static int GetErrorCount() { return get_error_count(); }
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "get_open_count", CallingConvention = CallingConvention.Cdecl)]
-	public static extern int GetOpenCount();
-
-	[DllImport("NativeWebSocket.dll", EntryPoint = "get_error_count", CallingConvention = CallingConvention.Cdecl)]
-	public static extern int GetErrorCount();
-
-	[DllImport("NativeWebSocket.dll", EntryPoint = "get_close_count", CallingConvention = CallingConvention.Cdecl)]
-	public static extern int GetCloseCount();
-
-	[DllImport("NativeWebSocket.dll", EntryPoint = "get_last_error", CallingConvention = CallingConvention.Cdecl)]
-	private static extern int GetLastErrorRaw(byte[] buf, int buflen);
+	public static int GetCloseCount() { return get_close_count(); }
 
 	public static string GetLastError()
 	{
 		byte[] buf = new byte[512];
-		int n = GetLastErrorRaw(buf, buf.Length);
+		int n = get_last_error(buf, buf.Length);
+		if (n <= 0)
+			return "";
 		return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Min(n, buf.Length - 1));
 	}
 
-	[DllImport("NativeWebSocket.dll", EntryPoint = "has_pending_message", CallingConvention = CallingConvention.Cdecl)]
-	[return: MarshalAs(UnmanagedType.I1)]
-	public static extern bool HasPendingMessage();
-
-	[DllImport("NativeWebSocket.dll", EntryPoint = "get_pending_message", CallingConvention = CallingConvention.Cdecl)]
-	private static extern IntPtr GetPendingMessageRaw(out int length);
-
-	[DllImport("NativeWebSocket.dll", EntryPoint = "pop_pending_message", CallingConvention = CallingConvention.Cdecl)]
-	private static extern void PopPendingMessage();
+	public static bool HasPendingMessage() { return has_pending_message() != 0; }
 
 	// Returns null when the queue is empty.
 	public static string GetPendingMessage()
 	{
 		int length;
-		IntPtr ptr = GetPendingMessageRaw(out length);
+		IntPtr ptr = get_pending_message(out length);
 		if (ptr == IntPtr.Zero)
 			return null;
 		byte[] bytes = new byte[length];
 		Marshal.Copy(ptr, bytes, 0, length);
-		PopPendingMessage();
+		pop_pending_message();
 		return System.Text.Encoding.UTF8.GetString(bytes);
 	}
 }
