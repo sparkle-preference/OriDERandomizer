@@ -2,10 +2,13 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-// Managed face of the native websocket sidecar (native/websocket/). The
-// native dll and the CA bundle mbedtls needs ride inside Assembly-CSharp.dll
-// as embedded resources (named exactly DllResource / CaResource); Load()
-// extracts both next to oriDE.exe.
+// Managed face of the native websocket sidecar. The dll is built from
+// github.com/timoschwarzer/dotnet-native-websocket (our changes are PR'd
+// upstream; the built binary lives in resource_files/ — see the README
+// there for the build recipe). The native dll and the CA bundle mbedtls
+// needs ride inside Assembly-CSharp.dll as embedded resources (named
+// exactly DllResource / CaResource); Load() extracts both next to
+// oriDE.exe.
 //
 // No [DllImport("NativeWebSocket.dll")] anywhere: this Mono can't resolve a
 // native dll that appeared on disk after process start (kernel32 LoadLibrary
@@ -47,8 +50,7 @@ public static class NativeWebSocket
 	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int RetIntFn();
 	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate byte RetByteFn();
 	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void BytesFn(byte[] data, int len);
-	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int BufFn(byte[] buf, int len);
-	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr PopMsgFn(out int len);
+	[UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr PtrLenFn(out int len);
 
 	private static VoidFn initialize_network;
 	private static VoidFn finalize_network;
@@ -64,9 +66,9 @@ public static class NativeWebSocket
 	private static RetIntFn get_open_count;
 	private static RetIntFn get_error_count;
 	private static RetIntFn get_close_count;
-	private static BufFn get_last_error;
+	private static PtrLenFn get_last_error;
 	private static RetByteFn has_pending_message;
-	private static PopMsgFn get_pending_message;
+	private static PtrLenFn get_pending_message;
 	private static VoidFn pop_pending_message;
 
 	public static bool Load()
@@ -101,9 +103,9 @@ public static class NativeWebSocket
 			get_open_count = (RetIntFn)Bind(module, "get_open_count", typeof(RetIntFn));
 			get_error_count = (RetIntFn)Bind(module, "get_error_count", typeof(RetIntFn));
 			get_close_count = (RetIntFn)Bind(module, "get_close_count", typeof(RetIntFn));
-			get_last_error = (BufFn)Bind(module, "get_last_error", typeof(BufFn));
+			get_last_error = (PtrLenFn)Bind(module, "get_last_error", typeof(PtrLenFn));
 			has_pending_message = (RetByteFn)Bind(module, "has_pending_message", typeof(RetByteFn));
-			get_pending_message = (PopMsgFn)Bind(module, "get_pending_message", typeof(PopMsgFn));
+			get_pending_message = (PtrLenFn)Bind(module, "get_pending_message", typeof(PtrLenFn));
 			pop_pending_message = (VoidFn)Bind(module, "pop_pending_message", typeof(VoidFn));
 			initialize_network();
 			Randomizer.log("ws diag: exports bound, initialize_network ok");
@@ -202,11 +204,13 @@ public static class NativeWebSocket
 
 	public static string GetLastError()
 	{
-		byte[] buf = new byte[512];
-		int n = get_last_error(buf, buf.Length);
-		if (n <= 0)
+		int length;
+		IntPtr ptr = get_last_error(out length);
+		if (ptr == IntPtr.Zero || length == 0)
 			return "";
-		return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Min(n, buf.Length - 1));
+		byte[] bytes = new byte[length];
+		Marshal.Copy(ptr, bytes, 0, length);
+		return System.Text.Encoding.UTF8.GetString(bytes);
 	}
 
 	public static bool HasPendingMessage() { return has_pending_message() != 0; }
