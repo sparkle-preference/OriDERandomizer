@@ -639,6 +639,7 @@ public static class BingoController
             }
             string[] idParts = Randomizer.SyncId.Split('.');
             UpdateUrl = $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/game/{idParts[0]}/player/{idParts[1]}/bingo";
+            WsUnsupported = false;  // fresh seed, fresh chance (server may have upgraded)
             if(!Active)
             {
                 UpdateClient = new WebClient();
@@ -1009,15 +1010,45 @@ public static class BingoController
 
     }
     public static void PostUpdate() {
-        NameValueCollection values = new NameValueCollection();
-        values["bingoData"] = GetJson();
-        values["version"] = Randomizer.VERSION;
-        if(!UpdateClient.IsBusy)
+        string json = GetJson();
+        // over the websocket when it's up: the server acks with a status
+        // (RandomizerSyncManager routes bingoack/err frames back here).
+        // EscapeDataString throws past ~32k chars; boards run a few KB,
+        // but never let an outlier kill the update path
+        if (RandomizerSyncManager.WsOpen && !WsUnsupported && json.Length < 30000)
         {
+            NativeWebSocket.SendText("bingo:bingoData=" + Uri.EscapeDataString(json) + "&version=" + Randomizer.VERSION);
+            UpdateTimer = 15;
+        }
+        else if(!UpdateClient.IsBusy)
+        {
+            NameValueCollection values = new NameValueCollection();
+            values["bingoData"] = json;
+            values["version"] = Randomizer.VERSION;
             UpdateClient.UploadValuesAsync(new Uri(UpdateUrl), values);
             UpdateTimer = 15;
         }
     }
+
+    // mirrors PostCallback: a failed update retries fast. A LOST frame
+    // (no ack at all) just waits out the 15s cadence — every update is a
+    // full durable snapshot, so nothing is ever missing for long.
+    public static void OnBingoAck(string status) {
+        try {
+            if (int.Parse(status) >= 300)
+                UpdateTimer = Math.Min(1, UpdateTimer);
+        } catch(Exception e) {
+            Randomizer.log("OnBingoAck: " + e.Message);
+        }
+    }
+
+    // the server err'd a bingo frame (predates them): back to http, resend promptly
+    public static void OnBingoErr() {
+        WsUnsupported = true;
+        UpdateTimer = Math.Min(1, UpdateTimer);
+    }
+
+    public static bool WsUnsupported;
 
     public static MoonGuid StomplessRocks = new MoonGuid(-1118019250, 1080908127, 1929144468, -1515713832);
     public static MoonGuid Drain = new MoonGuid(1711549718, 1225123502, -2036372807, 248162391);

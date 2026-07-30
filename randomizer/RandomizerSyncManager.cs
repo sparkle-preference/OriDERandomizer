@@ -280,11 +280,14 @@ public static class RandomizerSyncManager
 				ProcessTickResponse(frame.Substring(sep + 1));
 			else if (kind == "foundack" && sep >= 0)
 				OnFoundAck(frame.Substring(sep + 1));
+			else if (kind == "bingoack" && sep >= 0)
+				BingoController.OnBingoAck(frame.Substring(sep + 1));
 			else if (kind == "err" && sep >= 0)
 			{
-				// a server that errs our found frames predates them: stop
-				// sending pickups over ws and rescue the in-flight one
-				if (frame.Substring(sep + 1).StartsWith("found"))
+				// a server that errs one of our frame kinds predates it:
+				// route that channel back to http
+				string what = frame.Substring(sep + 1);
+				if (what.StartsWith("found"))
 				{
 					wsFoundUnsupported = true;
 					if (SendingPickup != null && wsFoundToken != 0 && !webClient.IsBusy)
@@ -293,7 +296,9 @@ public static class RandomizerSyncManager
 						webClient.DownloadStringAsync(SendingPickup.GetURL());
 					}
 				}
-				Randomizer.log("ws: server err frame: " + frame.Substring(sep + 1));
+				else if (what.StartsWith("bingo"))
+					BingoController.OnBingoErr();
+				Randomizer.log("ws: server err frame: " + what);
 			}
 			else
 				Randomizer.LogError("ProcessFrame: unknown frame kind: " + kind);
