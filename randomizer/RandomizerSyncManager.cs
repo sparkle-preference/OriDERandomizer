@@ -61,12 +61,13 @@ public static class RandomizerSyncManager
 			else
 			{
 				string url = $"wss://{wsHost.Value}/netcode/game/{parts[0]}/player/{parts[1]}/ws";
-				if (url != wsUrl)
-				{
-					wsUrl = url;
-					wsDead = false;
-					wsLoadAttempts = 0;
-				}
+				wsUrl = url;
+				// alt+L doubles as the user's "retry the websocket" button:
+				// a socket written off earlier this session gets a fresh
+				// shot on every seed reload
+				wsDead = false;
+				wsLoadAttempts = 0;
+				wsFoundUnsupported = false;
 				StartWebsocket(url);
 			}
 		}
@@ -135,6 +136,22 @@ public static class RandomizerSyncManager
 			if (SendingPickup == null && PickupQueue.Count > 0 && !webClient.IsBusy)
 			{
 				SendingPickup = PickupQueue.Dequeue();
+				wsFoundAttempts = 0;
+				if (WsOpen && !wsFoundUnsupported)
+					SendFoundWs();
+				else
+				{
+					wsFoundToken = 0;
+					webClient.DownloadStringAsync(SendingPickup.GetURL());
+				}
+			}
+			// a ws-sent pickup whose ack never came falls back to http —
+			// the server dedups replayed pickups, so double delivery is
+			// exactly as safe as an http retry
+			else if (SendingPickup != null && wsFoundToken != 0
+					&& Time.realtimeSinceStartup - wsFoundSentAt > 5f && !webClient.IsBusy)
+			{
+				wsFoundToken = 0;
 				webClient.DownloadStringAsync(SendingPickup.GetURL());
 			}
 			else if (Randomizer.SyncId != "" && !SeedSent)
@@ -246,9 +263,11 @@ public static class RandomizerSyncManager
 		}
 	}
 
-	// One frame off the websocket. v1 frame kinds: "tick:<body>" where
-	// <body> is byte-identical to a /tick/ http response. Unknown kinds
-	// are logged and dropped so older dlls survive newer servers.
+	// One frame off the websocket. Kinds: "tick:<body>" (<body> is
+	// byte-identical to a /tick/ http response, whether replied or pushed),
+	// "foundack:<token>|<status>" (our pickup ack), "err:<what>" (server
+	// didn't understand one of our frames — old server). Unknown kinds are
+	// logged and dropped so older dlls survive newer servers.
 	public static void ProcessFrame(string frame)
 	{
 		try
@@ -259,6 +278,23 @@ public static class RandomizerSyncManager
 			string kind = sep < 0 ? frame : frame.Substring(0, sep);
 			if (kind == "tick" && sep >= 0)
 				ProcessTickResponse(frame.Substring(sep + 1));
+			else if (kind == "foundack" && sep >= 0)
+				OnFoundAck(frame.Substring(sep + 1));
+			else if (kind == "err" && sep >= 0)
+			{
+				// a server that errs our found frames predates them: stop
+				// sending pickups over ws and rescue the in-flight one
+				if (frame.Substring(sep + 1).StartsWith("found"))
+				{
+					wsFoundUnsupported = true;
+					if (SendingPickup != null && wsFoundToken != 0 && !webClient.IsBusy)
+					{
+						wsFoundToken = 0;
+						webClient.DownloadStringAsync(SendingPickup.GetURL());
+					}
+				}
+				Randomizer.log("ws: server err frame: " + frame.Substring(sep + 1));
+			}
 			else
 				Randomizer.LogError("ProcessFrame: unknown frame kind: " + kind);
 		}
@@ -266,6 +302,53 @@ public static class RandomizerSyncManager
 		{
 			Randomizer.LogError("ProcessFrame threw error: " + e.Message);
 		}
+	}
+
+	// Mirrors RetryOnFail's status handling exactly: Gone revokes RBs and
+	// stops, NotAcceptable drops, anything else transient retries (ws up
+	// to 3 attempts, then http). Stale acks (token mismatch: we already
+	// fell back to http) are ignored — the server dedups the replay.
+	private static void OnFoundAck(string body)
+	{
+		string[] parts = body.Split('|');
+		int token = int.Parse(parts[0]);
+		int status = int.Parse(parts[1]);
+		if (SendingPickup == null || token != wsFoundToken)
+			return;
+		wsFoundToken = 0;
+		if (status == 410)
+		{
+			if (SendingPickup.type == "RB")
+				RandomizerBonus.UpgradeID(-int.Parse(SendingPickup.id));
+			SendingPickup = null;
+		}
+		else if (status < 300 || status == 406)
+		{
+			SendingPickup = null;
+		}
+		else if (wsFoundAttempts < 3 && WsOpen)
+		{
+			SendFoundWs();
+		}
+		else if (!webClient.IsBusy)
+		{
+			webClient.DownloadStringAsync(SendingPickup.GetURL());
+		}
+		else
+		{
+			// webClient busy should be impossible here (the queue is
+			// serial), but never strand a pickup on an impossibility
+			PickupQueue.Enqueue(SendingPickup);
+			SendingPickup = null;
+		}
+	}
+
+	private static void SendFoundWs()
+	{
+		wsFoundToken = ++wsFoundCounter;
+		wsFoundSentAt = Time.realtimeSinceStartup;
+		wsFoundAttempts++;
+		NativeWebSocket.SendText(SendingPickup.WsBody(wsFoundToken));
 	}
 
 	public static void ProcessTickResponse(string data)
@@ -600,6 +683,16 @@ public static class RandomizerSyncManager
 
 	private static float wsNextTry;
 
+	private static int wsFoundCounter;
+
+	private static int wsFoundToken;
+
+	private static float wsFoundSentAt;
+
+	private static int wsFoundAttempts;
+
+	private static bool wsFoundUnsupported;
+
 	public static string fixInt(int stupidFuckingSignedInt) {
 		if(stupidFuckingSignedInt < 0) {
 			var unsignedVer = BitConverter.ToUInt32(BitConverter.GetBytes(stupidFuckingSignedInt), 0);
@@ -652,15 +745,28 @@ public static class RandomizerSyncManager
 			this.coords = _coords;
 		}
 
+		public string CleanedId {
+			get {
+				string cleaned_id = this.id.Replace("#","");
+				if(cleaned_id.Contains("\\"))
+					cleaned_id = cleaned_id.Split('\\')[0];
+				return cleaned_id;
+			}
+		}
+
 		public Uri GetURL()
 		{
-			string cleaned_id = this.id.Replace("#","");
-			if(cleaned_id.Contains("\\"))
-				cleaned_id = cleaned_id.Split('\\')[0];
-			string url = RootUrl + "/found/" + this.coords + "/" + this.type + "/" + cleaned_id;
+			string url = RootUrl + "/found/" + this.coords + "/" + this.type + "/" + this.CleanedId;
 			url += "?zone=" + RandomizerStatsManager.CurrentZone();
 
 			return new Uri(url);
+		}
+
+		// found:<token>|<qs>|<coords>|<kind>|<id> — id last, the server
+		// parses it greedily (TW ids carry commas)
+		public string WsBody(int token)
+		{
+			return "found:" + token + "|zone=" + Uri.EscapeDataString(RandomizerStatsManager.CurrentZone()) + "|" + this.coords + "|" + this.type + "|" + this.CleanedId;
 		}
 
 		public string id;
