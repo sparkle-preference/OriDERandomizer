@@ -276,6 +276,44 @@ public class RandomizerLocationManager
         }
     }
 
+    // websocket areas refresh: the client offers its local hash after
+    // connecting; a server with newer logic answers with the whole file
+    // (areas:<content> frame). Survives the http host's retirement.
+    public static string AreasHash() {
+        try {
+            if (!File.Exists("areas.ori"))
+                return "none";
+            using (var sha = System.Security.Cryptography.SHA256.Create())
+            {
+                byte[] h = sha.ComputeHash(File.ReadAllBytes("areas.ori"));
+                var sb = new System.Text.StringBuilder();
+                foreach (byte b in h)
+                    sb.Append(b.ToString("x2"));
+                return sb.ToString();
+            }
+        } catch(Exception e) {
+            Randomizer.log($"AreasHash: {e.Message}");
+            return "none";
+        }
+    }
+
+    public static void ApplyAreasUpdate(string content) {
+        new Thread(() => ApplyAreasWorker(content)).Start();
+    }
+
+    private static void ApplyAreasWorker(string content) {
+        try {
+            if(File.Exists("areas.ori")) File.Move("areas.ori", "areas.ori.old"); // backup
+            File.WriteAllText("areas.ori", content);
+            if(File.Exists("areas.ori.old")) File.Delete("areas.ori.old");
+            Randomizer.log("ws: areas.ori updated from server, reloading logic");
+            InitializeLogic();
+        } catch(Exception e) {
+            Randomizer.log($"ApplyAreasUpdate: {e}");
+            if(!File.Exists("areas.ori") && File.Exists("areas.ori.old")) File.Move("areas.ori.old", "areas.ori");
+        }
+    }
+
     public static void DownloadAreas() {
         if (RandomizerSettings.DevSettings.AreasOri)
         {
