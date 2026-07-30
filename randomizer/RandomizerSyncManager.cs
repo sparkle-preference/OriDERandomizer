@@ -68,6 +68,7 @@ public static class RandomizerSyncManager
 				wsDead = false;
 				wsLoadAttempts = 0;
 				wsFoundUnsupported = false;
+				wsNoHttp = false;  // the server re-sends nohttp on connect
 				StartWebsocket(url);
 			}
 		}
@@ -133,7 +134,10 @@ public static class RandomizerSyncManager
 	{
 		try
 		{
-			if (SendingPickup == null && PickupQueue.Count > 0 && !webClient.IsBusy)
+			// pickups wait in the queue until a transport exists (with the
+			// http fallback gone, that means until the socket reconnects)
+			if (SendingPickup == null && PickupQueue.Count > 0 && !webClient.IsBusy
+					&& ((WsOpen && !wsFoundUnsupported) || !wsNoHttp))
 			{
 				SendingPickup = PickupQueue.Dequeue();
 				wsFoundAttempts = 0;
@@ -145,14 +149,13 @@ public static class RandomizerSyncManager
 					webClient.DownloadStringAsync(SendingPickup.GetURL());
 				}
 			}
-			// a ws-sent pickup whose ack never came falls back to http —
-			// the server dedups replayed pickups, so double delivery is
-			// exactly as safe as an http retry
+			// a ws-sent pickup whose ack never came retries — via http if
+			// that's still allowed, else over the socket. The server dedups
+			// replayed pickups, so double delivery is as safe as a retry
 			else if (SendingPickup != null && wsFoundToken != 0
-					&& Time.realtimeSinceStartup - wsFoundSentAt > 5f && !webClient.IsBusy)
+					&& Time.realtimeSinceStartup - wsFoundSentAt > 5f)
 			{
-				wsFoundToken = 0;
-				webClient.DownloadStringAsync(SendingPickup.GetURL());
+				FoundFallback();
 			}
 			else if (Randomizer.SyncId != "" && !SeedSent)
 			{
@@ -183,7 +186,7 @@ public static class RandomizerSyncManager
 				tslu = 0f;
 				NativeWebSocket.SendText("tick:" + TickPayload());
 			}
-			else if (!getClient.IsBusy)
+			else if (!wsNoHttp && !getClient.IsBusy)
 			{
 				tslu = 0f;
 				NameValueCollection nvc = new NameValueCollection();
@@ -208,17 +211,40 @@ public static class RandomizerSyncManager
 	{
 		try
 		{
+			// no transport at all: leave SeedSent false, Update retries
+			// until the socket reconnects (cheap: two bool checks/frame)
+			if (!WsOpen && wsNoHttp)
+				return;
 			string[] array = File.ReadAllLines(Randomizer.SeedFilePath);
 			array[0] = array[0].Replace(',', '|');
-			NameValueCollection nvc = new NameValueCollection();
-			nvc.Set("seed", string.Join(",", array).Replace("#",""));
-			nvc.Set("version", Randomizer.VERSION);
-			var client = new WebClient();
-			client.UploadValuesAsync(new Uri(RootUrl + "/setSeed"), nvc);
-			SeedSent = true;			
+			string seed = string.Join(",", array).Replace("#","");
+			if (WsOpen)
+			{
+				NativeWebSocket.SendText("seed:seed=" + EscapeLong(seed) + "&version=" + Randomizer.VERSION);
+			}
+			else
+			{
+				NameValueCollection nvc = new NameValueCollection();
+				nvc.Set("seed", seed);
+				nvc.Set("version", Randomizer.VERSION);
+				var client = new WebClient();
+				client.UploadValuesAsync(new Uri(RootUrl + "/setSeed"), nvc);
+			}
+			SeedSent = true;
 		} catch(Exception e) {
 			Randomizer.LogError("UploadSeed: " + e.Message);
 		}
+	}
+
+	// Uri.EscapeDataString throws past ~32k chars and seeds can get there
+	// (plandos especially, escaped commas inflate 3x). Chunked escaping is
+	// character-wise safe: seed text is ASCII.
+	private static string EscapeLong(string s)
+	{
+		var sb = new System.Text.StringBuilder();
+		for (int i = 0; i < s.Length; i += 16000)
+			sb.Append(Uri.EscapeDataString(s.Substring(i, Math.Min(16000, s.Length - i))));
+		return sb.ToString();
 	}
 
 	public static bool getBit(int bf, int bit)
@@ -265,23 +291,39 @@ public static class RandomizerSyncManager
 
 	// One frame off the websocket. Kinds: "tick:<body>" (<body> is
 	// byte-identical to a /tick/ http response, whether replied or pushed),
-	// "foundack:<token>|<status>" (our pickup ack), "err:<what>" (server
-	// didn't understand one of our frames — old server). Unknown kinds are
-	// logged and dropped so older dlls survive newer servers.
+	// "foundack:<token>|<status>" (our pickup ack), "nohttp:" (server says
+	// the http fallback routes are gone — websocket-only from here on),
+	// "err:<what>" (server didn't understand one of our frames — old
+	// server). Unknown kinds are logged and dropped so older dlls survive
+	// newer servers. Only tick/foundack need Sein (they touch the
+	// inventory); the rest must land even at the title screen — nohttp
+	// in particular arrives right after connect.
 	public static void ProcessFrame(string frame)
 	{
 		try
 		{
-			if(!Characters.Sein)
-				return;
 			int sep = frame.IndexOf(':');
 			string kind = sep < 0 ? frame : frame.Substring(0, sep);
 			if (kind == "tick" && sep >= 0)
+			{
+				if(!Characters.Sein)
+					return;
 				ProcessTickResponse(frame.Substring(sep + 1));
+			}
 			else if (kind == "foundack" && sep >= 0)
+			{
+				// dropping the ack is safe: the 5s timeout resends
+				if(!Characters.Sein)
+					return;
 				OnFoundAck(frame.Substring(sep + 1));
+			}
 			else if (kind == "bingoack" && sep >= 0)
 				BingoController.OnBingoAck(frame.Substring(sep + 1));
+			else if (kind == "nohttp")
+			{
+				wsNoHttp = true;
+				Randomizer.log("ws: server flagged http fallback unavailable; websocket-only mode");
+			}
 			else if (kind == "err" && sep >= 0)
 			{
 				// a server that errs one of our frame kinds predates it:
@@ -290,7 +332,7 @@ public static class RandomizerSyncManager
 				if (what.StartsWith("found"))
 				{
 					wsFoundUnsupported = true;
-					if (SendingPickup != null && wsFoundToken != 0 && !webClient.IsBusy)
+					if (SendingPickup != null && wsFoundToken != 0 && !wsNoHttp && !webClient.IsBusy)
 					{
 						wsFoundToken = 0;
 						webClient.DownloadStringAsync(SendingPickup.GetURL());
@@ -335,17 +377,34 @@ public static class RandomizerSyncManager
 		{
 			SendFoundWs();
 		}
-		else if (!webClient.IsBusy)
-		{
-			webClient.DownloadStringAsync(SendingPickup.GetURL());
-		}
 		else
 		{
-			// webClient busy should be impossible here (the queue is
-			// serial), but never strand a pickup on an impossibility
-			PickupQueue.Enqueue(SendingPickup);
-			SendingPickup = null;
+			FoundFallback();
 		}
+	}
+
+	// The in-flight pickup needs another route: http if allowed, else keep
+	// working the socket (resend now if it's open, or re-arm the timeout
+	// and wait out the reconnect — the retry loop re-fires every 5s).
+	private static void FoundFallback()
+	{
+		if (!wsNoHttp)
+		{
+			wsFoundToken = 0;
+			if (!webClient.IsBusy)
+				webClient.DownloadStringAsync(SendingPickup.GetURL());
+			else
+			{
+				// webClient busy should be impossible here (the queue is
+				// serial), but never strand a pickup on an impossibility
+				PickupQueue.Enqueue(SendingPickup);
+				SendingPickup = null;
+			}
+		}
+		else if (WsOpen)
+			SendFoundWs();
+		else
+			wsFoundSentAt = Time.realtimeSinceStartup;
 	}
 
 	private static void SendFoundWs()
@@ -472,8 +531,16 @@ public static class RandomizerSyncManager
 							RandomizerChaosManager.SpawnEffect();
 							ChaosTimeoutCounter = 3600;
 						}
-						var client = new WebClient();
-						client.DownloadStringAsync(new Uri(RootUrl + "/callback/" + text));
+						if (WsOpen)
+							NativeWebSocket.SendText("conf:" + text);
+						else if (!wsNoHttp)
+						{
+							var client = new WebClient();
+							client.DownloadStringAsync(new Uri(RootUrl + "/callback/" + text));
+						}
+						// (no transport right now: the confirm is lost, same
+						// as a failed fire-and-forget GET today — the signal
+						// lingers server-side until the next seed reload)
 						CurrentSignals.Add(text);
 					}
 				} else {
@@ -562,8 +629,13 @@ public static class RandomizerSyncManager
 		if (!Randomizer.Sync || Randomizer.SyncId == "")
 			return;
 		try {
-			var client = new WebClient();
-			client.DownloadStringAsync(new Uri(RootUrl + "/complete"));
+			if (WsOpen)
+				NativeWebSocket.SendText("complete:");
+			else if (!wsNoHttp)
+			{
+				var client = new WebClient();
+				client.DownloadStringAsync(new Uri(RootUrl + "/complete"));
+			}
 		} catch(Exception e) {
 			Randomizer.LogError("SendGameComplete: " + e.Message);
 		}
@@ -697,6 +769,13 @@ public static class RandomizerSyncManager
 	private static int wsFoundAttempts;
 
 	private static bool wsFoundUnsupported;
+
+	private static bool wsNoHttp;
+
+	// BingoController checks this before its own http fallback
+	public static bool WsNoHttp {
+		get { return wsNoHttp; }
+	}
 
 	public static string fixInt(int stupidFuckingSignedInt) {
 		if(stupidFuckingSignedInt < 0) {

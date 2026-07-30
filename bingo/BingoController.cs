@@ -1020,13 +1020,20 @@ public static class BingoController
             NativeWebSocket.SendText("bingo:bingoData=" + Uri.EscapeDataString(json) + "&version=" + Randomizer.VERSION);
             UpdateTimer = 15;
         }
-        else if(!UpdateClient.IsBusy)
+        else if(!RandomizerSyncManager.WsNoHttp && !UpdateClient.IsBusy)
         {
             NameValueCollection values = new NameValueCollection();
             values["bingoData"] = json;
             values["version"] = Randomizer.VERSION;
             UpdateClient.UploadValuesAsync(new Uri(UpdateUrl), values);
             UpdateTimer = 15;
+        }
+        else
+        {
+            // no transport right now (fallback routes gone, socket mid-
+            // reconnect): try again shortly — the next send carries the
+            // full board state anyway
+            UpdateTimer = 3;
         }
     }
 

@@ -264,10 +264,22 @@ public class RandomizerLocationManager
         LogicThread.Start();
     }
 
+    // logic init waits on this download, and once the plain-http host is
+    // retired the endpoint may black-hole instead of refusing — a capped
+    // timeout keeps the worst case at a 5s one-time delay before falling
+    // back to the shipped areas.ori
+    private class QuickWebClient : WebClient {
+        protected override WebRequest GetWebRequest(Uri address) {
+            var req = base.GetWebRequest(address);
+            req.Timeout = 5000;
+            return req;
+        }
+    }
+
     public static void DownloadAreas() {
         if (RandomizerSettings.DevSettings.AreasOri)
         {
-            var webClient = new WebClient();
+            var webClient = new QuickWebClient();
             try {
                 if(File.Exists("areas.ori")) File.Move("areas.ori", "areas.ori.old"); // backup
                 ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
