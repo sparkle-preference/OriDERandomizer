@@ -155,6 +155,25 @@ public class RandomizerKeysanity {
         RandomizerSwitch.PickupMessage(progress);
     }
 
+    // the door-hint pickup (RB 313-324): same effect as touching door
+    // keyId, minus needing to be anywhere near it
+    public void UnlockDoorHint(int keyId) {
+        if (!reverseDoorKeyMap.ContainsKey(keyId))
+            return;
+        if (!IsActive) {
+            RandomizerSwitch.PickupMessage($"{hintMap[keyId]} Door Hint");
+            return;
+        }
+        var guid = reverseDoorKeyMap[keyId];
+        if (!GetDoorHint(guid))
+            SetDoorHint(guid);
+        var count = inventory.GetRandomizerItem(keyId);
+        if (count >= countForDoor(keyId))
+            RandomizerSwitch.PickupMessage($"${hintMap[keyId]} Door Hint ({count}/{countForDoor(keyId)})$");
+        else
+            RandomizerSwitch.PickupMessage($"{hintMap[keyId]} Door Hint ({count}/{countForDoor(keyId)})\n{hintsForDoor(keyId)}");
+    }
+
     public void ShowKeyProgress() {
         var sb = new StringBuilder();
         for (var id = 300; id < 312;) {

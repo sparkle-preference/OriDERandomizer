@@ -151,6 +151,20 @@
 
 312 - Door Hints Gotten (bitfield)
 
+=== Keysanity Door Hints (pickup = touching the matching door: unlocks + shows its zone hints) ===
+313 - Glades Pool Door Hint
+314 - Lower Spirit Caverns Door Hint
+315 - Grotto Door Hint
+316 - Swamp Door Hint
+317 - Upper Spirit Caverns Door Hint
+318 - Lower Ginso Door Hint
+319 - Upper Ginso Door Hint
+320 - Misty Door Hint
+321 - Forlorn Door Hint
+322 - Lower Sorrow Door Hint
+323 - Mid Sorrow Door Hint
+324 - Upper Sorrow Door Hint
+
 402 - World Tour relics collected
 
 Enhanced mode -- April Fools :)

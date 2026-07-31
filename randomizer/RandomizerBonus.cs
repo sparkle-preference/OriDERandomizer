@@ -32,6 +32,16 @@ public static class RandomizerBonus
             return;
         }
 
+        // keysanity door hints: 313-324 act like touching door 300-311
+        // (unlock + show that door's zone hints). Not revocable.
+        if (ID >= 313 && ID < 325) {
+            if(flag)
+                return;
+            Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
+            Randomizer.Keysanity.UnlockDoorHint(ID - 13);
+            return;
+        }
+
         if(ID >= 200 && ID < 260)
         {
             int abilityId = (ID - 200) % 30;
