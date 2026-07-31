@@ -303,6 +303,7 @@ public class RandomizerLocationManager
 
     private static void ApplyAreasWorker(string content) {
         try {
+            if (!RandomizerSettings.DevSettings.AreasOri) return; // flag disables areas worker
             if(File.Exists("areas.ori")) File.Move("areas.ori", "areas.ori.old"); // backup
             File.WriteAllText("areas.ori", content);
             if(File.Exists("areas.ori.old")) File.Delete("areas.ori.old");
