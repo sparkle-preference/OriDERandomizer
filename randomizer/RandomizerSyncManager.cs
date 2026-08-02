@@ -179,6 +179,9 @@ public static class RandomizerSyncManager
 				wsAreasChecked = true;
 				NativeWebSocket.SendText("areas:" + RandomizerLocationManager.AreasHash());
 			}
+			// unacked complete: keeps retrying (multiworld releases ride on it)
+			if (completePending && Time.realtimeSinceStartup >= completeNextAt)
+				TrySendComplete();
 			// websocket frames are drained every frame, not at tick
 			// cadence — pushed signals should land with frame latency
 			CheckWebsocketHealth();
@@ -328,6 +331,11 @@ public static class RandomizerSyncManager
 			}
 			else if (kind == "bingoack" && sep >= 0)
 				BingoController.OnBingoAck(frame.Substring(sep + 1));
+			else if (kind == "completeack")
+			{
+				// no Sein guard: this arrives during credits
+				completePending = false;
+			}
 			else if (kind == "nohttp")
 			{
 				wsNoHttp = true;
@@ -640,23 +648,41 @@ public static class RandomizerSyncManager
 		}
 	}
 
-	// credits-roll ping: fire and forget (the server treats it as the real
-	// game end; in multiworld it releases our world's leftovers to their
-	// owners). No retry: a missed ping just means no release.
+	// credits-roll ping: the server treats it as the real game end, and in
+	// multiworld it releases our world's leftovers to their owners — so it
+	// is no longer fire-and-forget (game 134478 stranded 62 items when this
+	// died with the process during credits). Retries until the server acks
+	// (completeack frame); the http path can't ack, so it just gets a few
+	// spaced attempts. game_complete is idempotent server-side.
 	public static void SendGameComplete()
 	{
 		if (!Randomizer.Sync || Randomizer.SyncId == "")
 			return;
+		completePending = true;
+		completeAttempts = 0;
+		TrySendComplete();
+	}
+
+	private static void TrySendComplete()
+	{
+		completeNextAt = Time.realtimeSinceStartup + 3f;
 		try {
 			if (WsOpen)
+			{
 				NativeWebSocket.SendText("complete:");
+				completeAttempts++;
+			}
 			else if (!wsNoHttp)
 			{
 				var client = new WebClient();
 				client.DownloadStringAsync(new Uri(RootUrl + "/complete"));
+				completeAttempts++;
 			}
+			// no transport right now: attempts don't count, wait for the socket
+			if (completeAttempts >= 5)
+				completePending = false;
 		} catch(Exception e) {
-			Randomizer.LogError("SendGameComplete: " + e.Message);
+			Randomizer.log("SendGameComplete: " + e.Message);
 		}
 	}
 
@@ -792,6 +818,12 @@ public static class RandomizerSyncManager
 	private static bool wsNoHttp;
 
 	private static bool wsAreasChecked;
+
+	private static bool completePending;
+
+	private static int completeAttempts;
+
+	private static float completeNextAt;
 
 	// BingoController checks this before its own http fallback
 	public static bool WsNoHttp {
