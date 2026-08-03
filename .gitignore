@@ -32,3 +32,4 @@ seed_gen/*.csv
 !Assembly-Csharp.dll
 
 /.vscode/
+/Managed
