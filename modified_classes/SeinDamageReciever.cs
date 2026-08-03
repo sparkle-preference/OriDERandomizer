@@ -347,6 +347,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
 		{
 			return;
 		}
+		BingoController.OnDeath(damage);
 		this.m_died = true;
 		SoundDescriptor soundForDamage = this.SeinDeathSound.GetSoundForDamage(damage);
 		if (soundForDamage != null)
