@@ -80,7 +80,8 @@ Building the rando uses a fork of dnSpy found at https://github.com/AsmPrgmC3/dn
 
 Build steps:
 - Download dnSpy
-- Copy a vanilla `Assembly-CSharp.dll` into the root directory (next to this README), renaming it to `Assembly-CSharp_orig.dll`
+- Copy the `Managed` folder of a clean game install (found in `Ori DE/oriDE_Data/Managed`) into the root of this repo, so that the `Managed` folder sits next to the `dnspy-modfile.json` file.
+    - Important: It needs to have a vanilla `Assembly-CSharp.dll`. If you have the rando installed, revert the file to its original, or repair the game via steam / do a clean reinstall.
 - Run `path\to\dnSpy.exe --modfile:dnspy-modfile.json --runModfile --closeAfterModfile`
 
 `Assembly-CSharp.dll` will contain the updated rando.
