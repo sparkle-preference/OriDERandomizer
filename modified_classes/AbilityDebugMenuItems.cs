@@ -190,6 +190,11 @@ public static class AbilityDebugMenuItems
 		Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
 	}
 
+	public static void SpiritFlameRapidFireUpgradeSetter(bool newValue)
+	{
+		Characters.Sein.PlayerAbilities.RapidFire.HasAbility = newValue;
+	}
+
 	public static bool SoulEfficiencyGetter()
 	{
 		return Characters.Sein.PlayerAbilities.SoulEfficiency.HasAbility;
