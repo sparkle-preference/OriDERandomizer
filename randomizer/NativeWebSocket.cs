@@ -153,8 +153,7 @@ public static class NativeWebSocket
 		byte[] bytes = RandomizerResources.ReadResource(resource);
 		if (bytes == null)
 		{
-			string have = string.Join(", ", typeof(NativeWebSocket).Assembly.GetManifestResourceNames());
-			Randomizer.log($"ws diag: embedded resource '{resource}' not found; assembly has: [{have}]");
+			Randomizer.log($"ws diag: failed to load embedded resource '{resource}'. See previous log for more details.");
 			return null;
 		}
 		try
