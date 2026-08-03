@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Core;
 using Game;
 using UnityEngine;
+using Input = Core.Input;
 
 public class SeinJump : CharacterState, ISeinReceiver
 {
@@ -163,7 +164,7 @@ public class SeinJump : CharacterState, ISeinReceiver
 		}
 		GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(this.JumpParticleEffect, this.Sein.PlatformBehaviour.PlatformMovement.FeetPosition, Quaternion.identity);
 		gameObject.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(-this.Sein.PlatformBehaviour.PlatformMovement.LocalSpeed));
-		this.Sein.PlatformBehaviour.Force.ApplyGroundForce(Vector3.down * this.JumpImpulse, 1);
+		this.Sein.PlatformBehaviour.Force.ApplyGroundForce(Vector3.down * this.JumpImpulse, ForceMode.Impulse);
 		this.OnJumpEvent(this.PlatformMovement.LocalSpeedY);
 		JumpFlipPlatform.OnSeinJumpEvent();
 		this.m_timeWeCanJumpRemaining = 0f;

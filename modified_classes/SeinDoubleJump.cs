@@ -12,19 +12,7 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver
 		};
 	}
 
-	public static event Action<float> OnDoubleJumpEvent
-	{
-		[MethodImpl(MethodImplOptions.Synchronized)]
-		add
-		{
-			SeinDoubleJump.OnDoubleJumpEvent = (Action<float>)Delegate.Combine(SeinDoubleJump.OnDoubleJumpEvent, value);
-		}
-		[MethodImpl(MethodImplOptions.Synchronized)]
-		remove
-		{
-			SeinDoubleJump.OnDoubleJumpEvent = (Action<float>)Delegate.Remove(SeinDoubleJump.OnDoubleJumpEvent, value);
-		}
-	}
+	public static event Action<float> OnDoubleJumpEvent;
 
 	public int ExtraJumpsAvailable
 	{
