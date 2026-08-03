@@ -115,7 +115,7 @@ public class PlatformingMovement : PlatformMovement
 
 	public override void PlaceOnGround(float lift = 0.5f, float distance = 0f)
 	{
-		this.Position += base.LocalToWorld(Vector3.up * lift);
+		this.Position += (Vector3)base.LocalToWorld(Vector3.up * lift);
 		if (distance == 0f)
 		{
 			distance = 50f;
@@ -132,7 +132,7 @@ public class PlatformingMovement : PlatformMovement
 		}
 		else
 		{
-			this.Position += base.LocalToWorld(Vector3.down * 0.5f);
+			this.Position += (Vector3)base.LocalToWorld(Vector3.down * 0.5f);
 		}
 	}
 

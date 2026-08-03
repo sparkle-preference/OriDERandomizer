@@ -10,7 +10,7 @@ public class ShowEnhancedSpiritFlameTextAction : PerformingAction
 		{
 			SuspensionManager.SuspendAll();
 		}
-		if (this.StoryMessage == null)
+		if (this.Messages == null)
 		{
 			return;
 		}
