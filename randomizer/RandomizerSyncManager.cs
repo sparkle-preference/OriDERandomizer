@@ -831,11 +831,7 @@ public static class RandomizerSyncManager
 	}
 
 	public static string fixInt(int stupidFuckingSignedInt) {
-		if(stupidFuckingSignedInt < 0) {
-			var unsignedVer = BitConverter.ToUInt32(BitConverter.GetBytes(stupidFuckingSignedInt), 0);
-			return unsignedVer.ToString();
-		}
-		return stupidFuckingSignedInt.ToString();
+		return ((uint)stupidFuckingSignedInt).ToString();
 	}
 
 	public static Dictionary<string, RandomizerAction> TPIds = new Dictionary<string, RandomizerAction>() {
