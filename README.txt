@@ -71,3 +71,25 @@ Damage vulnerability/resistance
 Random velocity vectors
 
 The randomness of chaos mode is based on the system clock instead of a set seed, thus will vary between players playing the same seed and between plays of a seed. This mode is intended for fun and to feel the joy of getting teleported out of bounds while you're stuck in a cutscene. I recommend saving a lot.
+
+
+
+BUILD INSTRUCTIONS
+
+Building the rando uses a fork of dnSpy found at https://github.com/AsmPrgmC3/dnSpy/releases/latest
+
+Build steps:
+- Download dnSpy
+- Copy a vanilla `Assembly-CSharp.dll` into the root directory (next to this README), renaming it to `Assembly-CSharp_orig.dll`
+- Run `path\to\dnSpy.exe --modfile:dnspy-modfile.json --runModfile --closeAfterModfile`
+
+`Assembly-CSharp.dll` will contain the updated rando.
+
+If you're compiling often, it might be more convenient to avoid dnSpy loading times by keeping it open.
+To do that, open dnSpy and select "File -> Load Modfile...". Select the `dnspy-modfile.json` next to this README.
+Once that's done, you can run it anytime via "File -> Run Modfile" (or the shortcut Ctrl+Shift+M).
+
+To avoid copying the `Assembly-CSharp.dll` after every recompile, it's also possible to change the "outputFile" path in `dnspy-modfile.json` to point to your game's `Assembly-CSharp.dll`.
+
+When adding new class or resource files, they need to be added to the corresponding list inside `dnspy-modfile.json`.
+Classes from the source assembly that are now modified also need to be added to the "replaceClasses" section.
