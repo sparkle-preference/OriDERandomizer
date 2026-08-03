@@ -1,5 +1,5 @@
 {
-	"sourceAssembly": "Assembly-CSharp_orig.dll",
+	"sourceAssembly": "Managed/Assembly-CSharp_orig.dll",
 	"outputFile": "Assembly-CSharp.dll",
 	"replaceClasses": [
 		"AbilityDebugMenuItems",
