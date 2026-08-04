@@ -4,28 +4,6 @@ using System.Linq;
 
 namespace Protogen {
     public static class OriReachable {
-        public static List<Node> ReachableCollecting(AreaGraph graph, Inventory inventory,
-            Dictionary<string, Inventory> placements) {
-            var reachableOrder = new List<Node>();
-            var lastReachable = new HashSet<string>();
-            bool didUpdate;
-            do {
-                var newReachable = Reachable(graph, inventory);
-                didUpdate = !newReachable.SetEquals(lastReachable);
-                foreach (var nodeName in newReachable.Except(lastReachable)) {
-                    if (placements.ContainsKey(nodeName)) {
-                        inventory += placements[nodeName];
-                    }
-
-                    reachableOrder.Add(graph.NodesByName[nodeName]);
-                }
-
-                lastReachable = newReachable;
-            } while (didUpdate);
-
-            return reachableOrder;
-        }
-
         public static HashSet<string> Reachable(AreaGraph graph, Inventory inventory, string startNode = null, Dictionary<string, HashSet<string>> primedPaths = null) {
             if (startNode == null || !graph.OutgoingConnections.ContainsKey(startNode)) {
                 startNode = graph.Origin.Name;

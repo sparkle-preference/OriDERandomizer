@@ -12,7 +12,7 @@ public class ShowEnhancedSpiritFlameTextAction : PerformingAction {
         }
 
         var messageProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
-        messageProvider.messages = Messages;
+        messageProvider.Messages = Messages;
         messageBox = UI.MessageController.ShowEnhancedSpiritFlameMessage(messageProvider);
         if (messageBox) {
             messageBox.OnMessageScreenHide += OnMessageScreenHide;

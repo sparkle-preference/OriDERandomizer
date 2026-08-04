@@ -18,12 +18,12 @@ public class RandomizerChaosColor : RandomizerChaosEffect {
         Countdown = Random.Range(600, 3600);
         InitialColor = Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color;
         if (Random.Range(0, 2) == 0) {
-            Randomizer.showChaosEffect("Invisible Ori");
+            Randomizer.ShowChaosEffect("Invisible Ori");
             Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color = new Color(InitialColor.r, InitialColor.g, InitialColor.b, 0f);
             return;
         }
 
-        Randomizer.showChaosEffect("Ghostly Ori");
+        Randomizer.ShowChaosEffect("Ghostly Ori");
         Fading = true;
         FadeRate = Random.Range(0.5f, 2f) / Countdown;
     }

@@ -16,32 +16,32 @@ public class RandomizerChaosGravity : RandomizerChaosEffect {
         WellActive = false;
         var num = Random.Range(0, 16);
         if (num <= 2) {
-            Randomizer.showChaosEffect("Gravity increase");
+            Randomizer.ShowChaosEffect("Gravity increase");
             ApplyGravityMultiplier(Random.Range(1.1f, 2f));
             return;
         }
 
         if (num <= 7) {
-            Randomizer.showChaosEffect("Gravity decrease");
+            Randomizer.ShowChaosEffect("Gravity decrease");
             ApplyGravityMultiplier(Random.Range(0.1f, 0.9f));
             return;
         }
 
         if (num <= 10) {
-            Randomizer.showChaosEffect("Gravity shift");
+            Randomizer.ShowChaosEffect("Gravity shift");
             Characters.Sein.PlatformBehaviour.Gravity.BaseSettings.GravityAngle = Random.Range(45f, 315f);
             return;
         }
 
         if (num <= 13) {
-            Randomizer.showChaosEffect("Weird gravity");
+            Randomizer.ShowChaosEffect("Weird gravity");
             Characters.Sein.PlatformBehaviour.Gravity.BaseSettings.GravityAngle = Random.Range(0f, 360f);
             ApplyGravityMultiplier(1f / Random.Range(0.5f, 2f));
             return;
         }
 
         if (num <= 15) {
-            Randomizer.showChaosEffect("Gravity well");
+            Randomizer.ShowChaosEffect("Gravity well");
             WellActive = true;
             WellPosition = new Vector2(Characters.Sein.Position.x + Random.Range(-20f, 20f), Characters.Sein.Position.y + Random.Range(-20f, 20f));
             WellStrength = Random.Range(16f, 32f);

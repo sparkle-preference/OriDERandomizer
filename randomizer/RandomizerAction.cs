@@ -10,10 +10,6 @@ public class RandomizerAction {
         Value = StringValPickupTypes.Contains(action) ? value : int.Parse((string)value);
     }
 
-    public bool IsStringVal() {
-        return StringValPickupTypes.Contains(Action);
-    }
-
     public string ValAsStr() {
         return StringValPickupTypes.Contains(Action) ? (string)Value : ((int)Value).ToString();
     }

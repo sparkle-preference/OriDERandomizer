@@ -7,7 +7,7 @@ public class RandomizerChaosPoison : RandomizerChaosEffect {
     }
 
     public override void Start() {
-        Randomizer.showChaosEffect("Poison");
+        Randomizer.ShowChaosEffect("Poison");
         Countdown = Random.Range(1200, 3600);
         DamageRate = Random.Range(0.5f, 2f) * Characters.Sein.Mortality.Health.MaxHealth / Countdown;
     }

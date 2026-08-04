@@ -1197,12 +1197,12 @@ public static class BingoController {
         // EscapeDataString throws past ~32k chars; boards run a few KB,
         // but never let an outlier kill the update path
         if (RandomizerSyncManager.WsOpen && !WsUnsupported && json.Length < 30000) {
-            NativeWebSocket.SendText("bingo:bingoData=" + Uri.EscapeDataString(json) + "&version=" + Randomizer.VERSION);
+            NativeWebSocket.SendText("bingo:bingoData=" + Uri.EscapeDataString(json) + "&version=" + Randomizer.Version);
             UpdateTimer = 15;
         } else if (!RandomizerSyncManager.WsNoHttp && !UpdateClient.IsBusy) {
             var values = new NameValueCollection();
             values["bingoData"] = json;
-            values["version"] = Randomizer.VERSION;
+            values["version"] = Randomizer.Version;
             UpdateClient.UploadValuesAsync(new Uri(UpdateUrl), values);
             UpdateTimer = 15;
         } else {
@@ -1222,7 +1222,7 @@ public static class BingoController {
                 UpdateTimer = Math.Min(1, UpdateTimer);
             }
         } catch (Exception e) {
-            Randomizer.log("OnBingoAck: " + e.Message);
+            Randomizer.Log("OnBingoAck: " + e.Message);
         }
     }
 

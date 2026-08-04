@@ -18,7 +18,7 @@ public static class RandomizerMW {
     // save item ids 940-947 hold the granted-slots bitfields (8 x 32 bits).
     // NOTE: must stay OUTSIDE 1500-1599, which RandomizerInventory preserves
     // through death/reload -- granted bits have to roll back with the save.
-    public const int GrantedSlotsBase = 940;
+    public const int GRANTED_SLOTS_BASE = 940;
 
     public class ManifestEntry {
         public int Finder;
@@ -87,7 +87,7 @@ public static class RandomizerMW {
             return false;
         }
 
-        var local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + slot / 32);
+        var local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GRANTED_SLOTS_BASE + slot / 32);
         return (local & (1u << (slot % 32))) != 0;
     }
 
@@ -128,7 +128,7 @@ public static class RandomizerMW {
 
     // grants beyond this in one tick get one grouped summary instead of a
     // message per item (a release can dump dozens of slots at once)
-    public const int BatchMessageThreshold = 3;
+    public const int BATCH_MESSAGE_THRESHOLD = 3;
 
     // tick field 6: 8 ";"-joined 32-bit uints. Returns true if anything was
     // granted, so the caller can refresh logic.
@@ -149,7 +149,7 @@ public static class RandomizerMW {
                     continue;
                 }
 
-                var local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i);
+                var local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GRANTED_SLOTS_BASE + i);
                 var diff = serverFields[i] & ~local;
                 for (var bit = 0; bit < 32 && diff != 0; bit++) {
                     if ((diff & (1u << bit)) != 0) {
@@ -162,7 +162,7 @@ public static class RandomizerMW {
                 return false;
             }
 
-            var batch = pending.Count > BatchMessageThreshold;
+            var batch = pending.Count > BATCH_MESSAGE_THRESHOLD;
             // grants during the credits roll happen silently
             var silent = Randomizer.CreditsActive;
             var batched = new List<ManifestEntry>();
@@ -172,8 +172,8 @@ public static class RandomizerMW {
                 }
 
                 var i = slot / 32;
-                var local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i);
-                Characters.Sein.Inventory.SetRandomizerItem(GrantedSlotsBase + i, (int)(local | (1u << (slot % 32))));
+                var local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GRANTED_SLOTS_BASE + i);
+                Characters.Sein.Inventory.SetRandomizerItem(GRANTED_SLOTS_BASE + i, (int)(local | (1u << (slot % 32))));
                 granted = true;
             }
 
@@ -222,12 +222,12 @@ public static class RandomizerMW {
         return true;
     }
 
-    private static Dictionary<string, string> SkillNames = new Dictionary<string, string> {
+    private static Dictionary<string, string> skillNames = new Dictionary<string, string> {
         { "0", "Bash" }, { "2", "Charge Flame" }, { "3", "Wall Jump" }, { "4", "Stomp" }, { "5", "Double Jump" },
         { "8", "Charge Jump" }, { "12", "Climb" }, { "14", "Glide" }, { "50", "Dash" }, { "51", "Grenade" }, { "15", "Spirit Flame" },
     };
 
-    private static Dictionary<string, string> EventNames = new Dictionary<string, string> {
+    private static Dictionary<string, string> eventNames = new Dictionary<string, string> {
         { "0", "Water Vein" }, { "1", "Clean Water" }, { "2", "Gumon Seal" }, { "3", "Wind Restored" }, { "4", "Sunstone" }, { "5", "Warmth Returned" },
     };
 
@@ -240,7 +240,7 @@ public static class RandomizerMW {
     private static HashSet<string> redStuff = new HashSet<string> { "Sunstone", "Horu Teleporter", "Warmth Returned" };
 
     public static string ColorWrap(string input) {
-        if (SkillNames.ContainsValue(input)) {
+        if (skillNames.ContainsValue(input)) {
             return $"${input}$"; // skill names are green
         }
 
@@ -271,10 +271,10 @@ public static class RandomizerMW {
                 finders.Add(entry.Finder);
                 switch (entry.Code) {
                     case "SK":
-                        skills.Add(ColorWrap(SkillNames.ContainsKey(entry.Id) ? SkillNames[entry.Id] : "Unknown Skill " + entry.Id));
+                        skills.Add(ColorWrap(skillNames.ContainsKey(entry.Id) ? skillNames[entry.Id] : "Unknown Skill " + entry.Id));
                         break;
                     case "EV":
-                        events.Add(ColorWrap(EventNames.ContainsKey(entry.Id) ? EventNames[entry.Id] : "Unknown Event " + entry.Id));
+                        events.Add(ColorWrap(eventNames.ContainsKey(entry.Id) ? eventNames[entry.Id] : "Unknown Event " + entry.Id));
                         break;
                     case "TP":
                         travel.Add(ColorWrap(entry.Id + " Teleporter"));

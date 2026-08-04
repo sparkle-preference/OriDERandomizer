@@ -61,7 +61,7 @@ public class RandomizerUI : MonoBehaviour {
     }
 
     public void Update() {
-        if (m_sideNotificationsDisplaying.Count == 0 && m_sideNotificationsAwaiting.Count == 0) {
+        if (sideNotificationsDisplaying.Count == 0 && sideNotificationsAwaiting.Count == 0) {
             return;
         }
 
@@ -69,39 +69,39 @@ public class RandomizerUI : MonoBehaviour {
 
         // message objects destroy themselves automatically when their time elapses, so we have to clean up after them
         var i = 0;
-        while (i < m_sideNotificationsDisplaying.Count) {
-            if (!m_sideNotificationsDisplaying[i].MessageBox) {
-                m_sideNotificationsDisplaying.RemoveAt(i);
+        while (i < sideNotificationsDisplaying.Count) {
+            if (!sideNotificationsDisplaying[i].MessageBox) {
+                sideNotificationsDisplaying.RemoveAt(i);
                 updateDisplay = true;
             } else {
                 i++;
             }
         }
 
-        while (m_sideNotificationsAwaiting.Count > 0 && (m_sideNotificationsDisplaying.Count < 5 || m_extendedAltTShown)) {
-            var nextMessage = m_sideNotificationsAwaiting.Dequeue();
-            m_sideNotificationsDisplaying.Add(nextMessage);
-            m_recentSideNotifications.Enqueue(nextMessage);
+        while (sideNotificationsAwaiting.Count > 0 && (sideNotificationsDisplaying.Count < 5 || extendedAltTShown)) {
+            var nextMessage = sideNotificationsAwaiting.Dequeue();
+            sideNotificationsDisplaying.Add(nextMessage);
+            recentSideNotifications.Enqueue(nextMessage);
             updateDisplay = true;
         }
 
-        if (m_sideNotificationsDisplaying.Count > 5) {
-            for (var j = 0; j < m_sideNotificationsDisplaying.Count - 5; j++) {
-                if (m_sideNotificationsDisplaying[j].MessageBox != null) {
-                    m_sideNotificationsDisplaying[j].MessageBox.Visibility.HideMessageScreenImmediately();
+        if (sideNotificationsDisplaying.Count > 5) {
+            for (var j = 0; j < sideNotificationsDisplaying.Count - 5; j++) {
+                if (sideNotificationsDisplaying[j].MessageBox != null) {
+                    sideNotificationsDisplaying[j].MessageBox.Visibility.HideMessageScreenImmediately();
                 }
             }
 
-            m_sideNotificationsDisplaying.RemoveRange(0, m_sideNotificationsDisplaying.Count - 5);
+            sideNotificationsDisplaying.RemoveRange(0, sideNotificationsDisplaying.Count - 5);
         }
 
-        while (m_recentSideNotifications.Count > 5) {
-            m_recentSideNotifications.Dequeue();
+        while (recentSideNotifications.Count > 5) {
+            recentSideNotifications.Dequeue();
         }
 
         if (updateDisplay) {
             var nextY = 2.2f;
-            foreach (var displayingMessage in m_sideNotificationsDisplaying) {
+            foreach (var displayingMessage in sideNotificationsDisplaying) {
                 if (!displayingMessage.MessageBox) {
                     displayingMessage.Instantiate();
                 }
@@ -121,30 +121,30 @@ public class RandomizerUI : MonoBehaviour {
 
         // in any case where "hold alt+T" would show nothing, replay last message OnPressed to preserve snappy response
         // (recents fill even with the side queue disabled, so holding shows the last 5 either way)
-        if (RandomizerRebinding.ReplayMessage.OnPressed && (alwaysShowLastFive || m_recentSideNotifications.Count == 0)) {
-            Randomizer.playLastMessage();
+        if (RandomizerRebinding.ReplayMessage.OnPressed && (alwaysShowLastFive || recentSideNotifications.Count == 0)) {
+            Randomizer.PlayLastMessage();
         }
 
         if (alwaysShowLastFive) {
-            m_extendedAltTShown = true;
+            extendedAltTShown = true;
         }
 
         if (RandomizerRebinding.ReplayMessage.Pressed) {
-            m_timeAltTHeld += Time.deltaTime;
+            timeAltTHeld += Time.deltaTime;
 
-            if (m_timeAltTHeld >= 0.2f && !m_extendedAltTShown) {
-                foreach (var displayingMessage in m_sideNotificationsDisplaying) {
-                    if (!m_recentSideNotifications.Contains(displayingMessage)) {
+            if (timeAltTHeld >= 0.2f && !extendedAltTShown) {
+                foreach (var displayingMessage in sideNotificationsDisplaying) {
+                    if (!recentSideNotifications.Contains(displayingMessage)) {
                         displayingMessage.MessageBox.Visibility.HideMessageScreenImmediately();
                     }
                 }
 
-                m_sideNotificationsDisplaying.Clear();
-                m_sideNotificationsDisplaying.AddRange(m_recentSideNotifications.ToArray());
-                m_extendedAltTShown = true;
+                sideNotificationsDisplaying.Clear();
+                sideNotificationsDisplaying.AddRange(recentSideNotifications.ToArray());
+                extendedAltTShown = true;
 
                 var nextY = 2.2f;
-                foreach (var displayingMessage in m_sideNotificationsDisplaying) {
+                foreach (var displayingMessage in sideNotificationsDisplaying) {
                     if (!displayingMessage.MessageBox) {
                         displayingMessage.Instantiate();
                     }
@@ -157,24 +157,24 @@ public class RandomizerUI : MonoBehaviour {
             }
         }
 
-        if (m_extendedAltTShown) {
-            foreach (var displayingMessage in m_sideNotificationsDisplaying) {
+        if (extendedAltTShown) {
+            foreach (var displayingMessage in sideNotificationsDisplaying) {
                 displayingMessage.MessageBox.Visibility.ResetWaitDuration();
             }
         }
 
         // only replay message OnReleased if we know that OnPressed would not have handled it (i.e. "hold alt+T" would show something)
-        if (RandomizerRebinding.ReplayMessage.OnReleased && !m_extendedAltTShown && m_recentSideNotifications.Count > 0) {
-            Randomizer.playLastMessage();
+        if (RandomizerRebinding.ReplayMessage.OnReleased && !extendedAltTShown && recentSideNotifications.Count > 0) {
+            Randomizer.PlayLastMessage();
         }
 
         if (RandomizerRebinding.ReplayMessage.Released) {
-            m_timeAltTHeld = 0f;
+            timeAltTHeld = 0f;
 
-            if (m_extendedAltTShown && !alwaysShowLastFive) {
-                m_extendedAltTShown = false;
+            if (extendedAltTShown && !alwaysShowLastFive) {
+                extendedAltTShown = false;
 
-                foreach (var displayingMessage in m_sideNotificationsDisplaying) {
+                foreach (var displayingMessage in sideNotificationsDisplaying) {
                     displayingMessage.MessageBox.SetWaitDuration(3f);
                     displayingMessage.MessageBox.Visibility.ResetWaitDuration();
                 }
@@ -183,22 +183,22 @@ public class RandomizerUI : MonoBehaviour {
     }
 
     public void QueueSideNotification(Message message) {
-        m_sideNotificationsAwaiting.Enqueue(message);
+        sideNotificationsAwaiting.Enqueue(message);
     }
 
     // track a message for hold-alt+T without displaying it (side queue disabled:
     // it already showed top-center)
     public void RecordRecentNotification(Message message) {
-        m_recentSideNotifications.Enqueue(message);
-        while (m_recentSideNotifications.Count > 5) {
-            m_recentSideNotifications.Dequeue();
+        recentSideNotifications.Enqueue(message);
+        while (recentSideNotifications.Count > 5) {
+            recentSideNotifications.Dequeue();
         }
     }
 
     public void ClearRecentNotifications() {
-        m_recentSideNotifications.Clear();
+        recentSideNotifications.Clear();
 
-        foreach (var displayingMessage in m_sideNotificationsDisplaying) {
+        foreach (var displayingMessage in sideNotificationsDisplaying) {
             if (displayingMessage.MessageBox) {
                 displayingMessage.MessageBox.SetWaitDuration(3f);
                 displayingMessage.MessageBox.Visibility.ResetWaitDuration();
@@ -208,15 +208,15 @@ public class RandomizerUI : MonoBehaviour {
 
     public static RandomizerUI Instance;
 
-    private List<Message> m_sideNotificationsDisplaying = new List<Message>();
+    private List<Message> sideNotificationsDisplaying = new List<Message>();
 
-    private Queue<Message> m_sideNotificationsAwaiting = new Queue<Message>();
+    private Queue<Message> sideNotificationsAwaiting = new Queue<Message>();
 
-    private Queue<Message> m_recentSideNotifications = new Queue<Message>();
+    private Queue<Message> recentSideNotifications = new Queue<Message>();
 
-    private float m_timeAltTHeld;
+    private float timeAltTHeld;
 
-    private bool m_extendedAltTShown;
+    private bool extendedAltTShown;
 
     public class Message {
         public static Message InfoMessage(string message, float baseDuration = 1f) {

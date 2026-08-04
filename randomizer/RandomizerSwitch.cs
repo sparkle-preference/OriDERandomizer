@@ -28,13 +28,13 @@ public static class RandomizerSwitch {
         }
     }
 
-    public static void ExpOrbPickup(int Value, int coords) {
-        PickupMessage(Value + " " + RandomizerExpNames.ExpName(coords));
+    public static void ExpOrbPickup(int value, int coords) {
+        PickupMessage(value + " " + RandomizerExpNames.ExpName(coords));
         if (Randomizer.ZeroXP) {
             return;
         }
 
-        Characters.Sein.Level.GainExperience(RandomizerBonus.ExpWithBonuses(Value, true));
+        Characters.Sein.Level.GainExperience(RandomizerBonus.ExpWithBonuses(value, true));
     }
 
     public static void KeystonePickup() {
@@ -54,8 +54,8 @@ public static class RandomizerSwitch {
         Characters.Sein.Inventory.IncRandomizerItem(71, 1);
     }
 
-    public static void AbilityPickup(int Ability) {
-        switch (Ability) {
+    public static void AbilityPickup(int ability) {
+        switch (ability) {
             case 0:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(414);
@@ -157,11 +157,11 @@ public static class RandomizerSwitch {
                 break;
         }
 
-        RandomizerStatsManager.FoundSkill(Ability);
+        RandomizerStatsManager.FoundSkill(ability);
     }
 
-    public static void EventPickup(int Value) {
-        switch (Value) {
+    public static void EventPickup(int value) {
+        switch (value) {
             case 0:
                 PickupMessage("*Water Vein*", 300);
                 Keys.GinsoTree = true;
@@ -193,15 +193,15 @@ public static class RandomizerSwitch {
                 break;
         }
 
-        RandomizerStatsManager.FoundEvent(Value);
+        RandomizerStatsManager.FoundEvent(value);
     }
 
-    public static void TeleportPickup(string Value) {
+    public static void TeleportPickup(string value) {
         var shardCount = -1;
         var colorChar = ' ';
         var shardPart = "";
         var dungeonAbbr = "";
-        if (Value == "Ginso") {
+        if (value == "Ginso") {
             Characters.Sein.Inventory.SetRandomizerItem(1024, 1);
             shardCount = RandomizerBonus.WaterVeinShards();
             shardPart = "Water Vein";
@@ -209,7 +209,7 @@ public static class RandomizerSwitch {
             colorChar = '*';
         }
 
-        if (Value == "Forlorn") {
+        if (value == "Forlorn") {
             Characters.Sein.Inventory.SetRandomizerItem(1025, 1);
             shardCount = RandomizerBonus.GumonSealShards();
             shardPart = "Gumon Seal";
@@ -217,7 +217,7 @@ public static class RandomizerSwitch {
             colorChar = '#';
         }
 
-        if (Value == "Horu") {
+        if (value == "Horu") {
             Characters.Sein.Inventory.SetRandomizerItem(1026, 1);
             shardCount = RandomizerBonus.SunstoneShards();
             shardPart = "Sunstone";
@@ -232,20 +232,20 @@ public static class RandomizerSwitch {
                 shardPart = "2 " + shardPart + " shards to activate";
             }
 
-            PickupMessage(colorChar + "Broken " + Value + " teleporter\nCollect " + shardPart + colorChar, 300);
+            PickupMessage(colorChar + "Broken " + value + " teleporter\nCollect " + shardPart + colorChar, 300);
             return;
         }
 
         if (colorChar != ' ' && Randomizer.CluesMode && Randomizer.TeleportersLockedByClues && !RandomizerClues.IsClueActive(dungeonAbbr)) {
-            PickupMessage($"{colorChar}Broken {Value} teleporter\nGet the {shardPart} clue to activate{colorChar}", 300);
+            PickupMessage($"{colorChar}Broken {value} teleporter\nGet the {shardPart} clue to activate{colorChar}", 300);
             return;
         }
 
-        TeleporterController.Activate(Randomizer.TeleportTable[Value].ToString(), false);
-        PickupMessage(colorChar + Value + " teleporter activated" + colorChar);
+        TeleporterController.Activate(Randomizer.TeleportTable[value].ToString(), false);
+        PickupMessage(colorChar + value + " teleporter activated" + colorChar);
     }
 
-    public static void GivePickup(RandomizerAction action, int coords, bool found_locally = true) {
+    public static void GivePickup(RandomizerAction action, int coords, bool foundLocally = true) {
         try {
             switch (action.Action) {
                 case "RP":
@@ -331,9 +331,9 @@ public static class RandomizerSwitch {
                             }
                         }
 
-                        Randomizer.showHint(RandomizerUI.Message.PickupMessage(message, duration / 60f));
+                        Randomizer.ShowHint(RandomizerUI.Message.PickupMessage(message, duration / 60f));
                     } else {
-                        Randomizer.showHint(RandomizerUI.Message.PickupMessage(message));
+                        Randomizer.ShowHint(RandomizerUI.Message.PickupMessage(message));
                     }
 
                     break;
@@ -408,11 +408,11 @@ public static class RandomizerSwitch {
             Randomizer.LogError($"Give Pickup({action}, {coords}): {e.Message}");
         }
 
-        if (found_locally && Randomizer.Sync) {
+        if (foundLocally && Randomizer.Sync) {
             RandomizerSyncManager.FoundPickup(action, coords);
         }
 
-        if (found_locally) {
+        if (foundLocally) {
             Randomizer.OnCoord(coords);
         }
     }
@@ -464,24 +464,24 @@ public static class RandomizerSwitch {
 
         if (SilentMode) {
             if (RandomizerSettings.Dev) {
-                Randomizer.log(text + " (squelched)");
+                Randomizer.Log(text + " (squelched)");
             }
 
             return;
         }
 
-        Randomizer.showHint(RandomizerUI.Message.PickupMessage(text, frames / 60f));
+        Randomizer.ShowHint(RandomizerUI.Message.PickupMessage(text, frames / 60f));
     }
 
     public static void SentMwPickupMessage(string text, int frames = 120) {
         if (SilentMode) {
             if (RandomizerSettings.Dev) {
-                Randomizer.log(text + " (squelched)");
+                Randomizer.Log(text + " (squelched)");
             }
 
             return;
         }
 
-        Randomizer.showHint(RandomizerUI.Message.MwPickupMessage(text, frames / 60f));
+        Randomizer.ShowHint(RandomizerUI.Message.MwPickupMessage(text, frames / 60f));
     }
 }

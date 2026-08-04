@@ -4,19 +4,19 @@ using UnityEngine;
 
 public static class RandomizerText {
     public static RandomizerMessageProvider GetAbilityName(AbilityType ability) {
-        if (!m_abilityOverrides.ContainsKey(ability)) {
+        if (!abilityOverrides.ContainsKey(ability)) {
             return null;
         }
 
-        return m_abilityOverrides[ability].NameOverride;
+        return abilityOverrides[ability].NameOverride;
     }
 
     public static RandomizerMessageProvider GetAbilityDescription(AbilityType ability) {
-        if (!m_abilityOverrides.ContainsKey(ability)) {
+        if (!abilityOverrides.ContainsKey(ability)) {
             return null;
         }
 
-        return m_abilityOverrides[ability].DescriptionOverride;
+        return abilityOverrides[ability].DescriptionOverride;
     }
 
     public static string MapFilterText {
@@ -33,7 +33,7 @@ public static class RandomizerText {
     }
 
     public static string GetObjectiveText() {
-        if (Randomizer.canFinalEscape(false)) {
+        if (Randomizer.CanFinalEscape(false)) {
             return "Find and Restore #Mount Horu#!";
         }
 
@@ -49,29 +49,14 @@ public static class RandomizerText {
             return "Restore all 9 #Mapstones#";
         }
 
-        if (Randomizer.fragsEnabled) {
-            return string.Format("Find all {0} #Warmth Fragments# hidden throughout Nibel", Randomizer.fragKeyFinish);
+        if (Randomizer.FragsEnabled) {
+            return string.Format("Find all {0} #Warmth Fragments# hidden throughout Nibel", Randomizer.FragKeyFinish);
         }
 
         return "Continue to search for #Skills# and #Resources#";
     }
 
-    public static RandomizerMessageProvider GetDifficultyName(DifficultyMode mode) {
-        switch (mode) {
-            case DifficultyMode.Easy:
-                return DifficultyOverrides.Easy.NameOverride;
-            case DifficultyMode.Normal:
-                return DifficultyOverrides.Normal.NameOverride;
-            case DifficultyMode.Hard:
-                return DifficultyOverrides.Hard.NameOverride;
-            case DifficultyMode.OneLife:
-                return DifficultyOverrides.OneLife.NameOverride;
-            default:
-                return null;
-        }
-    }
-
-    private static Dictionary<AbilityType, AbilityTextOverrides> m_abilityOverrides = new Dictionary<AbilityType, AbilityTextOverrides> {
+    private static Dictionary<AbilityType, AbilityTextOverrides> abilityOverrides = new Dictionary<AbilityType, AbilityTextOverrides> {
         {
             AbilityType.ChargeFlameEfficiency,
             new AbilityTextOverrides(null, "Allows Charge Flame to be performed without spending Energy")

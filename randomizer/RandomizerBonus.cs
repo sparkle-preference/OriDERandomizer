@@ -73,7 +73,7 @@ public static class RandomizerBonus {
 
                 break;
             case 2:
-                Randomizer.returnToStart();
+                Randomizer.ReturnToStart();
                 RandomizerSwitch.PickupMessage("Go Home!");
                 return;
             case 20:
@@ -230,12 +230,12 @@ public static class RandomizerBonus {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
                 }
 
-                if (Randomizer.fragKeyFinish < WarmthFrags()) {
+                if (Randomizer.FragKeyFinish < WarmthFrags()) {
                     RandomizerSwitch.PickupMessage("@Warmth Fragment (extra)@", 300);
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage(string.Concat("@Warmth Fragment (", WarmthFrags().ToString(), "/", Randomizer.fragKeyFinish, ")@"), 300);
+                RandomizerSwitch.PickupMessage(string.Concat("@Warmth Fragment (", WarmthFrags().ToString(), "/", Randomizer.FragKeyFinish, ")@"), 300);
                 break;
             case 29:
                 return;
@@ -427,17 +427,17 @@ public static class RandomizerBonus {
                 }
 
                 Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                var s_color = "";
-                var g_color = "";
+                var sColor = "";
+                var gColor = "";
                 if (Characters.Sein.PlayerAbilities.HasAbility(AbilityType.Stomp)) {
-                    s_color = "$";
+                    sColor = "$";
                 }
 
                 if (Characters.Sein.PlayerAbilities.HasAbility(AbilityType.Grenade)) {
-                    g_color = "$";
+                    gColor = "$";
                 }
 
-                RandomizerSwitch.PickupMessage(s_color + "Stomp: " + Randomizer.StompZone + s_color + g_color + "    Grenade: " + Randomizer.GrenadeZone + g_color, 480);
+                RandomizerSwitch.PickupMessage(sColor + "Stomp: " + Randomizer.StompZone + sColor + gColor + "    Grenade: " + Randomizer.GrenadeZone + gColor, 480);
                 break;
             case 410:
                 if (!flag) {
@@ -540,8 +540,6 @@ public static class RandomizerBonus {
                 }
 
                 return;
-                Characters.Sein.Inventory.SetRandomizerItem(ID, 0);
-                return;
             default:
                 if (flag) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
@@ -631,10 +629,6 @@ public static class RandomizerBonus {
         return total;
     }
 
-    public static int GetPickupCount() {
-        return Characters.Sein.Inventory.GetRandomizerItem(0);
-    }
-
     public static int DoubleJumpUpgrades() {
         return Characters.Sein.Inventory.GetRandomizerItem(12);
     }
@@ -688,10 +682,6 @@ public static class RandomizerBonus {
 
     public static int Bleeding() {
         return Characters.Sein.Inventory.GetRandomizerItem(30);
-    }
-
-    public static bool ExpEfficiency() {
-        return false;
     }
 
     public static int Lifesteal() {
@@ -751,7 +741,7 @@ public static class RandomizerBonus {
 
     public static void ListBonuses() {
         var bonuses = new List<string>();
-        foreach (var kv in BonusNames) {
+        foreach (var kv in bonusNames) {
             var amnt = Characters.Sein.Inventory.GetRandomizerItem(kv.Key);
             if (amnt == 0) {
                 continue;
@@ -766,9 +756,9 @@ public static class RandomizerBonus {
 
         if (bonuses.Count > 0) {
             var msg = $"ALIGNRIGHTANCHORTOPPARAMS_12_14_1_{string.Join("\n", bonuses.ToArray())}";
-            Randomizer.printInfo(msg);
+            Randomizer.PrintInfo(msg);
         } else {
-            Randomizer.printInfo("No bonus passives");
+            Randomizer.PrintInfo("No bonus passives");
         }
     }
 
@@ -785,7 +775,7 @@ public static class RandomizerBonus {
     public static bool EnhancedGrenade => Randomizer.Inventory.GetRandomizerItem(420) > 0 && !RandomizerBonusSkill.IsActive(115);
     public static bool EnhancedCleanWater => Randomizer.Inventory.GetRandomizerItem(422) > 0 && !RandomizerBonusSkill.IsActive(115);
 
-    private static Dictionary<int, string> BonusNames = new Dictionary<int, string> {
+    private static Dictionary<int, string> bonusNames = new Dictionary<int, string> {
         { 6, "Attack Upgrade" },
         { 13, "Health Regeneration" },
         { 15, "Energy Regeneration" },

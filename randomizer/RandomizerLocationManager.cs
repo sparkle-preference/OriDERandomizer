@@ -50,9 +50,9 @@ public class RandomizerLocationManager {
 
         if (!File.Exists("areas.ori")) {
             Areas = null;
-            s_logicLastUpdated = DateTime.MinValue;
-            s_lastLogicPaths = paths;
-            Randomizer.log("No areas.ori found, will not update logic.");
+            logicLastUpdated = DateTime.MinValue;
+            lastLogicPaths = paths;
+            Randomizer.Log("No areas.ori found, will not update logic.");
             RandomizerSettings.CurrentFilter = RandomizerSettings.MapFilterMode.Uncollected;
             return;
         }
@@ -67,10 +67,10 @@ public class RandomizerLocationManager {
             }
         }
 
-        if (s_logicLastUpdated == DateTime.MinValue || File.GetLastWriteTime("areas.ori") > s_logicLastUpdated || !paths.SetEquals(s_lastLogicPaths)) {
+        if (logicLastUpdated == DateTime.MinValue || File.GetLastWriteTime("areas.ori") > logicLastUpdated || !paths.SetEquals(lastLogicPaths)) {
             Areas = OriParse.Parse("areas.ori", paths);
-            s_logicLastUpdated = File.GetLastWriteTime("areas.ori");
-            s_lastLogicPaths = paths;
+            logicLastUpdated = File.GetLastWriteTime("areas.ori");
+            lastLogicPaths = paths;
 
             foreach (var location in LocationsByName.Values) {
                 location.Reachable = false;
@@ -178,7 +178,7 @@ public class RandomizerLocationManager {
 
     public static void PlacePickup(int key, string action, object value, bool repeatable = false) {
         if (!LocationsByKey.ContainsKey(key)) {
-            Randomizer.printInfo("Error: Unknown location key " + key + " in seed file " + Randomizer.SeedFilePath);
+            Randomizer.PrintInfo("Error: Unknown location key " + key + " in seed file " + Randomizer.SeedFilePath);
             return;
         }
 
@@ -237,7 +237,7 @@ public class RandomizerLocationManager {
     public static void UpdateReachable() {
         if (LogicThread != null && LogicThread.IsAlive) {
             LogicThread.Abort();
-            Randomizer.log("Killing existing logic thread");
+            Randomizer.Log("Killing existing logic thread");
         }
 
         LogicThread = new Thread(UpdateReachableWorker);
@@ -275,7 +275,7 @@ public class RandomizerLocationManager {
                 return sb.ToString();
             }
         } catch (Exception e) {
-            Randomizer.log($"AreasHash: {e.Message}");
+            Randomizer.Log($"AreasHash: {e.Message}");
             return "none";
         }
     }
@@ -299,10 +299,10 @@ public class RandomizerLocationManager {
                 File.Delete("areas.ori.old");
             }
 
-            Randomizer.log("ws: areas.ori updated from server, reloading logic");
+            Randomizer.Log("ws: areas.ori updated from server, reloading logic");
             InitializeLogic();
         } catch (Exception e) {
-            Randomizer.log($"ApplyAreasUpdate: {e}");
+            Randomizer.Log($"ApplyAreasUpdate: {e}");
             if (!File.Exists("areas.ori") && File.Exists("areas.ori.old")) {
                 File.Move("areas.ori.old", "areas.ori");
             }
@@ -408,7 +408,7 @@ public class RandomizerLocationManager {
             }
             else if (item.Value.Reachable)
             {
-                Randomizer.log("!!!! " + item.Key + " became unreachable!"); // can toggle this on for debugging but logging in a thread is spoopy
+                Randomizer.Log("!!!! " + item.Key + " became unreachable!"); // can toggle this on for debugging but logging in a thread is spoopy
                 item.Value.Reachable = false;
             }
         }*/
@@ -436,9 +436,9 @@ public class RandomizerLocationManager {
         return $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/areas";
     }
 
-    private static DateTime s_logicLastUpdated = DateTime.MinValue;
+    private static DateTime logicLastUpdated = DateTime.MinValue;
 
-    private static HashSet<string> s_lastLogicPaths;
+    private static HashSet<string> lastLogicPaths;
 
     private static Dictionary<string, string> stupidBullshit = new Dictionary<string, string> {
         { "-159,-114,force", "SpiritTreeRefined" },
@@ -513,7 +513,7 @@ public class RandomizerLocationManager {
             }
 
             if (Randomizer.ColorShift) {
-                Randomizer.changeColor();
+                Randomizer.ChangeColor();
             }
 
             if (Type == LocationType.ProgressiveMap) {
@@ -540,7 +540,7 @@ public class RandomizerLocationManager {
             }
 
             if (Type == LocationType.Skill) {
-                Randomizer.showProgress();
+                Randomizer.ShowProgress();
             }
         }
 

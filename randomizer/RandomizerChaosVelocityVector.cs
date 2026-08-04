@@ -12,14 +12,14 @@ public class RandomizerChaosVelocityVector : RandomizerChaosEffect {
         Pushing = false;
         var num = Random.Range(0, 8);
         if (num <= 5) {
-            Randomizer.showChaosEffect("Throw");
+            Randomizer.ShowChaosEffect("Throw");
             Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = Random.Range(-100f, 100f);
             Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = Random.Range(-100f, 100f);
             return;
         }
 
         if (num <= 7) {
-            Randomizer.showChaosEffect("Push");
+            Randomizer.ShowChaosEffect("Push");
             Pushing = true;
             Push = new Vector2(Random.Range(-40f, 40f), Random.Range(-40f, 40f));
         }

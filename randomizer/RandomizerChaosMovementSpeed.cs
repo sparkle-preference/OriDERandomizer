@@ -18,9 +18,9 @@ public class RandomizerChaosMovementSpeed : RandomizerChaosEffect {
         if (num <= 7) {
             var num2 = Random.Range(0.5f, 2f);
             if (num2 < 1f) {
-                Randomizer.showChaosEffect("Slow movement");
+                Randomizer.ShowChaosEffect("Slow movement");
             } else {
-                Randomizer.showChaosEffect("Fast movement");
+                Randomizer.ShowChaosEffect("Fast movement");
             }
 
             Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.Acceleration = 60f * num2;
@@ -34,7 +34,7 @@ public class RandomizerChaosMovementSpeed : RandomizerChaosEffect {
 
         if (num <= 12) {
             var num3 = Random.Range(8f, 16f);
-            Randomizer.showChaosEffect("Icy ground");
+            Randomizer.ShowChaosEffect("Icy ground");
             Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.Acceleration = 60f / num3;
             Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.Decceleration = 30f / num3;
             Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.MaxSpeed = 11.6666f * num3 / 8f;
@@ -43,14 +43,14 @@ public class RandomizerChaosMovementSpeed : RandomizerChaosEffect {
 
         if (num <= 14) {
             var num4 = Random.Range(1.5f, 3f);
-            Randomizer.showChaosEffect("Drag racer Ori");
+            Randomizer.ShowChaosEffect("Drag racer Ori");
             Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.MaxSpeed = 11.6666f * num4;
             Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Air.MaxSpeed = 11.6666f * num4;
             return;
         }
 
         if (num == 15) {
-            Randomizer.showChaosEffect("Strange movement");
+            Randomizer.ShowChaosEffect("Strange movement");
             Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.Acceleration = 60f * Random.Range(0.05f, 4f);
             Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.Decceleration = 30f * Random.Range(0.05f, 4f);
             Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.MaxSpeed = 11.6666f * Random.Range(0.25f, 4f);

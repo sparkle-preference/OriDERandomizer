@@ -3,7 +3,7 @@ public class RandomizerResources {
         using (var stream = typeof(RandomizerResources).Assembly.GetManifestResourceStream(name)) {
             if (stream == null) {
                 var available = string.Join(", ", ListResources());
-                Randomizer.log($"Failed to read resource '{name}'. Resource not found in assembly. Available resources: [{available}]");
+                Randomizer.Log($"Failed to read resource '{name}'. Resource not found in assembly. Available resources: [{available}]");
                 return null;
             }
 

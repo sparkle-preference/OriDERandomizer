@@ -172,7 +172,7 @@ public class SaveSceneManager : MonoBehaviour {
             try {
                 bootstrapHook(sceneRoot);
             } catch (Exception ex) {
-                Randomizer.log("Bootstrap exception: " + ex);
+                Randomizer.Log("Bootstrap exception: " + ex);
             }
         }
     }
@@ -194,7 +194,7 @@ public class SaveSceneManager : MonoBehaviour {
             try {
                 bootstrapHook(sceneRoot);
             } catch (Exception ex) {
-                Randomizer.log("Bootstrap exception: " + ex);
+                Randomizer.Log("Bootstrap exception: " + ex);
             }
         }
     }

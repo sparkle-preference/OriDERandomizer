@@ -275,7 +275,7 @@ public class AreaMapNavigation : MonoBehaviour {
 
             AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(true);
         } catch (Exception e) {
-            Randomizer.log("HandleRandomizerTooltip: " + e.Message);
+            Randomizer.Log("HandleRandomizerTooltip: " + e.Message);
         }
     }
 

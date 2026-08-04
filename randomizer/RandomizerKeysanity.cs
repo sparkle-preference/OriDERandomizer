@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -79,8 +78,8 @@ public class RandomizerKeysanity {
             var count = inventory.GetRandomizerItem(id);
             Characters.Sein.Inventory.Keystones = count - numberUsed;
 
-            if (count < countForDoor(id)) {
-                Randomizer.printInfo($"{hintMap[id]} {count}/{countForDoor(id)}: {hintsForDoor(id)}");
+            if (count < CountForDoor(id)) {
+                Randomizer.PrintInfo($"{hintMap[id]} {count}/{CountForDoor(id)}: {HintsForDoor(id)}");
             }
 
             return;
@@ -112,18 +111,18 @@ public class RandomizerKeysanity {
             }
 
             var count = inventory.GetRandomizerItem(id);
-            if (count == countForDoor(id)) {
+            if (count == CountForDoor(id)) {
                 return $"${hintMap[id]} {count}/{count}\n(Openable!)$";
             }
 
             if (GetDoorHint(guid)) {
-                return $"{hintMap[id]} {count}/{countForDoor(id)}\n{hintsForDoor(id)}";
+                return $"{hintMap[id]} {count}/{CountForDoor(id)}\n{HintsForDoor(id)}";
             }
 
-            return $"{hintMap[id]} {count}/{countForDoor(id)}\n(Touch door to get hint!)";
+            return $"{hintMap[id]} {count}/{CountForDoor(id)}\n(Touch door to get hint!)";
         }
 
-        Randomizer.log($"Unknown door {guid}");
+        Randomizer.Log($"Unknown door {guid}");
         return "?Unknown Door?";
     }
 
@@ -137,17 +136,17 @@ public class RandomizerKeysanity {
 
     // coords -2..-257 are multiworld manifest pseudo-locations: those keys sit
     // in another world, so "found" means the server granted us that slot
-    private bool clueResolved(int coords) {
+    private bool ClueResolved(int coords) {
         return coords <= -2 && coords >= -257 ? RandomizerMW.ManifestLocGranted(coords) : Randomizer.HaveCoord(coords);
     }
 
     // Me when I'm using LINQ responsibly (<- me when I lie)
-    private string hintsForDoor(int id, int skipCoords = -1) {
+    private string HintsForDoor(int id, int skipCoords = -1) {
         return RandomizerMW.ResolveNames(
             string.Join(
                 ", ",
                 keyClueMap[id]
-                    .Where(rkhi => !(rkhi.Coords == skipCoords || clueResolved(rkhi.Coords))) // only look at hints we still need
+                    .Where(rkhi => !(rkhi.Coords == skipCoords || ClueResolved(rkhi.Coords))) // only look at hints we still need
                     .GroupBy(rkhi => rkhi.Area) // group them by their areas
                     .OrderBy(grp => $"{4 - grp.Count()}{grp.Key}") // sort by count and then area alphabetically
                     .Select(grp => grp.Count() == 1 ? grp.Key : $"{grp.Key} x{grp.Count()}") // format for display (with x[NUM] for multiples)
@@ -158,14 +157,14 @@ public class RandomizerKeysanity {
     }
 
 
-    private int countForDoor(int id) {
+    private int CountForDoor(int id) {
         return id < 304 ? 2 : 4;
     }
 
     private string GetProgress(int id, bool printKeystone) {
         if (hintMap.TryGetValue(id, out var baseHint)) {
-            var canOpen = inventory.GetRandomizerItem(id) - countForDoor(id) == 0;
-            var hint = $"{baseHint}{(printKeystone ? " Keystone " : " ")}({inventory.GetRandomizerItem(id)}/{countForDoor(id)})";
+            var canOpen = inventory.GetRandomizerItem(id) - CountForDoor(id) == 0;
+            var hint = $"{baseHint}{(printKeystone ? " Keystone " : " ")}({inventory.GetRandomizerItem(id)}/{CountForDoor(id)})";
             if (canOpen) {
                 return $"${hint}$";
             }
@@ -179,7 +178,7 @@ public class RandomizerKeysanity {
     public void ShowPickupHint(int id, int foundAt) {
         var progress = GetProgress(id, true);
         if (progress.Length > 0 && progress[0] != '$' && GetDoorHint(id)) {
-            progress += $"\n(Remaining: {hintsForDoor(id, foundAt)})";
+            progress += $"\n(Remaining: {HintsForDoor(id, foundAt)})";
         }
 
         RandomizerSwitch.PickupMessage(progress);
@@ -203,10 +202,10 @@ public class RandomizerKeysanity {
         }
 
         var count = inventory.GetRandomizerItem(keyId);
-        if (count >= countForDoor(keyId)) {
-            RandomizerSwitch.PickupMessage($"${hintMap[keyId]} Door Hint ({count}/{countForDoor(keyId)})$");
+        if (count >= CountForDoor(keyId)) {
+            RandomizerSwitch.PickupMessage($"${hintMap[keyId]} Door Hint ({count}/{CountForDoor(keyId)})$");
         } else {
-            RandomizerSwitch.PickupMessage($"{hintMap[keyId]} Door Hint ({count}/{countForDoor(keyId)})\n{hintsForDoor(keyId)}");
+            RandomizerSwitch.PickupMessage($"{hintMap[keyId]} Door Hint ({count}/{CountForDoor(keyId)})\n{HintsForDoor(keyId)}");
         }
     }
 
@@ -216,7 +215,7 @@ public class RandomizerKeysanity {
             sb.Append($"{GetProgress(id++, false)} {GetProgress(id++, false)} {GetProgress(id++, false)}\n");
         }
 
-        Randomizer.printInfo(sb.ToString().TrimEnd());
+        Randomizer.PrintInfo(sb.ToString().TrimEnd());
     }
 
     public void AddClue(int id, int coords, string area) {

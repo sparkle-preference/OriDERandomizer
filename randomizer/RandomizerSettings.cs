@@ -82,7 +82,7 @@ public static class RandomizerSettings {
                 }
 
                 if (nagList.Count > 0) {
-                    Randomizer.printInfo("Default settings written for: " + string.Join(", ", nagList.ToArray()), 120 + 60 * nagList.Count);
+                    Randomizer.PrintInfo("Default settings written for: " + string.Join(", ", nagList.ToArray()), 120 + 60 * nagList.Count);
                 }
 
                 File.AppendAllText("RandomizerSettings.txt", writeText);
@@ -104,7 +104,7 @@ public static class RandomizerSettings {
             }
         } catch (Exception) {
             All[setting].Reset();
-            Randomizer.printInfo("@" + setting + ": failed to parse value '" + value + "'. Using default value: '" + All[setting].ToString() + "'@", 240);
+            Randomizer.PrintInfo("@" + setting + ": failed to parse value '" + value + "'. Using default value: '" + All[setting].ToString() + "'@", 240);
         }
     }
 
@@ -412,8 +412,8 @@ public static class RandomizerSettings {
         public UrlSetting(string name, string defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
         }
 
-        public override void Parse(string Value) {
-            this.Value = Value;
+        public override void Parse(string value) {
+            Value = value;
         }
 
         public override string ValidValues() {
@@ -423,7 +423,7 @@ public static class RandomizerSettings {
 
     public class ColorSetting : Setting<Color> {
         public ColorSetting(string name, Color defaultValue, float divisor, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
-            this.divisor = divisor;
+            Divisor = divisor;
         }
 
         public override string ValidValues() {
@@ -432,14 +432,14 @@ public static class RandomizerSettings {
 
         public override void Parse(string value) {
             var parts = value.Split(',');
-            Value = new Color(float.Parse(parts[0]) / divisor, float.Parse(parts[1]) / divisor, float.Parse(parts[2]) / divisor, float.Parse(parts[3]) / divisor);
+            Value = new Color(float.Parse(parts[0]) / Divisor, float.Parse(parts[1]) / Divisor, float.Parse(parts[2]) / Divisor, float.Parse(parts[3]) / Divisor);
         }
 
         public override string ToString() {
-            return string.Format("{0:F0}, {1:F0}, {2:F0}, {3:F0}", Value.r * divisor, Value.g * divisor, Value.b * divisor, Value.a * divisor);
+            return string.Format("{0:F0}, {1:F0}, {2:F0}, {3:F0}", Value.r * Divisor, Value.g * Divisor, Value.b * Divisor, Value.a * Divisor);
         }
 
-        public float divisor;
+        public float Divisor;
     }
 
     public class EnumSetting<T> : Setting<T> where T : Enum {

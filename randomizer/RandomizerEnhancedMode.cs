@@ -214,7 +214,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             index,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor(hintText),
             }
         );
@@ -225,7 +225,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             seinSequence,
             27,
-            new MessageDescriptor[3] {
+            new[] {
                 new MessageDescriptor("My voice... is returning...\nAt last, I can speak once more, after 8 years of silence."),
                 new MessageDescriptor("I am #Sein#, the light and eyes of the randomizer developers. I will be happy to waste your time during your journey."),
                 new MessageDescriptor("But if you really can't stand my presence, then you can silence me once more by pressing #Shift+Alt+U#."),
@@ -236,7 +236,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             postFightSequence,
             10,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("These poor creatures...they could have lived, if you had just used the randomizer's Warp feature.", EmotionType.Sad, null),
             }
         );
@@ -247,7 +247,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             7,
-            new MessageDescriptor[2] {
+            new[] {
                 new MessageDescriptor("This is a #door#. A #door# is like a wall, except you can go through it."),
                 new MessageDescriptor("...what are you looking at me like that for? Of course you can't go through a wall! Don't be silly."),
             }
@@ -291,7 +291,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 8,
-                new MessageDescriptor[3] {
+                new[] {
                     new MessageDescriptor("Ori, this is a #Map#. Or #Map Stone#? #Map Altar#? Honestly, I'm not even sure anymore."),
                     new MessageDescriptor("Anyway, you're going to have to place mapstones in all 9 #Map Monuments# to finish your journey."),
                     new MessageDescriptor(hintText),
@@ -362,7 +362,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 8,
-                new MessageDescriptor[3] {
+                new[] {
                     new MessageDescriptor("Ori, this is a #Map#. Or #Map Stone#? #Map Altar#? Honestly, I'm not even sure anymore."),
                     new MessageDescriptor("Anyway, you can receive items by placing mapstones in these #Map Monuments#!"),
                     new MessageDescriptor($"For example, if you place {hintMapAsText}, you'll find {pickupHint}!"),
@@ -376,7 +376,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             7,
-            new MessageDescriptor[4] {
+            new[] {
                 new MessageDescriptor("Ori."),
                 new MessageDescriptor("Quaza."),
                 new MessageDescriptor("Shaka."),
@@ -390,7 +390,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             attackSequence,
             0,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("I'm sorry, Ori, but stepping on this #Spirit Well# triggers a lengthy cutscene.", EmotionType.Sad, null),
             },
             true
@@ -401,7 +401,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             mapSequence,
             15,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("It's possible to skip this cutscene using #Save Anywhere#. This may be a good idea if you're trying to complete your journey as quickly as possible!"),
             }
         );
@@ -410,7 +410,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             returnSequence,
             5,
-            new MessageDescriptor[2] {
+            new[] {
                 new MessageDescriptor("Depending on the circumstances, skipping this cutscene may or not be the best option. Try it out sometimes and see how you feel about it!"),
                 new MessageDescriptor("If you don't know how to do #Save Anywhere#, then you can ask on the #Discord#!", EmotionType.Happy, null),
             }
@@ -422,28 +422,28 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             4,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Watching this cutscene takes around 40 seconds. You could already be checking the $Charge Flame$ tree by now!"),
             }
         );
         AddEnhancedModeTextAction(
             sequence,
             10,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Of course, if you skip this cutscene, then you don't activate this #Spirit Well# and you can't teleport to it."),
             }
         );
         AddEnhancedModeTextAction(
             sequence,
             16,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("But if you only return to this area once or twice, then it may still be faster overall to skip the cutscene."),
             }
         );
         AddEnhancedModeTextAction(
             sequence,
             22,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("There's also always a chance you get the teleporter as a pickup! That would save even more time!"),
             }
         );
@@ -460,7 +460,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             stealSequence,
             11,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor($"A #Gumon# from the #Forlorn Ruins#! He's running away with {itemHint}! Quickly, after him!", EmotionType.Urgent, null),
             }
         );
@@ -471,7 +471,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 failSequence,
                 2,
-                new MessageDescriptor[1] {
+                new[] {
                     new MessageDescriptor($"Ori, you need the *Water Vein* to open this door. You can find it {keyHint}!"),
                 }
             );
@@ -479,7 +479,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 failSequence,
                 2,
-                new MessageDescriptor[1] {
+                new[] {
                     new MessageDescriptor("Ori, you need the *Water Vein* to open this door. Good luck finding the shards!"),
                 }
             );
@@ -496,7 +496,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             15,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("I hope you brought some verticality, Ori! Or maybe $Dash$, if you know how to use it."),
             }
         );
@@ -513,14 +513,14 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             seeHeartSequence,
             6,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Please tell me you'll actually restore the #Element of Waters#! Everyone always skips it."),
             }
         );
         AddEnhancedModeTextAction(
             seeHeartSequence,
             11,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor($"Look...what if I told you that you can get {pickupHint} at the end of the escape? Would you do it then?"),
             }
         );
@@ -529,7 +529,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             startSequence,
             3,
-            new MessageDescriptor[2] {
+            new[] {
                 new MessageDescriptor($"Thanks, Ori! Just so you know, I wasn't lying earlier when I said you would get {pickupHint}."),
                 new MessageDescriptor("Or at least, if I was lying, you'll probably be too distracted to remember that I did."),
             }
@@ -546,14 +546,14 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             lowerSequence,
             9,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Ori, I'm sensing a large area of instant, guaranteed death ahead! What could be causing it?"),
             }
         );
         AddEnhancedModeTextAction(
             lowerSequence,
             16,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Oh heck, it's a bird!", EmotionType.Urgent, null),
             }
         );
@@ -562,7 +562,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             higherSequence,
             10,
-            new MessageDescriptor[3] {
+            new[] {
                 new MessageDescriptor("Ori, I know you're thinking of #dropping those rocks on Kuro's head#, but that's extremely dangerous!"),
                 new MessageDescriptor("A heavy impact to the head could cause a #concussion#, which is a type of brain injury that could lead to serious complications."),
                 new MessageDescriptor("We should consider asking Kuro to put on a #helmet# first. You can never be too careful!"),
@@ -576,7 +576,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             8,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor($"Look! #Atsu's Torch#! If you were to pick that up and slowly, painfully carry it for a long distance, you could get {pickupHint}!"),
             }
         );
@@ -594,7 +594,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 23,
-                new MessageDescriptor[1] {
+                new[] {
                     new MessageDescriptor("I hope this is your dungeon key, Ori, because otherwise it's probably in the #Forlorn Ruins#!"),
                 }
             );
@@ -603,7 +603,7 @@ public class RandomizerEnhancedMode {
                 AddEnhancedModeTextAction(
                     sequence,
                     23,
-                    new MessageDescriptor[1] {
+                    new[] {
                         new MessageDescriptor("I hope this is your relic, Ori, because otherwise it's probably in the $Grenade$-locked pickup!"),
                     }
                 );
@@ -611,7 +611,7 @@ public class RandomizerEnhancedMode {
                 AddEnhancedModeTextAction(
                     sequence,
                     23,
-                    new MessageDescriptor[1] {
+                    new[] {
                         new MessageDescriptor("Ori, you know that there's no relic in Misty Woods this time, right?"),
                     }
                 );
@@ -620,7 +620,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 23,
-                new MessageDescriptor[1] {
+                new[] {
                     new MessageDescriptor("Do you have a bingo goal to visit this location, Ori? Sorry to hear that."),
                 }
             );
@@ -628,7 +628,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 23,
-                new MessageDescriptor[1] {
+                new[] {
                     new MessageDescriptor("Wow, you're really checking the #Gumon Seal# this time?"),
                 }
             );
@@ -642,7 +642,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 7,
-                new MessageDescriptor[1] {
+                new[] {
                     new MessageDescriptor($"Ori, you need the #Gumon Seal# to open this door. You can find it {keyHint}!"),
                 }
             );
@@ -650,7 +650,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 7,
-                new MessageDescriptor[1] {
+                new[] {
                     new MessageDescriptor("Ori, you need the #Gumon Seal# to open this door. Good luck finding the shards!"),
                 }
             );
@@ -662,21 +662,21 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             enterSequence,
             11,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Ah, these are the #Forlorn Ruins#, home to the #Gumon#. I wonder what makes them so forlorn? And why they're in ruins?"),
             }
         );
         AddEnhancedModeTextAction(
             enterSequence,
             15,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Oh. Oh god. They're dead. They're all dead. All #seven# of them!", EmotionType.Sad, null),
             }
         );
         AddEnhancedModeTextAction(
             enterSequence,
             19,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Ori, I'm sorry...I didn't realize this game was so dark. If you need to step away for a while, I understand.", EmotionType.Sad, null),
             }
         );
@@ -685,7 +685,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             orbSequence,
             7,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Orb."),
             }
         );
@@ -696,7 +696,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             7,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("This makes #eight#, I guess."),
             }
         );
@@ -707,7 +707,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             7,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Ori, do you remember when #Gareth Coker# visited an Ori speedrunner's stream?"),
             }
         );
@@ -715,7 +715,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             12,
-            new MessageDescriptor[2] {
+            new[] {
                 new MessageDescriptor("It's true! He said that the music for this escape sequence was made at the last minute after they were already done recording music for the game."),
                 new MessageDescriptor("Pay close attention and you might be able to hear that it's actually just the same music as the #Ginso Tree# escape, digitally pitched up half a step!"),
             }
@@ -732,7 +732,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             7,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Take your business straight to the top of #Nibel# with in-dialogue advertising! Your product could be right here! Contact @Vulajin@ for pricing inquiries."),
             }
         );
@@ -743,7 +743,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             5,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Don't forget to save after watching this cutscene! Dying in #Blackroot Burrows# can be frustrating enough without having to watch this again!"),
             }
         );
@@ -754,7 +754,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             7,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Did you know that the slime right above us drops a guaranteed energy fragment? *Eiko* taught me that!"),
             }
         );
@@ -765,7 +765,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             darknessSequence,
             21,
-            new MessageDescriptor[2] {
+            new[] {
                 new MessageDescriptor("There are some cool cutscene skips you can do in this room! Some of them involve some tight timing though."),
                 new MessageDescriptor("Actually, this dialogue might mess with some of that timing. Hopefully not!"),
             }
@@ -782,7 +782,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 23,
-                new MessageDescriptor[1] {
+                new[] {
                     new MessageDescriptor("Don't forget to die to the crushers below here! It might be on your bingo card!"),
                 }
             );
@@ -790,7 +790,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 23,
-                new MessageDescriptor[1] {
+                new[] {
                     new MessageDescriptor("Did you leave the fronkey below here alive? He may be able to help you break the floor to explore deeper!"),
                 }
             );
@@ -807,7 +807,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             39,
-            new MessageDescriptor[1] {
+            new[] {
                 new MessageDescriptor("Remember #those who have passed# and they will live on forever in your heart.", EmotionType.Happy, null),
             }
         );
@@ -820,7 +820,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 7,
-                new MessageDescriptor[1] {
+                new[] {
                     new MessageDescriptor($"Ori, you need the @Sunstone@ to open this door. You can find it {keyHint}!"),
                 }
             );
@@ -828,7 +828,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 7,
-                new MessageDescriptor[1] {
+                new[] {
                     new MessageDescriptor("Ori, you need the @Sunstone@ to open this door. Good luck finding the shards!"),
                 }
             );
@@ -847,7 +847,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 17,
-                new MessageDescriptor[3] {
+                new[] {
                     new MessageDescriptor("There's #so much lava# in here..."),
                     new MessageDescriptor("I think it would be nicer with #less lava#."),
                     new MessageDescriptor($"Anyway, good luck on #door warp#! I bet {pickupHint} you get it {tryText} try!"),
@@ -857,7 +857,7 @@ public class RandomizerEnhancedMode {
             AddEnhancedModeTextAction(
                 sequence,
                 17,
-                new MessageDescriptor[3] {
+                new[] {
                     new MessageDescriptor("Did you know that this place used to be #filled with lava#?"),
                     new MessageDescriptor("I think it's much nicer like this. You can explore #Mount Horu# however you like!"),
                     new MessageDescriptor($"Anyway, good luck on #door warp#! I bet {pickupHint} you get it {tryText} try!"),
@@ -871,7 +871,7 @@ public class RandomizerEnhancedMode {
         AddEnhancedModeTextAction(
             sequence,
             2,
-            new MessageDescriptor[2] {
+            new[] {
                 new MessageDescriptor("Ori, it looks like it's all going to come down to execution on the final escape!", EmotionType.Urgent, null),
                 new MessageDescriptor("Good luck!"),
             }

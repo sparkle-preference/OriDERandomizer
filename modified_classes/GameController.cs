@@ -296,7 +296,7 @@ public class GameController : SaveSerialize, ISuspendable {
         UberGhostTrail.WarmUpResource();
         MixerManager.WarmUpResource();
         InteractionRotationModifier.WarmUpResource();
-        Randomizer.initialize();
+        Randomizer.Initialize();
         timer.Report("Warming resources");
         Resources.Clear();
     }
@@ -330,7 +330,7 @@ public class GameController : SaveSerialize, ISuspendable {
 
         if (altHeld && shiftHeld && MoonInput.GetKeyDown(KeyCode.U) && RandomizerBonus.EnhancedSpiritFlame) {
             RandomizerBonus.SuppressEnhancedSpiritFlame = !RandomizerBonus.SuppressEnhancedSpiritFlame;
-            Randomizer.printInfo("Enhanced Spirit Flame text " + (RandomizerBonus.SuppressEnhancedSpiritFlame ? "disabled :(" : "enabled :)"));
+            Randomizer.PrintInfo("Enhanced Spirit Flame text " + (RandomizerBonus.SuppressEnhancedSpiritFlame ? "disabled :(" : "enabled :)"));
         }
     }
 

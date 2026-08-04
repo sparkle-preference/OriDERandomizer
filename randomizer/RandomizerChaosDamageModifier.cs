@@ -10,19 +10,19 @@ public class RandomizerChaosDamageModifier : RandomizerChaosEffect {
         Countdown = Random.Range(360, 3600);
         var num = Random.Range(0, 8);
         if (num <= 3) {
-            Randomizer.showChaosEffect("Damage vulnerability");
+            Randomizer.ShowChaosEffect("Damage vulnerability");
             Randomizer.DamageModifier = Random.Range(1.5f, 4f);
             return;
         }
 
         if (num <= 6) {
-            Randomizer.showChaosEffect("Damage reduction");
+            Randomizer.ShowChaosEffect("Damage reduction");
             Randomizer.DamageModifier = Random.Range(0.25f, 0.8f);
             return;
         }
 
         if (num <= 7) {
-            Randomizer.showChaosEffect("Invulnerability");
+            Randomizer.ShowChaosEffect("Invulnerability");
             Randomizer.DamageModifier = 0f;
         }
     }

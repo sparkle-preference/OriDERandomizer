@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public static class RandomizerChaosManager {
-    public static void initialize() {
+    public static void Initialize() {
         Countdown = Random.Range(300, 1800);
         Effects = new List<RandomizerChaosEffect>();
         Frequencies = new List<int>();

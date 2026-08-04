@@ -7,42 +7,42 @@ using UnityEngine;
 public static class RandomizerBonusSkill {
     public static void SwitchBonusSkill() {
         var unlocked = new Dictionary<int, int>(UnlockedBonusSkills);
-        var slot_0 = unlocked.Keys.Min();
-        var slot_n = unlocked.Keys.Max();
+        var slot0 = unlocked.Keys.Min();
+        var slotN = unlocked.Keys.Max();
         if (ActiveBonus == 0) {
             if (unlocked.Count == 0) {
                 Randomizer.Print("No bonus skills unlocked!", 3, false, false, false, true);
                 return;
             }
 
-            ActiveBonus = unlocked[slot_0];
+            ActiveBonus = unlocked[slot0];
         }
 
-        var active_slot = get(ActiveBonus) >> 2;
-        var cur_slot = active_slot;
+        var activeSlot = get(ActiveBonus) >> 2;
+        var curSlot = activeSlot;
         if (unlocked.Count == 1) {
-            Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
+            Randomizer.Print("Bonus Skill (" + (curSlot + 1) + "): " + BonusSkillNames[unlocked[curSlot]], 3, false, false, false, true);
             return;
         }
 
-        while (cur_slot < slot_n) {
-            cur_slot++;
-            if (unlocked.ContainsKey(cur_slot) && get(unlocked[cur_slot]) > 0) {
-                ActiveBonus = unlocked[cur_slot];
-                Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
+        while (curSlot < slotN) {
+            curSlot++;
+            if (unlocked.ContainsKey(curSlot) && get(unlocked[curSlot]) > 0) {
+                ActiveBonus = unlocked[curSlot];
+                Randomizer.Print("Bonus Skill (" + (curSlot + 1) + "): " + BonusSkillNames[unlocked[curSlot]], 3, false, false, false, true);
                 return;
             }
         }
 
-        cur_slot = slot_0;
-        while (cur_slot < active_slot) {
-            if (unlocked.ContainsKey(cur_slot) && get(unlocked[cur_slot]) > 0) {
-                ActiveBonus = unlocked[cur_slot];
-                Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
+        curSlot = slot0;
+        while (curSlot < activeSlot) {
+            if (unlocked.ContainsKey(curSlot) && get(unlocked[curSlot]) > 0) {
+                ActiveBonus = unlocked[curSlot];
+                Randomizer.Print("Bonus Skill (" + (curSlot + 1) + "): " + BonusSkillNames[unlocked[curSlot]], 3, false, false, false, true);
                 return;
             }
 
-            cur_slot++;
+            curSlot++;
         }
     }
 
@@ -251,7 +251,6 @@ public static class RandomizerBonusSkill {
                             CapturedOffset = CapturedEnemy.PositionToPlayerPosition;
                             CapturedLeft = Characters.Sein.FaceLeft;
                             CapturedEnemy.gameObject.SetActiveRecursively(false);
-                            //Events.Scheduler.OnSceneRootDisabled.Remove(new Action<SceneRoot>(CapturedEnemy.OnSceneUnloaded));
                             BonusSkillNames[112] = "Pokeball (" + CapturedName + ")";
                         }
                     }
@@ -324,7 +323,7 @@ public static class RandomizerBonusSkill {
 
     public static void Update() {
         if (!Characters.Sein.IsSuspended && Characters.Sein.Controller.CanMove && Characters.Sein.Active) {
-            if (DrainNextUpdate > 0) {
+            if (drainNextUpdate > 0) {
                 UpdateDrain();
             }
 
@@ -377,16 +376,16 @@ public static class RandomizerBonusSkill {
     }
 
     public static void FoundBonusSkill(int ID) {
-        var psuedo = ID == 108 || ID == 115 || ID == 1587;
+        var pseudo = ID == 108 || ID == 115 || ID == 1587;
         if (get(ID) > 0) {
-            if (!psuedo) {
+            if (!pseudo) {
                 RandomizerSwitch.PickupMessage(BonusSkillNames[ID] + " (duplicate)");
             }
 
             return;
         }
 
-        if (!psuedo) {
+        if (!pseudo) {
             RandomizerSwitch.PickupMessage("Unlocked Bonus Skill: " + BonusSkillNames[ID]);
         }
 
@@ -435,7 +434,7 @@ public static class RandomizerBonusSkill {
                 Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Air.MaxSpeed = 11.6666f;
             }
 
-            DrainNextUpdate -= 1;
+            drainNextUpdate -= 1;
         } catch (Exception e) {
             Randomizer.LogError("Update Drain: " + e.Message);
         }
@@ -515,7 +514,7 @@ public static class RandomizerBonusSkill {
         if (IsActive(id)) {
             set(id, get(id) - 2);
         } else if (RandomizerSettings.Dev) {
-            Randomizer.log("ignoring deactivation of " + id + " since skill was not active");
+            Randomizer.Log("ignoring deactivation of " + id + " since skill was not active");
         }
 
         UpdateDrain();
@@ -525,7 +524,7 @@ public static class RandomizerBonusSkill {
         if (!IsActive(id)) {
             set(id, get(id) + 2);
         } else if (RandomizerSettings.Dev) {
-            Randomizer.log("ignoring activation of " + id + " since skill was already active");
+            Randomizer.Log("ignoring activation of " + id + " since skill was already active");
         }
 
         UpdateDrain();
@@ -601,10 +600,6 @@ public static class RandomizerBonusSkill {
         return orig * TimeScale(1.0f);
     }
 
-    public static void TimeScale(Animator animator) {
-        animator.speed = TimeScale(1.0f);
-    }
-
     public static void BonusSkillText(string text) {
         Randomizer.Print(text, 3, false, false, false, true);
     }
@@ -623,10 +618,10 @@ public static class RandomizerBonusSkill {
     }
 
     public static void DelayDrainUpdate() {
-        DrainNextUpdate = 5;
+        drainNextUpdate = 5;
     }
 
-    private static int DrainNextUpdate;
+    private static int drainNextUpdate;
     public static Enemy SaveEnemy;
     public static Vector3 SaveOffset;
     public static bool SaveLeft;

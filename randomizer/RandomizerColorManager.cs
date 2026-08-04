@@ -6,14 +6,14 @@ using UnityEngine;
 
 public static class RandomizerColorManager {
     public static void Initialize() {
-        HotColdTarget = new Vector3(0f, 0f);
+        hotColdTarget = new Vector3(0f, 0f);
         var found = false;
         if (File.Exists("Color.txt")) {
             var text = File.ReadAllText("Color.txt").ToLower();
             var lines = text.Split(
                 '\n'
             );
-            if (lines != null && lines.Length >= 1 && lines[0].Trim().Equals("customrotation")) {
+            if (lines.Length >= 1 && lines[0].Trim().Equals("customrotation")) {
                 colors.Clear();
                 var red = 0f;
                 var green = 0f;
@@ -24,7 +24,7 @@ public static class RandomizerColorManager {
                     var components = lines[i].Split(
                         ','
                     );
-                    if (components != null && components.Length >= 4) {
+                    if (components.Length >= 4) {
                         float.TryParse(components[0], out red);
                         float.TryParse(components[1], out green);
                         float.TryParse(components[2], out blue);
@@ -39,7 +39,7 @@ public static class RandomizerColorManager {
                     components = lines[i + 1].Split(
                         ','
                     );
-                    if (components != null && components.Length >= 5) {
+                    if (components.Length >= 5) {
                         float red2;
                         float.TryParse(components[0], out red2);
                         float green2;
@@ -73,7 +73,7 @@ public static class RandomizerColorManager {
             var components2 = text.Split(
                 ','
             );
-            if (components2 != null && (components2.Length == 3 || components2.Length == 4)) {
+            if ((components2.Length == 3 || components2.Length == 4)) {
                 var red3 = 0f;
                 var green3 = 0f;
                 var blue3 = 0f;
@@ -120,7 +120,7 @@ public static class RandomizerColorManager {
                         RandomizerBonus.SenseFragsActive = true;
                     }
                 } else {
-                    distance = Vector3.Distance(HotColdTarget, Characters.Sein.Position);
+                    distance = Vector3.Distance(hotColdTarget, Characters.Sein.Position);
                 }
 
                 if (distance < scale) {
@@ -163,13 +163,13 @@ public static class RandomizerColorManager {
 
     public static void UpdateHotColdTarget() {
         var minimum = float.MaxValue;
-        HotColdTarget = new Vector3(5000f, 5000f);
+        hotColdTarget = new Vector3(5000f, 5000f);
         foreach (var target in Randomizer.HotColdItems.Values) {
             if (Characters.Sein.Inventory.GetRandomizerItem(target.Id) == 0) {
                 var distance = Vector3.Distance(target.Position, Characters.Sein.Position);
                 if (distance < minimum) {
                     minimum = distance;
-                    HotColdTarget = target.Position;
+                    hotColdTarget = target.Position;
                 }
             }
         }
@@ -180,7 +180,7 @@ public static class RandomizerColorManager {
                     var distance = Vector3.Distance(target.Position, Characters.Sein.Position);
                     if (distance < minimum) {
                         minimum = distance;
-                        HotColdTarget = target.Position;
+                        hotColdTarget = target.Position;
                     }
                 }
             }
@@ -197,5 +197,5 @@ public static class RandomizerColorManager {
 
     private static int colorIndex;
 
-    private static Vector3 HotColdTarget;
+    private static Vector3 hotColdTarget;
 }

@@ -12,31 +12,31 @@ public class RandomizerBootstrap {
     }
 
     public static void FixedUpdate() {
-        for (var i = 0; i < s_bootstrappedScenesPreEnabled.Count;) {
-            if (Scenes.Manager.GetSceneManagerScene(s_bootstrappedScenesPreEnabled[i]) != null) {
+        for (var i = 0; i < bootstrappedScenesPreEnabled.Count;) {
+            if (Scenes.Manager.GetSceneManagerScene(bootstrappedScenesPreEnabled[i]) != null) {
                 i++;
             } else {
-                s_bootstrappedScenesPreEnabled.RemoveAt(i);
+                bootstrappedScenesPreEnabled.RemoveAt(i);
             }
         }
 
-        for (var i = 0; i < s_bootstrappedScenesAfterSerialize.Count;) {
-            if (Scenes.Manager.GetSceneManagerScene(s_bootstrappedScenesAfterSerialize[i]) != null) {
+        for (var i = 0; i < bootstrappedScenesAfterSerialize.Count;) {
+            if (Scenes.Manager.GetSceneManagerScene(bootstrappedScenesAfterSerialize[i]) != null) {
                 i++;
             } else {
-                s_bootstrappedScenesAfterSerialize.RemoveAt(i);
+                bootstrappedScenesAfterSerialize.RemoveAt(i);
             }
         }
     }
 
     private static void BootstrapScenePreEnabled(SceneRoot sceneRoot) {
-        if (s_bootstrappedScenesPreEnabled.Contains(sceneRoot.name)) {
+        if (bootstrappedScenesPreEnabled.Contains(sceneRoot.name)) {
             return;
         }
 
-        if (s_bootstrapPreEnabled.ContainsKey(sceneRoot.name)) {
-            s_bootstrappedScenesPreEnabled.Add(sceneRoot.name);
-            s_bootstrapPreEnabled[sceneRoot.name].Invoke(sceneRoot);
+        if (bootstrapPreEnabled.ContainsKey(sceneRoot.name)) {
+            bootstrappedScenesPreEnabled.Add(sceneRoot.name);
+            bootstrapPreEnabled[sceneRoot.name].Invoke(sceneRoot);
         }
 
         if (RandomizerEnhancedMode.TextBootstrapScenes.ContainsKey(sceneRoot.name) && (Randomizer.EnhancedMode || Randomizer.EnhancedSeinInSeed)) {
@@ -49,17 +49,17 @@ public class RandomizerBootstrap {
     }
 
     private static void BootstrapSceneAfterSerialize(SceneRoot sceneRoot) {
-        if (s_bootstrappedScenesAfterSerialize.Contains(sceneRoot.name)) {
+        if (bootstrappedScenesAfterSerialize.Contains(sceneRoot.name)) {
             return;
         }
 
-        if (s_bootstrapAfterSerialize.ContainsKey(sceneRoot.name)) {
-            s_bootstrappedScenesAfterSerialize.Add(sceneRoot.name);
-            s_bootstrapAfterSerialize[sceneRoot.name].Invoke(sceneRoot);
+        if (bootstrapAfterSerialize.ContainsKey(sceneRoot.name)) {
+            bootstrappedScenesAfterSerialize.Add(sceneRoot.name);
+            bootstrapAfterSerialize[sceneRoot.name].Invoke(sceneRoot);
             // We also need to process these functions after serialisation not caused by
             // scene loading, e.g. after death. So connect those hooks.
             sceneRoot.SaveSceneManager.sceneRoot = sceneRoot;
-            sceneRoot.SaveSceneManager.bootstrapHook = s_bootstrapAfterSerialize[sceneRoot.name];
+            sceneRoot.SaveSceneManager.bootstrapHook = bootstrapAfterSerialize[sceneRoot.name];
         }
     }
 
@@ -114,8 +114,8 @@ public class RandomizerBootstrap {
     }
 
     private static void BootstrapTitleScreen(SceneRoot sceneRoot) {
-        SaveSlotsItemsUI itemsUI = sceneRoot.transform.FindChild("ui").GetComponent<TitleScreenManager>().SaveSlotsScreen.ItemsUI;
-        foreach (SaveSlotUI saveSlotUI in new Object[2] { itemsUI.SaveSlotUI, itemsUI.SaveSlotCompletedUI }) {
+        var itemsUI = sceneRoot.transform.FindChild("ui").GetComponent<TitleScreenManager>().SaveSlotsScreen.ItemsUI;
+        foreach (var saveSlotUI in new[] { itemsUI.SaveSlotUI, itemsUI.SaveSlotCompletedUI }) {
             saveSlotUI.EasyTextMessageProvider = RandomizerText.DifficultyOverrides.Easy.NameOverride;
             saveSlotUI.NormalTextMessageProvider = RandomizerText.DifficultyOverrides.Normal.NameOverride;
             saveSlotUI.HardTextMessageProvider = RandomizerText.DifficultyOverrides.Hard.NameOverride;
@@ -147,7 +147,7 @@ public class RandomizerBootstrap {
                 difficultyManager.Index = 3;
                 break;
             default:
-                Randomizer.log($"unknown default difficulty {RandomizerSettings.Game.DefaultDifficulty.Value}");
+                Randomizer.Log($"unknown default difficulty {RandomizerSettings.Game.DefaultDifficulty.Value}");
                 difficultyManager.Index = 0;
                 break;
         }
@@ -482,15 +482,15 @@ public class RandomizerBootstrap {
         Scenes.Manager.AdditivelyLoadScenesAtPosition(position, true, false, true);
 
         var actionSequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        var original_list = new List<ActionMethod>(actionSequence.Actions);
+        var originalList = new List<ActionMethod>(actionSequence.Actions);
         // Remove from "09. Wait 4 seconds" and onwards.
         actionSequence.Actions.RemoveRange(8, 9);
         // Hide letterboxes
-        actionSequence.Actions.Add(original_list[11]);
+        actionSequence.Actions.Add(originalList[11]);
         // Show UI
-        actionSequence.Actions.Add(original_list[15]);
+        actionSequence.Actions.Add(originalList[15]);
         // Unlock player input
-        actionSequence.Actions.Add(original_list[10]);
+        actionSequence.Actions.Add(originalList[10]);
         // Warp
         var setPosition = actionSequence.gameObject.AddComponent<SetCharacterPosition>();
         setPosition.transform.position = position;
@@ -498,15 +498,15 @@ public class RandomizerBootstrap {
         SetGuidAndSave(sceneRoot, setPosition, new MoonGuid(2033807637, 1102752838, 351348109, 1564353675));
         actionSequence.Actions.Add(setPosition);
         // create checkpoint -- should be immediately after warp.
-        actionSequence.Actions.Add(original_list[14]);
+        actionSequence.Actions.Add(originalList[14]);
         // Wait 4 seconds
-        actionSequence.Actions.Add(original_list[8]);
+        actionSequence.Actions.Add(originalList[8]);
         // wait 3.3 sceonds
-        actionSequence.Actions.Add(original_list[12]);
+        actionSequence.Actions.Add(originalList[12]);
         // play sound
-        actionSequence.Actions.Add(original_list[13]);
+        actionSequence.Actions.Add(originalList[13]);
         // Set user status action.
-        actionSequence.Actions.Add(original_list[16]);
+        actionSequence.Actions.Add(originalList[16]);
         sceneRoot.OnValidate();
     }
 
@@ -775,7 +775,7 @@ public class RandomizerBootstrap {
         }
     }
 
-    private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>> {
+    private static Dictionary<string, Action<SceneRoot>> bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>> {
         { "moonGrottoRopeBridge", BootstrapMoonGrottoBridge },
         { "mountHoruHubMid", BootstrapMountHoruHub },
         { "mountHoruLaserPuzzle", BootstrapMountHoruLaserPuzzle },
@@ -797,7 +797,7 @@ public class RandomizerBootstrap {
         { "forlornRuinsC", BootstrapForlornRuinsBridge },
     };
 
-    private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();
+    private static List<string> bootstrappedScenesPreEnabled = new List<string>();
 
     // Generally prefer PreEnabled over AfterSerialize. These functions are run after *every*
     // serialisation of the scene, so after every death and not just the initial load. So don't
@@ -805,11 +805,11 @@ public class RandomizerBootstrap {
     // But if you need to do things that alter or depend on serialised parts of the scene,
     // this is the place. Things altered here may be serialised (saved) by the scene. If you
     // want to make new serialised scene elements you'll need to use PreEnabled.
-    private static Dictionary<string, Action<SceneRoot>> s_bootstrapAfterSerialize = new Dictionary<string, Action<SceneRoot>> {
+    private static Dictionary<string, Action<SceneRoot>> bootstrapAfterSerialize = new Dictionary<string, Action<SceneRoot>> {
         { "moonGrottoEnemyPuzzle", BootstrapMoonGrottoMiniboss },
         { "sunkenGladesOriRoom", BootstrapSeinRoomWall },
         { "ginsoTreePuzzles", BootstrapGinsoLowerMiniboss },
     };
 
-    private static List<string> s_bootstrappedScenesAfterSerialize = new List<string>();
+    private static List<string> bootstrappedScenesAfterSerialize = new List<string>();
 }

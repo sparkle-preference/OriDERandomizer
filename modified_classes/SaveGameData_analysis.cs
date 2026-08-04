@@ -34,8 +34,8 @@ public class SaveGameData {
             var saveScene = new SaveScene();
             saveScene.SceneGUID = new MoonGuid(reader.ReadBytes(16));
             if (logging) {
-                Randomizer.log("SCENE");
-                Randomizer.log(saveScene.SceneGUID.ToString());
+                Randomizer.Log("SCENE");
+                Randomizer.Log(saveScene.SceneGUID.ToString());
             }
 
             this.Scenes.Add(saveScene.SceneGUID, saveScene);
@@ -43,7 +43,7 @@ public class SaveGameData {
             for (var k = 0; k < num2; k++) {
                 var saveObject = new SaveObject(new MoonGuid(reader.ReadBytes(16)));
                 if (logging) {
-                    Randomizer.log(saveObject.Id.ToString());
+                    Randomizer.Log(saveObject.Id.ToString());
                 }
 
                 saveObject.Data.ReadMemoryStreamFromBinaryReader(reader);
@@ -53,7 +53,7 @@ public class SaveGameData {
                         str = str + saveObject.Data.MemoryStream.GetBuffer()[l] + " ";
                     }
 
-                    Randomizer.log(str);
+                    Randomizer.Log(str);
                 }
 
                 if (reading && DifferentDataMap.ContainsKey(saveObject.Id.ToString())) {

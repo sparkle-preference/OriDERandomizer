@@ -14,7 +14,7 @@ public static class RandomizerTrackedDataManager {
             TreeBitfield = Characters.Sein.Inventory.GetRandomizerItem(1001) + GetSkillBitfield();
             RelicBitfield = Characters.Sein.Inventory.GetRandomizerItem(1002) + GetRelicExistsBitfield();
             MapstoneBitfield = Characters.Sein.Inventory.GetRandomizerItem(1003) + (RandomizerBonus.WarmthFrags() << 9);
-            TeleporterBitfield = GetTeleporters() + (Randomizer.fragKeyFinish << 10);
+            TeleporterBitfield = GetTeleporters() + (Randomizer.FragKeyFinish << 10);
             KeyEventBitfield = GetKeyEvents();
         }
     }
@@ -93,7 +93,7 @@ public static class RandomizerTrackedDataManager {
             bf += 1 << 12;
         }
 
-        if (Randomizer.fragsEnabled) {
+        if (Randomizer.FragsEnabled) {
             bf += 1 << 13;
         }
 
@@ -139,7 +139,7 @@ public static class RandomizerTrackedDataManager {
             output += "\nremaining: " + string.Join(", ", unowned.ToArray());
         }
 
-        Randomizer.printInfo(output);
+        Randomizer.PrintInfo(output);
     }
 
     public static void ListTrees() {
@@ -163,14 +163,14 @@ public static class RandomizerTrackedDataManager {
             output += "\nremaining: " + string.Join(", ", unowned.ToArray());
         }
 
-        Randomizer.printInfo(output);
+        Randomizer.PrintInfo(output);
     }
 
     public static void ListRelics() {
         UpdateBitfields();
         var owned = new List<string>();
         var unowned = new List<string>();
-        var no_relics = new List<string>();
+        var noRelics = new List<string>();
 
         foreach (var relic in RelicFound) {
             if (Randomizer.RelicZoneLookup.ContainsValue(relic.Key)) {
@@ -180,7 +180,7 @@ public static class RandomizerTrackedDataManager {
                     unowned.Add(relic.Key);
                 }
             } else {
-                no_relics.Add(relic.Key);
+                noRelics.Add(relic.Key);
             }
         }
 
@@ -189,11 +189,11 @@ public static class RandomizerTrackedDataManager {
             output += "\nremaining: " + string.Join(", ", unowned.ToArray());
         }
 
-        if (no_relics.Count > 0) {
-            output += "\nrelicless: " + string.Join(", ", no_relics.ToArray());
+        if (noRelics.Count > 0) {
+            output += "\nrelicless: " + string.Join(", ", noRelics.ToArray());
         }
 
-        Randomizer.printInfo(output);
+        Randomizer.PrintInfo(output);
     }
 
     public static void ListMapstones() {
@@ -223,7 +223,7 @@ public static class RandomizerTrackedDataManager {
                 output += "\nremaining: " + string.Join(", ", unowned.ToArray());
             }
 
-            Randomizer.printInfo(output);
+            Randomizer.PrintInfo(output);
         } catch (Exception e) {
             Randomizer.LogError("ListMapstones: " + e.Message);
         }
@@ -259,14 +259,6 @@ public static class RandomizerTrackedDataManager {
 
     public static bool GetRelic(string zone) {
         return (RelicBitfield >> RelicFound[zone]) % 2 == 1;
-    }
-
-    public static void SetMapstone(string areaIdentifier) {
-        try {
-            SetMapstone(MapBitsByArea[areaIdentifier]);
-        } catch (Exception e) {
-            Randomizer.LogError("@SetMapstone:@ area " + areaIdentifier + ": " + e.Message);
-        }
     }
 
     public static void SetMapstone(int mapNum) {

@@ -8,7 +8,7 @@ public static class RandomizerCreditsManager {
         Credits = new List<KeyValuePair<string, int>>();
         Credits.Add(
             new KeyValuePair<string, int>(
-                @"ANCHORTOPPARAMS_20_7.5_2_Ori DE Randomizer (" + Randomizer.VERSION + @")
+                @"ANCHORTOPPARAMS_20_7.5_2_Ori DE Randomizer (" + Randomizer.Version + @")
 Developed by:
 Torin  *Eiko*  @Vulajin@
 $d265f27$  #Kirefel#" +
@@ -118,7 +118,7 @@ Join the Ori community: orirando.com/discord",
             var nextCredits = Credits[0];
             Credits.RemoveAt(0);
             NextCreditCountdown = nextCredits.Value;
-            Randomizer.showCredits(nextCredits.Key, nextCredits.Value);
+            Randomizer.ShowCredits(nextCredits.Key, nextCredits.Value);
         }
     }
 

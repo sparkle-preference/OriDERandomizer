@@ -93,7 +93,7 @@ public static class NativeWebSocket {
 
         try {
             var dir = ExeDir();
-            Randomizer.log($"ws diag: extracting to {dir}");
+            Randomizer.Log($"ws diag: extracting to {dir}");
             var dllPath = Extract(DllResource, Path.Combine(dir, DllResource));
             CaPath = Extract(CaResource, Path.Combine(dir, CaResource));
             if (dllPath == null) {
@@ -102,7 +102,7 @@ public static class NativeWebSocket {
 
             var module = LoadLibrary(dllPath);
             if (module == IntPtr.Zero) {
-                Randomizer.log($"ws diag: LoadLibrary({dllPath}) failed, Win32 error {Marshal.GetLastWin32Error()}");
+                Randomizer.Log($"ws diag: LoadLibrary({dllPath}) failed, Win32 error {Marshal.GetLastWin32Error()}");
                 return false;
             }
 
@@ -125,11 +125,11 @@ public static class NativeWebSocket {
             get_pending_message = (PtrLenFn)Bind(module, "get_pending_message", typeof(PtrLenFn));
             pop_pending_message = (VoidFn)Bind(module, "pop_pending_message", typeof(VoidFn));
             initialize_network();
-            Randomizer.log("ws diag: exports bound, initialize_network ok");
+            Randomizer.Log("ws diag: exports bound, initialize_network ok");
             Loaded = true;
             return true;
         } catch (Exception e) {
-            Randomizer.log($"NativeWebSocket.Load: {e}");
+            Randomizer.Log($"NativeWebSocket.Load: {e}");
             return false;
         }
     }
@@ -152,7 +152,7 @@ public static class NativeWebSocket {
                 return Path.GetDirectoryName(dataPath);
             }
         } catch (Exception e) {
-            Randomizer.log($"ws diag: Application.dataPath unavailable ({e.GetType().Name}); using cwd");
+            Randomizer.Log($"ws diag: Application.dataPath unavailable ({e.GetType().Name}); using cwd");
         }
 
         // the game's cwd is its install root (randomizer.log lives there)
@@ -165,19 +165,19 @@ public static class NativeWebSocket {
     private static string Extract(string resource, string target) {
         var bytes = RandomizerResources.ReadResource(resource);
         if (bytes == null) {
-            Randomizer.log($"ws diag: failed to load embedded resource '{resource}'. See previous log for more details.");
+            Randomizer.Log($"ws diag: failed to load embedded resource '{resource}'. See previous log for more details.");
             return null;
         }
 
         try {
             if (!File.Exists(target) || new FileInfo(target).Length != bytes.Length) {
                 File.WriteAllBytes(target, bytes);
-                Randomizer.log($"ws diag: wrote {resource} ({bytes.Length} bytes) to {target}");
+                Randomizer.Log($"ws diag: wrote {resource} ({bytes.Length} bytes) to {target}");
             } else {
-                Randomizer.log($"ws diag: {target} already current ({bytes.Length} bytes)");
+                Randomizer.Log($"ws diag: {target} already current ({bytes.Length} bytes)");
             }
         } catch (IOException e) {
-            Randomizer.log($"ws diag: can't write {target} ({e.Message}); {(File.Exists(target) ? "using existing file" : "giving up")}");
+            Randomizer.Log($"ws diag: can't write {target} ({e.Message}); {(File.Exists(target) ? "using existing file" : "giving up")}");
             if (!File.Exists(target)) {
                 return null;
             }

@@ -88,7 +88,7 @@ public static class RandomizerRebinding {
                 }
 
                 if (warnList.Count > 0) {
-                    Randomizer.printInfo("Default Binds written for these missing binds: " + string.Join(", ", warnList.ToArray()) + ".", 480);
+                    Randomizer.PrintInfo("Default Binds written for these missing binds: " + string.Join(", ", warnList.ToArray()) + ".", 480);
                 }
 
                 var writeText = "";
@@ -115,7 +115,7 @@ public static class RandomizerRebinding {
         }
 
         rebindMap[action].Binds = ParseOrDefault(action, bindingString, writeList).Binds;
-        rebindMap[action].deprecated_wasPressed = true;
+        rebindMap[action].DeprecatedWasPressed = true;
     }
 
     public static BindSet ParseOrDefault(string action, string bindingString, List<string> writeList) {
@@ -128,7 +128,7 @@ public static class RandomizerRebinding {
         try {
             return ParseBinds(action, bindingString);
         } catch (Exception) {
-            Randomizer.printInfo("@" + action + ": failed to parse '" + bindingString + "'. Using default value: '" + defaultBinds + "'@", 240);
+            Randomizer.PrintInfo("@" + action + ": failed to parse '" + bindingString + "'. Using default value: '" + defaultBinds + "'@", 240);
             bindingString = defaultBinds;
         }
 
@@ -400,7 +400,7 @@ public static class RandomizerRebinding {
 
     public class BindSet : Input.InputButtonProcessor {
         public BindSet(List<SingleBind> binds) {
-            deprecated_wasPressed = true;
+            DeprecatedWasPressed = true;
             Binds = binds;
         }
 
@@ -420,19 +420,19 @@ public static class RandomizerRebinding {
             return Binds.Count > 0;
         }
 
-        public bool IsPressed() {
+        public new bool IsPressed() {
             foreach (var bind in Binds) {
                 if (bind.Pressed) {
-                    if (deprecated_wasPressed) {
+                    if (DeprecatedWasPressed) {
                         return false;
                     }
 
-                    deprecated_wasPressed = true;
+                    DeprecatedWasPressed = true;
                     return true;
                 }
             }
 
-            deprecated_wasPressed = false;
+            DeprecatedWasPressed = false;
             return false;
         }
 
@@ -452,6 +452,6 @@ public static class RandomizerRebinding {
 
         public List<SingleBind> Binds;
 
-        public bool deprecated_wasPressed;
+        public bool DeprecatedWasPressed;
     }
 }

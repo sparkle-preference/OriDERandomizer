@@ -8,7 +8,7 @@ public class Naru : MonoBehaviour, ICharacter {
     }
 
     public void OnDestroy() {
-        Randomizer.onNaruDestroyed();
+        Randomizer.OnNaruDestroyed();
         if (Characters.Naru == this) {
             Characters.Naru = null;
         }

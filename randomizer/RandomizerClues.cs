@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Sein.World;
 
 public static class RandomizerClues {
-    public static void initialize() {
+    public static void Initialize() {
         RevealOrder = new int[3];
         Clues = new List<string>();
     }

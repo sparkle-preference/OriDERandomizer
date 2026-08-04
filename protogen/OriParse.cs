@@ -66,11 +66,11 @@ namespace Protogen {
                 var adjustedCount = i == 9 ? 11 : i == 8 ? 9 : i;
                 var node = new Node("Map" + i, NodeType.Pickup);
                 nodeDictionary[node.Name] = node;
-                connections.Add(new Connection(nodeDictionary[Origin], node, new Inventory { Mapstones = adjustedCount }));
+                connections.Add(new Connection(nodeDictionary[ORIGIN], node, new Inventory { Mapstones = adjustedCount }));
             }
 
             return new AreaGraph(
-                nodeDictionary[Origin],
+                nodeDictionary[ORIGIN],
                 nodeDictionary.Values.ToList(),
                 connections
             );
@@ -109,79 +109,64 @@ namespace Protogen {
         private static int GetPathMaskFromLine(string[] parts) {
             var pathMask = 0;
             // Anything is allowed in insane/timed-level/glitched.
-            if (allowsAnything.Contains(parts[0])) {
-                return pathBits[parts[0]];
+            if (AllowsAnything.Contains(parts[0])) {
+                return PathBits[parts[0]];
             }
 
             foreach (var part in parts) {
-                if (abilitySkills.Contains(part) || part.StartsWith("Ability=")) {
-                    if (pathBits.ContainsKey(parts[0] + "-abilities")) {
-                        pathMask |= pathBits[parts[0] + "-abilities"];
+                if (AbilitySkills.Contains(part) || part.StartsWith("Ability=")) {
+                    if (PathBits.ContainsKey(parts[0] + "-abilities")) {
+                        pathMask |= PathBits[parts[0] + "-abilities"];
                     } else {
-                        pathMask |= invalidPathset;
+                        pathMask |= InvalidPathset;
                     }
                 }
 
-                if (healthSkills.Contains(part) || part.StartsWith("Health=")) {
-                    if (pathBits.ContainsKey(parts[0] + "-dboost")) {
-                        pathMask |= pathBits[parts[0] + "-dboost"];
+                if (HealthSkills.Contains(part) || part.StartsWith("Health=")) {
+                    if (PathBits.ContainsKey(parts[0] + "-dboost")) {
+                        pathMask |= PathBits[parts[0] + "-dboost"];
                     } else {
-                        pathMask |= invalidPathset;
+                        pathMask |= InvalidPathset;
                     }
                 }
             }
 
             if (parts.Contains("Lure")) {
-                if (pathBits.ContainsKey(parts[0] + "-lure")) {
-                    pathMask |= pathBits[parts[0] + "-lure"];
+                if (PathBits.ContainsKey(parts[0] + "-lure")) {
+                    pathMask |= PathBits[parts[0] + "-lure"];
                 } else {
-                    pathMask |= invalidPathset;
+                    pathMask |= InvalidPathset;
                 }
             }
 
             if (parts[0] == "expert" && parts.Contains("DoubleBash")) {
-                pathMask |= pathBits["dbash"];
+                pathMask |= PathBits["dbash"];
             }
 
             if (parts.Contains("GrenadeJump")) {
-                pathMask |= pathBits["gjump"];
+                pathMask |= PathBits["gjump"];
             }
 
             // We only add -core now because we can allow people to have dbash or gjump without having their respective -cores selected.
             if (pathMask == 0) {
-                if (pathBits.ContainsKey(parts[0] + "-core")) {
-                    pathMask |= pathBits[parts[0] + "-core"];
+                if (PathBits.ContainsKey(parts[0] + "-core")) {
+                    pathMask |= PathBits[parts[0] + "-core"];
                 } else {
-                    pathMask |= invalidPathset;
+                    pathMask |= InvalidPathset;
                 }
             }
 
             return pathMask;
         }
 
-        public static string PathMaskToString(int pathMask) {
-            var results = "";
-            foreach (var item in pathBits) {
-                if ((pathMask & item.Value) != 0) {
-                    results += item.Key + " ";
-                }
-            }
-
-            if (results.Length == 0) {
-                results = "NoPathSetsFound!";
-            }
-
-            return results;
-        }
-
         // Returns null if invalid.
         public static HashSet<string> PathMaskToPathSet(int pathMask) {
-            if (pathMask <= 0 || pathMask >= invalidPathset) {
+            if (pathMask <= 0 || pathMask >= InvalidPathset) {
                 return null;
             }
 
             var result = new HashSet<string>();
-            foreach (var item in pathBits) {
+            foreach (var item in PathBits) {
                 if ((pathMask & item.Value) != 0) {
                     result.Add(item.Key);
                 }
@@ -196,22 +181,22 @@ namespace Protogen {
         public static int PathSetToPathMask(HashSet<string> pathSet) {
             var pathMask = 0;
             foreach (var path in pathSet) {
-                if (pathBits.ContainsKey(path)) {
-                    pathMask |= pathBits[path];
+                if (PathBits.ContainsKey(path)) {
+                    pathMask |= PathBits[path];
                 }
             }
 
             return pathMask;
         }
 
-        public const string Origin = "SunkenGladesRunaway";
+        public const string ORIGIN = "SunkenGladesRunaway";
 
-        public static string[] abilitySkills = { "ChargeFlameBurn", "ChargeDash", "RocketJump", "AirDash", "TripleJump", "UltraDefense", "Rekindle" };
-        public static string[] healthSkills = { "UltraDefense" };
-        public static string[] allowsAnything = { "glitched", "timed-level", "insane" };
-        public static int invalidPathset = 1 << 19;
+        public static string[] AbilitySkills = { "ChargeFlameBurn", "ChargeDash", "RocketJump", "AirDash", "TripleJump", "UltraDefense", "Rekindle" };
+        public static string[] HealthSkills = { "UltraDefense" };
+        public static string[] AllowsAnything = { "glitched", "timed-level", "insane" };
+        public static int InvalidPathset = 1 << 19;
 
-        public static Dictionary<string, int> pathBits = new Dictionary<string, int> {
+        public static Dictionary<string, int> PathBits = new Dictionary<string, int> {
             { "casual-core", 1 << 0 },
             { "casual-dboost", 1 << 1 },
             { "standard-core", 1 << 2 },

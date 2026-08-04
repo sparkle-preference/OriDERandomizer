@@ -220,14 +220,14 @@ public static class RandomizerStatsManager {
     }
 
     public static bool UpdateAndReset(int counter, int max) {
-        var _counter = get(counter);
-        var _max = get(max);
-        var update = _counter > _max;
+        var currentCounter = Get(counter);
+        var currentMax = Get(max);
+        var update = currentCounter > currentMax;
         if (update) {
-            set(max, _counter);
+            Set(max, currentCounter);
         }
 
-        set(counter, 0);
+        Set(counter, 0);
         return update;
     }
 
@@ -237,13 +237,13 @@ public static class RandomizerStatsManager {
         }
 
         try {
-            inc(shoof_sum, get(TSLDOS));
-            UpdateAndReset(TSLDOS, TSLDOS_max);
-            UpdateAndReset(PSLDOS, PSLDOS_max);
-            UpdateAndReset(TSLD, TSLD_max);
-            inc(DSLS, 1);
-            inc(Deaths, 1);
-            inc(Deaths + Offsets[CurrentZone()], 1);
+            Inc(ShoofSum, Get(TSLDOS));
+            UpdateAndReset(TSLDOS, TSLDOSMax);
+            UpdateAndReset(PSLDOS, PSLDOSMax);
+            UpdateAndReset(TSLD, TSLDMax);
+            Inc(DSLS, 1);
+            Inc(Deaths, 1);
+            Inc(Deaths + Offsets[CurrentZone()], 1);
         } catch (Exception e) {
             Randomizer.LogError("OnDeath: " + e.Message);
         }
@@ -251,15 +251,15 @@ public static class RandomizerStatsManager {
 
     public static void OnReturnToMenu() {
         try {
-            inc(Reloads, 1);
+            Inc(Reloads, 1);
             MenuCache = new Dictionary<int, int>();
-            foreach (var single in new[] { DSLS, TSLD, Reloads, AltRCount, shoof_sum, PPM_max, PPM_max_time, PPM_max_count, Saves }) {
-                MenuCache[single] = get(single);
+            foreach (var single in new[] { DSLS, TSLD, Reloads, AltRCount, ShoofSum, PPMMax, PPMMaxTime, PPMMaxCount, Saves }) {
+                MenuCache[single] = Get(single);
             }
 
             foreach (var group in new[] { Time, Deaths })
             foreach (var offset in Offsets.Values) {
-                MenuCache[group + offset] = get(group + offset);
+                MenuCache[group + offset] = Get(group + offset);
             }
 
             WriteFromCache = true;
@@ -277,12 +277,12 @@ public static class RandomizerStatsManager {
             return;
         }
 
-        set(TSLDOS, 0);
+        Set(TSLDOS, 0);
 
-        set(PSLDOS, 0);
-        UpdateAndReset(DSLS, DSLS_max);
+        Set(PSLDOS, 0);
+        UpdateAndReset(DSLS, DSLSMax);
         if (userInitiated) {
-            inc(Saves, 1);
+            Inc(Saves, 1);
         }
     }
 
@@ -297,15 +297,15 @@ public static class RandomizerStatsManager {
                 if (WriteFromCache) {
                     WriteFromCache = false;
                     foreach (var key in MenuCache.Keys) {
-                        set(key, MenuCache[key]);
+                        Set(key, MenuCache[key]);
                     }
                 }
 
-                inc(Drought, CachedTime);
-                inc(TSLDOS, CachedTime);
-                inc(TSLD, CachedTime);
-                inc(Time, CachedTime);
-                inc(Time + Offsets[CurrentZone()], CachedTime);
+                Inc(Drought, CachedTime);
+                Inc(TSLDOS, CachedTime);
+                Inc(TSLD, CachedTime);
+                Inc(Time, CachedTime);
+                Inc(Time + Offsets[CurrentZone()], CachedTime);
                 CachedTime = 0;
             } catch (Exception e) {
                 Randomizer.LogError("IncTime: " + e.Message);
@@ -318,7 +318,7 @@ public static class RandomizerStatsManager {
             return 0;
         }
 
-        return get(Pickups + Offsets[areaName]);
+        return Get(Pickups + Offsets[areaName]);
     }
 
     public static void IncPickup(int loc) {
@@ -335,23 +335,23 @@ public static class RandomizerStatsManager {
         }
 
         try {
-            inc(PSLDOS, 1);
-            var count = inc(Pickups, 1);
-            var time = get(Time);
-            if (UpdateAndReset(Drought, Drought_max)) {
-                set(Drought_max_end, time);
+            Inc(PSLDOS, 1);
+            var count = Inc(Pickups, 1);
+            var time = Get(Time);
+            if (UpdateAndReset(Drought, DroughtMax)) {
+                Set(DroughtMaxEnd, time);
             }
 
             if (count >= 10) {
                 var ppm = (int)(Math.Round(count / (time / 60f), 2) * 100);
-                if (ppm > get(PPM_max)) {
-                    set(PPM_max, ppm);
-                    set(PPM_max_time, time);
-                    set(PPM_max_count, count);
+                if (ppm > Get(PPMMax)) {
+                    Set(PPMMax, ppm);
+                    Set(PPMMaxTime, time);
+                    Set(PPMMaxCount, count);
                 }
             }
 
-            inc(Pickups + Offsets[CurrentZone()], 1);
+            Inc(Pickups + Offsets[CurrentZone()], 1);
         } catch (Exception e) {
             Randomizer.LogError("IncPickup: " + e.Message);
         }
@@ -369,7 +369,7 @@ public static class RandomizerStatsManager {
                 Randomizer.PrintImmediately("", 1, false, false, false);
                 WriteStatsFile();
                 if (RandomizerSettings.Dev && BingoController.Active) {
-                    Randomizer.log("Bingo payload: " + BingoController.GetJson());
+                    Randomizer.Log("Bingo payload: " + BingoController.GetJson());
                 }
             } else {
                 ShowStats(duration);
@@ -388,10 +388,10 @@ public static class RandomizerStatsManager {
                     if (zone == "unknown") {
                         line += "\t\tN/A";
                     } else {
-                        line += "\t\t" + get(Deaths + offset);
+                        line += "\t\t" + Get(Deaths + offset);
                     }
 
-                    var time = get(Time + offset);
+                    var time = Get(Time + offset);
                     var timestr = FormatTime(time);
                     line += "\t\t" + timestr;
                     if (timestr.Length < 4) {
@@ -399,7 +399,7 @@ public static class RandomizerStatsManager {
                     }
 
                     if (PickupCounts.ContainsKey(zone)) {
-                        var count = get(Pickups + offset);
+                        var count = Get(Pickups + offset);
                         var pickupstr = count + "/" + PickupCounts[zone];
                         line += "\t\t" + pickupstr;
                         if (pickupstr.Length < 5) {
@@ -421,45 +421,45 @@ public static class RandomizerStatsManager {
 
                 break;
             case 1:
-                var ppm_max = get(PPM_max) / 100f;
-                statsPage = "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_12_1_\nSaves:					" + get(Saves);
-                statsPage += "\nReloads:					" + get(Reloads);
-                var altrc = get(AltRCount);
+                var ppmMax = Get(PPMMax) / 100f;
+                statsPage = "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_12_1_\nSaves:					" + Get(Saves);
+                statsPage += "\nReloads:					" + Get(Reloads);
+                var altrc = Get(AltRCount);
                 if (altrc > 0) {
-                    statsPage += "\nAlt+Rs Used:				" + get(altrc);
-                    statsPage += "\nTeleporters Used:			" + get(TeleporterCount);
+                    statsPage += "\nAlt+Rs Used:				" + Get(altrc);
+                    statsPage += "\nTeleporters Used:			" + Get(TeleporterCount);
                 } else {
-                    statsPage += "\nTimes Warped:				" + get(TeleporterCount);
+                    statsPage += "\nTimes Warped:				" + Get(TeleporterCount);
                 }
 
-                statsPage += "\nEnemies Killed:				" + get(EnemiesKilled);
-                statsPage += "\nBy Leveling up:				" + get(LevelUpKills);
-                statsPage += "\nExp collected:				" + get(ExpGained);
-                if (get(ExpBonus) > 0) {
-                    statsPage += " + " + get(ExpBonus) + " bonus";
+                statsPage += "\nEnemies Killed:				" + Get(EnemiesKilled);
+                statsPage += "\nBy Leveling up:				" + Get(LevelUpKills);
+                statsPage += "\nExp collected:				" + Get(ExpGained);
+                if (Get(ExpBonus) > 0) {
+                    statsPage += " + " + Get(ExpBonus) + " bonus";
                 }
 
-                statsPage += "\nPeak Pickups Per Minute:		" + ppm_max;
-                if (ppm_max > 0) {
-                    statsPage += " (" + get(PPM_max_count) + " / " + FormatTime(get(PPM_max_time), false) + ")";
+                statsPage += "\nPeak Pickups Per Minute:		" + ppmMax;
+                if (ppmMax > 0) {
+                    statsPage += " (" + Get(PPMMaxCount) + " / " + FormatTime(Get(PPMMaxTime), false) + ")";
                 }
 
-                statsPage += "\nLongest Drought:			" + FormatTime(get(Drought_max), false);
-                if (get(Drought_max) > 0) {
+                statsPage += "\nLongest Drought:			" + FormatTime(Get(DroughtMax), false);
+                if (Get(DroughtMax) > 0) {
                     var startTime = "0:00";
-                    var droughtStart = get(Drought_max_end) - get(Drought_max);
+                    var droughtStart = Get(DroughtMaxEnd) - Get(DroughtMax);
                     if (droughtStart > 0) {
                         startTime = FormatTime(droughtStart, false);
                     }
 
-                    statsPage += " (" + startTime + "-" + FormatTime(get(Drought_max_end), false) + ")";
+                    statsPage += " (" + startTime + "-" + FormatTime(Get(DroughtMaxEnd), false) + ")";
                 }
 
-                statsPage += "\nWorst death (time lost):		" + FormatTime(get(TSLDOS_max), false);
-                statsPage += "\nWorst death (pickups lost):	" + get(PSLDOS_max);
-                statsPage += "\nMost deaths at one save:		" + Math.Max(get(DSLS_max), get(DSLS));
-                statsPage += "\nTotal time lost to deaths:		" + FormatTime(get(shoof_sum), false);
-                statsPage += "\nLongest time without dying:	" + FormatTime(Math.Max(get(TSLD_max), get(TSLD)), false);
+                statsPage += "\nWorst death (time lost):		" + FormatTime(Get(TSLDOSMax), false);
+                statsPage += "\nWorst death (pickups lost):	" + Get(PSLDOSMax);
+                statsPage += "\nMost deaths at one save:		" + Math.Max(Get(DSLSMax), Get(DSLS));
+                statsPage += "\nTotal time lost to deaths:		" + FormatTime(Get(ShoofSum), false);
+                statsPage += "\nLongest time without dying:	" + FormatTime(Math.Max(Get(TSLDMax), Get(TSLD)), false);
                 break;
             case 2:
                 statsPage += "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_12_1_Item				Found At		Zone";
@@ -474,7 +474,7 @@ public static class RandomizerStatsManager {
 
                     line += "\t";
                     var offset = KeyItemTime + KeyItemOffsets[item];
-                    var raw = get(offset);
+                    var raw = Get(offset);
                     var time = -1;
                     if (raw > 0) {
                         time = raw % (1 << 18);
@@ -520,15 +520,15 @@ public static class RandomizerStatsManager {
         return statsPage;
     }
 
-    private static int get(int item) {
+    private static int Get(int item) {
         return Characters.Sein.Inventory.GetRandomizerItem(item);
     }
 
-    private static int set(int item, int value) {
+    private static int Set(int item, int value) {
         return Characters.Sein.Inventory.SetRandomizerItem(item, value);
     }
 
-    private static int inc(int item, int value) {
+    private static int Inc(int item, int value) {
         return Characters.Sein.Inventory.IncRandomizerItem(item, value);
     }
 
@@ -684,31 +684,31 @@ public static class RandomizerStatsManager {
     }
 
     public static void OnKill(DamageType source) {
-        inc(EnemiesKilled, 1);
+        Inc(EnemiesKilled, 1);
         switch (source) {
             case DamageType.LevelUp:
-                inc(LevelUpKills, 1);
+                Inc(LevelUpKills, 1);
                 break;
         }
     }
 
 
     public static void WarpedToStart() {
-        inc(AltRCount, 1);
+        Inc(AltRCount, 1);
     }
 
     public static void UsedTeleporter() {
-        inc(TeleporterCount, 1);
+        Inc(TeleporterCount, 1);
     }
 
     public static void FoundMapstone() {
-        inc(Pickups, 1);
-        inc(Pickups + 12, 1);
+        Inc(Pickups, 1);
+        Inc(Pickups + 12, 1);
     }
 
     public static void OnExp(int expGained, int expBonus) {
-        inc(ExpGained, expGained);
-        inc(ExpBonus, expBonus);
+        Inc(ExpGained, expGained);
+        Inc(ExpBonus, expBonus);
     }
 
     public static void FoundSkill(int skillID) {
@@ -723,10 +723,10 @@ public static class RandomizerStatsManager {
 
     public static void FoundKeyItem(string itemName) {
         var offset = KeyItemTime + KeyItemOffsets[itemName];
-        if (get(offset) == 0) {
-            var time = get(Time);
+        if (Get(offset) == 0) {
+            var time = Get(Time);
             var zone = Offsets[CurrentZone()];
-            set(offset, time + (zone << 18));
+            Set(offset, time + (zone << 18));
         }
     }
 
@@ -739,27 +739,27 @@ public static class RandomizerStatsManager {
 
     public static int Time = 1520;
 
-    public static int DSLS_max = 1535;
-    public static int TSLD_max = 1536;
-    public static int TSLDOS_max = 1537;
-    public static int PSLDOS_max = 1538;
+    public static int DSLSMax = 1535;
+    public static int TSLDMax = 1536;
+    public static int TSLDOSMax = 1537;
+    public static int PSLDOSMax = 1538;
     public static int KeyItemTime = 1540;
 
 
     public static int Saves = 1570;
-    public static int shoof_sum = 1571;
+    public static int ShoofSum = 1571;
     public static int EnemiesKilled = 1572;
     public static int ExpGained = 1573;
     public static int ExpBonus = 1574;
-    public static int PPM_max = 1575;
-    public static int PPM_max_time = 1576;
-    public static int PPM_max_count = 1577;
+    public static int PPMMax = 1575;
+    public static int PPMMaxTime = 1576;
+    public static int PPMMaxCount = 1577;
     public static int Reloads = 1578;
     public static int AltRCount = 1579;
     public static int TeleporterCount = 1580;
     public static int Drought = 1581;
-    public static int Drought_max = 1582;
-    public static int Drought_max_end = 1583;
+    public static int DroughtMax = 1582;
+    public static int DroughtMaxEnd = 1583;
 
     public static int Pickups = 1600;
     public static int LevelUpKills = 1650;
