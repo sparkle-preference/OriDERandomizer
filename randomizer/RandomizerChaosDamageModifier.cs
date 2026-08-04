@@ -11,7 +11,7 @@ public class RandomizerChaosDamageModifier : RandomizerChaosEffect
 	public override void Start()
 	{
 		Countdown = Random.Range(360, 3600);
-		int num = Random.Range(0, 8);
+		var num = Random.Range(0, 8);
 		if (num <= 3)
 		{
 			Randomizer.showChaosEffect("Damage vulnerability");

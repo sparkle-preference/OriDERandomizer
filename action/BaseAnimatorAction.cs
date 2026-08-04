@@ -18,9 +18,9 @@ public class BaseAnimatorAction : ActionMethod
 
 	public override void Perform(IContext context)
 	{
-		for (int i = 0; i < Animators.Length; i++)
+		for (var i = 0; i < Animators.Length; i++)
 		{
-			BaseAnimator baseAnimator = Animators[i];
+			var baseAnimator = Animators[i];
 			if (baseAnimator.enabled)
 			{
 				baseAnimator.Initialize();
@@ -75,7 +75,7 @@ public class BaseAnimatorAction : ActionMethod
 
 	public override void PerformInstantly(IContext context)
 	{
-		foreach (BaseAnimator baseAnimator in Animators)
+		foreach (var baseAnimator in Animators)
 		{
 			if (baseAnimator.enabled)
 			{

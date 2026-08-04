@@ -27,7 +27,7 @@ public class ActivateAction : ActionMethod
 		{
 			if (ar.Reading)
 			{
-				bool active = ar.Serialize(true);
+				var active = ar.Serialize(true);
 				if (Target)
 				{
 					Target.SetActive(active);

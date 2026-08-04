@@ -102,7 +102,7 @@ public class FloatingRockLaserEnemy : Enemy
 		PlaySound(ShootingSound);
 		SpawnPrefab(ShootingEffect);
 		ProjectileSpawner.AimAt(Characters.Sein.Controller.Transform);
-		Projectile projectile = ProjectileSpawner.SpawnProjectile();
+		var projectile = ProjectileSpawner.SpawnProjectile();
 		projectile.GetComponent<DamageDealer>().Damage = Settings.ProjectileDamage;
 		Movement.ApplyImpulseForce(Settings.ShootingForce * ProjectileSpawner.Direction * -1f);
 	}
@@ -121,19 +121,19 @@ public class FloatingRockLaserEnemy : Enemy
 		State.Charge = new State();
 		State.Laser = new State();
 		State.Shooting = new State();
-		State idle = State.Idle;
+		var idle = State.Idle;
 		idle.OnEnterEvent = (Action)Delegate.Combine(idle.OnEnterEvent, new Action(OnEnterIdle));
-		State idle2 = State.Idle;
+		var idle2 = State.Idle;
 		idle2.OnExitEvent = (Action)Delegate.Combine(idle2.OnExitEvent, new Action(OnExitIdle));
-		State charge = State.Charge;
+		var charge = State.Charge;
 		charge.OnEnterEvent = (Action)Delegate.Combine(charge.OnEnterEvent, new Action(OnEnterCharge));
-		State laser = State.Laser;
+		var laser = State.Laser;
 		laser.OnEnterEvent = (Action)Delegate.Combine(laser.OnEnterEvent, new Action(OnEnterLaser));
-		State laser2 = State.Laser;
+		var laser2 = State.Laser;
 		laser2.OnExitEvent = (Action)Delegate.Combine(laser2.OnExitEvent, new Action(OnExitLaser));
-		State shooting = State.Shooting;
+		var shooting = State.Shooting;
 		shooting.OnEnterEvent = (Action)Delegate.Combine(shooting.OnEnterEvent, new Action(OnEnterShooting));
-		State laser3 = State.Laser;
+		var laser3 = State.Laser;
 		laser3.UpdateStateEvent = (Action)Delegate.Combine(laser3.UpdateStateEvent, new Action(UpdateLaserState));
 		Controller.StateMachine.RegisterStates(
 			State.Idle,
@@ -159,7 +159,7 @@ public class FloatingRockLaserEnemy : Enemy
 	{
 		get
 		{
-			bool flag = Vector3.Dot(PositionToPlayerPosition.normalized, Vector3.Cross(m_laserDirection, Vector3.back)) > 0f;
+			var flag = Vector3.Dot(PositionToPlayerPosition.normalized, Vector3.Cross(m_laserDirection, Vector3.back)) > 0f;
 			return !flag ? -1 : 1;
 		}
 	}
@@ -170,10 +170,10 @@ public class FloatingRockLaserEnemy : Enemy
 		{
 			m_laserRotationSpeed = Mathf.MoveTowards(m_laserRotationSpeed, DesiredLaserRotationDirection, Time.deltaTime * 4f);
 		}
-		float num = LaserAngleOverTimeCurve.Evaluate(Controller.StateMachine.CurrentStateTime / Settings.LaserDuration);
-		float num2 = Laser.CurrentLaserLength / Settings.LaserChaseSpeedDistance;
-		float num3 = !Mathf.Approximately(num2, 0f) ? num * Settings.LaserChaseSpeed / num2 : 0f;
-		float num4 = MoonMath.Angle.AngleFromVector(m_laserDirection) + m_laserRotationSpeed * RandomizerBonusSkill.TimeScale(Time.deltaTime) * num3;
+		var num = LaserAngleOverTimeCurve.Evaluate(Controller.StateMachine.CurrentStateTime / Settings.LaserDuration);
+		var num2 = Laser.CurrentLaserLength / Settings.LaserChaseSpeedDistance;
+		var num3 = !Mathf.Approximately(num2, 0f) ? num * Settings.LaserChaseSpeed / num2 : 0f;
+		var num4 = MoonMath.Angle.AngleFromVector(m_laserDirection) + m_laserRotationSpeed * RandomizerBonusSkill.TimeScale(Time.deltaTime) * num3;
 		m_laserDirection = MoonMath.Angle.VectorFromAngle(num4);
 		Laser.transform.eulerAngles = new Vector3(0f, 0f, num4 - 90f);
 	}
@@ -195,8 +195,8 @@ public class FloatingRockLaserEnemy : Enemy
 	{
 		Vector3 vector = Characters.Sein.PlatformBehaviour.PlatformMovement.WorldSpeed;
 		m_laserDirection = PositionToPlayerPosition.normalized;
-		bool flag = Vector3.Dot(vector.normalized, Vector3.Cross(m_laserDirection, Vector3.forward)) > 0f;
-		float num = MoonMath.Angle.AngleFromVector(m_laserDirection);
+		var flag = Vector3.Dot(vector.normalized, Vector3.Cross(m_laserDirection, Vector3.forward)) > 0f;
+		var num = MoonMath.Angle.AngleFromVector(m_laserDirection);
 		num += (!flag ? -1 : 1) * Settings.LaserAngularOffset;
 		m_laserDirection = MoonMath.Angle.VectorFromAngle(num);
 		m_laserRotationSpeed = DesiredLaserRotationDirection;

@@ -41,7 +41,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 
 	public void Drown()
 	{
-		Damage damage = new Damage(1000f, Vector3.zero, Position, DamageType.Water, gameObject);
+		var damage = new Damage(1000f, Vector3.zero, Position, DamageType.Water, gameObject);
 		DamageReciever.OnRecieveDamage(damage);
 	}
 
@@ -57,7 +57,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 		{
 			CameraFrustumOptimizer.Register(this);
 		}
-		SceneRoot sceneRoot = SceneRoot.FindFromTransform(transform);
+		var sceneRoot = SceneRoot.FindFromTransform(transform);
 		if (sceneRoot != null)
 		{
 			SceneRootGUID = sceneRoot.MetaData.SceneMoonGuid;
@@ -238,8 +238,8 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	{
 		get
 		{
-			Vector3 size = new Vector3(BoundingBox.width, BoundingBox.height, 0f);
-			Vector3 vector = transform.position;
+			var size = new Vector3(BoundingBox.width, BoundingBox.height, 0f);
+			var vector = transform.position;
 			vector += new Vector3(BoundingBox.center.x, BoundingBox.center.y, 0f);
 			return new Bounds(vector, size);
 		}
@@ -247,7 +247,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 
 	public bool PlayerInsideSameScene()
 	{
-		RuntimeSceneMetaData currentScene = Scenes.Manager.CurrentScene;
+		var currentScene = Scenes.Manager.CurrentScene;
 		return currentScene != null && currentScene.SceneMoonGuid == SceneRootGUID;
 	}
 

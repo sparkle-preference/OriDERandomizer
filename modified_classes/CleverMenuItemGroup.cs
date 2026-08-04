@@ -75,16 +75,16 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase
 	public new void Awake()
 	{
 		base.Awake();
-		CleverMenuItemSelectionManager selectionManager = SelectionManager;
+		var selectionManager = SelectionManager;
 		selectionManager.OptionChangeCallback = (Action)Delegate.Combine(selectionManager.OptionChangeCallback, new Action(OnMenuItemChange));
-		CleverMenuItemSelectionManager selectionManager2 = SelectionManager;
+		var selectionManager2 = SelectionManager;
 		selectionManager2.OptionPressedCallback = (Action)Delegate.Combine(selectionManager2.OptionPressedCallback, new Action(OnMenuItemPressed));
-		CleverMenuItemSelectionManager selectionManager3 = SelectionManager;
+		var selectionManager3 = SelectionManager;
 		selectionManager3.OnBackPressedCallback = (Action)Delegate.Combine(selectionManager3.OnBackPressedCallback, new Action(OnSelectionManagerBackPressed));
-		foreach (CleverMenuItemGroupItem cleverMenuItemGroupItem in Options)
+		foreach (var cleverMenuItemGroupItem in Options)
 		{
 			cleverMenuItemGroupItem.ItemGroup.IsActive = false;
-			CleverMenuItemGroupBase itemGroup = cleverMenuItemGroupItem.ItemGroup;
+			var itemGroup = cleverMenuItemGroupItem.ItemGroup;
 			itemGroup.OnBackPressed = (Action)Delegate.Combine(itemGroup.OnBackPressed, new Action(OnOptionBackPressed));
 		}
 	}
@@ -92,31 +92,31 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase
 	public new void OnDestroy()
 	{
 		base.OnDestroy();
-		CleverMenuItemSelectionManager selectionManager = SelectionManager;
+		var selectionManager = SelectionManager;
 		selectionManager.OptionChangeCallback = (Action)Delegate.Remove(selectionManager.OptionChangeCallback, new Action(OnMenuItemChange));
-		CleverMenuItemSelectionManager selectionManager2 = SelectionManager;
+		var selectionManager2 = SelectionManager;
 		selectionManager2.OptionPressedCallback = (Action)Delegate.Remove(selectionManager2.OptionPressedCallback, new Action(OnMenuItemPressed));
-		CleverMenuItemSelectionManager selectionManager3 = SelectionManager;
+		var selectionManager3 = SelectionManager;
 		selectionManager3.OnBackPressedCallback = (Action)Delegate.Remove(selectionManager3.OnBackPressedCallback, new Action(OnSelectionManagerBackPressed));
-		foreach (CleverMenuItemGroupItem cleverMenuItemGroupItem in Options)
+		foreach (var cleverMenuItemGroupItem in Options)
 		{
-			CleverMenuItemGroupBase itemGroup = cleverMenuItemGroupItem.ItemGroup;
+			var itemGroup = cleverMenuItemGroupItem.ItemGroup;
 			itemGroup.OnBackPressed = (Action)Delegate.Remove(itemGroup.OnBackPressed, new Action(OnOptionBackPressed));
 		}
 	}
 
 	public void Start()
 	{
-		foreach (CleverMenuItemGroupItem cleverMenuItemGroupItem in Options)
+		foreach (var cleverMenuItemGroupItem in Options)
 		{
-			bool isVisible = SelectionManager.CurrentMenuItem == cleverMenuItemGroupItem.MenuItem && ExpandOnHighlight;
+			var isVisible = SelectionManager.CurrentMenuItem == cleverMenuItemGroupItem.MenuItem && ExpandOnHighlight;
 			cleverMenuItemGroupItem.ItemGroup.IsVisible = isVisible;
 		}
 	}
 
 	public void OnOptionBackPressed()
 	{
-		foreach (CleverMenuItemGroupItem cleverMenuItemGroupItem in Options)
+		foreach (var cleverMenuItemGroupItem in Options)
 		{
 			if (!ExpandOnHighlight)
 			{
@@ -134,7 +134,7 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase
 
 	public void OnMenuItemChange()
 	{
-		foreach (CleverMenuItemGroupItem cleverMenuItemGroupItem in Options)
+		foreach (var cleverMenuItemGroupItem in Options)
 		{
 			if (SelectionManager.CurrentMenuItem == cleverMenuItemGroupItem.MenuItem && ExpandOnHighlight)
 			{
@@ -155,7 +155,7 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase
 
 	public override bool OnMenuItemChangedInGroup(CleverMenuItemGroup group)
 	{
-		bool flag = false;
+		var flag = false;
 		if (group == this)
 		{
 			flag = true;
@@ -164,7 +164,7 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase
 		{
 			IsActive = false;
 		}
-		foreach (CleverMenuItemGroupItem cleverMenuItemGroupItem in Options)
+		foreach (var cleverMenuItemGroupItem in Options)
 		{
 			if (cleverMenuItemGroupItem.ItemGroup.OnMenuItemChangedInGroup(group))
 			{
@@ -177,11 +177,11 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase
 
 	public void OnMenuItemPressed()
 	{
-		foreach (CleverMenuItemGroupItem cleverMenuItemGroupItem in Options)
+		foreach (var cleverMenuItemGroupItem in Options)
 		{
 			cleverMenuItemGroupItem.ItemGroup.IsVisible = SelectionManager.CurrentMenuItem == cleverMenuItemGroupItem.MenuItem;
 		}
-		foreach (CleverMenuItemGroupItem cleverMenuItemGroupItem2 in Options)
+		foreach (var cleverMenuItemGroupItem2 in Options)
 		{
 			if (SelectionManager.CurrentMenuItem == cleverMenuItemGroupItem2.MenuItem && cleverMenuItemGroupItem2.ItemGroup.CanBeEntered)
 			{
@@ -227,7 +227,7 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase
 		IsHighlightVisible = true;
 		if (!ExpandOnHighlight)
 		{
-			foreach (CleverMenuItemGroupItem cleverMenuItemGroupItem in Options)
+			foreach (var cleverMenuItemGroupItem in Options)
 			{
 				cleverMenuItemGroupItem.ItemGroup.IsVisible = false;
 			}
@@ -236,7 +236,7 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase
 
 	public void AddItem(CleverMenuItem item, CleverMenuItemGroupBase itemGroup)
 	{
-		CleverMenuItemGroupItem cleverMenuItemGroupItem = new CleverMenuItemGroupItem
+		var cleverMenuItemGroupItem = new CleverMenuItemGroupItem
 		{
 			ItemGroup = itemGroup,
 			MenuItem = item

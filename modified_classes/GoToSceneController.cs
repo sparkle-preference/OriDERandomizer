@@ -142,7 +142,7 @@ public class GoToSceneController : MonoBehaviour
 
 	public void GoToScene(string path)
 	{
-		RuntimeSceneMetaData sceneInformation = Scenes.Manager.GetSceneInformation(path);
+		var sceneInformation = Scenes.Manager.GetSceneInformation(path);
 		if (sceneInformation == null)
 		{
 			Randomizer.LogError("Bad scene path: " + path);

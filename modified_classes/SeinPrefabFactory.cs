@@ -99,7 +99,7 @@ public class SeinPrefabFactory : SaveSerialize, ISeinReceiver
 	{
 		try
 		{
-			foreach (SeinNestedPrefab seinNestedPrefab in m_prefabs)
+			foreach (var seinNestedPrefab in m_prefabs)
 			{
 				seinNestedPrefab.IsInstantiated = ar.Serialize(seinNestedPrefab.IsInstantiated);
 			}

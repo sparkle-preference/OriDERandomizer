@@ -13,7 +13,7 @@ public static class BingoController
         return Scenes.Manager.CurrentScene != null ? Scenes.Manager.CurrentScene.Scene : "" ;
     }
     private static string locStr() {
-        string ret = " at ";
+        var ret = " at ";
         if(Characters.Sein != null)
         {
             ret += "Pos: " + Characters.Sein.Position + ", ";
@@ -30,7 +30,7 @@ public static class BingoController
                 IntGoals["UnspentKeystones"].Value = Characters.Sein.Inventory.Keystones;
             if(CoreSkipTimeout > 0)
                 CoreSkipTimeout--;
-            string s = scene();
+            var s = scene();
             if(s == "catAndMouseRight" && Characters.Sein.Position.x > 190f)
                 MultiBoolGoals["CompleteEscape"]["Mount Horu"] = true;
             if(s != CurrentScene) {
@@ -38,7 +38,7 @@ public static class BingoController
                 if(SingleSceneListeners.ContainsKey(CurrentScene)) {
                     SingleSceneListeners[CurrentScene].Handle();
                 }
-                foreach(SceneListener listener in SceneListeners)
+                foreach(var listener in SceneListeners)
                     listener.Handle(CurrentScene);
             }
             if(UpdateTimer > 0)
@@ -114,13 +114,13 @@ public static class BingoController
             if(!Active) return;
             UpdateTimer = Math.Min(UpdateTimer, 3);
             // string log_out ="Killed by:" + damage.Sender.name + " ";
-            string currentScene = scene();
-            Entity test = damage.Sender.FindComponent<Entity>();
+            var currentScene = scene();
+            var test = damage.Sender.FindComponent<Entity>();
             // if(test != null)
             //     log_out += "(entity: " + test.MoonGuid + ")";
 
 
-            GuidOwner owner = damage.Sender.FindComponent<GuidOwner>();
+            var owner = damage.Sender.FindComponent<GuidOwner>();
             // if(owner != null)
             // {
             //     log_out += "(owner: " + owner.MoonGuid + ")";
@@ -204,9 +204,9 @@ public static class BingoController
         if(!Active || Randomizer.HaveCoord(loc))
             return;
         if(SingleLocListeners.ContainsKey(loc)) 
-            foreach(SingleLocListener listener in SingleLocListeners[loc])
+            foreach(var listener in SingleLocListeners[loc])
                 listener.Handle();
-        foreach(LocListener listener in LocListeners) 
+        foreach(var listener in LocListeners) 
             listener.Handle(loc);
     }
     public static void OnItem(RandomizerAction action, int coords) {
@@ -215,7 +215,7 @@ public static class BingoController
             if(!Active) return;
             if(coords == 2 && (action.Action == "HC" || action.Action == "EC" || action.Action == "AC"))
                 return;
-            string itemCode = action.Action + "|" + action.Value;
+            var itemCode = action.Action + "|" + action.Value;
             if(action.Action == "RB")
             {
                 SingleItemListeners["EV|0"].Set(Keys.GinsoTree);
@@ -226,11 +226,11 @@ public static class BingoController
                 SingleItemListeners[itemCode].Handle();
 
             IntGoals["TotalPickups"].OnChange(2);
-            string piz = "PickupsIn"+RandomizerStatsManager.CurrentZone(true);
+            var piz = "PickupsIn"+RandomizerStatsManager.CurrentZone(true);
             if(IntGoals.ContainsKey(piz))
                 IntGoals[piz].OnChange(2);
 
-            foreach(ItemListener listener in ItemListeners) 
+            foreach(var listener in ItemListeners) 
                 listener.Handle(itemCode);
         } catch(Exception e) {
             Randomizer.LogError("OnItem: " + e.Message);
@@ -268,7 +268,7 @@ public static class BingoController
     public static string LastTouchedTeleporter() {
         if(!Active || Characters.Sein == null)
             return "";
-        int last = get(LastTouchedId);
+        var last = get(LastTouchedId);
         return last > 0 && last <= Teleporters.Length ? Teleporters[last - 1] : "";
     }
 
@@ -280,9 +280,9 @@ public static class BingoController
     public static void OnPedestalTouch(string identifier) {
         try {
             if(!Active || Characters.Sein == null) return;
-            int to = TeleporterIndex(identifier);
+            var to = TeleporterIndex(identifier);
             if(to < 0) return;
-            int from = get(LastTouchedId) - 1;
+            var from = get(LastTouchedId) - 1;
             set(LastTouchedId, to + 1);
             if(from < 0 || from == to) return;
             MultiBoolGoals["Journey"][JourneyKey(Teleporters[from], identifier)] = true;
@@ -378,7 +378,7 @@ public static class BingoController
         public virtual bool Completed {
             get => get(ItemId) != 0;
             set {
-                bool prior = Completed;
+                var prior = Completed;
                 set(ItemId, value ? 1 : 0);
                 if(prior != value)
                     NotifyChanged();
@@ -395,7 +395,7 @@ public static class BingoController
             ItemId = id;
         }
         public static void mk(string name, int id) {
-            BoolGoal goal = new BoolGoal(name, id);
+            var goal = new BoolGoal(name, id);
             BoolGoals[goal.Name] = goal;
         }
         public override string ToJson() {
@@ -424,7 +424,7 @@ public static class BingoController
             set {
                 if(Completed == value)
                     return;
-                int bits = get(ItemId);
+                var bits = get(ItemId);
                 set(ItemId, value ? bits | (1 << Bit) : bits & ~(1 << Bit));
                 NotifyChanged();
             }
@@ -468,7 +468,7 @@ public static class BingoController
             SceneListeners.Add(this);
         }
         public static void mk(string name, int id, HashSet<string> scenes) {
-            BoolMultiSceneGoal goal = new BoolMultiSceneGoal(name, id, scenes);
+            var goal = new BoolMultiSceneGoal(name, id, scenes);
             BoolGoals[goal.Name] = goal;
         }
         public void Handle(string scene) { Completed = Completed || Scenes.Contains(scene); }
@@ -501,20 +501,20 @@ public static class BingoController
         public MultiBoolGoal(string name, List<BoolGoal> subgoals) {
             Name = name;
             Subgoals = new Dictionary<string, BoolGoal>();
-            foreach(BoolGoal subgoal in subgoals)
+            foreach(var subgoal in subgoals)
             {
                 subgoal.Owner = this;
                 Subgoals[subgoal.Name] = subgoal;
             }
         }
         public static void mk(string name, List<BoolGoal> subgoals) {
-            MultiBoolGoal goal = new MultiBoolGoal(name, subgoals);
+            var goal = new MultiBoolGoal(name, subgoals);
             MultiBoolGoals[goal.Name] = goal;
         }
         public override string ToJson() {
-            string jsonStr = "\"" + Name + "\": { \"value\": {";
-            int count = 0;
-            foreach(BoolGoal subgoal in Subgoals.Values)
+            var jsonStr = "\"" + Name + "\": { \"value\": {";
+            var count = 0;
+            foreach(var subgoal in Subgoals.Values)
             {
                 jsonStr += subgoal.ToJson() + ",";
                 if(subgoal.Completed)
@@ -530,18 +530,18 @@ public static class BingoController
     public class JourneyGoal : MultiBoolGoal {
         public JourneyGoal(string name, List<BoolGoal> subgoals) : base(name, subgoals) {}
         public static void mk() {
-            List<BoolGoal> pairs = new List<BoolGoal>();
-            for(int from = 0; from < Teleporters.Length; from++)
-                for(int to = 0; to < Teleporters.Length; to++)
+            var pairs = new List<BoolGoal>();
+            for(var from = 0; from < Teleporters.Length; from++)
+                for(var to = 0; to < Teleporters.Length; to++)
                     if(from != to)
                         pairs.Add(new BitfieldBoolGoal(JourneyKey(Teleporters[from], Teleporters[to]), JourneyBaseId + from, to));
-            JourneyGoal goal = new JourneyGoal("Journey", pairs);
+            var goal = new JourneyGoal("Journey", pairs);
             MultiBoolGoals[goal.Name] = goal;
         }
         public override string ToJson() {
-            string jsonStr = "\"" + Name + "\": { \"value\": {";
-            int count = 0;
-            foreach(BoolGoal subgoal in Subgoals.Values) {
+            var jsonStr = "\"" + Name + "\": { \"value\": {";
+            var count = 0;
+            foreach(var subgoal in Subgoals.Values) {
                 if(!subgoal.Completed)
                     continue;
                 jsonStr += subgoal.ToJson() + ",";
@@ -556,7 +556,7 @@ public static class BingoController
         public int Timeout = 1;
         public int Target;
         public void OnChange(int delta) {
-            int prior = Value - delta;
+            var prior = Value - delta;
             if(prior < Target)
             {
                 if(Value >= Target)
@@ -568,7 +568,7 @@ public static class BingoController
         public int Value {
             get => get(ItemId);
             set { 
-                    int delta = value - Value;
+                    var delta = value - Value;
                     set(ItemId, value);
                     OnChange(delta);
                 }
@@ -578,11 +578,11 @@ public static class BingoController
             ItemId = id;
         }
         public static void mk(string name, int id) {
-            IntGoal goal = new IntGoal(name, id);
+            var goal = new IntGoal(name, id);
             IntGoals[goal.Name] = goal;
         }
         public static void mk(string name, int id, int timeout) {
-            IntGoal goal = new IntGoal(name, id);
+            var goal = new IntGoal(name, id);
             IntGoals[goal.Name] = goal;
             goal.Timeout = timeout;
         }
@@ -599,7 +599,7 @@ public static class BingoController
             SingleItemListeners[itemCode] = this;
         }
         public static void mk(string name, int id, string itemCode) {
-            IntItemGoal goal = new IntItemGoal(name, id, itemCode);
+            var goal = new IntItemGoal(name, id, itemCode);
             IntGoals[goal.Name] = goal;
         }
         public void Handle() { Value++; }
@@ -613,7 +613,7 @@ public static class BingoController
             LocListeners.Add(this);
         }
         public static void mk(string name, int id, HashSet<int> locs) {
-            IntLocsGoal goal = new IntLocsGoal(name, id, locs);
+            var goal = new IntLocsGoal(name, id, locs);
             IntGoals[goal.Name] = goal; 
         }
         public void Handle(int loc) {
@@ -635,7 +635,7 @@ public static class BingoController
                 Randomizer.LogError("Unable to initialize bingo: " + Randomizer.SyncId + " is not a valid SyncId");
                 return;
             }
-            string[] idParts = Randomizer.SyncId.Split('.');
+            var idParts = Randomizer.SyncId.Split('.');
             UpdateUrl = $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/game/{idParts[0]}/player/{idParts[1]}/bingo";
             WsUnsupported = false;  // fresh seed, fresh chance (server may have upgraded)
             if(!Active)
@@ -857,18 +857,18 @@ public static class BingoController
             var lines = goals.Split('/');
             ActiveSingleGoals = new HashSet<String>();
             ActiveMultiGoals = new Dictionary<String, HashSet<String>>();
-            foreach(string singleGoal in lines[0].Split(','))
+            foreach(var singleGoal in lines[0].Split(','))
             {
                 if(singleGoal.Contains('-')) {
                     var goalParts = singleGoal.Split('-');
                     ActiveSingleGoals.Add(goalParts[0]);
-                    int count = int.Parse(goalParts[1]);
+                    var count = int.Parse(goalParts[1]);
                     IntGoals[goalParts[0]].Target = count;
                 }
                 else
                     ActiveSingleGoals.Add(singleGoal);
             }
-            foreach(string multiGoal in lines.Skip(1)) {
+            foreach(var multiGoal in lines.Skip(1)) {
                 try{
                     var parts = multiGoal.Split(':');
                     ActiveMultiGoals[parts[0]] = new HashSet<String>(parts[1].Split(','));
@@ -989,15 +989,15 @@ public static class BingoController
             };
 
     public static string GetJson() {
-        string jsonStr = "{\n";
-        List<string> jsonFrags = new List<string>();
-        foreach(BoolGoal goal in BoolGoals.Values) {
+        var jsonStr = "{\n";
+        var jsonFrags = new List<string>();
+        foreach(var goal in BoolGoals.Values) {
             jsonFrags.Add(goal.ToJson());
         }
-        foreach(IntGoal goal in IntGoals.Values) {
+        foreach(var goal in IntGoals.Values) {
             jsonFrags.Add(goal.ToJson());
         }
-        foreach(MultiBoolGoal goal in MultiBoolGoals.Values) {
+        foreach(var goal in MultiBoolGoals.Values) {
             jsonFrags.Add(goal.ToJson());
         }
         // no goal tracks this; the board uses it to show whether a journey card is
@@ -1008,7 +1008,7 @@ public static class BingoController
 
     }
     public static void PostUpdate() {
-        string json = GetJson();
+        var json = GetJson();
         // over the websocket when it's up: the server acks with a status
         // (RandomizerSyncManager routes bingoack/err frames back here).
         // EscapeDataString throws past ~32k chars; boards run a few KB,
@@ -1020,7 +1020,7 @@ public static class BingoController
         }
         else if(!RandomizerSyncManager.WsNoHttp && !UpdateClient.IsBusy)
         {
-            NameValueCollection values = new NameValueCollection();
+            var values = new NameValueCollection();
             values["bingoData"] = json;
             values["version"] = Randomizer.VERSION;
             UpdateClient.UploadValuesAsync(new Uri(UpdateUrl), values);

@@ -10,13 +10,13 @@ namespace Protogen
             Nodes = nodes;
             Connections = connections;
 
-            foreach (Node node in Nodes)
+            foreach (var node in Nodes)
             {
                 NodesByName[node.Name] = node;
                 OutgoingConnections[node.Name] = new List<Connection>();
             }
 
-            foreach (Connection connection in Connections)
+            foreach (var connection in Connections)
             {
                 OutgoingConnections[connection.Source.Name].Add(connection);
             }

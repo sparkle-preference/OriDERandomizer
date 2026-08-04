@@ -11,7 +11,7 @@ public static class RandomizerBonus
 
     public static void UpgradeID(int ID, int coords)
     {
-        bool flag = ID < 0;
+        var flag = ID < 0;
         if (flag)
         {
             ID = -ID;
@@ -44,8 +44,8 @@ public static class RandomizerBonus
 
         if(ID >= 200 && ID < 260)
         {
-            int abilityId = (ID - 200) % 30;
-            Ability ability = abilities[abilityId];
+            var abilityId = (ID - 200) % 30;
+            var ability = abilities[abilityId];
             if (ID < 230)
                 ability.Found();
             else
@@ -390,8 +390,8 @@ public static class RandomizerBonus
             if(Characters.Sein.Inventory.GetRandomizerItem(ID) > 0)
                 return;
             Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-            string s_color = "";
-            string g_color = "";
+            var s_color = "";
+            var g_color = "";
             if(Characters.Sein.PlayerAbilities.HasAbility(AbilityType.Stomp))
                 s_color = "$";
             if(Characters.Sein.PlayerAbilities.HasAbility(AbilityType.Grenade))
@@ -581,12 +581,12 @@ public static class RandomizerBonus
 
     public static int ExpWithBonuses(int baseExp, bool doTrack)
     {
-        float mult = 1.0f + Characters.Sein.Inventory.GetRandomizerItem(9);
+        var mult = 1.0f + Characters.Sein.Inventory.GetRandomizerItem(9);
         if(Characters.Sein.PlayerAbilities.AbilityMarkers.HasAbility) 
             mult += .5f;
         if(Characters.Sein.PlayerAbilities.SoulEfficiency.HasAbility)
             mult += .5f;
-        int total = (int)(baseExp*mult);
+        var total = (int)(baseExp*mult);
         if(doTrack)
         {
             RandomizerStatsManager.OnExp(baseExp, total-baseExp);
@@ -608,8 +608,8 @@ public static class RandomizerBonus
     public static int UpgradeCount(int ID)
     {
         if(ID >= 200 && ID <= 230) {
-            int abilityId = (ID - 200) % 30;
-            Ability ability = abilities[abilityId];
+            var abilityId = (ID - 200) % 30;
+            var ability = abilities[abilityId];
             return ability.Has() ? 1 : 0;            
         }
         if(ID == 17 || ID == 19 || ID == 21)
@@ -624,8 +624,8 @@ public static class RandomizerBonus
 
     public static void Update()
     {
-        int healthRegenLevel = HealthRegeneration() + (Characters.Sein.PlayerAbilities.HealthMarkers.HasAbility ? 2 : 0) - Bleeding();
-        int energyRegenLevel = EnergyRegeneration() + (Characters.Sein.PlayerAbilities.EnergyMarkers.HasAbility ? 2 : 0);
+        var healthRegenLevel = HealthRegeneration() + (Characters.Sein.PlayerAbilities.HealthMarkers.HasAbility ? 2 : 0) - Bleeding();
+        var energyRegenLevel = EnergyRegeneration() + (Characters.Sein.PlayerAbilities.EnergyMarkers.HasAbility ? 2 : 0);
 
         if (healthRegenLevel > 0)
         {
@@ -718,14 +718,14 @@ public static class RandomizerBonus
     }
 
     public static int ResetAP() {
-        int refund = Characters.Sein.Inventory.GetRandomizerItem(80);
+        var refund = Characters.Sein.Inventory.GetRandomizerItem(80);
         Characters.Sein.Inventory.SetRandomizerItem(80, 0);
         BingoController.OnResetAP();
         return refund;
     }
 
     public static void ListBonuses() {
-        List<string> bonuses = new List<string>();
+        var bonuses = new List<string>();
         foreach(var kv in BonusNames) {
             var amnt = Characters.Sein.Inventory.GetRandomizerItem(kv.Key);
             if(amnt == 0) continue;

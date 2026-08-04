@@ -14,19 +14,19 @@ namespace Protogen
             Node currentHome = null;
             Node currentDestination = null;
             var hasPath = false;
-            int pathMask = PathSetToPathMask(logicSets);
+            var pathMask = PathSetToPathMask(logicSets);
 
             if (!File.Exists(filename))
             {
                 return null;
             }
 
-            List<string> logicLines = File.ReadAllLines(filename).ToList();
+            var logicLines = File.ReadAllLines(filename).ToList();
 
-            foreach (string rawLine in logicLines)
+            foreach (var rawLine in logicLines)
             {
-                int commStart = rawLine.IndexOf("--");
-                string line = (commStart == -1 ? rawLine : rawLine.Substring(0, commStart)).Trim();
+                var commStart = rawLine.IndexOf("--");
+                var line = (commStart == -1 ? rawLine : rawLine.Substring(0, commStart)).Trim();
                 if (line.StartsWith("--") || line == "")
                     continue;
                 var segments = line.Split(new[]{' '}, StringSplitOptions.RemoveEmptyEntries);
@@ -56,7 +56,7 @@ namespace Protogen
                     hasPath = false;
                     break;
                 default:
-                    int lineMask = GetPathMaskFromLine(segments);
+                    var lineMask = GetPathMaskFromLine(segments);
                     lineMask &= ~pathMask;
                     if (lineMask == 0)
                     {
@@ -121,13 +121,13 @@ namespace Protogen
 
         private static int GetPathMaskFromLine(string[] parts) 
         {
-            int pathMask = 0;
+            var pathMask = 0;
             // Anything is allowed in insane/timed-level/glitched.
             if (allowsAnything.Contains(parts[0])) {
                 return pathBits[parts[0]];
             }
 
-            foreach (string part in parts) {
+            foreach (var part in parts) {
                 if (abilitySkills.Contains(part) || part.StartsWith("Ability="))
                 {
                     if (pathBits.ContainsKey(parts[0] + "-abilities")) {
@@ -174,8 +174,8 @@ namespace Protogen
 
         public static string PathMaskToString(int pathMask) 
         {
-            string results = "";
-            foreach(KeyValuePair<string, int> item in pathBits) 
+            var results = "";
+            foreach(var item in pathBits)
             {
                 if ((pathMask & item.Value) != 0)
                 {
@@ -196,8 +196,8 @@ namespace Protogen
                 return null;
             }
             
-            HashSet<string> result = new HashSet<string>();
-            foreach(KeyValuePair<string, int> item in pathBits) 
+            var result = new HashSet<string>();
+            foreach(var item in pathBits)
             {
                 if ((pathMask & item.Value) != 0)
                 {
@@ -212,8 +212,8 @@ namespace Protogen
 
         public static int PathSetToPathMask(HashSet<string> pathSet)
         {
-            int pathMask = 0;
-            foreach(string path in pathSet)
+            var pathMask = 0;
+            foreach(var path in pathSet)
             {
                 if (pathBits.ContainsKey(path)) {
                     pathMask |= pathBits[path];    

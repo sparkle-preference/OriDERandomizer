@@ -17,9 +17,9 @@ public static class RandomizerClues
 
 	public static string GetClues()
 	{
-		string text = "";
-		string text2 = "";
-		string text3 = "";
+		var text = "";
+		var text2 = "";
+		var text3 = "";
 		string[] array = {
 			"????",
 			"????",
@@ -40,7 +40,7 @@ public static class RandomizerClues
 			array[2] = Clues[RevealOrder[2] - 1];
 			text3 = "@";
 		}
-		for (int i = 0; i < 3; i++)
+		for (var i = 0; i < 3; i++)
 		{
 			if (RandomizerBonus.SkillTreeProgression() >= RevealOrder[i] * 3)
 			{
@@ -66,7 +66,7 @@ public static class RandomizerClues
 	}
 	public static void FinishClues()
 	{
-		for (int i = 0; i < 3; i++)
+		for (var i = 0; i < 3; i++)
 		{
 			if (RevealOrder[i] == 0)
 			{

@@ -108,15 +108,15 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		get
 		{
 			IChargeDashAttackable result = null;
-			float num = float.MaxValue;
-			foreach (IAttackable attackable in Targets.Attackables)
+			var num = float.MaxValue;
+			foreach (var attackable in Targets.Attackables)
 			{
 				if (attackable as Component && attackable.CanBeChargeDashed() && attackable is IChargeDashAttackable)
 				{
-					IChargeDashAttackable chargeDashAttackable = (IChargeDashAttackable)attackable;
+					var chargeDashAttackable = (IChargeDashAttackable)attackable;
 					if (UI.Cameras.Current.IsOnScreen(attackable.Position))
 					{
-						float magnitude = (attackable.Position - m_sein.Position).magnitude;
+						var magnitude = (attackable.Position - m_sein.Position).magnitude;
 						if (magnitude < num && magnitude < ChargeDashTargetMaxDistance)
 						{
 							result = chargeDashAttackable;
@@ -131,14 +131,14 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 
 	public void AttackNearbyEnemies()
 	{
-		int i = 0;
+		var i = 0;
 		while (i < Targets.Attackables.Count)
 		{
-			IAttackable attackable = Targets.Attackables[i];
+			var attackable = Targets.Attackables[i];
 			if (!InstantiateUtility.IsDestroyed(attackable as Component) && !m_attackablesIgnore.Contains(attackable) && attackable.CanBeChargeFlamed() && (attackable.Position - m_sein.PlatformBehaviour.PlatformMovement.HeadPosition).magnitude <= 3f)
 			{
 				m_attackablesIgnore.Add(attackable);
-				Vector3 v = !m_chargeDashAtTarget ? (!m_faceLeft ? Vector3.right : Vector3.left) * 3f : m_chargeDashDirection * 3f;
+				var v = !m_chargeDashAtTarget ? (!m_faceLeft ? Vector3.right : Vector3.left) * 3f : m_chargeDashDirection * 3f;
 				if (RandomizerBonus.EnhancedDash)
 				{
 					v = m_enhancedDashDirection * 3f;
@@ -210,7 +210,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 				}
 				else if (Input.Axis.y > 0f)
 				{
-					float dot = Vector3.Dot(Input.Axis.normalized, Vector3.left);
+					var dot = Vector3.Dot(Input.Axis.normalized, Vector3.left);
 					if (dot < 0.94f && dot > -0.94f)
 					{
 						m_enhancedDashDirection = Input.Axis.normalized;
@@ -239,8 +239,8 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 	public void PerformDash()
 	{
 		m_chargeDashAtTarget = false;
-		SoundProvider dashSound = !RainbowDashActivated ? DashSound : RainbowDashSound;
-		bool isGliding = m_sein.Controller.IsGliding;
+		var dashSound = !RainbowDashActivated ? DashSound : RainbowDashSound;
+		var isGliding = m_sein.Controller.IsGliding;
 		PerformDash(!isGliding ? DashAnimation : GlideDashAnimation, dashSound);
 		ChangeState(State.Dashing);
 		UpdateDashing();
@@ -250,7 +250,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 	public void PerformWallDash()
 	{
 		m_chargeDashAtTarget = false;
-		SoundProvider dashSound = !RainbowDashActivated ? DashSound : RainbowDashSound;
+		var dashSound = !RainbowDashActivated ? DashSound : RainbowDashSound;
 		PerformDash(DashAnimation, dashSound);
 		ChangeState(State.Dashing);
 		UpdateDashing();
@@ -285,7 +285,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		{
 			m_chargeDashAtTarget = false;
 		}
-		SoundProvider dashSound = !RainbowDashActivated ? ChargeDashSound : RainbowDashSound;
+		var dashSound = !RainbowDashActivated ? ChargeDashSound : RainbowDashSound;
 		PerformDash(ChargeDashAnimation, dashSound);
 		if (m_chargeDashAtTarget)
 		{
@@ -348,7 +348,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 
 	public bool AgainstWall()
 	{
-		PlatformMovement platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
+		var platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
 		return (platformMovement.HasWallLeft && m_sein.FaceLeft) || (platformMovement.HasWallRight && !m_sein.FaceLeft);
 	}
 
@@ -366,13 +366,13 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 
 	public bool CanWallDash()
 	{
-		PlatformMovement platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
+		var platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
 		return ((platformMovement.HasWallLeft && m_sein.Input.Horizontal >= 0f) || (platformMovement.HasWallRight && m_sein.Input.Horizontal <= 0f)) && !m_sein.IsOnGround && m_sein.PlayerAbilities.AirDash.HasAbility;
 	}
 
 	public void UpdateNormal()
 	{
-		float num = Time.time - m_lastPressTime;
+		var num = Time.time - m_lastPressTime;
 		if (m_sein.IsOnGround || (RandomizerBonus.GravitySuit() && Characters.Sein.Abilities.Swimming.IsSwimming))
 		{
 			m_hasDashed = false;
@@ -381,8 +381,8 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		if (Input.Glide.Pressed && m_timeWhenDashJumpHappened + 5f > Time.time)
 		{
 			m_timeWhenDashJumpHappened = 0f;
-			PlatformMovement platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
-			float num2 = OffGroundSpeed - 2f;
+			var platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
+			var num2 = OffGroundSpeed - 2f;
 			if (Mathf.Abs(platformMovement.LocalSpeedX) > num2)
 			{
 				platformMovement.LocalSpeedX = Mathf.Sign(platformMovement.LocalSpeedX) * num2;
@@ -442,13 +442,13 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 
 	public void UpdateDashing()
 	{
-		PlatformMovement platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
+		var platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
 		UI.Cameras.Current.ChaseTarget.CameraSpeedMultiplier.x = Mathf.Clamp01(m_stateCurrentTime / DashTime);
-		float velocity = DashSpeedOverTime.Evaluate(m_stateCurrentTime);
+		var velocity = DashSpeedOverTime.Evaluate(m_stateCurrentTime);
 		velocity *= 1.0f + .2f*RandomizerBonus.Velocity();
 		if (RandomizerBonus.GravitySuit() && Characters.Sein.Abilities.Swimming.IsSwimming)
 		{
-			Vector2 newSpeed = new Vector2(velocity, 0f);
+			var newSpeed = new Vector2(velocity, 0f);
 			platformMovement.LocalSpeed = newSpeed.Rotate(m_sein.Abilities.Swimming.SwimAngle);
 		}
 		else if (RandomizerBonus.EnhancedDash && m_enhancedDashDirection.y != 0f)
@@ -509,12 +509,12 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 
 	private void StickOntoGround()
 	{
-		PlatformMovement platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
-		Vector3 vector = platformMovement.Position;
+		var platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
+		var vector = platformMovement.Position;
 		platformMovement.PlaceOnGround(0f, 8f);
-		Vector3 vector2 = vector;
+		var vector2 = vector;
 		platformMovement.PlaceOnGround(0.5f, 8f);
-		Vector3 vector3 = vector;
+		var vector3 = vector;
 		vector = vector2;
 		if (vector3.y > vector2.y)
 		{
@@ -525,10 +525,10 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 
 	public void UpdateChargeDashing()
 	{
-		PlatformMovement platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
+		var platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
 		AttackNearbyEnemies();
 		m_sein.Mortality.DamageReciever.MakeInvincibleToEnemies(1f);
-		float velocity = ChargeDashSpeedOverTime.Evaluate(m_stateCurrentTime);
+		var velocity = ChargeDashSpeedOverTime.Evaluate(m_stateCurrentTime);
 		velocity *= 1.0f + .2f*RandomizerBonus.Velocity();
 		if (m_chargeDashAtTarget)
 		{
@@ -625,10 +625,10 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 
 	private bool RaycastTest()
 	{
-		Vector3 a = Vector3.Cross(m_sein.PlatformBehaviour.PlatformMovement.GroundRayNormal, Vector3.forward);
-		float num = m_sein.Speed.x * Time.deltaTime;
-		Vector3 vector = m_sein.Position + a * num + Vector3.up;
-		Vector3 vector2 = Vector3.down * (1.8f + Mathf.Abs(num));
+		var a = Vector3.Cross(m_sein.PlatformBehaviour.PlatformMovement.GroundRayNormal, Vector3.forward);
+		var num = m_sein.Speed.x * Time.deltaTime;
+		var vector = m_sein.Position + a * num + Vector3.up;
+		var vector2 = Vector3.down * (1.8f + Mathf.Abs(num));
 		Debug.DrawRay(vector, vector2, Color.yellow, 0.5f);
 		RaycastHit raycastHit;
 		return m_sein.Controller.RayTest(vector, vector2, out raycastHit);
@@ -644,8 +644,8 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			float efficiencyDiscount = RandomizerBonus.ChargeDashEfficiency() ? 0.5f : 0f;
-			float enhancedDiscount = RandomizerBonus.EnhancedDash ? 0.5f : 0f;
+			var efficiencyDiscount = RandomizerBonus.ChargeDashEfficiency() ? 0.5f : 0f;
+			var enhancedDiscount = RandomizerBonus.EnhancedDash ? 0.5f : 0f;
 			return EnergyCost - efficiencyDiscount - enhancedDiscount;
 		}
 	}

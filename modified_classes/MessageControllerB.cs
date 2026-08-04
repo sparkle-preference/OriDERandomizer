@@ -15,8 +15,8 @@ public class MessageControllerB : MonoBehaviour
 		{
 			return null;
 		}
-		GameObject expr_25 = InstantiateUtility.Instantiate(messageBoxPrefab, position, Quaternion.identity) as GameObject;
-		MessageBox componentInChildren = expr_25.GetComponentInChildren<MessageBox>();
+		var expr_25 = InstantiateUtility.Instantiate(messageBoxPrefab, position, Quaternion.identity) as GameObject;
+		var componentInChildren = expr_25.GetComponentInChildren<MessageBox>();
 		if (componentInChildren.Visibility)
 		{
 			componentInChildren.SetWaitDuration(duration);
@@ -27,7 +27,7 @@ public class MessageControllerB : MonoBehaviour
 
 	public MessageBox ShowHintMessage(MessageProvider messageProvider, Vector3 position, float duration = 3f)
 	{
-		GameObject gameObject = ShowMessageBox(HintMessage, messageProvider, position, duration);
+		var gameObject = ShowMessageBox(HintMessage, messageProvider, position, duration);
 		return !gameObject ? null : gameObject.GetComponentInChildren<MessageBox>();
 	}
 
@@ -37,7 +37,7 @@ public class MessageControllerB : MonoBehaviour
 		{
 			return null;
 		}
-		GameObject gameObject = ShowMessageBox(messageBoxPrefab, messageProvider, position, duration);
+		var gameObject = ShowMessageBox(messageBoxPrefab, messageProvider, position, duration);
 		if (gameObject)
 		{
 			return gameObject.GetComponentInChildren<MessageBox>();
@@ -54,7 +54,7 @@ public class MessageControllerB : MonoBehaviour
 	public MessageBox ShowAbilityMessage(MessageProvider messageProvider, GameObject avatar)
 	{
 		UI.Hints.HideExistingHint();
-		MessageBox messageBox = ShowMessageBoxB(AbilityMessage, messageProvider, new Vector3(0f, 2f), float.PositiveInfinity);
+		var messageBox = ShowMessageBoxB(AbilityMessage, messageProvider, new Vector3(0f, 2f), float.PositiveInfinity);
 		if (messageBox && avatar)
 		{
 			messageBox.SetAvatar(avatar);
@@ -66,7 +66,7 @@ public class MessageControllerB : MonoBehaviour
 	public MessageBox ShowPickupMessage(MessageProvider messageProvider, GameObject avatar)
 	{
 		UI.Hints.HideExistingHint();
-		MessageBox messageBox = ShowMessageBoxB(PickupMessage, messageProvider, new Vector3(0f, 2f), float.PositiveInfinity);
+		var messageBox = ShowMessageBoxB(PickupMessage, messageProvider, new Vector3(0f, 2f), float.PositiveInfinity);
 		if (messageBox && avatar)
 		{
 			messageBox.SetAvatar(avatar);
@@ -78,7 +78,7 @@ public class MessageControllerB : MonoBehaviour
 	public MessageBox ShowStoryMessage(MessageProvider messageProvider)
 	{
 		UI.Hints.HideExistingHint();
-		MessageBox messageBox = ShowMessageBoxB(StoryMessage, messageProvider, Vector3.zero, float.PositiveInfinity);
+		var messageBox = ShowMessageBoxB(StoryMessage, messageProvider, Vector3.zero, float.PositiveInfinity);
 		m_currentMessageBox = messageBox;
 		return messageBox;
 	}
@@ -86,7 +86,7 @@ public class MessageControllerB : MonoBehaviour
 	public MessageBox ShowHelpMessage(MessageProvider messageProvider, GameObject avatar)
 	{
 		UI.Hints.HideExistingHint();
-		MessageBox messageBox = ShowMessageBoxB(HelpMessage, messageProvider, Vector3.zero, float.PositiveInfinity);
+		var messageBox = ShowMessageBoxB(HelpMessage, messageProvider, Vector3.zero, float.PositiveInfinity);
 		if (messageBox && avatar)
 		{
 			messageBox.SetAvatar(avatar);
@@ -109,7 +109,7 @@ public class MessageControllerB : MonoBehaviour
 		}
 		else
 		{
-			GameObject gameObject = ShowMessageBox(StoryMessage, messageProvider, Vector3.zero, float.PositiveInfinity);
+			var gameObject = ShowMessageBox(StoryMessage, messageProvider, Vector3.zero, float.PositiveInfinity);
 			m_currentMessageBox = !gameObject ? null : gameObject.GetComponentInChildren<MessageBox>();
 		}
 		

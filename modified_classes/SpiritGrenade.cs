@@ -8,9 +8,9 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
 
 	public void Awake()
 	{
-		DamageDealer damageDealer = DamageDealer;
+		var damageDealer = DamageDealer;
 		damageDealer.OnDamageDealtEvent = (Action<GameObject, Damage>)Delegate.Combine(damageDealer.OnDamageDealtEvent, new Action<GameObject, Damage>(OnDamageDealt));
-		DamageDealer damageDealer2 = DamageDealer;
+		var damageDealer2 = DamageDealer;
 		damageDealer2.ShouldDealDamage = (Func<GameObject, bool>)Delegate.Combine(damageDealer2.ShouldDealDamage, new Func<GameObject, bool>(ShouldDealDamage));
 		SuspensionManager.Register(this);
 		Targets.Attackables.Add(this);
@@ -24,9 +24,9 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
 
 	public void OnDestroy()
 	{
-		DamageDealer damageDealer = DamageDealer;
+		var damageDealer = DamageDealer;
 		damageDealer.OnDamageDealtEvent = (Action<GameObject, Damage>)Delegate.Remove(damageDealer.OnDamageDealtEvent, new Action<GameObject, Damage>(OnDamageDealt));
-		DamageDealer damageDealer2 = DamageDealer;
+		var damageDealer2 = DamageDealer;
 		damageDealer2.ShouldDealDamage = (Func<GameObject, bool>)Delegate.Remove(damageDealer2.ShouldDealDamage, new Func<GameObject, bool>(ShouldDealDamage));
 		SuspensionManager.Unregister(this);
 		Targets.Attackables.Remove(this);
@@ -38,7 +38,7 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
 		{
 			return false;
 		}
-		IAttackable attackable = target.FindComponent<IAttackable>();
+		var attackable = target.FindComponent<IAttackable>();
 		return attackable as Component && attackable.CanBeGrenaded();
 	}
 
@@ -59,7 +59,7 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
 
 	public void SetTrajectory(Vector2 speed)
 	{
-		Rigidbody component = GetComponent<Rigidbody>();
+		var component = GetComponent<Rigidbody>();
 		component.velocity = speed;
 	}
 
@@ -81,7 +81,7 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
 		else
 		{
 			m_rigidbody.velocity += Vector3.down * Gravity * Time.deltaTime;
-			IgnitableSpiritTorch ignitableSpiritTorch = IgnitableSpiritTorch.IgniteAnyTorchesNearPosition(transform.position);
+			var ignitableSpiritTorch = IgnitableSpiritTorch.IgniteAnyTorchesNearPosition(transform.position);
 			if (ignitableSpiritTorch)
 			{
 				m_ignitableTorch = ignitableSpiritTorch;
@@ -178,13 +178,13 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
     public void OnCollisionEnter(Collision collision)
     {
         // If the collision causes it explode then the explosion happens before this collision callback.
-        PetrifiedPlant plant = collision.gameObject.GetComponent<PetrifiedPlant>();
+        var plant = collision.gameObject.GetComponent<PetrifiedPlant>();
         if (plant != null && !HasExploded)
         {
             Explode();
         }
         
-        StompableFloor floor = collision.gameObject.GetComponent<StompableFloor>();
+        var floor = collision.gameObject.GetComponent<StompableFloor>();
         if (RandomizerBonus.EnhancedGrenade && floor != null && !HasExploded)
         {
         	Explode();

@@ -71,7 +71,7 @@ public class RollingMovement : SaveSerialize, ISuspendable
 
 	public void OnCollision(Collision collision)
 	{
-		foreach (ContactPoint contactPoint in collision.contacts)
+		foreach (var contactPoint in collision.contacts)
 		{
 			Speed -= Vector3.Dot(Speed.normalized, contactPoint.normal) * contactPoint.normal;
 			if (Vector3.Dot(contactPoint.normal, Vector3.up) > Mathf.Cos(0.7853982f))

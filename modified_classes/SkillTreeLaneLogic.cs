@@ -9,7 +9,7 @@ public class SkillTreeLaneLogic : SaveSerialize
 	public void OnEnable()
 	{
 		UpdateItems(true);
-		foreach (SkillItem skillItem in Skills)
+		foreach (var skillItem in Skills)
 		{
 			skillItem.LargeIconColor = LargeIconColor;
 		}
@@ -22,12 +22,12 @@ public class SkillTreeLaneLogic : SaveSerialize
 
 	public void UpdateItems(bool instant)
 	{
-		int firstUnlearnedIndex = 0;
-		int totalPointsNeeded = 0;
-		int totalHardPointsNeeded = 0;
-		for (int i = 0; i < Skills.Count; i++)
+		var firstUnlearnedIndex = 0;
+		var totalPointsNeeded = 0;
+		var totalHardPointsNeeded = 0;
+		for (var i = 0; i < Skills.Count; i++)
 		{
-			SkillItem skillItem = Skills[i];
+			var skillItem = Skills[i];
 			if (!skillItem.HasSkillItem)
 			{
 				if (firstUnlearnedIndex == 0)
@@ -56,8 +56,8 @@ public class SkillTreeLaneLogic : SaveSerialize
 	{
 		get
 		{
-			bool result = true;
-			for (int i = 0; i < Skills.Count; i++)
+			var result = true;
+			for (var i = 0; i < Skills.Count; i++)
 			{
 				if (!Skills[i].HasSkillItem)
 				{

@@ -18,7 +18,7 @@ public class SeinWorldStateCondition : Condition
             }
             if (overrideEvent == OverrideEvents.WaterEscapeExit)
             {
-                bool finishedEscape = Randomizer.Inventory.FinishedGinsoEscape;
+                var finishedEscape = Randomizer.Inventory.FinishedGinsoEscape;
                 surfaceColliders.SetActive(finishedEscape);
                 blockingWall.SetActive(finishedEscape);
                 if (finishedEscape)
@@ -67,9 +67,9 @@ public class SeinWorldStateCondition : Condition
         }
         if (gameObject.name == "artAfter")
         {
-            Transform transform4 = transform.FindChild("artAfter");
-            Transform transform2 = transform4.FindChild("surfaceColliders");
-            Transform transform3 = transform4.FindChild("blockingWall");
+            var transform4 = transform.FindChild("artAfter");
+            var transform2 = transform4.FindChild("surfaceColliders");
+            var transform3 = transform4.FindChild("blockingWall");
             if (transform2 && transform3)
             {
                 overrideEvent = OverrideEvents.WaterEscapeExit;

@@ -106,7 +106,7 @@ public class EnergyDoor : SaveSerialize
 	{
 		get
 		{
-			SeinSpiritFlameTargetting spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
+			var spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
 			return spiritFlameTargetting && spiritFlameTargetting.ClosestAttackables.Count > 0;
 		}
 	}
@@ -120,7 +120,7 @@ public class EnergyDoor : SaveSerialize
 
 	public void UpdateSlots()
 	{
-		foreach (EnergyDoorSlot energyDoorSlot in m_slots)
+		foreach (var energyDoorSlot in m_slots)
 		{
 			energyDoorSlot.Refresh();
 		}
@@ -132,7 +132,7 @@ public class EnergyDoor : SaveSerialize
 		{
 			return;
 		}
-		State currentState = CurrentState;
+		var currentState = CurrentState;
 		if (currentState != State.Normal)
 		{
 			if (currentState == State.Highlighted)

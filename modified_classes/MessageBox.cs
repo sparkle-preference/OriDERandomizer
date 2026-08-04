@@ -18,7 +18,7 @@ public class MessageBox : MonoBehaviour
 
 	public HashSet<ISuspendable> GetSuspendables()
 	{
-		HashSet<ISuspendable> hashSet = new HashSet<ISuspendable>();
+		var hashSet = new HashSet<ISuspendable>();
 		foreach (ISuspendable item in GetComponentsInChildren(typeof(ISuspendable)))
 		{
 			hashSet.Add(item);
@@ -105,15 +105,15 @@ public class MessageBox : MonoBehaviour
 	{
 		if (TextBox.textRenderers != null)
 		{
-			foreach (TextRenderer textRenderer in TextBox.textRenderers)
+			foreach (var textRenderer in TextBox.textRenderers)
 			{
-				MoonTextMeshRenderer moonTextMeshRenderer = textRenderer as MoonTextMeshRenderer;
+				var moonTextMeshRenderer = textRenderer as MoonTextMeshRenderer;
 				if (moonTextMeshRenderer != null)
 				{
-					Renderer component = moonTextMeshRenderer.GetComponent<Renderer>();
+					var component = moonTextMeshRenderer.GetComponent<Renderer>();
 					if (component)
 					{
-						float val = time / FadeSpread;
+						var val = time / FadeSpread;
 						UberShaderAPI.SetFloat(component, val, "_TxtTime", true);
 					}
 				}
@@ -128,7 +128,7 @@ public class MessageBox : MonoBehaviour
 		m_currentMessage = messageDescriptor;
 		if (FormatText)
 		{
-			string text = MessageParserUtility.ProcessString(m_currentMessage.Message);
+			var text = MessageParserUtility.ProcessString(m_currentMessage.Message);
 			TextBox.SetText(text);
 		}
 		else
@@ -153,7 +153,7 @@ public class MessageBox : MonoBehaviour
 			m_messageDescriptors = MessageProvider.GetMessages().ToArray();
 			MessageIndex = Mathf.Clamp(MessageIndex, 0, m_messageDescriptors.Length);
 			m_currentMessage = m_messageDescriptors[MessageIndex];
-			string text = m_currentMessage.Message;
+			var text = m_currentMessage.Message;
 			if (text.StartsWith("ALIGNLEFT"))
 			{
 				TextBox.alignment = AlignmentMode.Left;
@@ -184,7 +184,7 @@ public class MessageBox : MonoBehaviour
 			}
 			if (text.StartsWith("PADDING"))
 			{
-				Queue<string> p = new Queue<string>(text.Split('_'));
+				var p = new Queue<string>(text.Split('_'));
 				p.Dequeue();
 				TextBox.paddingBottom = float.Parse(p.Dequeue());
 				TextBox.paddingLeft = float.Parse(p.Dequeue());
@@ -194,7 +194,7 @@ public class MessageBox : MonoBehaviour
 			}
 			if (text.StartsWith("PARAMS"))
 			{
-				Queue<string> p = new Queue<string>(text.Split('_'));
+				var p = new Queue<string>(text.Split('_'));
 				p.Dequeue();
 				TextBox.maxHeight = float.Parse(p.Dequeue());
 				TextBox.width = float.Parse(p.Dequeue());
@@ -204,7 +204,7 @@ public class MessageBox : MonoBehaviour
 			float r = 0f,g = 0f,b = 0f,a = 0f;
 			if (text.StartsWith("BGCOLOR"))
 			{
-				Queue<string> p = new Queue<string>(text.Split('_'));
+				var p = new Queue<string>(text.Split('_'));
 				p.Dequeue();
 				r = float.Parse(p.Dequeue());
 				g = float.Parse(p.Dequeue());
@@ -244,10 +244,10 @@ public class MessageBox : MonoBehaviour
 			}
 		}
 		TextBox.CreateRendersIfThereAreNone();
-		TextRenderer[] textRenderers = TextBox.textRenderers;
-		for (int i = 0; i < textRenderers.Length; i++)
+		var textRenderers = TextBox.textRenderers;
+		for (var i = 0; i < textRenderers.Length; i++)
 		{
-			MoonTextMeshRenderer moonTextMeshRenderer = textRenderers[i] as MoonTextMeshRenderer;
+			var moonTextMeshRenderer = textRenderers[i] as MoonTextMeshRenderer;
 			if (moonTextMeshRenderer)
 			{
 				moonTextMeshRenderer.FadeSpread = FadeSpread;

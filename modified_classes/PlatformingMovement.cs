@@ -23,10 +23,10 @@ public class PlatformingMovement : PlatformMovement
 
 	public void OnCollision(Collision collision)
 	{
-		for (int i = 0; i < collision.contacts.Length; i++)
+		for (var i = 0; i < collision.contacts.Length; i++)
 		{
-			ContactPoint contactPoint = collision.contacts[i];
-			Vector2 vector = WorldToLocal(contactPoint.normal);
+			var contactPoint = collision.contacts[i];
+			var vector = WorldToLocal(contactPoint.normal);
 			if (IsWallLeft(vector, contactPoint.otherCollider, 30f))
 			{
 				OnCollisionWallLeft(vector, contactPoint.otherCollider);
@@ -80,10 +80,10 @@ public class PlatformingMovement : PlatformMovement
 			if (IsOnGround)
 			{
 				LocalSpeedY = 0f;
-				Vector3 position = transform.position;
+				var position = transform.position;
 				transform.position += GroundBinormal * LocalSpeedX * Time.deltaTime;
 				transform.position += GroundNormal * 0.02f;
-				Vector3 vector = (0.04f + Mathf.Abs(LocalSpeedX) * Time.deltaTime) * -GroundNormal;
+				var vector = (0.04f + Mathf.Abs(LocalSpeedX) * Time.deltaTime) * -GroundNormal;
 				RaycastHit raycastHit;
 				if (m_rigidbody.SweepTest(vector.normalized, out raycastHit, vector.magnitude))
 				{

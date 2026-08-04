@@ -30,18 +30,18 @@ public static class RandomizerTrackedDataManager
 	}
 
 	public static int GetRelicExistsBitfield() {
-		int bf = 0;
-		foreach(string zone in Randomizer.RelicZoneLookup.Values) {
+		var bf = 0;
+		foreach(var zone in Randomizer.RelicZoneLookup.Values) {
 			bf += 1 << RelicExists[zone];
 		}
 		return bf;
 	}
 
 	public static int GetKeyEvents() {
-		int bf = 0;
-		int wvShards = RandomizerBonus.WaterVeinShards();
-		int gsShards = RandomizerBonus.GumonSealShards();
-		int ssShards = RandomizerBonus.SunstoneShards();
+		var bf = 0;
+		var wvShards = RandomizerBonus.WaterVeinShards();
+		var gsShards = RandomizerBonus.GumonSealShards();
+		var ssShards = RandomizerBonus.SunstoneShards();
 		if(wvShards > 0)
 			bf += 1 << 0;
 		if(wvShards > 1)
@@ -76,14 +76,14 @@ public static class RandomizerTrackedDataManager
 	}
 
 	public static int GetTeleporters() {
-		int bf = 0;
-		List<string> unlockedTPids = new List<string>();
-		foreach (GameMapTeleporter gameMapTP in TeleporterController.Instance.Teleporters)
+		var bf = 0;
+		var unlockedTPids = new List<string>();
+		foreach (var gameMapTP in TeleporterController.Instance.Teleporters)
 		{
 			if(gameMapTP.Activated)
 				unlockedTPids.Add(gameMapTP.Identifier);
 		}
-		foreach(KeyValuePair<string, int> tp in Teleporters) {
+		foreach(var tp in Teleporters) {
 			if(unlockedTPids.Contains(Randomizer.TeleportTable[tp.Key].ToString())) {
 				bf += 1 << tp.Value;
 			}
@@ -93,16 +93,16 @@ public static class RandomizerTrackedDataManager
 
 	public static void ListTeleporters() {
 		UpdateBitfields();
-		List<string> owned = new List<string>();
-		List<string> unowned = new List<string>();
-		foreach(KeyValuePair<string, int> tp in Teleporters) {
+		var owned = new List<string>();
+		var unowned = new List<string>();
+		foreach(var tp in Teleporters) {
 			if((TeleporterBitfield >> tp.Value) % 2 == 1) {
 				owned.Add(tp.Key);
 			} else {
 				unowned.Add(tp.Key);
 			}
 		}
-		string output = "TPs active: " + string.Join(", ", owned.ToArray());
+		var output = "TPs active: " + string.Join(", ", owned.ToArray());
 		if(unowned.Count > 0)
 			output += "\nremaining: " + string.Join(", ", unowned.ToArray());
 		Randomizer.printInfo(output);
@@ -110,9 +110,9 @@ public static class RandomizerTrackedDataManager
 
 	public static void ListTrees() {
 		UpdateBitfields();
-		List<string> owned = new List<string>();
-		List<string> unowned = new List<string>();
-		foreach(KeyValuePair<int, string> tree in Trees) {
+		var owned = new List<string>();
+		var unowned = new List<string>();
+		foreach(var tree in Trees) {
 			if(tree.Key == 0) {
 				continue;
 			}
@@ -122,7 +122,7 @@ public static class RandomizerTrackedDataManager
 				unowned.Add(tree.Value);
 			}
 		}
-		string output = "Trees active: " + string.Join(", ", owned.ToArray());
+		var output = "Trees active: " + string.Join(", ", owned.ToArray());
 		if(unowned.Count > 0)
 			output += "\nremaining: " + string.Join(", ", unowned.ToArray());
 		Randomizer.printInfo(output);
@@ -130,11 +130,11 @@ public static class RandomizerTrackedDataManager
 
 	public static void ListRelics() {
 		UpdateBitfields();
-		List<string> owned = new List<string>();
-		List<string> unowned = new List<string>();
-		List<string> no_relics = new List<string>();
+		var owned = new List<string>();
+		var unowned = new List<string>();
+		var no_relics = new List<string>();
 
-		foreach(KeyValuePair<string, int> relic in RelicFound) {
+		foreach(var relic in RelicFound) {
 			if(Randomizer.RelicZoneLookup.ContainsValue(relic.Key))
 			{
 				if((RelicBitfield >> relic.Value) % 2 == 1) {
@@ -146,7 +146,7 @@ public static class RandomizerTrackedDataManager
 				no_relics.Add(relic.Key);
 			}
 		}
-		string output = "Relics collected: " + string.Join(", ", owned.ToArray());
+		var output = "Relics collected: " + string.Join(", ", owned.ToArray());
 		if(unowned.Count > 0)
 			output += "\nremaining: " + string.Join(", ", unowned.ToArray());
 		if(no_relics.Count > 0)
@@ -160,7 +160,7 @@ public static class RandomizerTrackedDataManager
 			var owned = new List<string>();
 			var unowned = new List<string>();
 			var touched = new List<string>();
-			foreach (KeyValuePair<string, int> pair in MapBitsByArea) {
+			foreach (var pair in MapBitsByArea) {
 				if (GetMapstone(pair.Value)) {
 					owned.Add(MapZonesByBit[pair.Value]);
 				} else {
@@ -170,7 +170,7 @@ public static class RandomizerTrackedDataManager
 						unowned.Add(MapZonesByBit[pair.Value]);
 				}
 			}
-			string output = "Maps active: " + string.Join(", ", owned.ToArray());
+			var output = "Maps active: " + string.Join(", ", owned.ToArray());
 			if(touched.Count > 0)
 			{
 				output += "\ntouched: " + string.Join(", ",touched.ToArray());
@@ -243,8 +243,8 @@ public static class RandomizerTrackedDataManager
 	}
 
 	public static int GetSkillBitfield() {
-		int bf = 0;
-		foreach(KeyValuePair<int, AbilityType> kvp in Skills) {
+		var bf = 0;
+		foreach(var kvp in Skills) {
 			if(Characters.Sein.PlayerAbilities.HasAbility(kvp.Value))
 				bf += 1 << kvp.Key;
 		}

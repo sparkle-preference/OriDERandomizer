@@ -52,9 +52,9 @@ public class KeybindControl : MonoBehaviour
 		}
 		else if (Input.anyKeyDown)
 		{
-			foreach (object obj in Enum.GetValues(typeof(KeyCode)))
+			foreach (var obj in Enum.GetValues(typeof(KeyCode)))
 			{
-				KeyCode keyCode = (KeyCode)obj;
+				var keyCode = (KeyCode)obj;
 				if (Input.GetKeyDown(keyCode) && !currentKeys.Contains(keyCode))
 				{
 					currentKeys.Add(keyCode);
@@ -71,9 +71,9 @@ public class KeybindControl : MonoBehaviour
 
 	public static string KeyBindingToString(KeyCode[] codes)
 	{
-		string text = string.Empty;
-		bool flag = true;
-		foreach (KeyCode keyCode in codes)
+		var text = string.Empty;
+		var flag = true;
+		foreach (var keyCode in codes)
 		{
 			text += !flag ? ", " : string.Empty;
 			text += keyCode;
@@ -94,7 +94,7 @@ public class KeybindControl : MonoBehaviour
 		GetKeys = getKeys;
 		SetKeys = setKeys;
 		messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
-		CleverMenuItemTooltip component = GetComponent<CleverMenuItemTooltip>();
+		var component = GetComponent<CleverMenuItemTooltip>();
 		tooltipProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
 		tooltipProvider.SetMessage(owner.DefaultTooltip);
 		component.Tooltip = tooltipProvider;

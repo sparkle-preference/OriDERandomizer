@@ -19,7 +19,7 @@ public class HierarchyDebugMenu : MonoBehaviour
 		m_selectionIndex = 0;
 		SuspensionManager.SuspendAll();
 		m_items.Clear();
-		foreach (GameObject gameObject in Resources.FindObjectsOfTypeAll<GameObject>())
+		foreach (var gameObject in Resources.FindObjectsOfTypeAll<GameObject>())
 		{
 			if (gameObject.hideFlags == HideFlags.None && gameObject.transform.parent == null && gameObject.activeInHierarchy == gameObject.activeSelf)
 			{
@@ -36,12 +36,12 @@ public class HierarchyDebugMenu : MonoBehaviour
 
 	public void OnGUI()
 	{
-		int num = 0;
-		int depth = 0;
+		var num = 0;
+		var depth = 0;
 		GUILayout.BeginArea(new Rect(Screen.width / 2 - 200f, 0f, 400f, Screen.height), GUI.skin.box);
 		GUILayout.BeginVertical(GUI.skin.box);
 		GUILayout.FlexibleSpace();
-		foreach (GameObjectItem item in m_items)
+		foreach (var item in m_items)
 		{
 			OnItemGUI(item, ref num, depth);
 		}
@@ -71,16 +71,16 @@ public class HierarchyDebugMenu : MonoBehaviour
 	{
 		if (Input.GetKeyDown(KeyCode.Backslash))
 		{
-			bool verbose = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+			var verbose = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
 			DebugWidget.Instance.TargetObject(m_selected.Target, verbose);
 		}
 		if (Input.GetKeyDown(KeyCode.Home))
 		{
 			Debug.Log(m_selected.Label + "(" + m_selectionIndex + ")");
-			int num = m_items.FindIndex(g => g.Label == "systems");
-			GameObjectItem gameObjectItem = m_items[num];
+			var num = m_items.FindIndex(g => g.Label == "systems");
+			var gameObjectItem = m_items[num];
 			gameObjectItem.Expanded = true;
-			int num2 = gameObjectItem.Children.FindIndex(g => g.Label == "menuScreenManager");
+			var num2 = gameObjectItem.Children.FindIndex(g => g.Label == "menuScreenManager");
 			m_selected = m_items[num2];
 			m_selectionIndex = num + num2 + 1;
 		}
@@ -136,13 +136,13 @@ public class HierarchyDebugMenu : MonoBehaviour
 		{
 			return;
 		}
-		int num = index - m_selectionIndex;
+		var num = index - m_selectionIndex;
 		if (num == 0)
 		{
 			m_selected = item;
 		}
-		int num2 = ShowAboveCount;
-		int num3 = ShowBelowCount;
+		var num2 = ShowAboveCount;
+		var num3 = ShowBelowCount;
 		if (m_selectionIndex < num2)
 		{
 			num3 += num2 - m_selectionIndex;
@@ -167,7 +167,7 @@ public class HierarchyDebugMenu : MonoBehaviour
 		{
 			return;
 		}
-		foreach (GameObjectItem child in item.Children)
+		foreach (var child in item.Children)
 		{
 			OnItemGUI(child, ref index, depth + 1);
 		}

@@ -20,7 +20,7 @@ public class SwarmEnemy : GroundEnemy
 
 	public void OnPreProcessDamage(Damage damage)
 	{
-		EntityDamageDealer component = damage.Sender.GetComponent<EntityDamageDealer>();
+		var component = damage.Sender.GetComponent<EntityDamageDealer>();
 		if (component != null)
 		{
 			Entity entity = component.Entity;
@@ -65,7 +65,7 @@ public class SwarmEnemy : GroundEnemy
 	public bool ShouldRun()
 	{
 		float num = Math.Sign(PositionToPlayerPosition.x);
-		bool flag = Size != 0f && Physics.Linecast(transform.position + new Vector3(num * (Size - 1f), 0f), transform.position + new Vector3(num * Size, 0f));
+		var flag = Size != 0f && Physics.Linecast(transform.position + new Vector3(num * (Size - 1f), 0f), transform.position + new Vector3(num * Size, 0f));
 		bool flag2;
 		if (EnemyStopper.InsideEnemyStopper(Position, !PlayerIsToLeft ? Vector3.right : Vector3.left, out flag2))
 		{
@@ -99,8 +99,8 @@ public class SwarmEnemy : GroundEnemy
 
 	public void UpdateRotation()
 	{
-		float num = SpeedXToRotation.Evaluate(PlatformMovement.LocalSpeedX) * SpeedYToRotation.Evaluate(PlatformMovement.LocalSpeedX) * AirTiltAngle;
-		float b = !PlatformMovement.IsOnGround ? num : PlatformMovement.GroundAngle;
+		var num = SpeedXToRotation.Evaluate(PlatformMovement.LocalSpeedX) * SpeedYToRotation.Evaluate(PlatformMovement.LocalSpeedX) * AirTiltAngle;
+		var b = !PlatformMovement.IsOnGround ? num : PlatformMovement.GroundAngle;
 		FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.1f));
 	}
 
@@ -185,9 +185,9 @@ public class SwarmEnemy : GroundEnemy
 	{
 		if (Settings.Child)
 		{
-			for (int i = 0; i < 2; i++)
+			for (var i = 0; i < 2; i++)
 			{
-				Vector3 velocity = ((i != 0 ? Vector3.right : Vector3.left) + Vector3.up * 3f) * 7f;
+				var velocity = ((i != 0 ? Vector3.right : Vector3.left) + Vector3.up * 3f) * 7f;
 				SwarmEnemyManager.Instance.QueueSpawn(transform.position, velocity, (int)(Loot.LootAmount * Loot.LootMultiplier), OrbSpawner, DamageDealer.Damage, Settings.Child, SceneRootGUID, Owner);
 			}
 		}

@@ -23,9 +23,9 @@ public class AnimatorAction : ActionMethod
 
 	public override void Perform(IContext context)
 	{
-		for (int i = 0; i < Animators.Length; i++)
+		for (var i = 0; i < Animators.Length; i++)
 		{
-			LegacyAnimator legacyAnimator = Animators[i];
+			var legacyAnimator = Animators[i];
 			if (legacyAnimator.enabled)
 			{
 				switch (Command)
@@ -69,7 +69,7 @@ public class AnimatorAction : ActionMethod
 
 	public override void PerformInstantly(IContext context)
 	{
-		foreach (LegacyAnimator legacyAnimator in Animators)
+		foreach (var legacyAnimator in Animators)
 		{
 			if (legacyAnimator.enabled)
 			{

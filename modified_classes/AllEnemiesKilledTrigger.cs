@@ -39,15 +39,15 @@ public class AllEnemiesKilledTrigger : Trigger
 	public void Init()
 	{
 		RespawningPlaceholders.Clear();
-		for (int i = 0; i < GetComponentsInChildren<RespawningPlaceholder>().Length; i++)
+		for (var i = 0; i < GetComponentsInChildren<RespawningPlaceholder>().Length; i++)
 		{
-			RespawningPlaceholder item = GetComponentsInChildren<RespawningPlaceholder>()[i];
+			var item = GetComponentsInChildren<RespawningPlaceholder>()[i];
 			RespawningPlaceholders.Add(item);
 		}
 		Entities.Clear();
-		for (int j = 0; j < GetComponentsInChildren<Entity>().Length; j++)
+		for (var j = 0; j < GetComponentsInChildren<Entity>().Length; j++)
 		{
-			Entity item2 = GetComponentsInChildren<Entity>()[j];
+			var item2 = GetComponentsInChildren<Entity>()[j];
 			Entities.Add(item2);
 		}
 		TriggerOnCounter = RespawningPlaceholders.Count + Entities.Count;
@@ -56,12 +56,12 @@ public class AllEnemiesKilledTrigger : Trigger
 	private void RegisterEvent()
 	{
 		Action<Damage> action = EntityKilled;
-		for (int i = 0; i < RespawningPlaceholders.Count; i++)
+		for (var i = 0; i < RespawningPlaceholders.Count; i++)
 		{
-			RespawningPlaceholder respawningPlaceholder = RespawningPlaceholders[i];
+			var respawningPlaceholder = RespawningPlaceholders[i];
 			respawningPlaceholder.OnCurrentInstanceDeath = (Action<Damage>)Delegate.Combine(respawningPlaceholder.OnCurrentInstanceDeath, action);
 		}
-		for (int j = 0; j < Entities.Count; j++)
+		for (var j = 0; j < Entities.Count; j++)
 		{
 			Entities[j].DamageReciever.OnDeathEvent.Add(action);
 		}
@@ -70,12 +70,12 @@ public class AllEnemiesKilledTrigger : Trigger
 	private void DeregisterEvent()
 	{
 		Action<Damage> action = EntityKilled;
-		for (int i = 0; i < RespawningPlaceholders.Count; i++)
+		for (var i = 0; i < RespawningPlaceholders.Count; i++)
 		{
-			RespawningPlaceholder respawningPlaceholder = RespawningPlaceholders[i];
+			var respawningPlaceholder = RespawningPlaceholders[i];
 			respawningPlaceholder.OnCurrentInstanceDeath = (Action<Damage>)Delegate.Remove(respawningPlaceholder.OnCurrentInstanceDeath, action);
 		}
-		for (int j = 0; j < Entities.Count; j++)
+		for (var j = 0; j < Entities.Count; j++)
 		{
 			Entities[j].DamageReciever.OnDeathEvent.Remove(action);
 		}
@@ -97,7 +97,7 @@ public class AllEnemiesKilledTrigger : Trigger
 			}
 			if (ShowMessages)
 			{
-				int num = TriggerOnCounter - m_counter - 1;
+				var num = TriggerOnCounter - m_counter - 1;
 				if (num >= Messages.Count)
 				{
 					num = Messages.Count - 1;

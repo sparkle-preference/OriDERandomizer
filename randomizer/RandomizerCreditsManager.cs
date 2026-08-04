@@ -89,7 +89,7 @@ Join the Ori community: orirando.com/discord", 50));
 			End();
 			return;
 		}
-			KeyValuePair<string, int> nextCredits = Credits[0];
+			var nextCredits = Credits[0];
 			Credits.RemoveAt(0);
 			NextCreditCountdown = nextCredits.Value;
 			Randomizer.showCredits(nextCredits.Key, nextCredits.Value);

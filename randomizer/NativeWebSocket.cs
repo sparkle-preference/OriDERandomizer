@@ -79,13 +79,13 @@ public static class NativeWebSocket
 			return true;
 		try
 		{
-			string dir = ExeDir();
+			var dir = ExeDir();
 			Randomizer.log($"ws diag: extracting to {dir}");
-			string dllPath = Extract(DllResource, Path.Combine(dir, DllResource));
+			var dllPath = Extract(DllResource, Path.Combine(dir, DllResource));
 			CaPath = Extract(CaResource, Path.Combine(dir, CaResource));
 			if (dllPath == null)
 				return false;
-			IntPtr module = LoadLibrary(dllPath);
+			var module = LoadLibrary(dllPath);
 			if (module == IntPtr.Zero)
 			{
 				Randomizer.log($"ws diag: LoadLibrary({dllPath}) failed, Win32 error {Marshal.GetLastWin32Error()}");
@@ -123,7 +123,7 @@ public static class NativeWebSocket
 
 	private static Delegate Bind(IntPtr module, string name, Type t)
 	{
-		IntPtr fn = GetProcAddress(module, name);
+		var fn = GetProcAddress(module, name);
 		if (fn == IntPtr.Zero)
 			throw new MissingMethodException($"export {name} missing from {DllResource}");
 		return Marshal.GetDelegateForFunctionPointer(fn, t);
@@ -135,7 +135,7 @@ public static class NativeWebSocket
 	{
 		try
 		{
-			string dataPath = Application.dataPath;
+			var dataPath = Application.dataPath;
 			if (!string.IsNullOrEmpty(dataPath))
 				return Path.GetDirectoryName(dataPath);
 		}
@@ -152,7 +152,7 @@ public static class NativeWebSocket
 	// dll updates, and both instances then hold the same Assembly-CSharp.
 	private static string Extract(string resource, string target)
 	{
-		byte[] bytes = RandomizerResources.ReadResource(resource);
+		var bytes = RandomizerResources.ReadResource(resource);
 		if (bytes == null)
 		{
 			Randomizer.log($"ws diag: failed to load embedded resource '{resource}'. See previous log for more details.");
@@ -206,10 +206,10 @@ public static class NativeWebSocket
 	public static string GetLastError()
 	{
 		int length;
-		IntPtr ptr = get_last_error(out length);
+		var ptr = get_last_error(out length);
 		if (ptr == IntPtr.Zero || length == 0)
 			return "";
-		byte[] bytes = new byte[length];
+		var bytes = new byte[length];
 		Marshal.Copy(ptr, bytes, 0, length);
 		return Encoding.UTF8.GetString(bytes);
 	}
@@ -220,10 +220,10 @@ public static class NativeWebSocket
 	public static string GetPendingMessage()
 	{
 		int length;
-		IntPtr ptr = get_pending_message(out length);
+		var ptr = get_pending_message(out length);
 		if (ptr == IntPtr.Zero)
 			return null;
-		byte[] bytes = new byte[length];
+		var bytes = new byte[length];
 		Marshal.Copy(ptr, bytes, 0, length);
 		pop_pending_message();
 		return Encoding.UTF8.GetString(bytes);

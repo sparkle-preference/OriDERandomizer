@@ -79,36 +79,36 @@ public class SeinWallJump : CharacterState, ISeinReceiver
 		m_hasWallJumpedRight = false;
 		PlatformMovement.LocalSpeedX = -JumpStrength.x * RandomizerBonus.Jumpscale;
 		PlatformMovement.LocalSpeedY = JumpStrength.y * RandomizerBonus.Jumpscale;
-		Vector2 localSpeed = PlatformMovement.LocalSpeed;
+		var localSpeed = PlatformMovement.LocalSpeed;
 		ApplyImpulseToWall(localSpeed);
 		if (Sein.Input.NormalizedHorizontal < 0)
 		{
 			CharacterSpriteMirror.FaceLeft = true;
-			CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(AwayAnimation, 10, ShouldKeepPlayingWallJumpLeftAwayAnimation);
+			var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(AwayAnimation, 10, ShouldKeepPlayingWallJumpLeftAwayAnimation);
 			characterAnimationState.OnStopPlaying = OnAnimationEnd;
 			characterAnimationState.OnStartPlaying = OnAnimationStart;
 		}
 		else if (Sein.Input.NormalizedHorizontal > 0)
 		{
 			Vector3 origin = PlatformMovement.Position2D + PlatformMovement.LocalToWorld(Vector3.up * 2f);
-			float maxDistance = PlatformMovement.CapsuleCollider.radius + 2f;
-			Ray ray = new Ray(origin, PlatformMovement.LocalToWorld(Vector3.right));
+			var maxDistance = PlatformMovement.CapsuleCollider.radius + 2f;
+			var ray = new Ray(origin, PlatformMovement.LocalToWorld(Vector3.right));
 			if (Physics.Raycast(ray, maxDistance))
 			{
-				CharacterAnimationSystem.CharacterAnimationState characterAnimationState2 = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(TowardsAnimation, 10, ShouldKeepPlayingWallJumpLeftTowardsAnimation);
+				var characterAnimationState2 = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(TowardsAnimation, 10, ShouldKeepPlayingWallJumpLeftTowardsAnimation);
 				characterAnimationState2.OnStopPlaying = OnAnimationEnd;
 				StartCoroutine(RoutineForMegWhoPlaysMarioAndSucksAtWallJumping());
 			}
 			else
 			{
-				CharacterAnimationSystem.CharacterAnimationState characterAnimationState3 = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(EdgeJumpAnimation, 10, ShouldKeepPlayingWallJumpLeftTowardsAnimation);
+				var characterAnimationState3 = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(EdgeJumpAnimation, 10, ShouldKeepPlayingWallJumpLeftTowardsAnimation);
 				characterAnimationState3.OnStopPlaying = OnAnimationEnd;
 				localSpeed.y = 0f;
 			}
 		}
 		else
 		{
-			CharacterAnimationSystem.CharacterAnimationState characterAnimationState4 = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(RegularAnimation, 10, ShouldKeepPlayingWallJumpLeftRegularAnimation);
+			var characterAnimationState4 = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(RegularAnimation, 10, ShouldKeepPlayingWallJumpLeftRegularAnimation);
 			characterAnimationState4.OnStopPlaying = OnAnimationEnd;
 			characterAnimationState4.OnStartPlaying = OnAnimationStart;
 		}
@@ -126,10 +126,10 @@ public class SeinWallJump : CharacterState, ISeinReceiver
 	public IEnumerator RoutineForMegWhoPlaysMarioAndSucksAtWallJumping()
 	{
 		float i = Sein.Input.NormalizedHorizontal;
-		bool left = i < 0f;
+		var left = i < 0f;
 		yield return new WaitForFixedUpdate();
 		yield return new WaitForFixedUpdate();
-		for (float t = 0f; t < 0.2f; t += Time.deltaTime)
+		for (var t = 0f; t < 0.2f; t += Time.deltaTime)
 		{
 			if (Input.Jump.OnPressed)
 			{
@@ -143,7 +143,7 @@ public class SeinWallJump : CharacterState, ISeinReceiver
 			{
 				PlatformMovement.LocalSpeedX = JumpStrength.x  * RandomizerBonus.Jumpscale * (!left ? -1 : 1);
 				CharacterSpriteMirror.FaceLeft = !left;
-				CharacterAnimationSystem.CharacterAnimationState state = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(AwayAnimation, 10, ShouldKeepPlayingWallJumpLeftAwayAnimation);
+				var state = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(AwayAnimation, 10, ShouldKeepPlayingWallJumpLeftAwayAnimation);
 				state.OnStopPlaying = OnAnimationEnd;
 				state.OnStartPlaying = OnAnimationStart;
 				if (DoubleJump)
@@ -214,36 +214,36 @@ public class SeinWallJump : CharacterState, ISeinReceiver
 		m_hasWallJumpedLeft = false;
 		PlatformMovement.LocalSpeedX = JumpStrength.x  * RandomizerBonus.Jumpscale;
 		PlatformMovement.LocalSpeedY = JumpStrength.y  * RandomizerBonus.Jumpscale;
-		Vector2 localSpeed = PlatformMovement.LocalSpeed;
+		var localSpeed = PlatformMovement.LocalSpeed;
 		ApplyImpulseToWall(localSpeed);
 		if (Sein.Input.NormalizedHorizontal > 0)
 		{
 			CharacterSpriteMirror.FaceLeft = false;
-			CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(AwayAnimation, 10, ShouldKeepPlayingWallJumpRightAwayAnimation);
+			var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(AwayAnimation, 10, ShouldKeepPlayingWallJumpRightAwayAnimation);
 			characterAnimationState.OnStopPlaying = OnAnimationEnd;
 			characterAnimationState.OnStartPlaying = OnAnimationStart;
 		}
 		else if (Sein.Input.NormalizedHorizontal < 0)
 		{
-			Vector3 origin = PlatformMovement.Position + Vector3.up * 2f;
-			float maxDistance = PlatformMovement.CapsuleCollider.radius + 2f;
-			Ray ray = new Ray(origin, PlatformMovement.LocalToWorld(Vector3.left));
+			var origin = PlatformMovement.Position + Vector3.up * 2f;
+			var maxDistance = PlatformMovement.CapsuleCollider.radius + 2f;
+			var ray = new Ray(origin, PlatformMovement.LocalToWorld(Vector3.left));
 			if (Physics.Raycast(ray, maxDistance))
 			{
-				CharacterAnimationSystem.CharacterAnimationState characterAnimationState2 = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(TowardsAnimation, 10, ShouldKeepPlayingWallJumpRightTowardsAnimation);
+				var characterAnimationState2 = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(TowardsAnimation, 10, ShouldKeepPlayingWallJumpRightTowardsAnimation);
 				characterAnimationState2.OnStopPlaying = OnAnimationEnd;
 				StartCoroutine(RoutineForMegWhoPlaysMarioAndSucksAtWallJumping());
 			}
 			else
 			{
-				CharacterAnimationSystem.CharacterAnimationState characterAnimationState3 = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(EdgeJumpAnimation, 10, ShouldKeepPlayingWallJumpRightTowardsAnimation);
+				var characterAnimationState3 = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(EdgeJumpAnimation, 10, ShouldKeepPlayingWallJumpRightTowardsAnimation);
 				characterAnimationState3.OnStopPlaying = OnAnimationEnd;
 				localSpeed.y = 0f;
 			}
 		}
 		else
 		{
-			CharacterAnimationSystem.CharacterAnimationState characterAnimationState4 = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(RegularAnimation, 10, ShouldKeepPlayingWallJumpRightRegularAnimation);
+			var characterAnimationState4 = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(RegularAnimation, 10, ShouldKeepPlayingWallJumpRightRegularAnimation);
 			characterAnimationState4.OnStopPlaying = OnAnimationEnd;
 			characterAnimationState4.OnStartPlaying = OnAnimationStart;
 		}
@@ -275,13 +275,13 @@ public class SeinWallJump : CharacterState, ISeinReceiver
 
 	public void ApplyImpulseToWall(Vector2 speed)
 	{
-		PlatformMovementListOfColliders platformMovementListOfColliders = Sein.PlatformBehaviour.PlatformMovementListOfColliders;
-		for (int i = 0; i < platformMovementListOfColliders.WallLeftColliders.Count; i++)
+		var platformMovementListOfColliders = Sein.PlatformBehaviour.PlatformMovementListOfColliders;
+		for (var i = 0; i < platformMovementListOfColliders.WallLeftColliders.Count; i++)
 		{
-			Collider collider = platformMovementListOfColliders.WallLeftColliders[i];
+			var collider = platformMovementListOfColliders.WallLeftColliders[i];
 			if (collider)
 			{
-				Rigidbody attachedRigidbody = collider.attachedRigidbody;
+				var attachedRigidbody = collider.attachedRigidbody;
 				if (attachedRigidbody)
 				{
 					Vector3 force = PlatformMovement.LocalToWorld(-speed.normalized * WallJumpImpulse);
@@ -289,12 +289,12 @@ public class SeinWallJump : CharacterState, ISeinReceiver
 				}
 			}
 		}
-		for (int j = 0; j < platformMovementListOfColliders.WallRightColliders.Count; j++)
+		for (var j = 0; j < platformMovementListOfColliders.WallRightColliders.Count; j++)
 		{
-			Collider collider2 = platformMovementListOfColliders.WallRightColliders[j];
+			var collider2 = platformMovementListOfColliders.WallRightColliders[j];
 			if (collider2)
 			{
-				Rigidbody attachedRigidbody2 = collider2.attachedRigidbody;
+				var attachedRigidbody2 = collider2.attachedRigidbody;
 				if (attachedRigidbody2)
 				{
 					Vector3 force2 = PlatformMovement.LocalToWorld(-speed.normalized * WallJumpImpulse);

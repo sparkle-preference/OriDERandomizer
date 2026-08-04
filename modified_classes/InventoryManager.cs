@@ -32,31 +32,31 @@ public class InventoryManager : MenuScreen
 	{
 		Instance = this;
 		
-		CleverMenuItemSelectionManager navigationManager = NavigationManager;
+		var navigationManager = NavigationManager;
 		navigationManager.OptionChangeCallback = (Action)Delegate.Combine(navigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
 		navigationManager.OptionPressedCallback = (Action)Delegate.Combine(navigationManager.OptionPressedCallback, new Action(OnMenuItemPressed));
 		navigationManager.OnBackPressedCallback = (Action)Delegate.Combine(navigationManager.OnBackPressedCallback, new Action(OnBackPressed));
 		
-		DifficultyController instance = DifficultyController.Instance;
+		var instance = DifficultyController.Instance;
 		instance.OnDifficultyChanged = (Action)Delegate.Combine(instance.OnDifficultyChanged, new Action(OnDifficultyChanged));
 
 		if (Difficulty)
 		{
-			DifficultyModeMessageProvider difficultyProvider = (DifficultyModeMessageProvider)Difficulty.MessageProvider;
+			var difficultyProvider = (DifficultyModeMessageProvider)Difficulty.MessageProvider;
 			difficultyProvider.Easy = RandomizerText.DifficultyOverrides.Easy.NameOverrideUpper;
 			difficultyProvider.Normal = RandomizerText.DifficultyOverrides.Normal.NameOverrideUpper;
 			difficultyProvider.Hard = RandomizerText.DifficultyOverrides.Hard.NameOverrideUpper;
 			difficultyProvider.OneLife = RandomizerText.DifficultyOverrides.OneLife.NameOverrideUpper;
 
-			ActionSequence difficultySequence = (ActionSequence)Difficulty.transform.parent.GetComponent<RunActionCondition>().Action;
-			InstantiateAction difficultyAction = (InstantiateAction)difficultySequence.Actions[0];
-			ChangeDifficultyScreen difficultyScreen = difficultyAction.Prefab.GetComponent<ChangeDifficultyScreen>();
+			var difficultySequence = (ActionSequence)Difficulty.transform.parent.GetComponent<RunActionCondition>().Action;
+			var difficultyAction = (InstantiateAction)difficultySequence.Actions[0];
+			var difficultyScreen = difficultyAction.Prefab.GetComponent<ChangeDifficultyScreen>();
 			difficultyScreen.Easy = RandomizerText.DifficultyOverrides.Easy.NameOverride;
 			difficultyScreen.Normal = RandomizerText.DifficultyOverrides.Normal.NameOverride;
 			difficultyScreen.Hard = RandomizerText.DifficultyOverrides.Hard.NameOverride;
 			difficultyScreen.OneLife = RandomizerText.DifficultyOverrides.OneLife.NameOverride;
 
-			CleverMenuItemSelectionManager changeDifficultyManager = difficultyAction.Prefab.GetComponent<CleverMenuItemSelectionManager>();
+			var changeDifficultyManager = difficultyAction.Prefab.GetComponent<CleverMenuItemSelectionManager>();
 			changeDifficultyManager.MenuItems[0].GetComponentInChildren<MessageBox>().SetMessageProvider(RandomizerText.DifficultyOverrides.Easy.NameOverrideUpper);
 			changeDifficultyManager.MenuItems[1].GetComponentInChildren<MessageBox>().SetMessageProvider(RandomizerText.DifficultyOverrides.Normal.NameOverrideUpper);
 			changeDifficultyManager.MenuItems[2].GetComponentInChildren<MessageBox>().SetMessageProvider(RandomizerText.DifficultyOverrides.Hard.NameOverrideUpper);
@@ -84,7 +84,7 @@ public class InventoryManager : MenuScreen
 
 	public void OnMenuItemPressed()
 	{
-		InventoryAbilityItem component = NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
+		var component = NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
 		if (component && !component.HasAbility)
 		{
 			if (PressUngainedAbilityOptionSound)
@@ -93,11 +93,11 @@ public class InventoryManager : MenuScreen
 			}
 			return;
 		}
-		InventoryItemHelpText component2 = NavigationManager.CurrentMenuItem.GetComponent<InventoryItemHelpText>();
+		var component2 = NavigationManager.CurrentMenuItem.GetComponent<InventoryItemHelpText>();
 		if (component2)
 		{
 			SuspensionManager.SuspendAll();
-			MessageBox messageBox = UI.MessageController.ShowMessageBoxB(HelpMessageBox, component2.HelpMessage, Vector3.zero, float.PositiveInfinity);
+			var messageBox = UI.MessageController.ShowMessageBoxB(HelpMessageBox, component2.HelpMessage, Vector3.zero, float.PositiveInfinity);
 			if (messageBox)
 			{
 				messageBox.SetAvatar(component2.Avatar);
@@ -131,12 +131,12 @@ public class InventoryManager : MenuScreen
 			Instance = null;
 		}
 
-		CleverMenuItemSelectionManager navigationManager = NavigationManager;
+		var navigationManager = NavigationManager;
 		navigationManager.OptionChangeCallback = (Action)Delegate.Remove(navigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
 		navigationManager.OptionPressedCallback = (Action)Delegate.Remove(navigationManager.OptionPressedCallback, new Action(OnMenuItemPressed));
 		navigationManager.OnBackPressedCallback = (Action)Delegate.Remove(navigationManager.OnBackPressedCallback, new Action(OnBackPressed));
 
-		DifficultyController instance = DifficultyController.Instance;
+		var instance = DifficultyController.Instance;
 		instance.OnDifficultyChanged = (Action)Delegate.Remove(instance.OnDifficultyChanged, new Action(OnDifficultyChanged));
 	}
 
@@ -163,9 +163,9 @@ public class InventoryManager : MenuScreen
 		waterVeinClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.GinsoTree, RandomizerBonus.WaterVeinShards(), 0)));
 		gumonSealClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.ForlornRuins, RandomizerBonus.GumonSealShards(), 1)));
 		sunstoneClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.MountHoru, RandomizerBonus.SunstoneShards(), 2)));
-		GameTimer timer = GameController.Instance.Timer;
+		var timer = GameController.Instance.Timer;
 		TimeText.SetMessage(new MessageDescriptor(string.Format("{0:D2}:{1:D2}:{2:D2}", timer.Hours, timer.Minutes, timer.Seconds)));
-		InventoryAbilityItem component = NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
+		var component = NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
 		if (component)
 		{
 			AbilityNameText.gameObject.SetActive(true);

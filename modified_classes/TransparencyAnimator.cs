@@ -6,7 +6,7 @@ public class TransparencyAnimator : BaseAnimator
 {
 	static TransparencyAnimator()
 	{
-		bool[] array = new bool[3];
+		var array = new bool[3];
 		array[0] = true;
 		array[1] = true;
 		s_disableRenderer = array;
@@ -15,7 +15,7 @@ public class TransparencyAnimator : BaseAnimator
 	[ContextMenu("Print out renderer data")]
 	public void PrintOutRendererData()
 	{
-		foreach (RendererData rendererData in m_rendererData)
+		foreach (var rendererData in m_rendererData)
 		{
 			if (rendererData.Renderer != null)
 			{
@@ -30,7 +30,7 @@ public class TransparencyAnimator : BaseAnimator
 			if (s_propIds == null)
 			{
 				s_propIds = new int[s_propNames.Length];
-				for (int i = 0; i < s_propNames.Length; i++)
+				for (var i = 0; i < s_propNames.Length; i++)
 				{
 					s_propIds[i] = Shader.PropertyToID(s_propNames[i]);
 				}
@@ -65,7 +65,7 @@ public class TransparencyAnimator : BaseAnimator
 
 	private void AddChild(Transform child)
 	{
-		Renderer component = child.GetComponent<Renderer>();
+		var component = child.GetComponent<Renderer>();
 		if (component && CanBeAnimated(component) && !m_renderers.Contains(component))
 		{
 			m_rendererData.Add(new RendererData(component, PropertyId));
@@ -75,18 +75,18 @@ public class TransparencyAnimator : BaseAnimator
 
 	private void AddChildren(Transform childTransform)
 	{
-		int childCount = childTransform.childCount;
-		for (int i = 0; i < childCount; i++)
+		var childCount = childTransform.childCount;
+		for (var i = 0; i < childCount; i++)
 		{
-			Transform child = childTransform.GetChild(i);
-			TransparencyAnimator component = child.GetComponent<TransparencyAnimator>();
+			var child = childTransform.GetChild(i);
+			var component = child.GetComponent<TransparencyAnimator>();
 			if (component != null)
 			{
 				m_childTransparencyAnimators.Add(component);
 			}
 			else
 			{
-				CleverMenuItem component2 = child.GetComponent<CleverMenuItem>();
+				var component2 = child.GetComponent<CleverMenuItem>();
 				if (component2 != null && component2.AnimateColors)
 				{
 					if (m_cleverMenuItems == null)
@@ -103,10 +103,10 @@ public class TransparencyAnimator : BaseAnimator
 
 	public static void Register(Transform child)
 	{
-		Transform parent = child.parent;
+		var parent = child.parent;
 		while (parent)
 		{
-			TransparencyAnimator component = parent.GetComponent<TransparencyAnimator>();
+			var component = parent.GetComponent<TransparencyAnimator>();
 			if (component && component.AnimateChildren)
 			{
 				component.ManuallyRegister(child);
@@ -122,13 +122,13 @@ public class TransparencyAnimator : BaseAnimator
 		{
 			return;
 		}
-		TransparencyAnimator component = child.GetComponent<TransparencyAnimator>();
+		var component = child.GetComponent<TransparencyAnimator>();
 		if (component)
 		{
 			m_childTransparencyAnimators.Add(component);
 			return;
 		}
-		CleverMenuItem component2 = child.GetComponent<CleverMenuItem>();
+		var component2 = child.GetComponent<CleverMenuItem>();
 		if (component2 != null && component2.AnimateColors)
 		{
 			if (m_cleverMenuItems == null)
@@ -152,21 +152,21 @@ public class TransparencyAnimator : BaseAnimator
 
 	public void ApplyTransparency(bool force = true)
 	{
-		float finalOpacity = FinalOpacity;
+		var finalOpacity = FinalOpacity;
 		if (!Mathf.Approximately(m_lastFinalOpacity, finalOpacity) || force)
 		{
 			m_lastFinalOpacity = finalOpacity;
-			for (int i = 0; i < m_rendererData.Count; i++)
+			for (var i = 0; i < m_rendererData.Count; i++)
 			{
 				m_rendererData[i].SetRendererAlpha((int)Mode, PropertyId, UseSharedMaterial, finalOpacity);
 			}
-			for (int j = 0; j < m_childTransparencyAnimators.Count; j++)
+			for (var j = 0; j < m_childTransparencyAnimators.Count; j++)
 			{
 				m_childTransparencyAnimators[j].SetParentOpacity(finalOpacity);
 			}
 			if (m_cleverMenuItems != null)
 			{
-				for (int k = 0; k < m_cleverMenuItems.Count; k++)
+				for (var k = 0; k < m_cleverMenuItems.Count; k++)
 				{
 					m_cleverMenuItems[k].SetParentOpacity(finalOpacity);
 				}
@@ -194,11 +194,11 @@ public class TransparencyAnimator : BaseAnimator
 	{
 		m_parentOpacity = 1f;
 		m_opacity = 1f;
-		for (int i = 0; i < m_childTransparencyAnimators.Count; i++)
+		for (var i = 0; i < m_childTransparencyAnimators.Count; i++)
 		{
 			m_childTransparencyAnimators[i].RestoreToOriginalState();
 		}
-		for (int j = 0; j < m_rendererData.Count; j++)
+		for (var j = 0; j < m_rendererData.Count; j++)
 		{
 			m_rendererData[j].SetRendererAlpha((int)Mode, PropertyId, UseSharedMaterial, 1f);
 		}
@@ -287,9 +287,9 @@ public class TransparencyAnimator : BaseAnimator
 			{
 				Renderer.enabled = value > 0.01f;
 			}
-			float a = value * OriginalAlpha;
-			Material material = !useSharedMaterial ? Renderer.material : Renderer.sharedMaterial;
-			Color color = material.GetColor(propertyID);
+			var a = value * OriginalAlpha;
+			var material = !useSharedMaterial ? Renderer.material : Renderer.sharedMaterial;
+			var color = material.GetColor(propertyID);
 			color.a = a;
 			material.SetColor(propertyID, color);
 		}

@@ -17,10 +17,10 @@ public class RandomizerChaosMovementSpeed : RandomizerChaosEffect
 	public override void Start()
 	{
 		Countdown = Random.Range(360, 3600);
-		int num = Random.Range(0, 16);
+		var num = Random.Range(0, 16);
 		if (num <= 7)
 		{
-			float num2 = Random.Range(0.5f, 2f);
+			var num2 = Random.Range(0.5f, 2f);
 			if (num2 < 1f)
 			{
 				Randomizer.showChaosEffect("Slow movement");
@@ -39,7 +39,7 @@ public class RandomizerChaosMovementSpeed : RandomizerChaosEffect
 		}
 		if (num <= 12)
 		{
-			float num3 = Random.Range(8f, 16f);
+			var num3 = Random.Range(8f, 16f);
 			Randomizer.showChaosEffect("Icy ground");
 			Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.Acceleration = 60f / num3;
 			Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.Decceleration = 30f / num3;
@@ -48,7 +48,7 @@ public class RandomizerChaosMovementSpeed : RandomizerChaosEffect
 		}
 		if (num <= 14)
 		{
-			float num4 = Random.Range(1.5f, 3f);
+			var num4 = Random.Range(1.5f, 3f);
 			Randomizer.showChaosEffect("Drag racer Ori");
 			Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.MaxSpeed = 11.6666f * num4;
 			Characters.Sein.PlatformBehaviour.LeftRightMovement.Settings.Air.MaxSpeed = 11.6666f * num4;

@@ -210,7 +210,7 @@ public static class RandomizerStatsManager {
 		}
 		if(Scenes.Manager.CurrentScene != null)
 		{
-			string scene = Scenes.Manager.CurrentScene.Scene;
+			var scene = Scenes.Manager.CurrentScene.Scene;
 			if(SceneToZone.ContainsKey(scene))
 				return SceneToZone[scene];
 		}
@@ -218,9 +218,9 @@ public static class RandomizerStatsManager {
 	}
 
 	public static bool UpdateAndReset(int counter, int max) {
-		int _counter = get(counter);
-		int _max = get(max);
-		bool update = _counter > _max;
+		var _counter = get(counter);
+		var _max = get(max);
+		var update = _counter > _max;
 		if(update)
 			set(max, _counter);
 		set(counter, 0);
@@ -249,11 +249,11 @@ public static class RandomizerStatsManager {
 		try {
 			inc(Reloads, 1);
 			MenuCache = new Dictionary<int, int>();
-			foreach(int single in new[] {DSLS, TSLD, Reloads, AltRCount, shoof_sum, PPM_max, PPM_max_time, PPM_max_count, Saves})
+			foreach(var single in new[] {DSLS, TSLD, Reloads, AltRCount, shoof_sum, PPM_max, PPM_max_time, PPM_max_count, Saves})
 				MenuCache[single] = get(single);
 
-			foreach(int group in new[] {Time, Deaths}) 
-				foreach(int offset in Offsets.Values)
+			foreach(var group in new[] {Time, Deaths}) 
+				foreach(var offset in Offsets.Values)
 					MenuCache[group + offset] = get(group + offset);
 			WriteFromCache = true;			
 		}
@@ -286,7 +286,7 @@ public static class RandomizerStatsManager {
 			try {
 				if(WriteFromCache) {
 					WriteFromCache = false;
-					foreach(int key in MenuCache.Keys)
+					foreach(var key in MenuCache.Keys)
 						set(key, MenuCache[key]);
 				}
 				inc(Drought, CachedTime);
@@ -321,12 +321,12 @@ public static class RandomizerStatsManager {
 			return;
 		try {
 			inc(PSLDOS, 1);
-			int count = inc(Pickups, 1);
-			int time  = get(Time);
+			var count = inc(Pickups, 1);
+			var time  = get(Time);
 			if(UpdateAndReset(Drought, Drought_max))
 				set(Drought_max_end, time);
 			if(count >= 10) {			
-				int ppm = (int)(Math.Round(count / (time / 60f), 2) * 100);
+				var ppm = (int)(Math.Round(count / (time / 60f), 2) * 100);
 				if(ppm > get(PPM_max))
 				{
 					set(PPM_max, ppm);
@@ -345,7 +345,7 @@ public static class RandomizerStatsManager {
 	public static void ShowStats(int duration) {
 		if(CurrentPage < PageCount)
 		{
-			string stats = GetStatsPage(CurrentPage);
+			var stats = GetStatsPage(CurrentPage);
 			Randomizer.PrintImmediately(stats, duration, false, false, false);
 			CurrentPage++;
 			StatsTimer = duration;
@@ -364,32 +364,32 @@ public static class RandomizerStatsManager {
 	}
 
 	public static string GetStatsPage(int page) {
-		string statsPage = "";
+		var statsPage = "";
 		switch(page) {
 			case 0:
 				 statsPage += "ALIGNLEFTANCHORTOPPARAMS_12_14_1_Zone		Deaths	Time			Pickups		PPM";
-				foreach(string zone in Offsets.Keys)
+				foreach(var zone in Offsets.Keys)
 				{
-					int offset = Offsets[zone];
-					string line = ZonePrettyNames[zone];
+					var offset = Offsets[zone];
+					var line = ZonePrettyNames[zone];
 					if(zone == "unknown") {
 						line += "\t\tN/A";
 					} else {
 						line += "\t\t" + get(Deaths+offset);
 					}
-					int time = get(Time+offset);
-					string timestr = FormatTime(time);
+					var time = get(Time+offset);
+					var timestr = FormatTime(time);
 					line += "\t\t" + timestr;
 					if(timestr.Length < 4)
 						line += "\t";
 					if(PickupCounts.ContainsKey(zone))
 					{
-						int count = get(Pickups+offset);
-						string pickupstr = count+"/"+PickupCounts[zone];
+						var count = get(Pickups+offset);
+						var pickupstr = count+"/"+PickupCounts[zone];
 						line += "\t\t" + pickupstr;
 						if(pickupstr.Length < 5)
 							line += "\t";
-						float ppm = count / (time / 60f);
+						var ppm = count / (time / 60f);
 						if(time == 0 || ppm > 256 || zone == "unknown"){
 							line += "\t\tN/A";
 						} else {
@@ -402,7 +402,7 @@ public static class RandomizerStatsManager {
 				}
 				break;
 			case 1:
-				float ppm_max = get(PPM_max) / 100f;
+				var ppm_max = get(PPM_max) / 100f;
 				statsPage = "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_12_1_\nSaves:					" + get(Saves);
 				statsPage += "\nReloads:					" + get(Reloads);
 				var altrc = get(AltRCount);
@@ -423,8 +423,8 @@ public static class RandomizerStatsManager {
 				statsPage += "\nLongest Drought:			" + FormatTime(get(Drought_max), false);
 				if(get(Drought_max) > 0)
 				{
-					string startTime = "0:00";
-					int droughtStart = get(Drought_max_end) - get(Drought_max);
+					var startTime = "0:00";
+					var droughtStart = get(Drought_max_end) - get(Drought_max);
 					if(droughtStart > 0) 
 						startTime = FormatTime(droughtStart, false);
 					statsPage += " (" + startTime + "-" + FormatTime(get(Drought_max_end), false) + ")";
@@ -437,22 +437,22 @@ public static class RandomizerStatsManager {
 				break;
 			case 2:
 				statsPage += "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_12_1_Item				Found At		Zone";
-				SortedDictionary<int, List<string>> linesByTime = new SortedDictionary<int, List<string>>();
-				foreach(string item in KeyItemOffsets.Keys)
+				var linesByTime = new SortedDictionary<int, List<string>>();
+				foreach(var item in KeyItemOffsets.Keys)
 				{
-					string line = item + ":";
+					var line = item + ":";
 					if(line.Length < 10)
 						line += "\t\t";
 					else if(line.Length < 16)
 						line += "\t";
 					line += "\t";
-					int offset = KeyItemTime + KeyItemOffsets[item];
-					int raw = get(offset);
-					int time = -1;
+					var offset = KeyItemTime + KeyItemOffsets[item];
+					var raw = get(offset);
+					var time = -1;
 					if(raw > 0) {
 						time = raw % (1 << 18);
-						int zoneOffset = raw >> 18;
-						string zoneName = ZonePrettyNames[Offsets.First(x => x.Value == zoneOffset).Key].Trim();
+						var zoneOffset = raw >> 18;
+						var zoneName = ZonePrettyNames[Offsets.First(x => x.Value == zoneOffset).Key].Trim();
 						line += FormatTime(time);
 						if(FormatTime(time).Length < 4)
 							line += "\t";
@@ -471,11 +471,11 @@ public static class RandomizerStatsManager {
 				} else {
 					last = new List<string>();
 				}
-				foreach(List<string> lines in linesByTime.Values) {
-					foreach(string line in lines)
+				foreach(var lines in linesByTime.Values) {
+					foreach(var line in lines)
 						statsPage += "\n"+line;
 				}
-				foreach(string line in last)
+				foreach(var line in last)
 					statsPage += "\n"+line;
 				break;
 		}
@@ -501,19 +501,19 @@ public static class RandomizerStatsManager {
 
 	public static void WriteStatsFile() {
 		try {
-			string flagLine = File.ReadAllLines(Randomizer.SeedFilePath)[0];
-			string zonePart = GetStatsPage(0).Substring(33);
+			var flagLine = File.ReadAllLines(Randomizer.SeedFilePath)[0];
+			var zonePart = GetStatsPage(0).Substring(33);
 			// formatting is garbage
 			zonePart = zonePart.Replace("   ", "");
 			zonePart = Regex.Replace(zonePart, "\t+", " ");
-			List<string> zoneLines = new List<string>(zonePart.Split('\n'));
-			List<int> zoneLineSpacing = new List<int> {0, 0, 0, 0, 0};
-			foreach(string line in zoneLines) {
-				int col = 0;
-				int lastStart = 0;
-				for(int i = 0; i < line.Length; i++) {
+			var zoneLines = new List<string>(zonePart.Split('\n'));
+			var zoneLineSpacing = new List<int> {0, 0, 0, 0, 0};
+			foreach(var line in zoneLines) {
+				var col = 0;
+				var lastStart = 0;
+				for(var i = 0; i < line.Length; i++) {
 					if(line[i] == ' '){
-						int spacing = i-lastStart + 2;
+						var spacing = i-lastStart + 2;
 						if(zoneLineSpacing[col] < spacing)
 							zoneLineSpacing[col] = spacing;
 						col++;
@@ -522,11 +522,11 @@ public static class RandomizerStatsManager {
 				}
 			}
 			zonePart = "";
-			foreach(string line in zoneLines) {
-				int col = 0;
-				string paddedLine = "";
-				foreach(string linePart in line.Split(' ')) {
-					string lpc = linePart;
+			foreach(var line in zoneLines) {
+				var col = 0;
+				var paddedLine = "";
+				foreach(var linePart in line.Split(' ')) {
+					var lpc = linePart;
 					while(lpc.Length < zoneLineSpacing[col]) 
 						lpc += " ";
 					paddedLine += lpc;
@@ -535,28 +535,28 @@ public static class RandomizerStatsManager {
 				zonePart += paddedLine + "\n";
 			}
 
-			string miscPart = GetStatsPage(1).Substring(49);
-			List<string> miscLines = new List<string>(miscPart.Split('\n'));
+			var miscPart = GetStatsPage(1).Substring(49);
+			var miscLines = new List<string>(miscPart.Split('\n'));
 			miscPart = "";
-			foreach(string line in miscLines) {
-				int i = line.IndexOf(":");
-				string paddedLine = line.Substring(0, i+1);
+			foreach(var line in miscLines) {
+				var i = line.IndexOf(":");
+				var paddedLine = line.Substring(0, i+1);
 				while(paddedLine.Length < 32)
 					paddedLine += " ";
 				paddedLine += line.Substring(i+1).Trim();
 				miscPart += paddedLine + "\n";
 			}
-			string keyItemPart = GetStatsPage(2).Substring(49);
+			var keyItemPart = GetStatsPage(2).Substring(49);
 			keyItemPart = keyItemPart.Replace("   ", "");
 			keyItemPart = Regex.Replace(keyItemPart, "\t+", "\t");
-			List<string> keyItemLines = new List<string>(keyItemPart.Split('\n'));
-			List<int> keyItemSpacing = new List<int> {0, 0, 0, 0};
-			foreach(string line in keyItemLines) {
-				int col = 0;
-				int lastStart = 0;
-				for(int i = 0; i < line.Length; i++) {
+			var keyItemLines = new List<string>(keyItemPart.Split('\n'));
+			var keyItemSpacing = new List<int> {0, 0, 0, 0};
+			foreach(var line in keyItemLines) {
+				var col = 0;
+				var lastStart = 0;
+				for(var i = 0; i < line.Length; i++) {
 					if(line[i] == '\t'){
-						int spacing = i-lastStart + 2;
+						var spacing = i-lastStart + 2;
 						if(keyItemSpacing[col] < spacing)
 							keyItemSpacing[col] = spacing;
 						col++;
@@ -565,11 +565,11 @@ public static class RandomizerStatsManager {
 				}
 			}
 			keyItemPart = "";
-			foreach(string line in keyItemLines) {
-				int col = 0;
-				string paddedLine = "";
-				foreach(string linePart in line.Split('\t')) {
-					string lpc = linePart;
+			foreach(var line in keyItemLines) {
+				var col = 0;
+				var paddedLine = "";
+				foreach(var linePart in line.Split('\t')) {
+					var lpc = linePart;
 					while(lpc.Length < keyItemSpacing[col]) 
 						lpc += " ";
 					paddedLine += lpc;
@@ -578,7 +578,7 @@ public static class RandomizerStatsManager {
 				keyItemPart += paddedLine + "\n";
 			}
 
-			string statsFile = flagLine+"\n\n"+ zonePart + miscPart + "\n" + keyItemPart;
+			var statsFile = flagLine+"\n\n"+ zonePart + miscPart + "\n" + keyItemPart;
 			statsFile = statsFile.Replace("\n", "\r\n");
 			File.WriteAllText("stats.txt", statsFile);
 		} catch(Exception e)
@@ -599,11 +599,11 @@ public static class RandomizerStatsManager {
 		if(seconds == 0) {
 			return "   N/A";
 		}
-		string secondsPart = (seconds % 60).ToString();
+		var secondsPart = (seconds % 60).ToString();
 		if(secondsPart.Length < 2)
 			secondsPart = "0"+secondsPart;
-		int minutes = seconds / 60;
-		string minutesPart = (minutes % 60).ToString();
+		var minutes = seconds / 60;
+		var minutesPart = (minutes % 60).ToString();
 		if(minutesPart.Length < 2)
 		if(minutes >= 60)
 			minutesPart = "0"+minutesPart;
@@ -611,7 +611,7 @@ public static class RandomizerStatsManager {
 			minutesPart = "   "+minutesPart;
 		if(minutes >= 60)
 		{
-			int hours = minutes / 60;
+			var hours = minutes / 60;
 			return hours+":"+minutesPart+":"+secondsPart;
 		}
 		return minutesPart+":"+secondsPart;
@@ -642,11 +642,11 @@ public static class RandomizerStatsManager {
 		FoundKeyItem(EventsById[eventID]);
 	}
 	public static void FoundKeyItem(string itemName) {
-		int offset = KeyItemTime + KeyItemOffsets[itemName];
+		var offset = KeyItemTime + KeyItemOffsets[itemName];
 		if(get(offset) == 0)
 		{
-			int time = get(Time);
-			int zone = Offsets[CurrentZone()];
+			var time = get(Time);
+			var zone = Offsets[CurrentZone()];
 			set(offset, time + (zone << 18));
 		}
 	}

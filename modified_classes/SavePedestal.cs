@@ -88,7 +88,7 @@ public class SavePedestal : SaveSerialize
 	{
 		get
 		{
-			SeinSpiritFlameTargetting spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
+			var spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
 			return spiritFlameTargetting && spiritFlameTargetting.ClosestAttackables.Count > 0;
 		}
 	}
@@ -105,7 +105,7 @@ public class SavePedestal : SaveSerialize
 		{
 			return;
 		}
-		State currentState = CurrentState;
+		var currentState = CurrentState;
 		if (currentState != State.Normal)
 		{
 			if (currentState == State.Highlighted)
@@ -218,9 +218,9 @@ public class SavePedestal : SaveSerialize
 
 	public IEnumerator MoveSeinToCenterSmoothly()
 	{
-		PlatformMovement seinPlatformMovement = Characters.Sein.PlatformBehaviour.PlatformMovement;
+		var seinPlatformMovement = Characters.Sein.PlatformBehaviour.PlatformMovement;
 		int num;
-		for (int i = 0; i < 10; i = num + 1)
+		for (var i = 0; i < 10; i = num + 1)
 		{
 			seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, transform.position.x, 0.2f);
 			yield return new WaitForFixedUpdate();

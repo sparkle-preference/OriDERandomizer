@@ -26,13 +26,13 @@ public class ControllerMenuBindsScreen : CustomSettingsScreen
 	private void ResetKeybinds()
 	{
 		PlayerInputRebinding.SetDefaultControllerBindingSettings();
-		PlayerInput instance = PlayerInput.Instance;
+		var instance = PlayerInput.Instance;
 		if (instance != null)
 		{
 			instance.RefreshControlScheme();
 		}
-		ControllerBindControl[] componentsInChildren = OptionsScreen.Instance.transform.GetComponentsInChildren<ControllerBindControl>(true);
-		for (int i = 0; i < componentsInChildren.Length; i++)
+		var componentsInChildren = OptionsScreen.Instance.transform.GetComponentsInChildren<ControllerBindControl>(true);
+		for (var i = 0; i < componentsInChildren.Length; i++)
 		{
 			componentsInChildren[i].Reset();
 		}

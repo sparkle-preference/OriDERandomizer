@@ -9,14 +9,14 @@ public class GetWorldEventCondition : Condition
 		{
 			return State != 21;
 		}
-		int value = World.Events.Find(WorldEvents).Value;
+		var value = World.Events.Find(WorldEvents).Value;
 		if (States.Count == 0)
 		{
 			return State == value;
 		}
-		for (int i = 0; i < States.Count; i++)
+		for (var i = 0; i < States.Count; i++)
 		{
-			int num = States[i];
+			var num = States[i];
 			if (value == num)
 			{
 				return true;

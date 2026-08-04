@@ -13,7 +13,7 @@ public class RandomizerChaosVelocityVector : RandomizerChaosEffect
 	{
 		Countdown = Random.Range(1, 300);
 		Pushing = false;
-		int num = Random.Range(0, 8);
+		var num = Random.Range(0, 8);
 		if (num <= 5)
 		{
 			Randomizer.showChaosEffect("Throw");

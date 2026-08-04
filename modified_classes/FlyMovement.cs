@@ -63,7 +63,7 @@ public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable
 		get => Velocity.x;
 		set
 		{
-			Vector2 velocity = Velocity;
+			var velocity = Velocity;
 			velocity.x = value;
 			Velocity = velocity;
 		}
@@ -74,7 +74,7 @@ public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable
 		get => Velocity.y;
 		set
 		{
-			Vector2 velocity = Velocity;
+			var velocity = Velocity;
 			velocity.y = value;
 			Velocity = velocity;
 		}

@@ -85,7 +85,7 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 			return;
 		}
 
-		bool pressed = ChargeFlameButton.OnPressed && !ChargeFlameButton.Used;
+		var pressed = ChargeFlameButton.OnPressed && !ChargeFlameButton.Used;
 
 		if (RandomizerSettings.Controls.Autofire == RandomizerSettings.AutofireMode.Hold && !RandomizerRebinding.SuppressAutofire.Pressed)
 		{
@@ -106,7 +106,7 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 			m_chargeFlameChargeEffect.transform.position = Characters.Ori.transform.position;
 			m_chargeFlameChargeEffect.transform.parent = Characters.Ori.transform;
 			m_chargeFlameChargeEffect.GetComponentsInChildren(s_legacyAnimatorList);
-			for (int i = 0; i < s_legacyAnimatorList.Count; i++)
+			for (var i = 0; i < s_legacyAnimatorList.Count; i++)
 			{
 				s_legacyAnimatorList[i].Speed = 1f / ChargeDuration;
 			}
@@ -219,9 +219,9 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 
 		if (RandomizerBonus.EnhancedChargeFlame)
 		{
-			for (int i = 0; i < Targets.Attackables.Count; i++)
+			for (var i = 0; i < Targets.Attackables.Count; i++)
 			{
-				IAttackable attackable = Targets.Attackables[i];
+				var attackable = Targets.Attackables[i];
 				if (InstantiateUtility.IsDestroyed(attackable as Component))
 				{
 					continue;
@@ -229,7 +229,7 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 
 				if (attackable.CanBeChargeFlamed() && attackable is Projectile)
 				{
-					Vector3 distance = attackable.Position - Characters.Ori.transform.position;
+					var distance = attackable.Position - Characters.Ori.transform.position;
 					if (distance.magnitude <= m_captureRadius)
 					{
 						CapturedProjectile capturedProjectile = null;
@@ -264,9 +264,9 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 					continue;
 				}
 
-				Projectile projectile = item.Key as Projectile;
-				Vector3 targetPosition = Characters.Ori.transform.position;
-				Vector3 direction = targetPosition - projectile.Position;
+				var projectile = item.Key as Projectile;
+				var targetPosition = Characters.Ori.transform.position;
+				var direction = targetPosition - projectile.Position;
 
 				if (direction.magnitude > 0.2f)
 				{

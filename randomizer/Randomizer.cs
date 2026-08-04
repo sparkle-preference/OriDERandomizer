@@ -111,16 +111,16 @@ public static class Randomizer
             var lastLineNum = -1;
             try {
                 if(File.Exists(SeedFilePath)) {
-                    List<String> allLines = File.ReadAllLines(SeedFilePath).ToList();
+                    var allLines = File.ReadAllLines(SeedFilePath).ToList();
 
                     lastLine = allLines[0];
                     lastLineNum = 0;
 
-                    string[] flagLine = allLines[0].Split('|');
-                    string s = flagLine[1];
-                    string[] flags = flagLine[0].Split(',');
+                    var flagLine = allLines[0].Split('|');
+                    var s = flagLine[1];
+                    var flags = flagLine[0].Split(',');
                     SeedMeta = allLines[0];
-                    bool doBingo = ParseFlags(s, flags);
+                    var doBingo = ParseFlags(s, flags);
                     if(doBingo) {
                         Message = "Good luck on your bingo!";
                         BingoController.Init(allLines[allLines.Count-1]);
@@ -132,12 +132,12 @@ public static class Randomizer
                     if(CluesMode) {
                         RandomizerClues.initialize();
                     }
-                    foreach (string line in allLines.Skip(1))
+                    foreach (var line in allLines.Skip(1))
                     {
                         lastLine = line;
                         lastLineNum += 1;
 
-                        string[] lineParts = line.Split('|');
+                        var lineParts = line.Split('|');
                         int coords;
                         int.TryParse(lineParts[0], out coords);
 
@@ -157,7 +157,7 @@ public static class Randomizer
                         }
                         else if (lineParts[1] != "EN")
                         {
-                            bool repeatable = lineParts[1] == "RP";
+                            var repeatable = lineParts[1] == "RP";
                             RandomizerLocationManager.PlacePickup(coords, lineParts[1], lineParts[2], repeatable);
                         }
                     }
@@ -216,8 +216,8 @@ public static class Randomizer
             return;
         }
 
-        string filePath = aFiles[0];
-        string fileName = filePath.Substring(filePath.LastIndexOf('\\') + 1);
+        var filePath = aFiles[0];
+        var fileName = filePath.Substring(filePath.LastIndexOf('\\') + 1);
         if (fileName.StartsWith("randomizer") && fileName.EndsWith(".dat"))
         {
             SeedFilePath = aFiles[0];
@@ -265,7 +265,7 @@ public static class Randomizer
         Scenes.Manager.SetTargetPositions(Characters.Sein.Position);
         UI.Cameras.Current.CameraTarget.SetTargetPosition(Characters.Sein.Position);
         UI.Cameras.Current.MoveCameraToTargetInstantly();
-        int value = World.Events.Find(MistySim).Value;
+        var value = World.Events.Find(MistySim).Value;
         if (value != 1 && value != 8)
         {
             World.Events.Find(MistySim).Value = 10;
@@ -281,11 +281,11 @@ public static class Randomizer
 
         if (TeleporterController.CanTeleport(null))
         {
-            string defaultTeleporter = "sunkenGlades";
-            float closestTeleporter = Mathf.Infinity;
+            var defaultTeleporter = "sunkenGlades";
+            var closestTeleporter = Mathf.Infinity;
 
-            bool isInGlades = false;
-            bool isInGrotto = false;
+            var isInGlades = false;
+            var isInGrotto = false;
 
             if (Scenes.Manager.CurrentScene.Scene.StartsWith("sunkenGlades"))
             {
@@ -296,7 +296,7 @@ public static class Randomizer
                 isInGrotto = true;
             }
 
-            foreach (GameMapTeleporter teleporter in TeleporterController.Instance.Teleporters)
+            foreach (var teleporter in TeleporterController.Instance.Teleporters)
             {
                 if (teleporter.Activated)
                 {
@@ -312,7 +312,7 @@ public static class Randomizer
                         break;
                     }
 
-                    Vector3 distanceVector = teleporter.WorldPosition - Characters.Sein.Position;
+                    var distanceVector = teleporter.WorldPosition - Characters.Sein.Position;
                     if (distanceVector.sqrMagnitude < closestTeleporter)
                     {
                         defaultTeleporter = teleporter.Identifier;
@@ -380,11 +380,11 @@ public static class Randomizer
             if (PlayedGoodLuckOnce)
             {
                 var split = Message.Substring(0, Message.Length - 1).ToLower().Split(' ');
-                int n = split.Count();
+                var n = split.Count();
                 while (n > 1)
                 {
-                    int k = unseededRandom.Next(n--);
-                    string value = split[k];
+                    var k = unseededRandom.Next(n--);
+                    var value = split[k];
                     split[k] = split[n];
                     split[n] = value;
                 }
@@ -408,7 +408,7 @@ public static class Randomizer
 
     public static void log(string message)
     {
-        StreamWriter streamWriter = File.AppendText("randomizer.log");
+        var streamWriter = File.AppendText("randomizer.log");
         streamWriter.WriteLine(DateTime.Now + ": " + message);
         streamWriter.Flush();
         streamWriter.Dispose();
@@ -421,7 +421,7 @@ public static class Randomizer
 
     public static void hintAndLog(float x, float y)
     {
-        string message = (int)x + " " + (int)y;
+        var message = (int)x + " " + (int)y;
         showHint(RandomizerUI.Message.PickupMessage(message));
         log(message);
     }
@@ -487,8 +487,8 @@ public static class Randomizer
                     Characters.Sein.Position = WarpTarget;
                     Characters.Sein.Speed = new Vector3(0f, 0f);
                     Characters.Ori.Position = new Vector3(WarpTarget.x, WarpTarget.y-5);
-                    bool loading = false;
-                    foreach (SceneManagerScene sms in Scenes.Manager.ActiveScenes)
+                    var loading = false;
+                    foreach (var sms in Scenes.Manager.ActiveScenes)
                     {
                         if (sms.CurrentState == SceneManagerScene.State.Loading)
                         {
@@ -648,7 +648,7 @@ public static class Randomizer
         }
         if (RandomizerRebinding.ColorShift.IsPressed())
         {
-            string obj = "Color shift enabled";
+            var obj = "Color shift enabled";
             if (ColorShift)
             {
                 obj = "Color shift disabled";
@@ -710,23 +710,23 @@ public static class Randomizer
     public static void showProgress()
     {
         try {
-            string text = "";
-            string g = "";
+            var text = "";
+            var g = "";
             if(ForceTrees || CluesMode)
             {
-                int trees = RandomizerBonus.SkillTreeProgression();
+                var trees = RandomizerBonus.SkillTreeProgression();
                 g = trees >= 10 ? "$" : "";
                 text += $"{g}Trees ({trees}/10){g}  ";
             }
             if (WorldTour && Characters.Sein) {
-                int relics = get(402);
+                var relics = get(402);
                 g = relics >= RelicCount ? "$" : "";
                 text += $"{g}Relics ({relics}/{RelicCount}){g}  ";
             }
-            int maps = RandomizerBonus.MapStoneProgression();
+            var maps = RandomizerBonus.MapStoneProgression();
             g = maps >= 9 ? "$" : "";
             text += $"{g}Maps ({maps}/9){g}  ";
-            int pickups = get(1600);
+            var pickups = get(1600);
             g = pickups >= 256 ? "$" : "";
 
             text += $"{g}Total ({pickups}/256){g}\n";
@@ -749,14 +749,14 @@ public static class Randomizer
                 text += $"*WV{(Keys.GinsoTree ? ": Found*" : "*: ????")}  #GS{(Keys.ForlornRuins ? ": Found#" : "#: ????")}  @SS{(Keys.MountHoru ? ": Found@" : "@: ????")}";
             if (fragsEnabled)
             {
-                int frags = RandomizerBonus.WarmthFrags();
+                var frags = RandomizerBonus.WarmthFrags();
                 g = frags >= fragKeyFinish ? "$" : "";
                 text += $" {g}Frags: ({RandomizerBonus.WarmthFrags()}/{fragKeyFinish}){g}";
             }
             if(RandomizerBonus.ForlornEscapeHint())
             {
-                string s = "";
-                string g_color = "";
+                var s = "";
+                var g_color = "";
                  if(Characters.Sein) {
                     s = Characters.Sein.PlayerAbilities.HasAbility(AbilityType.Stomp)   ? "$" : "";
                     g = Characters.Sein && Characters.Sein.PlayerAbilities.HasAbility(AbilityType.Grenade) ? "$" : "";
@@ -772,7 +772,7 @@ public static class Randomizer
 
     public static void showSeedInfo()
     {
-        string seedInfo = "v" + VERSION;
+        var seedInfo = "v" + VERSION;
         seedInfo += "- seed loaded: " + SeedMeta;
         printInfo(seedInfo);
     }
@@ -799,8 +799,8 @@ public static class Randomizer
     {
         if (PendingWinMessage == null)
             return;
-        bool stable = Characters.Sein && Characters.Sein.Active && Characters.Sein.Controller.CanMove
-                      && !Characters.Sein.IsSuspended && !UI.MainMenuVisible;
+        var stable = Characters.Sein && Characters.Sein.Active && Characters.Sein.Controller.CanMove
+                     && !Characters.Sein.IsSuspended && !UI.MainMenuVisible;
         // count stable frames, not just one: CanMove goes true before the respawn
         // fade finishes, and a message printed under the fade is a message unseen
         WinMessageStableFrames = stable ? WinMessageStableFrames + 1 : 0;
@@ -881,7 +881,7 @@ public static class Randomizer
             return false;
         }
         if (WorldTour) {
-            int relics = get(402);
+            var relics = get(402);
             if(relics < RelicCount) {
                 if(verbose)
                     printInfo("Relics (" + relics + "/" + RelicCount + ")");
@@ -909,15 +909,15 @@ public static class Randomizer
         {
             return;
         }
-        int num = (int)(Math.Floor((int)position.x / GridFactor) * GridFactor) * 10000 + (int)(Math.Floor((int)position.y / GridFactor) * GridFactor);
+        var num = (int)(Math.Floor((int)position.x / GridFactor) * GridFactor) * 10000 + (int)(Math.Floor((int)position.y / GridFactor) * GridFactor);
         if (DoorTable.ContainsKey(num))
         {
             Characters.Sein.Position = (Vector3)DoorTable[num];
             return;
         }
-        for (int i = -1; i <= 1; i++)
+        for (var i = -1; i <= 1; i++)
         {
-            for (int j = -1; j <= 1; j++)
+            for (var j = -1; j <= 1; j++)
             {
                 if (DoorTable.ContainsKey(num + (int)GridFactor * (10000 * i + j)))
                 {
@@ -926,9 +926,9 @@ public static class Randomizer
                 }
             }
         }
-        for (int k = -2; k <= 2; k += 4)
+        for (var k = -2; k <= 2; k += 4)
         {
-            for (int l = -1; l <= 1; l++)
+            for (var l = -1; l <= 1; l++)
             {
                 if (DoorTable.ContainsKey(num + (int)GridFactor * (10000 * k + l)))
                 {
@@ -942,8 +942,8 @@ public static class Randomizer
 
     public static int ordHash(string s)
     {
-        int num = 0;
-        foreach (char c in s)
+        var num = 0;
+        foreach (var c in s)
         {
             num += c;
         }
@@ -994,7 +994,7 @@ public static class Randomizer
     public static void Tick()
     {
         try {
-            long old_tick = LastTick;
+            var old_tick = LastTick;
             LastTick = DateTime.Now.Ticks % 10000000L;
             if (LastTick < old_tick)
             {
@@ -1023,7 +1023,7 @@ public static class Randomizer
                 RandomizerStatsManager.IncTime();
                 if(Scenes.Manager.CurrentScene != null)
                 {
-                    string scene = Scenes.Manager.CurrentScene.Scene;
+                    var scene = Scenes.Manager.CurrentScene.Scene;
                     if(scene == "thornfeltSwampActTwoStart" && NeedGinsoEscapeCleanup) {
                         try
                         {
@@ -1112,7 +1112,7 @@ public static class Randomizer
                     }
                     if(RandomizerSyncManager.NetworkFree)
                     {
-                        foreach (GameMapTeleporter gameMapTP in TeleporterController.Instance.Teleporters)
+                        foreach (var gameMapTP in TeleporterController.Instance.Teleporters)
                         {
                             if(gameMapTP.Activated)
                                 continue;
@@ -1194,10 +1194,10 @@ public static class Randomizer
     private static string cct(IEnumerable<char> cs) => new String(cs.ToArray());
 
     public static bool ParseFlags(string seed, string[] rawFlags) {
-        bool doBingo = false;
+        var doBingo = false;
 
-        foreach (string rawFlag in rawFlags) {
-            string flag = rawFlag.ToLower();
+        foreach (var rawFlag in rawFlags) {
+            var flag = rawFlag.ToLower();
 
             if (flag == "ohko")
                 OHKO = true;
@@ -1219,12 +1219,12 @@ public static class Randomizer
             }
             else if (flag.StartsWith("frags/")) {
                 fragsEnabled = true;
-                string[] fragParams = flag.Split('/');
+                var fragParams = flag.Split('/');
                 maxFrags =  int.Parse(fragParams[2]);
                 fragKeyFinish = int.Parse(fragParams[1]);
             }
             else if (flag.StartsWith("mode=")) {
-                string modeStr = flag.Substring(5).ToLower();
+                var modeStr = flag.Substring(5).ToLower();
                 int syncMode;
                 if (modeStr == "shared")
                 {
@@ -1367,8 +1367,8 @@ public static class Randomizer
         {
             // Check the full pickup code + id for sense. This is for sense=MUEC cases. Otherwise processed in the recursion.
             GetSenseFromSeedLine(coords, code, id, area);
-            string[] pieces = id.Split('/');
-            for (int i = 0; i < pieces.Length; i += 2)
+            var pieces = id.Split('/');
+            for (var i = 0; i < pieces.Length; i += 2)
             {
                 GetDataFromSeedLine(coords, pieces[i], pieces[i + 1], area);
             }
@@ -1418,7 +1418,7 @@ public static class Randomizer
         if (code == "TW")
         {
             //6399872|TW|Warp to Spirit Cavern AC,-219,-176,SpiritCavernsACWarp|Swamp
-            string[] Pieces = id.Split(
+            var Pieces = id.Split(
                 ','
             );
             if (Pieces.Length > 3)
@@ -1439,7 +1439,7 @@ public static class Randomizer
                 LogError("Unknown coord: " + coord);
             return false;
         }
-        int locID = 1560 + RandomizerTrackedDataManager.CoordsMap[coord]/32;
+        var locID = 1560 + RandomizerTrackedDataManager.CoordsMap[coord]/32;
         return  0 != (get(locID) >> (RandomizerTrackedDataManager.CoordsMap[coord]%32)) % 2;
     }
 
@@ -1450,7 +1450,7 @@ public static class Randomizer
                 LogError("Unknown coord: " + coord);
             return false;
         }
-        int locID = 930 + RandomizerTrackedDataManager.CoordsMap[coord]/32;
+        var locID = 930 + RandomizerTrackedDataManager.CoordsMap[coord]/32;
         return  0 != (get(locID) >> (RandomizerTrackedDataManager.CoordsMap[coord]%32)) % 2;
     }
 
@@ -1461,9 +1461,9 @@ public static class Randomizer
                 LogError("Unknown coord: " + coord);
             return;
         }
-        int locID = 1560 + RandomizerTrackedDataManager.CoordsMap[coord]/32;
-        int offset = RandomizerTrackedDataManager.CoordsMap[coord]%32;
-        int current = get(locID);
+        var locID = 1560 + RandomizerTrackedDataManager.CoordsMap[coord]/32;
+        var offset = RandomizerTrackedDataManager.CoordsMap[coord]%32;
+        var current = get(locID);
         // set Seen
         if((current >> offset) % 2 == 0)
             set(locID, current + (1 << offset));
@@ -1501,8 +1501,8 @@ public static class Randomizer
 
     public static bool DoesGrabForgivenessExpire(float time)
     {
-        float scaledTime = Mathf.Round(time * 120f);
-        bool expires = GrabForgivenessFrames < scaledTime;
+        var scaledTime = Mathf.Round(time * 120f);
+        var expires = GrabForgivenessFrames < scaledTime;
         GrabForgivenessFrames -= Mathf.Min(GrabForgivenessFrames, Mathf.Round(time * 120f));
         return expires;
     }
@@ -1511,8 +1511,8 @@ public static class Randomizer
     {
         Inventory.Clear();
         TeleporterController.RemoveCustomTeleporters();
-        int spawnHCs = 0;
-        int spawnECs = 0;
+        var spawnHCs = 0;
+        var spawnECs = 0;
 
         // relaxed difficulty players start with +1 health and +1 energy, plus the first ability in each tree
         if (DifficultyController.Instance.Difficulty == DifficultyMode.Easy)

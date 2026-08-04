@@ -92,8 +92,8 @@ namespace Core
 		{
 			get
 			{
-				Camera camera = UI.Cameras.System.GUICamera.Camera;
-				Vector2 cursorPosition = CursorPosition;
+				var camera = UI.Cameras.System.GUICamera.Camera;
+				var cursorPosition = CursorPosition;
 				return camera.ViewportToWorldPoint(cursorPosition);
 			}
 		}
@@ -102,7 +102,7 @@ namespace Core
 		{
 			get
 			{
-				for (int i = 0; i < Buttons.Length; i++)
+				for (var i = 0; i < Buttons.Length; i++)
 				{
 					if (Buttons[i].OnPressed)
 					{
@@ -117,7 +117,7 @@ namespace Core
 		{
 			get
 			{
-				for (int i = 0; i < Buttons.Length; i++)
+				for (var i = 0; i < Buttons.Length; i++)
 				{
 					if (Buttons[i].IsPressed)
 					{
@@ -132,7 +132,7 @@ namespace Core
 		{
 			get
 			{
-				for (int i = 0; i < Buttons.Length; i++)
+				for (var i = 0; i < Buttons.Length; i++)
 				{
 					if (Buttons[i].Released)
 					{
@@ -147,7 +147,7 @@ namespace Core
 		{
 			get
 			{
-				for (int i = 0; i < Buttons.Length; i++)
+				for (var i = 0; i < Buttons.Length; i++)
 				{
 					if (Buttons[i].OnReleased)
 					{

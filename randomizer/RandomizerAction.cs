@@ -25,8 +25,8 @@ public class RandomizerAction
         var ret = new List<RandomizerAction>();
         if(Action == "MU" || Action == "RP") {
             try {
-                string[] pieces = ((string)Value).Split('/');
-                for(int i = 0; i < pieces.Length; i+=2) {
+                var pieces = ((string)Value).Split('/');
+                for(var i = 0; i < pieces.Length; i+=2) {
                     ret.Add(new RandomizerAction(pieces[i], pieces[i+1]));
                 }
             } catch(Exception e) {

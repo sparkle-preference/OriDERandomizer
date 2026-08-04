@@ -80,19 +80,19 @@ public class JumperEnemy : GroundEnemy
 
 	public bool ShouldThrow()
 	{
-		OnReceiveDamage onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
+		var onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
 		return onReceiveDamage.Damage.Type == DamageType.Bash;
 	}
 
 	public bool ShouldStomped()
 	{
-		OnReceiveDamage onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
+		var onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
 		return onReceiveDamage.Damage.Type == DamageType.StompBlast;
 	}
 
 	public void OnThrow()
 	{
-		OnReceiveDamage onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
+		var onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
 		PlatformMovement.WorldSpeed = onReceiveDamage.Damage.Force * 10f;
 		if (PlatformMovement.IsOnGround && PlatformMovement.LocalSpeedY < 0f)
 		{
@@ -104,7 +104,7 @@ public class JumperEnemy : GroundEnemy
 
 	public void OnStomped()
 	{
-		OnReceiveDamage onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
+		var onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
 		PlatformMovement.WorldSpeed = onReceiveDamage.Damage.Force * 8f;
 		if (PlatformMovement.IsOnGround && PlatformMovement.LocalSpeedY < 0f)
 		{
@@ -118,7 +118,7 @@ public class JumperEnemy : GroundEnemy
 	{
 		Vector2 localSpeed;
 		localSpeed.y = PhysicsHelper.CalculateSpeedFromHeight(Settings.JumpHeight, Settings.Gravity);
-		float num = 2f * localSpeed.y / Settings.Gravity;
+		var num = 2f * localSpeed.y / Settings.Gravity;
 		localSpeed.x = Settings.JumpDistance / num;
 		if (OutOfJumpingZone())
 		{
@@ -130,8 +130,8 @@ public class JumperEnemy : GroundEnemy
 			localSpeed.x = Mathf.Clamp(PositionToPlayerPosition.x / num, -localSpeed.x, localSpeed.x);
 			m_shouldStomp = Mathf.Abs((PlayerPosition + m_playerSmoothSpeed - Position).x) < Settings.StompAttackDistance;
 		}
-		Vector3 vector = new Vector3(localSpeed.x * num * 0.5f, Settings.JumpHeight);
-		bool flag = Mathf.Sign(localSpeed.x) != FaceLeftSign;
+		var vector = new Vector3(localSpeed.x * num * 0.5f, Settings.JumpHeight);
+		var flag = Mathf.Sign(localSpeed.x) != FaceLeftSign;
 		if (Physics.Raycast(new Ray(Position, vector.normalized), vector.magnitude, RaycastLayerMask) || !m_shouldStomp)
 		{
 			localSpeed.y = PhysicsHelper.CalculateSpeedFromHeight(Settings.ShortJumpHeight, Settings.Gravity);
@@ -184,16 +184,16 @@ public class JumperEnemy : GroundEnemy
 
 	public void UpdateRotation()
 	{
-		IState currentState = Controller.StateMachine.CurrentState;
-		float currentStateTime = Controller.StateMachine.CurrentStateTime;
+		var currentState = Controller.StateMachine.CurrentState;
+		var currentStateTime = Controller.StateMachine.CurrentStateTime;
 		if (currentState == State.Thrown)
 		{
-			float num = 1f - Mathf.InverseLerp(0.3f, 0.6f, currentStateTime);
+			var num = 1f - Mathf.InverseLerp(0.3f, 0.6f, currentStateTime);
 			FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(m_thrownDirection) - 90f) * num);
 		}
 		else
 		{
-			float b = !PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle;
+			var b = !PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle;
 			FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.2f));
 		}
 	}
@@ -209,7 +209,7 @@ public class JumperEnemy : GroundEnemy
 		{
 			if (StompEffect)
 			{
-				GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(StompEffect, Position, Quaternion.identity);
+				var gameObject = (GameObject)InstantiateUtility.Instantiate(StompEffect, Position, Quaternion.identity);
 				gameObject.GetComponentInChildren<DamageDealer>().Damage = Settings.ExplosionDamage;
 			}
 			PlaySound(Sounds.Impact);
@@ -222,8 +222,8 @@ public class JumperEnemy : GroundEnemy
 			}
 			PlaySound(Sounds.Impact);
 		}
-		Collider groundCollider = PlatformMovementListOfColliders.GroundCollider;
-		Damage damage = new Damage(Settings.GroundStompDamage, Vector3.down * 3f, transform.position, DamageType.Stomp, this.gameObject);
+		var groundCollider = PlatformMovementListOfColliders.GroundCollider;
+		var damage = new Damage(Settings.GroundStompDamage, Vector3.down * 3f, transform.position, DamageType.Stomp, this.gameObject);
 		if (groundCollider)
 		{
 			damage.DealToComponents(groundCollider.gameObject);

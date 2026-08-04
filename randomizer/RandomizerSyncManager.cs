@@ -53,7 +53,7 @@ public static class RandomizerSyncManager
 		EventInfos.Add(new EventInfoLine(3, 3, () => Events.WindRestored));
 		EventInfos.Add(new EventInfoLine(4, 4, () => Keys.MountHoru));
 		if(Randomizer.SyncId != "") {
-			string[] parts = Randomizer.SyncId.Split('.');
+			var parts = Randomizer.SyncId.Split('.');
 			RootUrl = $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/game/{parts[0]}/player/{parts[1]}";
 			// every websocket path is armored: a broken merge, missing
 			// setting, or native failure must never break seed loading
@@ -62,7 +62,7 @@ public static class RandomizerSyncManager
 				Randomizer.log("ws diag: WsEndpoint setting missing (RandomizerSettings not fully merged?); websocket off");
 			else
 			{
-				string url = $"wss://{wsHost.Value}/netcode/game/{parts[0]}/player/{parts[1]}/ws";
+				var url = $"wss://{wsHost.Value}/netcode/game/{parts[0]}/player/{parts[1]}/ws";
 				wsUrl = url;
 				// alt+L doubles as the user's "retry the websocket" button:
 				// a socket written off earlier this session gets a fresh
@@ -201,16 +201,16 @@ public static class RandomizerSyncManager
 			else if (!wsNoHttp && !getClient.IsBusy)
 			{
 				tslu = 0f;
-				NameValueCollection nvc = new NameValueCollection();
-				Vector3 pos = Characters.Sein.Position;
+				var nvc = new NameValueCollection();
+				var pos = Characters.Sein.Position;
 				nvc["x"] = pos.x.ToString();
 				nvc["y"] = pos.y.ToString();
 				nvc["version"] = Randomizer.VERSION;
-				for(int i = 0; i < 8; i++) {
+				for(var i = 0; i < 8; i++) {
 					nvc["seen_" + i] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(1560+i));
 					nvc["have_" + i] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(930+i));
 				}
-				Uri uri = new Uri(RootUrl + "/tick/");
+				var uri = new Uri(RootUrl + "/tick/");
 				getClient.UploadValuesAsync(uri, nvc);
 			}
 		} catch(Exception e) {
@@ -227,16 +227,16 @@ public static class RandomizerSyncManager
 			// until the socket reconnects (cheap: two bool checks/frame)
 			if (!WsOpen && wsNoHttp)
 				return;
-			string[] array = File.ReadAllLines(Randomizer.SeedFilePath);
+			var array = File.ReadAllLines(Randomizer.SeedFilePath);
 			array[0] = array[0].Replace(',', '|');
-			string seed = string.Join(",", array).Replace("#","");
+			var seed = string.Join(",", array).Replace("#","");
 			if (WsOpen)
 			{
 				NativeWebSocket.SendText("seed:seed=" + EscapeLong(seed) + "&version=" + Randomizer.VERSION);
 			}
 			else
 			{
-				NameValueCollection nvc = new NameValueCollection();
+				var nvc = new NameValueCollection();
 				nvc.Set("seed", seed);
 				nvc.Set("version", Randomizer.VERSION);
 				var client = new WebClient();
@@ -254,7 +254,7 @@ public static class RandomizerSyncManager
 	private static string EscapeLong(string s)
 	{
 		var sb = new StringBuilder();
-		for (int i = 0; i < s.Length; i += 16000)
+		for (var i = 0; i < s.Length; i += 16000)
 			sb.Append(Uri.EscapeDataString(s.Substring(i, Math.Min(16000, s.Length - i))));
 		return sb.ToString();
 	}
@@ -313,8 +313,8 @@ public static class RandomizerSyncManager
 	{
 		try
 		{
-			int sep = frame.IndexOf(':');
-			string kind = sep < 0 ? frame : frame.Substring(0, sep);
+			var sep = frame.IndexOf(':');
+			var kind = sep < 0 ? frame : frame.Substring(0, sep);
 			if (kind == "tick" && sep >= 0)
 			{
 				if(!Characters.Sein)
@@ -342,7 +342,7 @@ public static class RandomizerSyncManager
 			}
 			else if (kind == "areas" && sep >= 0)
 			{
-				string body = frame.Substring(sep + 1);
+				var body = frame.Substring(sep + 1);
 				// "ok" = our hash matched; anything real is the whole file
 				// (never overwrite with something implausibly small)
 				if (body != "ok" && body.Length > 10000)
@@ -354,7 +354,7 @@ public static class RandomizerSyncManager
 			{
 				// a server that errs one of our frame kinds predates it:
 				// route that channel back to http
-				string what = frame.Substring(sep + 1);
+				var what = frame.Substring(sep + 1);
 				if (what.StartsWith("found"))
 				{
 					wsFoundUnsupported = true;
@@ -383,9 +383,9 @@ public static class RandomizerSyncManager
 	// fell back to http) are ignored — the server dedups the replay.
 	private static void OnFoundAck(string body)
 	{
-		string[] parts = body.Split('|');
-		int token = int.Parse(parts[0]);
-		int status = int.Parse(parts[1]);
+		var parts = body.Split('|');
+		var token = int.Parse(parts[0]);
+		var status = int.Parse(parts[1]);
 		if (SendingPickup == null || token != wsFoundToken)
 			return;
 		wsFoundToken = 0;
@@ -445,12 +445,12 @@ public static class RandomizerSyncManager
 	{
 		{
 			{
-				bool mustRefreshLogic = false;
-				string[] array = data.Split(
+				var mustRefreshLogic = false;
+				var array = data.Split(
 					','
 				);
-				int bf = int.Parse(array[0]);
-				foreach (SkillInfoLine skillInfoLine in SkillInfos)
+				var bf = int.Parse(array[0]);
+				foreach (var skillInfoLine in SkillInfos)
 				{
 					if (getBit(bf, skillInfoLine.bit) && !Characters.Sein.PlayerAbilities.HasAbility(skillInfoLine.skill))
 					{
@@ -458,8 +458,8 @@ public static class RandomizerSyncManager
 						mustRefreshLogic = true;
 					}
 				}
-				int bf2 = int.Parse(array[1]);
-				foreach (EventInfoLine eventInfoLine in EventInfos)
+				var bf2 = int.Parse(array[1]);
+				foreach (var eventInfoLine in EventInfos)
 				{
 					if (getBit(bf2, eventInfoLine.bit) && !eventInfoLine.checker())
 					{
@@ -467,8 +467,8 @@ public static class RandomizerSyncManager
 						mustRefreshLogic = true;
 					}
 				}
-				int bf4 = int.Parse(array[2]);
-				foreach (TeleportInfoLine teleportInfoLine in TeleportInfos)
+				var bf4 = int.Parse(array[2]);
+				foreach (var teleportInfoLine in TeleportInfos)
 				{
 					if (getBit(bf4, teleportInfoLine.bit) && !isTeleporterActivated(teleportInfoLine.id))
 					{
@@ -478,10 +478,10 @@ public static class RandomizerSyncManager
 				}
 				if(array[3] != "")
 					{
-					string[] upgrades = array[3].Split(';');
-					foreach(string rawUpgrade in upgrades)
+					var upgrades = array[3].Split(';');
+					foreach(var rawUpgrade in upgrades)
 					{
-						string[] splitpair = rawUpgrade.Split('x');
+						var splitpair = rawUpgrade.Split('x');
 						if(splitpair[0].Contains("_")) {
 							if(WarpDatas.ContainsKey(splitpair[0])) {
 								WarpDatas[splitpair[0]].GrantFromNetwork();
@@ -490,17 +490,17 @@ public static class RandomizerSyncManager
 
 							Randomizer.LogError($"Unknown ?Warp? {rawUpgrade}");
 						}
-						int id = int.Parse(splitpair[0]);
-						int cnt = int.Parse(splitpair[1]);
+						var id = int.Parse(splitpair[0]);
+						var cnt = int.Parse(splitpair[1]);
 						// 900-909: tree progress
 						if(id >= 900 && id < 910) {
-							int tree = id-899;
-							string treeName =  RandomizerTrackedDataManager.Trees[tree];
+							var tree = id-899;
+							var treeName =  RandomizerTrackedDataManager.Trees[tree];
 							if(RandomizerTrackedDataManager.SetTree(tree))
 								Randomizer.showHint(RandomizerUI.Message.PickupMessage(treeName +  " tree (activated by teammate)"));
 						// 911-921: relic progress
 						} else if(id >= 911 && id < 922) {
-							string relicZone = RandomizerTrackedDataManager.Zones[id-911];
+							var relicZone = RandomizerTrackedDataManager.Zones[id-911];
 							if(RandomizerTrackedDataManager.SetRelic(relicZone))
 								Randomizer.showHint(RandomizerUI.Message.PickupMessage("#" + relicZone + " relic# (found by teammate)", 5f));
 						// 100-129: bonus skills
@@ -522,7 +522,7 @@ public static class RandomizerSyncManager
 				// sit at a fixed index 6; legacy games omit it when empty.
 				if (array.Length > 5 && array[5] != "")
 				{
-					foreach (string text in array[5].Split('|'))
+					foreach (var text in array[5].Split('|'))
 					{
 						if(text == "" || CurrentSignals.Contains(text))
 							continue;
@@ -544,7 +544,7 @@ public static class RandomizerSyncManager
 						}
 						else if (text.StartsWith("pickup:"))
 						{
-							string[] parts = text.Substring(7).Split('|');
+							var parts = text.Substring(7).Split('|');
 							RandomizerAction action;
 							 action = new RandomizerAction(parts[0], parts[1]);
 							RandomizerSwitch.GivePickup(action, 0, false);
@@ -592,7 +592,7 @@ public static class RandomizerSyncManager
 
 	public static void RetryOnFail(object sender, DownloadStringCompletedEventArgs e)
 	{
-		int ln = 0;
+		var ln = 0;
 		try
 		{
 			if(SendingPickup == null)
@@ -607,7 +607,7 @@ public static class RandomizerSyncManager
 				if (e.Error is WebException we && we.Response != null)
 				{
 					ln = 3;
-					HttpStatusCode statusCode = ((HttpWebResponse)we.Response).StatusCode;
+					var statusCode = ((HttpWebResponse)we.Response).StatusCode;
 					ln = 4;
 					if (statusCode == HttpStatusCode.Gone) {
 						ln = 5;
@@ -639,7 +639,7 @@ public static class RandomizerSyncManager
 	public static void FoundPickup(RandomizerAction action, int coords)
 	{
 		try {
-			Pickup pickup = new Pickup(action, coords);
+			var pickup = new Pickup(action, coords);
 			PickupQueue.Enqueue(pickup);
 		} catch(Exception e) {
 			Randomizer.LogError($"FoundPickup: {action.Action}: {e.Message}\n{e.StackTrace}");
@@ -717,7 +717,7 @@ public static class RandomizerSyncManager
 				if(identifier == "mountHoru" && Characters.Sein.Inventory.GetRandomizerItem(1026) == 1)
 					return true;
 			}
-			foreach (GameMapTeleporter gameMapTeleporter in TeleporterController.Instance.Teleporters)
+			foreach (var gameMapTeleporter in TeleporterController.Instance.Teleporters)
 			{
 				if (gameMapTeleporter.Identifier == identifier)
 				{
@@ -764,12 +764,12 @@ public static class RandomizerSyncManager
 	// ws adapter must parse this identically to request.form.
 	private static string TickPayload()
 	{
-		Vector3 pos = Characters.Sein.Position;
+		var pos = Characters.Sein.Position;
 		var sb = new StringBuilder();
 		sb.Append("x=").Append(pos.x.ToString());
 		sb.Append("&y=").Append(pos.y.ToString());
 		sb.Append("&version=").Append(Uri.EscapeDataString(Randomizer.VERSION));
-		for(int i = 0; i < 8; i++) {
+		for(var i = 0; i < 8; i++) {
 			sb.Append("&seen_").Append(i).Append('=').Append(fixInt(Characters.Sein.Inventory.GetRandomizerItem(1560+i)));
 			sb.Append("&have_").Append(i).Append('=').Append(fixInt(Characters.Sein.Inventory.GetRandomizerItem(930+i)));
 		}
@@ -849,7 +849,7 @@ public static class RandomizerSyncManager
 			{
 				return false;
 			}
-			Pickup pickup = (Pickup)obj;
+			var pickup = (Pickup)obj;
 			return type == pickup.type && id == pickup.id && coords == pickup.coords;
 		}
 
@@ -874,7 +874,7 @@ public static class RandomizerSyncManager
 
 		public string CleanedId {
 			get {
-				string cleaned_id = id.Replace("#","");
+				var cleaned_id = id.Replace("#","");
 				if(cleaned_id.Contains("\\"))
 					cleaned_id = cleaned_id.Split('\\')[0];
 				return cleaned_id;
@@ -883,7 +883,7 @@ public static class RandomizerSyncManager
 
 		public Uri GetURL()
 		{
-			string url = RootUrl + "/found/" + coords + "/" + type + "/" + CleanedId;
+			var url = RootUrl + "/found/" + coords + "/" + type + "/" + CleanedId;
 			url += "?zone=" + RandomizerStatsManager.CurrentZone();
 
 			return new Uri(url);
@@ -919,7 +919,7 @@ public static class RandomizerSyncManager
 			{
 				return false;
 			}
-			SkillInfoLine skillInfoLine = (SkillInfoLine)obj;
+			var skillInfoLine = (SkillInfoLine)obj;
 			return bit == skillInfoLine.bit && id == skillInfoLine.id && skill == skillInfoLine.skill;
 		}
 
@@ -951,7 +951,7 @@ public static class RandomizerSyncManager
 			{
 				return false;
 			}
-			UpgradeInfoLine upgradeInfoLine = (UpgradeInfoLine)obj;
+			var upgradeInfoLine = (UpgradeInfoLine)obj;
 			return bit == upgradeInfoLine.bit && id == upgradeInfoLine.id;
 		}
 
@@ -986,7 +986,7 @@ public static class RandomizerSyncManager
 			{
 				return false;
 			}
-			EventInfoLine eventInfoLine = (EventInfoLine)obj;
+			var eventInfoLine = (EventInfoLine)obj;
 			return bit == eventInfoLine.bit && id == eventInfoLine.id;
 		}
 
@@ -1016,7 +1016,7 @@ public static class RandomizerSyncManager
 			{
 				return false;
 			}
-			TeleportInfoLine teleportInfoLine = (TeleportInfoLine)obj;
+			var teleportInfoLine = (TeleportInfoLine)obj;
 			return bit == teleportInfoLine.bit && id == teleportInfoLine.id;
 		}
 

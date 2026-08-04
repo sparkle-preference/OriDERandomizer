@@ -101,7 +101,7 @@ public class SeinJump : CharacterState, ISeinReceiver
 		{
 			Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY * 0.5f, 1f);
 		}
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(BackflipAnimation, 10, ShouldBackflipAnimationKeepPlaying);
+		var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(BackflipAnimation, 10, ShouldBackflipAnimationKeepPlaying);
 		characterAnimationState.OnStartPlaying = OnAnimationStart;
 		characterAnimationState.OnStopPlaying = OnAnimationEnd;
 	}
@@ -135,7 +135,7 @@ public class SeinJump : CharacterState, ISeinReceiver
 		{
 			PerformRunningJump();
 		}
-		GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(JumpParticleEffect, Sein.PlatformBehaviour.PlatformMovement.FeetPosition, Quaternion.identity);
+		var gameObject = (GameObject)InstantiateUtility.Instantiate(JumpParticleEffect, Sein.PlatformBehaviour.PlatformMovement.FeetPosition, Quaternion.identity);
 		gameObject.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(-Sein.PlatformBehaviour.PlatformMovement.LocalSpeed));
 		Sein.PlatformBehaviour.Force.ApplyGroundForce(Vector3.down * JumpImpulse, ForceMode.Impulse);
 		OnJumpEvent(PlatformMovement.LocalSpeedY);
@@ -173,11 +173,11 @@ public class SeinJump : CharacterState, ISeinReceiver
 
 	public void PerformFirstRunningJump()
 	{
-		Vector2 localSpeed = PlatformMovement.LocalSpeed;
+		var localSpeed = PlatformMovement.LocalSpeed;
 		localSpeed.y = CalculateSpeedFromHeight(FirstJumpHeight);
 		PlatformMovement.LocalSpeed = localSpeed;
 		CacheDelegates();
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[0], 10, m_shouldJumpMoving);
+		var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[0], 10, m_shouldJumpMoving);
 		characterAnimationState.OnStopPlaying = onAnimationEnd;
 		characterAnimationState.OnStartPlaying = null;
 		if (Sein.PlatformBehaviour.JumpSustain)
@@ -190,11 +190,11 @@ public class SeinJump : CharacterState, ISeinReceiver
 
 	public void PerformSecondRunningJump()
 	{
-		Vector2 localSpeed = PlatformMovement.LocalSpeed;
+		var localSpeed = PlatformMovement.LocalSpeed;
 		localSpeed.y = CalculateSpeedFromHeight(m_runningJumpNumber != 0 ? SecondJumpHeight : FirstJumpHeight);
 		PlatformMovement.LocalSpeed = localSpeed;
 		CacheDelegates();
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[1], 10, m_shouldJumpMoving);
+		var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[1], 10, m_shouldJumpMoving);
 		characterAnimationState.OnStopPlaying = onAnimationEnd;
 		characterAnimationState.OnStartPlaying = null;
 		if (Sein.PlatformBehaviour.JumpSustain)
@@ -207,11 +207,11 @@ public class SeinJump : CharacterState, ISeinReceiver
 
 	public void PerformThirdRunningJump()
 	{
-		Vector2 localSpeed = PlatformMovement.LocalSpeed;
+		var localSpeed = PlatformMovement.LocalSpeed;
 		localSpeed.y = CalculateSpeedFromHeight(ThirdJumpHeight);
 		PlatformMovement.LocalSpeed = localSpeed;
 		CacheDelegates();
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[2], 10, m_shouldJumpMoving);
+		var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[2], 10, m_shouldJumpMoving);
 		characterAnimationState.OnStartPlaying = null;
 		characterAnimationState.OnStopPlaying = onAnimationEnd;
 		if (Sein.PlatformBehaviour.JumpSustain)
@@ -240,7 +240,7 @@ public class SeinJump : CharacterState, ISeinReceiver
 
 	public void PerformFirstIdleJump()
 	{
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpIdleAnimation[0], 10, ShouldJumpIdleAnimationKeepPlaying);
+		var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpIdleAnimation[0], 10, ShouldJumpIdleAnimationKeepPlaying);
 		characterAnimationState.OnStartPlaying = null;
 		characterAnimationState.OnStopPlaying = OnAnimationEnd;
 		PlatformMovement.LocalSpeedY = CalculateSpeedFromHeight(FirstJumpHeight);
@@ -254,7 +254,7 @@ public class SeinJump : CharacterState, ISeinReceiver
 
 	public void PerformSecondIdleJump()
 	{
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpIdleAnimation[1], 10, ShouldJumpIdleAnimationKeepPlaying);
+		var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpIdleAnimation[1], 10, ShouldJumpIdleAnimationKeepPlaying);
 		characterAnimationState.OnStartPlaying = null;
 		characterAnimationState.OnStopPlaying = OnAnimationEnd;
 		PlatformMovement.LocalSpeedY = CalculateSpeedFromHeight(SecondJumpHeight);
@@ -268,7 +268,7 @@ public class SeinJump : CharacterState, ISeinReceiver
 
 	private void PerformThirdIldleJump()
 	{
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpIdleAnimation[2], 10, ShouldJumpIdleAnimationKeepPlaying);
+		var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpIdleAnimation[2], 10, ShouldJumpIdleAnimationKeepPlaying);
 		characterAnimationState.OnStartPlaying = null;
 		characterAnimationState.OnStopPlaying = OnAnimationEnd;
 		PlatformMovement.LocalSpeedY = CalculateSpeedFromHeight(ThirdJumpHeight);
@@ -282,7 +282,7 @@ public class SeinJump : CharacterState, ISeinReceiver
 
 	private void PerformWallSlideJump()
 	{
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(WallSlideJumpAnimation, 24, ShouldWallSlideJumpAnimationKeepPlaying);
+		var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(WallSlideJumpAnimation, 24, ShouldWallSlideJumpAnimationKeepPlaying);
 		characterAnimationState.OnStartPlaying = null;
 		characterAnimationState.OnStopPlaying = OnAnimationEnd;
 		PlatformMovement.LocalSpeedY = CalculateSpeedFromHeight(FirstJumpHeight);
@@ -294,11 +294,11 @@ public class SeinJump : CharacterState, ISeinReceiver
 
 	private void PerformCrouchJump()
 	{
-		bool flag = false;
-		List<Collider> groundColliders = Sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundColliders;
-		for (int i = 0; i < groundColliders.Count; i++)
+		var flag = false;
+		var groundColliders = Sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundColliders;
+		for (var i = 0; i < groundColliders.Count; i++)
 		{
-			Collider component = groundColliders[i];
+			var component = groundColliders[i];
 			if (component.GetComponentInParents<GoThroughPlatform>() && Sein.GetComponent<GoThroughPlatformHandler>().FallThroughPlatform())
 			{
 				Sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = 0f;
@@ -314,7 +314,7 @@ public class SeinJump : CharacterState, ISeinReceiver
 			PlatformMovement.LocalSpeedY = CalculateSpeedFromHeight(CrouchJumpHeight);
 			PlatformMovement.LocalSpeedX = !CharacterSpriteMirror.FaceLeft ? -3 : 3;
 			Sein.PlatformBehaviour.AirNoDeceleration.NoDeceleration = true;
-			CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(CrouchJumpAnimation, 10, ShouldBackflipAnimationKeepPlaying);
+			var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(CrouchJumpAnimation, 10, ShouldBackflipAnimationKeepPlaying);
 			characterAnimationState.OnStartPlaying = OnAnimationStart;
 			characterAnimationState.OnStopPlaying = OnAnimationEnd;
 		}

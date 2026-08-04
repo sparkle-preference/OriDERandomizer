@@ -15,7 +15,7 @@ public class SaveGameController
 
 	public void SaveToFile(string filename)
 	{
-		using (BinaryWriter binaryWriter = new BinaryWriter(File.Open(filename, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+		using (var binaryWriter = new BinaryWriter(File.Open(filename, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
 		{
 			SaveToWriter(binaryWriter);
 		}
@@ -24,7 +24,7 @@ public class SaveGameController
 	public bool LoadFromFile(string filename)
 	{
 		bool result;
-		using (BinaryReader binaryReader = new BinaryReader(File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+		using (var binaryReader = new BinaryReader(File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
 		{
 			result = LoadFromReader(binaryReader);
 		}
@@ -33,8 +33,8 @@ public class SaveGameController
 
 	public byte[] SaveToBytes()
 	{
-		MemoryStream memoryStream = new MemoryStream();
-		using (BinaryWriter binaryWriter = new BinaryWriter(memoryStream))
+		var memoryStream = new MemoryStream();
+		using (var binaryWriter = new BinaryWriter(memoryStream))
 		{
 			SaveToWriter(binaryWriter);
 		}
@@ -51,7 +51,7 @@ public class SaveGameController
 	{
 		get
 		{
-			SaveSlotInfo currentSaveSlot = SaveSlotsManager.CurrentSaveSlot;
+			var currentSaveSlot = SaveSlotsManager.CurrentSaveSlot;
 			return currentSaveSlot.Difficulty == DifficultyMode.OneLife && currentSaveSlot.WasKilled;
 		}
 	}
@@ -76,7 +76,7 @@ public class SaveGameController
 	public bool LoadFromBytes(byte[] binary)
 	{
 		bool result;
-		using (BinaryReader binaryReader = new BinaryReader(new MemoryStream(binary)))
+		using (var binaryReader = new BinaryReader(new MemoryStream(binary)))
 		{
 			result = LoadFromReader(binaryReader);
 		}
@@ -91,7 +91,7 @@ public class SaveGameController
 		}
 		if (Recorder.Instance && Recorder.Instance.State == Recorder.RecorderState.Playing)
 		{
-			InputData frameDataOfType = Recorder.Instance.CurrentFrame.GetFrameDataOfType<InputData>();
+			var frameDataOfType = Recorder.Instance.CurrentFrame.GetFrameDataOfType<InputData>();
 			return frameDataOfType != null && frameDataOfType.SaveFileExists;
 		}
 		return File.Exists(GetSaveFilePath(slotIndex));
@@ -107,10 +107,10 @@ public class SaveGameController
 			}
 			if (Recorder.Instance && Recorder.Instance.State == Recorder.RecorderState.Playing)
 			{
-				List<InputData> frameData = Recorder.Instance.CurrentFrame.GetFrameData<InputData>();
+				var frameData = Recorder.Instance.CurrentFrame.GetFrameData<InputData>();
 				if (frameData != null)
 				{
-					InputData inputData = frameData[0];
+					var inputData = frameData[0];
 					if (inputData != null)
 					{
 						return inputData.SaveFileExists;
@@ -148,7 +148,7 @@ public class SaveGameController
 		{
 			return false;
 		}
-		bool result = LoadFromFile(GetSaveFilePath(CurrentSlotIndex, CurrentBackupIndex));
+		var result = LoadFromFile(GetSaveFilePath(CurrentSlotIndex, CurrentBackupIndex));
 		RestoreCheckpoint();
 		return result;
 	}
@@ -164,7 +164,7 @@ public class SaveGameController
 
 	public bool OnLoadComplete(byte[] buffer)
 	{
-		bool result = LoadFromBytes(buffer);
+		var result = LoadFromBytes(buffer);
 		RestoreCheckpoint();
 		return result;
 	}
@@ -209,7 +209,7 @@ public class SaveGameController
 	{
 		GameController.Instance.IsLoadingGame = true;
 		Game.Checkpoint.SaveGameData.ClearPendingScenes();
-		HashSet<SaveSerialize> hashSet = new HashSet<SaveSerialize>();
+		var hashSet = new HashSet<SaveSerialize>();
 		hashSet.Add(Scenes.Manager);
 		hashSet.Add(GameController.Instance);
 		hashSet.Add(SeinWorldState.Instance);
@@ -220,7 +220,7 @@ public class SaveGameController
 		Scenes.Manager.MarkLoadingScenesAsCancel();
 		if (SaveWasOneLifeAndKilled)
 		{
-			RuntimeSceneMetaData sceneInformation = Scenes.Manager.GetSceneInformation("sunkenGladesRunaway");
+			var sceneInformation = Scenes.Manager.GetSceneInformation("sunkenGladesRunaway");
 			GameController.Instance.RequireInitialValues = true;
 			GameStateMachine.Instance.SetToGame();
 			DifficultyController.Instance.ChangeDifficulty(DifficultyMode.OneLife);

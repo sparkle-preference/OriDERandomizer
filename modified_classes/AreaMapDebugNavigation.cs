@@ -33,7 +33,7 @@ public class AreaMapDebugNavigation : MonoBehaviour
 		}
 		if (!(MoonInput.GetKey(KeyCode.LeftShift) || MoonInput.GetKey(KeyCode.RightShift)) && Input.RightClick.OnPressed)
 		{
-			Vector2 cursorPosition = Input.CursorPositionUI;
+			var cursorPosition = Input.CursorPositionUI;
 			Vector2 worldPosition = m_areaMapUi.Navigation.MapToWorldPosition(cursorPosition);
 			if (Characters.Sein != null)
 			{

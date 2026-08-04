@@ -23,13 +23,13 @@ public class AreaMapNavigation : MonoBehaviour
 	{
 		foreach (RuntimeGameWorldArea runtimeGameWorldArea in GameWorld.Instance.RuntimeAreas)
 		{
-			CageStructureTool cageStructureTool = runtimeGameWorldArea.Area.CageStructureTool;
-			Rect[] facesAsRectangles = cageStructureTool.FacesAsRectangles;
-			for (int i = 0; i < facesAsRectangles.Length; i++)
+			var cageStructureTool = runtimeGameWorldArea.Area.CageStructureTool;
+			var facesAsRectangles = cageStructureTool.FacesAsRectangles;
+			for (var i = 0; i < facesAsRectangles.Length; i++)
 			{
 				if (facesAsRectangles[i].Overlaps(bound))
 				{
-					int id = cageStructureTool.Faces[i].ID;
+					var id = cageStructureTool.Faces[i].ID;
 					if (runtimeGameWorldArea.FaceIsDiscoveredOrVisited(id))
 					{
 						return true;
@@ -69,7 +69,7 @@ public class AreaMapNavigation : MonoBehaviour
 		get => MapPivot.localScale;
 		set
 		{
-			Vector3 localScale = MapPivot.localScale;
+			var localScale = MapPivot.localScale;
 			localScale.x = value.x;
 			localScale.y = value.y;
 			MapPivot.localScale = localScale;
@@ -86,7 +86,7 @@ public class AreaMapNavigation : MonoBehaviour
 
 	public void HandleObjectiveFocus()
 	{
-		bool isTransitioning = GameMapTransitionManager.Instance.IsTransitioning;
+		var isTransitioning = GameMapTransitionManager.Instance.IsTransitioning;
 		m_focusTime = Mathf.Clamp01(m_focusTime - 2f * Time.deltaTime);
 		if (m_focusTime > 0f)
 		{
@@ -135,7 +135,7 @@ public class AreaMapNavigation : MonoBehaviour
 
 	public Vector3 MapToWorldPosition(Vector2 position)
 	{
-		Vector2 v = position - MapPlanePosition;
+		var v = position - MapPlanePosition;
 		v.x /= MapPlaneSize.x;
 		v.y /= MapPlaneSize.y;
 		return v;
@@ -151,8 +151,8 @@ public class AreaMapNavigation : MonoBehaviour
 		{
 			return;
 		}
-		Vector2 vector = Vector2.zero;
-		Vector2 cursorPositionUI = Input.CursorPositionUI;
+		var vector = Vector2.zero;
+		var cursorPositionUI = Input.CursorPositionUI;
 		cursorPositionUI.x /= MapPlaneSize.x;
 		cursorPositionUI.y /= MapPlaneSize.y;
 		if (Input.LeftClick.OnPressed)
@@ -211,7 +211,7 @@ public class AreaMapNavigation : MonoBehaviour
 
 	public Vector3 ConstrainWorldPositionByBounds(Vector3 worldPosition)
 	{
-		Bounds bounds = Bounds;
+		var bounds = Bounds;
 		worldPosition.x = Mathf.Clamp(worldPosition.x, bounds.min.x, bounds.max.x);
 		worldPosition.y = Mathf.Clamp(worldPosition.y, bounds.min.y, bounds.max.y);
 		return worldPosition;
@@ -219,19 +219,19 @@ public class AreaMapNavigation : MonoBehaviour
 
 	public void UpdateScrollLimits()
 	{
-		bool flag = false;
-		float num = 0f;
-		float num2 = 0f;
-		float num3 = 0f;
-		float num4 = 0f;
+		var flag = false;
+		var num = 0f;
+		var num2 = 0f;
+		var num3 = 0f;
+		var num4 = 0f;
 		foreach (RuntimeGameWorldArea runtimeGameWorldArea in GameWorld.Instance.RuntimeAreas)
 		{
-			GameWorldArea area = runtimeGameWorldArea.Area;
-			Rect[] facesAsRectangles = area.CageStructureTool.FacesAsRectangles;
-			for (int i = 0; i < area.CageStructureTool.Faces.Count; i++)
+			var area = runtimeGameWorldArea.Area;
+			var facesAsRectangles = area.CageStructureTool.FacesAsRectangles;
+			for (var i = 0; i < area.CageStructureTool.Faces.Count; i++)
 			{
-				Rect rect = facesAsRectangles[i];
-				int id = area.CageStructureTool.Faces[i].ID;
+				var rect = facesAsRectangles[i];
+				var id = area.CageStructureTool.Faces[i].ID;
 				if (flag)
 				{
 					num = Mathf.Min(num, rect.xMin);
@@ -249,9 +249,9 @@ public class AreaMapNavigation : MonoBehaviour
 				}
 			}
 		}
-		for (int j = 0; j < Objectives.All.Count; j++)
+		for (var j = 0; j < Objectives.All.Count; j++)
 		{
-			Vector2 position = Objectives.All[j].Position;
+			var position = Objectives.All[j].Position;
 			num = Mathf.Min(num, position.x);
 			num2 = Mathf.Min(num2, position.y);
 			num3 = Mathf.Max(num3, position.x);
@@ -277,23 +277,23 @@ public class AreaMapNavigation : MonoBehaviour
 		Vector2 cursorPositionWorld = MapToWorldPosition(Input.CursorPositionUI);
 		RuntimeWorldMapIcon candidate = null;
 		string candidateArea = null;
-		float candidateDistance = Mathf.Infinity;
+		var candidateDistance = Mathf.Infinity;
 		var doorCount = 0;
-		float zoomScaleFactor = (float)Math.Pow(Zoom / 0.04f, .45f);                    // please don't ask me how i got these numbers
-		float offset = .45f * (float)Math.Pow(zoomScaleFactor, 1.5f);                          // it's kind of a dumb story
-		Vector3 textScale = new Vector3(0.3f * zoomScaleFactor, 0.3f * zoomScaleFactor, 0.3f); // but they work well i prommy
+		var zoomScaleFactor = (float)Math.Pow(Zoom / 0.04f, .45f);                    // please don't ask me how i got these numbers
+		var offset = .45f * (float)Math.Pow(zoomScaleFactor, 1.5f);                          // it's kind of a dumb story
+		var textScale = new Vector3(0.3f * zoomScaleFactor, 0.3f * zoomScaleFactor, 0.3f); // but they work well i prommy
 
 		foreach (RuntimeGameWorldArea runtimeArea in GameWorld.Instance.RuntimeAreas)
 		{
-			foreach (RuntimeWorldMapIcon runtimeIcon in runtimeArea.Icons)
+			foreach (var runtimeIcon in runtimeArea.Icons)
 			{
 				if (!runtimeIcon.IsVisible(m_areaMapUi) || runtimeIcon.Icon == WorldMapIconType.Invisible)
 				{
 					continue;
 				}
 				if(RandomizerSettings.Customization.AlwaysShowDoorHints.Value && RandomizerLocationManager.KeystoneDoorMapGuidToMoonGuid.ContainsKey(runtimeIcon.Guid)) {
-					string text = Randomizer.Keysanity.MapHintForDoor(RandomizerLocationManager.KeystoneDoorMapGuidToMoonGuid[runtimeIcon.Guid]).Replace("\n(Touch door to get hint!)", "");
-					Vector3 pos = WorldToMapPosition(runtimeIcon.Position);
+					var text = Randomizer.Keysanity.MapHintForDoor(RandomizerLocationManager.KeystoneDoorMapGuidToMoonGuid[runtimeIcon.Guid]).Replace("\n(Touch door to get hint!)", "");
+					var pos = WorldToMapPosition(runtimeIcon.Position);
 					pos.y -= text.Contains("\n") ? offset : offset * 0.6f; // smaller offset for 1 liners
 					AreaMapUI.Instance.KeysanityDoorTooltips[doorCount].transform.localScale = textScale;
 					AreaMapUI.Instance.KeysanityDoorTooltips[doorCount].transform.position = pos;
@@ -312,7 +312,7 @@ public class AreaMapNavigation : MonoBehaviour
 					continue;
 				}
 
-				float distance = Vector2.Distance(runtimeIcon.Position, cursorPositionWorld);
+				var distance = Vector2.Distance(runtimeIcon.Position, cursorPositionWorld);
 
 				if (distance > 12f || distance > candidateDistance)
 				{
@@ -331,7 +331,7 @@ public class AreaMapNavigation : MonoBehaviour
 			return;
 		}
 
-		Vector3 candidatePosition = WorldToMapPosition(candidate.Position);
+		var candidatePosition = WorldToMapPosition(candidate.Position);
 		candidatePosition.y -= offset;
 		AreaMapUI.Instance.RandomizerTooltip.transform.position = candidatePosition;
 		AreaMapUI.Instance.RandomizerTooltip.transform.localScale = textScale;

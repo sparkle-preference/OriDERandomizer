@@ -38,12 +38,12 @@ public class SeinChargeJump : CharacterState, ISeinReceiver
 		CurrentState = state;
 		m_stateCurrentTime = 0f;
 		m_attackablesIgnore.Clear();
-		State currentState = CurrentState;
+		var currentState = CurrentState;
 	}
 
 	public void UpdateState()
 	{
-		State currentState = CurrentState;
+		var currentState = CurrentState;
 		if (currentState == State.Jumping)
 		{
 			if (m_stateCurrentTime > JumpDuration)
@@ -51,17 +51,17 @@ public class SeinChargeJump : CharacterState, ISeinReceiver
 				ChangeState(State.Normal);
 			}
 
-			for (int i = 0; i < Targets.Attackables.Count; i++)
+			for (var i = 0; i < Targets.Attackables.Count; i++)
 			{
-				IAttackable attackable = Targets.Attackables[i];
+				var attackable = Targets.Attackables[i];
 				if (!InstantiateUtility.IsDestroyed(attackable as Component) && !m_attackablesIgnore.Contains(attackable) && attackable.CanBeStomped())
 				{
-					Vector3 vector = attackable.Position - Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
-					float magnitude = vector.magnitude;
+					var vector = attackable.Position - Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
+					var magnitude = vector.magnitude;
 					if (magnitude < 3f && Vector2.Dot(vector.normalized, PlatformMovement.LocalSpeed.normalized) > 0f)
 					{
 						m_attackablesIgnore.Add(attackable);
-						Damage damage = new Damage(Damage, PlatformMovement.WorldSpeed.normalized * 3f, Sein.Position, DamageType.Stomp, gameObject);
+						var damage = new Damage(Damage, PlatformMovement.WorldSpeed.normalized * 3f, Sein.Position, DamageType.Stomp, gameObject);
 						damage.DealToComponents(((Component)attackable).gameObject);
 						if (attackable.IsDead() && attackable is IStompAttackable && ((IStompAttackable)attackable).CountsTowardsSuperJumpAchievement())
 						{
@@ -78,16 +78,16 @@ public class SeinChargeJump : CharacterState, ISeinReceiver
 		}
 		else if (Sein.Abilities.ChargeJumpCharging.IsCharged && RandomizerBonus.EnhancedChargeJump)
 		{
-			for (int i = 0; i < Targets.Attackables.Count; i++)
+			for (var i = 0; i < Targets.Attackables.Count; i++)
 			{
-				IAttackable attackable = Targets.Attackables[i];
+				var attackable = Targets.Attackables[i];
 				if (!InstantiateUtility.IsDestroyed(attackable as Component) && attackable.CanBeStomped())
 				{
-					Vector3 vector = attackable.Position - Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
-					float magnitude = vector.magnitude;
+					var vector = attackable.Position - Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
+					var magnitude = vector.magnitude;
 					if (magnitude < 3.75f)
 					{
-						Damage damage = new Damage(Damage, PlatformMovement.WorldSpeed.normalized * 3f, Sein.Position, DamageType.Stomp, gameObject);
+						var damage = new Damage(Damage, PlatformMovement.WorldSpeed.normalized * 3f, Sein.Position, DamageType.Stomp, gameObject);
 						damage.DealToComponents(((Component)attackable).gameObject);
 						if (ExplosionEffect && attackable.IsDead())
 						{
@@ -104,7 +104,7 @@ public class SeinChargeJump : CharacterState, ISeinReceiver
 
 	public void PerformChargeJump()
 	{
-		float chargedJumpStrength = ChargedJumpStrength + ChargedJumpStrength * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
+		var chargedJumpStrength = ChargedJumpStrength + ChargedJumpStrength * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
 		PlatformMovement.LocalSpeedY = chargedJumpStrength;
 		OnJumpEvent(chargedJumpStrength);
 		Sound.Play(JumpSound.GetSound(null), Sein.PlatformBehaviour.PlatformMovement.Position, null);

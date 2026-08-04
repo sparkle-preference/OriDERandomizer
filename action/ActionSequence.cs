@@ -48,7 +48,7 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable
 
 	public void OnRestoreCheckpoint()
 	{
-		ActionSequenceSerializer component = GetComponent<ActionSequenceSerializer>();
+		var component = GetComponent<ActionSequenceSerializer>();
 		if (component)
 		{
 			return;
@@ -60,10 +60,10 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable
 	public void FindActions()
 	{
 		Actions.Clear();
-		for (int i = 0; i < transform.childCount; i++)
+		for (var i = 0; i < transform.childCount; i++)
 		{
-			Transform child = transform.GetChild(i);
-			foreach (ActionMethod item in child.GetComponents<ActionMethod>())
+			var child = transform.GetChild(i);
+			foreach (var item in child.GetComponents<ActionMethod>())
 			{
 				Actions.Add(item);
 			}
@@ -136,13 +136,13 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable
 		{
 			return;
 		}
-		int count = Actions.Count;
+		var count = Actions.Count;
 		while (m_index < count)
 		{
-			ActionMethod actionMethod = Actions[m_index];
+			var actionMethod = Actions[m_index];
 			if (actionMethod != null && actionMethod is WaitAction)
 			{
-				WaitAction waitAction = actionMethod as WaitAction;
+				var waitAction = actionMethod as WaitAction;
 				if (waitAction.IsPerforming)
 				{
 					return;
@@ -160,12 +160,12 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable
 
 	public static void Rename(List<ActionMethod> actions)
 	{
-		int num = 0;
-		for (int i = 0; i < actions.Count; i++)
+		var num = 0;
+		for (var i = 0; i < actions.Count; i++)
 		{
-			ActionMethod actionMethod = actions[i];
+			var actionMethod = actions[i];
 			num++;
-			string niceName = actionMethod.GetNiceName();
+			var niceName = actionMethod.GetNiceName();
 			actionMethod.name = FormatName(num, niceName);
 		}
 	}
@@ -209,7 +209,7 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable
 
 	public override void Serialize(Archive ar)
 	{
-		ActionSequenceSerializer component = GetComponent<ActionSequenceSerializer>();
+		var component = GetComponent<ActionSequenceSerializer>();
 		if (component)
 		{
 			return;

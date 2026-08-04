@@ -13,16 +13,16 @@ public class SpitterEnemy : GroundEnemy
 
 	public override bool CanBeOptimized()
 	{
-		IState currentState = Controller.StateMachine.CurrentState;
+		var currentState = Controller.StateMachine.CurrentState;
 		return currentState == State.Idle || currentState == State.Walk;
 	}
 
 	public bool WilhelmScreamZoneRectanglesContain(Vector2 position)
 	{
-		for (int i = 0; i < ActionZones.Length; i++)
+		for (var i = 0; i < ActionZones.Length; i++)
 		{
-			Transform transform = ActionZones[i];
-			Rect rect = default(Rect);
+			var transform = ActionZones[i];
+			var rect = default(Rect);
 			rect.width = transform.lossyScale.x;
 			rect.height = transform.lossyScale.y;
 			rect.center = transform.position;
@@ -131,29 +131,29 @@ public class SpitterEnemy : GroundEnemy
 
 	public void UpdateRotation()
 	{
-		IState currentState = Controller.StateMachine.CurrentState;
-		float currentStateTime = Controller.StateMachine.CurrentStateTime;
+		var currentState = Controller.StateMachine.CurrentState;
+		var currentStateTime = Controller.StateMachine.CurrentStateTime;
 		if (currentState == State.Thrown)
 		{
-			float num = 1f - Mathf.InverseLerp(0.3f, 0.6f, currentStateTime);
+			var num = 1f - Mathf.InverseLerp(0.3f, 0.6f, currentStateTime);
 			FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(ThrownDirection) - 90f) * num);
 		}
 		else
 		{
-			float b = !PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle;
+			var b = !PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle;
 			FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.2f));
 		}
 	}
 
 	public bool ShouldThrow()
 	{
-		OnReceiveDamage onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
+		var onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
 		return onReceiveDamage.Damage.Type == DamageType.Bash;
 	}
 
 	public bool ShouldStomped()
 	{
-		OnReceiveDamage onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
+		var onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
 		return onReceiveDamage.Damage.Type == DamageType.StompBlast;
 	}
 

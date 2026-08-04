@@ -17,8 +17,8 @@ public class DebugMenuB : SaveSerialize
 	{
 		if (Instance == null)
 		{
-			GameObject gameObject = Resources.Load<GameObject>("debugMenu");
-			GameObject gameObject2 = Instantiate(gameObject);
+			var gameObject = Resources.Load<GameObject>("debugMenu");
+			var gameObject2 = Instantiate(gameObject);
 			Utility.DontAssociateWithAnyScene(gameObject2);
 			gameObject2.name = gameObject.name;
 		}
@@ -93,7 +93,7 @@ public class DebugMenuB : SaveSerialize
 
 	public bool ReinstantiateOri()
 	{
-		Vector3 position = Characters.Current.Position;
+		var position = Characters.Current.Position;
 		CharacterFactory.Instance.DestroyCharacter();
 		CharacterFactory.Instance.SpawnCharacter(CharacterFactory.Characters.Sein, null, position, null);
 		LateStartHook.AddLateStartMethod(delegate
@@ -114,7 +114,7 @@ public class DebugMenuB : SaveSerialize
 		ar.Serialize(ref MuteSoundEffects);
 		if (ar.Reading)
 		{
-			bool flag = false;
+			var flag = false;
 			ar.Serialize(ref flag);
 			if (flag == Active)
 			{
@@ -162,9 +162,9 @@ public class DebugMenuB : SaveSerialize
 
 	public void SendSteamTelemetry(int repetition)
 	{
-		for (int i = 0; i < repetition; i++)
+		for (var i = 0; i < repetition; i++)
 		{
-			SteamTelemetry.StringData stringData = new SteamTelemetry.StringData("test #" + i);
+			var stringData = new SteamTelemetry.StringData("test #" + i);
 			SteamTelemetry.Instance.Send(TelemetryEvent.Test, stringData.ToString());
 		}
 	}
@@ -176,7 +176,7 @@ public class DebugMenuB : SaveSerialize
 			m_art = (from a in FindObjectsOfType<GameObject>()
 			where a.name == "art"
 			select a).ToArray();
-			foreach (GameObject gameObject in m_art)
+			foreach (var gameObject in m_art)
 			{
 				if (gameObject)
 				{
@@ -186,7 +186,7 @@ public class DebugMenuB : SaveSerialize
 		}
 		else
 		{
-			foreach (GameObject gameObject2 in m_art)
+			foreach (var gameObject2 in m_art)
 			{
 				if (gameObject2)
 				{
@@ -200,7 +200,7 @@ public class DebugMenuB : SaveSerialize
 
 	public bool PrintReadableTextures()
 	{
-		using (StreamWriter streamWriter = new StreamWriter("texturesYouCanWriteTo.txt"))
+		using (var streamWriter = new StreamWriter("texturesYouCanWriteTo.txt"))
 		{
 			foreach (Texture2D texture2D in Resources.FindObjectsOfTypeAll(typeof(Texture2D)))
 			{
@@ -224,7 +224,7 @@ public class DebugMenuB : SaveSerialize
 			m_enemies = (from a in FindObjectsOfType<GameObject>()
 			where a.name == "enemies"
 			select a).ToArray();
-			foreach (GameObject gameObject in m_enemies)
+			foreach (var gameObject in m_enemies)
 			{
 				if (gameObject)
 				{
@@ -234,7 +234,7 @@ public class DebugMenuB : SaveSerialize
 		}
 		else
 		{
-			foreach (GameObject gameObject2 in m_enemies)
+			foreach (var gameObject2 in m_enemies)
 			{
 				if (gameObject2)
 				{
@@ -251,8 +251,8 @@ public class DebugMenuB : SaveSerialize
 		if (m_particleSystems == null)
 		{
 			m_particleSystems = new List<GameObject>();
-			ParticleSystem[] array = FindObjectsOfType<ParticleSystem>();
-			foreach (ParticleSystem particleSystem in array)
+			var array = FindObjectsOfType<ParticleSystem>();
+			foreach (var particleSystem in array)
 			{
 				if (particleSystem)
 				{
@@ -260,8 +260,8 @@ public class DebugMenuB : SaveSerialize
 					m_particleSystems.Add(particleSystem.gameObject);
 				}
 			}
-			ParticleEmitter[] array3 = FindObjectsOfType<ParticleEmitter>();
-			foreach (ParticleEmitter particleEmitter in array3)
+			var array3 = FindObjectsOfType<ParticleEmitter>();
+			foreach (var particleEmitter in array3)
 			{
 				if (particleEmitter)
 				{
@@ -273,8 +273,8 @@ public class DebugMenuB : SaveSerialize
 		}
 		else
 		{
-			ParticleSystem[] array5 = FindObjectsOfType<ParticleSystem>();
-			foreach (ParticleSystem particleSystem2 in array5)
+			var array5 = FindObjectsOfType<ParticleSystem>();
+			foreach (var particleSystem2 in array5)
 			{
 				if (particleSystem2)
 				{
@@ -282,8 +282,8 @@ public class DebugMenuB : SaveSerialize
 					m_particleSystems.Add(particleSystem2.gameObject);
 				}
 			}
-			ParticleEmitter[] array7 = FindObjectsOfType<ParticleEmitter>();
-			foreach (ParticleEmitter particleEmitter2 in array7)
+			var array7 = FindObjectsOfType<ParticleEmitter>();
+			foreach (var particleEmitter2 in array7)
 			{
 				if (particleEmitter2)
 				{
@@ -303,7 +303,7 @@ public class DebugMenuB : SaveSerialize
 		MenuHeight = Screen.height - MenuTopLeftY * 2f - VerticalSpace - 30f;
 		ShouldShowOnlySelectedItem = false;
 		m_menuList.Clear();
-		List<IDebugMenuItem> list = new List<IDebugMenuItem>();
+		var list = new List<IDebugMenuItem>();
 		list.Add(new ActionDebugMenuItem("Save", SaveGame));
 		list.Add(new ActionDebugMenuItem("Load", LoadGame));
 		list.Add(new ActionDebugMenuItem("Restore Checkpoint", RestoreCheckpoint));
@@ -364,7 +364,7 @@ public class DebugMenuB : SaveSerialize
 		list.Add(new BoolDebugMenuItem("See Achievement Hint", AchievementHintGetter, AchievementHintSetter));
 		list.Add(new ActionDebugMenuItem("Gumo Sequences", GumoSequencesAction));
 		list.Add(new ActionDebugMenuItem("Quit", Quit));
-		List<IDebugMenuItem> list2 = new List<IDebugMenuItem>();
+		var list2 = new List<IDebugMenuItem>();
 		list2.Add(new TimeScaleDebugMenuItem("Time Scale"));
 		list2.Add(new ZoomDebugMenuItem("Zoom"));
 		list2.Add(new GlobalDebugQuadScaleMenuItem("Quad scale"));
@@ -392,10 +392,10 @@ public class DebugMenuB : SaveSerialize
 			list2.Add(new EnergyDebugMenuItem("Energy"));
 			list2.Add(new MaxEnergyDebugMenuItem("Max Energy"));
 		}
-		MonoBehaviour[] array = (MonoBehaviour[])FindObjectsOfType(typeof(MonoBehaviour));
-		foreach (MonoBehaviour monoBehaviour in array)
+		var array = (MonoBehaviour[])FindObjectsOfType(typeof(MonoBehaviour));
+		foreach (var monoBehaviour in array)
 		{
-			IDebugMenuToggleable debugMenuToggleable = monoBehaviour as IDebugMenuToggleable;
+			var debugMenuToggleable = monoBehaviour as IDebugMenuToggleable;
 			if (debugMenuToggleable != null)
 			{
 				list2.Add(new DebugMenuTogglerItem(debugMenuToggleable));
@@ -419,11 +419,11 @@ public class DebugMenuB : SaveSerialize
 		{
 			LeaderboardsController.AutoUpload = v;
 		}));
-		List<IDebugMenuItem> list3 = new List<IDebugMenuItem>();
-		foreach (string text in ImportantLevelsNames)
+		var list3 = new List<IDebugMenuItem>();
+		foreach (var text in ImportantLevelsNames)
 		{
-			bool flag = false;
-			foreach (RuntimeSceneMetaData runtimeSceneMetaData in Scenes.Manager.AllScenes)
+			var flag = false;
+			foreach (var runtimeSceneMetaData in Scenes.Manager.AllScenes)
 			{
 				if (runtimeSceneMetaData.Scene == text)
 				{
@@ -439,13 +439,13 @@ public class DebugMenuB : SaveSerialize
 				});
 			}
 		}
-		List<IDebugMenuItem> list4 = new List<IDebugMenuItem>();
-		foreach (WorldEvents worldEvent in m_worldEvents)
+		var list4 = new List<IDebugMenuItem>();
+		foreach (var worldEvent in m_worldEvents)
 		{
 			list4.Add(new DebugMenuWorldEventActionMenuItem(worldEvent));
 		}
-		List<IDebugMenuItem> list5 = new List<IDebugMenuItem>();
-		List<IDebugMenuItem> list6 = new List<IDebugMenuItem>();
+		var list5 = new List<IDebugMenuItem>();
+		var list6 = new List<IDebugMenuItem>();
 		if (Characters.Sein)
 		{
 			list5.Add(new ActionDebugMenuItem("Remove all skills/abilities", AbilityDebugMenuItems.RemoveAllSkillsAndAbilities));
@@ -496,7 +496,7 @@ public class DebugMenuB : SaveSerialize
 			list6.Add(new BoolDebugMenuItem("Charge Flame Blast", AbilityDebugMenuItems.ChargeFlameBlastGetter, AbilityDebugMenuItems.ChargeFlameBlastSetter));
 			list6.Add(new BoolDebugMenuItem("Ultra Split Flame", AbilityDebugMenuItems.UltraSplitFlameGetter, AbilityDebugMenuItems.UltraSplitFlameSetter));
 		}
-		List<IDebugMenuItem> list7 = new List<IDebugMenuItem>();
+		var list7 = new List<IDebugMenuItem>();
 		if (!XboxLiveController.IsContentPackage)
 		{
 			list7.Add(new ActionDebugMenuItem("Start FPS Test 0", StartFPSTest0));
@@ -540,7 +540,7 @@ public class DebugMenuB : SaveSerialize
 		list7.Add(new BoolDebugMenuItem("Streaming Install Debug Override", StreamingInstallDebugGetter, StreamingInstallDebugSetter));
 		list7.Add(new ActionDebugMenuItem("Break Telem URL", BreakSteamTelemetryURL));
 		list7.Add(new ActionDebugMenuItem("Set Telemetry to UPF", SetSteamTelemetryURLToUPF));
-		List<IDebugMenuItem> list8 = new List<IDebugMenuItem>();
+		var list8 = new List<IDebugMenuItem>();
 		list8.Add(new BoolDebugMenuItem("Clean Water", CleanWaterGetter, CleanWaterSetter));
 		list8.Add(new BoolDebugMenuItem("Wind Released", WindReleasedGetter, WindReleasedSetter));
 		list8.Add(new BoolDebugMenuItem("Gumo Free", GumoFreeGetter, GumFreeSetter));
@@ -590,14 +590,14 @@ public class DebugMenuB : SaveSerialize
 			m_menuList.Add(list8);
 		}
 		m_showGumoSequences = false;
-		int num = 8;
+		var num = 8;
 		m_gumoSequencesMenuList.Clear();
-		List<IDebugMenuItem> list9 = new List<IDebugMenuItem>();
-		List<IDebugMenuItem> list10 = new List<IDebugMenuItem>();
-		List<IDebugMenuItem> list11 = new List<IDebugMenuItem>();
-		List<IDebugMenuItem> list12 = new List<IDebugMenuItem>();
-		List<IDebugMenuItem> list13 = new List<IDebugMenuItem>();
-		foreach (GoToSequenceData goToSequenceData in GumoSequence)
+		var list9 = new List<IDebugMenuItem>();
+		var list10 = new List<IDebugMenuItem>();
+		var list11 = new List<IDebugMenuItem>();
+		var list12 = new List<IDebugMenuItem>();
+		var list13 = new List<IDebugMenuItem>();
+		foreach (var goToSequenceData in GumoSequence)
 		{
 			if (goToSequenceData.Scene)
 			{
@@ -1145,7 +1145,7 @@ public class DebugMenuB : SaveSerialize
 		}
 		else
 		{
-			GameObject gameObject = Instantiate(NightberryPlaceholder, Characters.Sein.Position, Quaternion.identity) as GameObject;
+			var gameObject = Instantiate(NightberryPlaceholder, Characters.Sein.Position, Quaternion.identity) as GameObject;
 			InstantiateUtility.Destroy(gameObject);
 		}
 		return true;
@@ -1361,14 +1361,14 @@ public class DebugMenuB : SaveSerialize
 			if (m_showGumoSequences)
 			{
 				GUILayout.BeginArea(new Rect(MenuTopLeftX, MenuTopLeftY, MenuWidth, MenuHeight), GUIContent.none, DebugMenuStyle);
-				int num = 0;
-				foreach (List<IDebugMenuItem> list in m_gumoSequencesMenuList)
+				var num = 0;
+				foreach (var list in m_gumoSequencesMenuList)
 				{
-					int num2 = 0;
-					foreach (IDebugMenuItem debugMenuItem in list)
+					var num2 = 0;
+					foreach (var debugMenuItem in list)
 					{
-						Vector2 vector = new Vector2(HorizontalSpace * num, VerticalSpace * num2);
-						bool b = new Vector2(num, num2) == m_gumoSequencesCursorIndex;
+						var vector = new Vector2(HorizontalSpace * num, VerticalSpace * num2);
+						var b = new Vector2(num, num2) == m_gumoSequencesCursorIndex;
 						debugMenuItem.Draw(new Rect(vector.x, vector.y, HorizontalSpace, VerticalSpace), b);
 						num2++;
 					}
@@ -1391,14 +1391,14 @@ public class DebugMenuB : SaveSerialize
 				{
 					GUILayout.BeginArea(new Rect(MenuTopLeftX, MenuTopLeftY, MenuWidth, MenuHeight), GUIContent.none);
 				}
-				int num3 = 0;
-				foreach (List<IDebugMenuItem> list2 in m_menuList)
+				var num3 = 0;
+				foreach (var list2 in m_menuList)
 				{
-					int num4 = 0;
-					foreach (IDebugMenuItem debugMenuItem2 in list2)
+					var num4 = 0;
+					foreach (var debugMenuItem2 in list2)
 					{
-						Vector2 vector2 = new Vector2(GetColPosition(num3), VerticalSpace * num4);
-						bool flag = new Vector2(num3, num4) == m_cursorIndex;
+						var vector2 = new Vector2(GetColPosition(num3), VerticalSpace * num4);
+						var flag = new Vector2(num3, num4) == m_cursorIndex;
 						if (!ShouldShowOnlySelectedItem || flag)
 						{
 							debugMenuItem2.Draw(new Rect(vector2.x, vector2.y, ColumnsWidth[num3], VerticalSpace), flag);
@@ -1422,8 +1422,8 @@ public class DebugMenuB : SaveSerialize
 
 	private int GetColPosition(int index)
 	{
-		int num = 0;
-		for (int i = 0; i < index; i++)
+		var num = 0;
+		for (var i = 0; i < index; i++)
 		{
 			num += ColumnsWidth[i];
 		}
@@ -1457,7 +1457,7 @@ public class DebugMenuB : SaveSerialize
 
 	public IEnumerator GoToScene(string sceneName)
 	{
-		RuntimeSceneMetaData sceneInformation = Scenes.Manager.GetSceneInformation(sceneName);
+		var sceneInformation = Scenes.Manager.GetSceneInformation(sceneName);
 		Scenes.Manager.AutoLoadingUnloading = false;
 		Scenes.Manager.UnloadAllScenes();
 		Scenes.Manager.DestroyManager.DestroyAll();

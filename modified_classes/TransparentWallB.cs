@@ -28,7 +28,7 @@ public class TransparentWallB : SaveSerialize, ISuspendable
 
 	public void Start()
 	{
-		AnimatorDriver animatorDriver = Animator.AnimatorDriver;
+		var animatorDriver = Animator.AnimatorDriver;
 		if (WallVisible)
 		{
 			Animator.Initialize();
@@ -96,7 +96,7 @@ public class TransparentWallB : SaveSerialize, ISuspendable
 		{
 			return;
 		}
-		AnimatorDriver animatorDriver = Animator.AnimatorDriver;
+		var animatorDriver = Animator.AnimatorDriver;
 		if (WallVisible)
 		{
 			if (animatorDriver.IsReversed || !animatorDriver.IsPlaying)

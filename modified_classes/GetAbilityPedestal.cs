@@ -18,7 +18,7 @@ public class GetAbilityPedestal : SaveSerialize
 
 	public void UpdateStates()
 	{
-		States currentState = CurrentState;
+		var currentState = CurrentState;
 
 		if (currentState != States.Completed && RandomizerLocationManager.IsPickupCollected(MoonGuid))
 		{
@@ -100,8 +100,8 @@ public class GetAbilityPedestal : SaveSerialize
 
 	public IEnumerator MoveSeinToCenterSmoothly()
 	{
-		PlatformMovement seinPlatformMovement = Characters.Sein.PlatformBehaviour.PlatformMovement;
-		for (int i = 0; i < 10; i++)
+		var seinPlatformMovement = Characters.Sein.PlatformBehaviour.PlatformMovement;
+		for (var i = 0; i < 10; i++)
 		{
 			seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, transform.position.x, 0.2f);
 			yield return new WaitForFixedUpdate();
@@ -114,7 +114,7 @@ public class GetAbilityPedestal : SaveSerialize
 	{
 		if (ar.Reading)
 		{
-			int state = ar.Serialize(0);
+			var state = ar.Serialize(0);
 			ChangeState((States)state);
 		}
 		else

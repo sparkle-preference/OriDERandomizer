@@ -33,7 +33,7 @@ public class MapStone : SaveSerialize
 	{
 		get
 		{
-			SeinSpiritFlameTargetting spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
+			var spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
 			return spiritFlameTargetting && spiritFlameTargetting.ClosestAttackables.Count > 0;
 		}
 	}
@@ -101,7 +101,7 @@ public class MapStone : SaveSerialize
 
 	public void FixedUpdate()
 	{
-		State currentState = CurrentState;
+		var currentState = CurrentState;
 		if (currentState != State.Activated && RandomizerLocationManager.IsPickupCollected(MoonGuid))
 		{
 			if (currentState == State.Highlighted)

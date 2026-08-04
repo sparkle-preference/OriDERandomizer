@@ -9,7 +9,7 @@ public class OptionsScreen : MenuScreen, ISuspendable
 	{
 		Instance = this;
 		SuspensionManager.Register(this);
-		CleverMenuItemSelectionManager navigation = Navigation;
+		var navigation = Navigation;
 		navigation.OnBackPressedCallback = (Action)Delegate.Combine(navigation.OnBackPressedCallback, new Action(OnBackPressed));
 		AddSubscreen<ControlsSettingsScreen>("CONTROL OPTIONS", 2);
 		AddSubscreen<AccessibilitySettingsScreen>("ACCESSIBILITY", 3);
@@ -21,7 +21,7 @@ public class OptionsScreen : MenuScreen, ISuspendable
 
 	public void OnDestroy()
 	{
-		CleverMenuItemSelectionManager navigation = Navigation;
+		var navigation = Navigation;
 		navigation.OnBackPressedCallback = (Action)Delegate.Remove(navigation.OnBackPressedCallback, new Action(OnBackPressed));
 	}
 
@@ -36,7 +36,7 @@ public class OptionsScreen : MenuScreen, ISuspendable
 	public override void Hide()
 	{
 		Navigation.SetVisible(false);
-		foreach (CleverMenuItemGroup.CleverMenuItemGroupItem cleverMenuItemGroupItem in GetComponent<CleverMenuItemGroup>().Options)
+		foreach (var cleverMenuItemGroupItem in GetComponent<CleverMenuItemGroup>().Options)
 		{
 			if (cleverMenuItemGroupItem.ItemGroup)
 			{
@@ -82,7 +82,7 @@ public class OptionsScreen : MenuScreen, ISuspendable
 		Navigation.AddMenuItem(label, index, Navigation.transform.FindChild("mainMenuUI").GetComponent<CleverMenuItemLayout>(), delegate
 		{
 		});
-		GameObject gameObject = Instantiate(transform.FindChild("*settings").gameObject);
+		var gameObject = Instantiate(transform.FindChild("*settings").gameObject);
 		gameObject.name = "*" + label.ToLower();
 		gameObject.transform.SetParent(transform);
 		Destroy(gameObject.GetComponent<SettingsScreen>());

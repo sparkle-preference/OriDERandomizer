@@ -30,7 +30,7 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
 		{
 			num *= 1.5f;
 		}
-		bool couldAffordBefore = Sein.SoulFlame.CanAffordSoulFlame;
+		var couldAffordBefore = Sein.SoulFlame.CanAffordSoulFlame;
 		AchievementsLogic.Instance.OnCollectedEnergyShard();
 		Sein.Energy.Gain(num);
 		energyOrbPickup.Collected();
@@ -66,7 +66,7 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
 
 	public void OnCollectExpOrbPickup(ExpOrbPickup expOrbPickup)
 	{
-		int num = RandomizerBonus.ExpWithBonuses(expOrbPickup.Amount, false);
+		var num = RandomizerBonus.ExpWithBonuses(expOrbPickup.Amount, false);
 		if (expOrbPickup.MessageType == ExpOrbPickup.ExpOrbMessageType.None)
 		{
 			expOrbPickup.Collected();
@@ -140,7 +140,7 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
 
 	public void OnCollectRestoreHealthPickup(RestoreHealthPickup restoreHealthPickup)
 	{
-		int amount = restoreHealthPickup.Amount * (!Sein.PlayerAbilities.HealthEfficiency.HasAbility ? 1 : 2);
+		var amount = restoreHealthPickup.Amount * (!Sein.PlayerAbilities.HealthEfficiency.HasAbility ? 1 : 2);
 		Sein.Mortality.Health.GainHealth(amount);
 		restoreHealthPickup.Collected();
 		UI.SeinUI.ShakeHealthbar();
@@ -180,7 +180,7 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
 		{
 			return;
 		}
-		Vector3 position = Sein.Position;
+		var position = Sein.Position;
 		if (checkpoint.RespawnPosition != Vector2.zero)
 		{
 			Sein.Position = new Vector3(checkpoint.RespawnPosition.x, checkpoint.RespawnPosition.y) + checkpoint.transform.position;

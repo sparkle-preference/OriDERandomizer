@@ -74,9 +74,9 @@ public static class RandomizerMW
     {
         try
         {
-            foreach (string pair in field.Split(';'))
+            foreach (var pair in field.Split(';'))
             {
-                int dot = pair.IndexOf('.');
+                var dot = pair.IndexOf('.');
                 int pid;
                 if (dot > 0 && int.TryParse(pair.Substring(0, dot), out pid) && pair.Length > dot + 1)
                     PlayerNames[pid] = pair.Substring(dot + 1);
@@ -96,10 +96,10 @@ public static class RandomizerMW
     // has the item at this manifest pseudo-location already been granted to us?
     public static bool ManifestLocGranted(int coords)
     {
-        int slot = -coords - 2;
+        var slot = -coords - 2;
         if (slot < 0 || slot > 255 || !Characters.Sein)
             return false;
-        uint local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + slot / 32);
+        var local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + slot / 32);
         return (local & (1u << (slot % 32))) != 0;
     }
 
@@ -109,9 +109,9 @@ public static class RandomizerMW
     {
         try
         {
-            int slot = -coords - 2;
-            string[] parts = value.Split(new[] { ',' }, 3);
-            ManifestEntry entry = new ManifestEntry();
+            var slot = -coords - 2;
+            var parts = value.Split(new[] { ',' }, 3);
+            var entry = new ManifestEntry();
             entry.Finder = int.Parse(parts[0]);
             entry.Code = parts[1];
             entry.Id = parts[2];
@@ -150,39 +150,39 @@ public static class RandomizerMW
     // granted, so the caller can refresh logic.
     public static bool OnSlotsField(string field)
     {
-        bool granted = false;
+        var granted = false;
         try
         {
             if (string.IsNullOrEmpty(field) || !Characters.Sein || Characters.Sein.Inventory == null)
                 return false;
-            string[] parts = field.Split(';');
+            var parts = field.Split(';');
 
             // first pass: which grantable slots are new this tick?
-            List<int> pending = new List<int>();
-            uint[] serverFields = new uint[8];
-            for (int i = 0; i < 8 && i < parts.Length; i++)
+            var pending = new List<int>();
+            var serverFields = new uint[8];
+            for (var i = 0; i < 8 && i < parts.Length; i++)
             {
                 if (!uint.TryParse(parts[i], out serverFields[i]))
                     continue;
-                uint local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i);
-                uint diff = serverFields[i] & ~local;
-                for (int bit = 0; bit < 32 && diff != 0; bit++)
+                var local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i);
+                var diff = serverFields[i] & ~local;
+                for (var bit = 0; bit < 32 && diff != 0; bit++)
                     if ((diff & (1u << bit)) != 0)
                         pending.Add(i * 32 + bit);
             }
             if (pending.Count == 0)
                 return false;
 
-            bool batch = pending.Count > BatchMessageThreshold;
+            var batch = pending.Count > BatchMessageThreshold;
             // grants during the credits roll happen silently
-            bool silent = Randomizer.CreditsActive;
-            List<ManifestEntry> batched = new List<ManifestEntry>();
-            foreach (int slot in pending)
+            var silent = Randomizer.CreditsActive;
+            var batched = new List<ManifestEntry>();
+            foreach (var slot in pending)
             {
                 if (!GrantSlot(slot, batch || silent, batched))
                     continue;
-                int i = slot / 32;
-                uint local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i);
+                var i = slot / 32;
+                var local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i);
                 Characters.Sein.Inventory.SetRandomizerItem(GrantedSlotsBase + i, (int)(local | (1u << (slot % 32))));
                 granted = true;
             }
@@ -207,8 +207,8 @@ public static class RandomizerMW
             }
             return false;
         }
-        ManifestEntry entry = Manifest[slot];
-        int coords = -slot - 2;
+        var entry = Manifest[slot];
+        var coords = -slot - 2;
         if (batch)
         {
             // squelch per-item messages; ShowBatchMessage summarizes after
@@ -269,12 +269,12 @@ public static class RandomizerMW
     {
         try
         {
-            List<string> skills = new List<string>();
-            List<string> events = new List<string>();
-            List<string> travel = new List<string>();
+            var skills = new List<string>();
+            var events = new List<string>();
+            var travel = new List<string>();
             int hc = 0, ec = 0, ac = 0, ks = 0, ms = 0, exp = 0, rb = 0, wvs = 0, gss = 0, sss = 0, wfg = 0, other = 0;
-            HashSet<int> finders = new HashSet<int>();
-            foreach (ManifestEntry entry in entries)
+            var finders = new HashSet<int>();
+            foreach (var entry in entries)
             {
                 finders.Add(entry.Finder);
                 switch (entry.Code)
@@ -320,14 +320,14 @@ public static class RandomizerMW
             if(gss > 0) events.Add(Counted(gss, "Gumon Seal Shard", "Gumon Seal Shards", "#"));
             if(sss > 0) events.Add(Counted(sss, "Sunstone Shard", "Sunstone Shards", "@"));
             if(wfg > 0) events.Add(Counted(wfg, "Warmth Fragment", "Warmth Fragments", "@"));
-            List<string> lines = new List<string>();
+            var lines = new List<string>();
             if (skills.Count > 0)
                 lines.Add(string.Join(", ", skills.ToArray()));
             if (events.Count > 0)
                 lines.Add(string.Join(", ", events.ToArray()));
             if (travel.Count > 0)
                 lines.Add(string.Join(", ", travel.ToArray()));
-            List<string> counts = new List<string>();
+            var counts = new List<string>();
             // TODO: maybe get their names even though it'll be so much work (probs a refactor on name handling in general misery emoji)
             if (rb > 0) counts.Add(Counted(rb, "Bonus Pickup", "Bonus Pickups"));
             if (hc > 0) counts.Add(Counted(hc, "Health Cell", "Health Cells"));
@@ -341,8 +341,8 @@ public static class RandomizerMW
                 lines.Add(string.Join(", ", counts.ToArray()));
             if (lines.Count > 0)
             {
-                List<string> finderNames = new List<string>();
-                foreach (int f in finders)
+                var finderNames = new List<string>();
+                foreach (var f in finders)
                     finderNames.Add(PlayerName(f));
                 finderNames.Sort();
                 RandomizerSwitch.PickupMessage($"Received from {string.Join(", ", finderNames.ToArray())}:\n" + string.Join("\n", lines.ToArray()), 480);

@@ -56,7 +56,7 @@ public class SkillItem : MonoBehaviour
 	{
 		get
 		{
-			using (List<SkillItem>.Enumerator enumerator = RequiredItems.GetEnumerator())
+			using (var enumerator = RequiredItems.GetEnumerator())
 			{
 				while (enumerator.MoveNext())
 				{

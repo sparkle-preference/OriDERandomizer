@@ -19,13 +19,13 @@ public static class RandomizerSettings {
 		}
 
 		try {
-			List<string> unseenSettings  = new List<string>(All.Keys);
+			var unseenSettings  = new List<string>(All.Keys);
 			unseenSettings.Remove("Dev");
-			List<string> writeList = new List<string>();
-			string[] lines = File.ReadAllLines("RandomizerSettings.txt");
+			var writeList = new List<string>();
+			var lines = File.ReadAllLines("RandomizerSettings.txt");
 
 			// parse step 1: read settings from file
-			foreach (string rawLine in lines) {
+			foreach (var rawLine in lines) {
 				var line = rawLine;
 
 				if(line.Contains("//"))
@@ -34,12 +34,12 @@ public static class RandomizerSettings {
 				if (!line.Contains(":"))
 					continue;
 
-				string[] parts = line.Split(new[]{':'}, 2);
-				string setting = parts[0].Trim();
+				var parts = line.Split(new[]{':'}, 2);
+				var setting = parts[0].Trim();
 				if (!All.ContainsKey(setting)) {
 					continue;
 				}
-				string value = parts[1].Trim();
+				var value = parts[1].Trim();
 				if(setting == "Grenade Jump Mode" && value.ToLower() == "free") {
 					dirty = true;
 					value = "Auto";
@@ -57,7 +57,7 @@ public static class RandomizerSettings {
 				unseenSettings.Remove(setting);
 			}
 
-			foreach (string missing in unseenSettings) {
+			foreach (var missing in unseenSettings) {
 				All[missing].Reset();
 				writeList.Add(missing);
 				if(missing == LastAddedSetting) {
@@ -66,10 +66,10 @@ public static class RandomizerSettings {
 			}
 
 			if (writeList.Count > 0 && !dirty) {
-				string writeText = "";
+				var writeText = "";
 				var nagList = new List<string>();
-				foreach (string writeKey in writeList) {
-					SettingBase setting = All[writeKey];
+				foreach (var writeKey in writeList) {
+					var setting = All[writeKey];
 					writeText += Environment.NewLine + writeKey + ": " + setting.ToString();
 					if (setting.Nag) {
 						nagList.Add(writeKey);
@@ -402,7 +402,7 @@ public static class RandomizerSettings {
 		public override string ValidValues() => "R,G,B,A (more details at top of file)";
 
         public override void Parse(string value) {
-			string[] parts = value.Split(',');
+			var parts = value.Split(',');
 			Value = new Color(float.Parse(parts[0]) / divisor, float.Parse(parts[1]) / divisor, float.Parse(parts[2]) / divisor, float.Parse(parts[3]) / divisor);
 		}
 
