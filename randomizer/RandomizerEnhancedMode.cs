@@ -267,7 +267,7 @@ public class RandomizerEnhancedMode {
 
             foreach (var loc in RandomizerLocationManager.LocationsByName.Values) {
                 if (mapsByBadZone.ContainsKey(loc.Zone) && loc.Pickup?.Action == "MS") {
-                    mapsByBadZone[loc.Zone] = mapsByBadZone[loc.Zone] + 1;
+                    mapsByBadZone[loc.Zone] += 1;
                 }
             }
 

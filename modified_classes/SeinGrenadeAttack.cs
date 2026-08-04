@@ -290,12 +290,12 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
 
         var num = m_rawAimOffset.y <= 0f ? MinAimDistanceDown : MinAimDistanceUp;
         var num2 = MinAimDistanceHorizontal / num;
-        m_rawAimOffset.y = m_rawAimOffset.y * num2;
+        m_rawAimOffset.y *= num2;
         if (m_rawAimOffset.magnitude < MinAimDistanceHorizontal) {
             m_rawAimOffset = m_rawAimOffset.normalized * MinAimDistanceHorizontal;
         }
 
-        m_rawAimOffset.y = m_rawAimOffset.y / num2;
+        m_rawAimOffset.y /= num2;
         m_rawAimOffset.y = Mathf.Clamp(m_rawAimOffset.y, !IsGrabbingWall ? MinAimVertical : MinAimVerticalWall, MaxAimVertical);
     }
 
@@ -497,7 +497,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
         m_faceLeft = m_sein.FaceLeft;
         m_rawAimOffset.x = Mathf.Abs(m_rawAimOffset.x) * (!m_sein.FaceLeft ? 1 : -1);
         if (IsGrabbingWall) {
-            m_rawAimOffset.x = m_rawAimOffset.x * -1f;
+            m_rawAimOffset.x *= -1f;
         }
 
         ClampAim();

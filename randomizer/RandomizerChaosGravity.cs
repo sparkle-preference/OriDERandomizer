@@ -68,9 +68,9 @@ public class RandomizerChaosGravity : RandomizerChaosEffect {
                 friction = 0.25f;
             }
 
-            Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedX + friction * num * vector.x;
+            Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedX += friction * num * vector.x;
             if (!Characters.Sein.PlatformBehaviour.PlatformMovement.IsOnGround || num > 26f) {
-                Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY + num * vector.y;
+                Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY += num * vector.y;
             }
         }
     }

@@ -51,8 +51,8 @@ public class MixerManager : MonoBehaviour {
 
         m_settings.MultiplyBlendWith(ModulatingSnapshot.SnapshotSettings, 1f);
         m_currentlyActiveSnapshots.RemoveAll(CachedIsSnapshotInactivePredicate);
-        m_settings.Music = m_settings.Music * Mathf.Log10(GameSettings.Instance.MusicVolume * 9f + 1f);
-        m_settings.SoundEffects = m_settings.SoundEffects * Mathf.Log10(GameSettings.Instance.SoundEffectsVolume * 9f + 1f);
+        m_settings.Music *= Mathf.Log10(GameSettings.Instance.MusicVolume * 9f + 1f);
+        m_settings.SoundEffects *= Mathf.Log10(GameSettings.Instance.SoundEffectsVolume * 9f + 1f);
         ApplySoundCompression();
         var masterMixer = GetMasterMixer();
         m_settings.ApplyGroupSettingsToMixer(masterMixer);

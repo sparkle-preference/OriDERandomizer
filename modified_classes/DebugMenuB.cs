@@ -1046,17 +1046,17 @@ public class DebugMenuB : SaveSerialize {
 
                 if (Input.Up.OnPressed) {
                     ResetHold();
-                    cursorIndex.y = cursorIndex.y - 1f;
+                    cursorIndex.y -= 1f;
                 }
 
                 if (Input.Left.OnPressed) {
                     ResetHold();
-                    cursorIndex.x = cursorIndex.x - 1f;
+                    cursorIndex.x -= 1f;
                 }
 
                 if (Input.Right.OnPressed) {
                     ResetHold();
-                    cursorIndex.x = cursorIndex.x + 1f;
+                    cursorIndex.x += 1f;
                 }
 
                 if (Input.Left.Pressed || Input.Right.Pressed || Input.Up.Pressed || Input.Down.Pressed) {
@@ -1064,19 +1064,19 @@ public class DebugMenuB : SaveSerialize {
                     if (holdRemainingTime < 0f) {
                         holdRemainingTime = holdDelayDuration;
                         if (Input.Left.Pressed) {
-                            cursorIndex.x = cursorIndex.x - 1f;
+                            cursorIndex.x -= 1f;
                         }
 
                         if (Input.Right.Pressed) {
-                            cursorIndex.x = cursorIndex.x + 1f;
+                            cursorIndex.x += 1f;
                         }
 
                         if (Input.Down.Pressed) {
-                            cursorIndex.y = cursorIndex.y + 1f;
+                            cursorIndex.y += 1f;
                         }
 
                         if (Input.Up.Pressed) {
-                            cursorIndex.y = cursorIndex.y - 1f;
+                            cursorIndex.y -= 1f;
                         }
                     }
                 }
