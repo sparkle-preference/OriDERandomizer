@@ -16,11 +16,11 @@ public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable {
         set => Velocity = Time.deltaTime != 0f ? value / Time.deltaTime : Vector2.zero;
     }
 
-    public Rigidbody Rigidbody => rigidbody;
+    public Rigidbody Rigidbody => m_rigidbody;
 
     public override void Awake() {
         base.Awake();
-        rigidbody = GetComponent<Rigidbody>();
+        m_rigidbody = GetComponent<Rigidbody>();
         SuspensionManager.Register(this);
     }
 
@@ -29,14 +29,17 @@ public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable {
         SuspensionManager.Unregister(this);
     }
 
+    public void Start() {
+    }
+
     public void FixedUpdate() {
         if (IsSuspended) {
-            rigidbody.velocity = Vector3.zero;
+            m_rigidbody.velocity = Vector3.zero;
             return;
         }
 
         Kickback.AdvanceTime();
-        rigidbody.velocity = RandomizerBonusSkill.TimeScale(Velocity + (!HasKickback ? Vector2.zero : Kickback.KickbackVector));
+        m_rigidbody.velocity = RandomizerBonusSkill.TimeScale(Velocity + (!HasKickback ? Vector2.zero : Kickback.KickbackVector));
     }
 
     public void OnRecieveDamage(Damage damage) {
@@ -65,7 +68,7 @@ public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable {
 
     public override void Serialize(Archive ar) {
         Velocity = ar.Serialize(Velocity);
-        rigidbody.velocity = ar.Serialize(rigidbody.velocity);
+        m_rigidbody.velocity = ar.Serialize(m_rigidbody.velocity);
         transform.position = ar.Serialize(transform.position);
     }
 
@@ -77,5 +80,5 @@ public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable {
 
     public Vector2 Velocity;
 
-    private Rigidbody rigidbody;
+    private Rigidbody m_rigidbody;
 }

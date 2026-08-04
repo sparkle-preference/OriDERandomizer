@@ -17,13 +17,13 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
     public void ReclaimOwernship(RespawningPlaceholder placeholder) {
         transform.parent = placeholder.transform.parent;
         Events.Scheduler.OnSceneRootDisabled.Remove(OnSceneUnloaded);
-        registeredToSceneRootDisabled = false;
+        m_registeredToSceneRootDisabled = false;
     }
 
     public void FreeOwnership(RespawningPlaceholder placeholder) {
         transform.parent = null;
         Events.Scheduler.OnSceneRootDisabled.Add(OnSceneUnloaded);
-        registeredToSceneRootDisabled = true;
+        m_registeredToSceneRootDisabled = true;
     }
 
     public virtual bool CanBeOptimized() {
@@ -65,7 +65,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
             CameraFrustumOptimizer.Unregister(this);
         }
 
-        if (registeredToSceneRootDisabled) {
+        if (m_registeredToSceneRootDisabled) {
             Events.Scheduler.OnSceneRootDisabled.Remove(OnSceneUnloaded);
         }
 
@@ -86,7 +86,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
             (this as Enemy).Animation.Animator.TextureAnimator.SpeedMultiplier = RandomizerBonusSkill.TimeScale(1f);
         }
 
-        if (FrustrumOptimized && !insideFrustum && CanBeOptimized()) {
+        if (FrustrumOptimized && !m_insideFrustum && CanBeOptimized()) {
             gameObject.SetActive(false);
         }
     }
@@ -181,17 +181,17 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
     }
 
     public void OnFrustumEnter() {
-        insideFrustum = true;
+        m_insideFrustum = true;
         if (!DamageReciever || !DamageReciever.NoHealthLeft) {
             gameObject.SetActive(true);
         }
     }
 
     public void OnFrustumExit() {
-        insideFrustum = false;
+        m_insideFrustum = false;
     }
 
-    public bool InsideFrustum => insideFrustum;
+    public bool InsideFrustum => m_insideFrustum;
 
     public Bounds Bounds {
         get {
@@ -200,6 +200,11 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
             vector += new Vector3(BoundingBox.center.x, BoundingBox.center.y, 0f);
             return new Bounds(vector, size);
         }
+    }
+
+    public bool PlayerInsideSameScene() {
+        var currentScene = Scenes.Manager.CurrentScene;
+        return currentScene != null && currentScene.SceneMoonGuid == SceneRootGUID;
     }
 
     public EntityController Controller;
@@ -220,7 +225,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 
     public bool FrustrumOptimized;
 
-    private bool registeredToSceneRootDisabled;
+    private bool m_registeredToSceneRootDisabled;
 
-    private bool insideFrustum = true;
+    private bool m_insideFrustum = true;
 }

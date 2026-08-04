@@ -20,4 +20,6 @@ public class DifficultyToggler : MonoBehaviour, IDebugMenuToggleable {
         get => (int)DifficultyController.Instance.Difficulty;
         set => DifficultyController.Instance.Difficulty = (DifficultyMode)((value % ToggleOptions.Length + ToggleOptions.Length) % ToggleOptions.Length);
     }
+
+    private int m_currentOption;
 }

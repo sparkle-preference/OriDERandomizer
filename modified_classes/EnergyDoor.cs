@@ -2,19 +2,22 @@ using System.Collections.Generic;
 using Core;
 using Game;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Input = Core.Input;
 
 public class EnergyDoor : SaveSerialize {
     public void OnValidate() {
-        Transform = transform;
+        m_transform = transform;
+    }
+
+    public override void Awake() {
+        base.Awake();
     }
 
     public void Highlight() {
         if (OriTarget) {
             Characters.Ori.MoveOriToPosition(OriTarget.position, OriDuration);
         } else {
-            Characters.Ori.MoveOriToPosition(Transform.position, OriDuration);
+            Characters.Ori.MoveOriToPosition(m_transform.position, OriDuration);
         }
 
         if (Characters.Sein.Abilities.SpiritFlame) {
@@ -23,12 +26,12 @@ public class EnergyDoor : SaveSerialize {
 
         Characters.Ori.GetComponent<Rigidbody>().velocity = Vector3.zero;
         Characters.Ori.EnableHoverWobbling = false;
-        if (hint == null) {
-            hint = UI.Hints.Show(HintMessage, HintLayer.HintZone);
+        if (m_hint == null) {
+            m_hint = UI.Hints.Show(HintMessage, HintLayer.HintZone);
         }
 
         if (OnOriEnterSoundProvider) {
-            Sound.Play(OnOriEnterSoundProvider.GetSound(null), Transform.position, null);
+            Sound.Play(OnOriEnterSoundProvider.GetSound(null), m_transform.position, null);
         }
     }
 
@@ -39,18 +42,18 @@ public class EnergyDoor : SaveSerialize {
             Characters.Sein.Abilities.SpiritFlame.RemoveLock("energyDoor");
         }
 
-        if (hint) {
-            hint.HideMessageScreen();
+        if (m_hint) {
+            m_hint.HideMessageScreen();
         }
 
         if (OnOriExitSoundProvider) {
-            Sound.Play(OnOriExitSoundProvider.GetSound(null), Transform.position, null);
+            Sound.Play(OnOriExitSoundProvider.GetSound(null), m_transform.position, null);
         }
     }
 
     public void RestoreOrbs() {
         if (AmountOfEnergyUsed > 0 && RestoreSoundProvider) {
-            Sound.Play(RestoreSoundProvider.GetSound(null), Transform.position, null);
+            Sound.Play(RestoreSoundProvider.GetSound(null), m_transform.position, null);
         }
 
         if (Characters.Sein) {
@@ -68,9 +71,9 @@ public class EnergyDoor : SaveSerialize {
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref slotsPending);
+        ar.Serialize(ref m_slotsPending);
         ar.Serialize(ref AmountOfEnergyUsed);
-        ar.Serialize(ref slotsFilled);
+        ar.Serialize(ref m_slotsFilled);
         if (ar.Reading && CurrentState == State.Highlighted) {
             Unhighlight();
             CurrentState = State.Normal;
@@ -83,7 +86,7 @@ public class EnergyDoor : SaveSerialize {
         }
     }
 
-    public float DistanceToSein => Vector3.Distance(Transform.position, Characters.Sein.Position);
+    public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
 
     public bool OriHasTargets {
         get {
@@ -95,11 +98,11 @@ public class EnergyDoor : SaveSerialize {
     public bool SeinInRange => !OriHasTargets && DistanceToSein <= Radius;
 
     public void RegisterSlot(EnergyDoorSlot slot) {
-        slots.Add(slot);
+        m_slots.Add(slot);
     }
 
     public void UpdateSlots() {
-        foreach (var energyDoorSlot in slots) {
+        foreach (var energyDoorSlot in m_slots) {
             energyDoorSlot.Refresh();
         }
     }
@@ -136,7 +139,7 @@ public class EnergyDoor : SaveSerialize {
                         Characters.Sein.Energy.Spend(1f);
                         UpdateSlots();
                         if (PlaceSlotSoundProvider) {
-                            Sound.Play(PlaceSlotSoundProvider.GetSound(null), Transform.position, null);
+                            Sound.Play(PlaceSlotSoundProvider.GetSound(null), m_transform.position, null);
                         }
                     }
 
@@ -146,7 +149,7 @@ public class EnergyDoor : SaveSerialize {
                         Unhighlight();
                         CurrentState = State.Opened;
                         if (ActivateSoundProvider) {
-                            Sound.Play(ActivateSoundProvider.GetSound(null), Transform.position, null);
+                            Sound.Play(ActivateSoundProvider.GetSound(null), m_transform.position, null);
                         }
                     }
                 }
@@ -159,11 +162,11 @@ public class EnergyDoor : SaveSerialize {
 
     public Transform OriTarget;
 
-    [FormerlySerializedAs("m_transform")] [SerializeField] [HideInInspector] private Transform Transform;
+    [SerializeField] [HideInInspector] private Transform m_transform;
 
-    private int slotsPending;
+    private int m_slotsPending;
 
-    private int slotsFilled;
+    private int m_slotsFilled;
 
     public ActionMethod OnOpenedAction;
 
@@ -187,13 +190,15 @@ public class EnergyDoor : SaveSerialize {
 
     public float Radius = 10f;
 
+    public Texture2D HintTexture;
+
     public MessageProvider HintMessage;
 
-    private MessageBox hint;
+    private MessageBox m_hint;
 
     public State CurrentState;
 
-    private List<EnergyDoorSlot> slots = new List<EnergyDoorSlot>();
+    private List<EnergyDoorSlot> m_slots = new List<EnergyDoorSlot>();
 
     public enum State {
         Normal,

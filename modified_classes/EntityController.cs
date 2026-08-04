@@ -28,11 +28,11 @@ public class EntityController : SaveSerialize, INearSeinReceiver, IDamageRecieve
             return;
         }
 
-        if (transManager == null) {
-            transManager = StateMachine.GetTransistionManager<OnFixedUpdate>();
+        if (m_transManager == null) {
+            m_transManager = StateMachine.GetTransistionManager<OnFixedUpdate>();
         }
 
-        if (transManager == null) {
+        if (m_transManager == null) {
             return;
         }
 
@@ -43,7 +43,7 @@ public class EntityController : SaveSerialize, INearSeinReceiver, IDamageRecieve
 
         StateMachine.UpdateState(deltaTime);
         StateMachine.CurrentTrigger = null;
-        transManager.Process(StateMachine);
+        m_transManager.Process(StateMachine);
     }
 
     public void OnAnimationEnd(TextureAnimation anim) {
@@ -74,14 +74,14 @@ public class EntityController : SaveSerialize, INearSeinReceiver, IDamageRecieve
     }
 
     public void OnNearSeinEnter() {
-        nearSein = true;
+        m_nearSein = true;
     }
 
     public void OnNearSeinExit() {
-        nearSein = false;
+        m_nearSein = false;
     }
 
-    public bool NearSein => nearSein && Characters.Sein.Controller.CanMove;
+    public bool NearSein => m_nearSein && Characters.Sein.Controller.CanMove;
 
     public bool IsNearSein() {
         return NearSein;
@@ -107,7 +107,7 @@ public class EntityController : SaveSerialize, INearSeinReceiver, IDamageRecieve
 
     public Action<Damage> OnReceiveDamage;
 
-    private TransitionManager transManager;
+    private TransitionManager m_transManager;
 
-    private bool nearSein;
+    private bool m_nearSein;
 }

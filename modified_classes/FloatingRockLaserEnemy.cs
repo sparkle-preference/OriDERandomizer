@@ -89,7 +89,7 @@ public class FloatingRockLaserEnemy : Enemy {
     }
 
     public void UpdateLaserState() {
-        Movement.ApplyForce(-Settings.LaserForce * laserDirection);
+        Movement.ApplyForce(-Settings.LaserForce * m_laserDirection);
         UpdateLaserDirection();
         UpdateLaser();
     }
@@ -135,21 +135,21 @@ public class FloatingRockLaserEnemy : Enemy {
 
     public float DesiredLaserRotationDirection {
         get {
-            var flag = Vector3.Dot(PositionToPlayerPosition.normalized, Vector3.Cross(laserDirection, Vector3.back)) > 0f;
+            var flag = Vector3.Dot(PositionToPlayerPosition.normalized, Vector3.Cross(m_laserDirection, Vector3.back)) > 0f;
             return !flag ? -1 : 1;
         }
     }
 
     public void UpdateLaserDirection() {
         if (Controller.NearSein) {
-            laserRotationSpeed = Mathf.MoveTowards(laserRotationSpeed, DesiredLaserRotationDirection, Time.deltaTime * 4f);
+            m_laserRotationSpeed = Mathf.MoveTowards(m_laserRotationSpeed, DesiredLaserRotationDirection, Time.deltaTime * 4f);
         }
 
         var num = LaserAngleOverTimeCurve.Evaluate(Controller.StateMachine.CurrentStateTime / Settings.LaserDuration);
         var num2 = Laser.CurrentLaserLength / Settings.LaserChaseSpeedDistance;
         var num3 = !Mathf.Approximately(num2, 0f) ? num * Settings.LaserChaseSpeed / num2 : 0f;
-        var num4 = MoonMath.Angle.AngleFromVector(laserDirection) + laserRotationSpeed * RandomizerBonusSkill.TimeScale(Time.deltaTime) * num3;
-        laserDirection = MoonMath.Angle.VectorFromAngle(num4);
+        var num4 = MoonMath.Angle.AngleFromVector(m_laserDirection) + m_laserRotationSpeed * RandomizerBonusSkill.TimeScale(Time.deltaTime) * num3;
+        m_laserDirection = MoonMath.Angle.VectorFromAngle(num4);
         Laser.transform.eulerAngles = new Vector3(0f, 0f, num4 - 90f);
     }
 
@@ -166,12 +166,12 @@ public class FloatingRockLaserEnemy : Enemy {
 
     public void AimLaserAtPlayer() {
         Vector3 vector = Characters.Sein.PlatformBehaviour.PlatformMovement.WorldSpeed;
-        laserDirection = PositionToPlayerPosition.normalized;
-        var flag = Vector3.Dot(vector.normalized, Vector3.Cross(laserDirection, Vector3.forward)) > 0f;
-        var num = MoonMath.Angle.AngleFromVector(laserDirection);
+        m_laserDirection = PositionToPlayerPosition.normalized;
+        var flag = Vector3.Dot(vector.normalized, Vector3.Cross(m_laserDirection, Vector3.forward)) > 0f;
+        var num = MoonMath.Angle.AngleFromVector(m_laserDirection);
         num += (!flag ? -1 : 1) * Settings.LaserAngularOffset;
-        laserDirection = MoonMath.Angle.VectorFromAngle(num);
-        laserRotationSpeed = DesiredLaserRotationDirection;
+        m_laserDirection = MoonMath.Angle.VectorFromAngle(num);
+        m_laserRotationSpeed = DesiredLaserRotationDirection;
     }
 
     public new void FixedUpdate() {
@@ -217,15 +217,27 @@ public class FloatingRockLaserEnemy : Enemy {
 
     public SoundSource ShootingSound;
 
+    public SoundSource LaserSound;
+
     public SoundSource IdleSound;
+
+    public SoundSource LaserHitSound;
+
+    public AnimationCurve LaserThicknessCurve;
 
     public AnimationCurve LaserAngleOverTimeCurve;
 
     public BlockableLaser Laser;
 
-    private Vector3 laserDirection;
+    public LayerMask LaserLayerMask;
 
-    private float laserRotationSpeed;
+    private float m_laserSpeed;
+
+    private Vector3 m_laserDirection;
+
+    private float m_laserRotationSpeed;
+
+    private Vector3 m_laserStartPosition;
 
     public class States {
         public State Idle;
