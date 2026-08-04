@@ -1,26 +1,25 @@
-using System;
 using UnityEngine;
 
 public class SeinHealthController : SaveSerialize, ISeinReceiver
 {
 	public void SetAmount(float amount)
 	{
-		this.Amount = amount;
-		this.VisualMinAmount = amount;
-		this.VisualMaxAmount = amount;
+		Amount = amount;
+		VisualMinAmount = amount;
+		VisualMaxAmount = amount;
 	}
 
 	public void FixedUpdate()
 	{
-		this.VisualMinAmount = Mathf.MoveTowards(this.VisualMinAmount, (float)((int)this.Amount), Time.deltaTime * 4f);
-		this.VisualMaxAmount = Mathf.MoveTowards(this.VisualMaxAmount, (float)((int)this.Amount), Time.deltaTime * 4f);
+		VisualMinAmount = Mathf.MoveTowards(VisualMinAmount, (int)Amount, Time.deltaTime * 4f);
+		VisualMaxAmount = Mathf.MoveTowards(VisualMaxAmount, (int)Amount, Time.deltaTime * 4f);
 	}
 
 	public float VisualMinAmountNormalized
 	{
 		get
 		{
-			return this.VisualMinAmount / (float)this.MaxHealth;
+			return VisualMinAmount / MaxHealth;
 		}
 	}
 
@@ -28,7 +27,7 @@ public class SeinHealthController : SaveSerialize, ISeinReceiver
 	{
 		get
 		{
-			return this.VisualMaxAmount / (float)this.MaxHealth;
+			return VisualMaxAmount / MaxHealth;
 		}
 	}
 
@@ -36,66 +35,66 @@ public class SeinHealthController : SaveSerialize, ISeinReceiver
 	{
 		get
 		{
-			return this.MaxHealth / 4 - 3;
+			return MaxHealth / 4 - 3;
 		}
 	}
 
 	public void OnRespawn()
 	{
-		InstantiateUtility.Instantiate(this.RespawnEffect, this.m_sein.Transform.position, Quaternion.identity);
-		this.m_sein.Mortality.DamageReciever.MakeInvincible(1f);
+		InstantiateUtility.Instantiate(RespawnEffect, m_sein.Transform.position, Quaternion.identity);
+		m_sein.Mortality.DamageReciever.MakeInvincible(1f);
 	}
 
 	public void LoseHealth(int amount)
 	{
-		this.Amount -= (float)amount;
-		if (this.Amount < 0f)
+		Amount -= amount;
+		if (Amount < 0f)
 		{
-			this.Amount = 0f;
+			Amount = 0f;
 		}
-		this.VisualMinAmount = this.Amount;
+		VisualMinAmount = Amount;
 	}
 
 	public void GainHealth(int amount)
 	{
-		if (this.Amount > (float)this.MaxHealth)
+		if (Amount > MaxHealth)
 		{
 			return;
 		}
-		this.Amount += (float)amount;
-		this.Amount = Mathf.Min((float)this.MaxHealth, this.Amount);
-		this.VisualMaxAmount = this.Amount;
+		Amount += amount;
+		Amount = Mathf.Min(MaxHealth, Amount);
+		VisualMaxAmount = Amount;
 	}
 
 	public void GainMaxHeartContainer()
 	{
-		this.MaxHealth += 4;
-		this.RestoreAllHealth();
+		MaxHealth += 4;
+		RestoreAllHealth();
 	}
 
 	public void RestoreAllHealth()
 	{
-		if (this.Amount < (float)this.MaxHealth)
+		if (Amount < MaxHealth)
 		{
-			this.Amount = (float)this.MaxHealth;
-			this.VisualMaxAmount = this.Amount;
+			Amount = MaxHealth;
+			VisualMaxAmount = Amount;
 		}
 	}
 
 	public void TakeDamage(int amount)
 	{
-		this.Amount -= (float)amount;
-		this.Amount = Mathf.Max(0f, this.Amount);
-		this.VisualMinAmount = this.Amount;
+		Amount -= amount;
+		Amount = Mathf.Max(0f, Amount);
+		VisualMinAmount = Amount;
 	}
 
 	public override void Serialize(Archive ar)
 	{
-		ar.Serialize(ref this.Amount);
-		ar.Serialize(ref this.MaxHealth);
+		ar.Serialize(ref Amount);
+		ar.Serialize(ref MaxHealth);
 		if (ar.Reading)
 		{
-			this.VisualMaxAmount = (this.VisualMinAmount = this.Amount);
+			VisualMaxAmount = (VisualMinAmount = Amount);
 		}
 	}
 
@@ -103,34 +102,34 @@ public class SeinHealthController : SaveSerialize, ISeinReceiver
 	{
 		get
 		{
-			return this.Amount == (float)this.MaxHealth;
+			return Amount == MaxHealth;
 		}
 	}
 
 	public void SetReferenceToSein(SeinCharacter sein)
 	{
-		this.m_sein = sein;
+		m_sein = sein;
 	}
 
 	public void GainHealth(float amount)
 	{
-		if (this.Amount > (float)this.MaxHealth)
+		if (Amount > MaxHealth)
 		{
 			return;
 		}
-		this.Amount += amount;
-		this.Amount = Mathf.Min((float)this.MaxHealth, this.Amount);
-		this.VisualMaxAmount = this.Amount;
+		Amount += amount;
+		Amount = Mathf.Min(MaxHealth, Amount);
+		VisualMaxAmount = Amount;
 	}
 
 	public void LoseHealth(float amount)
 	{
-		this.Amount -= amount;
-		if (this.Amount < 0f)
+		Amount -= amount;
+		if (Amount < 0f)
 		{
-			this.Amount = 0f;
+			Amount = 0f;
 		}
-		this.VisualMinAmount = this.Amount;
+		VisualMinAmount = Amount;
 	}
 
 	public float Amount;

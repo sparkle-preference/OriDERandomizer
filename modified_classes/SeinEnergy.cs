@@ -1,4 +1,3 @@
-using System;
 using Core;
 using Game;
 using UnityEngine;
@@ -7,27 +6,27 @@ public class SeinEnergy : SaveSerialize
 {
 	public void SetCurrent(float current)
 	{
-		this.Current = current;
-		this.MinVisual = this.Current;
-		this.MaxVisual = this.Current;
+		Current = current;
+		MinVisual = Current;
+		MaxVisual = Current;
 	}
 
 	public void NotifyOutOfEnergy()
 	{
 		UI.SeinUI.ShakeEnergyOrbBar();
-		Sound.Play(this.OutOfEnergySound.GetSound(null), base.transform.position, null);
+		Sound.Play(OutOfEnergySound.GetSound(null), transform.position, null);
 	}
 
 	public bool CanAfford(float amount)
 	{
-		return this.Current >= amount;
+		return Current >= amount;
 	}
 
 	public float VisualMin
 	{
 		get
 		{
-			return this.MinVisual / this.Max;
+			return MinVisual / Max;
 		}
 	}
 
@@ -35,41 +34,41 @@ public class SeinEnergy : SaveSerialize
 	{
 		get
 		{
-			return this.MaxVisual / this.Max;
+			return MaxVisual / Max;
 		}
 	}
 
 	public void Gain(float amount)
 	{
-		if (this.Current > this.Max)
+		if (Current > Max)
 		{
 			return;
 		}
-		this.Current += amount;
-		if (this.Current > this.Max)
+		Current += amount;
+		if (Current > Max)
 		{
-			this.Current = this.Max;
+			Current = Max;
 		}
-		this.MaxVisual = this.Current;
+		MaxVisual = Current;
 	}
 
 	public void Spend(float amount)
 	{
-		this.Current -= amount;
-		if (this.Current < 0f)
+		Current -= amount;
+		if (Current < 0f)
 		{
-			this.Current = 0f;
+			Current = 0f;
 		}
-		this.MinVisual = this.Current;
+		MinVisual = Current;
 	}
 
 	public override void Serialize(Archive ar)
 	{
-		ar.Serialize(ref this.Current);
-		ar.Serialize(ref this.Max);
+		ar.Serialize(ref Current);
+		ar.Serialize(ref Max);
 		if (ar.Reading)
 		{
-			this.MinVisual = (this.MaxVisual = this.Current);
+			MinVisual = (MaxVisual = Current);
 		}
 	}
 
@@ -77,7 +76,7 @@ public class SeinEnergy : SaveSerialize
 	{
 		get
 		{
-			return this.Max > 0f;
+			return Max > 0f;
 		}
 	}
 
@@ -85,7 +84,7 @@ public class SeinEnergy : SaveSerialize
 	{
 		get
 		{
-			return this.MaxVisual / this.Max;
+			return MaxVisual / Max;
 		}
 	}
 
@@ -93,7 +92,7 @@ public class SeinEnergy : SaveSerialize
 	{
 		get
 		{
-			return this.MinVisual / this.Max;
+			return MinVisual / Max;
 		}
 	}
 
@@ -101,21 +100,21 @@ public class SeinEnergy : SaveSerialize
 	{
 		get
 		{
-			return this.Max;
+			return Max;
 		}
 	}
 
 	public void Update()
 	{
-		this.MinVisual = Mathf.MoveTowards(this.MinVisual, (float)((int)(this.Current * 4f)) / 4f, Time.deltaTime);
-		this.MaxVisual = Mathf.MoveTowards(this.MaxVisual, (float)((int)(this.Current * 4f)) / 4f, Time.deltaTime);
+		MinVisual = Mathf.MoveTowards(MinVisual, (int)(Current * 4f) / 4f, Time.deltaTime);
+		MaxVisual = Mathf.MoveTowards(MaxVisual, (int)(Current * 4f) / 4f, Time.deltaTime);
 	}
 
 	public void RestoreAllEnergy()
 	{
-		if (this.Current < this.Max)
+		if (Current < Max)
 		{
-			this.Current = this.Max;
+			Current = Max;
 		}
 	}
 

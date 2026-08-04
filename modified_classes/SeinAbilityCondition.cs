@@ -1,7 +1,5 @@
-using System;
-using Game;
-using Sein.World;
 using Core;
+using Game;
 
 public class SeinAbilityCondition : Condition
 {
@@ -9,7 +7,7 @@ public class SeinAbilityCondition : Condition
     {
         if (Characters.Sein != null)
         {
-            if (this.Ability == AbilityType.Stomp)
+            if (Ability == AbilityType.Stomp)
             {
                 if (Randomizer.Inventory.FinishedGinsoEscape && Scenes.Manager.CurrentScene != null)
                 {
@@ -28,7 +26,7 @@ public class SeinAbilityCondition : Condition
                     return true;
                 }
             }
-            return Characters.Sein.PlayerAbilities.HasAbility(this.Ability);
+            return Characters.Sein.PlayerAbilities.HasAbility(Ability);
         }
         return false;
     }

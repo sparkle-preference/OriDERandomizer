@@ -45,7 +45,7 @@ public static class RandomizerExpNames {
 	{
 		if (RandomizerSettings.Customization.RandomizedExpNames)
 		{
-			return ExpNames[new System.Random(31 * Randomizer.SeedMeta.GetHashCode() + p).Next(ExpNames.Count)];
+			return ExpNames[new Random(31 * Randomizer.SeedMeta.GetHashCode() + p).Next(ExpNames.Count)];
 		}
 		return "Experience";
 	}

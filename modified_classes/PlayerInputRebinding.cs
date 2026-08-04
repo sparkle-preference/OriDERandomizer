@@ -8,7 +8,7 @@ public class PlayerInputRebinding
 {
 	static PlayerInputRebinding()
 	{
-		PlayerInputRebinding.m_controllerButtonRemappings = new int[]
+		m_controllerButtonRemappings = new[]
 		{
 			0,
 			1,
@@ -25,8 +25,8 @@ public class PlayerInputRebinding
 			12,
 			13
 		};
-		PlayerInputRebinding.m_hasReadControllerRemappingsFile = false;
-		PlayerInputRebinding.intToButton = new XboxControllerInput.Button[]
+		m_hasReadControllerRemappingsFile = false;
+		intToButton = new[]
 		{
 			XboxControllerInput.Button.ButtonA,
 			XboxControllerInput.Button.ButtonB,
@@ -45,23 +45,23 @@ public class PlayerInputRebinding
 		};
 	}
 
-	public static PlayerInputRebinding.KeyBindingSettings KeyRebindings
+	public static KeyBindingSettings KeyRebindings
 	{
 		get
 		{
-			if (PlayerInputRebinding.m_keyRebindings == null)
+			if (m_keyRebindings == null)
 			{
-				if (!File.Exists(PlayerInputRebinding.KeyRebindingFile))
+				if (!File.Exists(KeyRebindingFile))
 				{
-					PlayerInputRebinding.SetDefaultKeyBindingSettings();
-					PlayerInputRebinding.WriteKeyRebindSettings();
+					SetDefaultKeyBindingSettings();
+					WriteKeyRebindSettings();
 				}
 				else
 				{
-					PlayerInputRebinding.GetKeyRebindSettingsFromFile();
+					GetKeyRebindSettingsFromFile();
 				}
 			}
-			return PlayerInputRebinding.m_keyRebindings;
+			return m_keyRebindings;
 		}
 	}
 
@@ -69,7 +69,7 @@ public class PlayerInputRebinding
 	{
 		get
 		{
-			return Path.Combine(OutputFolder.PlayerDataFolderPath, PlayerInputRebinding.keyRebindingFileName);
+			return Path.Combine(OutputFolder.PlayerDataFolderPath, keyRebindingFileName);
 		}
 	}
 
@@ -77,55 +77,55 @@ public class PlayerInputRebinding
 	{
 		try
 		{
-			using (StreamReader streamReader = new StreamReader(new FileStream(PlayerInputRebinding.KeyRebindingFile, FileMode.Open)))
+			using (StreamReader streamReader = new StreamReader(new FileStream(KeyRebindingFile, FileMode.Open)))
 			{
 				streamReader.ReadLine();
 				streamReader.ReadLine();
 				streamReader.ReadLine();
 				streamReader.ReadLine();
-				PlayerInputRebinding.m_keyRebindings = new PlayerInputRebinding.KeyBindingSettings
+				m_keyRebindings = new KeyBindingSettings
 				{
 					IsRebinding = true,
-					HorizontalDigiPadLeft = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					HorizontalDigiPadRight = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					VerticalDigiPadDown = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					VerticalDigiPadUp = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					MenuLeft = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					MenuRight = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					MenuDown = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					MenuUp = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					MenuPageLeft = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					MenuPageRight = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					ActionButtonA = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					SoulFlame = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					Jump = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					Grab = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					SpiritFlame = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					Bash = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					Glide = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					ChargeJump = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					Select = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					Start = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					Cancel = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					LeftShoulder = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					RightShoulder = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					LeftStick = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					RightStick = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					ZoomIn = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					ZoomOut = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					Copy = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					Delete = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					Focus = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					Filter = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine()),
-					Legend = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine())
+					HorizontalDigiPadLeft = StringToKeyBinding(streamReader.ReadLine()),
+					HorizontalDigiPadRight = StringToKeyBinding(streamReader.ReadLine()),
+					VerticalDigiPadDown = StringToKeyBinding(streamReader.ReadLine()),
+					VerticalDigiPadUp = StringToKeyBinding(streamReader.ReadLine()),
+					MenuLeft = StringToKeyBinding(streamReader.ReadLine()),
+					MenuRight = StringToKeyBinding(streamReader.ReadLine()),
+					MenuDown = StringToKeyBinding(streamReader.ReadLine()),
+					MenuUp = StringToKeyBinding(streamReader.ReadLine()),
+					MenuPageLeft = StringToKeyBinding(streamReader.ReadLine()),
+					MenuPageRight = StringToKeyBinding(streamReader.ReadLine()),
+					ActionButtonA = StringToKeyBinding(streamReader.ReadLine()),
+					SoulFlame = StringToKeyBinding(streamReader.ReadLine()),
+					Jump = StringToKeyBinding(streamReader.ReadLine()),
+					Grab = StringToKeyBinding(streamReader.ReadLine()),
+					SpiritFlame = StringToKeyBinding(streamReader.ReadLine()),
+					Bash = StringToKeyBinding(streamReader.ReadLine()),
+					Glide = StringToKeyBinding(streamReader.ReadLine()),
+					ChargeJump = StringToKeyBinding(streamReader.ReadLine()),
+					Select = StringToKeyBinding(streamReader.ReadLine()),
+					Start = StringToKeyBinding(streamReader.ReadLine()),
+					Cancel = StringToKeyBinding(streamReader.ReadLine()),
+					LeftShoulder = StringToKeyBinding(streamReader.ReadLine()),
+					RightShoulder = StringToKeyBinding(streamReader.ReadLine()),
+					LeftStick = StringToKeyBinding(streamReader.ReadLine()),
+					RightStick = StringToKeyBinding(streamReader.ReadLine()),
+					ZoomIn = StringToKeyBinding(streamReader.ReadLine()),
+					ZoomOut = StringToKeyBinding(streamReader.ReadLine()),
+					Copy = StringToKeyBinding(streamReader.ReadLine()),
+					Delete = StringToKeyBinding(streamReader.ReadLine()),
+					Focus = StringToKeyBinding(streamReader.ReadLine()),
+					Filter = StringToKeyBinding(streamReader.ReadLine()),
+					Legend = StringToKeyBinding(streamReader.ReadLine())
 				};
 				try
 				{
-					PlayerInputRebinding.m_keyRebindings.Stomp = PlayerInputRebinding.StringToKeyBinding(streamReader.ReadLine());
+					m_keyRebindings.Stomp = StringToKeyBinding(streamReader.ReadLine());
 				}
 				catch
 				{
-					PlayerInputRebinding.m_keyRebindings.Stomp = new KeyCode[]
+					m_keyRebindings.Stomp = new[]
 					{
 						KeyCode.S
 					};
@@ -134,17 +134,17 @@ public class PlayerInputRebinding
 		}
 		catch (Exception)
 		{
-			PlayerInputRebinding.SetDefaultKeyBindingSettings();
+			SetDefaultKeyBindingSettings();
 		}
 	}
 
 	private static KeyCode[] StringToKeyBinding(string s)
 	{
-		s = s.Split(new string[]
+		s = s.Split(new[]
 		{
 			": "
 		}, StringSplitOptions.None)[1];
-		string[] array = s.Split(new string[]
+		string[] array = s.Split(new[]
 		{
 			", "
 		}, StringSplitOptions.None);
@@ -158,46 +158,46 @@ public class PlayerInputRebinding
 
 	public static void WriteKeyRebindSettings()
 	{
-		using (StreamWriter streamWriter = new StreamWriter(new FileStream(PlayerInputRebinding.KeyRebindingFile, FileMode.OpenOrCreate)))
+		using (StreamWriter streamWriter = new StreamWriter(new FileStream(KeyRebindingFile, FileMode.OpenOrCreate)))
 		{
-			PlayerInputRebinding.KeyBindingSettings keyRebindings = PlayerInputRebinding.m_keyRebindings;
+			KeyBindingSettings keyRebindings = m_keyRebindings;
 			streamWriter.WriteLine("Keyboard Rebindings");
 			streamWriter.WriteLine("--------");
-			streamWriter.WriteLine("Activate Key Rebinding: " + keyRebindings.IsRebinding.ToString());
+			streamWriter.WriteLine("Activate Key Rebinding: " + keyRebindings.IsRebinding);
 			streamWriter.WriteLine("--------");
-			streamWriter.WriteLine("Movement Left: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.HorizontalDigiPadLeft));
-			streamWriter.WriteLine("Movement Right: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.HorizontalDigiPadRight));
-			streamWriter.WriteLine("Movement Down: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.VerticalDigiPadDown));
-			streamWriter.WriteLine("Movement Up: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.VerticalDigiPadUp));
-			streamWriter.WriteLine("Menu Left: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.MenuLeft));
-			streamWriter.WriteLine("Menu Right: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.MenuRight));
-			streamWriter.WriteLine("Menu Down: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.MenuDown));
-			streamWriter.WriteLine("Menu Up: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.MenuUp));
-			streamWriter.WriteLine("Menu Previous: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.MenuPageLeft));
-			streamWriter.WriteLine("Menu Next: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.MenuPageRight));
-			streamWriter.WriteLine("Proceed: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.ActionButtonA));
-			streamWriter.WriteLine("Soul Link: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.SoulFlame));
-			streamWriter.WriteLine("Jump: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Jump));
-			streamWriter.WriteLine("Grab: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Grab));
-			streamWriter.WriteLine("Spirit Flame: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.SpiritFlame));
-			streamWriter.WriteLine("Bash: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Bash));
-			streamWriter.WriteLine("Glide: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Glide));
-			streamWriter.WriteLine("Charge Jump: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.ChargeJump));
-			streamWriter.WriteLine("Select: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Select));
-			streamWriter.WriteLine("Start: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Start));
-			streamWriter.WriteLine("Cancel: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Cancel));
-			streamWriter.WriteLine("Grenade: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.LeftShoulder));
-			streamWriter.WriteLine("Dash: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.RightShoulder));
-			streamWriter.WriteLine("Left Stick: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.LeftStick));
-			streamWriter.WriteLine("Debug Menu (shhh): " + PlayerInputRebinding.KeyBindingToString(keyRebindings.RightStick));
-			streamWriter.WriteLine("Zoom In World Map: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.ZoomIn));
-			streamWriter.WriteLine("Zoom Out World Map: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.ZoomOut));
-			streamWriter.WriteLine("Copy: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Copy));
-			streamWriter.WriteLine("Delete: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Delete));
-			streamWriter.WriteLine("Focus: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Focus));
-			streamWriter.WriteLine("Filter: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Filter));
-			streamWriter.WriteLine("Legend: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Legend));
-			streamWriter.WriteLine("Stomp: " + PlayerInputRebinding.KeyBindingToString(keyRebindings.Stomp));
+			streamWriter.WriteLine("Movement Left: " + KeyBindingToString(keyRebindings.HorizontalDigiPadLeft));
+			streamWriter.WriteLine("Movement Right: " + KeyBindingToString(keyRebindings.HorizontalDigiPadRight));
+			streamWriter.WriteLine("Movement Down: " + KeyBindingToString(keyRebindings.VerticalDigiPadDown));
+			streamWriter.WriteLine("Movement Up: " + KeyBindingToString(keyRebindings.VerticalDigiPadUp));
+			streamWriter.WriteLine("Menu Left: " + KeyBindingToString(keyRebindings.MenuLeft));
+			streamWriter.WriteLine("Menu Right: " + KeyBindingToString(keyRebindings.MenuRight));
+			streamWriter.WriteLine("Menu Down: " + KeyBindingToString(keyRebindings.MenuDown));
+			streamWriter.WriteLine("Menu Up: " + KeyBindingToString(keyRebindings.MenuUp));
+			streamWriter.WriteLine("Menu Previous: " + KeyBindingToString(keyRebindings.MenuPageLeft));
+			streamWriter.WriteLine("Menu Next: " + KeyBindingToString(keyRebindings.MenuPageRight));
+			streamWriter.WriteLine("Proceed: " + KeyBindingToString(keyRebindings.ActionButtonA));
+			streamWriter.WriteLine("Soul Link: " + KeyBindingToString(keyRebindings.SoulFlame));
+			streamWriter.WriteLine("Jump: " + KeyBindingToString(keyRebindings.Jump));
+			streamWriter.WriteLine("Grab: " + KeyBindingToString(keyRebindings.Grab));
+			streamWriter.WriteLine("Spirit Flame: " + KeyBindingToString(keyRebindings.SpiritFlame));
+			streamWriter.WriteLine("Bash: " + KeyBindingToString(keyRebindings.Bash));
+			streamWriter.WriteLine("Glide: " + KeyBindingToString(keyRebindings.Glide));
+			streamWriter.WriteLine("Charge Jump: " + KeyBindingToString(keyRebindings.ChargeJump));
+			streamWriter.WriteLine("Select: " + KeyBindingToString(keyRebindings.Select));
+			streamWriter.WriteLine("Start: " + KeyBindingToString(keyRebindings.Start));
+			streamWriter.WriteLine("Cancel: " + KeyBindingToString(keyRebindings.Cancel));
+			streamWriter.WriteLine("Grenade: " + KeyBindingToString(keyRebindings.LeftShoulder));
+			streamWriter.WriteLine("Dash: " + KeyBindingToString(keyRebindings.RightShoulder));
+			streamWriter.WriteLine("Left Stick: " + KeyBindingToString(keyRebindings.LeftStick));
+			streamWriter.WriteLine("Debug Menu (shhh): " + KeyBindingToString(keyRebindings.RightStick));
+			streamWriter.WriteLine("Zoom In World Map: " + KeyBindingToString(keyRebindings.ZoomIn));
+			streamWriter.WriteLine("Zoom Out World Map: " + KeyBindingToString(keyRebindings.ZoomOut));
+			streamWriter.WriteLine("Copy: " + KeyBindingToString(keyRebindings.Copy));
+			streamWriter.WriteLine("Delete: " + KeyBindingToString(keyRebindings.Delete));
+			streamWriter.WriteLine("Focus: " + KeyBindingToString(keyRebindings.Focus));
+			streamWriter.WriteLine("Filter: " + KeyBindingToString(keyRebindings.Filter));
+			streamWriter.WriteLine("Legend: " + KeyBindingToString(keyRebindings.Legend));
+			streamWriter.WriteLine("Stomp: " + KeyBindingToString(keyRebindings.Stomp));
 			streamWriter.WriteLine("--------");
 			streamWriter.WriteLine("Usage:");
 			streamWriter.WriteLine("- There is no guarantee of the game still being playable after key rebinding. Please use with caution and delete this file in case of breakage");
@@ -228,86 +228,86 @@ public class PlayerInputRebinding
 
 	public static void SetDefaultKeyBindingSettings()
 	{
-		PlayerInputRebinding.m_keyRebindings = PlayerInputRebinding.DefaultKeyBindingSettings();
+		m_keyRebindings = DefaultKeyBindingSettings();
 	}
 
-	private static PlayerInputRebinding.KeyBindingSettings DefaultKeyBindingSettings()
+	private static KeyBindingSettings DefaultKeyBindingSettings()
 	{
 		bool flag = GameSettings.Instance.CurrentControlScheme == ControlScheme.KeyboardAndMouse;
 		bool flag2 = GameSettings.Instance.KeyboardLayout == KeyboardLayout.QWERTY;
-		PlayerInputRebinding.KeyBindingSettings keyBindingSettings = new PlayerInputRebinding.KeyBindingSettings();
+		KeyBindingSettings keyBindingSettings = new KeyBindingSettings();
 		keyBindingSettings.IsRebinding = false;
-		keyBindingSettings.HorizontalDigiPadLeft = new KeyCode[]
+		keyBindingSettings.HorizontalDigiPadLeft = new[]
 		{
 			(!flag2) ? KeyCode.Q : KeyCode.A,
 			KeyCode.LeftArrow
 		};
-		keyBindingSettings.HorizontalDigiPadRight = new KeyCode[]
+		keyBindingSettings.HorizontalDigiPadRight = new[]
 		{
 			KeyCode.D,
 			KeyCode.RightArrow
 		};
-		keyBindingSettings.VerticalDigiPadDown = new KeyCode[]
+		keyBindingSettings.VerticalDigiPadDown = new[]
 		{
 			KeyCode.S,
 			KeyCode.DownArrow
 		};
-		keyBindingSettings.VerticalDigiPadUp = new KeyCode[]
+		keyBindingSettings.VerticalDigiPadUp = new[]
 		{
 			(!flag2) ? KeyCode.Z : KeyCode.W,
 			KeyCode.UpArrow
 		};
-		keyBindingSettings.MenuLeft = new KeyCode[]
+		keyBindingSettings.MenuLeft = new[]
 		{
 			(!flag2) ? KeyCode.Q : KeyCode.A,
 			KeyCode.LeftArrow
 		};
-		keyBindingSettings.MenuRight = new KeyCode[]
+		keyBindingSettings.MenuRight = new[]
 		{
 			KeyCode.D,
 			KeyCode.RightArrow
 		};
-		keyBindingSettings.MenuDown = new KeyCode[]
+		keyBindingSettings.MenuDown = new[]
 		{
 			KeyCode.S,
 			KeyCode.DownArrow
 		};
-		keyBindingSettings.MenuUp = new KeyCode[]
+		keyBindingSettings.MenuUp = new[]
 		{
 			(!flag2) ? KeyCode.Z : KeyCode.W,
 			KeyCode.UpArrow
 		};
-		keyBindingSettings.MenuPageLeft = new KeyCode[]
+		keyBindingSettings.MenuPageLeft = new[]
 		{
 			KeyCode.K,
 			KeyCode.PageUp
 		};
-		keyBindingSettings.MenuPageRight = new KeyCode[]
+		keyBindingSettings.MenuPageRight = new[]
 		{
 			KeyCode.L,
 			KeyCode.PageDown
 		};
-		keyBindingSettings.ActionButtonA = new KeyCode[]
+		keyBindingSettings.ActionButtonA = new[]
 		{
 			KeyCode.Space,
 			KeyCode.Return
 		};
-		keyBindingSettings.SoulFlame = new KeyCode[]
+		keyBindingSettings.SoulFlame = new[]
 		{
 			KeyCode.E
 		};
-		keyBindingSettings.Jump = new KeyCode[]
+		keyBindingSettings.Jump = new[]
 		{
 			KeyCode.Space,
 			(!flag2) ? KeyCode.W : KeyCode.Z,
 			KeyCode.Y
 		};
-		keyBindingSettings.Grab = new KeyCode[]
+		keyBindingSettings.Grab = new[]
 		{
 			KeyCode.LeftShift,
 			KeyCode.RightShift
 		};
-		PlayerInputRebinding.KeyBindingSettings keyBindingSettings2 = keyBindingSettings;
+		KeyBindingSettings keyBindingSettings2 = keyBindingSettings;
 		KeyCode[] spiritFlame;
 		if (flag)
 		{
@@ -324,7 +324,7 @@ public class PlayerInputRebinding
 			array2[1] = KeyCode.Mouse0;
 		}
 		keyBindingSettings2.SpiritFlame = spiritFlame;
-		PlayerInputRebinding.KeyBindingSettings keyBindingSettings3 = keyBindingSettings;
+		KeyBindingSettings keyBindingSettings3 = keyBindingSettings;
 		KeyCode[] bash;
 		if (flag)
 		{
@@ -341,12 +341,12 @@ public class PlayerInputRebinding
 			array4[1] = KeyCode.Mouse1;
 		}
 		keyBindingSettings3.Bash = bash;
-		keyBindingSettings.Glide = new KeyCode[]
+		keyBindingSettings.Glide = new[]
 		{
 			KeyCode.LeftShift,
 			KeyCode.RightShift
 		};
-		PlayerInputRebinding.KeyBindingSettings keyBindingSettings4 = keyBindingSettings;
+		KeyBindingSettings keyBindingSettings4 = keyBindingSettings;
 		KeyCode[] chargeJump;
 		if (flag)
 		{
@@ -363,67 +363,67 @@ public class PlayerInputRebinding
 			array6[1] = ((!flag2) ? KeyCode.Z : KeyCode.W);
 		}
 		keyBindingSettings4.ChargeJump = chargeJump;
-		keyBindingSettings.Select = new KeyCode[]
+		keyBindingSettings.Select = new[]
 		{
 			KeyCode.Tab
 		};
-		keyBindingSettings.Start = new KeyCode[]
+		keyBindingSettings.Start = new[]
 		{
 			KeyCode.Escape
 		};
-		keyBindingSettings.Cancel = new KeyCode[]
+		keyBindingSettings.Cancel = new[]
 		{
 			KeyCode.Escape,
 			KeyCode.Mouse1
 		};
-		keyBindingSettings.LeftShoulder = new KeyCode[]
+		keyBindingSettings.LeftShoulder = new[]
 		{
 			KeyCode.R
 		};
-		keyBindingSettings.RightShoulder = new KeyCode[]
+		keyBindingSettings.RightShoulder = new[]
 		{
 			KeyCode.LeftControl,
 			KeyCode.RightControl
 		};
-		keyBindingSettings.LeftStick = new KeyCode[]
+		keyBindingSettings.LeftStick = new[]
 		{
 			KeyCode.Alpha7
 		};
-		keyBindingSettings.RightStick = new KeyCode[]
+		keyBindingSettings.RightStick = new[]
 		{
 			KeyCode.Alpha8
 		};
-		keyBindingSettings.ZoomIn = new KeyCode[]
+		keyBindingSettings.ZoomIn = new[]
 		{
 			KeyCode.RightShift,
 			KeyCode.LeftShift
 		};
-		keyBindingSettings.ZoomOut = new KeyCode[]
+		keyBindingSettings.ZoomOut = new[]
 		{
 			KeyCode.RightControl,
 			KeyCode.LeftControl
 		};
-		keyBindingSettings.Copy = new KeyCode[]
+		keyBindingSettings.Copy = new[]
 		{
 			KeyCode.C
 		};
-		keyBindingSettings.Delete = new KeyCode[]
+		keyBindingSettings.Delete = new[]
 		{
 			KeyCode.Delete
 		};
-		keyBindingSettings.Focus = new KeyCode[]
+		keyBindingSettings.Focus = new[]
 		{
 			KeyCode.F
 		};
-		keyBindingSettings.Filter = new KeyCode[]
+		keyBindingSettings.Filter = new[]
 		{
 			KeyCode.F
 		};
-		keyBindingSettings.Legend = new KeyCode[]
+		keyBindingSettings.Legend = new[]
 		{
 			KeyCode.L
 		};
-		keyBindingSettings.Stomp = new KeyCode[]
+		keyBindingSettings.Stomp = new[]
 		{
 			KeyCode.S
 		};
@@ -434,93 +434,93 @@ public class PlayerInputRebinding
 	{
 		get
 		{
-			return Path.Combine(OutputFolder.PlayerDataFolderPath, PlayerInputRebinding.controllerRebindingFileName);
+			return Path.Combine(OutputFolder.PlayerDataFolderPath, controllerRebindingFileName);
 		}
 	}
 
 	public static XboxControllerInput.Button GetRemappedJoystickButton(XboxControllerInput.Button joystickButtonIndex)
 	{
-		return PlayerInputRebinding.intToButton[PlayerInputRebinding.m_controllerButtonRemappings[PlayerInputRebinding.ButtonToInt(joystickButtonIndex)]];
+		return intToButton[m_controllerButtonRemappings[ButtonToInt(joystickButtonIndex)]];
 	}
 
 	public static void GetControllerButtonRemappingsFromFile()
 	{
 		try
 		{
-			using (StreamReader streamReader = new StreamReader(new FileStream(PlayerInputRebinding.ControllerRemappingFile, FileMode.Open)))
+			using (StreamReader streamReader = new StreamReader(new FileStream(ControllerRemappingFile, FileMode.Open)))
 			{
-				PlayerInputRebinding.SetDefaultControllerButtonRemappings();
+				SetDefaultControllerButtonRemappings();
 				streamReader.ReadLine();
 				streamReader.ReadLine();
 				streamReader.ReadLine();
-				bool flag = bool.Parse(streamReader.ReadLine().Split(new string[]
+				bool flag = bool.Parse(streamReader.ReadLine().Split(new[]
 				{
 					": "
 				}, StringSplitOptions.None)[1]);
 				if (flag)
 				{
 					streamReader.ReadLine();
-					PlayerInputRebinding.m_controllerIsRemappingButtons = flag;
-					PlayerInputRebinding.m_controllerButtonRemappings[0] = int.Parse(streamReader.ReadLine().Split(new string[]
+					m_controllerIsRemappingButtons = flag;
+					m_controllerButtonRemappings[0] = int.Parse(streamReader.ReadLine().Split(new[]
 					{
 						": "
 					}, StringSplitOptions.None)[1]) - 1;
-					PlayerInputRebinding.m_controllerButtonRemappings[1] = int.Parse(streamReader.ReadLine().Split(new string[]
+					m_controllerButtonRemappings[1] = int.Parse(streamReader.ReadLine().Split(new[]
 					{
 						": "
 					}, StringSplitOptions.None)[1]) - 1;
-					PlayerInputRebinding.m_controllerButtonRemappings[2] = int.Parse(streamReader.ReadLine().Split(new string[]
+					m_controllerButtonRemappings[2] = int.Parse(streamReader.ReadLine().Split(new[]
 					{
 						": "
 					}, StringSplitOptions.None)[1]) - 1;
-					PlayerInputRebinding.m_controllerButtonRemappings[3] = int.Parse(streamReader.ReadLine().Split(new string[]
+					m_controllerButtonRemappings[3] = int.Parse(streamReader.ReadLine().Split(new[]
 					{
 						": "
 					}, StringSplitOptions.None)[1]) - 1;
-					PlayerInputRebinding.m_controllerButtonRemappings[4] = int.Parse(streamReader.ReadLine().Split(new string[]
+					m_controllerButtonRemappings[4] = int.Parse(streamReader.ReadLine().Split(new[]
 					{
 						": "
 					}, StringSplitOptions.None)[1]) - 1;
-					PlayerInputRebinding.m_controllerButtonRemappings[5] = int.Parse(streamReader.ReadLine().Split(new string[]
+					m_controllerButtonRemappings[5] = int.Parse(streamReader.ReadLine().Split(new[]
 					{
 						": "
 					}, StringSplitOptions.None)[1]) - 1;
-					PlayerInputRebinding.m_controllerButtonRemappings[6] = int.Parse(streamReader.ReadLine().Split(new string[]
+					m_controllerButtonRemappings[6] = int.Parse(streamReader.ReadLine().Split(new[]
 					{
 						": "
 					}, StringSplitOptions.None)[1]) - 1;
-					PlayerInputRebinding.m_controllerButtonRemappings[7] = int.Parse(streamReader.ReadLine().Split(new string[]
+					m_controllerButtonRemappings[7] = int.Parse(streamReader.ReadLine().Split(new[]
 					{
 						": "
 					}, StringSplitOptions.None)[1]) - 1;
-					PlayerInputRebinding.m_controllerButtonRemappings[8] = int.Parse(streamReader.ReadLine().Split(new string[]
+					m_controllerButtonRemappings[8] = int.Parse(streamReader.ReadLine().Split(new[]
 					{
 						": "
 					}, StringSplitOptions.None)[1]) - 1;
-					PlayerInputRebinding.m_controllerButtonRemappings[9] = int.Parse(streamReader.ReadLine().Split(new string[]
+					m_controllerButtonRemappings[9] = int.Parse(streamReader.ReadLine().Split(new[]
 					{
 						": "
 					}, StringSplitOptions.None)[1]) - 1;
-					PlayerInputRebinding.m_controllerButtonRemappings[12] = int.Parse(streamReader.ReadLine().Split(new string[]
+					m_controllerButtonRemappings[12] = int.Parse(streamReader.ReadLine().Split(new[]
 					{
 						": "
 					}, StringSplitOptions.None)[1]) - 1;
-					PlayerInputRebinding.m_controllerButtonRemappings[13] = int.Parse(streamReader.ReadLine().Split(new string[]
+					m_controllerButtonRemappings[13] = int.Parse(streamReader.ReadLine().Split(new[]
 					{
 						": "
 					}, StringSplitOptions.None)[1]) - 1;
 					for (int i = 0; i < 10; i++)
 					{
-						if (PlayerInputRebinding.m_controllerButtonRemappings[i] < 0 || PlayerInputRebinding.m_controllerButtonRemappings[i] > 11)
+						if (m_controllerButtonRemappings[i] < 0 || m_controllerButtonRemappings[i] > 11)
 						{
-							PlayerInputRebinding.SetDefaultControllerButtonRemappings();
+							SetDefaultControllerButtonRemappings();
 						}
 					}
 					for (int j = 12; j < 14; j++)
 					{
-						if (PlayerInputRebinding.m_controllerButtonRemappings[j] < 0 || PlayerInputRebinding.m_controllerButtonRemappings[j] > 13)
+						if (m_controllerButtonRemappings[j] < 0 || m_controllerButtonRemappings[j] > 13)
 						{
-							PlayerInputRebinding.SetDefaultControllerButtonRemappings();
+							SetDefaultControllerButtonRemappings();
 						}
 					}
 				}
@@ -528,31 +528,31 @@ public class PlayerInputRebinding
 		}
 		catch (Exception)
 		{
-			PlayerInputRebinding.SetDefaultControllerButtonRemappings();
+			SetDefaultControllerButtonRemappings();
 		}
 	}
 
 	public static void WriteControllerButtonRemappings()
 	{
-		using (StreamWriter streamWriter = new StreamWriter(new FileStream(PlayerInputRebinding.ControllerRemappingFile, FileMode.OpenOrCreate)))
+		using (StreamWriter streamWriter = new StreamWriter(new FileStream(ControllerRemappingFile, FileMode.OpenOrCreate)))
 		{
 			streamWriter.WriteLine("Controller Button Remapping - remaps controller buttons to different DirectInput button IDs");
 			streamWriter.WriteLine("Only for DirectInput controllers");
 			streamWriter.WriteLine("--------");
-			streamWriter.WriteLine("Activate DirectInput Button Rebinding: " + PlayerInputRebinding.m_controllerIsRemappingButtons.ToString());
+			streamWriter.WriteLine("Activate DirectInput Button Rebinding: " + m_controllerIsRemappingButtons);
 			streamWriter.WriteLine("--------");
-			streamWriter.WriteLine("A: " + (PlayerInputRebinding.m_controllerButtonRemappings[0] + 1));
-			streamWriter.WriteLine("B: " + (PlayerInputRebinding.m_controllerButtonRemappings[1] + 1));
-			streamWriter.WriteLine("X: " + (PlayerInputRebinding.m_controllerButtonRemappings[2] + 1));
-			streamWriter.WriteLine("Y: " + (PlayerInputRebinding.m_controllerButtonRemappings[3] + 1));
-			streamWriter.WriteLine("LShoulder: " + (PlayerInputRebinding.m_controllerButtonRemappings[4] + 1));
-			streamWriter.WriteLine("RShoulder: " + (PlayerInputRebinding.m_controllerButtonRemappings[5] + 1));
-			streamWriter.WriteLine("Select: " + (PlayerInputRebinding.m_controllerButtonRemappings[6] + 1));
-			streamWriter.WriteLine("Start: " + (PlayerInputRebinding.m_controllerButtonRemappings[7] + 1));
-			streamWriter.WriteLine("LStick: " + (PlayerInputRebinding.m_controllerButtonRemappings[8] + 1));
-			streamWriter.WriteLine("RStick: " + (PlayerInputRebinding.m_controllerButtonRemappings[9] + 1));
-			streamWriter.WriteLine("LTrigger: " + (PlayerInputRebinding.m_controllerButtonRemappings[12] + 1));
-			streamWriter.WriteLine("RTrigger: " + (PlayerInputRebinding.m_controllerButtonRemappings[13] + 1));
+			streamWriter.WriteLine("A: " + (m_controllerButtonRemappings[0] + 1));
+			streamWriter.WriteLine("B: " + (m_controllerButtonRemappings[1] + 1));
+			streamWriter.WriteLine("X: " + (m_controllerButtonRemappings[2] + 1));
+			streamWriter.WriteLine("Y: " + (m_controllerButtonRemappings[3] + 1));
+			streamWriter.WriteLine("LShoulder: " + (m_controllerButtonRemappings[4] + 1));
+			streamWriter.WriteLine("RShoulder: " + (m_controllerButtonRemappings[5] + 1));
+			streamWriter.WriteLine("Select: " + (m_controllerButtonRemappings[6] + 1));
+			streamWriter.WriteLine("Start: " + (m_controllerButtonRemappings[7] + 1));
+			streamWriter.WriteLine("LStick: " + (m_controllerButtonRemappings[8] + 1));
+			streamWriter.WriteLine("RStick: " + (m_controllerButtonRemappings[9] + 1));
+			streamWriter.WriteLine("LTrigger: " + (m_controllerButtonRemappings[12] + 1));
+			streamWriter.WriteLine("RTrigger: " + (m_controllerButtonRemappings[13] + 1));
 			streamWriter.WriteLine("--------");
 			streamWriter.WriteLine("Usage:");
 			streamWriter.WriteLine("- There is no guarantee of the game still being playable after button remapping. Please use with caution and delete this file in case of breakage");
@@ -573,24 +573,24 @@ public class PlayerInputRebinding
 
 	public static void RefreshControllerButtonRemappings()
 	{
-		if (!PlayerInputRebinding.m_hasReadControllerRemappingsFile)
+		if (!m_hasReadControllerRemappingsFile)
 		{
-			if (!File.Exists(PlayerInputRebinding.ControllerRemappingFile))
+			if (!File.Exists(ControllerRemappingFile))
 			{
-				PlayerInputRebinding.SetDefaultControllerButtonRemappings();
-				PlayerInputRebinding.WriteControllerButtonRemappings();
+				SetDefaultControllerButtonRemappings();
+				WriteControllerButtonRemappings();
 			}
 			else
 			{
-				PlayerInputRebinding.GetControllerButtonRemappingsFromFile();
+				GetControllerButtonRemappingsFromFile();
 			}
-			PlayerInputRebinding.m_hasReadControllerRemappingsFile = true;
+			m_hasReadControllerRemappingsFile = true;
 		}
 	}
 
 	public static void SetDefaultControllerButtonRemappings()
 	{
-		PlayerInputRebinding.m_controllerButtonRemappings = new int[]
+		m_controllerButtonRemappings = new[]
 		{
 			0,
 			1,
@@ -652,112 +652,112 @@ public class PlayerInputRebinding
 	{
 		try
 		{
-			using (StreamReader streamReader = new StreamReader(new FileStream(PlayerInputRebinding.ControllerRebindingFile, FileMode.Open)))
+			using (StreamReader streamReader = new StreamReader(new FileStream(ControllerRebindingFile, FileMode.Open)))
 			{
 				streamReader.ReadLine();
 				streamReader.ReadLine();
-				PlayerInputRebinding.m_controllerRebindings = new PlayerInputRebinding.ControllerBindingSettings
+				m_controllerRebindings = new ControllerBindingSettings
 				{
-					HorizontalDigiPadLeft = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					HorizontalDigiPadRight = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					VerticalDigiPadDown = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					VerticalDigiPadUp = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					MenuLeft = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					MenuRight = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					MenuDown = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					MenuUp = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					MenuPageLeft = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					MenuPageRight = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					ActionButtonA = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					SoulFlame = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Jump = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Grab = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					SpiritFlame = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Bash = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Glide = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					ChargeJump = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Select = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Start = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Cancel = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					LeftShoulder = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					RightShoulder = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					LeftStick = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					RightStick = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					ZoomIn = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					ZoomOut = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Copy = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Delete = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Focus = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Filter = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Legend = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine()),
-					Stomp = PlayerInputRebinding.StringToControllerBinding(streamReader.ReadLine())
+					HorizontalDigiPadLeft = StringToControllerBinding(streamReader.ReadLine()),
+					HorizontalDigiPadRight = StringToControllerBinding(streamReader.ReadLine()),
+					VerticalDigiPadDown = StringToControllerBinding(streamReader.ReadLine()),
+					VerticalDigiPadUp = StringToControllerBinding(streamReader.ReadLine()),
+					MenuLeft = StringToControllerBinding(streamReader.ReadLine()),
+					MenuRight = StringToControllerBinding(streamReader.ReadLine()),
+					MenuDown = StringToControllerBinding(streamReader.ReadLine()),
+					MenuUp = StringToControllerBinding(streamReader.ReadLine()),
+					MenuPageLeft = StringToControllerBinding(streamReader.ReadLine()),
+					MenuPageRight = StringToControllerBinding(streamReader.ReadLine()),
+					ActionButtonA = StringToControllerBinding(streamReader.ReadLine()),
+					SoulFlame = StringToControllerBinding(streamReader.ReadLine()),
+					Jump = StringToControllerBinding(streamReader.ReadLine()),
+					Grab = StringToControllerBinding(streamReader.ReadLine()),
+					SpiritFlame = StringToControllerBinding(streamReader.ReadLine()),
+					Bash = StringToControllerBinding(streamReader.ReadLine()),
+					Glide = StringToControllerBinding(streamReader.ReadLine()),
+					ChargeJump = StringToControllerBinding(streamReader.ReadLine()),
+					Select = StringToControllerBinding(streamReader.ReadLine()),
+					Start = StringToControllerBinding(streamReader.ReadLine()),
+					Cancel = StringToControllerBinding(streamReader.ReadLine()),
+					LeftShoulder = StringToControllerBinding(streamReader.ReadLine()),
+					RightShoulder = StringToControllerBinding(streamReader.ReadLine()),
+					LeftStick = StringToControllerBinding(streamReader.ReadLine()),
+					RightStick = StringToControllerBinding(streamReader.ReadLine()),
+					ZoomIn = StringToControllerBinding(streamReader.ReadLine()),
+					ZoomOut = StringToControllerBinding(streamReader.ReadLine()),
+					Copy = StringToControllerBinding(streamReader.ReadLine()),
+					Delete = StringToControllerBinding(streamReader.ReadLine()),
+					Focus = StringToControllerBinding(streamReader.ReadLine()),
+					Filter = StringToControllerBinding(streamReader.ReadLine()),
+					Legend = StringToControllerBinding(streamReader.ReadLine()),
+					Stomp = StringToControllerBinding(streamReader.ReadLine())
 				};
 			}
 		}
 		catch (Exception)
 		{
-			PlayerInputRebinding.SetDefaultControllerBindingSettings();
+			SetDefaultControllerBindingSettings();
 		}
 	}
 
-	public static PlayerInputRebinding.ControllerButton[] StringToControllerBinding(string s)
+	public static ControllerButton[] StringToControllerBinding(string s)
 	{
-		s = s.Split(new string[]
+		s = s.Split(new[]
 		{
 			": "
 		}, StringSplitOptions.None)[1];
-		string[] array = s.Split(new string[]
+		string[] array = s.Split(new[]
 		{
 			", "
 		}, StringSplitOptions.RemoveEmptyEntries);
-		List<PlayerInputRebinding.ControllerButton> list = new List<PlayerInputRebinding.ControllerButton>();
+		List<ControllerButton> list = new List<ControllerButton>();
 		foreach (string value in array)
 		{
-			list.Add((PlayerInputRebinding.ControllerButton)((int)Enum.Parse(typeof(PlayerInputRebinding.ControllerButton), value)));
+			list.Add((ControllerButton)((int)Enum.Parse(typeof(ControllerButton), value)));
 		}
 		return list.ToArray();
 	}
 
 	public static void WriteControllerRebindSettings()
 	{
-		using (StreamWriter streamWriter = new StreamWriter(new FileStream(PlayerInputRebinding.ControllerRebindingFile, FileMode.OpenOrCreate)))
+		using (StreamWriter streamWriter = new StreamWriter(new FileStream(ControllerRebindingFile, FileMode.OpenOrCreate)))
 		{
-			PlayerInputRebinding.ControllerBindingSettings controllerRebindings = PlayerInputRebinding.m_controllerRebindings;
+			ControllerBindingSettings controllerRebindings = m_controllerRebindings;
 			streamWriter.WriteLine("Controller Rebindings");
 			streamWriter.WriteLine("--------");
-			streamWriter.WriteLine("Movement Left: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.HorizontalDigiPadLeft));
-			streamWriter.WriteLine("Movement Right: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.HorizontalDigiPadRight));
-			streamWriter.WriteLine("Movement Down: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.VerticalDigiPadDown));
-			streamWriter.WriteLine("Movement Up: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.VerticalDigiPadUp));
-			streamWriter.WriteLine("Menu Left: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.MenuLeft));
-			streamWriter.WriteLine("Menu Right: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.MenuRight));
-			streamWriter.WriteLine("Menu Down: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.MenuDown));
-			streamWriter.WriteLine("Menu Up: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.MenuUp));
-			streamWriter.WriteLine("Menu Previous: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.MenuPageLeft));
-			streamWriter.WriteLine("Menu Next: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.MenuPageRight));
-			streamWriter.WriteLine("Proceed: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.ActionButtonA));
-			streamWriter.WriteLine("Soul Link: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.SoulFlame));
-			streamWriter.WriteLine("Jump: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Jump));
-			streamWriter.WriteLine("Grab: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Grab));
-			streamWriter.WriteLine("Spirit Flame: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.SpiritFlame));
-			streamWriter.WriteLine("Bash: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Bash));
-			streamWriter.WriteLine("Glide: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Glide));
-			streamWriter.WriteLine("Charge Jump: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.ChargeJump));
-			streamWriter.WriteLine("Map: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Select));
-			streamWriter.WriteLine("Start: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Start));
-			streamWriter.WriteLine("Cancel: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Cancel));
-			streamWriter.WriteLine("Grenade: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.LeftShoulder));
-			streamWriter.WriteLine("Dash: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.RightShoulder));
-			streamWriter.WriteLine("Left Stick: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.LeftStick));
-			streamWriter.WriteLine("Debug Menu (shhh): " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.RightStick));
-			streamWriter.WriteLine("Zoom In World Map: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.ZoomIn));
-			streamWriter.WriteLine("Zoom Out World Map: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.ZoomOut));
-			streamWriter.WriteLine("Copy: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Copy));
-			streamWriter.WriteLine("Delete: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Delete));
-			streamWriter.WriteLine("Focus: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Focus));
-			streamWriter.WriteLine("Filter: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Filter));
-			streamWriter.WriteLine("Legend: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Legend));
-			streamWriter.WriteLine("Stomp: " + PlayerInputRebinding.ControllerBindingToString(controllerRebindings.Stomp));
+			streamWriter.WriteLine("Movement Left: " + ControllerBindingToString(controllerRebindings.HorizontalDigiPadLeft));
+			streamWriter.WriteLine("Movement Right: " + ControllerBindingToString(controllerRebindings.HorizontalDigiPadRight));
+			streamWriter.WriteLine("Movement Down: " + ControllerBindingToString(controllerRebindings.VerticalDigiPadDown));
+			streamWriter.WriteLine("Movement Up: " + ControllerBindingToString(controllerRebindings.VerticalDigiPadUp));
+			streamWriter.WriteLine("Menu Left: " + ControllerBindingToString(controllerRebindings.MenuLeft));
+			streamWriter.WriteLine("Menu Right: " + ControllerBindingToString(controllerRebindings.MenuRight));
+			streamWriter.WriteLine("Menu Down: " + ControllerBindingToString(controllerRebindings.MenuDown));
+			streamWriter.WriteLine("Menu Up: " + ControllerBindingToString(controllerRebindings.MenuUp));
+			streamWriter.WriteLine("Menu Previous: " + ControllerBindingToString(controllerRebindings.MenuPageLeft));
+			streamWriter.WriteLine("Menu Next: " + ControllerBindingToString(controllerRebindings.MenuPageRight));
+			streamWriter.WriteLine("Proceed: " + ControllerBindingToString(controllerRebindings.ActionButtonA));
+			streamWriter.WriteLine("Soul Link: " + ControllerBindingToString(controllerRebindings.SoulFlame));
+			streamWriter.WriteLine("Jump: " + ControllerBindingToString(controllerRebindings.Jump));
+			streamWriter.WriteLine("Grab: " + ControllerBindingToString(controllerRebindings.Grab));
+			streamWriter.WriteLine("Spirit Flame: " + ControllerBindingToString(controllerRebindings.SpiritFlame));
+			streamWriter.WriteLine("Bash: " + ControllerBindingToString(controllerRebindings.Bash));
+			streamWriter.WriteLine("Glide: " + ControllerBindingToString(controllerRebindings.Glide));
+			streamWriter.WriteLine("Charge Jump: " + ControllerBindingToString(controllerRebindings.ChargeJump));
+			streamWriter.WriteLine("Map: " + ControllerBindingToString(controllerRebindings.Select));
+			streamWriter.WriteLine("Start: " + ControllerBindingToString(controllerRebindings.Start));
+			streamWriter.WriteLine("Cancel: " + ControllerBindingToString(controllerRebindings.Cancel));
+			streamWriter.WriteLine("Grenade: " + ControllerBindingToString(controllerRebindings.LeftShoulder));
+			streamWriter.WriteLine("Dash: " + ControllerBindingToString(controllerRebindings.RightShoulder));
+			streamWriter.WriteLine("Left Stick: " + ControllerBindingToString(controllerRebindings.LeftStick));
+			streamWriter.WriteLine("Debug Menu (shhh): " + ControllerBindingToString(controllerRebindings.RightStick));
+			streamWriter.WriteLine("Zoom In World Map: " + ControllerBindingToString(controllerRebindings.ZoomIn));
+			streamWriter.WriteLine("Zoom Out World Map: " + ControllerBindingToString(controllerRebindings.ZoomOut));
+			streamWriter.WriteLine("Copy: " + ControllerBindingToString(controllerRebindings.Copy));
+			streamWriter.WriteLine("Delete: " + ControllerBindingToString(controllerRebindings.Delete));
+			streamWriter.WriteLine("Focus: " + ControllerBindingToString(controllerRebindings.Focus));
+			streamWriter.WriteLine("Filter: " + ControllerBindingToString(controllerRebindings.Filter));
+			streamWriter.WriteLine("Legend: " + ControllerBindingToString(controllerRebindings.Legend));
+			streamWriter.WriteLine("Stomp: " + ControllerBindingToString(controllerRebindings.Stomp));
 			streamWriter.WriteLine("--------");
 			streamWriter.WriteLine("Usage:");
 			streamWriter.WriteLine("- There is no guarantee of the game still being playable after key rebinding. Please use with caution and delete this file in case of breakage");
@@ -776,11 +776,11 @@ public class PlayerInputRebinding
 		}
 	}
 
-	public static string ControllerBindingToString(PlayerInputRebinding.ControllerButton[] codes)
+	public static string ControllerBindingToString(ControllerButton[] codes)
 	{
 		string text = string.Empty;
 		bool flag = true;
-		foreach (PlayerInputRebinding.ControllerButton controllerButton in codes)
+		foreach (ControllerButton controllerButton in codes)
 		{
 			text += ((!flag) ? ", " : string.Empty);
 			text += controllerButton;
@@ -791,164 +791,164 @@ public class PlayerInputRebinding
 
 	public static void SetDefaultControllerBindingSettings()
 	{
-		PlayerInputRebinding.m_controllerRebindings = PlayerInputRebinding.DefaultControllerBindingSettings();
+		m_controllerRebindings = DefaultControllerBindingSettings();
 	}
 
-	public static PlayerInputRebinding.ControllerBindingSettings DefaultControllerBindingSettings()
+	public static ControllerBindingSettings DefaultControllerBindingSettings()
 	{
-		return new PlayerInputRebinding.ControllerBindingSettings
+		return new ControllerBindingSettings
 		{
-			HorizontalDigiPadLeft = new PlayerInputRebinding.ControllerButton[]
+			HorizontalDigiPadLeft = new[]
 			{
-				PlayerInputRebinding.ControllerButton.DLeft
+				ControllerButton.DLeft
 			},
-			HorizontalDigiPadRight = new PlayerInputRebinding.ControllerButton[]
+			HorizontalDigiPadRight = new[]
 			{
-				PlayerInputRebinding.ControllerButton.DRight
+				ControllerButton.DRight
 			},
-			VerticalDigiPadUp = new PlayerInputRebinding.ControllerButton[]
+			VerticalDigiPadUp = new[]
 			{
-				PlayerInputRebinding.ControllerButton.DUp
+				ControllerButton.DUp
 			},
-			VerticalDigiPadDown = new PlayerInputRebinding.ControllerButton[]
+			VerticalDigiPadDown = new[]
 			{
-				PlayerInputRebinding.ControllerButton.DDown
+				ControllerButton.DDown
 			},
-			ActionButtonA = new PlayerInputRebinding.ControllerButton[1],
-			Bash = new PlayerInputRebinding.ControllerButton[]
+			ActionButtonA = new ControllerButton[1],
+			Bash = new[]
 			{
-				PlayerInputRebinding.ControllerButton.Y
+				ControllerButton.Y
 			},
-			Cancel = new PlayerInputRebinding.ControllerButton[]
+			Cancel = new[]
 			{
-				PlayerInputRebinding.ControllerButton.B
+				ControllerButton.B
 			},
-			ChargeJump = new PlayerInputRebinding.ControllerButton[]
+			ChargeJump = new[]
 			{
-				PlayerInputRebinding.ControllerButton.LT
+				ControllerButton.LT
 			},
-			Copy = new PlayerInputRebinding.ControllerButton[]
+			Copy = new[]
 			{
-				PlayerInputRebinding.ControllerButton.X
+				ControllerButton.X
 			},
-			Delete = new PlayerInputRebinding.ControllerButton[]
+			Delete = new[]
 			{
-				PlayerInputRebinding.ControllerButton.Y
+				ControllerButton.Y
 			},
-			Filter = new PlayerInputRebinding.ControllerButton[]
+			Filter = new[]
 			{
-				PlayerInputRebinding.ControllerButton.X
+				ControllerButton.X
 			},
-			Focus = new PlayerInputRebinding.ControllerButton[]
+			Focus = new[]
 			{
-				PlayerInputRebinding.ControllerButton.X
+				ControllerButton.X
 			},
-			Glide = new PlayerInputRebinding.ControllerButton[]
+			Glide = new[]
 			{
-				PlayerInputRebinding.ControllerButton.RT
+				ControllerButton.RT
 			},
-			Grab = new PlayerInputRebinding.ControllerButton[]
+			Grab = new[]
 			{
-				PlayerInputRebinding.ControllerButton.RT
+				ControllerButton.RT
 			},
-			Jump = new PlayerInputRebinding.ControllerButton[1],
-			LeftShoulder = new PlayerInputRebinding.ControllerButton[]
+			Jump = new ControllerButton[1],
+			LeftShoulder = new[]
 			{
-				PlayerInputRebinding.ControllerButton.LB
+				ControllerButton.LB
 			},
-			LeftStick = new PlayerInputRebinding.ControllerButton[]
+			LeftStick = new[]
 			{
-				PlayerInputRebinding.ControllerButton.LS
+				ControllerButton.LS
 			},
-			Legend = new PlayerInputRebinding.ControllerButton[]
+			Legend = new[]
 			{
-				PlayerInputRebinding.ControllerButton.Y
+				ControllerButton.Y
 			},
-			MenuDown = new PlayerInputRebinding.ControllerButton[]
+			MenuDown = new[]
 			{
-				PlayerInputRebinding.ControllerButton.LDown,
-				PlayerInputRebinding.ControllerButton.DDown
+				ControllerButton.LDown,
+				ControllerButton.DDown
 			},
-			MenuLeft = new PlayerInputRebinding.ControllerButton[]
+			MenuLeft = new[]
 			{
-				PlayerInputRebinding.ControllerButton.LLeft,
-				PlayerInputRebinding.ControllerButton.DLeft
+				ControllerButton.LLeft,
+				ControllerButton.DLeft
 			},
-			MenuPageLeft = new PlayerInputRebinding.ControllerButton[]
+			MenuPageLeft = new[]
 			{
-				PlayerInputRebinding.ControllerButton.LT
+				ControllerButton.LT
 			},
-			MenuPageRight = new PlayerInputRebinding.ControllerButton[]
+			MenuPageRight = new[]
 			{
-				PlayerInputRebinding.ControllerButton.RT
+				ControllerButton.RT
 			},
-			MenuRight = new PlayerInputRebinding.ControllerButton[]
+			MenuRight = new[]
 			{
-				PlayerInputRebinding.ControllerButton.LRight,
-				PlayerInputRebinding.ControllerButton.DRight
+				ControllerButton.LRight,
+				ControllerButton.DRight
 			},
-			MenuUp = new PlayerInputRebinding.ControllerButton[]
+			MenuUp = new[]
 			{
-				PlayerInputRebinding.ControllerButton.LUp,
-				PlayerInputRebinding.ControllerButton.DUp
+				ControllerButton.LUp,
+				ControllerButton.DUp
 			},
-			RightShoulder = new PlayerInputRebinding.ControllerButton[]
+			RightShoulder = new[]
 			{
-				PlayerInputRebinding.ControllerButton.RB
+				ControllerButton.RB
 			},
-			RightStick = new PlayerInputRebinding.ControllerButton[]
+			RightStick = new[]
 			{
-				PlayerInputRebinding.ControllerButton.RS
+				ControllerButton.RS
 			},
-			Select = new PlayerInputRebinding.ControllerButton[]
+			Select = new[]
 			{
-				PlayerInputRebinding.ControllerButton.Back
+				ControllerButton.Back
 			},
-			SoulFlame = new PlayerInputRebinding.ControllerButton[]
+			SoulFlame = new[]
 			{
-				PlayerInputRebinding.ControllerButton.B
+				ControllerButton.B
 			},
-			SpiritFlame = new PlayerInputRebinding.ControllerButton[]
+			SpiritFlame = new[]
 			{
-				PlayerInputRebinding.ControllerButton.X
+				ControllerButton.X
 			},
-			Start = new PlayerInputRebinding.ControllerButton[]
+			Start = new[]
 			{
-				PlayerInputRebinding.ControllerButton.Start
+				ControllerButton.Start
 			},
-			Stomp = new PlayerInputRebinding.ControllerButton[]
+			Stomp = new[]
 			{
-				PlayerInputRebinding.ControllerButton.LDown,
-				PlayerInputRebinding.ControllerButton.DDown
+				ControllerButton.LDown,
+				ControllerButton.DDown
 			},
-			ZoomIn = new PlayerInputRebinding.ControllerButton[]
+			ZoomIn = new[]
 			{
-				PlayerInputRebinding.ControllerButton.RT
+				ControllerButton.RT
 			},
-			ZoomOut = new PlayerInputRebinding.ControllerButton[]
+			ZoomOut = new[]
 			{
-				PlayerInputRebinding.ControllerButton.LT
+				ControllerButton.LT
 			}
 		};
 	}
 
-	public static PlayerInputRebinding.ControllerBindingSettings ControllerRebindings
+	public static ControllerBindingSettings ControllerRebindings
 	{
 		get
 		{
-			if (PlayerInputRebinding.m_controllerRebindings == null)
+			if (m_controllerRebindings == null)
 			{
-				if (!File.Exists(PlayerInputRebinding.ControllerRebindingFile))
+				if (!File.Exists(ControllerRebindingFile))
 				{
-					PlayerInputRebinding.SetDefaultControllerBindingSettings();
-					PlayerInputRebinding.WriteControllerRebindSettings();
+					SetDefaultControllerBindingSettings();
+					WriteControllerRebindSettings();
 				}
 				else
 				{
-					PlayerInputRebinding.GetControllerRebindSettingsFromFile();
+					GetControllerRebindSettingsFromFile();
 				}
 			}
-			return PlayerInputRebinding.m_controllerRebindings;
+			return m_controllerRebindings;
 		}
 	}
 
@@ -956,7 +956,7 @@ public class PlayerInputRebinding
 	{
 		get
 		{
-			return Path.Combine(OutputFolder.PlayerDataFolderPath, PlayerInputRebinding.controllerInputRebindingsFileName);
+			return Path.Combine(OutputFolder.PlayerDataFolderPath, controllerInputRebindingsFileName);
 		}
 	}
 
@@ -964,7 +964,7 @@ public class PlayerInputRebinding
 
 	private static string controllerRebindingFileName = "ControllerButtonRemaps.txt";
 
-	private static PlayerInputRebinding.KeyBindingSettings m_keyRebindings;
+	private static KeyBindingSettings m_keyRebindings;
 
 	private static int[] m_controllerButtonRemappings;
 
@@ -976,28 +976,28 @@ public class PlayerInputRebinding
 
 	public static string controllerInputRebindingsFileName = "ControllerRebindings.txt";
 
-	public static PlayerInputRebinding.ControllerBindingSettings m_controllerRebindings;
+	public static ControllerBindingSettings m_controllerRebindings;
 
 	public class KeyBindingSettings
 	{
 		public KeyBindingSettings()
 		{
-			this.Glide = new KeyCode[0];
-			this.ChargeJump = new KeyCode[0];
-			this.Select = new KeyCode[0];
-			this.Start = new KeyCode[0];
-			this.Cancel = new KeyCode[0];
-			this.LeftShoulder = new KeyCode[0];
-			this.RightShoulder = new KeyCode[0];
-			this.LeftStick = new KeyCode[0];
-			this.RightStick = new KeyCode[0];
-			this.ZoomIn = new KeyCode[0];
-			this.ZoomOut = new KeyCode[0];
-			this.Copy = new KeyCode[0];
-			this.Delete = new KeyCode[0];
-			this.Focus = new KeyCode[0];
-			this.Filter = new KeyCode[0];
-			this.Legend = new KeyCode[0];
+			Glide = new KeyCode[0];
+			ChargeJump = new KeyCode[0];
+			Select = new KeyCode[0];
+			Start = new KeyCode[0];
+			Cancel = new KeyCode[0];
+			LeftShoulder = new KeyCode[0];
+			RightShoulder = new KeyCode[0];
+			LeftStick = new KeyCode[0];
+			RightStick = new KeyCode[0];
+			ZoomIn = new KeyCode[0];
+			ZoomOut = new KeyCode[0];
+			Copy = new KeyCode[0];
+			Delete = new KeyCode[0];
+			Focus = new KeyCode[0];
+			Filter = new KeyCode[0];
+			Legend = new KeyCode[0];
 		}
 
 		public bool IsRebinding;
@@ -1099,70 +1099,70 @@ public class PlayerInputRebinding
 
 	public class ControllerBindingSettings
 	{
-		public PlayerInputRebinding.ControllerButton[] HorizontalDigiPadLeft = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] HorizontalDigiPadLeft = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] HorizontalDigiPadRight = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] HorizontalDigiPadRight = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] VerticalDigiPadDown = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] VerticalDigiPadDown = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] VerticalDigiPadUp = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] VerticalDigiPadUp = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] MenuLeft = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] MenuLeft = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] MenuRight = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] MenuRight = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] MenuDown = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] MenuDown = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] MenuUp = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] MenuUp = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] MenuPageLeft = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] MenuPageLeft = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] MenuPageRight = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] MenuPageRight = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] ActionButtonA = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] ActionButtonA = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] SoulFlame = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] SoulFlame = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Jump = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Jump = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Grab = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Grab = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] SpiritFlame = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] SpiritFlame = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Bash = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Bash = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Glide = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Glide = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] ChargeJump = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] ChargeJump = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Select = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Select = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Start = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Start = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Cancel = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Cancel = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] LeftShoulder = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] LeftShoulder = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] RightShoulder = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] RightShoulder = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] LeftStick = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] LeftStick = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] RightStick = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] RightStick = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] ZoomIn = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] ZoomIn = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] ZoomOut = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] ZoomOut = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Copy = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Copy = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Delete = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Delete = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Focus = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Focus = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Filter = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Filter = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Legend = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Legend = new ControllerButton[0];
 
-		public PlayerInputRebinding.ControllerButton[] Stomp = new PlayerInputRebinding.ControllerButton[0];
+		public ControllerButton[] Stomp = new ControllerButton[0];
 	}
 }

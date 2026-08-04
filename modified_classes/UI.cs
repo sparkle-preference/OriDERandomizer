@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace Game
@@ -9,16 +8,16 @@ namespace Game
 		{
 			get
 			{
-				UI.LoadMessageController();
-				return UI.m_messageController;
+				LoadMessageController();
+				return m_messageController;
 			}
 		}
 
 		public static void LoadMessageController()
 		{
-			if (UI.m_messageController == null)
+			if (m_messageController == null)
 			{
-				UI.m_messageController = (Resources.Load("MessageControllerB") as GameObject).GetComponent<MessageControllerB>();
+				m_messageController = (Resources.Load("MessageControllerB") as GameObject).GetComponent<MessageControllerB>();
 			}
 		}
 
@@ -26,11 +25,11 @@ namespace Game
 		{
 			get
 			{
-				return UI.m_sMenu;
+				return m_sMenu;
 			}
 			set
 			{
-				UI.m_sMenu = value;
+				m_sMenu = value;
 			}
 		}
 
@@ -38,7 +37,7 @@ namespace Game
 		{
 			get
 			{
-				return UI.m_sMenu != null && (UI.m_sMenu.MainMenuVisible || UI.m_sMenu.ResumeScreenVisible);
+				return m_sMenu != null && (m_sMenu.MainMenuVisible || m_sMenu.ResumeScreenVisible);
 			}
 		}
 
@@ -46,13 +45,13 @@ namespace Game
 		{
 			get
 			{
-				return UI.m_sMenu != null;
+				return m_sMenu != null;
 			}
 		}
 
 		public static bool IsInventoryVisible()
 		{
-			return UI.MainMenuVisible && UI.m_sMenu.IsInventoryVisible();
+			return MainMenuVisible && m_sMenu.IsInventoryVisible();
 		}
 
 		private static MessageControllerB m_messageController;
@@ -86,12 +85,12 @@ namespace Game
 
 			public static void HideExistingHint()
 			{
-				UI.Hints.HideExistingHint(false);
+				HideExistingHint(false);
 			}
 
 			private static bool LayerShouldShow(HintLayer layer)
 			{
-				return !UI.Hints.m_currentHint || layer >= UI.Hints.m_currentLayer;
+				return !m_currentHint || layer >= m_currentLayer;
 			}
 
 			public static MessageBox Show(MessageProvider messageProvider, HintLayer layer, float duration = 3f)
@@ -100,27 +99,27 @@ namespace Game
 				{
 					return null;
 				}
-				if (UI.MessageController.AnyAbilityPickupStoryMessagesVisible)
+				if (MessageController.AnyAbilityPickupStoryMessagesVisible)
 				{
 					return null;
 				}
-				if (UI.Hints.LayerShouldShow(layer))
+				if (LayerShouldShow(layer))
 				{
-					UI.Hints.HideExistingHint(true);
-					UI.Hints.m_currentLayer = layer;
+					HideExistingHint(true);
+					m_currentLayer = layer;
 					if (ShorterHintZone.IsInside)
 					{
 						duration = 1f;
 					}
 					if (layer == HintLayer.Randomizer)
 					{
-						UI.Hints.m_currentHint = UI.MessageController.ShowHintMessage(messageProvider, new Vector3(UI.Hints.HintPosition.x, UI.Hints.HintPosition.y, -7f), duration);
+						m_currentHint = MessageController.ShowHintMessage(messageProvider, new Vector3(HintPosition.x, HintPosition.y, -7f), duration);
 					}
 					else
 					{
-						UI.Hints.m_currentHint = UI.MessageController.ShowHintMessage(messageProvider, UI.Hints.HintPosition, duration);
+						m_currentHint = MessageController.ShowHintMessage(messageProvider, HintPosition, duration);
 					}
-					return UI.Hints.m_currentHint;
+					return m_currentHint;
 				}
 				return null;
 			}
@@ -129,21 +128,21 @@ namespace Game
 			{
 				get
 				{
-					return UI.Hints.m_currentHint;
+					return m_currentHint;
 				}
 			}
 
 			public static void HideExistingHint(bool force)
 			{
-				if (UI.Hints.m_currentLayer == HintLayer.Randomizer && !force)
+				if (m_currentLayer == HintLayer.Randomizer && !force)
 				{
 					return;
 				}
 
-				if (UI.Hints.m_currentHint)
+				if (m_currentHint)
 				{
-					UI.Hints.m_currentHint.Visibility.HideMessageScreenImmediately();
-					UI.Hints.m_currentHint = null;
+					m_currentHint.Visibility.HideMessageScreenImmediately();
+					m_currentHint = null;
 				}
 			}
 

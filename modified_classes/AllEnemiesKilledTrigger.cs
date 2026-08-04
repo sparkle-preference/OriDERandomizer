@@ -6,105 +6,105 @@ public class AllEnemiesKilledTrigger : Trigger
 {
 	public override void Serialize(Archive ar)
 	{
-		ar.Serialize(ref this.m_counter);
+		ar.Serialize(ref m_counter);
 		base.Serialize(ar);
-		if (this.ActionOnAwakeTrigger && this.m_counter >= this.TriggerOnCounter)
+		if (ActionOnAwakeTrigger && m_counter >= TriggerOnCounter)
 		{
-			this.ActionOnAwakeTrigger.Perform(null);
+			ActionOnAwakeTrigger.Perform(null);
 		}
 	}
 
 	public void Increment()
 	{
-		this.m_counter++;
-		if (this.m_counter == this.TriggerOnCounter)
+		m_counter++;
+		if (m_counter == TriggerOnCounter)
 		{
-			BingoController.OnPurpleDoor(this.MoonGuid);
-			base.DoTrigger(true);
+			BingoController.OnPurpleDoor(MoonGuid);
+			DoTrigger();
 		}
 	}
 
 	public new void Awake()
 	{
 		base.Awake();
-		this.RegisterEvent();
+		RegisterEvent();
 	}
 
 	public new void OnDestroy()
 	{
 		base.OnDestroy();
-		this.DeregisterEvent();
+		DeregisterEvent();
 	}
 
 	public void Init()
 	{
-		this.RespawningPlaceholders.Clear();
-		for (int i = 0; i < base.GetComponentsInChildren<RespawningPlaceholder>().Length; i++)
+		RespawningPlaceholders.Clear();
+		for (int i = 0; i < GetComponentsInChildren<RespawningPlaceholder>().Length; i++)
 		{
-			RespawningPlaceholder item = base.GetComponentsInChildren<RespawningPlaceholder>()[i];
-			this.RespawningPlaceholders.Add(item);
+			RespawningPlaceholder item = GetComponentsInChildren<RespawningPlaceholder>()[i];
+			RespawningPlaceholders.Add(item);
 		}
-		this.Entities.Clear();
-		for (int j = 0; j < base.GetComponentsInChildren<Entity>().Length; j++)
+		Entities.Clear();
+		for (int j = 0; j < GetComponentsInChildren<Entity>().Length; j++)
 		{
-			Entity item2 = base.GetComponentsInChildren<Entity>()[j];
-			this.Entities.Add(item2);
+			Entity item2 = GetComponentsInChildren<Entity>()[j];
+			Entities.Add(item2);
 		}
-		this.TriggerOnCounter = this.RespawningPlaceholders.Count + this.Entities.Count;
+		TriggerOnCounter = RespawningPlaceholders.Count + Entities.Count;
 	}
 
 	private void RegisterEvent()
 	{
-		Action<Damage> action = new Action<Damage>(this.EntityKilled);
-		for (int i = 0; i < this.RespawningPlaceholders.Count; i++)
+		Action<Damage> action = EntityKilled;
+		for (int i = 0; i < RespawningPlaceholders.Count; i++)
 		{
-			RespawningPlaceholder respawningPlaceholder = this.RespawningPlaceholders[i];
+			RespawningPlaceholder respawningPlaceholder = RespawningPlaceholders[i];
 			respawningPlaceholder.OnCurrentInstanceDeath = (Action<Damage>)Delegate.Combine(respawningPlaceholder.OnCurrentInstanceDeath, action);
 		}
-		for (int j = 0; j < this.Entities.Count; j++)
+		for (int j = 0; j < Entities.Count; j++)
 		{
-			this.Entities[j].DamageReciever.OnDeathEvent.Add(action);
+			Entities[j].DamageReciever.OnDeathEvent.Add(action);
 		}
 	}
 
 	private void DeregisterEvent()
 	{
-		Action<Damage> action = new Action<Damage>(this.EntityKilled);
-		for (int i = 0; i < this.RespawningPlaceholders.Count; i++)
+		Action<Damage> action = EntityKilled;
+		for (int i = 0; i < RespawningPlaceholders.Count; i++)
 		{
-			RespawningPlaceholder respawningPlaceholder = this.RespawningPlaceholders[i];
+			RespawningPlaceholder respawningPlaceholder = RespawningPlaceholders[i];
 			respawningPlaceholder.OnCurrentInstanceDeath = (Action<Damage>)Delegate.Remove(respawningPlaceholder.OnCurrentInstanceDeath, action);
 		}
-		for (int j = 0; j < this.Entities.Count; j++)
+		for (int j = 0; j < Entities.Count; j++)
 		{
-			this.Entities[j].DamageReciever.OnDeathEvent.Remove(action);
+			Entities[j].DamageReciever.OnDeathEvent.Remove(action);
 		}
 	}
 
 	private void EntityKilled(Damage damage)
 	{
-		this.EnemyKilled();
+		EnemyKilled();
 	}
 
 	private void EnemyKilled()
 	{
-		if (this.Active)
+		if (Active)
 		{
-			this.Increment();
-			if (this.m_lastMessageBox)
+			Increment();
+			if (m_lastMessageBox)
 			{
-				this.m_lastMessageBox.HideMessageScreen();
+				m_lastMessageBox.HideMessageScreen();
 			}
-			if (this.ShowMessages)
+			if (ShowMessages)
 			{
-				int num = this.TriggerOnCounter - this.m_counter - 1;
-				if (num >= this.Messages.Count)
+				int num = TriggerOnCounter - m_counter - 1;
+				if (num >= Messages.Count)
 				{
-					num = this.Messages.Count - 1;
+					num = Messages.Count - 1;
 				}
 				if (num > 0)
 				{
-					this.m_lastMessageBox = UI.Hints.Show(this.Messages[num], HintLayer.Gameplay, 1f);
+					m_lastMessageBox = UI.Hints.Show(Messages[num], HintLayer.Gameplay, 1f);
 				}
 			}
 		}

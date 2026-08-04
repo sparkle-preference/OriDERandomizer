@@ -10,42 +10,42 @@ public class DebugWidget : MonoBehaviour
 	{
 		get
 		{
-			if (DebugWidget.instance == null)
+			if (instance == null)
 			{
-				DebugWidget.instance = new GameObject("DebugWidget").AddComponent<DebugWidget>();
-				UnityEngine.Object.DontDestroyOnLoad(DebugWidget.instance.gameObject);
+				instance = new GameObject("DebugWidget").AddComponent<DebugWidget>();
+				DontDestroyOnLoad(instance.gameObject);
 			}
-			return DebugWidget.instance;
+			return instance;
 		}
 	}
 
 	public void OnGUI()
 	{
-		if (this.hidden)
+		if (hidden)
 		{
 			return;
 		}
-		if (this.output != null)
+		if (output != null)
 		{
-			this.widgetFrame = GUI.Window(0, this.widgetFrame, new GUI.WindowFunction(this.WindowFunc), "Debug Widget");
+			widgetFrame = GUI.Window(0, widgetFrame, WindowFunc, "Debug Widget");
 		}
-		this.logsRect = GUI.Window(1, this.logsRect, new GUI.WindowFunction(this.LogsWindowFunc), "Logs");
+		logsRect = GUI.Window(1, logsRect, LogsWindowFunc, "Logs");
 	}
 
 	public void WindowFunc(int id)
 	{
 		GUI.DragWindow();
-		this.scrollPosition = GUILayout.BeginScrollView(this.scrollPosition, new GUILayoutOption[0]);
-		for (int i = 0; i < this.output.Length; i++)
+		scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+		for (int i = 0; i < output.Length; i++)
 		{
-			GUILayout.Label(this.output[i], new GUILayoutOption[0]);
+			GUILayout.Label(output[i]);
 		}
 		GUILayout.EndScrollView();
 	}
 
 	public void TargetObject(GameObject obj, bool verbose)
 	{
-		this.hidden = false;
+		hidden = false;
 		MonoBehaviour[] components = obj.GetComponents<MonoBehaviour>();
 		List<string> list = new List<string> { obj.name };
 		foreach (MonoBehaviour monoBehaviour in components)
@@ -88,34 +88,34 @@ public class DebugWidget : MonoBehaviour
 				}
 			}
 		}
-		this.output = list.ToArray();
-		this.LogCallback("Targetted " + obj.name + (verbose ? " (verbose)" : ""), "", LogType.Log);
+		output = list.ToArray();
+		LogCallback("Targetted " + obj.name + (verbose ? " (verbose)" : ""), "", LogType.Log);
 	}
 
 	public void Update()
 	{
-		if (UnityEngine.Input.GetKeyDown(KeyCode.KeypadEnter))
+		if (Input.GetKeyDown(KeyCode.KeypadEnter))
 		{
-			this.hidden = true;
+			hidden = true;
 		}
 	}
 
 	public void Awake()
 	{
-		Application.logMessageReceived += this.LogCallback;
+		Application.logMessageReceived += LogCallback;
 	}
 
 	public void LogCallback(string condition, string stackTrace, LogType type)
 	{
 		if (type == LogType.Exception)
 		{
-			this.logItems.Add(new DebugWidget.LogItem
+			logItems.Add(new LogItem
 			{
 				text = stackTrace,
 				type = type
 			});
 		}
-		this.logItems.Add(new DebugWidget.LogItem
+		logItems.Add(new LogItem
 		{
 			text = condition,
 			type = type
@@ -125,10 +125,10 @@ public class DebugWidget : MonoBehaviour
 	public void LogsWindowFunc(int id)
 	{
 		GUI.DragWindow();
-		this.logsScrollPosition = GUILayout.BeginScrollView(this.logsScrollPosition, new GUILayoutOption[0]);
-		for (int i = this.logItems.Count - 1; i >= 0; i--)
+		logsScrollPosition = GUILayout.BeginScrollView(logsScrollPosition);
+		for (int i = logItems.Count - 1; i >= 0; i--)
 		{
-			GUILayout.Label(this.logItems[i].text, new GUILayoutOption[0]);
+			GUILayout.Label(logItems[i].text);
 		}
 		GUILayout.EndScrollView();
 	}
@@ -143,7 +143,7 @@ public class DebugWidget : MonoBehaviour
 
 	public bool hidden = true;
 
-	public List<DebugWidget.LogItem> logItems = new List<DebugWidget.LogItem>();
+	public List<LogItem> logItems = new List<LogItem>();
 
 	public Rect logsRect = new Rect(10f, 1000f, 1000f, 400f);
 

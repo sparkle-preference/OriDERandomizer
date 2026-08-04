@@ -1,26 +1,26 @@
 /* * * * *
  * This is a collection of Win API helpers. Mainly dealing with window message hooks
  * and file drag&drop support for Windows standalone Unity applications.
- * 
+ *
  * 2019.11.28 - Changed the "UnityDragAndDropHook" class to a static class. This
  *   has been done for IL2CPP support. IL2CPP can not marshall instance method
  *   callbacks passed to native code. So the callbacks must be static methods.
  *   Therefore all fields involved also need to be static.
- * 
+ *
  * The MIT License (MIT)
- * 
+ *
  * Copyright (c) 2018 Markus Göbel (Bunny83)
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -28,15 +28,18 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- * 
+ *
  * * * * */
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
+using AOT;
 
 namespace B83.Win32
 {
-    public enum HookType : int
+    public enum HookType
     {
         WH_JOURNALRECORD = 0,
         WH_JOURNALPLAYBACK = 1,
@@ -363,10 +366,10 @@ namespace B83.Win32
         public static extern bool IsWindowVisible(IntPtr hWnd);
 
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
+        static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
         public static string GetClassName(IntPtr hWnd)
         {
-            var sb = new System.Text.StringBuilder(256);
+            var sb = new StringBuilder(256);
             int count = GetClassName(hWnd, sb, 256);
             return sb.ToString(0, count);
         }
@@ -374,11 +377,11 @@ namespace B83.Win32
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         static extern int GetWindowTextLength(IntPtr hWnd);
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
+        static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
         public static string GetWindowText(IntPtr hWnd)
         {
             int length = GetWindowTextLength(hWnd) + 2;
-            var sb = new System.Text.StringBuilder(length);
+            var sb = new StringBuilder(length);
             int count = GetWindowText(hWnd, sb, length);
             return sb.ToString(0, count);
         }
@@ -401,7 +404,7 @@ namespace B83.Win32
         [DllImport("shell32.dll")]
         public static extern void DragAcceptFiles(IntPtr hwnd, bool fAccept);
         [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-        public static extern uint DragQueryFile(IntPtr hDrop, uint iFile, System.Text.StringBuilder lpszFile, uint cch);
+        public static extern uint DragQueryFile(IntPtr hDrop, uint iFile, StringBuilder lpszFile, uint cch);
         [DllImport("shell32.dll")]
         public static extern void DragFinish(IntPtr hDrop);
 
@@ -420,7 +423,7 @@ namespace B83.Win32
         private static string m_ClassName = "UnityWndClass";
 
         // attribute required for IL2CPP, also has to be a static method
-        [AOT.MonoPInvokeCallback(typeof(EnumThreadDelegate))]
+        [MonoPInvokeCallback(typeof(EnumThreadDelegate))]
         private static bool EnumCallback(IntPtr W, IntPtr _)
         {
             if (Window.IsWindowVisible(W) && (mainWindow == IntPtr.Zero || (m_ClassName != null && Window.GetClassName(W) == m_ClassName)))
@@ -449,7 +452,7 @@ namespace B83.Win32
         }
 
         // attribute required for IL2CPP, also has to be a static method
-        [AOT.MonoPInvokeCallback(typeof(HookProc))]
+        [MonoPInvokeCallback(typeof(HookProc))]
         private static IntPtr Callback(int code, IntPtr wParam, ref MSG lParam)
         {
             if (code == 0 && lParam.message == WM.DROPFILES)
@@ -459,7 +462,7 @@ namespace B83.Win32
 
                 // 0xFFFFFFFF as index makes the method return the number of files
                 uint n = WinAPI.DragQueryFile(lParam.wParam, 0xFFFFFFFF, null, 0);
-                var sb = new System.Text.StringBuilder(1024);
+                var sb = new StringBuilder(1024);
 
                 List<string> result = new List<string>();
                 for (uint i = 0; i < n; i++)

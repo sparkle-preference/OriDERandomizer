@@ -1,33 +1,33 @@
 ﻿using System;
-using Core;
 using Game;
 using UnityEngine;
+using Input = Core.Input;
 
 public class OptionsScreen : MenuScreen, ISuspendable
 {
 	public void Awake()
 	{
-		OptionsScreen.Instance = this;
+		Instance = this;
 		SuspensionManager.Register(this);
-		CleverMenuItemSelectionManager navigation = this.Navigation;
-		navigation.OnBackPressedCallback = (Action)Delegate.Combine(navigation.OnBackPressedCallback, new Action(this.OnBackPressed));
-		this.AddSubscreen<ControlsSettingsScreen>("CONTROL OPTIONS", 2);
-		this.AddSubscreen<AccessibilitySettingsScreen>("ACCESSIBILITY", 3);
-		this.AddSubscreen<KeybindsScreen>("KEYBINDS", 4);
-		this.AddSubscreen<MenuKeybindsScreen>("MENU KEYBINDS", 5);
-		this.AddSubscreen<ControllerBindsScreen>("CONTROLLER BINDS", 6);
-		this.AddSubscreen<ControllerMenuBindsScreen>("CONTROLLER MENU BINDS", 7);
+		CleverMenuItemSelectionManager navigation = Navigation;
+		navigation.OnBackPressedCallback = (Action)Delegate.Combine(navigation.OnBackPressedCallback, new Action(OnBackPressed));
+		AddSubscreen<ControlsSettingsScreen>("CONTROL OPTIONS", 2);
+		AddSubscreen<AccessibilitySettingsScreen>("ACCESSIBILITY", 3);
+		AddSubscreen<KeybindsScreen>("KEYBINDS", 4);
+		AddSubscreen<MenuKeybindsScreen>("MENU KEYBINDS", 5);
+		AddSubscreen<ControllerBindsScreen>("CONTROLLER BINDS", 6);
+		AddSubscreen<ControllerMenuBindsScreen>("CONTROLLER MENU BINDS", 7);
 	}
 
 	public void OnDestroy()
 	{
-		CleverMenuItemSelectionManager navigation = this.Navigation;
-		navigation.OnBackPressedCallback = (Action)Delegate.Remove(navigation.OnBackPressedCallback, new Action(this.OnBackPressed));
+		CleverMenuItemSelectionManager navigation = Navigation;
+		navigation.OnBackPressedCallback = (Action)Delegate.Remove(navigation.OnBackPressedCallback, new Action(OnBackPressed));
 	}
 
 	public void FixedUpdate()
 	{
-		if (Core.Input.Bash.OnPressed)
+		if (Input.Bash.OnPressed)
 		{
 			XboxOne.Help();
 		}
@@ -35,8 +35,8 @@ public class OptionsScreen : MenuScreen, ISuspendable
 
 	public override void Hide()
 	{
-		this.Navigation.SetVisible(false);
-		foreach (CleverMenuItemGroup.CleverMenuItemGroupItem cleverMenuItemGroupItem in base.GetComponent<CleverMenuItemGroup>().Options)
+		Navigation.SetVisible(false);
+		foreach (CleverMenuItemGroup.CleverMenuItemGroupItem cleverMenuItemGroupItem in GetComponent<CleverMenuItemGroup>().Options)
 		{
 			if (cleverMenuItemGroupItem.ItemGroup)
 			{
@@ -47,27 +47,27 @@ public class OptionsScreen : MenuScreen, ISuspendable
 
 	public override void ShowImmediate()
 	{
-		this.Navigation.SetVisibleImmediate(true);
-		this.Navigation.SetIndexToFirst();
+		Navigation.SetVisibleImmediate(true);
+		Navigation.SetIndexToFirst();
 	}
 
 	public override void HideImmediate()
 	{
-		this.Navigation.SetVisibleImmediate(false);
+		Navigation.SetVisibleImmediate(false);
 	}
 
 	public override void Show()
 	{
-		this.Navigation.RefreshVisible();
-		this.Navigation.SetVisible(true);
-		this.Navigation.SetIndexToFirst();
+		Navigation.RefreshVisible();
+		Navigation.SetVisible(true);
+		Navigation.SetIndexToFirst();
 	}
 
 	public void OnBackPressed()
 	{
 		if (GameController.Instance.GameInTitleScreen)
 		{
-			UI.Menu.HideMenuScreen(false);
+			UI.Menu.HideMenuScreen();
 		}
 		else
 		{
@@ -79,16 +79,16 @@ public class OptionsScreen : MenuScreen, ISuspendable
 
 	public void AddSubscreen<TController>(string label, int index) where TController : MonoBehaviour
 	{
-		this.Navigation.AddMenuItem(label, index, this.Navigation.transform.FindChild("mainMenuUI").GetComponent<CleverMenuItemLayout>(), delegate
+		Navigation.AddMenuItem(label, index, Navigation.transform.FindChild("mainMenuUI").GetComponent<CleverMenuItemLayout>(), delegate
 		{
 		});
-		GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(base.transform.FindChild("*settings").gameObject);
+		GameObject gameObject = Instantiate(transform.FindChild("*settings").gameObject);
 		gameObject.name = "*" + label.ToLower();
-		gameObject.transform.SetParent(base.transform);
-		UnityEngine.Object.Destroy(gameObject.GetComponent<SettingsScreen>());
+		gameObject.transform.SetParent(transform);
+		Destroy(gameObject.GetComponent<SettingsScreen>());
 		gameObject.AddComponent<TController>();
 		gameObject.SetActive(false);
-		base.GetComponent<CleverMenuItemGroup>().AddItem(this.Navigation.MenuItems[index], gameObject.GetComponent<CleverMenuItemGroupBase>());
+		GetComponent<CleverMenuItemGroup>().AddItem(Navigation.MenuItems[index], gameObject.GetComponent<CleverMenuItemGroupBase>());
 	}
 
 	public static OptionsScreen Instance;

@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class TraceGroundMovement : SaveSerialize, IDamageReciever, ISuspendable
 {
@@ -7,7 +6,7 @@ public class TraceGroundMovement : SaveSerialize, IDamageReciever, ISuspendable
 
 	public override void Awake()
 	{
-		this.m_rigidbody = base.GetComponent<Rigidbody>();
+		m_rigidbody = GetComponent<Rigidbody>();
 		SuspensionManager.Register(this);
 		base.Awake();
 	}
@@ -22,7 +21,7 @@ public class TraceGroundMovement : SaveSerialize, IDamageReciever, ISuspendable
 	{
 		get
 		{
-			return Vector3.Cross(Vector3.back, this.m_floorNormal);
+			return Vector3.Cross(Vector3.back, m_floorNormal);
 		}
 	}
 
@@ -30,7 +29,7 @@ public class TraceGroundMovement : SaveSerialize, IDamageReciever, ISuspendable
 	{
 		get
 		{
-			return -this.Right;
+			return -Right;
 		}
 	}
 
@@ -38,7 +37,7 @@ public class TraceGroundMovement : SaveSerialize, IDamageReciever, ISuspendable
 	{
 		get
 		{
-			return this.m_floorNormal;
+			return m_floorNormal;
 		}
 	}
 
@@ -46,67 +45,67 @@ public class TraceGroundMovement : SaveSerialize, IDamageReciever, ISuspendable
 	{
 		get
 		{
-			return -this.Up;
+			return -Up;
 		}
 	}
 
 	public void OnCollisionEnter(Collision collision)
 	{
-		this.OnCollision(collision);
+		OnCollision(collision);
 	}
 
 	public void OnCollisionStay(Collision collision)
 	{
-		this.OnCollision(collision);
+		OnCollision(collision);
 	}
 
 	public void OnCollision(Collision collision)
 	{
-		this.m_floorNormal = PhysicsHelper.CalculateAverageNormalFromContactPoints(collision.contacts);
-		this.m_movingGround.SetGround(collision.transform);
-		this.Surface = SurfaceToSoundProviderMap.ColliderMaterialToSurfaceMaterialType(collision.collider);
+		m_floorNormal = PhysicsHelper.CalculateAverageNormalFromContactPoints(collision.contacts);
+		m_movingGround.SetGround(collision.transform);
+		Surface = SurfaceToSoundProviderMap.ColliderMaterialToSurfaceMaterialType(collision.collider);
 	}
 
 	public void FixedUpdate()
 	{
-		this.m_movingGround.Update();
-		this.Kickback.AdvanceTime();
-		if (this.IsSuspended)
+		m_movingGround.Update();
+		Kickback.AdvanceTime();
+		if (IsSuspended)
 		{
-			this.m_rigidbody.velocity = Vector3.zero;
+			m_rigidbody.velocity = Vector3.zero;
 			return;
 		}
-		float num = this.Speed;
-		num += this.Kickback.CurrentKickbackSpeed;
-		this.m_rigidbody.velocity = RandomizerBonusSkill.TimeScale(this.Right * num);
-		Vector3 eulerAngles = base.transform.eulerAngles;
-		eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(eulerAngles.z, MoonMath.Angle.AngleFromVector(this.Right), 0.2f));
-		base.transform.eulerAngles = eulerAngles;
-		Vector3 vector = base.transform.position;
-		Vector2 vector2 = this.m_movingGround.CalculateDelta(base.transform);
+		float num = Speed;
+		num += Kickback.CurrentKickbackSpeed;
+		m_rigidbody.velocity = RandomizerBonusSkill.TimeScale(Right * num);
+		Vector3 eulerAngles = transform.eulerAngles;
+		eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(eulerAngles.z, MoonMath.Angle.AngleFromVector(Right), 0.2f));
+		transform.eulerAngles = eulerAngles;
+		Vector3 vector = transform.position;
+		Vector2 vector2 = m_movingGround.CalculateDelta(transform);
 		vector.x += RandomizerBonusSkill.TimeScale(vector2.x);
 		vector.y += RandomizerBonusSkill.TimeScale(vector2.y);
 		float z = eulerAngles.z;
-		float b = Mathf.DeltaAngle(z, this.m_lastAngle) / Time.deltaTime;
-		this.m_lastAngle = z;
-		this.CurrentAngularVelocity = Mathf.Lerp(this.CurrentAngularVelocity, b, 0.5f);
-		if (Vector3.Distance(this.m_lastPosition, vector) > 0.03f)
+		float b = Mathf.DeltaAngle(z, m_lastAngle) / Time.deltaTime;
+		m_lastAngle = z;
+		CurrentAngularVelocity = Mathf.Lerp(CurrentAngularVelocity, b, 0.5f);
+		if (Vector3.Distance(m_lastPosition, vector) > 0.03f)
 		{
-			this.m_lastPosition = vector;
-			vector -= this.Down * 0.05f;
-			base.transform.position = vector;
+			m_lastPosition = vector;
+			vector -= Down * 0.05f;
+			transform.position = vector;
 			RaycastHit raycastHit;
-			if (this.m_rigidbody.SweepTest(this.Down, out raycastHit, 1f))
+			if (m_rigidbody.SweepTest(Down, out raycastHit, 1f))
 			{
-				vector += RandomizerBonusSkill.TimeScale(this.Down * raycastHit.distance);
+				vector += RandomizerBonusSkill.TimeScale(Down * raycastHit.distance);
 			}
 		}
-		base.transform.position = vector;
+		transform.position = vector;
 	}
 
 	public void ApplyKickback(float kickbackMultiplier)
 	{
-		this.Kickback.ApplyKickback(kickbackMultiplier);
+		Kickback.ApplyKickback(kickbackMultiplier);
 	}
 
 	public void OnRecieveDamage(Damage damage)
@@ -115,19 +114,19 @@ public class TraceGroundMovement : SaveSerialize, IDamageReciever, ISuspendable
 		{
 			return;
 		}
-		if (Vector3.Dot(this.Right, damage.Force) > 0f)
+		if (Vector3.Dot(Right, damage.Force) > 0f)
 		{
-			this.Kickback.ApplyKickback(damage.Force.magnitude);
+			Kickback.ApplyKickback(damage.Force.magnitude);
 			return;
 		}
-		this.Kickback.ApplyKickback(-damage.Force.magnitude);
+		Kickback.ApplyKickback(-damage.Force.magnitude);
 	}
 
 	public override void Serialize(Archive ar)
 	{
-		base.transform.position = ar.Serialize(base.transform.position);
-		this.Speed = ar.Serialize(this.Speed);
-		ar.Serialize(ref this.m_floorNormal);
+		transform.position = ar.Serialize(transform.position);
+		Speed = ar.Serialize(Speed);
+		ar.Serialize(ref m_floorNormal);
 	}
 
 	public bool IsSuspended { get; set; }

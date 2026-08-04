@@ -1,32 +1,31 @@
-using System;
-using Core;
 using Game;
 using UnityEngine;
+using Input = Core.Input;
 
 public class MapStone : SaveSerialize
 {
 	public override void Awake()
 	{
 		base.Awake();
-		this.m_transform = base.transform;
+		m_transform = transform;
 	}
 
 	public void FindWorldArea()
 	{
 		if (GameWorld.Instance)
 		{
-			this.WorldArea = GameWorld.Instance.WorldAreaAtPosition(this.m_transform.position);
+			WorldArea = GameWorld.Instance.WorldAreaAtPosition(m_transform.position);
 		}
-		if (this.WorldArea == null)
+		if (WorldArea == null)
 		{
 		}
 	}
 
 	public void Start()
 	{
-		if (this.WorldArea == null)
+		if (WorldArea == null)
 		{
-			this.FindWorldArea();
+			FindWorldArea();
 		}
 	}
 
@@ -41,9 +40,9 @@ public class MapStone : SaveSerialize
 
 	public void Highlight()
 	{
-		if (this.OriTarget)
+		if (OriTarget)
 		{
-			Characters.Ori.MoveOriToPosition(this.OriTarget.position, this.OriDuration);
+			Characters.Ori.MoveOriToPosition(OriTarget.position, OriDuration);
 		}
 		if (Characters.Sein.Abilities.SpiritFlame)
 		{
@@ -53,13 +52,13 @@ public class MapStone : SaveSerialize
 		Characters.Ori.EnableHoverWobbling = false;
 		Characters.Ori.InsideMapstone = true;
 		BingoController.OnTouchMapstone();
-		if (this.m_hint == null)
+		if (m_hint == null)
 		{
-			this.m_hint = UI.Hints.Show(this.HintMessage, HintLayer.HintZone, 3f);
+			m_hint = UI.Hints.Show(HintMessage, HintLayer.HintZone);
 		}
-		if (this.OriEnterAction)
+		if (OriEnterAction)
 		{
-			this.OriEnterAction.Perform(null);
+			OriEnterAction.Perform(null);
 		}
 	}
 
@@ -72,22 +71,22 @@ public class MapStone : SaveSerialize
 		{
 			Characters.Sein.Abilities.SpiritFlame.RemoveLock("mapStone");
 		}
-		if (this.OriExitAction)
+		if (OriExitAction)
 		{
-			this.OriExitAction.Perform(null);
+			OriExitAction.Perform(null);
 		}
-		if (this.m_hint)
+		if (m_hint)
 		{
-			this.m_hint.HideMessageScreen();
+			m_hint.HideMessageScreen();
 		}
 	}
 
 	public void OnDisable()
 	{
-		if (this.CurrentState == MapStone.State.Highlighted)
+		if (CurrentState == State.Highlighted)
 		{
-			this.CurrentState = MapStone.State.Normal;
-			this.Unhighlight();
+			CurrentState = State.Normal;
+			Unhighlight();
 		}
 	}
 
@@ -95,79 +94,78 @@ public class MapStone : SaveSerialize
 	{
 		get
 		{
-			return this.CurrentState == MapStone.State.Activated;
+			return CurrentState == State.Activated;
 		}
 	}
 
 	public override void Serialize(Archive ar)
 	{
-		this.CurrentState = (MapStone.State)ar.Serialize((int)this.CurrentState);
+		CurrentState = (State)ar.Serialize((int)CurrentState);
 	}
 
 	public float DistanceToSein
 	{
 		get
 		{
-			return Vector3.Distance(this.m_transform.position, Characters.Sein.Position);
+			return Vector3.Distance(m_transform.position, Characters.Sein.Position);
 		}
 	}
 
 	public void FixedUpdate()
 	{
-		MapStone.State currentState = this.CurrentState;
-		if (currentState != MapStone.State.Activated && RandomizerLocationManager.IsPickupCollected(this.MoonGuid))
+		State currentState = CurrentState;
+		if (currentState != State.Activated && RandomizerLocationManager.IsPickupCollected(MoonGuid))
 		{
-			if (currentState == MapStone.State.Highlighted)
+			if (currentState == State.Highlighted)
 			{
-				this.Unhighlight();
+				Unhighlight();
 			}
 
-			if (this.OnOpenedAction)
+			if (OnOpenedAction)
 			{
-				this.OnOpenedAction.PerformInstantly(null);
+				OnOpenedAction.PerformInstantly(null);
 			}
 
-			this.CurrentState = MapStone.State.Activated;
+			CurrentState = State.Activated;
 			return;
 		}
 
-		if (currentState != MapStone.State.Normal)
+		if (currentState != State.Normal)
 		{
-			if (currentState == MapStone.State.Highlighted)
+			if (currentState == State.Highlighted)
 			{
-				if (this.DistanceToSein > this.Radius || this.OriHasTargets || !Characters.Sein.IsOnGround)
+				if (DistanceToSein > Radius || OriHasTargets || !Characters.Sein.IsOnGround)
 				{
-					this.Unhighlight();
-					this.CurrentState = MapStone.State.Normal;
+					Unhighlight();
+					CurrentState = State.Normal;
 				}
-				if (Characters.Sein.Controller.CanMove && !Characters.Sein.IsSuspended && Core.Input.SpiritFlame.OnPressed)
+				if (Characters.Sein.Controller.CanMove && !Characters.Sein.IsSuspended && Input.SpiritFlame.OnPressed)
 				{
 					if (Characters.Sein.Inventory.MapStones > 0)
 					{
 						Characters.Sein.Inventory.MapStones--;
-						if (this.OnOpenedAction)
+						if (OnOpenedAction)
 						{
-							this.OnOpenedAction.Perform(null);
+							OnOpenedAction.Perform(null);
 						}
 						AchievementsLogic.Instance.OnMapStoneActivated();
-						this.CurrentState = MapStone.State.Activated;
-						RandomizerLocationManager.GivePickup(this.MoonGuid);
+						CurrentState = State.Activated;
+						RandomizerLocationManager.GivePickup(MoonGuid);
 						GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
 						return;
 					}
 					UI.SeinUI.ShakeMapstones();
-					if (this.OnFailAction)
+					if (OnFailAction)
 					{
-						this.OnFailAction.Perform(null);
-						return;
+						OnFailAction.Perform(null);
 					}
 				}
 			}
 		}
-		else if (this.DistanceToSein < this.Radius && !this.OriHasTargets && Characters.Sein.IsOnGround)
+		else if (DistanceToSein < Radius && !OriHasTargets && Characters.Sein.IsOnGround)
 		{
-			this.Highlight();
-			this.CurrentState = MapStone.State.Highlighted;
+			Highlight();
+			CurrentState = State.Highlighted;
 		}
 	}
 
@@ -197,7 +195,7 @@ public class MapStone : SaveSerialize
 
 	public float OriDuration = 1f;
 
-	public MapStone.State CurrentState;
+	public State CurrentState;
 
 	public enum State
 	{

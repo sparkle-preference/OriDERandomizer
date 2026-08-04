@@ -9,11 +9,11 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 	{
 		get
 		{
-			return this.Direction;
+			return Direction;
 		}
 		set
 		{
-			this.Direction = value;
+			Direction = value;
 		}
 	}
 
@@ -29,73 +29,73 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 
 	public void OnValidate()
 	{
-		this.m_onKillRecievers = base.GetComponentsInChildren(typeof(IKillReciever));
+		m_onKillRecievers = GetComponentsInChildren(typeof(IKillReciever));
 	}
 
 	public void OnPoolSpawned()
 	{
-		this.HasBeenBashedByOri = false;
-		this.CurrentTime = 0f;
-		this.Gravity = this.m_originalGravity;
-		this.Direction = Vector3.left;
-		this.Speed = 0f;
-		this.m_collider.enabled = this.m_colliderEnabledAtStart;
-		this.m_explode = false;
-		this.m_explodeLater = false;
-		this.m_lastLoop = null;
-		this.LastReflector = null;
-		this.Displacement = Vector3.zero;
-		this.IsSuspended = false;
-		this.Owner = null;
+		HasBeenBashedByOri = false;
+		CurrentTime = 0f;
+		Gravity = m_originalGravity;
+		Direction = Vector3.left;
+		Speed = 0f;
+		m_collider.enabled = m_colliderEnabledAtStart;
+		m_explode = false;
+		m_explodeLater = false;
+		m_lastLoop = null;
+		LastReflector = null;
+		Displacement = Vector3.zero;
+		IsSuspended = false;
+		Owner = null;
 	}
 
 	public void Start()
 	{
-		if (this.RotateSpriteToDirection)
+		if (RotateSpriteToDirection)
 		{
-			base.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(this.Direction));
+			transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(Direction));
 		}
-		if (this.EnableCollisionGracePeriod)
+		if (EnableCollisionGracePeriod)
 		{
-			this.m_collider.enabled = false;
+			m_collider.enabled = false;
 		}
 	}
 
 	public void Awake()
 	{
-		this.m_nullify = delegate()
+		m_nullify = delegate
 		{
-			this.m_lastLoop = null;
+			m_lastLoop = null;
 		};
 		SuspensionManager.Register(this);
-		this.Direction = Vector3.left;
-		this.Speed = 0f;
-		this.m_collider = base.GetComponent<Collider>();
-		this.m_colliderEnabledAtStart = this.m_collider.enabled;
-		this.Rigidbody = base.GetComponent<Rigidbody>();
-		DamageDealer component = base.GetComponent<DamageDealer>();
+		Direction = Vector3.left;
+		Speed = 0f;
+		m_collider = GetComponent<Collider>();
+		m_colliderEnabledAtStart = m_collider.enabled;
+		Rigidbody = GetComponent<Rigidbody>();
+		DamageDealer component = GetComponent<DamageDealer>();
 		if (component)
 		{
 			DamageDealer damageDealer = component;
-			damageDealer.OnDamageDealtEvent = (Action<GameObject, Damage>)Delegate.Combine(damageDealer.OnDamageDealtEvent, new Action<GameObject, Damage>(this.OnDamageDealt));
+			damageDealer.OnDamageDealtEvent = (Action<GameObject, Damage>)Delegate.Combine(damageDealer.OnDamageDealtEvent, new Action<GameObject, Damage>(OnDamageDealt));
 		}
-		if (this.ProjectileLoop)
+		if (ProjectileLoop)
 		{
-			this.m_lastLoop = Sound.Play(this.ProjectileLoop.GetSound(null), base.transform.position, this.m_nullify);
-			if (this.m_lastLoop)
+			m_lastLoop = Sound.Play(ProjectileLoop.GetSound(null), transform.position, m_nullify);
+			if (m_lastLoop)
 			{
-				this.m_lastLoop.AttachTo = base.transform;
+				m_lastLoop.AttachTo = transform;
 			}
 		}
-		this.m_originalGravity = this.Gravity;
+		m_originalGravity = Gravity;
 	}
 
 	public void OnEnable()
 	{
 		Targets.Attackables.Add(this);
 		PortalVistor.All.Add(this);
-		this.CurrentTime = 0f;
-		this.Rigidbody.velocity = Vector3.zero;
+		CurrentTime = 0f;
+		Rigidbody.velocity = Vector3.zero;
 	}
 
 	public void OnDisable()
@@ -111,7 +111,7 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 
 	public virtual bool CanBeBashed()
 	{
-		return this.CanProjectileBeBashed;
+		return CanProjectileBeBashed;
 	}
 
 	public bool CanBeSpiritFlamed()
@@ -131,9 +131,9 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 
 	public void OnEnterBash()
 	{
-		if (this.m_lastLoop)
+		if (m_lastLoop)
 		{
-			this.m_lastLoop.FadeOut(0.3f, true);
+			m_lastLoop.FadeOut(0.3f, true);
 		}
 	}
 
@@ -159,17 +159,17 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 		switch (type)
 		{
 		case DamageType.Bash:
-			this.HasBeenBashedByOri = true;
-			this.Direction = damage.Force.normalized;
-			if (this.UseBashSpeed)
+			HasBeenBashedByOri = true;
+			Direction = damage.Force.normalized;
+			if (UseBashSpeed)
 			{
-				this.Speed = this.BashSpeed;
+				Speed = BashSpeed;
 			}
-			if (this.CancelGravityOnBash)
+			if (CancelGravityOnBash)
 			{
-				this.Gravity = 0f;
+				Gravity = 0f;
 			}
-			this.Owner = null;
+			Owner = null;
 			return;
 		case DamageType.Grenade:
 			break;
@@ -180,23 +180,23 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 			}
 			break;
 		case DamageType.StompBlast:
-			this.Direction = damage.Force.normalized;
-			this.Owner = null;
+			Direction = damage.Force.normalized;
+			Owner = null;
 			return;
 		}
-		this.Direction = damage.Force.normalized;
-		this.Owner = null;
+		Direction = damage.Force.normalized;
+		Owner = null;
 	}
 
 	public Vector3 Position
 	{
 		get
 		{
-			return base.transform.position;
+			return transform.position;
 		}
 		set
 		{
-			base.transform.position = value;
+			transform.position = value;
 		}
 	}
 
@@ -262,117 +262,117 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 
 	public void OnDamageDealt(GameObject go, Damage damage)
 	{
-		if (go == this.Owner)
+		if (go == Owner)
 		{
 			return;
 		}
 		IProjectileDetonatable projectileDetonatable = go.FindComponent<IProjectileDetonatable>();
 		if (projectileDetonatable != null && projectileDetonatable.CanDetonateProjectiles())
 		{
-			this.ExplodeProjectile();
+			ExplodeProjectile();
 		}
 	}
 
 	public virtual void FixedUpdate()
 	{
-		if (this.IsSuspended)
+		if (IsSuspended)
 		{
-			this.Rigidbody.velocity = Vector3.zero;
+			Rigidbody.velocity = Vector3.zero;
 			return;
 		}
-		if (this.EnableCollisionGracePeriod && this.CurrentTime > this.CollisionGracePeriod)
+		if (EnableCollisionGracePeriod && CurrentTime > CollisionGracePeriod)
 		{
-			this.m_collider.enabled = true;
+			m_collider.enabled = true;
 		}
-		if (this.m_lastLoop == null && this.ProjectileLoop != null)
+		if (m_lastLoop == null && ProjectileLoop != null)
 		{
-			this.m_lastLoop = Sound.Play(this.ProjectileLoop.GetSound(null), base.transform.position, this.m_nullify);
-			if (this.m_lastLoop)
+			m_lastLoop = Sound.Play(ProjectileLoop.GetSound(null), transform.position, m_nullify);
+			if (m_lastLoop)
 			{
-				this.m_lastLoop.AttachTo = base.transform;
+				m_lastLoop.AttachTo = transform;
 			}
 		}
-		this.CurrentTime += Time.deltaTime;
-		if (this.CurrentTime > this.MaximumLiveTime)
+		CurrentTime += Time.deltaTime;
+		if (CurrentTime > MaximumLiveTime)
 		{
-			this.m_explode = true;
+			m_explode = true;
 		}
-		if (WaterZone.PositionInWater(this.Position))
+		if (WaterZone.PositionInWater(Position))
 		{
-			this.m_explode = true;
+			m_explode = true;
 		}
-		if (this.Gravity > 0f)
+		if (Gravity > 0f)
 		{
-			this.SpeedVector += RandomizerBonusSkill.TimeScale(Vector3.down * this.Gravity * Time.fixedDeltaTime);
+			SpeedVector += RandomizerBonusSkill.TimeScale(Vector3.down * Gravity * Time.fixedDeltaTime);
 		}
-		this.UpdateVelocity();
-		if (this.RotateSpriteToDirection)
+		UpdateVelocity();
+		if (RotateSpriteToDirection)
 		{
-			float num = base.transform.eulerAngles.z;
-			num = Mathf.MoveTowardsAngle(num, MoonMath.Angle.AngleFromDirection(this.Direction), this.SpriteTurnSpeed * Time.deltaTime);
-			base.transform.eulerAngles = new Vector3(0f, 0f, num);
+			float num = transform.eulerAngles.z;
+			num = Mathf.MoveTowardsAngle(num, MoonMath.Angle.AngleFromDirection(Direction), SpriteTurnSpeed * Time.deltaTime);
+			transform.eulerAngles = new Vector3(0f, 0f, num);
 		}
-		if (this.m_explode)
+		if (m_explode)
 		{
-			this.ExplodeProjectile();
+			ExplodeProjectile();
 		}
-		if (this.m_explodeLater)
+		if (m_explodeLater)
 		{
-			this.m_explode = true;
-			this.m_explodeLater = false;
+			m_explode = true;
+			m_explodeLater = false;
 		}
 	}
 
 	public void ExplodeProjectile()
 	{
-		if (this.m_lastLoop)
+		if (m_lastLoop)
 		{
-			this.m_lastLoop.FadeOut(0.3f, true);
+			m_lastLoop.FadeOut(0.3f, true);
 		}
-		for (int i = 0; i < this.m_onKillRecievers.Length; i++)
+		for (int i = 0; i < m_onKillRecievers.Length; i++)
 		{
-			if (this.m_onKillRecievers[i])
+			if (m_onKillRecievers[i])
 			{
-				((IKillReciever)this.m_onKillRecievers[i]).OnKill();
+				((IKillReciever)m_onKillRecievers[i]).OnKill();
 			}
 		}
-		InstantiateUtility.Destroy(base.gameObject);
+		InstantiateUtility.Destroy(gameObject);
 	}
 
 	public void OnCollisionEnter(Collision collision)
 	{
-		this.m_explodeLater = true;
+		m_explodeLater = true;
 	}
 
 	public void OnCollisionStay(Collision collision)
 	{
-		this.m_explode = true;
+		m_explode = true;
 	}
 
 	public void UpdateVelocity()
 	{
-		Vector3 vector = -Vector3.ClampMagnitude(this.Displacement / Time.deltaTime, 10f);
-		this.Displacement += vector * Time.deltaTime;
-		this.Rigidbody.velocity = RandomizerBonusSkill.TimeScale(this.Direction * this.Speed + vector);
+		Vector3 vector = -Vector3.ClampMagnitude(Displacement / Time.deltaTime, 10f);
+		Displacement += vector * Time.deltaTime;
+		Rigidbody.velocity = RandomizerBonusSkill.TimeScale(Direction * Speed + vector);
 	}
 
 	public Vector3 SpeedVector
 	{
 		get
 		{
-			return this.Speed * this.Direction;
+			return Speed * Direction;
 		}
 		set
 		{
-			this.Speed = value.magnitude;
-			this.Direction = value.normalized;
+			Speed = value.magnitude;
+			Direction = value.normalized;
 		}
 	}
 
 	public void UpdateSpeedAndDirection()
 	{
-		this.Direction = this.Rigidbody.velocity.normalized;
-		this.Speed = RandomizerBonusSkill.TimeScale(this.Rigidbody.velocity.magnitude);
+		Direction = Rigidbody.velocity.normalized;
+		Speed = RandomizerBonusSkill.TimeScale(Rigidbody.velocity.magnitude);
 	}
 
 	public GameObject Owner;

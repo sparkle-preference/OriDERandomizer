@@ -1,16 +1,14 @@
-using System;
-
 namespace Protogen
 {
     public class Connection
     {
         public Connection(Node source, Node destination, Inventory req)
         {
-            this.Source = source;
+            Source = source;
 
-            this.Destination = destination;
+            Destination = destination;
 
-            this.Requirement = req;
+            Requirement = req;
         }
 
         public Node Source;

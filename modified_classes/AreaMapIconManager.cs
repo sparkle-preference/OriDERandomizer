@@ -68,56 +68,56 @@ public class AreaMapIconManager : MonoBehaviour
 		switch (iconType)
 		{
 		case WorldMapIconType.Keystone:
-			return this.Icons.Keystone;
+			return Icons.Keystone;
 		case WorldMapIconType.Mapstone:
-			return this.Icons.Mapstone;
+			return Icons.Mapstone;
 		case WorldMapIconType.BreakableWall:
-			return this.Icons.BreakableWall;
+			return Icons.BreakableWall;
 		case WorldMapIconType.BreakableWallBroken:
-			return this.Icons.BreakableWallBroken;
+			return Icons.BreakableWallBroken;
 		case WorldMapIconType.StompableFloor:
-			return this.Icons.StompableFloor;
+			return Icons.StompableFloor;
 		case WorldMapIconType.StompableFloorBroken:
-			return this.Icons.StompableFloorBroken;
+			return Icons.StompableFloorBroken;
 		case WorldMapIconType.EnergyGateTwo:
-			return this.Icons.EnergyGateTwo;
+			return Icons.EnergyGateTwo;
 		case WorldMapIconType.EnergyGateOpen:
-			return this.Icons.EnergyGateOpen;
+			return Icons.EnergyGateOpen;
 		case WorldMapIconType.KeystoneDoorFour:
-			return this.Icons.KeystoneDoorFour;
+			return Icons.KeystoneDoorFour;
 		case WorldMapIconType.KeystoneDoorOpen:
-			return this.Icons.KeystoneDoorOpen;
+			return Icons.KeystoneDoorOpen;
 		case WorldMapIconType.AbilityPedestal:
-			return this.Icons.AbilityPedestal;
+			return Icons.AbilityPedestal;
 		case WorldMapIconType.HealthUpgrade:
-			return this.Icons.HealthUpgrade;
+			return Icons.HealthUpgrade;
 		case WorldMapIconType.EnergyUpgrade:
-			return this.Icons.EnergyUpgrade;
+			return Icons.EnergyUpgrade;
 		case WorldMapIconType.SavePedestal:
-			return this.Icons.SavePedestal;
+			return Icons.SavePedestal;
 		case WorldMapIconType.AbilityPoint:
-			return this.Icons.AbilityPoint;
+			return Icons.AbilityPoint;
 		case WorldMapIconType.KeystoneDoorTwo:
-			return this.Icons.KeystoneDoorTwo;
+			return Icons.KeystoneDoorTwo;
 		case WorldMapIconType.Experience:
-			return this.Icons.Experience;
+			return Icons.Experience;
 		case WorldMapIconType.MapstonePickup:
-			return this.Icons.MapstonePickup;
+			return Icons.MapstonePickup;
 		case WorldMapIconType.EnergyGateTwelve:
-			return this.Icons.EnergyGateTwelve;
+			return Icons.EnergyGateTwelve;
 		case WorldMapIconType.EnergyGateTen:
-			return this.Icons.EnergyGateTen;
+			return Icons.EnergyGateTen;
 		case WorldMapIconType.EnergyGateEight:
-			return this.Icons.EnergyGateEight;
+			return Icons.EnergyGateEight;
 		case WorldMapIconType.EnergyGateSix:
-			return this.Icons.EnergyGateSix;
+			return Icons.EnergyGateSix;
 		case WorldMapIconType.EnergyGateFour:
-			return this.Icons.EnergyGateFour;
+			return Icons.EnergyGateFour;
 		}
 		return null;
 	}
 
-	public AreaMapIconManager.IconGameObjects Icons;
+	public IconGameObjects Icons;
 
 	[Serializable]
 	public class IconGameObjects

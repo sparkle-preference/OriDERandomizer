@@ -2,6 +2,7 @@ using System;
 using Core;
 using Game;
 using UnityEngine;
+using Input = Core.Input;
 
 public class SeinGrabWall : CharacterState, ISeinReceiver
 {
@@ -9,7 +10,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.Gravity;
+			return Sein.PlatformBehaviour.Gravity;
 		}
 	}
 
@@ -17,7 +18,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.LeftRightMovement;
+			return Sein.PlatformBehaviour.LeftRightMovement;
 		}
 	}
 
@@ -25,7 +26,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.PlatformMovementListOfColliders;
+			return Sein.PlatformBehaviour.PlatformMovementListOfColliders;
 		}
 	}
 
@@ -33,38 +34,38 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.PlatformMovement;
+			return Sein.PlatformBehaviour.PlatformMovement;
 		}
 	}
 
 	public TextureAnimationWithTransitions PickAwayAnimation()
 	{
-		if (this.Sein.PlayerAbilities.ChargeJump.HasAbility)
+		if (Sein.PlayerAbilities.ChargeJump.HasAbility)
 		{
-			TextureAnimationWithTransitions[] away = this.GrabWallAnimation.Away;
-			float angularElevation = this.Sein.Abilities.WallChargeJump.AngularElevation;
-			int num = (int)Mathf.Clamp(Mathf.InverseLerp(-45f, 45f, angularElevation) * (float)away.Length, 0f, (float)(away.Length - 1));
+			TextureAnimationWithTransitions[] away = GrabWallAnimation.Away;
+			float angularElevation = Sein.Abilities.WallChargeJump.AngularElevation;
+			int num = (int)Mathf.Clamp(Mathf.InverseLerp(-45f, 45f, angularElevation) * away.Length, 0f, away.Length - 1);
 			return away[num];
 		}
-		return this.GrabWallAnimation.GrabAway;
+		return GrabWallAnimation.GrabAway;
 	}
 
 	public void Start()
 	{
-		this.CharacterGravity.ModifyGravityPlatformMovementSettingsEvent += this.ModifyGravityPlatformMovementSettings;
-		this.CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent += this.ModifyHorizontalPlatformMovementSettings;
+		CharacterGravity.ModifyGravityPlatformMovementSettingsEvent += ModifyGravityPlatformMovementSettings;
+		CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent += ModifyHorizontalPlatformMovementSettings;
 	}
 
 	public new void OnDestroy()
 	{
 		base.OnDestroy();
-		this.CharacterGravity.ModifyGravityPlatformMovementSettingsEvent -= this.ModifyGravityPlatformMovementSettings;
-		this.CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent -= this.ModifyHorizontalPlatformMovementSettings;
+		CharacterGravity.ModifyGravityPlatformMovementSettingsEvent -= ModifyGravityPlatformMovementSettings;
+		CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent -= ModifyHorizontalPlatformMovementSettings;
 	}
 
 	public void ModifyGravityPlatformMovementSettings(GravityPlatformMovementSettings settings)
 	{
-		if (this.IsGrabbing)
+		if (IsGrabbing)
 		{
 			settings.GravityStrength = 0f;
 		}
@@ -74,13 +75,13 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.PlatformMovement.LocalSpeedY == 0f;
+			return PlatformMovement.LocalSpeedY == 0f;
 		}
 	}
 
 	public void ModifyHorizontalPlatformMovementSettings(HorizontalPlatformMovementSettings settings)
 	{
-		if (this.IsGrabbing && !this.PlatformMovement.IsOnGround && !this.PlatformMovement.IsOnCeiling)
+		if (IsGrabbing && !PlatformMovement.IsOnGround && !PlatformMovement.IsOnCeiling)
 		{
 			settings.LockInput = true;
 		}
@@ -88,38 +89,38 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 
 	public override void OnExit()
 	{
-		this.IsGrabbing = false;
-		if (this.m_climbDownSoundPlayer)
+		IsGrabbing = false;
+		if (m_climbDownSoundPlayer)
 		{
-			this.m_climbDownSoundPlayer.FadeOut(0.3f, true);
-			UberPoolManager.Instance.RemoveOnDestroyed(this.m_climbDownSoundPlayer.gameObject);
-			this.m_climbDownSoundPlayer = null;
+			m_climbDownSoundPlayer.FadeOut(0.3f, true);
+			UberPoolManager.Instance.RemoveOnDestroyed(m_climbDownSoundPlayer.gameObject);
+			m_climbDownSoundPlayer = null;
 		}
 		base.OnExit();
 	}
 
 	public void OnGrabWall()
 	{
-		if (GameController.Instance.GameTime > this.m_lastWallGrabEnterSoundTime + this.m_minimumSoundDelay)
+		if (GameController.Instance.GameTime > m_lastWallGrabEnterSoundTime + m_minimumSoundDelay)
 		{
-			Sound.Play(this.WallGrabEnterSound.GetSoundForMaterial(this.Sein.PlatformBehaviour.WallSurfaceMaterialType, null), this.PlatformMovement.Position, null);
-			this.m_lastWallGrabEnterSoundTime = GameController.Instance.GameTime;
+			Sound.Play(WallGrabEnterSound.GetSoundForMaterial(Sein.PlatformBehaviour.WallSurfaceMaterialType, null), PlatformMovement.Position, null);
+			m_lastWallGrabEnterSoundTime = GameController.Instance.GameTime;
 		}
 	}
 
 	public void OnReleaseWall()
 	{
-		this.Sein.Abilities.WallSlide.ResetMovingOffWallLockTimer();
-		if (GameController.Instance.GameTime > this.m_lastWallGrabExitSoundTime + this.m_minimumSoundDelay)
+		Sein.Abilities.WallSlide.ResetMovingOffWallLockTimer();
+		if (GameController.Instance.GameTime > m_lastWallGrabExitSoundTime + m_minimumSoundDelay)
 		{
-			Sound.Play(this.WallGrabExitSound.GetSoundForMaterial(this.Sein.PlatformBehaviour.WallSurfaceMaterialType, null), this.PlatformMovement.Position, null);
-			this.m_lastWallGrabExitSoundTime = GameController.Instance.GameTime;
+			Sound.Play(WallGrabExitSound.GetSoundForMaterial(Sein.PlatformBehaviour.WallSurfaceMaterialType, null), PlatformMovement.Position, null);
+			m_lastWallGrabExitSoundTime = GameController.Instance.GameTime;
 		}
-		if (this.m_climbDownSoundPlayer)
+		if (m_climbDownSoundPlayer)
 		{
-			this.m_climbDownSoundPlayer.FadeOut(0f, true);
-			UberPoolManager.Instance.RemoveOnDestroyed(this.m_climbDownSoundPlayer.gameObject);
-			this.m_climbDownSoundPlayer = null;
+			m_climbDownSoundPlayer.FadeOut(0f, true);
+			UberPoolManager.Instance.RemoveOnDestroyed(m_climbDownSoundPlayer.gameObject);
+			m_climbDownSoundPlayer = null;
 		}
 	}
 
@@ -127,20 +128,20 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.m_isGrabbing;
+			return m_isGrabbing;
 		}
 		set
 		{
-			if (this.m_isGrabbing != value)
+			if (m_isGrabbing != value)
 			{
-				this.m_isGrabbing = value;
-				if (this.m_isGrabbing)
+				m_isGrabbing = value;
+				if (m_isGrabbing)
 				{
-					this.OnGrabWall();
+					OnGrabWall();
 				}
 				else
 				{
-					this.OnReleaseWall();
+					OnReleaseWall();
 				}
 			}
 		}
@@ -148,95 +149,95 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 
 	public void UpdateGrabbing()
 	{
-		if (this.IsGrabbing && this.Sein.Controller.CanMove && this.Sein.Input.Up.Pressed && !this.PlatformMovement.HeadAgainstWall)
+		if (IsGrabbing && Sein.Controller.CanMove && Sein.Input.Up.Pressed && !PlatformMovement.HeadAgainstWall)
 		{
-			if (this.Sein.Abilities.Glide)
+			if (Sein.Abilities.Glide)
 			{
-				this.Sein.Abilities.Glide.NeedsRightTriggerReleased = true;
+				Sein.Abilities.Glide.NeedsRightTriggerReleased = true;
 			}
 			float climbClamberFactor = RandomizerSettings.Controls.SlowClimbVault ? 0.225f : 0.65f;
-			this.Sein.Abilities.EdgeClamber.PerformEdgeClamber(climbClamberFactor);
+			Sein.Abilities.EdgeClamber.PerformEdgeClamber(climbClamberFactor);
 		}
-		if (!this.CanGrab)
+		if (!CanGrab)
 		{
 			if (Randomizer.DoesGrabForgivenessExpire(Time.deltaTime))
 			{
-				this.IsGrabbing = false;
+				IsGrabbing = false;
 				return;
 			}
 		}
-		if (!this.WantToGrab)
+		if (!WantToGrab)
 		{
-			this.IsGrabbing = false;
+			IsGrabbing = false;
 			return;
 		}
-		if (ForceGrabReleaseZone.InsideZone(this.Sein.Position))
+		if (ForceGrabReleaseZone.InsideZone(Sein.Position))
 		{
-			this.m_requiresRelease = true;
+			m_requiresRelease = true;
 		}
-		Vector2 localSpeed = this.PlatformMovement.LocalSpeed;
+		Vector2 localSpeed = PlatformMovement.LocalSpeed;
 		if (Characters.Sein.Controller.CanMove)
 		{
-			if (this.LockVerticalMovement || this.Sein.Controller.IsChargingJump)
+			if (LockVerticalMovement || Sein.Controller.IsChargingJump)
 			{
 				localSpeed.y = 0f;
 			}
-			else if (this.Sein.Input.Up.Pressed)
+			else if (Sein.Input.Up.Pressed)
 			{
-				localSpeed.y = Mathf.Clamp(localSpeed.y + this.Acceleration * Time.deltaTime, 0f, this.ClimbSpeedUp * RandomizerBonus.Veloscale);
+				localSpeed.y = Mathf.Clamp(localSpeed.y + Acceleration * Time.deltaTime, 0f, ClimbSpeedUp * RandomizerBonus.Veloscale);
 			}
-			else if (this.Sein.Input.Down.Pressed)
+			else if (Sein.Input.Down.Pressed)
 			{
-				localSpeed.y = Mathf.Clamp(localSpeed.y - this.Acceleration * Time.deltaTime, -this.ClimbSpeedDown * RandomizerBonus.Veloscale, 0f);
+				localSpeed.y = Mathf.Clamp(localSpeed.y - Acceleration * Time.deltaTime, -ClimbSpeedDown * RandomizerBonus.Veloscale, 0f);
 			}
 			else
 			{
 				localSpeed.y = 0f;
 			}
 		}
-		this.HandleWallClimbUpSteps();
-		this.HandleWallClimbDownSteps();
-		this.PlatformMovement.LocalSpeed = localSpeed;
-		if (this.ShouldGrabWallUpAnimationPlay)
+		HandleWallClimbUpSteps();
+		HandleWallClimbDownSteps();
+		PlatformMovement.LocalSpeed = localSpeed;
+		if (ShouldGrabWallUpAnimationPlay)
 		{
-			this.Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(this.GrabWallAnimation.ClimbUp, 25, new Func<bool>(this.ShouldGrabWallUpAnimationKeepPlaying), false);
+			Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(GrabWallAnimation.ClimbUp, 25, ShouldGrabWallUpAnimationKeepPlaying);
 		}
-		if (this.ShouldGrabWallDownAnimationPlay)
+		if (ShouldGrabWallDownAnimationPlay)
 		{
-			this.Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(this.GrabWallAnimation.ClimbDown, 25, new Func<bool>(this.ShouldGrabWallDownAnimationKeepPlaying), false);
+			Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(GrabWallAnimation.ClimbDown, 25, ShouldGrabWallDownAnimationKeepPlaying);
 		}
-		if (this.ShouldGrabWallAwayAnimationPlay)
+		if (ShouldGrabWallAwayAnimationPlay)
 		{
-			this.Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(this.PickAwayAnimation(), 25, new Func<bool>(this.ShouldGrabWallAwayAnimationKeepPlaying), true);
+			Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(PickAwayAnimation(), 25, ShouldGrabWallAwayAnimationKeepPlaying, true);
 		}
-		if (this.ShouldGrabWallIdleAnimationPlay)
+		if (ShouldGrabWallIdleAnimationPlay)
 		{
-			this.Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(this.GrabWallAnimation.Idle, 25, new Func<bool>(this.ShouldGrabWallIdleAnimationKeepPlaying), false);
+			Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(GrabWallAnimation.Idle, 25, ShouldGrabWallIdleAnimationKeepPlaying);
 		}
-		this.m_currentTime += Time.deltaTime;
+		m_currentTime += Time.deltaTime;
 	}
 
 	public override void UpdateCharacterState()
 	{
-		if (this.IsGrabbing)
+		if (IsGrabbing)
 		{
-			this.UpdateGrabbing();
+			UpdateGrabbing();
 		}
-		else if (this.WantToGrab)
+		else if (WantToGrab)
 		{
-			if (!this.Sein.Abilities.WallSlide.IsWallSliding)
+			if (!Sein.Abilities.WallSlide.IsWallSliding)
 			{
-				this.m_requiresRelease = false;
+				m_requiresRelease = false;
 			}
-			if (this.CanGrab)
+			if (CanGrab)
 			{
 				Randomizer.ApplyGrabForgiveness();
-				this.IsGrabbing = true;
+				IsGrabbing = true;
 			}
 		}
 		else
 		{
-			this.m_requiresRelease = false;
+			m_requiresRelease = false;
 		}
 	}
 
@@ -244,7 +245,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return RandomizerSettings.Controls.InvertClimb ^ Core.Input.Glide.Pressed;
+			return RandomizerSettings.Controls.InvertClimb ^ Input.Glide.Pressed;
 		}
 	}
 
@@ -252,7 +253,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.Abilities.WallSlide.IsOnWall && (this.Sein.PlatformBehaviour.PlatformMovement.HasWallLeft || !this.Sein.Controller.FaceLeft) && (this.Sein.PlatformBehaviour.PlatformMovement.HasWallRight || this.Sein.Controller.FaceLeft) && !this.m_requiresRelease && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.AllAbilities) && this.PlatformMovement.HeadAgainstWall;
+			return Sein.Abilities.WallSlide.IsOnWall && (Sein.PlatformBehaviour.PlatformMovement.HasWallLeft || !Sein.Controller.FaceLeft) && (Sein.PlatformBehaviour.PlatformMovement.HasWallRight || Sein.Controller.FaceLeft) && !m_requiresRelease && !SeinAbilityRestrictZone.IsInside() && PlatformMovement.HeadAgainstWall;
 		}
 	}
 
@@ -260,7 +261,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.ShouldGrabWallUpAnimationKeepPlaying();
+			return ShouldGrabWallUpAnimationKeepPlaying();
 		}
 	}
 
@@ -268,7 +269,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.ShouldGrabWallDownAnimationKeepPlaying();
+			return ShouldGrabWallDownAnimationKeepPlaying();
 		}
 	}
 
@@ -276,7 +277,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.ShouldGrabWallAwayAnimationKeepPlaying();
+			return ShouldGrabWallAwayAnimationKeepPlaying();
 		}
 	}
 
@@ -284,72 +285,72 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.ShouldGrabWallIdleAnimationKeepPlaying();
+			return ShouldGrabWallIdleAnimationKeepPlaying();
 		}
 	}
 
 	public bool ShouldGrabWallUpAnimationKeepPlaying()
 	{
-		return this.IsGrabbing && this.PlatformMovement.LocalSpeedY > 0f;
+		return IsGrabbing && PlatformMovement.LocalSpeedY > 0f;
 	}
 
 	public bool ShouldGrabWallDownAnimationKeepPlaying()
 	{
-		return this.IsGrabbing && this.PlatformMovement.LocalSpeedY < 0f;
+		return IsGrabbing && PlatformMovement.LocalSpeedY < 0f;
 	}
 
 	public bool ShouldGrabWallAwayAnimationKeepPlaying()
 	{
-		return this.IsGrabbing && this.PlatformMovement.LocalSpeedY == 0f && this.IsGrabbingAway;
+		return IsGrabbing && PlatformMovement.LocalSpeedY == 0f && IsGrabbingAway;
 	}
 
 	public bool ShouldGrabWallIdleAnimationKeepPlaying()
 	{
-		return this.IsGrabbing && this.PlatformMovement.LocalSpeedY == 0f && !this.IsGrabbingAway;
+		return IsGrabbing && PlatformMovement.LocalSpeedY == 0f && !IsGrabbingAway;
 	}
 
 	public bool IsGrabbingAway
 	{
 		get
 		{
-			return (this.Sein.Input.NormalizedHorizontal == -1 && this.PlatformMovement.HasWallRight) || (this.Sein.Input.NormalizedHorizontal == 1 && this.PlatformMovement.HasWallLeft);
+			return (Sein.Input.NormalizedHorizontal == -1 && PlatformMovement.HasWallRight) || (Sein.Input.NormalizedHorizontal == 1 && PlatformMovement.HasWallLeft);
 		}
 	}
 
 	public void HandleWallClimbUpSteps()
 	{
-		if (this.PlatformMovement.LocalSpeedY > 0f && this.m_nextWallClimbUpTime < this.m_currentTime)
+		if (PlatformMovement.LocalSpeedY > 0f && m_nextWallClimbUpTime < m_currentTime)
 		{
-			Sound.Play(this.WallGrabStepUpSound.GetSoundForMaterial(this.Sein.PlatformBehaviour.WallSurfaceMaterialType, null), this.PlatformMovement.Position, null);
-			this.m_nextWallClimbUpTime = this.m_currentTime + 1f / this.WallClimbUpStepsPerSecond;
+			Sound.Play(WallGrabStepUpSound.GetSoundForMaterial(Sein.PlatformBehaviour.WallSurfaceMaterialType, null), PlatformMovement.Position, null);
+			m_nextWallClimbUpTime = m_currentTime + 1f / WallClimbUpStepsPerSecond;
 		}
 	}
 
 	public void HandleWallClimbDownSteps()
 	{
-		if (this.PlatformMovement.LocalSpeedY < 0f)
+		if (PlatformMovement.LocalSpeedY < 0f)
 		{
-			if (InstantiateUtility.IsDestroyed(this.m_climbDownSoundPlayer) && GameController.Instance.GameTime > this.m_lastWallGrabStepDownSoundTime + this.m_minimumSoundDelay)
+			if (InstantiateUtility.IsDestroyed(m_climbDownSoundPlayer) && GameController.Instance.GameTime > m_lastWallGrabStepDownSoundTime + m_minimumSoundDelay)
 			{
-				this.m_climbDownSoundPlayer = Sound.PlayLooping(this.WallGrabStepDownSound.GetSoundForMaterial(this.Sein.PlatformBehaviour.WallSurfaceMaterialType, null), this.PlatformMovement.Position, delegate()
+				m_climbDownSoundPlayer = Sound.PlayLooping(WallGrabStepDownSound.GetSoundForMaterial(Sein.PlatformBehaviour.WallSurfaceMaterialType, null), PlatformMovement.Position, delegate
 				{
-					this.m_climbDownSoundPlayer = null;
+					m_climbDownSoundPlayer = null;
 				});
-				this.m_lastWallGrabStepDownSoundTime = GameController.Instance.GameTime;
+				m_lastWallGrabStepDownSoundTime = GameController.Instance.GameTime;
 			}
 		}
-		else if (!InstantiateUtility.IsDestroyed(this.m_climbDownSoundPlayer))
+		else if (!InstantiateUtility.IsDestroyed(m_climbDownSoundPlayer))
 		{
-			this.m_climbDownSoundPlayer.FadeOut(0.3f, true);
-			UberPoolManager.Instance.RemoveOnDestroyed(this.m_climbDownSoundPlayer.gameObject);
-			this.m_climbDownSoundPlayer = null;
+			m_climbDownSoundPlayer.FadeOut(0.3f, true);
+			UberPoolManager.Instance.RemoveOnDestroyed(m_climbDownSoundPlayer.gameObject);
+			m_climbDownSoundPlayer = null;
 		}
 	}
 
 	public void SetReferenceToSein(SeinCharacter sein)
 	{
-		this.Sein = sein;
-		this.Sein.Abilities.GrabWall = this;
+		Sein = sein;
+		Sein.Abilities.GrabWall = this;
 	}
 
 	public SeinCharacter Sein;
@@ -376,7 +377,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver
 
 	public bool LockVerticalMovement;
 
-	public SeinGrabWall.GrabWallAnimationSet GrabWallAnimation;
+	public GrabWallAnimationSet GrabWallAnimation;
 
 	public TextureAnimationWithTransitions EdgeClimbAnimation;
 

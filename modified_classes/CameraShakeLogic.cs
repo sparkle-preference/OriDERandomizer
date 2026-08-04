@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 public class CameraShakeLogic : MonoBehaviour, ISuspendable
@@ -29,8 +28,8 @@ public class CameraShakeLogic : MonoBehaviour, ISuspendable
 		shakeOffset *= RandomizerSettings.Accessibility.CameraShakeFactor;
 		shakeRotation *= RandomizerSettings.Accessibility.CameraShakeFactor;
 
-		this.Target.localPosition = shakeOffset;
-		this.Target.localEulerAngles = shakeRotation;
+		Target.localPosition = shakeOffset;
+		Target.localEulerAngles = shakeRotation;
 	}
 
 	public bool IsSuspended { get; set; }

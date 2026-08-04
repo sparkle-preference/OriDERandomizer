@@ -1,21 +1,21 @@
 using System;
-using UnityEngine;
 using fsm;
 using fsm.triggers;
+using UnityEngine;
 
 public class SwarmEnemy : GroundEnemy
 {
 	public override bool CanBeOptimized()
 	{
-		return this.Controller.StateMachine.CurrentState == this.State.Idle;
+		return Controller.StateMachine.CurrentState == State.Idle;
 	}
 
 	public override void Awake()
 	{
 		base.Awake();
-		this.DamageReciever.OnDeathEvent.Add(new Action<Damage>(this.OnDeath));
-		EntityDamageReciever damageReciever = this.DamageReciever;
-		damageReciever.OnModifyDamage = (EntityDamageReciever.ModifyDamageDelegate)Delegate.Combine(damageReciever.OnModifyDamage, new EntityDamageReciever.ModifyDamageDelegate(this.OnPreProcessDamage));
+		DamageReciever.OnDeathEvent.Add(new Action<Damage>(OnDeath));
+		EntityDamageReciever damageReciever = DamageReciever;
+		damageReciever.OnModifyDamage = (EntityDamageReciever.ModifyDamageDelegate)Delegate.Combine(damageReciever.OnModifyDamage, new EntityDamageReciever.ModifyDamageDelegate(OnPreProcessDamage));
 	}
 
 	public void OnPreProcessDamage(Damage damage)
@@ -24,9 +24,9 @@ public class SwarmEnemy : GroundEnemy
 		if (component != null)
 		{
 			Entity entity = component.Entity;
-			if (entity is SwarmEnemy && this.GetInstanceID() > entity.GetInstanceID())
+			if (entity is SwarmEnemy && GetInstanceID() > entity.GetInstanceID())
 			{
-				this.PlatformMovement.LocalSpeedX *= 0.7f;
+				PlatformMovement.LocalSpeedX *= 0.7f;
 			}
 		}
 	}
@@ -34,147 +34,146 @@ public class SwarmEnemy : GroundEnemy
 	public new void Start()
 	{
 		base.Start();
-		this.State.Idle = new State
+		State.Idle = new State
 		{
-			OnEnterEvent = new Action(this.OnEnterIdle),
-			UpdateStateEvent = new Action(this.UpdateIdle),
-			OnExitEvent = new Action(this.OnExitIdle)
+			OnEnterEvent = OnEnterIdle,
+			UpdateStateEvent = UpdateIdle,
+			OnExitEvent = OnExitIdle
 		};
-		this.State.Run = new State
+		State.Run = new State
 		{
-			OnEnterEvent = new Action(this.OnEnterRun),
-			UpdateStateEvent = new Action(this.UpdateRun),
-			OnExitEvent = new Action(this.OnExitRun)
+			OnEnterEvent = OnEnterRun,
+			UpdateStateEvent = UpdateRun,
+			OnExitEvent = OnExitRun
 		};
-		this.State.Spawned = new State
+		State.Spawned = new State
 		{
-			OnEnterEvent = new Action(this.OnEnterSpawned),
-			UpdateStateEvent = new Action(this.UpdateSpawned)
+			OnEnterEvent = OnEnterSpawned,
+			UpdateStateEvent = UpdateSpawned
 		};
-		this.Controller.StateMachine.RegisterStates(new IState[]
-		{
-			this.State.Idle,
-			this.State.Run,
-			this.State.Spawned
-		});
-		this.Controller.StateMachine.Configure(this.State.Idle).AddTransition<OnFixedUpdate>(this.State.Run, new Func<bool>(this.ShouldRun), null);
-		this.Controller.StateMachine.Configure(this.State.Run).AddTransition<OnFixedUpdate>(this.State.Idle, () => !this.ShouldRun(), null);
-		this.Controller.StateMachine.Configure(this.State.Spawned).AddTransition<OnFixedUpdate>(this.State.Run, () => base.AfterTime(0.5f), null);
-		this.Controller.StateMachine.ChangeState((!this.m_wasSpawned) ? this.State.Idle : this.State.Spawned);
+		Controller.StateMachine.RegisterStates(
+			State.Idle,
+		State.Run,
+		State.Spawned
+		);
+		Controller.StateMachine.Configure(State.Idle).AddTransition<OnFixedUpdate>(State.Run, ShouldRun);
+		Controller.StateMachine.Configure(State.Run).AddTransition<OnFixedUpdate>(State.Idle, () => !ShouldRun());
+		Controller.StateMachine.Configure(State.Spawned).AddTransition<OnFixedUpdate>(State.Run, () => AfterTime(0.5f));
+		Controller.StateMachine.ChangeState((!m_wasSpawned) ? State.Idle : State.Spawned);
 	}
 
 	public bool ShouldRun()
 	{
-		float num = (float)Math.Sign(base.PositionToPlayerPosition.x);
-		bool flag = this.Size != 0f && Physics.Linecast(base.transform.position + new Vector3(num * (this.Size - 1f), 0f), base.transform.position + new Vector3(num * this.Size, 0f));
+		float num = Math.Sign(PositionToPlayerPosition.x);
+		bool flag = Size != 0f && Physics.Linecast(transform.position + new Vector3(num * (Size - 1f), 0f), transform.position + new Vector3(num * Size, 0f));
 		bool flag2;
-		if (EnemyStopper.InsideEnemyStopper(base.Position, (!base.PlayerIsToLeft) ? Vector3.right : Vector3.left, out flag2))
+		if (EnemyStopper.InsideEnemyStopper(Position, (!PlayerIsToLeft) ? Vector3.right : Vector3.left, out flag2))
 		{
 			return false;
 		}
-		return this.Controller.IsNearSein() && Mathf.Abs(base.PositionToPlayerPosition.x) > 0.5f && !flag;
+		return Controller.IsNearSein() && Mathf.Abs(PositionToPlayerPosition.x) > 0.5f && !flag;
 	}
 
 	public void SetModeToSpawned()
 	{
-		this.m_wasSpawned = true;
+		m_wasSpawned = true;
 	}
 
 	public new void FixedUpdate()
 	{
 		base.FixedUpdate();
-		if (!this.IsSuspended)
+		if (!IsSuspended)
 		{
-			this.PlatformMovement.LocalSpeedY -= this.Settings.Gravity * Time.deltaTime;
-			if (this.PlatformMovement.LocalSpeedY < -this.Settings.MaxFallSpeed)
+			PlatformMovement.LocalSpeedY -= Settings.Gravity * Time.deltaTime;
+			if (PlatformMovement.LocalSpeedY < -Settings.MaxFallSpeed)
 			{
-				this.PlatformMovement.LocalSpeedY = -this.Settings.MaxFallSpeed;
+				PlatformMovement.LocalSpeedY = -Settings.MaxFallSpeed;
 			}
-			this.UpdateRotation();
-			if (base.IsInWater)
+			UpdateRotation();
+			if (IsInWater)
 			{
-				this.Drown();
+				Drown();
 			}
 		}
 	}
 
 	public void UpdateRotation()
 	{
-		float num = this.SpeedXToRotation.Evaluate(this.PlatformMovement.LocalSpeedX) * this.SpeedYToRotation.Evaluate(this.PlatformMovement.LocalSpeedX) * this.AirTiltAngle;
-		float b = (!this.PlatformMovement.IsOnGround) ? num : this.PlatformMovement.GroundAngle;
-		this.FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(this.FeetTransform.eulerAngles.z, b, 0.1f));
+		float num = SpeedXToRotation.Evaluate(PlatformMovement.LocalSpeedX) * SpeedYToRotation.Evaluate(PlatformMovement.LocalSpeedX) * AirTiltAngle;
+		float b = (!PlatformMovement.IsOnGround) ? num : PlatformMovement.GroundAngle;
+		FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.1f));
 	}
 
 	public void OnEnterIdle()
 	{
-		if (this.Idle)
+		if (Idle)
 		{
-			this.Idle.Play();
+			Idle.Play();
 		}
 	}
 
 	public void OnEnterRun()
 	{
-		if (this.Walking)
+		if (Walking)
 		{
-			this.Walking.Play();
+			Walking.Play();
 		}
 	}
 
 	public void OnExitIdle()
 	{
-		if (this.Idle)
+		if (Idle)
 		{
-			this.Idle.Stop();
+			Idle.Stop();
 		}
 	}
 
 	public void OnExitRun()
 	{
-		if (this.Walking)
+		if (Walking)
 		{
-			this.Walking.Stop();
+			Walking.Stop();
 		}
 	}
 
 	public void OnEnterSpawned()
 	{
-		this.RestartAnimationLoop(this.Animations.Spawned);
+		RestartAnimationLoop(Animations.Spawned);
 	}
 
 	public void UpdateIdle()
 	{
-		if (this.PlatformMovement.IsOnGround)
+		if (PlatformMovement.IsOnGround)
 		{
-			this.PlayAnimationLoop(this.Animations.Idle);
+			PlayAnimationLoop(Animations.Idle);
 		}
 		else
 		{
-			this.PlayAnimationLoop((!this.CanFall) ? this.Animations.Idle : this.Animations.Fall);
+			PlayAnimationLoop((!CanFall) ? Animations.Idle : Animations.Fall);
 		}
-		this.PlatformMovement.LocalSpeedX = MoonMath.Movement.DecelerateSpeed(this.PlatformMovement.LocalSpeedX, this.Settings.Decceleration);
+		PlatformMovement.LocalSpeedX = MoonMath.Movement.DecelerateSpeed(PlatformMovement.LocalSpeedX, Settings.Decceleration);
 	}
 
 	public void UpdateRun()
 	{
-		if (this.PlatformMovement.IsOnGround)
+		if (PlatformMovement.IsOnGround)
 		{
-			this.PlayAnimationLoop((!base.PlayerIsToLeft) ? this.Animations.RunRight : this.Animations.RunLeft);
+			PlayAnimationLoop((!PlayerIsToLeft) ? Animations.RunRight : Animations.RunLeft);
 		}
 		else
 		{
-			this.PlayAnimationLoop(this.CanFall ? this.Animations.Fall : ((!base.PlayerIsToLeft) ? this.Animations.RunRight : this.Animations.RunLeft));
+			PlayAnimationLoop(CanFall ? Animations.Fall : ((!PlayerIsToLeft) ? Animations.RunRight : Animations.RunLeft));
 		}
-		this.PlatformMovement.LocalSpeedX = RandomizerBonusSkill.TimeScale(this.Settings.Speed * this.Settings.MoveCurve.Evaluate(base.SpriteAnimator.CurrentAnimationTime) * (float)((!base.PlayerIsToLeft) ? 1 : (-1)));
-		if (this.Settings.JumpDelay > 0f)
+		PlatformMovement.LocalSpeedX = RandomizerBonusSkill.TimeScale(Settings.Speed * Settings.MoveCurve.Evaluate(SpriteAnimator.CurrentAnimationTime) * ((!PlayerIsToLeft) ? 1 : (-1)));
+		if (Settings.JumpDelay > 0f)
 		{
-			if (this.m_jumpDelay < 0f && this.PlatformMovement.IsOnGround)
+			if (m_jumpDelay < 0f && PlatformMovement.IsOnGround)
 			{
-				this.m_jumpDelay = this.Settings.JumpDelay;
-				this.PlatformMovement.LocalSpeedY = this.Settings.JumpStrength;
-				this.PlayAnimationOnce(this.Animations.Jump, 1);
+				m_jumpDelay = Settings.JumpDelay;
+				PlatformMovement.LocalSpeedY = Settings.JumpStrength;
+				PlayAnimationOnce(Animations.Jump, 1);
 			}
-			this.m_jumpDelay -= Time.deltaTime;
+			m_jumpDelay -= Time.deltaTime;
 		}
 	}
 
@@ -184,12 +183,12 @@ public class SwarmEnemy : GroundEnemy
 
 	public void OnDeath(Damage damage)
 	{
-		if (this.Settings.Child)
+		if (Settings.Child)
 		{
 			for (int i = 0; i < 2; i++)
 			{
 				Vector3 velocity = (((i != 0) ? Vector3.right : Vector3.left) + Vector3.up * 3f) * 7f;
-				SwarmEnemyManager.Instance.QueueSpawn(base.transform.position, velocity, (int)(this.Loot.LootAmount * this.Loot.LootMultiplier), this.OrbSpawner, this.DamageDealer.Damage, this.Settings.Child, this.SceneRootGUID, this.Owner);
+				SwarmEnemyManager.Instance.QueueSpawn(transform.position, velocity, (int)(Loot.LootAmount * Loot.LootMultiplier), OrbSpawner, DamageDealer.Damage, Settings.Child, SceneRootGUID, Owner);
 			}
 		}
 	}
@@ -197,7 +196,7 @@ public class SwarmEnemy : GroundEnemy
 	public override void OnDestroy()
 	{
 		base.OnDestroy();
-		this.Owner.OnChildComponentDestroy(this);
+		Owner.OnChildComponentDestroy(this);
 	}
 
 	public SwarmEnemyAnimations Animations;
@@ -216,7 +215,7 @@ public class SwarmEnemy : GroundEnemy
 
 	public float Size;
 
-	public SwarmEnemy.States State = new SwarmEnemy.States();
+	public States State = new States();
 
 	private bool m_wasSpawned;
 

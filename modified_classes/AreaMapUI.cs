@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Core;
 using Game;
-using UnityEngine;
 using RandoExts;
+using UnityEngine;
+using Input = Core.Input;
+
 public class AreaMapUI : MonoBehaviour, ISuspendable
 {
 	public GameObject PlayerPositionMarker { get; set; }
@@ -21,27 +23,27 @@ public class AreaMapUI : MonoBehaviour, ISuspendable
 	{
 		get
 		{
-			return this.FadeOutAnimator.transform;
+			return FadeOutAnimator.transform;
 		}
 	}
 
 	public void Hide()
 	{
-		base.gameObject.SetActive(false);
+		gameObject.SetActive(false);
 	}
 
 	public void Show()
 	{
-		base.gameObject.SetActive(true);
+		gameObject.SetActive(true);
 	}
 
 	public void ResetMaps()
 	{
-		foreach (AreaMapCanvas areaMapCanvas in this.Canvases)
+		foreach (AreaMapCanvas areaMapCanvas in Canvases)
 		{
 			areaMapCanvas.ResetMap();
 		}
-		foreach (AreaMapCanvasOverlay areaMapCanvasOverlay in base.GetComponentsInChildren<AreaMapCanvasOverlay>(true))
+		foreach (AreaMapCanvasOverlay areaMapCanvasOverlay in GetComponentsInChildren<AreaMapCanvasOverlay>(true))
 		{
 			areaMapCanvasOverlay.ApplyMasks();
 		}
@@ -49,40 +51,40 @@ public class AreaMapUI : MonoBehaviour, ISuspendable
 
 	public void Awake()
 	{
-		AreaMapUI.Instance = this;
-		this.DebugNavigation = base.GetComponent<AreaMapDebugNavigation>();
-		this.Navigation = base.GetComponent<AreaMapNavigation>();
-		this.IconManager = base.GetComponent<AreaMapIconManager>();
+		Instance = this;
+		DebugNavigation = GetComponent<AreaMapDebugNavigation>();
+		Navigation = GetComponent<AreaMapNavigation>();
+		IconManager = GetComponent<AreaMapIconManager>();
 		SuspensionManager.Register(this);
-		this.AreaMapLegend.HideSilently();
-		if (this.PlayerPositionMarker == null)
+		AreaMapLegend.HideSilently();
+		if (PlayerPositionMarker == null)
 		{
-			this.PlayerPositionMarker = UnityEngine.Object.Instantiate<GameObject>(this.PlayerPositionMarkerPrefab);
-			this.PlayerPositionMarker.transform.parent = this.FadeOutGroup;
-			TransparencyAnimator.Register(this.PlayerPositionMarker.transform);
+			PlayerPositionMarker = Instantiate(PlayerPositionMarkerPrefab);
+			PlayerPositionMarker.transform.parent = FadeOutGroup;
+			TransparencyAnimator.Register(PlayerPositionMarker.transform);
 		}
-		if (this.SoulFlamePositionMarker == null)
+		if (SoulFlamePositionMarker == null)
 		{
-			this.SoulFlamePositionMarker = UnityEngine.Object.Instantiate<GameObject>(this.SoulFlamePositionMarkerPrefab);
-			this.SoulFlamePositionMarker.transform.parent = this.FadeOutGroup;
-			TransparencyAnimator.Register(this.SoulFlamePositionMarker.transform);
+			SoulFlamePositionMarker = Instantiate(SoulFlamePositionMarkerPrefab);
+			SoulFlamePositionMarker.transform.parent = FadeOutGroup;
+			TransparencyAnimator.Register(SoulFlamePositionMarker.transform);
 		}
-		if (this.RandomizerTooltip == null)
+		if (RandomizerTooltip == null)
 		{
-			GameObject obj = UnityEngine.Object.Instantiate<GameObject>(this.transform.FindChild("legend/player").gameObject);
-			obj.transform.parent = this.transform.FindChild("legend");
-			this.RandomizerTooltip = obj.GetComponent<MessageBox>();
-			this.RandomizerTooltip.MessageProvider = null;
-			this.RandomizerTooltip.OverrideText = "Unknown";
+			GameObject obj = Instantiate(transform.FindChild("legend/player").gameObject);
+			obj.transform.parent = transform.FindChild("legend");
+			RandomizerTooltip = obj.GetComponent<MessageBox>();
+			RandomizerTooltip.MessageProvider = null;
+			RandomizerTooltip.OverrideText = "Unknown";
 		}
-		if (this.KeysanityDoorTooltips.Count == 0) {
+		if (KeysanityDoorTooltips.Count == 0) {
 			for(var i = 0; i < 12; i++) {
-				GameObject obj = UnityEngine.Object.Instantiate<GameObject>(this.transform.FindChild("legend/player").gameObject);
-				obj.transform.parent = this.transform.FindChild("legend");
+				GameObject obj = Instantiate(transform.FindChild("legend/player").gameObject);
+				obj.transform.parent = transform.FindChild("legend");
 				var doorTTip = obj.GetComponent<MessageBox>();
 				doorTTip.MessageProvider = null;
 				doorTTip.OverrideText = "Unknown";
-				this.KeysanityDoorTooltips.Add(doorTTip);
+				KeysanityDoorTooltips.Add(doorTTip);
 			}
 		}
 	}
@@ -90,34 +92,34 @@ public class AreaMapUI : MonoBehaviour, ISuspendable
 	public void OnDestroy()
 	{
 		SuspensionManager.Unregister(this);
-		AreaMapUI.Instance = null;
+		Instance = null;
 	}
 
 	public AreaMapCanvas FindCanvas(GameWorldArea area)
 	{
-		return this.Canvases.FirstOrDefault((AreaMapCanvas canvas) => canvas.Area == area);
+		return Canvases.FirstOrDefault(canvas => canvas.Area == area);
 	}
 
 	public void Init()
 	{
-		this.ResetMaps();
-		this.IconManager.ShowAreaIcons();
-		this.Navigation.Advance();
-		this.Navigation.UpdateScrollLimits();
-		this.PlayerPositionOffset = Vector2.zero;
-		this.Navigation.Init();
-		Transform fog = base.transform.FindChild("mapPivot/mistyWoodsFog");
+		ResetMaps();
+		IconManager.ShowAreaIcons();
+		Navigation.Advance();
+		Navigation.UpdateScrollLimits();
+		PlayerPositionOffset = Vector2.zero;
+		Navigation.Init();
+		Transform fog = transform.FindChild("mapPivot/mistyWoodsFog");
 		fog.gameObject.SetActive(false);
-		foreach (AreaMapCanvas areaMapCanvas in this.Canvases)
+		foreach (AreaMapCanvas areaMapCanvas in Canvases)
 		{
 			areaMapCanvas.RuntimeArea.DiscoverAllAreas();
 		}
-		this.Navigation.UpdateScrollLimits();
+		Navigation.UpdateScrollLimits();
 	}
 
 	public void FixedUpdate()
 	{
-		if (this.IsSuspended)
+		if (IsSuspended)
 		{
 			return;
 		}
@@ -125,44 +127,44 @@ public class AreaMapUI : MonoBehaviour, ISuspendable
 		{
 			return;
 		}
-		this.Navigation.Advance();
-		this.DebugNavigation.Advance();
-		this.UpdatePlayerPositionMarker();
-		this.UpdateSoulFlamePositionMarker();
-		this.UpdateCurrentArea();
+		Navigation.Advance();
+		DebugNavigation.Advance();
+		UpdatePlayerPositionMarker();
+		UpdateSoulFlamePositionMarker();
+		UpdateCurrentArea();
 		
 		if (!GameMapUI.Instance.ShowingObjective)
 		{
-			var msg = $"#{this.ObjectiveMessageProvider}#: {RandomizerText.GetObjectiveText()}\n{RandomizerText.MapFilterText}";
+			var msg = $"#{ObjectiveMessageProvider}#: {RandomizerText.GetObjectiveText()}\n{RandomizerText.MapFilterText}";
 			if(msg.Count(c => c == '\n') > 1)
 				msg = "\n" + msg; // paddingu paddingu...
-			this.ObjectiveText.SetMessage(new MessageDescriptor(msg));
-			this.ObjectiveText.gameObject.SetActive(true);
+			ObjectiveText.SetMessage(new MessageDescriptor(msg));
+			ObjectiveText.gameObject.SetActive(true);
 		}
 		else
 		{
-			this.ObjectiveText.gameObject.SetActive(false);
+			ObjectiveText.gameObject.SetActive(false);
 		}
 		if (GameMapTransitionManager.Instance.InAreaMapMode) {
-			if(Core.Input.Legend.OnPressed) 
-				this.AreaMapLegend.Toggle();
+			if(Input.Legend.OnPressed) 
+				AreaMapLegend.Toggle();
 			if(RandomizerRebinding.ToggleMapMode.OnPressed) {
 				RandomizerSettings.CurrentFilter = RandomizerSettings.CurrentFilter.Next();
-				this.IconManager.ShowAreaIcons();
+				IconManager.ShowAreaIcons();
 			}
 		}
 	}
 
 	public void UpdateCurrentArea()
 	{
-		Vector2 scrollPosition = this.Navigation.ScrollPosition;
+		Vector2 scrollPosition = Navigation.ScrollPosition;
 		foreach (RuntimeGameWorldArea runtimeGameWorldArea in GameWorld.Instance.RuntimeAreas)
 		{
-			if ((runtimeGameWorldArea.AreaDiscovered || this.DebugNavigation.UndiscoveredMapVisible) && runtimeGameWorldArea.Area.BoundaryCage.FindFaceAtPositionFaster(scrollPosition) != null)
+			if ((runtimeGameWorldArea.AreaDiscovered || DebugNavigation.UndiscoveredMapVisible) && runtimeGameWorldArea.Area.BoundaryCage.FindFaceAtPositionFaster(scrollPosition) != null)
 			{
-				if (GameMapUI.Instance.CurrentHighlightedArea != runtimeGameWorldArea && this.ChangeSelectedAreaSound)
+				if (GameMapUI.Instance.CurrentHighlightedArea != runtimeGameWorldArea && ChangeSelectedAreaSound)
 				{
-					Sound.Play(this.ChangeSelectedAreaSound.GetSound(null), base.transform.position, null);
+					Sound.Play(ChangeSelectedAreaSound.GetSound(null), transform.position, null);
 				}
 				GameMapUI.Instance.CurrentHighlightedArea = runtimeGameWorldArea;
 				break;
@@ -175,7 +177,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable
 		get
 		{
 			Transform target = UI.Cameras.Current.Target;
-			return target.position + this.PlayerPositionOffset + Vector3.up;
+			return target.position + PlayerPositionOffset + Vector3.up;
 		}
 	}
 
@@ -183,21 +185,21 @@ public class AreaMapUI : MonoBehaviour, ISuspendable
 	{
 		get
 		{
-			return Characters.Sein.SoulFlame.SoulFlamePosition + this.PlayerPositionOffset + Vector3.up;
+			return Characters.Sein.SoulFlame.SoulFlamePosition + PlayerPositionOffset + Vector3.up;
 		}
 	}
 
 	private void UpdatePlayerPositionMarker()
 	{
-		if (this.PlayerPositionMarker)
+		if (PlayerPositionMarker)
 		{
-			this.PlayerPositionMarker.transform.localPosition = this.Navigation.WorldToMapPosition(this.PlayerMarkerWorldPosition);
+			PlayerPositionMarker.transform.localPosition = Navigation.WorldToMapPosition(PlayerMarkerWorldPosition);
 		}
 	}
 
 	private void UpdateSoulFlamePositionMarker()
 	{
-		if (this.SoulFlamePositionMarker == null)
+		if (SoulFlamePositionMarker == null)
 		{
 			return;
 		}
@@ -205,12 +207,12 @@ public class AreaMapUI : MonoBehaviour, ISuspendable
 		{
 			if (Characters.Sein.SoulFlame.SoulFlameExists)
 			{
-				this.SoulFlamePositionMarker.SetActive(true);
-				this.SoulFlamePositionMarker.transform.localPosition = this.Navigation.WorldToMapPosition(this.SoulFlameMarkerWorldPosition);
+				SoulFlamePositionMarker.SetActive(true);
+				SoulFlamePositionMarker.transform.localPosition = Navigation.WorldToMapPosition(SoulFlameMarkerWorldPosition);
 			}
 			else
 			{
-				this.SoulFlamePositionMarker.SetActive(false);
+				SoulFlamePositionMarker.SetActive(false);
 			}
 		}
 	}

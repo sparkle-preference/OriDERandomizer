@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using Game;
-using UnityEngine;
 using Sein.World;
+using Events = Sein.World.Events;
 
 public static class RandomizerTrackedDataManager
 {
 	public static void Initialize()
 	{
-		RandomizerTrackedDataManager.TreeBitfield = -559038737;
+		TreeBitfield = -559038737;
 	}
 
 	public static void UpdateBitfields() {
@@ -60,9 +60,9 @@ public static class RandomizerTrackedDataManager
 			bf += 1 << 7;
 		if(Keys.MountHoru)
 			bf += 1 << 8;
-		if(Sein.World.Events.WaterPurified)
+		if(Events.WaterPurified)
 			bf += 1 << 9;
-		if(Sein.World.Events.WindRestored)
+		if(Events.WindRestored)
 			bf += 1 << 10;
 		if(Randomizer.ForceTrees)
 			bf += 1 << 11;
@@ -257,7 +257,7 @@ public static class RandomizerTrackedDataManager
 	public static int RelicBitfield;
 	public static int KeyEventBitfield;
 
-	public static Dictionary<int, string> Trees = new Dictionary<int, string>() {
+	public static Dictionary<int, string> Trees = new Dictionary<int, string> {
 			{0, "Spirit Flame"},
 			{1, "Wall Jump"},
 			{2, "Charge Flame"},
@@ -271,7 +271,7 @@ public static class RandomizerTrackedDataManager
 			{10, "Dash"},
 		};
 		
-	public static Dictionary<int, string> Zones = new Dictionary<int, string>() {			
+	public static Dictionary<int, string> Zones = new Dictionary<int, string> {			
 			{0, "Glades"},
 			{1, "Grove"},
 			{2, "Grotto"},
@@ -285,7 +285,7 @@ public static class RandomizerTrackedDataManager
 			{10, "Horu"},
 		};
 
-	public static Dictionary<string, int> RelicFound = new Dictionary<string, int>() {			
+	public static Dictionary<string, int> RelicFound = new Dictionary<string, int> {			
 			{"Glades", 0},
 			{"Grove", 1},
 			{"Grotto", 2},
@@ -299,7 +299,7 @@ public static class RandomizerTrackedDataManager
 			{"Horu", 10},
 		};
 
-	public static Dictionary<string, int> RelicExists = new Dictionary<string, int>() {
+	public static Dictionary<string, int> RelicExists = new Dictionary<string, int> {
 			{"Glades", 11},
 			{"Grove", 12},
 			{"Grotto", 13},
@@ -313,7 +313,7 @@ public static class RandomizerTrackedDataManager
 			{"Horu", 21},
 		};
 
-	public static Dictionary<string, int> MapBitsByArea = new Dictionary<string, int>() {
+	public static Dictionary<string, int> MapBitsByArea = new Dictionary<string, int> {
 			{"sunkenGlades", 0},
 			{"mangrove", 1},
 			{"hollowGrove", 2},
@@ -325,7 +325,7 @@ public static class RandomizerTrackedDataManager
 			{"mountHoru", 8},
 		};
 
-	public static Dictionary<int, string> MapZonesByBit = new Dictionary<int, string>() {
+	public static Dictionary<int, string> MapZonesByBit = new Dictionary<int, string> {
 			{0, "Glades"},
 			{1, "Blackroot"},
 			{2, "Grove"},
@@ -337,7 +337,7 @@ public static class RandomizerTrackedDataManager
 			{8, "Horu"},
 		};
 
-	public static Dictionary<string, int> Teleporters = new Dictionary<string, int>() {
+	public static Dictionary<string, int> Teleporters = new Dictionary<string, int> {
 			{"Grove", 0},
 			{"Swamp", 1},
 			{"Grotto", 2},
@@ -350,7 +350,7 @@ public static class RandomizerTrackedDataManager
 			{"Glades", 9},
 		};
 
-	public static Dictionary<int, AbilityType>  Skills = new Dictionary<int, AbilityType>() {
+	public static Dictionary<int, AbilityType>  Skills = new Dictionary<int, AbilityType> {
 			{11, AbilityType.SpiritFlame},
 			{12, AbilityType.WallJump},
 			{13, AbilityType.ChargeFlame},
@@ -364,7 +364,7 @@ public static class RandomizerTrackedDataManager
 			{21, AbilityType.Dash},
 		};
 
-	public static Dictionary<int, int> CoordsMap = new Dictionary<int, int>() {
+	public static Dictionary<int, int> CoordsMap = new Dictionary<int, int> {
 		{ -10120036, 0 }, { -10440008, 1 }, { -10759968, 2 }, { -10760004, 3 }, { -10839992, 4 }, { -11040068, 5 }, { -11880100, 6 }, { -120208, 7 }, { -12320248, 8 }, { -1560188, 9 }, { -1560272, 10 }, { -160096, 11 }, { -1639664, 12 }, { -1680104, 13 }, { -1680140, 14 }, { -1800088, 15 }, { -1800156, 16 }, { -1840196, 17 }, { -1840228, 18 }, { -1919808, 19 }, { -199724, 20 }, { -2080116, 21 }, { -2160176, 22 }, { -2200148, 23 }, { -2200184, 24 }, { -2240084, 25 }, { -2399488, 26 }, { -2400212, 27 }, { -2480208, 28 }, { -2480280, 29 }, { -280256, 30 }, { -2840236, 31 }, 
 		{ -2919980, 32 }, { -3160308, 33 }, { -319852, 34 }, { -3200164, 35 }, { -3360288, 36 }, { -3520100, 37 }, { -3559936, 38 }, { -3600088, 39 }, { -400240, 40 }, { -4159572, 41 }, { -4160080, 42 }, { -4199936, 43 }, { -4359680, 44 }, { -4440152, 45 }, { -4559584, 46 }, { -4600020, 47 }, { -4600188, 48 }, { -4600256, 49 }, { -4680068, 50 }, { -4799416, 51 }, { -480168, 52 }, { -4879680, 53 }, { -5039728, 54 }, { -5119796, 55 }, { -5159576, 56 }, { -5159700, 57 }, { -5160280, 58 }, { -5400104, 59 }, { -5400236, 60 }, { -5479592, 61 }, { -5479948, 62 }, { -5599400, 63 },
 		{ -560160, 64 }, { -5640092, 65 }, { -5719844, 66 }, { -5919556, 67 }, { -5959772, 68 }, { -600244, 69 }, { -6039640, 70 }, { -6079672, 71 }, { -6080316, 72 }, { -6119656, 73 }, { -6119704, 74 }, { -6159632, 75 }, { -6279608, 76 }, { -6280316, 77 }, { -6319752, 78 }, { -6479528, 79 }, { -6719712, 80 }, { -6720040, 81 }, { -6799732, 82 }, { -6800032, 83 }, { -6959592, 84 }, { -7040392, 85 }, { -7200024, 86 }, { -7320236, 87 }, { -7680144, 88 }, { -7960144, 89 }, { -800192, 90 }, { -8160268, 91 }, { -8240012, 92 }, { -8400124, 93 }, { -8440352, 94 }, { -8600356, 95 },

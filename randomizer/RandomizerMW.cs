@@ -110,7 +110,7 @@ public static class RandomizerMW
         try
         {
             int slot = -coords - 2;
-            string[] parts = value.Split(new char[] { ',' }, 3);
+            string[] parts = value.Split(new[] { ',' }, 3);
             ManifestEntry entry = new ManifestEntry();
             entry.Finder = int.Parse(parts[0]);
             entry.Code = parts[1];
@@ -239,11 +239,11 @@ public static class RandomizerMW
         return true;
     }
 
-    private static Dictionary<string, string> SkillNames = new Dictionary<string, string>() {
+    private static Dictionary<string, string> SkillNames = new Dictionary<string, string> {
         {"0", "Bash"}, {"2", "Charge Flame"}, {"3", "Wall Jump"}, {"4", "Stomp"}, {"5", "Double Jump"},
         {"8", "Charge Jump"}, {"12", "Climb"}, {"14", "Glide"}, {"50", "Dash"}, {"51", "Grenade"}, {"15", "Spirit Flame"}
     };
-    private static Dictionary<string, string> EventNames = new Dictionary<string, string>() {
+    private static Dictionary<string, string> EventNames = new Dictionary<string, string> {
         {"0", "Water Vein"}, {"1", "Clean Water"}, {"2", "Gumon Seal"}, {"3", "Wind Restored"}, {"4", "Sunstone"}, {"5", "Warmth Returned"}
     };
 
@@ -252,9 +252,9 @@ public static class RandomizerMW
         return $"{wrap}{n} {(n == 1 ? singular : plural)}{wrap}";
     }
 
-    private static HashSet<string> blueStuff = new HashSet<string>() {"Water Vein", "Ginso Teleporter", "Clean Water"};
-    private static HashSet<string> orangeStuff = new HashSet<string>() {"Gumon Seal", "Forlorn Teleporter", "Wind Restored"};
-    private static HashSet<string> redStuff = new HashSet<string>() {"Sunstone", "Horu Teleporter", "Warmth Returned"};
+    private static HashSet<string> blueStuff = new HashSet<string> {"Water Vein", "Ginso Teleporter", "Clean Water"};
+    private static HashSet<string> orangeStuff = new HashSet<string> {"Gumon Seal", "Forlorn Teleporter", "Wind Restored"};
+    private static HashSet<string> redStuff = new HashSet<string> {"Sunstone", "Horu Teleporter", "Warmth Returned"};
 
     public static string ColorWrap(string input) {
         if(SkillNames.ContainsValue(input)) return $"${input}$"; // skill names are green
@@ -336,7 +336,7 @@ public static class RandomizerMW
             if (ks > 0) counts.Add(Counted(ks, "Keystone", "Keystones"));
             if (ms > 0) counts.Add(Counted(ms, "Mapstone", "Mapstones"));
             if (other > 0) counts.Add(Counted(other, "other item", "other items"));
-            if (exp > 0) counts.Add(exp.ToString() + " Spirit Light");
+            if (exp > 0) counts.Add(exp + " Spirit Light");
             if (counts.Count > 0)
                 lines.Add(string.Join(", ", counts.ToArray()));
             if (lines.Count > 0)

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Core;
 using Game;
@@ -8,7 +7,7 @@ public class TeleporterController : SaveSerialize, ISuspendable
 {
 	private void Nullify()
 	{
-		this.m_teleportingStartSound = null;
+		m_teleportingStartSound = null;
 	}
 
 	public override void Serialize(Archive ar)
@@ -28,7 +27,7 @@ public class TeleporterController : SaveSerialize, ISuspendable
 			// Read default teleporters.
 			for (int i = 0; i < 12; i++)
 			{
-				GameMapTeleporter gameMapTeleporter = this.Teleporters[i];
+				GameMapTeleporter gameMapTeleporter = Teleporters[i];
 				ar.Serialize(ref gameMapTeleporter.Activated);
 			}
 			// Determine extra teleporter count.
@@ -37,11 +36,11 @@ public class TeleporterController : SaveSerialize, ISuspendable
 				ar.Serialize(ref requiredCustomTeleporterCount);
 			}
 			// Remove excess teleporters.
-			while (this.Teleporters.Count > 12 + requiredCustomTeleporterCount)
+			while (Teleporters.Count > 12 + requiredCustomTeleporterCount)
 			{	
-				this.Teleporters.RemoveAt(this.Teleporters.Count - 1);
+				Teleporters.RemoveAt(Teleporters.Count - 1);
 			}
-			this.customWarps.Clear();
+			customWarps.Clear();
 			// Create or modify teleporters.
 			for (int i = 0; i < requiredCustomTeleporterCount; i++)
 			{
@@ -52,35 +51,35 @@ public class TeleporterController : SaveSerialize, ISuspendable
 				ar.Serialize(ref position);
 				ar.Serialize(ref activated);
 				int currentTeleporterIndex = 12 + i;
-				if (currentTeleporterIndex < this.Teleporters.Count) {
+				if (currentTeleporterIndex < Teleporters.Count) {
 					// Alter the existing teleporter.
-					this.Teleporters[currentTeleporterIndex].SetInfo(name, position, activated);
+					Teleporters[currentTeleporterIndex].SetInfo(name, position, activated);
 				} else {
 					// Create a new teleporter.
 					GameMapTeleporter gameMapTeleporter = new GameMapTeleporter(name, position, activated);
-					this.Teleporters.Add(gameMapTeleporter);
+					Teleporters.Add(gameMapTeleporter);
 				}
-				this.customWarps.Add(name);
+				customWarps.Add(name);
 			}
 		} else {
 			// Writing.
-			if (this.Teleporters.Count < 12) {
+			if (Teleporters.Count < 12) {
 				return;
 			}
 			// Default teleporters.
 			for (int i = 0; i < 12; i++)
 			{
-				GameMapTeleporter gameMapTeleporter = this.Teleporters[i];
+				GameMapTeleporter gameMapTeleporter = Teleporters[i];
 				ar.Serialize(ref gameMapTeleporter.Activated);
 			}
 			// Extra teleporters.
-			int customTeleporterCount = this.Teleporters.Count - 12;
+			int customTeleporterCount = Teleporters.Count - 12;
 			if (customTeleporterCount > 0) {
 				ar.Serialize(ref customTeleporterCount);
 			}
-			for (int i = 12; i < this.Teleporters.Count; i++)
+			for (int i = 12; i < Teleporters.Count; i++)
 			{
-				GameMapTeleporter gameMapTeleporter = this.Teleporters[i];
+				GameMapTeleporter gameMapTeleporter = Teleporters[i];
 				ar.Serialize(ref gameMapTeleporter.Identifier);
 				ar.Serialize(ref gameMapTeleporter.WorldPosition);
 				ar.Serialize(ref gameMapTeleporter.Activated);
@@ -90,11 +89,11 @@ public class TeleporterController : SaveSerialize, ISuspendable
 
 	public static bool CanTeleport(string ignoreIdentifier)
 	{
-		if (TeleporterController.Instance)
+		if (Instance)
 		{
-			for (int i = 0; i < TeleporterController.Instance.Teleporters.Count; i++)
+			for (int i = 0; i < Instance.Teleporters.Count; i++)
 			{
-				GameMapTeleporter gameMapTeleporter = TeleporterController.Instance.Teleporters[i];
+				GameMapTeleporter gameMapTeleporter = Instance.Teleporters[i];
 				if (!(gameMapTeleporter.Identifier == ignoreIdentifier))
 				{
 					if (gameMapTeleporter.Activated)
@@ -110,38 +109,38 @@ public class TeleporterController : SaveSerialize, ISuspendable
 	public override void Awake()
 	{
 		base.Awake();
-		TeleporterController.Instance = this;
+		Instance = this;
 		SuspensionManager.Register(this);
-		Events.Scheduler.OnGameReset.Add(new Action(this.OnGameReset));
-		this.DontTeleportForAnimationTesting = false;
+		Events.Scheduler.OnGameReset.Add(OnGameReset);
+		DontTeleportForAnimationTesting = false;
 	}
 
 	public override void OnDestroy()
 	{
 		base.OnDestroy();
-		TeleporterController.Instance = null;
+		Instance = null;
 		SuspensionManager.Unregister(this);
-		Events.Scheduler.OnGameReset.Remove(new Action(this.OnGameReset));
+		Events.Scheduler.OnGameReset.Remove(OnGameReset);
 	}
 
 	public void OnGameReset()
 	{
-		for (int i = 0; i < TeleporterController.Instance.Teleporters.Count; i++)
+		for (int i = 0; i < Instance.Teleporters.Count; i++)
 		{
-			TeleporterController.Instance.Teleporters[i].Activated = false;
+			Instance.Teleporters[i].Activated = false;
 		}
-		this.CancelTeleport();
+		CancelTeleport();
 	}
 
 	public void CancelTeleport()
 	{
 		Randomizer.IsUsingRandomizerTeleportAnywhere = false;
-		this.m_isTeleporting = false;
-		this.m_isBlooming = false;
-		if (!InstantiateUtility.IsDestroyed(this.m_teleportingStartSound))
+		m_isTeleporting = false;
+		m_isBlooming = false;
+		if (!InstantiateUtility.IsDestroyed(m_teleportingStartSound))
 		{
-			this.m_teleportingStartSound.FadeOut(0.1f, true);
-			this.m_teleportingStartSound = null;
+			m_teleportingStartSound.FadeOut(0.1f, true);
+			m_teleportingStartSound = null;
 		}
 	}
 
@@ -165,7 +164,7 @@ public class TeleporterController : SaveSerialize, ISuspendable
 
 	public static bool ActivateAll()
 	{
-		foreach (GameMapTeleporter gameMapTeleporter in TeleporterController.Instance.Teleporters)
+		foreach (GameMapTeleporter gameMapTeleporter in Instance.Teleporters)
 		{
 			gameMapTeleporter.Activated = true;
 		}
@@ -177,7 +176,7 @@ public class TeleporterController : SaveSerialize, ISuspendable
 		if(natural)
 			RandomizerSyncManager.FoundTP(identifier);
 		BingoController.OnActivateTeleporter(identifier);
-		foreach (GameMapTeleporter gameMapTeleporter in TeleporterController.Instance.Teleporters)
+		foreach (GameMapTeleporter gameMapTeleporter in Instance.Teleporters)
 		{
 			if (gameMapTeleporter.Identifier == identifier)
 			{
@@ -208,13 +207,13 @@ public class TeleporterController : SaveSerialize, ISuspendable
 			Characters.Sein.Abilities.Swimming.ChangeState(SeinSwimming.State.OutOfWater);
 			Characters.Sein.Abilities.Swimming.HideBreathingUI();
 		}
-		if (!TeleporterController.Instance.DontTeleportForAnimationTesting)
+		if (!Instance.DontTeleportForAnimationTesting)
 		{
 			Scenes.Manager.AdditivelyLoadScenesAtPosition(selectedTeleporter.WorldPosition, true, false, true);
-			TeleporterController.Instance.m_teleporterTargetPosition = selectedTeleporter.WorldPosition;
+			Instance.m_teleporterTargetPosition = selectedTeleporter.WorldPosition;
 		}
-		TeleporterController.Instance.m_isTeleporting = true;
-		Characters.Sein.Controller.PlayAnimation(TeleporterController.Instance.TeleportingStartAnimation);
+		Instance.m_isTeleporting = true;
+		Characters.Sein.Controller.PlayAnimation(Instance.TeleportingStartAnimation);
 		if (GameMapUI.Instance.Teleporters.StartTeleportingSound)
 		{
 			Sound.Play(GameMapUI.Instance.Teleporters.StartTeleportingSound.GetSound(null), Vector3.zero, null);
@@ -223,12 +222,12 @@ public class TeleporterController : SaveSerialize, ISuspendable
 		{
 			Characters.Sein.Abilities.Carry.CurrentCarryable.Drop();
 		}
-		if (TeleporterController.Instance.TeleportingStartSound != null)
+		if (Instance.TeleportingStartSound != null)
 		{
-			TeleporterController.Instance.m_teleportingStartSound = Sound.Play(TeleporterController.Instance.TeleportingStartSound.GetSound(null), Characters.Sein.Position, new Action(TeleporterController.Instance.Nullify));
+			Instance.m_teleportingStartSound = Sound.Play(Instance.TeleportingStartSound.GetSound(null), Characters.Sein.Position, Instance.Nullify);
 		}
-		Characters.Sein.Controller.OnTriggeredAnimationFinished += TeleporterController.OnFinishedTeleportingStartAnimation;
-		TeleporterController.Instance.m_startTime = Time.time;
+		Characters.Sein.Controller.OnTriggeredAnimationFinished += OnFinishedTeleportingStartAnimation;
+		Instance.m_startTime = Time.time;
 		foreach (SavePedestal savePedestal in SavePedestal.All)
 		{
 			savePedestal.OnBeginTeleporting();
@@ -237,56 +236,56 @@ public class TeleporterController : SaveSerialize, ISuspendable
 
 	public static void OnFinishedTeleportingStartAnimation()
 	{
-		Characters.Sein.Controller.OnTriggeredAnimationFinished -= TeleporterController.OnFinishedTeleportingStartAnimation;
-		if (TeleporterController.Instance.m_isTeleporting)
+		Characters.Sein.Controller.OnTriggeredAnimationFinished -= OnFinishedTeleportingStartAnimation;
+		if (Instance.m_isTeleporting)
 		{
-			Characters.Sein.Controller.PlayAnimation(TeleporterController.Instance.TeleportingLoopAnimation);
-			TeleporterController.Instance.TeleportingTwirlAnimationSound.Play();
+			Characters.Sein.Controller.PlayAnimation(Instance.TeleportingLoopAnimation);
+			Instance.TeleportingTwirlAnimationSound.Play();
 		}
 	}
 
 	public void FixedUpdate()
 	{
-		if (this.m_isTeleporting)
+		if (m_isTeleporting)
 		{
 			float time = Time.time;
 			float num = 7f;
-			if (this.DontTeleportForAnimationTesting)
+			if (DontTeleportForAnimationTesting)
 			{
-				if (time > this.m_startTime + this.NoTeleportAnimationTime)
+				if (time > m_startTime + NoTeleportAnimationTime)
 				{
 					Characters.Sein.Controller.StopAnimation();
-					Characters.Sein.Controller.PlayAnimation(TeleporterController.Instance.TeleportingFinishAnimation);
-					TeleporterController.Instance.TeleportingTwirlAnimationSound.Stop();
-					this.m_isTeleporting = false;
+					Characters.Sein.Controller.PlayAnimation(Instance.TeleportingFinishAnimation);
+					Instance.TeleportingTwirlAnimationSound.Stop();
+					m_isTeleporting = false;
 				}
 			}
-			else if (!Scenes.Manager.IsLoadingScenes && time > this.m_startTime + num)
+			else if (!Scenes.Manager.IsLoadingScenes && time > m_startTime + num)
 			{
-				this.m_isTeleporting = false;
-				if (this.BloomFade)
+				m_isTeleporting = false;
+				if (BloomFade)
 				{
-					InstantiateUtility.Instantiate(this.BloomFade);
-					this.m_bloomCurrentTime = 0f;
-					this.m_isBlooming = true;
-					if (this.TeleportingBloomSound)
+					InstantiateUtility.Instantiate(BloomFade);
+					m_bloomCurrentTime = 0f;
+					m_isBlooming = true;
+					if (TeleportingBloomSound)
 					{
-						Sound.Play(this.TeleportingBloomSound.GetSound(null), Characters.Sein.Position, null);
+						Sound.Play(TeleportingBloomSound.GetSound(null), Characters.Sein.Position, null);
 					}
 				}
 				else
 				{
-					UI.Fader.Fade(0.5f, 0.05f, 0.2f, new Action(this.OnFadedToBlack), null);
+					UI.Fader.Fade(0.5f, 0.05f, 0.2f, OnFadedToBlack, null);
 				}
 			}
 		}
-		if (this.m_isBlooming)
+		if (m_isBlooming)
 		{
-			this.m_bloomCurrentTime += ((!this.IsSuspended) ? Time.deltaTime : 0f);
-			if (this.m_bloomCurrentTime > this.BloomFadeDuration)
+			m_bloomCurrentTime += ((!IsSuspended) ? Time.deltaTime : 0f);
+			if (m_bloomCurrentTime > BloomFadeDuration)
 			{
-				this.OnFadedToBlack();
-				this.m_isBlooming = false;
+				OnFadedToBlack();
+				m_isBlooming = false;
 			}
 		}
 	}
@@ -297,24 +296,24 @@ public class TeleporterController : SaveSerialize, ISuspendable
 		{
 			savePedestal.OnFinishedTeleporting();
 		}
-		if (!InstantiateUtility.IsDestroyed(this.m_teleportingStartSound))
+		if (!InstantiateUtility.IsDestroyed(m_teleportingStartSound))
 		{
-			this.m_teleportingStartSound.FadeOut(0.5f, true);
-			this.m_teleportingStartSound = null;
+			m_teleportingStartSound.FadeOut(0.5f, true);
+			m_teleportingStartSound = null;
 		}
-		if (this.BloomFade)
+		if (BloomFade)
 		{
 			UberGCManager.CollectResourcesIfNeeded();
 		}
 		if (Randomizer.IsUsingRandomizerTeleportAnywhere)
 		    RandomizerBonusSkill.LastAltR = Characters.Sein.Position;		
-		Characters.Sein.Position = this.m_teleporterTargetPosition + Vector3.up * 1.6f;
+		Characters.Sein.Position = m_teleporterTargetPosition + Vector3.up * 1.6f;
 		CameraPivotZone.InstantUpdate();
 		Scenes.Manager.UpdatePosition();
 		Scenes.Manager.UnloadScenesAtPosition(true);
-		Scenes.Manager.EnableDisabledScenesAtPosition(false);
+		Scenes.Manager.EnableDisabledScenesAtPosition();
 		Characters.Sein.Controller.StopAnimation();
-		UI.Cameras.Current.MoveCameraToTargetInstantly(true);
+		UI.Cameras.Current.MoveCameraToTargetInstantly();
 		if (Characters.Ori)
 		{
 			Characters.Ori.BackToPlayerController();
@@ -332,26 +331,26 @@ public class TeleporterController : SaveSerialize, ISuspendable
 		    }
 		}
 
-		LateStartHook.AddLateStartMethod(new Action(this.OnFinishedTeleporting));
+		LateStartHook.AddLateStartMethod(OnFinishedTeleporting);
 	}
 
 	public void OnFinishedTeleporting()
 	{
 		Randomizer.IsUsingRandomizerTeleportAnywhere = false;
 		CameraFrustumOptimizer.ForceUpdate();
-		Characters.Sein.Controller.PlayAnimation(TeleporterController.Instance.TeleportingFinishAnimation);
+		Characters.Sein.Controller.PlayAnimation(Instance.TeleportingFinishAnimation);
 		if (GameMapUI.Instance.Teleporters.ReachDestinationTeleporterSound)
 		{
-			Sound.Play(GameMapUI.Instance.Teleporters.ReachDestinationTeleporterSound.GetSound(null), base.transform.position, null);
+			Sound.Play(GameMapUI.Instance.Teleporters.ReachDestinationTeleporterSound.GetSound(null), transform.position, null);
 		}
-		this.TeleportingTwirlAnimationSound.Stop();
-		if (this.TeleporterFinishEffect)
+		TeleportingTwirlAnimationSound.Stop();
+		if (TeleporterFinishEffect)
 		{
-			InstantiateUtility.Instantiate(this.TeleporterFinishEffect, this.m_teleporterTargetPosition, Quaternion.identity);
+			InstantiateUtility.Instantiate(TeleporterFinishEffect, m_teleporterTargetPosition, Quaternion.identity);
 		}
-		if (this.TeleportingEndSound)
+		if (TeleportingEndSound)
 		{
-			Sound.Play(this.TeleportingEndSound.GetSound(null), Characters.Sein.Position, null);
+			Sound.Play(TeleportingEndSound.GetSound(null), Characters.Sein.Position, null);
 		}
 		// Disable any sein locks that we got from teleporting from a physical savePedestal.
 		Characters.Ori.ChangeState(Ori.State.Hovering);
@@ -363,42 +362,41 @@ public class TeleporterController : SaveSerialize, ISuspendable
 	}
 
 	public static bool HasCustomWarp(string name){
-		if (TeleporterController.Instance == null) {
+		if (Instance == null) {
 			return false;
 		}
-		return TeleporterController.Instance.customWarps.Contains(name);
+		return Instance.customWarps.Contains(name);
 	}
 
 	public static void RemoveCustomTeleporters()
 	{
-		if (TeleporterController.Instance != null)
+		if (Instance != null)
 		{
-			TeleporterController.Instance.Teleporters.RemoveAll((GameMapTeleporter teleporter) => teleporter.Name.GetType() == typeof(RandomizerMessageProvider));
-			TeleporterController.Instance.customWarps.Clear();
+			Instance.Teleporters.RemoveAll(teleporter => teleporter.Name.GetType() == typeof(RandomizerMessageProvider));
+			Instance.customWarps.Clear();
 		}
 	}
 
 	public static void AddCustomTeleporter(string name, float warpX, float warpY)
 	{
-		if (TeleporterController.Instance == null) {
+		if (Instance == null) {
 			return;
 		}
 		// If we already have that teleporter don't add it.
-		if(TeleporterController.Instance.customWarps.Contains(name) )
+		if(Instance.customWarps.Contains(name) )
 			return;
-		else
-			TeleporterController.Instance.customWarps.Add(name);
+		Instance.customWarps.Add(name);
 		GameMapTeleporter teleporter = new GameMapTeleporter(name, warpX, warpY);
-		TeleporterController.Instance.Teleporters.Add(teleporter);
+		Instance.Teleporters.Add(teleporter);
     }
 
 	public static bool IsTeleporting
 	{
 		get {
-			if (TeleporterController.Instance == null) {
+			if (Instance == null) {
 				return false;
 			}
-			return TeleporterController.Instance.m_isTeleporting;
+			return Instance.m_isTeleporting;
 		}
 	}
 

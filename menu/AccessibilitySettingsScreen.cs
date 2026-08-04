@@ -1,5 +1,3 @@
-using System;
-
 public class AccessibilitySettingsScreen : CustomSettingsScreen
 {
 	public override void InitScreen()

@@ -7,7 +7,7 @@ using Input = Core.Input;
 
 public class SeinJump : CharacterState, ISeinReceiver
 {
-	public event Action<float> OnJumpEvent = delegate(float A_0)
+	public event Action<float> OnJumpEvent = delegate
 	{
 	};
 
@@ -15,7 +15,7 @@ public class SeinJump : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return base.enabled && this.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY <= 0.0001f && this.m_timeWeCanJumpRemaining > 0f && !this.Sein.PlatformBehaviour.PlatformMovement.Ceiling.IsOn && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.AllAbilities);
+			return enabled && Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY <= 0.0001f && m_timeWeCanJumpRemaining > 0f && !Sein.PlatformBehaviour.PlatformMovement.Ceiling.IsOn && !SeinAbilityRestrictZone.IsInside();
 		}
 	}
 
@@ -23,7 +23,7 @@ public class SeinJump : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.PlatformMovement;
+			return Sein.PlatformBehaviour.PlatformMovement;
 		}
 	}
 
@@ -31,20 +31,20 @@ public class SeinJump : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.m_spriteMirrorLock;
+			return m_spriteMirrorLock;
 		}
 		set
 		{
-			if (this.m_spriteMirrorLock != value)
+			if (m_spriteMirrorLock != value)
 			{
-				this.m_spriteMirrorLock = value;
+				m_spriteMirrorLock = value;
 				if (value)
 				{
-					this.CharacterSpriteMirror.Lock++;
+					CharacterSpriteMirror.Lock++;
 				}
 				else
 				{
-					this.CharacterSpriteMirror.Lock--;
+					CharacterSpriteMirror.Lock--;
 				}
 			}
 		}
@@ -54,7 +54,7 @@ public class SeinJump : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.Visuals.SpriteMirror;
+			return Sein.PlatformBehaviour.Visuals.SpriteMirror;
 		}
 	}
 
@@ -62,366 +62,366 @@ public class SeinJump : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return (this.m_timeSinceMovingRight > 0f && this.m_timeSinceMovingRight < 0.2f && this.PlatformMovement.LocalSpeedX < 0f) || (this.m_timeSinceMovingLeft > 0f && this.m_timeSinceMovingLeft < 0.2f && this.PlatformMovement.LocalSpeedX > 0f);
+			return (m_timeSinceMovingRight > 0f && m_timeSinceMovingRight < 0.2f && PlatformMovement.LocalSpeedX < 0f) || (m_timeSinceMovingLeft > 0f && m_timeSinceMovingLeft < 0.2f && PlatformMovement.LocalSpeedX > 0f);
 		}
 	}
 
 	public void SetReferenceToSein(SeinCharacter sein)
 	{
-		this.Sein = sein;
-		this.Sein.Abilities.Jump = this;
+		Sein = sein;
+		Sein.Abilities.Jump = this;
 	}
 
 	public override void UpdateCharacterState()
 	{
-		if (this.m_timeWeCanJumpRemaining > 0f)
+		if (m_timeWeCanJumpRemaining > 0f)
 		{
-			this.m_timeWeCanJumpRemaining -= Time.deltaTime;
+			m_timeWeCanJumpRemaining -= Time.deltaTime;
 		}
-		if (this.Sein.PlatformBehaviour.PlatformMovement.Ground.IsOn)
+		if (Sein.PlatformBehaviour.PlatformMovement.Ground.IsOn)
 		{
-			this.m_timeWeCanJumpRemaining = this.DurationSinceLastOnGroundThatWeCanStillJump;
+			m_timeWeCanJumpRemaining = DurationSinceLastOnGroundThatWeCanStillJump;
 		}
 		else
 		{
-			this.m_bunnyHopTimeRemaining = 0.2f;
+			m_bunnyHopTimeRemaining = 0.2f;
 		}
-		if (this.m_bunnyHopTimeRemaining > 0f)
+		if (m_bunnyHopTimeRemaining > 0f)
 		{
-			this.m_bunnyHopTimeRemaining -= Time.deltaTime;
-			if (this.m_bunnyHopTimeRemaining < 0f)
+			m_bunnyHopTimeRemaining -= Time.deltaTime;
+			if (m_bunnyHopTimeRemaining < 0f)
 			{
-				this.ResetRunningJumpCount();
+				ResetRunningJumpCount();
 			}
 		}
-		if (!this.PlatformMovement.MovingHorizontally && this.PlatformMovement.IsOnGround)
+		if (!PlatformMovement.MovingHorizontally && PlatformMovement.IsOnGround)
 		{
-			this.ResetRunningJumpCount();
+			ResetRunningJumpCount();
 		}
-		if (this.PlatformMovement.MovingHorizontally && this.PlatformMovement.IsOnGround)
+		if (PlatformMovement.MovingHorizontally && PlatformMovement.IsOnGround)
 		{
-			this.ResetJumpIdleCount();
+			ResetJumpIdleCount();
 		}
-		this.UpdateTimeSinceFacing();
+		UpdateTimeSinceFacing();
 	}
 
 	public void ResetRunningJumpCount()
 	{
-		this.m_runningJumpNumber = 0;
+		m_runningJumpNumber = 0;
 	}
 
 	public void ResetJumpIdleCount()
 	{
-		this.m_jumpIdleNumber = 0;
+		m_jumpIdleNumber = 0;
 	}
 
 	public float CalculateSpeedFromHeight(float height)
 	{
-		return PhysicsHelper.CalculateSpeedFromHeight(height * RandomizerBonus.Jumpscale, this.Sein.PlatformBehaviour.Gravity.BaseSettings.GravityStrength);
+		return PhysicsHelper.CalculateSpeedFromHeight(height * RandomizerBonus.Jumpscale, Sein.PlatformBehaviour.Gravity.BaseSettings.GravityStrength);
 	}
 
 	public void PerformTurnAroundBackFlipJump()
 	{
-		this.PlatformMovement.LocalSpeedY = this.CalculateSpeedFromHeight(this.BackflipJumpHeight);
-		this.Sein.PlatformBehaviour.AirNoDeceleration.NoDeceleration = true;
-		if (this.Sein.PlatformBehaviour.JumpSustain)
+		PlatformMovement.LocalSpeedY = CalculateSpeedFromHeight(BackflipJumpHeight);
+		Sein.PlatformBehaviour.AirNoDeceleration.NoDeceleration = true;
+		if (Sein.PlatformBehaviour.JumpSustain)
 		{
-			this.Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(this.PlatformMovement.LocalSpeedY * 0.5f, 1f);
+			Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY * 0.5f, 1f);
 		}
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.BackflipAnimation, 10, new Func<bool>(this.ShouldBackflipAnimationKeepPlaying));
-		characterAnimationState.OnStartPlaying = new Action(this.OnAnimationStart);
-		characterAnimationState.OnStopPlaying = new Action(this.OnAnimationEnd);
+		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(BackflipAnimation, 10, ShouldBackflipAnimationKeepPlaying);
+		characterAnimationState.OnStartPlaying = OnAnimationStart;
+		characterAnimationState.OnStopPlaying = OnAnimationEnd;
 	}
 
 	public void PerformJump()
 	{
-		this.m_currentJumpingMaterial = SurfaceToSoundProviderMap.ColliderMaterialToSurfaceMaterialType(this.Sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundCollider);
-		if (this.Sein.Controller.IsCrouching)
+		m_currentJumpingMaterial = SurfaceToSoundProviderMap.ColliderMaterialToSurfaceMaterialType(Sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundCollider);
+		if (Sein.Controller.IsCrouching)
 		{
-			this.PerformCrouchJump();
-			Sound.Play(this.JumpSoundProvider.GetSoundForMaterial(this.m_currentJumpingMaterial, null), this.Sein.PlatformBehaviour.PlatformMovement.Position, null);
+			PerformCrouchJump();
+			Sound.Play(JumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
 		}
-		else if (this.HasSharplyTurnedAround)
+		else if (HasSharplyTurnedAround)
 		{
-			this.PerformTurnAroundBackFlipJump();
-			Sound.Play(this.FlipJumpSoundProvider.GetSoundForMaterial(this.m_currentJumpingMaterial, null), this.Sein.PlatformBehaviour.PlatformMovement.Position, null);
+			PerformTurnAroundBackFlipJump();
+			Sound.Play(FlipJumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
 		}
-		else if (this.Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput == 0f || this.PlatformMovement.IsOnWall)
+		else if (Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput == 0f || PlatformMovement.IsOnWall)
 		{
-			if (this.PlatformMovement.IsOnWall && this.Sein.PlayerAbilities.WallJump.HasAbility && this.Sein.Abilities.WallSlide.IsOnWall)
+			if (PlatformMovement.IsOnWall && Sein.PlayerAbilities.WallJump.HasAbility && Sein.Abilities.WallSlide.IsOnWall)
 			{
-				this.PerformWallSlideJump();
-				Sound.Play(this.JumpSoundProvider.GetSoundForMaterial(this.m_currentJumpingMaterial, null), this.Sein.PlatformBehaviour.PlatformMovement.Position, null);
+				PerformWallSlideJump();
+				Sound.Play(JumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
 			}
 			else
 			{
-				this.PerformIdleJump();
+				PerformIdleJump();
 			}
 		}
 		else
 		{
-			this.PerformRunningJump();
+			PerformRunningJump();
 		}
-		GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(this.JumpParticleEffect, this.Sein.PlatformBehaviour.PlatformMovement.FeetPosition, Quaternion.identity);
-		gameObject.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(-this.Sein.PlatformBehaviour.PlatformMovement.LocalSpeed));
-		this.Sein.PlatformBehaviour.Force.ApplyGroundForce(Vector3.down * this.JumpImpulse, ForceMode.Impulse);
-		this.OnJumpEvent(this.PlatformMovement.LocalSpeedY);
+		GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(JumpParticleEffect, Sein.PlatformBehaviour.PlatformMovement.FeetPosition, Quaternion.identity);
+		gameObject.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(-Sein.PlatformBehaviour.PlatformMovement.LocalSpeed));
+		Sein.PlatformBehaviour.Force.ApplyGroundForce(Vector3.down * JumpImpulse, ForceMode.Impulse);
+		OnJumpEvent(PlatformMovement.LocalSpeedY);
 		JumpFlipPlatform.OnSeinJumpEvent();
-		this.m_timeWeCanJumpRemaining = 0f;
+		m_timeWeCanJumpRemaining = 0f;
 	}
 
 	public void PerformRunningJump()
 	{
-		switch (this.m_runningJumpNumber)
+		switch (m_runningJumpNumber)
 		{
 		case 0:
-			this.PerformFirstRunningJump();
+			PerformFirstRunningJump();
 			break;
 		case 1:
-			this.PerformSecondRunningJump();
+			PerformSecondRunningJump();
 			break;
 		case 2:
-			this.PerformThirdRunningJump();
+			PerformThirdRunningJump();
 			break;
 		}
 	}
 
 	private void CacheDelegates()
 	{
-		if (this.m_shouldJumpMoving == null)
+		if (m_shouldJumpMoving == null)
 		{
-			this.m_shouldJumpMoving = new Func<bool>(this.ShouldJumpMovingAnimationKeepPlaying);
+			m_shouldJumpMoving = ShouldJumpMovingAnimationKeepPlaying;
 		}
-		if (this.onAnimationEnd == null)
+		if (onAnimationEnd == null)
 		{
-			this.onAnimationEnd = new Action(this.OnAnimationEnd);
+			onAnimationEnd = OnAnimationEnd;
 		}
 	}
 
 	public void PerformFirstRunningJump()
 	{
-		Vector2 localSpeed = this.PlatformMovement.LocalSpeed;
-		localSpeed.y = this.CalculateSpeedFromHeight(this.FirstJumpHeight);
-		this.PlatformMovement.LocalSpeed = localSpeed;
-		this.CacheDelegates();
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.JumpAnimation[0], 10, this.m_shouldJumpMoving);
-		characterAnimationState.OnStopPlaying = this.onAnimationEnd;
+		Vector2 localSpeed = PlatformMovement.LocalSpeed;
+		localSpeed.y = CalculateSpeedFromHeight(FirstJumpHeight);
+		PlatformMovement.LocalSpeed = localSpeed;
+		CacheDelegates();
+		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[0], 10, m_shouldJumpMoving);
+		characterAnimationState.OnStopPlaying = onAnimationEnd;
 		characterAnimationState.OnStartPlaying = null;
-		if (this.Sein.PlatformBehaviour.JumpSustain)
+		if (Sein.PlatformBehaviour.JumpSustain)
 		{
-			this.Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(this.PlatformMovement.LocalSpeedY, 1f);
+			Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY, 1f);
 		}
-		Sound.Play(this.JumpSoundProvider.GetSoundForMaterial(this.m_currentJumpingMaterial, null), this.Sein.PlatformBehaviour.PlatformMovement.Position, null);
-		this.m_runningJumpNumber++;
+		Sound.Play(JumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+		m_runningJumpNumber++;
 	}
 
 	public void PerformSecondRunningJump()
 	{
-		Vector2 localSpeed = this.PlatformMovement.LocalSpeed;
-		localSpeed.y = this.CalculateSpeedFromHeight((this.m_runningJumpNumber != 0) ? this.SecondJumpHeight : this.FirstJumpHeight);
-		this.PlatformMovement.LocalSpeed = localSpeed;
-		this.CacheDelegates();
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.JumpAnimation[1], 10, this.m_shouldJumpMoving);
-		characterAnimationState.OnStopPlaying = this.onAnimationEnd;
+		Vector2 localSpeed = PlatformMovement.LocalSpeed;
+		localSpeed.y = CalculateSpeedFromHeight((m_runningJumpNumber != 0) ? SecondJumpHeight : FirstJumpHeight);
+		PlatformMovement.LocalSpeed = localSpeed;
+		CacheDelegates();
+		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[1], 10, m_shouldJumpMoving);
+		characterAnimationState.OnStopPlaying = onAnimationEnd;
 		characterAnimationState.OnStartPlaying = null;
-		if (this.Sein.PlatformBehaviour.JumpSustain)
+		if (Sein.PlatformBehaviour.JumpSustain)
 		{
-			this.Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(this.PlatformMovement.LocalSpeedY, 1f);
+			Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY, 1f);
 		}
-		Sound.Play(this.JumpSoundProvider.GetSoundForMaterial(this.m_currentJumpingMaterial, null), this.Sein.PlatformBehaviour.PlatformMovement.Position, null);
-		this.m_runningJumpNumber++;
+		Sound.Play(JumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+		m_runningJumpNumber++;
 	}
 
 	public void PerformThirdRunningJump()
 	{
-		Vector2 localSpeed = this.PlatformMovement.LocalSpeed;
-		localSpeed.y = this.CalculateSpeedFromHeight(this.ThirdJumpHeight);
-		this.PlatformMovement.LocalSpeed = localSpeed;
-		this.CacheDelegates();
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.JumpAnimation[2], 10, this.m_shouldJumpMoving);
+		Vector2 localSpeed = PlatformMovement.LocalSpeed;
+		localSpeed.y = CalculateSpeedFromHeight(ThirdJumpHeight);
+		PlatformMovement.LocalSpeed = localSpeed;
+		CacheDelegates();
+		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[2], 10, m_shouldJumpMoving);
 		characterAnimationState.OnStartPlaying = null;
-		characterAnimationState.OnStopPlaying = this.onAnimationEnd;
-		if (this.Sein.PlatformBehaviour.JumpSustain)
+		characterAnimationState.OnStopPlaying = onAnimationEnd;
+		if (Sein.PlatformBehaviour.JumpSustain)
 		{
-			this.Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(this.PlatformMovement.LocalSpeedY * 0.5f, 1f);
+			Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY * 0.5f, 1f);
 		}
-		Sound.Play(this.SpinJumpSoundProvider.GetSoundForMaterial(this.m_currentJumpingMaterial, null), this.Sein.PlatformBehaviour.PlatformMovement.Position, null);
-		this.m_runningJumpNumber = 0;
+		Sound.Play(SpinJumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+		m_runningJumpNumber = 0;
 	}
 
 	private void PerformIdleJump()
 	{
-		switch (this.m_jumpIdleNumber)
+		switch (m_jumpIdleNumber)
 		{
 		case 0:
-			this.PerformFirstIdleJump();
+			PerformFirstIdleJump();
 			break;
 		case 1:
-			this.PerformSecondIdleJump();
+			PerformSecondIdleJump();
 			break;
 		case 2:
-			this.PerformThirdIldleJump();
+			PerformThirdIldleJump();
 			break;
 		}
 	}
 
 	public void PerformFirstIdleJump()
 	{
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.JumpIdleAnimation[0], 10, new Func<bool>(this.ShouldJumpIdleAnimationKeepPlaying));
+		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpIdleAnimation[0], 10, ShouldJumpIdleAnimationKeepPlaying);
 		characterAnimationState.OnStartPlaying = null;
-		characterAnimationState.OnStopPlaying = new Action(this.OnAnimationEnd);
-		this.PlatformMovement.LocalSpeedY = this.CalculateSpeedFromHeight(this.FirstJumpHeight);
-		if (this.Sein.PlatformBehaviour.JumpSustain)
+		characterAnimationState.OnStopPlaying = OnAnimationEnd;
+		PlatformMovement.LocalSpeedY = CalculateSpeedFromHeight(FirstJumpHeight);
+		if (Sein.PlatformBehaviour.JumpSustain)
 		{
-			this.Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(this.PlatformMovement.LocalSpeedY, 1f);
+			Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY, 1f);
 		}
-		Sound.Play(this.JumpSoundProvider.GetSoundForMaterial(this.m_currentJumpingMaterial, null), this.Sein.PlatformBehaviour.PlatformMovement.Position, null);
-		this.m_jumpIdleNumber++;
+		Sound.Play(JumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+		m_jumpIdleNumber++;
 	}
 
 	public void PerformSecondIdleJump()
 	{
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.JumpIdleAnimation[1], 10, new Func<bool>(this.ShouldJumpIdleAnimationKeepPlaying));
+		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpIdleAnimation[1], 10, ShouldJumpIdleAnimationKeepPlaying);
 		characterAnimationState.OnStartPlaying = null;
-		characterAnimationState.OnStopPlaying = new Action(this.OnAnimationEnd);
-		this.PlatformMovement.LocalSpeedY = this.CalculateSpeedFromHeight(this.SecondJumpHeight);
-		if (this.Sein.PlatformBehaviour.JumpSustain)
+		characterAnimationState.OnStopPlaying = OnAnimationEnd;
+		PlatformMovement.LocalSpeedY = CalculateSpeedFromHeight(SecondJumpHeight);
+		if (Sein.PlatformBehaviour.JumpSustain)
 		{
-			this.Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(this.PlatformMovement.LocalSpeedY, 1f);
+			Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY, 1f);
 		}
-		Sound.Play(this.JumpSoundProvider.GetSoundForMaterial(this.m_currentJumpingMaterial, null), this.Sein.PlatformBehaviour.PlatformMovement.Position, null);
-		this.m_jumpIdleNumber++;
+		Sound.Play(JumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+		m_jumpIdleNumber++;
 	}
 
 	private void PerformThirdIldleJump()
 	{
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.JumpIdleAnimation[2], 10, new Func<bool>(this.ShouldJumpIdleAnimationKeepPlaying));
+		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpIdleAnimation[2], 10, ShouldJumpIdleAnimationKeepPlaying);
 		characterAnimationState.OnStartPlaying = null;
-		characterAnimationState.OnStopPlaying = new Action(this.OnAnimationEnd);
-		this.PlatformMovement.LocalSpeedY = this.CalculateSpeedFromHeight(this.ThirdJumpHeight);
-		if (this.Sein.PlatformBehaviour.JumpSustain)
+		characterAnimationState.OnStopPlaying = OnAnimationEnd;
+		PlatformMovement.LocalSpeedY = CalculateSpeedFromHeight(ThirdJumpHeight);
+		if (Sein.PlatformBehaviour.JumpSustain)
 		{
-			this.Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(this.PlatformMovement.LocalSpeedY, 1f);
+			Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY, 1f);
 		}
-		Sound.Play(this.SpinJumpSoundProvider.GetSoundForMaterial(this.m_currentJumpingMaterial, null), this.Sein.PlatformBehaviour.PlatformMovement.Position, null);
-		this.m_jumpIdleNumber = 0;
+		Sound.Play(SpinJumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+		m_jumpIdleNumber = 0;
 	}
 
 	private void PerformWallSlideJump()
 	{
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.WallSlideJumpAnimation, 24, new Func<bool>(this.ShouldWallSlideJumpAnimationKeepPlaying));
+		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(WallSlideJumpAnimation, 24, ShouldWallSlideJumpAnimationKeepPlaying);
 		characterAnimationState.OnStartPlaying = null;
-		characterAnimationState.OnStopPlaying = new Action(this.OnAnimationEnd);
-		this.PlatformMovement.LocalSpeedY = this.CalculateSpeedFromHeight(this.FirstJumpHeight);
-		if (this.Sein.PlatformBehaviour.JumpSustain)
+		characterAnimationState.OnStopPlaying = OnAnimationEnd;
+		PlatformMovement.LocalSpeedY = CalculateSpeedFromHeight(FirstJumpHeight);
+		if (Sein.PlatformBehaviour.JumpSustain)
 		{
-			this.Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(this.PlatformMovement.LocalSpeedY, 1f);
+			Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY, 1f);
 		}
 	}
 
 	private void PerformCrouchJump()
 	{
 		bool flag = false;
-		List<Collider> groundColliders = this.Sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundColliders;
+		List<Collider> groundColliders = Sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundColliders;
 		for (int i = 0; i < groundColliders.Count; i++)
 		{
 			Collider component = groundColliders[i];
-			if (component.GetComponentInParents<GoThroughPlatform>() && this.Sein.GetComponent<GoThroughPlatformHandler>().FallThroughPlatform())
+			if (component.GetComponentInParents<GoThroughPlatform>() && Sein.GetComponent<GoThroughPlatformHandler>().FallThroughPlatform())
 			{
-				this.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = 0f;
-				this.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = 0f;
-				this.Sein.PlatformBehaviour.PlatformMovement.Ground.FutureOn = false;
-				this.Sein.PlatformBehaviour.PlatformMovement.Ground.IsOn = false;
-				this.Sein.PlatformBehaviour.PlatformMovement.Ground.WasOn = false;
+				Sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = 0f;
+				Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = 0f;
+				Sein.PlatformBehaviour.PlatformMovement.Ground.FutureOn = false;
+				Sein.PlatformBehaviour.PlatformMovement.Ground.IsOn = false;
+				Sein.PlatformBehaviour.PlatformMovement.Ground.WasOn = false;
 				flag = true;
 			}
 		}
 		if (!flag)
 		{
-			this.PlatformMovement.LocalSpeedY = this.CalculateSpeedFromHeight(this.CrouchJumpHeight);
-			this.PlatformMovement.LocalSpeedX = (float)((!this.CharacterSpriteMirror.FaceLeft) ? -3 : 3);
-			this.Sein.PlatformBehaviour.AirNoDeceleration.NoDeceleration = true;
-			CharacterAnimationSystem.CharacterAnimationState characterAnimationState = this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.CrouchJumpAnimation, 10, new Func<bool>(this.ShouldBackflipAnimationKeepPlaying));
-			characterAnimationState.OnStartPlaying = new Action(this.OnAnimationStart);
-			characterAnimationState.OnStopPlaying = new Action(this.OnAnimationEnd);
+			PlatformMovement.LocalSpeedY = CalculateSpeedFromHeight(CrouchJumpHeight);
+			PlatformMovement.LocalSpeedX = (!CharacterSpriteMirror.FaceLeft) ? -3 : 3;
+			Sein.PlatformBehaviour.AirNoDeceleration.NoDeceleration = true;
+			CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(CrouchJumpAnimation, 10, ShouldBackflipAnimationKeepPlaying);
+			characterAnimationState.OnStartPlaying = OnAnimationStart;
+			characterAnimationState.OnStopPlaying = OnAnimationEnd;
 		}
 	}
 
 	public bool ShouldBackflipAnimationKeepPlaying()
 	{
-		return this.Sein.PlatformBehaviour.PlatformMovement.IsInAir;
+		return Sein.PlatformBehaviour.PlatformMovement.IsInAir;
 	}
 
 	public bool ShouldJumpIdleAnimationKeepPlaying()
 	{
-		return this.Sein.PlatformBehaviour.PlatformMovement.IsInAir && (!Characters.Sein.Controller.CanMove || Input.NormalizedHorizontal == 0 || this.PlatformMovement.IsOnWall);
+		return Sein.PlatformBehaviour.PlatformMovement.IsInAir && (!Characters.Sein.Controller.CanMove || Input.NormalizedHorizontal == 0 || PlatformMovement.IsOnWall);
 	}
 
 	public bool ShouldWallSlideJumpAnimationKeepPlaying()
 	{
-		return this.PlatformMovement.IsOnWall && this.PlatformMovement.IsInAir && this.PlatformMovement.Jumping && this.PlatformMovement.HeadAgainstWall && this.PlatformMovement.FeetAgainstWall;
+		return PlatformMovement.IsOnWall && PlatformMovement.IsInAir && PlatformMovement.Jumping && PlatformMovement.HeadAgainstWall && PlatformMovement.FeetAgainstWall;
 	}
 
 	public bool ShouldJumpMovingAnimationKeepPlaying()
 	{
-		return this.Sein.PlatformBehaviour.PlatformMovement.IsInAir && (!Characters.Sein.Controller.CanMove || (this.Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput != 0f && (!this.PlatformMovement.IsOnWall || !this.PlatformMovement.HeadAgainstWall)));
+		return Sein.PlatformBehaviour.PlatformMovement.IsInAir && (!Characters.Sein.Controller.CanMove || (Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput != 0f && (!PlatformMovement.IsOnWall || !PlatformMovement.HeadAgainstWall)));
 	}
 
 	public bool ShouldThirdJumpMovingAnimationKeepPlaying()
 	{
-		return this.Sein.PlatformBehaviour.PlatformMovement.IsInAir;
+		return Sein.PlatformBehaviour.PlatformMovement.IsInAir;
 	}
 
 	public void UpdateTimeSinceFacing()
 	{
-		this.m_timeSinceMovingLeft += Time.deltaTime;
-		this.m_timeSinceMovingRight += Time.deltaTime;
-		if (this.PlatformMovement.LocalSpeedX < 0f)
+		m_timeSinceMovingLeft += Time.deltaTime;
+		m_timeSinceMovingRight += Time.deltaTime;
+		if (PlatformMovement.LocalSpeedX < 0f)
 		{
-			this.m_timeSinceMovingLeft = 0f;
+			m_timeSinceMovingLeft = 0f;
 		}
-		if (this.PlatformMovement.LocalSpeedX > 0f)
+		if (PlatformMovement.LocalSpeedX > 0f)
 		{
-			this.m_timeSinceMovingRight = 0f;
+			m_timeSinceMovingRight = 0f;
 		}
 	}
 
 	public void OnAnimationEnd()
 	{
-		this.SpriteMirrorLock = false;
+		SpriteMirrorLock = false;
 	}
 
 	public void OnAnimationStart()
 	{
-		this.SpriteMirrorLock = true;
+		SpriteMirrorLock = true;
 	}
 
 	public override void Serialize(Archive ar)
 	{
-		ar.Serialize(ref this.m_bunnyHopTimeRemaining);
-		ar.Serialize(ref this.m_jumpIdleNumber);
-		ar.Serialize(ref this.m_runningJumpNumber);
-		ar.Serialize(ref this.m_spriteMirrorLock);
-		ar.Serialize(ref this.m_timeSinceMovingLeft);
-		ar.Serialize(ref this.m_timeSinceMovingRight);
-		ar.Serialize(ref this.m_timeWeCanJumpRemaining);
+		ar.Serialize(ref m_bunnyHopTimeRemaining);
+		ar.Serialize(ref m_jumpIdleNumber);
+		ar.Serialize(ref m_runningJumpNumber);
+		ar.Serialize(ref m_spriteMirrorLock);
+		ar.Serialize(ref m_timeSinceMovingLeft);
+		ar.Serialize(ref m_timeSinceMovingRight);
+		ar.Serialize(ref m_timeWeCanJumpRemaining);
 	}
 
 	public override void Awake()
 	{
 		base.Awake();
-		Game.Checkpoint.Events.OnPostRestore.Add(new Action(this.OnRestoreCheckpoint));
+		Game.Checkpoint.Events.OnPostRestore.Add(OnRestoreCheckpoint);
 	}
 
 	public override void OnDestroy()
 	{
 		base.OnDestroy();
-		Game.Checkpoint.Events.OnPostRestore.Remove(new Action(this.OnRestoreCheckpoint));
+		Game.Checkpoint.Events.OnPostRestore.Remove(OnRestoreCheckpoint);
 	}
 
 	public void OnRestoreCheckpoint()
 	{
-		this.m_spriteMirrorLock = false;
+		m_spriteMirrorLock = false;
 	}
 
 	public TextureAnimationWithTransitions BackflipAnimation;

@@ -7,63 +7,63 @@ public class ControllerBindControl : MonoBehaviour
 {
 	public void Awake()
 	{
-		this.messageBox = base.transform.Find("text/stateText").GetComponent<MessageBox>();
+		messageBox = transform.Find("text/stateText").GetComponent<MessageBox>();
 	}
 
 	public void BeginEditing()
 	{
-		this.currentKeys.Clear();
-		this.UpdateMessageBox();
+		currentKeys.Clear();
+		UpdateMessageBox();
 		SuspensionManager.SuspendAll();
-		this.editing = true;
-		this.exit = 0;
-		this.allButtons = (XboxControllerInput.Button[])Enum.GetValues(typeof(XboxControllerInput.Button));
-		this.buttonsPressed = new bool[this.allButtons.Length];
-		for (int i = 0; i < this.buttonsPressed.Length; i++)
+		editing = true;
+		exit = 0;
+		allButtons = (XboxControllerInput.Button[])Enum.GetValues(typeof(XboxControllerInput.Button));
+		buttonsPressed = new bool[allButtons.Length];
+		for (int i = 0; i < buttonsPressed.Length; i++)
 		{
-			this.buttonsPressed[i] = true;
+			buttonsPressed[i] = true;
 		}
-		this.tooltipProvider.SetMessage("Start: finish editing");
-		this.owner.tooltipController.UpdateTooltip();
+		tooltipProvider.SetMessage("Start: finish editing");
+		owner.tooltipController.UpdateTooltip();
 	}
 
 	public void Update()
 	{
-		if (!this.editing)
+		if (!editing)
 		{
 			return;
 		}
-		if (this.exit < 2)
+		if (exit < 2)
 		{
-			this.exit++;
+			exit++;
 			return;
 		}
-		if (Input.GetKeyDown(KeyCode.Escape) || (this.WasPressed(XboxControllerInput.Button.Start) && this.currentKeys.Count > 0))
+		if (Input.GetKeyDown(KeyCode.Escape) || (WasPressed(XboxControllerInput.Button.Start) && currentKeys.Count > 0))
 		{
-			this.editing = false;
+			editing = false;
 			SuspensionManager.ResumeAll();
-			this.SetKeys(this.currentKeys.ToArray());
+			SetKeys(currentKeys.ToArray());
 			PlayerInputRebinding.WriteControllerRebindSettings();
 			PlayerInput.Instance.RefreshControlScheme();
-			this.tooltipProvider.SetMessage(this.owner.DefaultTooltip);
-			this.owner.tooltipController.UpdateTooltip();
+			tooltipProvider.SetMessage(owner.DefaultTooltip);
+			owner.tooltipController.UpdateTooltip();
 			return;
 		}
-		PlayerInputRebinding.ControllerButton? pressedButtonAsBind = this.GetPressedButtonAsBind();
-		if (pressedButtonAsBind != null && !this.currentKeys.Contains(pressedButtonAsBind.Value))
+		PlayerInputRebinding.ControllerButton? pressedButtonAsBind = GetPressedButtonAsBind();
+		if (pressedButtonAsBind != null && !currentKeys.Contains(pressedButtonAsBind.Value))
 		{
-			this.currentKeys.Add(pressedButtonAsBind.Value);
-			this.UpdateMessageBox();
+			currentKeys.Add(pressedButtonAsBind.Value);
+			UpdateMessageBox();
 		}
-		foreach (XboxControllerInput.Button button in this.allButtons)
+		foreach (XboxControllerInput.Button button in allButtons)
 		{
-			this.buttonsPressed[(int)button] = XboxControllerInput.GetButton(button, -1);
+			buttonsPressed[(int)button] = XboxControllerInput.GetButton(button);
 		}
 	}
 
 	public void UpdateMessageBox()
 	{
-		this.messageBox.SetMessage(new MessageDescriptor(ControllerBindControl.KeyBindingToString(this.currentKeys.ToArray())));
+		messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(currentKeys.ToArray())));
 	}
 
 	public static string KeyBindingToString(PlayerInputRebinding.ControllerButton[] codes)
@@ -81,13 +81,13 @@ public class ControllerBindControl : MonoBehaviour
 
 	public void Reset()
 	{
-		this.messageBox.SetMessage(new MessageDescriptor(ControllerBindControl.KeyBindingToString(this.GetKeys())));
-		this.editing = false;
+		messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+		editing = false;
 	}
 
 	private bool WasPressed(XboxControllerInput.Button button)
 	{
-		return !this.buttonsPressed[(int)button] && XboxControllerInput.GetButton(button, -1);
+		return !buttonsPressed[(int)button] && XboxControllerInput.GetButton(button);
 	}
 
 	private PlayerInputRebinding.ControllerButton ToBind(XboxControllerInput.Button button)
@@ -125,60 +125,60 @@ public class ControllerBindControl : MonoBehaviour
 
 	public PlayerInputRebinding.ControllerButton? GetPressedButtonAsBind()
 	{
-		foreach (XboxControllerInput.Button button in this.allButtons)
+		foreach (XboxControllerInput.Button button in allButtons)
 		{
-			if (this.WasPressed(button))
+			if (WasPressed(button))
 			{
-				return new PlayerInputRebinding.ControllerButton?(this.ToBind(button));
+				return ToBind(button);
 			}
 		}
 		if (XboxControllerInput.GetAxis(XboxControllerInput.Axis.LeftStickX) < -0.5f)
 		{
-			return new PlayerInputRebinding.ControllerButton?(PlayerInputRebinding.ControllerButton.LLeft);
+			return PlayerInputRebinding.ControllerButton.LLeft;
 		}
 		if (XboxControllerInput.GetAxis(XboxControllerInput.Axis.LeftStickX) > 0.5f)
 		{
-			return new PlayerInputRebinding.ControllerButton?(PlayerInputRebinding.ControllerButton.LRight);
+			return PlayerInputRebinding.ControllerButton.LRight;
 		}
 		if (XboxControllerInput.GetAxis(XboxControllerInput.Axis.LeftStickY) > 0.5f)
 		{
-			return new PlayerInputRebinding.ControllerButton?(PlayerInputRebinding.ControllerButton.LUp);
+			return PlayerInputRebinding.ControllerButton.LUp;
 		}
 		if (XboxControllerInput.GetAxis(XboxControllerInput.Axis.LeftStickY) < -0.5f)
 		{
-			return new PlayerInputRebinding.ControllerButton?(PlayerInputRebinding.ControllerButton.LDown);
+			return PlayerInputRebinding.ControllerButton.LDown;
 		}
 		if (XboxControllerInput.GetAxis(XboxControllerInput.Axis.RightStickX) < -0.5f)
 		{
-			return new PlayerInputRebinding.ControllerButton?(PlayerInputRebinding.ControllerButton.RLeft);
+			return PlayerInputRebinding.ControllerButton.RLeft;
 		}
 		if (XboxControllerInput.GetAxis(XboxControllerInput.Axis.RightStickX) > 0.5f)
 		{
-			return new PlayerInputRebinding.ControllerButton?(PlayerInputRebinding.ControllerButton.RRight);
+			return PlayerInputRebinding.ControllerButton.RRight;
 		}
 		if (XboxControllerInput.GetAxis(XboxControllerInput.Axis.RightStickY) > 0.5f)
 		{
-			return new PlayerInputRebinding.ControllerButton?(PlayerInputRebinding.ControllerButton.RUp);
+			return PlayerInputRebinding.ControllerButton.RUp;
 		}
 		if (XboxControllerInput.GetAxis(XboxControllerInput.Axis.RightStickY) < -0.5f)
 		{
-			return new PlayerInputRebinding.ControllerButton?(PlayerInputRebinding.ControllerButton.RDown);
+			return PlayerInputRebinding.ControllerButton.RDown;
 		}
 		if (XboxControllerInput.GetAxis(XboxControllerInput.Axis.DpadX) < -0.5f)
 		{
-			return new PlayerInputRebinding.ControllerButton?(PlayerInputRebinding.ControllerButton.DLeft);
+			return PlayerInputRebinding.ControllerButton.DLeft;
 		}
 		if (XboxControllerInput.GetAxis(XboxControllerInput.Axis.DpadX) > 0.5f)
 		{
-			return new PlayerInputRebinding.ControllerButton?(PlayerInputRebinding.ControllerButton.DRight);
+			return PlayerInputRebinding.ControllerButton.DRight;
 		}
 		if (XboxControllerInput.GetAxis(XboxControllerInput.Axis.DpadY) > 0.5f)
 		{
-			return new PlayerInputRebinding.ControllerButton?(PlayerInputRebinding.ControllerButton.DUp);
+			return PlayerInputRebinding.ControllerButton.DUp;
 		}
 		if (XboxControllerInput.GetAxis(XboxControllerInput.Axis.DpadY) < -0.5f)
 		{
-			return new PlayerInputRebinding.ControllerButton?(PlayerInputRebinding.ControllerButton.DDown);
+			return PlayerInputRebinding.ControllerButton.DDown;
 		}
 		return null;
 	}
@@ -186,13 +186,13 @@ public class ControllerBindControl : MonoBehaviour
 	public void Init(Func<PlayerInputRebinding.ControllerButton[]> getKeys, Action<PlayerInputRebinding.ControllerButton[]> setKeys, CustomSettingsScreen owner)
 	{
 		this.owner = owner;
-		this.GetKeys = getKeys;
-		this.SetKeys = setKeys;
-		this.messageBox.SetMessage(new MessageDescriptor(ControllerBindControl.KeyBindingToString(getKeys())));
-		CleverMenuItemTooltip component = base.GetComponent<CleverMenuItemTooltip>();
-		this.tooltipProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
-		this.tooltipProvider.SetMessage(owner.DefaultTooltip);
-		component.Tooltip = this.tooltipProvider;
+		GetKeys = getKeys;
+		SetKeys = setKeys;
+		messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
+		CleverMenuItemTooltip component = GetComponent<CleverMenuItemTooltip>();
+		tooltipProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
+		tooltipProvider.SetMessage(owner.DefaultTooltip);
+		component.Tooltip = tooltipProvider;
 		owner.tooltipController.UpdateTooltip();
 	}
 

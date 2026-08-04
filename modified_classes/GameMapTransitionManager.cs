@@ -1,6 +1,4 @@
-﻿using System;
-using Core;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class GameMapTransitionManager : MonoBehaviour
 {
@@ -8,7 +6,7 @@ public class GameMapTransitionManager : MonoBehaviour
 	{
 		get
 		{
-			return this.m_zoomTime != 0f && this.m_zoomTime < 1f;
+			return m_zoomTime != 0f && m_zoomTime < 1f;
 		}
 	}
 
@@ -16,7 +14,7 @@ public class GameMapTransitionManager : MonoBehaviour
 	{
 		get
 		{
-			return Mathf.Approximately(this.m_zoomTime, 0f);
+			return Mathf.Approximately(m_zoomTime, 0f);
 		}
 	}
 
@@ -24,20 +22,20 @@ public class GameMapTransitionManager : MonoBehaviour
 	{
 		get
 		{
-			return this.m_zoomTime >= 1f;
+			return m_zoomTime >= 1f;
 		}
 	}
 
 	public void Awake()
 	{
-		GameMapTransitionManager.Instance = this;
+		Instance = this;
 	}
 
 	public void OnDestroy()
 	{
-		if (GameMapTransitionManager.Instance == this)
+		if (Instance == this)
 		{
-			GameMapTransitionManager.Instance = null;
+			Instance = null;
 		}
 	}
 
@@ -45,7 +43,7 @@ public class GameMapTransitionManager : MonoBehaviour
 	{
 		get
 		{
-			return this.m_zoomTime;
+			return m_zoomTime;
 		}
 	}
 
@@ -55,29 +53,29 @@ public class GameMapTransitionManager : MonoBehaviour
 		{
 			return;
 		}
-		if (this.ZoomOutSound)
+		if (ZoomOutSound)
 		{
-			this.ZoomOutSound.Play();
+			ZoomOutSound.Play();
 		}
-		if (this.InAreaMapZoomOutSound)
+		if (InAreaMapZoomOutSound)
 		{
-			this.InAreaMapZoomOutSound.Stop();
+			InAreaMapZoomOutSound.Stop();
 		}
-		this.GoToWorldMap();
+		GoToWorldMap();
 	}
 
 	public void ZoomToAreaMap()
 	{
-		if (this.ZoomInSound)
+		if (ZoomInSound)
 		{
-			this.ZoomInSound.Play();
+			ZoomInSound.Play();
 		}
-		this.GoToAreaMap();
+		GoToAreaMap();
 	}
 
 	public void Update()
 	{
-		this.m_mouseWheel += UnityEngine.Input.GetAxis("Mouse ScrollWheel");
+		m_mouseWheel += Input.GetAxis("Mouse ScrollWheel");
 	}
 
 	public void Advance()
@@ -86,18 +84,18 @@ public class GameMapTransitionManager : MonoBehaviour
 		{
 			bool flag = Core.Input.ZoomOut.Pressed;
 			bool flag2 = Core.Input.ZoomIn.Pressed;
-			float num = this.m_mouseWheel * 50f;
-			this.m_mouseWheel = 0f;
-			this.m_zoomSpeed = Mathf.Lerp(this.m_zoomSpeed, num, 0.5f);
+			float num = m_mouseWheel * 50f;
+			m_mouseWheel = 0f;
+			m_zoomSpeed = Mathf.Lerp(m_zoomSpeed, num, 0.5f);
 			if (flag || flag2)
 			{
-				this.m_zoomSpeed = (float)(((!flag2) ? 0 : 1) - ((!flag) ? 0 : 1));
-				this.m_zeroZoom = true;
+				m_zoomSpeed = ((!flag2) ? 0 : 1) - ((!flag) ? 0 : 1);
+				m_zeroZoom = true;
 			}
-			else if (this.m_zeroZoom)
+			else if (m_zeroZoom)
 			{
-				this.m_zoomSpeed = 0f;
-				this.m_zeroZoom = false;
+				m_zoomSpeed = 0f;
+				m_zeroZoom = false;
 			}
 			if (num > 0f)
 			{
@@ -109,70 +107,69 @@ public class GameMapTransitionManager : MonoBehaviour
 			}
 			if (flag)
 			{
-				if (this.m_areaMode && this.m_zoomTime <= 1f)
+				if (m_areaMode && m_zoomTime <= 1f)
 				{
-					this.ZoomToWorldMap();
+					ZoomToWorldMap();
 				}
 			}
-			else if (this.m_zoomSpeed >= 0.05f && this.InAreaMapZoomOutSound)
+			else if (m_zoomSpeed >= 0.05f && InAreaMapZoomOutSound)
 			{
-				this.InAreaMapZoomOutSound.Stop();
+				InAreaMapZoomOutSound.Stop();
 			}
 			if (flag2)
 			{
-				if (!this.m_areaMode)
+				if (!m_areaMode)
 				{
-					this.ZoomToAreaMap();
+					ZoomToAreaMap();
 				}
 			}
-			else if (this.m_zoomSpeed <= -0.05f && this.InAreaMapZoomInSound)
+			else if (m_zoomSpeed <= -0.05f && InAreaMapZoomInSound)
 			{
-				this.InAreaMapZoomInSound.Stop();
+				InAreaMapZoomInSound.Stop();
 			}
-			if (this.m_areaMode)
+			if (m_areaMode)
 			{
-				if (this.m_zoomTime >= 1f)
+				if (m_zoomTime >= 1f)
 				{
-					if (this.m_zoomSpeed < -0.05f)
+					if (m_zoomSpeed < -0.05f)
 					{
-						if (this.InAreaMapZoomOutSound && !this.InAreaMapZoomOutSound.IsPlaying)
+						if (InAreaMapZoomOutSound && !InAreaMapZoomOutSound.IsPlaying)
 						{
-							this.InAreaMapZoomOutSound.Play();
+							InAreaMapZoomOutSound.Play();
 						}
-						this.m_zoomTime += Time.deltaTime * this.m_zoomSpeed;
+						m_zoomTime += Time.deltaTime * m_zoomSpeed;
 					}
-					else if (this.m_zoomSpeed > 0.05f)
+					else if (m_zoomSpeed > 0.05f)
 					{
-						if (this.InAreaMapZoomInSound && !this.InAreaMapZoomInSound.IsPlaying)
+						if (InAreaMapZoomInSound && !InAreaMapZoomInSound.IsPlaying)
 						{
-							this.InAreaMapZoomInSound.Play();
+							InAreaMapZoomInSound.Play();
 						}
-						this.m_zoomTime += Time.deltaTime * this.m_zoomSpeed;
-						this.m_zoomTime = Mathf.Clamp(this.m_zoomTime, 1f, 2f);
+						m_zoomTime += Time.deltaTime * m_zoomSpeed;
+						m_zoomTime = Mathf.Clamp(m_zoomTime, 1f, 2f);
 					}
 				}
 			}
 			else if (Core.Input.ActionButtonA.OnPressed && !Core.Input.ActionButtonA.Used)
 			{
 				Core.Input.ActionButtonA.Used = true;
-				this.ZoomToAreaMap();
+				ZoomToAreaMap();
 			}
 		}
-		if (this.m_areaMode && this.m_zoomTime < 1f)
+		if (m_areaMode && m_zoomTime < 1f)
 		{
-			this.m_zoomTime += 1f / this.ZoomDuration * Time.deltaTime;
-			this.m_zoomTime = Mathf.Clamp01(this.m_zoomTime);
-			if (this.m_zoomTime == 1f)
+			m_zoomTime += 1f / ZoomDuration * Time.deltaTime;
+			m_zoomTime = Mathf.Clamp01(m_zoomTime);
+			if (m_zoomTime == 1f)
 			{
 				WorldMapUI.Instance.Deactivate();
-                return;
 			}
 		}
-		else if (!this.m_areaMode)
+		else if (!m_areaMode)
 		{
-			this.m_zoomTime -= 1f / this.ZoomDuration * Time.deltaTime;
-			this.m_zoomTime = Mathf.Clamp01(this.m_zoomTime);
-			if (this.m_zoomTime == 0f)
+			m_zoomTime -= 1f / ZoomDuration * Time.deltaTime;
+			m_zoomTime = Mathf.Clamp01(m_zoomTime);
+			if (m_zoomTime == 0f)
 			{
 				AreaMapUI.Instance.Hide();
 			}
@@ -182,7 +179,7 @@ public class GameMapTransitionManager : MonoBehaviour
 	public void GoToWorldMap()
 	{
 		WorldMapUI.Instance.Activate();
-		this.m_areaMode = false;
+		m_areaMode = false;
 		AreaMapUI.Instance.FadeOutAnimator.Initialize();
 		AreaMapUI.Instance.FadeOutAnimator.AnimatorDriver.ContinueForward();
 		WorldMapUI.Instance.CrossFade.Initialize();
@@ -192,7 +189,7 @@ public class GameMapTransitionManager : MonoBehaviour
 	public void GoToAreaMap()
 	{
 		AreaMapUI.Instance.ResetMaps();
-		this.m_areaMode = true;
+		m_areaMode = true;
 		AreaMapUI.Instance.Show();
 		AreaMapUI.Instance.Init();
 		AreaMapUI.Instance.FadeOutAnimator.Initialize();
@@ -203,8 +200,8 @@ public class GameMapTransitionManager : MonoBehaviour
 
 	public void GoToAreaMapInstantly()
 	{
-		this.m_areaMode = true;
-		this.m_zoomTime = 1f;
+		m_areaMode = true;
+		m_zoomTime = 1f;
 		WorldMapUI.Instance.Deactivate();
 		WorldMapUI.Instance.CrossFade.Initialize();
 		WorldMapUI.Instance.CrossFade.AnimatorDriver.GoToStart();
@@ -218,8 +215,8 @@ public class GameMapTransitionManager : MonoBehaviour
 
 	public void GoToWorldMapInstantly()
 	{
-		this.m_areaMode = false;
-		this.m_zoomTime = 0f;
+		m_areaMode = false;
+		m_zoomTime = 0f;
 		AreaMapUI.Instance.Hide();
 		WorldMapUI.Instance.Activate();
 		WorldMapUI.Instance.CrossFade.Initialize();

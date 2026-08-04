@@ -1,4 +1,3 @@
-using System;
 using Game;
 
 public static class AbilityDebugMenuItems
@@ -11,12 +10,12 @@ public static class AbilityDebugMenuItems
 
 	public static void ToggleAbilities()
 	{
-		AbilityDebugMenuItems.SetAllAbilities(!AbilityDebugMenuItems.AllAbilitiesGetter());
+		SetAllAbilities(!AllAbilitiesGetter());
 	}
 
 	public static void AllAbilitiesSetter(bool newValue)
 	{
-		AbilityDebugMenuItems.ToggleAbilities();
+		ToggleAbilities();
 	}
 
 	public static bool AllAbilitiesGetter()
@@ -501,81 +500,81 @@ public static class AbilityDebugMenuItems
 
 	public static bool RemoveAllSkillsAndAbilities()
 	{
-		AbilityDebugMenuItems.RemoveAllSkills();
-		AbilityDebugMenuItems.RemoveAllAbilities();
+		RemoveAllSkills();
+		RemoveAllAbilities();
 		return true;
 	}
 
 	public static bool RemoveAllSkills()
 	{
-		AbilityDebugMenuItems.SpiritFlameSetter(false);
-		AbilityDebugMenuItems.WallJumpSetter(false);
-		AbilityDebugMenuItems.ChargeFlameSetter(false);
-		AbilityDebugMenuItems.DoubleJumpSetter(false);
-		AbilityDebugMenuItems.BashSetter(false);
-		AbilityDebugMenuItems.StompSetter(false);
-		AbilityDebugMenuItems.GlideSetter(false);
-		AbilityDebugMenuItems.ClimbSetter(false);
-		AbilityDebugMenuItems.ChargeJumpSetter(false);
-		AbilityDebugMenuItems.DashSetter(false);
-		AbilityDebugMenuItems.GrenadeSetter(false);
+		SpiritFlameSetter(false);
+		WallJumpSetter(false);
+		ChargeFlameSetter(false);
+		DoubleJumpSetter(false);
+		BashSetter(false);
+		StompSetter(false);
+		GlideSetter(false);
+		ClimbSetter(false);
+		ChargeJumpSetter(false);
+		DashSetter(false);
+		GrenadeSetter(false);
 		return true;
 	}
 
 	public static bool RemoveAllAbilities()
 	{
-		AbilityDebugMenuItems.RemoveAllBlueAbilities();
-		AbilityDebugMenuItems.RemoveAllPurpleAbilities();
-		AbilityDebugMenuItems.RemoveAllRedAbilities();
+		RemoveAllBlueAbilities();
+		RemoveAllPurpleAbilities();
+		RemoveAllRedAbilities();
 		return true;
 	}
 
 	public static bool RemoveAllBlueAbilities()
 	{
-		AbilityDebugMenuItems.RekindleSetter(false);
-		AbilityDebugMenuItems.RegroupSetter(false);
-		AbilityDebugMenuItems.ChargeFlameEfficiencySetter(false);
-		AbilityDebugMenuItems.AirDashSetter(false);
-		AbilityDebugMenuItems.UltraSoulFlameSetter(false);
-		AbilityDebugMenuItems.ChargeDashSetter(false);
-		AbilityDebugMenuItems.WaterBreathSetter(false);
-		AbilityDebugMenuItems.SoulFlameEfficiencySetter(false);
-		AbilityDebugMenuItems.DoubleJumpUpgradeSetter(false);
-		AbilityDebugMenuItems.UltraDefenseSetter(false);
+		RekindleSetter(false);
+		RegroupSetter(false);
+		ChargeFlameEfficiencySetter(false);
+		AirDashSetter(false);
+		UltraSoulFlameSetter(false);
+		ChargeDashSetter(false);
+		WaterBreathSetter(false);
+		SoulFlameEfficiencySetter(false);
+		DoubleJumpUpgradeSetter(false);
+		UltraDefenseSetter(false);
 		return true;
 	}
 
 	public static bool RemoveAllPurpleAbilities()
 	{
-		AbilityDebugMenuItems.MagnetSetter(false);
-		AbilityDebugMenuItems.MapMarkersSetter(false);
-		AbilityDebugMenuItems.HealthEfficiencySetter(false);
-		AbilityDebugMenuItems.UltraMagnetSetter(false);
-		AbilityDebugMenuItems.EnergyEfficiencySetter(false);
-		AbilityDebugMenuItems.AbilityMarkersSetter(false);
-		AbilityDebugMenuItems.SoulEfficiencySetter(false);
-		AbilityDebugMenuItems.HealthMarkersSetter(false);
-		AbilityDebugMenuItems.EnergyMarkersSetter(false);
-		AbilityDebugMenuItems.SenseSetter(false);
+		MagnetSetter(false);
+		MapMarkersSetter(false);
+		HealthEfficiencySetter(false);
+		UltraMagnetSetter(false);
+		EnergyEfficiencySetter(false);
+		AbilityMarkersSetter(false);
+		SoulEfficiencySetter(false);
+		HealthMarkersSetter(false);
+		EnergyMarkersSetter(false);
+		SenseSetter(false);
 		return true;
 	}
 
 	public static bool RemoveAllRedAbilities()
 	{
-		AbilityDebugMenuItems.QuickFlameSetter(false);
-		AbilityDebugMenuItems.SparkFlameSetter(false);
-		AbilityDebugMenuItems.ChargeFlameBurnSetter(false);
-		AbilityDebugMenuItems.SplitFlameUpgradeSetter(false);
-		AbilityDebugMenuItems.GrenadeUpgradeSetter(false);
-		AbilityDebugMenuItems.CinderFlameSetter(false);
-		AbilityDebugMenuItems.StompUpgradeSetter(false);
-		AbilityDebugMenuItems.RapidFireSetter(false);
-		AbilityDebugMenuItems.ChargeFlameBlastSetter(false);
-		AbilityDebugMenuItems.UltraSplitFlameSetter(false);
+		QuickFlameSetter(false);
+		SparkFlameSetter(false);
+		ChargeFlameBurnSetter(false);
+		SplitFlameUpgradeSetter(false);
+		GrenadeUpgradeSetter(false);
+		CinderFlameSetter(false);
+		StompUpgradeSetter(false);
+		RapidFireSetter(false);
+		ChargeFlameBlastSetter(false);
+		UltraSplitFlameSetter(false);
 
 		// also remove these deprecated abilities just in case
-		AbilityDebugMenuItems.BashUpgradeSetter(false);
-		AbilityDebugMenuItems.GrenadeEfficiencySetter(false);
+		BashUpgradeSetter(false);
+		GrenadeEfficiencySetter(false);
 		return true;
 	}
 }

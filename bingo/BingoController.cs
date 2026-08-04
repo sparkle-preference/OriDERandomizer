@@ -1,10 +1,10 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Net;
-using Game;
 using Core;
+using Game;
 using Sein.World;
 
 public static class BingoController
@@ -215,7 +215,7 @@ public static class BingoController
             if(!Active) return;
             if(coords == 2 && (action.Action == "HC" || action.Action == "EC" || action.Action == "AC"))
                 return;
-            string itemCode = action.Action + "|" + action.Value.ToString();
+            string itemCode = action.Action + "|" + action.Value;
             if(action.Action == "RB")
             {
                 SingleItemListeners["EV|0"].Set(Keys.GinsoTree);
@@ -254,7 +254,7 @@ public static class BingoController
 
     // index = bit position in the journey bitfields, and (+1) the LastTouched value,
     // so 0 reads as "no origin". Both live in the save file: never reorder this.
-    public static readonly string[] Teleporters = new string[] {
+    public static readonly string[] Teleporters = {
         "swamp", "sorrowPass", "sunkenGlades", "moonGrotto", "mangroveFalls", "valleyOfTheWind",
         "spiritTree", "mangroveB", "horuFields", "ginsoTree", "forlorn", "mountHoru"
     };
@@ -339,8 +339,6 @@ public static class BingoController
             case AbilityType.SoulEfficiency:
                 MultiBoolGoals["GetAbility"]["Spirit Potency"] = true;
                 break;
-            default:
-                break;
         }
         IntGoals["SpendPoints"].OnChange(2);
     }
@@ -349,7 +347,7 @@ public static class BingoController
     public abstract class BingoGoal {
         public abstract string ToJson();
         public string Name;
-        virtual public string GetName() { return this.Name; }
+        virtual public string GetName() { return Name; }
     }
 
     public interface LocListener { void Handle(int loc); }
@@ -378,56 +376,56 @@ public static class BingoController
         public int ItemId;
         public MultiBoolGoal Owner;
         public virtual bool Completed {
-            get { return get(this.ItemId) != 0; }
+            get { return get(ItemId) != 0; }
             set {
-                bool prior = this.Completed;
-                set(this.ItemId, value ? 1 : 0);
+                bool prior = Completed;
+                set(ItemId, value ? 1 : 0);
                 if(prior != value)
                     NotifyChanged();
             }
         }
         protected void NotifyChanged() {
             if(Owner == null)
-                GoalChanged(this.Name, 0);
+                GoalChanged(Name, 0);
             else
-                MultiGoalChanged(this.Owner.Name, this.Name);
+                MultiGoalChanged(Owner.Name, Name);
         }
         public BoolGoal(string name, int id) {
-            this.Name = name;
-            this.ItemId = id;
+            Name = name;
+            ItemId = id;
         }
         public static void mk(string name, int id) {
             BoolGoal goal = new BoolGoal(name, id);
             BoolGoals[goal.Name] = goal;
         }
         public override string ToJson() {
-            return "\"" + this.Name + "\": { \"value\": " + this.Completed.ToString().ToLower() + "}";
+            return "\"" + Name + "\": { \"value\": " + Completed.ToString().ToLower() + "}";
         }
     }
 
     public class BoolItemGoal : BoolGoal, SingleItemListener {
         public BoolItemGoal(string name, int id, string itemCode) : base(name, id) {
             if(SingleItemListeners.ContainsKey(itemCode)) 
-                Randomizer.LogError(SingleItemListeners[itemCode].GetName() + " conflicts with " + this.Name + ". The latter has overwritten the former.");
+                Randomizer.LogError(SingleItemListeners[itemCode].GetName() + " conflicts with " + Name + ". The latter has overwritten the former.");
             SingleItemListeners[itemCode] = this;
         }
-        public void Handle() { this.Completed = true; }
-        public void Set(bool newValue) { this.Completed = newValue; }
+        public void Handle() { Completed = true; }
+        public void Set(bool newValue) { Completed = newValue; }
     }
 
     // one bit of a shared int, so the N*N journey pairs cost N item ids, not N*N
     public class BitfieldBoolGoal : BoolGoal {
         public int Bit;
         public BitfieldBoolGoal(string name, int id, int bit) : base(name, id) {
-            this.Bit = bit;
+            Bit = bit;
         }
         public override bool Completed {
-            get { return (get(this.ItemId) & (1 << this.Bit)) != 0; }
+            get { return (get(ItemId) & (1 << Bit)) != 0; }
             set {
-                if(this.Completed == value)
+                if(Completed == value)
                     return;
-                int bits = get(this.ItemId);
-                set(this.ItemId, value ? bits | (1 << this.Bit) : bits & ~(1 << this.Bit));
+                int bits = get(ItemId);
+                set(ItemId, value ? bits | (1 << Bit) : bits & ~(1 << Bit));
                 NotifyChanged();
             }
         }
@@ -436,22 +434,22 @@ public static class BingoController
     public class BoolGuidSwitchGoal : BoolGoal, SingleGuidSwitchListener {
         public BoolGuidSwitchGoal(string name, int id, MoonGuid switchId) : base(name, id) {
             if(SingleGuidSwitchListeners.ContainsKey(switchId)) 
-                Randomizer.LogError(SingleGuidSwitchListeners[switchId].GetName() + " conflicts with " + this.Name + ". The latter has overwritten the former.");
+                Randomizer.LogError(SingleGuidSwitchListeners[switchId].GetName() + " conflicts with " + Name + ". The latter has overwritten the former.");
             SingleGuidSwitchListeners[switchId] = this;
         }
-        public void Handle() { this.Completed = true; }
+        public void Handle() { Completed = true; }
     }
 
     public class SceneBoolGuidSwitchGoal : BoolGoal, SingleGuidSwitchListener {
         public SceneBoolGuidSwitchGoal(string name, int id, MoonGuid switchId, string sceneName) : base(name, id) {
             if(SingleGuidSwitchListeners.ContainsKey(switchId)) 
-                Randomizer.LogError(SingleGuidSwitchListeners[switchId].GetName() + " conflicts with " + this.Name + ". The latter has overwritten the former.");
+                Randomizer.LogError(SingleGuidSwitchListeners[switchId].GetName() + " conflicts with " + Name + ". The latter has overwritten the former.");
             SingleGuidSwitchListeners[switchId] = this;
-            this.scene = sceneName;
+            scene = sceneName;
 
         }
         public string scene;
-        public void Handle() { if(scene() == this.scene) { this.Completed = true; } ; }
+        public void Handle() { if(scene() == scene) { Completed = true; } ; }
     }
 
 
@@ -461,29 +459,29 @@ public static class BingoController
                 SingleLocListeners[loc] = new List<SingleLocListener>();    
             SingleLocListeners[loc].Add(this);
         }
-        public void Handle() { this.Completed = true; }
+        public void Handle() { Completed = true; }
     }
     public class BoolMultiSceneGoal : BoolGoal, SceneListener {
         public HashSet<string> Scenes;
         public BoolMultiSceneGoal(string name, int id,  HashSet<string> scenes) : base(name, id) {
-            this.Scenes = scenes;
+            Scenes = scenes;
             SceneListeners.Add(this);
         }
         public static void mk(string name, int id, HashSet<string> scenes) {
             BoolMultiSceneGoal goal = new BoolMultiSceneGoal(name, id, scenes);
             BoolGoals[goal.Name] = goal;
         }
-        public void Handle(string scene) { this.Completed = this.Completed || this.Scenes.Contains(scene); }
+        public void Handle(string scene) { Completed = Completed || Scenes.Contains(scene); }
     }
 
 
     public class BoolSceneGoal : BoolGoal, SingleSceneListener {
         public BoolSceneGoal(string name, int id, string sceneName) : base(name, id) {
             if(SingleSceneListeners.ContainsKey(sceneName)) 
-                Randomizer.LogError(SingleSceneListeners[sceneName].GetName() + " conflicts with " + this.Name + ". The latter has overwritten the former.");
+                Randomizer.LogError(SingleSceneListeners[sceneName].GetName() + " conflicts with " + Name + ". The latter has overwritten the former.");
             SingleSceneListeners[sceneName] = this;
         }
-        public void Handle() { this.Completed = true; }
+        public void Handle() { Completed = true; }
     }
 
     public class MultiBoolGoal : BingoGoal {
@@ -492,21 +490,21 @@ public static class BingoController
         {
             get
             {
-                if(!this.Subgoals.ContainsKey(key)) {
-                    Randomizer.LogError("Key " + key + " not found in MultiBoolGoal " + this.Name);
+                if(!Subgoals.ContainsKey(key)) {
+                    Randomizer.LogError("Key " + key + " not found in MultiBoolGoal " + Name);
                     return false;
                 }
-                return this.Subgoals[key].Completed;
+                return Subgoals[key].Completed;
             }
-            set { this.Subgoals[key].Completed = value; }
+            set { Subgoals[key].Completed = value; }
         }
         public MultiBoolGoal(string name, List<BoolGoal> subgoals) {
-            this.Name = name;
-            this.Subgoals = new Dictionary<string, BoolGoal>();
+            Name = name;
+            Subgoals = new Dictionary<string, BoolGoal>();
             foreach(BoolGoal subgoal in subgoals)
             {
                 subgoal.Owner = this;
-                this.Subgoals[subgoal.Name] = subgoal;
+                Subgoals[subgoal.Name] = subgoal;
             }
         }
         public static void mk(string name, List<BoolGoal> subgoals) {
@@ -514,15 +512,15 @@ public static class BingoController
             MultiBoolGoals[goal.Name] = goal;
         }
         public override string ToJson() {
-            string jsonStr = "\"" + this.Name + "\": { \"value\": {";
+            string jsonStr = "\"" + Name + "\": { \"value\": {";
             int count = 0;
-            foreach(BoolGoal subgoal in this.Subgoals.Values)
+            foreach(BoolGoal subgoal in Subgoals.Values)
             {
                 jsonStr += subgoal.ToJson() + ",";
                 if(subgoal.Completed)
                     count++;
             }
-            return jsonStr.TrimEnd(',') + "}, \"total\": " + count.ToString() + "}";
+            return jsonStr.TrimEnd(',') + "}, \"total\": " + count + "}";
         }
     }
 
@@ -541,43 +539,43 @@ public static class BingoController
             MultiBoolGoals[goal.Name] = goal;
         }
         public override string ToJson() {
-            string jsonStr = "\"" + this.Name + "\": { \"value\": {";
+            string jsonStr = "\"" + Name + "\": { \"value\": {";
             int count = 0;
-            foreach(BoolGoal subgoal in this.Subgoals.Values) {
+            foreach(BoolGoal subgoal in Subgoals.Values) {
                 if(!subgoal.Completed)
                     continue;
                 jsonStr += subgoal.ToJson() + ",";
                 count++;
             }
-            return jsonStr.TrimEnd(',') + "}, \"total\": " + count.ToString() + "}";
+            return jsonStr.TrimEnd(',') + "}, \"total\": " + count + "}";
         }
     }
 
     public class IntGoal : BingoGoal {
         public int ItemId;
         public int Timeout = 1;
-        public int Target = 0;
+        public int Target;
         public void OnChange(int delta) {
-            int prior = this.Value - delta;
-            if(prior < this.Target)
+            int prior = Value - delta;
+            if(prior < Target)
             {
-                if(this.Value >= this.Target)
-                    GoalChanged(this.Name, 0);
+                if(Value >= Target)
+                    GoalChanged(Name, 0);
                 else
-                    GoalChanged(this.Name, this.Timeout);
+                    GoalChanged(Name, Timeout);
             }
         }
         public int Value {
-            get { return get(this.ItemId); }
+            get { return get(ItemId); }
             set { 
-                    int delta = value - this.Value;
-                    set(this.ItemId, value);
-                    this.OnChange(delta);
+                    int delta = value - Value;
+                    set(ItemId, value);
+                    OnChange(delta);
                 }
         }
         public IntGoal(string name, int id) {
-            this.Name = name;
-            this.ItemId = id;
+            Name = name;
+            ItemId = id;
         }
         public static void mk(string name, int id) {
             IntGoal goal = new IntGoal(name, id);
@@ -589,14 +587,14 @@ public static class BingoController
             goal.Timeout = timeout;
         }
         public override string ToJson() {
-            return "\"" + this.Name + "\": { \"value\": " + this.Value.ToString() + "}";
+            return "\"" + Name + "\": { \"value\": " + Value + "}";
         }
     }
 
     public class IntItemGoal : IntGoal, SingleItemListener {
         public IntItemGoal(string name, int id, string itemCode) : base(name, id) {
             if(SingleItemListeners.ContainsKey(itemCode)) {
-                Randomizer.LogError(SingleItemListeners[itemCode].GetName() + " conflicts with " + this.Name + ". The latter has overwritten the former.");
+                Randomizer.LogError(SingleItemListeners[itemCode].GetName() + " conflicts with " + Name + ". The latter has overwritten the former.");
             }
             SingleItemListeners[itemCode] = this;
         }
@@ -604,14 +602,14 @@ public static class BingoController
             IntItemGoal goal = new IntItemGoal(name, id, itemCode);
             IntGoals[goal.Name] = goal;
         }
-        public void Handle() { this.Value++; }
-        public void Set(bool newValue) { this.Value += newValue ? 1 : -1 ; }
+        public void Handle() { Value++; }
+        public void Set(bool newValue) { Value += newValue ? 1 : -1 ; }
     }
 
     public class IntLocsGoal : IntGoal, LocListener {
         public HashSet<int> Locs;
         public IntLocsGoal(string name, int id, HashSet<int> locs) : base(name, id) {
-            this.Locs = locs;
+            Locs = locs;
             LocListeners.Add(this);
         }
         public static void mk(string name, int id, HashSet<int> locs) {
@@ -619,8 +617,8 @@ public static class BingoController
             IntGoals[goal.Name] = goal; 
         }
         public void Handle(int loc) {
-            if(this.Locs.Contains(loc))
-                this.Value += 1;
+            if(Locs.Contains(loc))
+                Value += 1;
         }
     }
     public static void PostCallback(object sender, UploadValuesCompletedEventArgs e)
@@ -665,10 +663,10 @@ public static class BingoController
                 IntGoal.mk("UnspentKeystones", 2509);
                 IntLocsGoal.mk("BreakPlants", 2510, new HashSet<int> {-11040068, -12320248, -1800088, -4680068, -4799416, -6080316, -6319752, -8160268, 1240020, 3119768, 3160244, 3279920, 3399820, 3639880, 399844, 4319860, 4359656, 4439632, 4919600, 5119900, 5359824, 5399780, 5400100, 6080608, 6279880});
                 IntGoal.mk("TotalPickups", 1600, 1);            // already tracked by stats C:
-                IntLocsGoal.mk("UnderwaterPickups", 2511, new HashSet<int>() {1839836, 3559792, -5160280, -3600088, 39756, 3959588, 4199724, 7679852, 5919864, 7959788, 3359784, -3200164, -400240, 559720, 7599824, 6839792, 7639816, 8719856, 5239456, 3519820});
-                IntLocsGoal.mk("HealthCellLocs", 2512, new HashSet<int>() {-6119704, -6280316, -800192, 1479880, 1599920, 2599880, 3199820, 3919624, 3919688, 4239780, 5399808, 5799932});
-                IntLocsGoal.mk("EnergyCellLocs", 2513, new HashSet<int>() {-1560188, -280256, -3200164, -3360288, -400240, -6279608, 1720000, 2480400, 2719900, 4199828, 5119556, 5360432, 5439640, 599844, 7199904});
-                IntLocsGoal.mk("AbilityCellLocs", 2514, new HashSet<int>() {-10760004, -1680140, -2080116, -2160176, -2919980, -3520100, -3559936, -4160080, -4600188, -480168, -5119796, -6479528, -6719712, 1759964, 1799708, 2079568, 2519668, 2759624, 3319936, 3359784, 3519820, 3879576, 4079964, 4479568, 4479704, 4559492, 4999892, 5239456, 639888, 6399872, 6999916, 799804, 919908 } );
+                IntLocsGoal.mk("UnderwaterPickups", 2511, new HashSet<int> {1839836, 3559792, -5160280, -3600088, 39756, 3959588, 4199724, 7679852, 5919864, 7959788, 3359784, -3200164, -400240, 559720, 7599824, 6839792, 7639816, 8719856, 5239456, 3519820});
+                IntLocsGoal.mk("HealthCellLocs", 2512, new HashSet<int> {-6119704, -6280316, -800192, 1479880, 1599920, 2599880, 3199820, 3919624, 3919688, 4239780, 5399808, 5799932});
+                IntLocsGoal.mk("EnergyCellLocs", 2513, new HashSet<int> {-1560188, -280256, -3200164, -3360288, -400240, -6279608, 1720000, 2480400, 2719900, 4199828, 5119556, 5360432, 5439640, 599844, 7199904});
+                IntLocsGoal.mk("AbilityCellLocs", 2514, new HashSet<int> {-10760004, -1680140, -2080116, -2160176, -2919980, -3520100, -3559936, -4160080, -4600188, -480168, -5119796, -6479528, -6719712, 1759964, 1799708, 2079568, 2519668, 2759624, 3319936, 3359784, 3519820, 3879576, 4079964, 4479568, 4479704, 4559492, 4999892, 5239456, 639888, 6399872, 6999916, 799804, 919908 } );
                 IntGoal.mk("LightLanterns", 2515); 
                 IntGoal.mk("SpendPoints", 80, 1);
                 IntGoal.mk("GainExperience", 2516, 3);
@@ -694,7 +692,7 @@ public static class BingoController
 
 
                 MultiBoolGoals = new Dictionary<string, MultiBoolGoal>();
-                MultiBoolGoal.mk("CompleteHoruRoom", new List<BoolGoal>() {
+                MultiBoolGoal.mk("CompleteHoruRoom", new List<BoolGoal> {
                     new BoolLocGoal("L1", 2522, -919624),
                     new BoolLocGoal("L2", 2523, -199724),
                     new BoolLocGoal("L3", 2524, -1639664),
@@ -705,7 +703,7 @@ public static class BingoController
                     new BoolLocGoal("R4", 2529, 2160192)
                 });
 
-                MultiBoolGoal.mk("VanillaEventLocs", new List<BoolGoal>() {
+                MultiBoolGoal.mk("VanillaEventLocs", new List<BoolGoal> {
                     new BoolLocGoal("Water Vein", 2609, 4999752),
                     new BoolLocGoal("Gumon Seal", 2610, -7200024),
                     new BoolLocGoal("Sunstone", 2611, -5599400),
@@ -714,7 +712,7 @@ public static class BingoController
                     new BoolLocGoal("Warmth Returned", 2614, -2399488)
                 });
 
-                MultiBoolGoal.mk("DieTo", new List<BoolGoal>() {
+                MultiBoolGoal.mk("DieTo", new List<BoolGoal> {
                     new BoolGoal("Sunstone Lightning", 1598),
                     new BoolGoal("Lost Grove Laser", 1597),
                     new BoolGoal("Forlorn Void", 1596),
@@ -731,13 +729,13 @@ public static class BingoController
 
                 });
 
-                MultiBoolGoal.mk("CompleteEscape", new List<BoolGoal>() {
+                MultiBoolGoal.mk("CompleteEscape", new List<BoolGoal> {
                     new BoolLocGoal("Ginso Tree", 2530, 5480952),
                     new BoolSceneGoal("Forlorn Ruins", 2531, "forlornRuinsNestC"),
                     new BoolGoal("Mount Horu", 1599)
                 });
 
-                MultiBoolGoal.mk("ActivateTeleporter", new List<BoolGoal>() {
+                MultiBoolGoal.mk("ActivateTeleporter", new List<BoolGoal> {
                     new BoolGoal("swamp", 2532),
                     new BoolGoal("sorrowPass", 2520),
                     new BoolGoal("sunkenGlades", 2533),
@@ -754,16 +752,16 @@ public static class BingoController
 
                 JourneyGoal.mk();
 
-                MultiBoolGoal.mk("EnterArea", new List<BoolGoal>() {
-                    new BoolMultiSceneGoal("Lost Grove", 2543, new HashSet<string>() { "southMangroveFallsStoryRoomA", "southMangroveFallsGrenadeEscalationB", "southMangroveFallsGrenadeEscalationBR"}),
-                    new BoolMultiSceneGoal("Misty Woods", 2544,  new HashSet<string>() { "sorrowPassForestB", "mistyWoodsGetTorch", "mistyWoodsIntro" }),
-                    new BoolMultiSceneGoal("Forlorn Ruins", 2545, new HashSet<string>() {"forlornRuinsGravityRoomA", "forlornRuinsGetNightberry", "forlornRuinsGetIceB"}),
-                    new BoolMultiSceneGoal("Sorrow Pass", 2546, new HashSet<string>() {"valleyOfTheWindEArt", "valleyOfTheWindLaserShaft", "valleyOfTheWindGauntlet", "valleyOfTheWindTop", "valleyOfTheWindHubR"}),
-                    new BoolMultiSceneGoal("Mount Horu", 2547, new HashSet<string>() {"mountHoruHubBottom", "mountHoruHubMid"}),
-                    new BoolMultiSceneGoal("Ginso Tree", 2517,new HashSet<string>() { "ginsoTreeSaveRoom", "ginsoEntranceIntro", "ginsoTreeWaterRisingEnd"})
+                MultiBoolGoal.mk("EnterArea", new List<BoolGoal> {
+                    new BoolMultiSceneGoal("Lost Grove", 2543, new HashSet<string> { "southMangroveFallsStoryRoomA", "southMangroveFallsGrenadeEscalationB", "southMangroveFallsGrenadeEscalationBR"}),
+                    new BoolMultiSceneGoal("Misty Woods", 2544,  new HashSet<string> { "sorrowPassForestB", "mistyWoodsGetTorch", "mistyWoodsIntro" }),
+                    new BoolMultiSceneGoal("Forlorn Ruins", 2545, new HashSet<string> {"forlornRuinsGravityRoomA", "forlornRuinsGetNightberry", "forlornRuinsGetIceB"}),
+                    new BoolMultiSceneGoal("Sorrow Pass", 2546, new HashSet<string> {"valleyOfTheWindEArt", "valleyOfTheWindLaserShaft", "valleyOfTheWindGauntlet", "valleyOfTheWindTop", "valleyOfTheWindHubR"}),
+                    new BoolMultiSceneGoal("Mount Horu", 2547, new HashSet<string> {"mountHoruHubBottom", "mountHoruHubMid"}),
+                    new BoolMultiSceneGoal("Ginso Tree", 2517,new HashSet<string> { "ginsoTreeSaveRoom", "ginsoEntranceIntro", "ginsoTreeWaterRisingEnd"})
                 });
 
-                MultiBoolGoal.mk("GetEvent", new List<BoolGoal>() {
+                MultiBoolGoal.mk("GetEvent", new List<BoolGoal> {
                     new BoolItemGoal("Water Vein", 2548, "EV|0"),
                     new BoolItemGoal("Gumon Seal", 2549, "EV|2"),
                     new BoolItemGoal("Sunstone", 2550, "EV|4"),
@@ -772,7 +770,7 @@ public static class BingoController
                     new BoolItemGoal("Warmth Returned", 2553, "EV|5")
                 });
 
-                MultiBoolGoal.mk("GetItemAtLoc", new List<BoolGoal>() {
+                MultiBoolGoal.mk("GetItemAtLoc", new List<BoolGoal> {
                     new BoolLocGoal("LostGroveLongSwim", 2554, 5239456),
                     new BoolLocGoal("ValleyEntryGrenadeLongSwim", 2555, -3200164),
                     new BoolLocGoal("SpiderSacEnergyDoor", 2556, 639888),
@@ -787,7 +785,7 @@ public static class BingoController
                     new BoolLocGoal("RightForlornHealthCell", 2565, -6280316),
                     new BoolLocGoal("ForlornEscapePlant", 2566, -12320248)
                 });
-                MultiBoolGoal.mk("VisitTree", new List<BoolGoal>() {
+                MultiBoolGoal.mk("VisitTree", new List<BoolGoal> {
                     new BoolGoal("Wall Jump", 2567), 
                     new BoolGoal("Charge Flame", 2568), 
                     new BoolGoal("Double Jump", 2569), 
@@ -799,12 +797,12 @@ public static class BingoController
                     new BoolGoal("Grenade", 2575), 
                     new BoolGoal("Dash", 2576)
                 });
-                MultiBoolGoal.mk("GetAbility", new List<BoolGoal>() {
+                MultiBoolGoal.mk("GetAbility", new List<BoolGoal> {
                     new BoolGoal("Ultra Defense", 2577), 
                     new BoolGoal("Spirit Potency", 2578), 
                     new BoolGoal("Ultra Stomp", 2579)
                 });
-                MultiBoolGoal.mk("StompPeg", new List<BoolGoal>() {
+                MultiBoolGoal.mk("StompPeg", new List<BoolGoal> {
                     new BoolGuidSwitchGoal("BlackrootTeleporter", 2580, new MoonGuid(-896629726, 1267685881, 1301835908, 1482947216)), 
                     new BoolGuidSwitchGoal("SwampPostStomp", 2581, new MoonGuid(-1973919964, 1235174309, 1801441926, 1977910307)), 
                     new BoolGuidSwitchGoal("GroveMapstoneTree", 2582, new MoonGuid(-1664353560, 1216217354, 845171129, -1310424046)), 
@@ -820,7 +818,7 @@ public static class BingoController
                     new BoolGuidSwitchGoal("GroveGrottoLower", 2593, new MoonGuid(1980402418, 1183311360, -882091623, 275381859)),
                     new BoolGuidSwitchGoal("ForlornLaserPeg", 2625, new MoonGuid(970409280, 1324809336, 1682715272, 1648746300))
                 });
-                MultiBoolGoal.mk("HuntEnemies", new List<BoolGoal>() {
+                MultiBoolGoal.mk("HuntEnemies", new List<BoolGoal> {
                     new BoolGuidSwitchGoal("Misty Miniboss", 2596, new MoonGuid(-1042451585, 1166751436, 1922297510, -83736415)), 
                     new BoolGuidSwitchGoal("Frog Toss", 2597, new MoonGuid(-2143519163, 1146437181, -51560278, -1978077749)),
                     new BoolGuidSwitchGoal("Lost Grove Fight Room", 2598, new MoonGuid(-1679036972, 1237382256, -182501967, -2059998279)),
@@ -832,7 +830,7 @@ public static class BingoController
                     new BoolGuidSwitchGoal("Mount Horu Miniboss", 2604,  new MoonGuid(-1829316912, 1244306941, 1626759309, -571989581))
                 });
 
-                MultiBoolGoal.mk("TouchMapstone", new List<BoolGoal>() {
+                MultiBoolGoal.mk("TouchMapstone", new List<BoolGoal> {
                         new BoolGoal("sunkenGlades", 2615),
                         new BoolGoal("hollowGrove", 2616),
                         new BoolGoal("moonGrotto", 2617),
@@ -900,7 +898,7 @@ public static class BingoController
 
     public static HashSet<String> ActiveSingleGoals;
     public static Dictionary<String, HashSet<String>> ActiveMultiGoals;
-    public static HashSet<MoonGuid> BlackrootLanterns = new HashSet<MoonGuid>() {
+    public static HashSet<MoonGuid> BlackrootLanterns = new HashSet<MoonGuid> {
                 new MoonGuid(-247741005, 1196428260, -687048288, -31634124),
                 new MoonGuid(1907989719, 1277885764, -201315168, 756894943),
                 new MoonGuid(1145583265, 1113096007, 1499060158, 1321600423),
@@ -910,7 +908,7 @@ public static class BingoController
                 new MoonGuid(939157475, 1204164414, 1274659233, 466487750),
                 new MoonGuid(113579066, 1094186079, 393414551, 435335703)
             };
-    public static HashSet<MoonGuid> Walls = new HashSet<MoonGuid>() {
+    public static HashSet<MoonGuid> Walls = new HashSet<MoonGuid> {
                 new MoonGuid(996714861, 1239808899, 1900786868, -1496533060),
                 new MoonGuid(-282304521, 1106903372, 1209236670, 205465054),
                 new MoonGuid(2014579407, 1164325780, 1399366826, -192348871),
@@ -942,7 +940,7 @@ public static class BingoController
                 new MoonGuid(-1512077958, 1188663915, 1905064588, 2019919965),
                 new MoonGuid(-773868360, 1108658051, 469763253, 1729895317)
             };
-    public static HashSet<MoonGuid> Floors = new HashSet<MoonGuid>() {
+    public static HashSet<MoonGuid> Floors = new HashSet<MoonGuid> {
                 new MoonGuid(-920679693, 1232503605, 72320169, -1907458604),
                 new MoonGuid(-1709608458, 1158899166, -1771762550, -59165922),
                 new MoonGuid(794839184, 1159253274, -554590529, 1980315570),
@@ -1061,7 +1059,7 @@ public static class BingoController
     public static MoonGuid Drain = new MoonGuid(1711549718, 1225123502, -2036372807, 248162391);
     public static MoonGuid CoreSkipRight = new MoonGuid(1165644159, 1142717490, -237578866, -2119320164);
     public static MoonGuid CoreSkipLeft = new MoonGuid(1709969197, 1275364087, -792362568, -1385507206);
-    public static HashSet<string> Amphibians = new HashSet<string>() { "jumperEnemy", "spitterEnemy", "fastSpitterEnemy" };
+    public static HashSet<string> Amphibians = new HashSet<string> { "jumperEnemy", "spitterEnemy", "fastSpitterEnemy" };
     public static string CurrentScene;
 
     private static int get(int item) { return Characters.Sein.Inventory.GetRandomizerItem(item); }
@@ -1072,7 +1070,7 @@ public static class BingoController
     public static WebClient UpdateClient;
     public static string UpdateUrl;
     public static bool Active;
-    public static int CoreSkipTimeout = 0;
+    public static int CoreSkipTimeout;
     public static bool InCutscene = false;
     public static int LockCount = 0;
     public static int NetFailCount = 5;

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Core;
 using UnityEngine;
@@ -9,7 +8,7 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable
 	{
 		get
 		{
-			return this.m_transform.position;
+			return m_transform.position;
 		}
 	}
 
@@ -17,7 +16,7 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable
 
 	public override void Awake()
 	{
-		this.TimeSinceLastShot = float.MaxValue;
+		TimeSinceLastShot = float.MaxValue;
 		base.Awake();
 		SuspensionManager.Register(this);
 	}
@@ -30,68 +29,68 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable
 
 	public void Start()
 	{
-		this.m_timedTrigger = base.GetComponent<TimedTrigger>();
-		if (this.m_timedTrigger != null)
+		m_timedTrigger = GetComponent<TimedTrigger>();
+		if (m_timedTrigger != null)
 		{
-			this.trueTimedDuration = new float?(this.m_timedTrigger.Duration);
+			trueTimedDuration = m_timedTrigger.Duration;
 		}
-		this.m_transform = base.transform;
+		m_transform = transform;
 	}
 
 	private bool TimerPaused
 	{
 		get
 		{
-			return this.m_timedTrigger && this.m_timedTrigger.Paused;
+			return m_timedTrigger && m_timedTrigger.Paused;
 		}
 		set
 		{
-			if (this.m_timedTrigger)
+			if (m_timedTrigger)
 			{
-				this.m_timedTrigger.Paused = value;
+				m_timedTrigger.Paused = value;
 			}
 		}
 	}
 
 	public void OnDisable()
 	{
-		this.TimerPaused = false;
+		TimerPaused = false;
 	}
 
 	public void OnTimedTrigger()
 	{
-		this.SpawnProjectile();
+		SpawnProjectile();
 	}
 
 	public Projectile SpawnProjectile()
 	{
-		this.TimeSinceLastShot = 0f;
-		GameObject gameObject = InstantiateUtility.Instantiate(this.Projectile) as GameObject;
-		gameObject.transform.SetParentMaintainingLocalTransform(base.transform.root);
-		this.m_lastProjectile = gameObject;
-		gameObject.transform.position = base.transform.position;
+		TimeSinceLastShot = 0f;
+		GameObject gameObject = InstantiateUtility.Instantiate(Projectile) as GameObject;
+		gameObject.transform.SetParentMaintainingLocalTransform(transform.root);
+		m_lastProjectile = gameObject;
+		gameObject.transform.position = transform.position;
 		Projectile component = gameObject.GetComponent<Projectile>();
-		component.Speed = this.Speed;
-		component.Direction = this.Direction;
-		if (this.Direction == Vector3.zero)
+		component.Speed = Speed;
+		component.Direction = Direction;
+		if (Direction == Vector3.zero)
 		{
-			component.Direction = base.transform.up;
+			component.Direction = transform.up;
 		}
-		component.Gravity = this.Gravity;
-		if (this.Owner)
+		component.Gravity = Gravity;
+		if (Owner)
 		{
-			component.Owner = this.Owner;
+			component.Owner = Owner;
 		}
-		if (this.SpawnSound)
+		if (SpawnSound)
 		{
-			Sound.Play(this.SpawnSound, base.transform.position, null, this.SpawnSoundVolume, null);
+			Sound.Play(SpawnSound, transform.position, null, SpawnSoundVolume, null);
 		}
 		return component;
 	}
 
 	public void AimAt(Transform target)
 	{
-		this.Direction = (target.position - this.m_transform.position).normalized;
+		Direction = (target.position - m_transform.position).normalized;
 	}
 
 	public override void Serialize(Archive ar)
@@ -100,27 +99,27 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable
 
 	public void FixedUpdate()
 	{
-		if (this.IsSuspended)
+		if (IsSuspended)
 		{
 			return;
 		}
-		if (this.trueTimedDuration != null)
+		if (trueTimedDuration != null)
 		{
-			this.m_timedTrigger.Duration = this.trueTimedDuration.Value / RandomizerBonusSkill.TimeScale(1f);
+			m_timedTrigger.Duration = trueTimedDuration.Value / RandomizerBonusSkill.TimeScale(1f);
 		}
-		if (InstantiateUtility.IsDestroyed(this.m_lastProjectile))
+		if (InstantiateUtility.IsDestroyed(m_lastProjectile))
 		{
-			this.m_lastProjectile = null;
+			m_lastProjectile = null;
 		}
-		if (this.WaitForProjectileToBeDestroyed && !this.TimerPaused && this.m_lastProjectile != null)
+		if (WaitForProjectileToBeDestroyed && !TimerPaused && m_lastProjectile != null)
 		{
-			this.TimerPaused = true;
+			TimerPaused = true;
 		}
-		if (this.WaitForProjectileToBeDestroyed && this.TimerPaused && this.m_lastProjectile == null)
+		if (WaitForProjectileToBeDestroyed && TimerPaused && m_lastProjectile == null)
 		{
-			this.TimerPaused = false;
+			TimerPaused = false;
 		}
-		this.TimeSinceLastShot += Time.deltaTime;
+		TimeSinceLastShot += Time.deltaTime;
 	}
 
 	public bool IsSuspended { get; set; }

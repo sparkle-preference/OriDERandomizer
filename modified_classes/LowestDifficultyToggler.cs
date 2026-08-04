@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 public class LowestDifficultyToggler : MonoBehaviour, IDebugMenuToggleable
@@ -23,7 +22,7 @@ public class LowestDifficultyToggler : MonoBehaviour, IDebugMenuToggleable
 	{
 		get
 		{
-			return new string[]
+			return new[]
 			{
 				RandomizerText.DifficultyOverrides.Easy.NameOverride.ToString(),
 				RandomizerText.DifficultyOverrides.Normal.NameOverride.ToString(),
@@ -41,7 +40,7 @@ public class LowestDifficultyToggler : MonoBehaviour, IDebugMenuToggleable
 		}
 		set
 		{
-			DifficultyController.Instance.LowestDifficulty = (DifficultyMode)((value % this.ToggleOptions.Length + this.ToggleOptions.Length) % this.ToggleOptions.Length);
+			DifficultyController.Instance.LowestDifficulty = (DifficultyMode)((value % ToggleOptions.Length + ToggleOptions.Length) % ToggleOptions.Length);
 		}
 	}
 

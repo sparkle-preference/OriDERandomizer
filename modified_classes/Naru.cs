@@ -1,4 +1,3 @@
-using System;
 using Game;
 using UnityEngine;
 
@@ -27,24 +26,24 @@ public class Naru : MonoBehaviour, ICharacter
 	{
 		get
 		{
-			return base.transform.position;
+			return transform.position;
 		}
 		set
 		{
-			base.transform.position = value;
+			transform.position = value;
 		}
 	}
 
 	public void Activate(bool active)
 	{
-		base.gameObject.SetActive(active);
+		gameObject.SetActive(active);
 	}
 
 	public GameObject GameObject
 	{
 		get
 		{
-			return base.gameObject;
+			return gameObject;
 		}
 	}
 
@@ -52,11 +51,11 @@ public class Naru : MonoBehaviour, ICharacter
 	{
 		get
 		{
-			return this.Animation.SpriteMirror.FaceLeft;
+			return Animation.SpriteMirror.FaceLeft;
 		}
 		set
 		{
-			this.Animation.SpriteMirror.FaceLeft = value;
+			Animation.SpriteMirror.FaceLeft = value;
 		}
 	}
 
@@ -64,11 +63,11 @@ public class Naru : MonoBehaviour, ICharacter
 	{
 		get
 		{
-			return this.PlatformBehaviour.PlatformMovement.LocalSpeed;
+			return PlatformBehaviour.PlatformMovement.LocalSpeed;
 		}
 		set
 		{
-			this.PlatformBehaviour.PlatformMovement.LocalSpeed = value;
+			PlatformBehaviour.PlatformMovement.LocalSpeed = value;
 		}
 	}
 
@@ -76,7 +75,7 @@ public class Naru : MonoBehaviour, ICharacter
 	{
 		get
 		{
-			return base.transform;
+			return transform;
 		}
 	}
 
@@ -84,13 +83,13 @@ public class Naru : MonoBehaviour, ICharacter
 	{
 		get
 		{
-			return this.PlatformBehaviour.PlatformMovement.IsOnGround;
+			return PlatformBehaviour.PlatformMovement.IsOnGround;
 		}
 	}
 
 	public void PlaceOnGround()
 	{
-		this.PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
+		PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
 	}
 
 	public CharacterAnimationSystem Animation;

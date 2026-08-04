@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Game;
 using UnityEngine;
@@ -11,9 +10,9 @@ public class SkillItem : MonoBehaviour
 		{
 			if (DifficultyController.Instance.Difficulty == DifficultyMode.Hard)
 			{
-				return this.RequiredHardSkillPoints;
+				return RequiredHardSkillPoints;
 			}
-			return this.RequiredSkillPoints;
+			return RequiredSkillPoints;
 		}
 	}
 
@@ -23,9 +22,9 @@ public class SkillItem : MonoBehaviour
 		{
 			if (DifficultyController.Instance.Difficulty == DifficultyMode.Hard)
 			{
-				return this.TotalRequiredHardSkillPoints;
+				return TotalRequiredHardSkillPoints;
 			}
-			return this.TotalRequiredSkillPoints;
+			return TotalRequiredSkillPoints;
 		}
 	}
 
@@ -33,11 +32,11 @@ public class SkillItem : MonoBehaviour
 	{
 		get
 		{
-			return this.m_totalRequiredHardPoints;
+			return m_totalRequiredHardPoints;
 		}
 		set
 		{
-			this.m_totalRequiredHardPoints = value;
+			m_totalRequiredHardPoints = value;
 		}
 	}
 
@@ -45,11 +44,11 @@ public class SkillItem : MonoBehaviour
 	{
 		get
 		{
-			return this.m_totalRequiredPoints;
+			return m_totalRequiredPoints;
 		}
 		set
 		{
-			this.m_totalRequiredPoints = value;
+			m_totalRequiredPoints = value;
 		}
 	}
 
@@ -71,7 +70,7 @@ public class SkillItem : MonoBehaviour
 	{
 		get
 		{
-			return this.RequiredAbilities.Count != 0 || this.RequiredItems.Count != 0;
+			return RequiredAbilities.Count != 0 || RequiredItems.Count != 0;
 		}
 	}
 
@@ -79,7 +78,7 @@ public class SkillItem : MonoBehaviour
 	{
 		get
 		{
-			return this.ActualRequiredSkillPoints <= Characters.Sein.Level.SkillPoints;
+			return ActualRequiredSkillPoints <= Characters.Sein.Level.SkillPoints;
 		}
 	}
 
@@ -87,7 +86,7 @@ public class SkillItem : MonoBehaviour
 	{
 		get
 		{
-			using (List<SkillItem>.Enumerator enumerator = this.RequiredItems.GetEnumerator())
+			using (List<SkillItem>.Enumerator enumerator = RequiredItems.GetEnumerator())
 			{
 				while (enumerator.MoveNext())
 				{
@@ -103,52 +102,52 @@ public class SkillItem : MonoBehaviour
 
 	public void Awake()
 	{
-		this.m_animator = this.Icon.GetComponent<TransparencyAnimator>();
+		m_animator = Icon.GetComponent<TransparencyAnimator>();
 	}
 
 	public bool CanEarnSkill
 	{
 		get
 		{
-			return this.SoulRequirementMet && this.AbilitiesRequirementMet;
+			return SoulRequirementMet && AbilitiesRequirementMet;
 		}
 	}
 
 	public void FixedUpdate()
 	{
-		this.UpdateItem();
+		UpdateItem();
 	}
 
 	public void UpdateItem()
 	{
-		this.LearntSkillGlow.SetActive(this.HasSkillItem && this.Visible);
-		this.Icon.gameObject.SetActive(this.Visible);
-		if (this.HasSkillItem == this.m_animator.AnimatorDriver.IsReversed)
+		LearntSkillGlow.SetActive(HasSkillItem && Visible);
+		Icon.gameObject.SetActive(Visible);
+		if (HasSkillItem == m_animator.AnimatorDriver.IsReversed)
 		{
-			this.m_animator.Initialize();
-			if (this.HasSkillItem)
+			m_animator.Initialize();
+			if (HasSkillItem)
 			{
-				this.m_animator.AnimatorDriver.ContinueForward();
+				m_animator.AnimatorDriver.ContinueForward();
 			}
 			else
 			{
-				this.m_animator.AnimatorDriver.ContinueBackwards();
+				m_animator.AnimatorDriver.ContinueBackwards();
 			}
 		}
 	}
 
 	public void OnEnable()
 	{
-		this.HasSkillItem = Characters.Sein.PlayerAbilities.HasAbility(this.Ability);
-		this.UpdateItem();
-		this.m_animator.Initialize();
-		if (this.HasSkillItem)
+		HasSkillItem = Characters.Sein.PlayerAbilities.HasAbility(Ability);
+		UpdateItem();
+		m_animator.Initialize();
+		if (HasSkillItem)
 		{
-			this.m_animator.AnimatorDriver.GoToEnd();
+			m_animator.AnimatorDriver.GoToEnd();
 		}
 		else
 		{
-			this.m_animator.AnimatorDriver.GoToStart();
+			m_animator.AnimatorDriver.GoToStart();
 		}
 	}
 
@@ -156,7 +155,7 @@ public class SkillItem : MonoBehaviour
 	{
 		get
 		{
-			return RandomizerText.GetAbilityName(this.Ability) ?? NameMessageProvider;
+			return RandomizerText.GetAbilityName(Ability) ?? NameMessageProvider;
 		}
 	}
 
@@ -164,7 +163,7 @@ public class SkillItem : MonoBehaviour
 	{
 		get
 		{
-			return RandomizerText.GetAbilityDescription(this.Ability) ?? DescriptionMessageProvider;
+			return RandomizerText.GetAbilityDescription(Ability) ?? DescriptionMessageProvider;
 		}
 	}
 
@@ -194,7 +193,7 @@ public class SkillItem : MonoBehaviour
 
 	public bool HasSkillItem;
 
-	private int m_totalRequiredPoints = 0;
+	private int m_totalRequiredPoints;
 
-	private int m_totalRequiredHardPoints = 0;
+	private int m_totalRequiredHardPoints;
 }

@@ -1,32 +1,30 @@
-using System;
 using System.Collections.Generic;
-using Game;
-using UnityEngine;
 using RandoExts;
+using UnityEngine;
 
 public static class RandomizerText
 {
 	public static RandomizerMessageProvider GetAbilityName(AbilityType ability)
 	{
-		if (!RandomizerText.m_abilityOverrides.ContainsKey(ability))
+		if (!m_abilityOverrides.ContainsKey(ability))
 		{
 			return null;
 		}
-		return RandomizerText.m_abilityOverrides[ability].NameOverride;
+		return m_abilityOverrides[ability].NameOverride;
 	}
 
 	public static RandomizerMessageProvider GetAbilityDescription(AbilityType ability)
 	{
-		if (!RandomizerText.m_abilityOverrides.ContainsKey(ability))
+		if (!m_abilityOverrides.ContainsKey(ability))
 		{
 			return null;
 		}
-		return RandomizerText.m_abilityOverrides[ability].DescriptionOverride;
+		return m_abilityOverrides[ability].DescriptionOverride;
 	}
 
 	public static string MapFilterText {
 		get {
-			var text = $"Current Filter ({RandomizerRebinding.ToggleMapMode.FirstBindName()}): *{RandomizerSettings.CurrentFilter.Desc()}*"; 
+			var text = $"Current Filter ({RandomizerRebinding.ToggleMapMode.FirstBindName()}): *{RandomizerSettings.CurrentFilter.Desc()}*";
 			if(RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.InLogic) {
 				if(RandomizerLocationManager.Areas == null)
 					return $"{text}\n@Logic filter unavailable; areas.ori missing@";
@@ -66,55 +64,55 @@ public static class RandomizerText
 		switch (mode)
 		{
 		case DifficultyMode.Easy:
-			return RandomizerText.DifficultyOverrides.Easy.NameOverride;
+			return DifficultyOverrides.Easy.NameOverride;
 		case DifficultyMode.Normal:
-			return RandomizerText.DifficultyOverrides.Normal.NameOverride;
+			return DifficultyOverrides.Normal.NameOverride;
 		case DifficultyMode.Hard:
-			return RandomizerText.DifficultyOverrides.Hard.NameOverride;
+			return DifficultyOverrides.Hard.NameOverride;
 		case DifficultyMode.OneLife:
-			return RandomizerText.DifficultyOverrides.OneLife.NameOverride;
+			return DifficultyOverrides.OneLife.NameOverride;
 		default:
 			return null;
 		}
 	}
 
-	private static Dictionary<AbilityType, RandomizerText.AbilityTextOverrides> m_abilityOverrides = new Dictionary<AbilityType, RandomizerText.AbilityTextOverrides>
+	private static Dictionary<AbilityType, AbilityTextOverrides> m_abilityOverrides = new Dictionary<AbilityType, AbilityTextOverrides>
 	{
 		{
 			AbilityType.ChargeFlameEfficiency,
-			new RandomizerText.AbilityTextOverrides(null, "Allows Charge Flame to be performed without spending Energy")
+			new AbilityTextOverrides(null, "Allows Charge Flame to be performed without spending Energy")
 		},
 		{
 			AbilityType.ChargeDash,
-			new RandomizerText.AbilityTextOverrides(null, "Allows Ori to Charge Dash ([ChargeJumpCharge]) to attack enemies or break blue plants and walls")
+			new AbilityTextOverrides(null, "Allows Ori to Charge Dash ([ChargeJumpCharge]) to attack enemies or break blue plants and walls")
 		},
 		{
 			AbilityType.MapMarkers,
-			new RandomizerText.AbilityTextOverrides("Maphacks", "Reveal the entire world map")
+			new AbilityTextOverrides("Maphacks", "Reveal the entire world map")
 		},
 		{
 			AbilityType.HealthEfficiency,
-			new RandomizerText.AbilityTextOverrides("Health Efficiency", "Health pickups will restore twice as much Health")
+			new AbilityTextOverrides("Health Efficiency", "Health pickups will restore twice as much Health")
 		},
 		{
 			AbilityType.AbilityMarkers,
-			new RandomizerText.AbilityTextOverrides("Spirit Efficiency", "Increases all sources of Spirit Light by 50%")
+			new AbilityTextOverrides("Spirit Efficiency", "Increases all sources of Spirit Light by 50%")
 		},
 		{
 			AbilityType.SoulEfficiency,
-			new RandomizerText.AbilityTextOverrides("Spirit Potency", "Increases all sources of Spirit Light by an additional 50%")
+			new AbilityTextOverrides("Spirit Potency", "Increases all sources of Spirit Light by an additional 50%")
 		},
 		{
 			AbilityType.HealthMarkers,
-			new RandomizerText.AbilityTextOverrides("Health Recovery", "Ori's Health will gradually refill (2 per minute)")
+			new AbilityTextOverrides("Health Recovery", "Ori's Health will gradually refill (2 per minute)")
 		},
 		{
 			AbilityType.EnergyMarkers,
-			new RandomizerText.AbilityTextOverrides("Energy Recovery", "Ori's Energy will gradually refill (2 per minute)")
+			new AbilityTextOverrides("Energy Recovery", "Ori's Energy will gradually refill (2 per minute)")
 		},
 		{
 			AbilityType.Sense,
-			new RandomizerText.AbilityTextOverrides("Sense Items", "Causes Ori to change color when approaching important items")
+			new AbilityTextOverrides("Sense Items", "Causes Ori to change color when approaching important items")
 		}
 	};
 
@@ -128,14 +126,14 @@ public static class RandomizerText
 		{
 			if (name != null)
 			{
-				this.NameOverride = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
-				this.NameOverride.SetMessage(name);
+				NameOverride = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
+				NameOverride.SetMessage(name);
 			}
 			
 			if (description != null)
 			{
-				this.DescriptionOverride = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
-				this.DescriptionOverride.SetMessage(description);
+				DescriptionOverride = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
+				DescriptionOverride.SetMessage(description);
 			}
 		}
 

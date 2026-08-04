@@ -1,22 +1,20 @@
-using System;
-
 public class MusicVolumeSlider : CleverValueSlider
 {
 	public override float Value
 	{
 		get
 		{
-			if (this.Setting != null)
+			if (Setting != null)
 			{
-				return this.Setting.Value;
+				return Setting.Value;
 			}
 			return GameSettings.Instance.MusicVolume;
 		}
 		set
 		{
-			if (this.Setting != null)
+			if (Setting != null)
 			{
-				this.Setting.Value = value;
+				Setting.Value = value;
 				RandomizerSettings.SetDirty();
 				return;
 			}

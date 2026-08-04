@@ -2,6 +2,7 @@ using System;
 using Core;
 using Game;
 using UnityEngine;
+using Input = Core.Input;
 
 internal class BashAttackGame : Suspendable, IPooled
 {
@@ -11,37 +12,37 @@ internal class BashAttackGame : Suspendable, IPooled
 
 	public void OnPoolSpawned()
 	{
-		this.m_bashLoopingAudioSource = null;
-		this.m_keyboardSpeed = 0f;
-		this.m_keyboardAngle = 0f;
-		this.m_keyboardClockwise = false;
-		this.m_mode = BashAttackGame.Modes.Keyboard;
-		this.m_currentState = BashAttackGame.State.Appearing;
-		this.Angle = 0f;
-		this.m_stateCurrentTime = 0f;
-		this.m_nextBashLoopPlayedTime = 0f;
-		this.BashAttackCritical.enabled = true;
-		this.IsSuspended = false;
-		this.BashGameComplete = null;
+		m_bashLoopingAudioSource = null;
+		m_keyboardSpeed = 0f;
+		m_keyboardAngle = 0f;
+		m_keyboardClockwise = false;
+		m_mode = Modes.Keyboard;
+		m_currentState = State.Appearing;
+		Angle = 0f;
+		m_stateCurrentTime = 0f;
+		m_nextBashLoopPlayedTime = 0f;
+		BashAttackCritical.enabled = true;
+		IsSuspended = false;
+		BashGameComplete = null;
 	}
 
-	public void ChangeState(BashAttackGame.State state)
+	public void ChangeState(State state)
 	{
-		this.m_currentState = state;
-		this.m_stateCurrentTime = 0f;
+		m_currentState = state;
+		m_stateCurrentTime = 0f;
 		switch (state)
 		{
-		case BashAttackGame.State.Appearing:
-			this.BashAttackCritical.enabled = false;
+		case State.Appearing:
+			BashAttackCritical.enabled = false;
 			return;
-		case BashAttackGame.State.Playing:
-			this.BashAttackCritical.enabled = true;
+		case State.Playing:
+			BashAttackCritical.enabled = true;
 			return;
-		case BashAttackGame.State.Disappearing:
-			this.BashAttackCritical.enabled = false;
-			if (this.m_bashLoopingAudioSource)
+		case State.Disappearing:
+			BashAttackCritical.enabled = false;
+			if (m_bashLoopingAudioSource)
 			{
-				InstantiateUtility.Destroy(this.m_bashLoopingAudioSource.gameObject);
+				InstantiateUtility.Destroy(m_bashLoopingAudioSource.gameObject);
 			}
 			return;
 		default:
@@ -51,167 +52,167 @@ internal class BashAttackGame : Suspendable, IPooled
 
 	public void UpdateMode()
 	{
-		if (Core.Input.AnalogAxisLeft.magnitude > 0.2f)
+		if (Input.AnalogAxisLeft.magnitude > 0.2f)
 		{
-			this.m_mode = BashAttackGame.Modes.Controller;
+			m_mode = Modes.Controller;
 			return;
 		}
-		if (Core.Input.CursorMoved || GameSettings.Instance.CurrentControlScheme == ControlScheme.KeyboardAndMouse)
+		if (Input.CursorMoved || GameSettings.Instance.CurrentControlScheme == ControlScheme.KeyboardAndMouse)
 		{
-			this.m_mode = BashAttackGame.Modes.Mouse;
+			m_mode = Modes.Mouse;
 			return;
 		}
-		if (Core.Input.DigiPadAxis.magnitude > 0.2f && this.m_mode != BashAttackGame.Modes.Mouse)
+		if (Input.DigiPadAxis.magnitude > 0.2f && m_mode != Modes.Mouse)
 		{
-			this.m_mode = BashAttackGame.Modes.Keyboard;
+			m_mode = Modes.Keyboard;
 		}
 	}
 
 	public void FixedUpdate()
 	{
-		if (this.IsSuspended)
+		if (IsSuspended)
 		{
 			return;
 		}
-		if (this.m_currentState != BashAttackGame.State.Disappearing)
+		if (m_currentState != State.Disappearing)
 		{
-			this.UpdateMode();
-			switch (this.m_mode)
+			UpdateMode();
+			switch (m_mode)
 			{
-			case BashAttackGame.Modes.Mouse:
+			case Modes.Mouse:
 			{
-				Vector2 v = UI.Cameras.Current.Camera.WorldToScreenPoint(base.transform.position);
+				Vector2 v = UI.Cameras.Current.Camera.WorldToScreenPoint(transform.position);
 				Vector2 b = UI.Cameras.System.GUICamera.ScreenToWorldPoint(v);
-				Vector2 vector = Core.Input.CursorPositionUI - b;
+				Vector2 vector = Input.CursorPositionUI - b;
 				if (vector.magnitude > 0.001f)
 				{
 					vector.Normalize();
-					this.Angle = Mathf.LerpAngle(this.Angle, Mathf.Atan2(-vector.x, vector.y) * 57.29578f, 0.5f);
+					Angle = Mathf.LerpAngle(Angle, Mathf.Atan2(-vector.x, vector.y) * 57.29578f, 0.5f);
 				}
 				break;
 			}
-			case BashAttackGame.Modes.Keyboard:
+			case Modes.Keyboard:
 			{
-				Vector2 digiPadAxis = Core.Input.DigiPadAxis;
-				if ((double)digiPadAxis.magnitude > 0.2)
+				Vector2 digiPadAxis = Input.DigiPadAxis;
+				if (digiPadAxis.magnitude > 0.2)
 				{
 					float target = MoonMath.Angle.AngleFromVector(digiPadAxis) - 90f;
-					float f = Mathf.DeltaAngle(this.m_keyboardAngle, target);
-					if (Mathf.Sign(f) != (float)((!this.m_keyboardClockwise) ? -1 : 1))
+					float f = Mathf.DeltaAngle(m_keyboardAngle, target);
+					if (Mathf.Sign(f) != ((!m_keyboardClockwise) ? -1 : 1))
 					{
-						this.m_keyboardClockwise = (Mathf.Sign(f) > 0f);
-						this.m_keyboardSpeed = 0f;
+						m_keyboardClockwise = (Mathf.Sign(f) > 0f);
+						m_keyboardSpeed = 0f;
 					}
-					this.m_keyboardSpeed += Mathf.Min(Mathf.Abs(f), Time.deltaTime * 2000f);
-					this.m_keyboardAngle = Mathf.MoveTowardsAngle(this.m_keyboardAngle, target, this.m_keyboardSpeed * Time.deltaTime);
+					m_keyboardSpeed += Mathf.Min(Mathf.Abs(f), Time.deltaTime * 2000f);
+					m_keyboardAngle = Mathf.MoveTowardsAngle(m_keyboardAngle, target, m_keyboardSpeed * Time.deltaTime);
 				}
 				else
 				{
-					this.m_keyboardSpeed = 0f;
+					m_keyboardSpeed = 0f;
 				}
-				this.Angle = Mathf.LerpAngle(this.Angle, this.m_keyboardAngle, 0.5f);
+				Angle = Mathf.LerpAngle(Angle, m_keyboardAngle, 0.5f);
 				break;
 			}
-			case BashAttackGame.Modes.Controller:
+			case Modes.Controller:
 			{
-				Vector2 vector2 = Core.Input.AnalogAxisLeft;
+				Vector2 vector2 = Input.AnalogAxisLeft;
 				float sqrMagnitude = vector2.sqrMagnitude;
 				if (sqrMagnitude > RandomizerSettings.Controls.BashDeadzone)
 				{
 					vector2 /= Mathf.Sqrt(sqrMagnitude);
-					this.Angle = Mathf.LerpAngle(this.Angle, Mathf.Atan2(-vector2.x, vector2.y) * 57.29578f, 0.5f);
+					Angle = Mathf.LerpAngle(Angle, Mathf.Atan2(-vector2.x, vector2.y) * 57.29578f, 0.5f);
 				}
 				break;
 			}
 			}
 		}
-		this.ArrowSprite.transform.parent.rotation = Quaternion.Euler(0f, 0f, this.Angle);
-		this.UpdateState();
+		ArrowSprite.transform.parent.rotation = Quaternion.Euler(0f, 0f, Angle);
+		UpdateState();
 		if (Characters.Sein && !Characters.Sein.Active)
 		{
-			InstantiateUtility.Destroy(base.gameObject);
+			InstantiateUtility.Destroy(gameObject);
 		}
 	}
 
 	public void SendDirection(Vector2 direction)
 	{
-		this.m_keyboardAngle = MoonMath.Angle.AngleFromVector(direction) - 90f;
+		m_keyboardAngle = MoonMath.Angle.AngleFromVector(direction) - 90f;
 	}
 
 	public void UpdateState()
 	{
-		switch (this.m_currentState)
+		switch (m_currentState)
 		{
-		case BashAttackGame.State.Appearing:
-			this.UpdateAppearingState();
+		case State.Appearing:
+			UpdateAppearingState();
 			break;
-		case BashAttackGame.State.Playing:
-			this.UpdatePlayingState();
+		case State.Playing:
+			UpdatePlayingState();
 			break;
-		case BashAttackGame.State.Disappearing:
-			this.UpdateDisappearingState();
+		case State.Disappearing:
+			UpdateDisappearingState();
 			break;
 		}
-		this.m_stateCurrentTime += Time.deltaTime;
+		m_stateCurrentTime += Time.deltaTime;
 	}
 
 	private void UpdateDisappearingState()
 	{
-		float time = Mathf.Clamp01(this.m_stateCurrentTime / this.DisappearTime);
-		this.ArrowSprite.localScale = this.m_originalArrowScale * this.ArrowDisappearScaleCurve.Evaluate(time);
-		InstantiateUtility.Destroy(base.gameObject, 1f);
+		float time = Mathf.Clamp01(m_stateCurrentTime / DisappearTime);
+		ArrowSprite.localScale = m_originalArrowScale * ArrowDisappearScaleCurve.Evaluate(time);
+		InstantiateUtility.Destroy(gameObject, 1f);
 	}
 
 	private void UpdatePlayingState()
 	{
-		if (this.m_nextBashLoopPlayedTime <= this.m_stateCurrentTime)
+		if (m_nextBashLoopPlayedTime <= m_stateCurrentTime)
 		{
-			this.m_bashLoopingAudioSource = Sound.Play((!Characters.Sein.PlayerAbilities.BashBuff.HasAbility) ? Characters.Sein.Abilities.Bash.BashLoopSound.GetSound(null) : Characters.Sein.Abilities.Bash.UpgradedBashLoopSound.GetSound(null), base.transform.position, delegate()
+			m_bashLoopingAudioSource = Sound.Play((!Characters.Sein.PlayerAbilities.BashBuff.HasAbility) ? Characters.Sein.Abilities.Bash.BashLoopSound.GetSound(null) : Characters.Sein.Abilities.Bash.UpgradedBashLoopSound.GetSound(null), transform.position, delegate
 			{
-				this.m_bashLoopingAudioSource = null;
+				m_bashLoopingAudioSource = null;
 			});
-			if (!InstantiateUtility.IsDestroyed(this.m_bashLoopingAudioSource))
+			if (!InstantiateUtility.IsDestroyed(m_bashLoopingAudioSource))
 			{
-				this.m_nextBashLoopPlayedTime = this.m_stateCurrentTime + this.m_bashLoopingAudioSource.Length;
+				m_nextBashLoopPlayedTime = m_stateCurrentTime + m_bashLoopingAudioSource.Length;
 			}
 		}
-		if (this.BashAttackCritical.CurrentState == BashAttackCritical.State.Finished)
+		if (BashAttackCritical.CurrentState == BashAttackCritical.State.Finished)
 		{
-			this.GameFinished();
+			GameFinished();
 		}
-		if (this.ButtonBash.Released || (RandomizerRebinding.DoubleBash.Pressed && Randomizer.BashTap))
+		if (ButtonBash.Released || (RandomizerRebinding.DoubleBash.Pressed && Randomizer.BashTap))
 		{
-			this.GameFinished();
+			GameFinished();
 		}
 	}
 
 	private void UpdateAppearingState()
 	{
-		float num = Mathf.Clamp01(this.m_stateCurrentTime / this.AppearTime);
-		this.ArrowSprite.localScale = this.m_originalArrowScale * this.ArrowAppearScaleCurve.Evaluate(num);
+		float num = Mathf.Clamp01(m_stateCurrentTime / AppearTime);
+		ArrowSprite.localScale = m_originalArrowScale * ArrowAppearScaleCurve.Evaluate(num);
 		if (num == 1f)
 		{
-			this.ChangeState(BashAttackGame.State.Playing);
+			ChangeState(State.Playing);
 		}
 	}
 
 	public new void Awake()
 	{
 		base.Awake();
-		this.m_originalArrowScale = this.ArrowSprite.localScale;
+		m_originalArrowScale = ArrowSprite.localScale;
 	}
 
 	public void Start()
 	{
-		this.ChangeState(this.m_currentState);
-		this.ArrowSprite.localScale = Vector3.zero;
+		ChangeState(m_currentState);
+		ArrowSprite.localScale = Vector3.zero;
 	}
 
 	private void GameFinished()
 	{
-		Sound.Play((!Characters.Sein.PlayerAbilities.BashBuff.HasAbility) ? Characters.Sein.Abilities.Bash.BashEndSound.GetSound(null) : Characters.Sein.Abilities.Bash.UpgradedBashEndSound.GetSound(null), base.transform.position, null);
-		this.BashGameComplete(this.Angle);
-		this.ChangeState(BashAttackGame.State.Disappearing);
+		Sound.Play((!Characters.Sein.PlayerAbilities.BashBuff.HasAbility) ? Characters.Sein.Abilities.Bash.BashEndSound.GetSound(null) : Characters.Sein.Abilities.Bash.UpgradedBashEndSound.GetSound(null), transform.position, null);
+		BashGameComplete(Angle);
+		ChangeState(State.Disappearing);
 		if (RandomizerRebinding.DoubleBash.Pressed && !Randomizer.BashWasQueued)
 		{
 			Randomizer.QueueBash = true;
@@ -219,11 +220,11 @@ internal class BashAttackGame : Suspendable, IPooled
 		Randomizer.BashWasQueued = false;
 	}
 
-	public Core.Input.InputButtonProcessor ButtonBash
+	public Input.InputButtonProcessor ButtonBash
 	{
 		get
 		{
-			return Core.Input.Bash;
+			return Input.Bash;
 		}
 	}
 
@@ -243,7 +244,7 @@ internal class BashAttackGame : Suspendable, IPooled
 
 	public AnimationCurve ArrowDisappearScaleCurve;
 
-	private BashAttackGame.State m_currentState;
+	private State m_currentState;
 
 	private float m_stateCurrentTime;
 
@@ -259,7 +260,7 @@ internal class BashAttackGame : Suspendable, IPooled
 
 	private bool m_keyboardClockwise;
 
-	private BashAttackGame.Modes m_mode = BashAttackGame.Modes.Keyboard;
+	private Modes m_mode = Modes.Keyboard;
 
 	public enum State
 	{

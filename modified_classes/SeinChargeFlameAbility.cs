@@ -4,6 +4,7 @@ using Core;
 using fsm;
 using Game;
 using UnityEngine;
+using Input = Core.Input;
 
 public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 {
@@ -11,7 +12,7 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.ChargeFlameSettings.ChargeDuration;
+			return ChargeFlameSettings.ChargeDuration;
 		}
 	}
 
@@ -19,203 +20,202 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.m_sein.Energy.CanAfford(this.m_sein.PlayerAbilities.ChargeFlameEfficiency.HasAbility ? 0f : 0.5f);
+			return m_sein.Energy.CanAfford(m_sein.PlayerAbilities.ChargeFlameEfficiency.HasAbility ? 0f : 0.5f);
 		}
 	}
 
 	public void SpendEnergy()
 	{
-		this.m_sein.Energy.Spend(this.m_sein.PlayerAbilities.ChargeFlameEfficiency.HasAbility ? 0f : 0.5f);
+		m_sein.Energy.Spend(m_sein.PlayerAbilities.ChargeFlameEfficiency.HasAbility ? 0f : 0.5f);
 	}
 
 	public void RestoreEnergy()
 	{
-		this.m_sein.Energy.Gain(this.m_sein.PlayerAbilities.ChargeFlameEfficiency.HasAbility ? 0f : 0.5f);
+		m_sein.Energy.Gain(m_sein.PlayerAbilities.ChargeFlameEfficiency.HasAbility ? 0f : 0.5f);
 	}
 
 	public override void Awake()
 	{
 		base.Awake();
-		this.State.Start = new State
+		State.Start = new State
 		{
-			UpdateStateEvent = new Action(this.UpdateStartState),
-			OnEnterEvent = new Action(this.OnEnterStartState)
+			UpdateStateEvent = UpdateStartState,
+			OnEnterEvent = OnEnterStartState
 		};
-		this.State.Precharging = new State
+		State.Precharging = new State
 		{
-			UpdateStateEvent = new Action(this.UpdatePrechargingState)
+			UpdateStateEvent = UpdatePrechargingState
 		};
-		this.State.Charging = new State
+		State.Charging = new State
 		{
-			UpdateStateEvent = new Action(this.UpdateChargingState)
+			UpdateStateEvent = UpdateChargingState
 		};
-		this.State.Charged = new State
+		State.Charged = new State
 		{
-			UpdateStateEvent = new Action(this.UpdateChargedState),
-			OnEnterEvent = new Action(this.OnEnterChargedState)
+			UpdateStateEvent = UpdateChargedState,
+			OnEnterEvent = OnEnterChargedState
 		};
-		this.Logic.RegisterStates(new IState[]
-		{
-			this.State.Start,
-			this.State.Precharging,
-			this.State.Charging,
-			this.State.Charged
-		});
-		this.Logic.ChangeState(this.State.Start);
-		Game.Checkpoint.Events.OnPostRestore.Add(new Action(this.OnRestoreCheckpoint));
+		Logic.RegisterStates(
+			State.Start,
+		State.Precharging,
+		State.Charging,
+		State.Charged
+		);
+		Logic.ChangeState(State.Start);
+		Game.Checkpoint.Events.OnPostRestore.Add(OnRestoreCheckpoint);
 	}
 
 	public void OnRestoreCheckpoint()
 	{
-		if (this.m_chargeFlameChargeEffect)
+		if (m_chargeFlameChargeEffect)
 		{
-			InstantiateUtility.Destroy(this.m_chargeFlameChargeEffect);
+			InstantiateUtility.Destroy(m_chargeFlameChargeEffect);
 		}
-		if (this.CurrentChargingSound())
+		if (CurrentChargingSound())
 		{
-			this.CurrentChargingSound().StopAndFadeOut(0.5f);
+			CurrentChargingSound().StopAndFadeOut(0.5f);
 		}
-		this.Logic.ChangeState(this.State.Start);
+		Logic.ChangeState(State.Start);
 	}
 
 	public void OnEnterStartState()
 	{
-		if (this.m_chargeFlameChargeEffect)
+		if (m_chargeFlameChargeEffect)
 		{
-			InstantiateUtility.Destroy(this.m_chargeFlameChargeEffect);
+			InstantiateUtility.Destroy(m_chargeFlameChargeEffect);
 		}
 	}
 
 	public void UpdateStartState()
 	{
-		if (this.m_chargeFlameChargeEffect)
+		if (m_chargeFlameChargeEffect)
 		{
-			InstantiateUtility.Destroy(this.m_chargeFlameChargeEffect);
+			InstantiateUtility.Destroy(m_chargeFlameChargeEffect);
 		}
-		if (this.m_sein.Controller.IsBashing)
+		if (m_sein.Controller.IsBashing)
 		{
 			return;
 		}
 
-		bool pressed = this.ChargeFlameButton.OnPressed && !this.ChargeFlameButton.Used;
+		bool pressed = ChargeFlameButton.OnPressed && !ChargeFlameButton.Used;
 
 		if (RandomizerSettings.Controls.Autofire == RandomizerSettings.AutofireMode.Hold && !RandomizerRebinding.SuppressAutofire.Pressed)
 		{
 			pressed = false;
 		}
 
-		if (pressed && this.m_sein.PlayerAbilities.ChargeFlame.HasAbility && !this.m_sein.Controller.InputLocked && !this.m_sein.Abilities.SpiritFlame.LockShootingSpiritFlame)
+		if (pressed && m_sein.PlayerAbilities.ChargeFlame.HasAbility && !m_sein.Controller.InputLocked && !m_sein.Abilities.SpiritFlame.LockShootingSpiritFlame)
 		{
-			this.Logic.ChangeState(this.State.Precharging);
+			Logic.ChangeState(State.Precharging);
 		}
 	}
 
 	public void UpdatePrechargingState()
 	{
-		if (this.Logic.CurrentStateTime > 0.3f)
+		if (Logic.CurrentStateTime > 0.3f)
 		{
-			this.m_chargeFlameChargeEffect = (GameObject)InstantiateUtility.Instantiate(this.ChargeFlameSettings.ChargeFlameChargeEffectPrefab);
-			this.m_chargeFlameChargeEffect.transform.position = Characters.Ori.transform.position;
-			this.m_chargeFlameChargeEffect.transform.parent = Characters.Ori.transform;
-			this.m_chargeFlameChargeEffect.GetComponentsInChildren<LegacyAnimator>(SeinChargeFlameAbility.s_legacyAnimatorList);
-			for (int i = 0; i < SeinChargeFlameAbility.s_legacyAnimatorList.Count; i++)
+			m_chargeFlameChargeEffect = (GameObject)InstantiateUtility.Instantiate(ChargeFlameSettings.ChargeFlameChargeEffectPrefab);
+			m_chargeFlameChargeEffect.transform.position = Characters.Ori.transform.position;
+			m_chargeFlameChargeEffect.transform.parent = Characters.Ori.transform;
+			m_chargeFlameChargeEffect.GetComponentsInChildren(s_legacyAnimatorList);
+			for (int i = 0; i < s_legacyAnimatorList.Count; i++)
 			{
-				SeinChargeFlameAbility.s_legacyAnimatorList[i].Speed = 1f / this.ChargeDuration;
+				s_legacyAnimatorList[i].Speed = 1f / ChargeDuration;
 			}
-			SeinChargeFlameAbility.s_legacyAnimatorList.Clear();
-			if (this.CurrentChargingSound())
+			s_legacyAnimatorList.Clear();
+			if (CurrentChargingSound())
 			{
-				this.CurrentChargingSound().Play();
+				CurrentChargingSound().Play();
 			}
-			this.Logic.ChangeState(this.State.Charging);
+			Logic.ChangeState(State.Charging);
 			return;
 		}
-		if (this.ChargeFlameButton.Released)
+		if (ChargeFlameButton.Released)
 		{
-			this.Logic.ChangeState(this.State.Start);
+			Logic.ChangeState(State.Start);
 			return;
 		}
-		if (this.m_sein.Abilities.SpiritFlame.LockShootingSpiritFlame)
+		if (m_sein.Abilities.SpiritFlame.LockShootingSpiritFlame)
 		{
-			this.Logic.ChangeState(this.State.Start);
+			Logic.ChangeState(State.Start);
 			return;
 		}
-		if (this.m_sein.Controller.InputLocked)
+		if (m_sein.Controller.InputLocked)
 		{
-			this.Logic.ChangeState(this.State.Start);
+			Logic.ChangeState(State.Start);
 		}
 	}
 
 	public void UpdateChargingState()
 	{
-		if (this.ChargeFlameButton.Released || this.m_sein.Controller.InputLocked || this.m_sein.Abilities.SpiritFlame.LockShootingSpiritFlame)
+		if (ChargeFlameButton.Released || m_sein.Controller.InputLocked || m_sein.Abilities.SpiritFlame.LockShootingSpiritFlame)
 		{
-			if (this.CurrentChargingSound())
+			if (CurrentChargingSound())
 			{
-				this.CurrentChargingSound().StopAndFadeOut(0.5f);
+				CurrentChargingSound().StopAndFadeOut(0.5f);
 			}
-			this.Logic.ChangeState(this.State.Start);
+			Logic.ChangeState(State.Start);
 			return;
 		}
-		if (this.Logic.CurrentStateTime >= this.ChargeDuration)
+		if (Logic.CurrentStateTime >= ChargeDuration)
 		{
-			if (this.HasEnoughEnergy)
+			if (HasEnoughEnergy)
 			{
-				this.Logic.ChangeState(this.State.Charged);
-				this.SpendEnergy();
+				Logic.ChangeState(State.Charged);
+				SpendEnergy();
 				return;
 			}
-			if (this.CurrentChargingSound())
+			if (CurrentChargingSound())
 			{
-				this.CurrentChargingSound().StopAndFadeOut(0.5f);
+				CurrentChargingSound().StopAndFadeOut(0.5f);
 			}
-			this.Logic.ChangeState(this.State.Start);
+			Logic.ChangeState(State.Start);
 			UI.SeinUI.ShakeEnergyOrbBar();
-			if (this.NotEnoughEnergySound)
+			if (NotEnoughEnergySound)
 			{
-				Sound.Play(this.NotEnoughEnergySound.GetSound(null), base.transform.position, null);
+				Sound.Play(NotEnoughEnergySound.GetSound(null), transform.position, null);
 			}
 		}
 	}
 
 	public void ReleaseChargeBurst()
 	{
-		if (this.CurrentChargingSound())
+		if (CurrentChargingSound())
 		{
-			this.CurrentChargingSound().StopAndFadeOut(0.5f);
+			CurrentChargingSound().StopAndFadeOut(0.5f);
 		}
-		if (this.m_sein.PlayerAbilities.ChargeFlameBlast.HasAbility)
+		if (m_sein.PlayerAbilities.ChargeFlameBlast.HasAbility)
 		{
-			InstantiateUtility.Instantiate(this.ChargeFlameSettings.ChargeFlameBurstC, Characters.Ori.Position, Quaternion.identity);
+			InstantiateUtility.Instantiate(ChargeFlameSettings.ChargeFlameBurstC, Characters.Ori.Position, Quaternion.identity);
 		}
-		else if (this.m_sein.PlayerAbilities.ChargeFlameBurn.HasAbility)
+		else if (m_sein.PlayerAbilities.ChargeFlameBurn.HasAbility)
 		{
-			InstantiateUtility.Instantiate(this.ChargeFlameSettings.ChargeFlameBurstB, Characters.Ori.Position, Quaternion.identity);
+			InstantiateUtility.Instantiate(ChargeFlameSettings.ChargeFlameBurstB, Characters.Ori.Position, Quaternion.identity);
 		}
 		else
 		{
-			InstantiateUtility.Instantiate(this.ChargeFlameSettings.ChargeFlameBurstA, Characters.Ori.Position, Quaternion.identity);
+			InstantiateUtility.Instantiate(ChargeFlameSettings.ChargeFlameBurstA, Characters.Ori.Position, Quaternion.identity);
 		}
-		this.Logic.ChangeState(this.State.Start);
+		Logic.ChangeState(State.Start);
 	}
 
 	public void UpdateChargedState()
 	{
-		if (this.ChargeFlameButton.Released)
+		if (ChargeFlameButton.Released)
 		{
-			this.ReleaseChargeBurst();
+			ReleaseChargeBurst();
 			return;
 		}
 
-		if (Core.Input.SoulFlame.OnPressed)
+		if (Input.SoulFlame.OnPressed)
 		{
-			Core.Input.SoulFlame.Used = true;
-			if (this.CurrentChargingSound())
+			Input.SoulFlame.Used = true;
+			if (CurrentChargingSound())
 			{
-				this.CurrentChargingSound().StopAndFadeOut(0.5f);
+				CurrentChargingSound().StopAndFadeOut(0.5f);
 			}
 
-			foreach (var item in this.m_capturedProjectiles)
+			foreach (var item in m_capturedProjectiles)
 			{
 				if (!InstantiateUtility.IsDestroyed(item.Key as Component))
 				{
@@ -223,8 +223,8 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 				}
 			}
 
-			this.Logic.ChangeState(this.State.Start);
-			this.RestoreEnergy();
+			Logic.ChangeState(State.Start);
+			RestoreEnergy();
 			UI.SeinUI.ShakeEnergyOrbBar();
 			return;
 		}
@@ -242,18 +242,18 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 				if (attackable.CanBeChargeFlamed() && attackable is Projectile)
 				{
 					Vector3 distance = attackable.Position - Characters.Ori.transform.position;
-					if (distance.magnitude <= this.m_captureRadius)
+					if (distance.magnitude <= m_captureRadius)
 					{
-						SeinChargeFlameAbility.CapturedProjectile capturedProjectile = null;
+						CapturedProjectile capturedProjectile = null;
 
-						if (!this.m_capturedProjectiles.ContainsKey(attackable))
+						if (!m_capturedProjectiles.ContainsKey(attackable))
 						{
-							capturedProjectile = new SeinChargeFlameAbility.CapturedProjectile();
-							this.m_capturedProjectiles[attackable] = capturedProjectile;
+							capturedProjectile = new CapturedProjectile();
+							m_capturedProjectiles[attackable] = capturedProjectile;
 						}
 						else
 						{
-							capturedProjectile = this.m_capturedProjectiles[attackable];
+							capturedProjectile = m_capturedProjectiles[attackable];
 							if (!capturedProjectile.IsDestroyed)
 							{
 								continue;
@@ -268,7 +268,7 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 				}
 			}
 
-			foreach (var item in this.m_capturedProjectiles)
+			foreach (var item in m_capturedProjectiles)
 			{
 				if (InstantiateUtility.IsDestroyed(item.Key as Component))
 				{
@@ -283,7 +283,7 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 				if (direction.magnitude > 0.2f)
 				{
 					projectile.Direction = (projectile.Direction + direction).normalized;
-					projectile.Speed = Mathf.Lerp(1f, 30f, direction.magnitude / this.m_captureRadius);
+					projectile.Speed = Mathf.Lerp(1f, 30f, direction.magnitude / m_captureRadius);
 				}
 				else
 				{
@@ -294,11 +294,11 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 		}
 	}
 
-	public Core.Input.InputButtonProcessor ChargeFlameButton
+	public Input.InputButtonProcessor ChargeFlameButton
 	{
 		get
 		{
-			return Core.Input.SpiritFlame;
+			return Input.SpiritFlame;
 		}
 	}
 
@@ -306,66 +306,66 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Logic.CurrentState != this.State.Start;
+			return Logic.CurrentState != State.Start;
 		}
 	}
 
 	public override void UpdateCharacterState()
 	{
-		this.Logic.UpdateState(Time.deltaTime);
+		Logic.UpdateState(Time.deltaTime);
 	}
 
 	public void SetReferenceToSein(SeinCharacter sein)
 	{
-		this.m_sein = sein;
-		this.m_sein.Abilities.ChargeFlame = this;
+		m_sein = sein;
+		m_sein.Abilities.ChargeFlame = this;
 	}
 
 	public override void OnExit()
 	{
-		if (this.Logic.CurrentState == this.State.Precharging)
+		if (Logic.CurrentState == State.Precharging)
 		{
-			this.Logic.ChangeState(this.State.Start);
+			Logic.ChangeState(State.Start);
 		}
-		if (this.Logic.CurrentState == this.State.Charging)
+		if (Logic.CurrentState == State.Charging)
 		{
-			if (this.CurrentChargingSound())
+			if (CurrentChargingSound())
 			{
-				this.CurrentChargingSound().StopAndFadeOut(0.5f);
+				CurrentChargingSound().StopAndFadeOut(0.5f);
 			}
-			this.Logic.ChangeState(this.State.Start);
+			Logic.ChangeState(State.Start);
 		}
-		if (this.Logic.CurrentState == this.State.Charged)
+		if (Logic.CurrentState == State.Charged)
 		{
-			this.ReleaseChargeBurst();
+			ReleaseChargeBurst();
 		}
 		base.OnExit();
 	}
 
 	private SoundSource CurrentChargingSound()
 	{
-		if (this.m_sein.PlayerAbilities.ChargeFlameBlast.HasAbility)
+		if (m_sein.PlayerAbilities.ChargeFlameBlast.HasAbility)
 		{
-			return this.ChargingSoundLevelC;
+			return ChargingSoundLevelC;
 		}
-		if (this.m_sein.PlayerAbilities.ChargeFlameBurn.HasAbility)
+		if (m_sein.PlayerAbilities.ChargeFlameBurn.HasAbility)
 		{
-			return this.ChargingSoundLevelB;
+			return ChargingSoundLevelB;
 		}
-		return this.ChargingSoundLevelA;
+		return ChargingSoundLevelA;
 	}
 
 	public Dictionary<IAttackable, CapturedProjectile> CapturedProjectiles
 	{
 		get
 		{
-			return this.m_capturedProjectiles;
+			return m_capturedProjectiles;
 		}
 	}
 
 	public void OnEnterChargedState()
 	{
-		this.m_capturedProjectiles.Clear();
+		m_capturedProjectiles.Clear();
 	}
 
 	public SoundSource ChargingSoundLevelA;
@@ -378,9 +378,9 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver
 
 	public SoundProvider NotEnoughEnergySound;
 
-	public SeinChargeFlameAbility.ChargeFlameDefinitions ChargeFlameSettings;
+	public ChargeFlameDefinitions ChargeFlameSettings;
 
-	public SeinChargeFlameAbility.States State = new SeinChargeFlameAbility.States();
+	public States State = new States();
 
 	private StateMachine Logic = new StateMachine();
 

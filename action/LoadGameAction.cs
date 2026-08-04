@@ -1,5 +1,3 @@
-using System;
-
 public class LoadGameAction : ActionMethod
 {
 	public override void Perform(IContext context)

@@ -10,7 +10,7 @@ public class FloatingRockLaserEnemy : Enemy
 	{
 		if (anim && animationSystem)
 		{
-			animationSystem.Play(anim, layer, null);
+			animationSystem.Play(anim, layer);
 		}
 	}
 
@@ -18,7 +18,7 @@ public class FloatingRockLaserEnemy : Enemy
 	{
 		if (anim && animationSystem)
 		{
-			animationSystem.RestartLoop(anim, layer, null);
+			animationSystem.RestartLoop(anim, layer);
 		}
 	}
 
@@ -26,22 +26,22 @@ public class FloatingRockLaserEnemy : Enemy
 	{
 		if (anim && animationSystem)
 		{
-			animationSystem.PlayLoop(anim, layer, null, false);
+			animationSystem.PlayLoop(anim, layer);
 		}
 	}
 
 	public new void Awake()
 	{
 		base.Awake();
-		EntityDamageReciever damageReciever = this.DamageReciever;
-		damageReciever.OnModifyDamage = (EntityDamageReciever.ModifyDamageDelegate)Delegate.Combine(damageReciever.OnModifyDamage, new EntityDamageReciever.ModifyDamageDelegate(this.OnModifyDamage));
+		EntityDamageReciever damageReciever = DamageReciever;
+		damageReciever.OnModifyDamage = (EntityDamageReciever.ModifyDamageDelegate)Delegate.Combine(damageReciever.OnModifyDamage, new EntityDamageReciever.ModifyDamageDelegate(OnModifyDamage));
 	}
 
 	public new void OnDestroy()
 	{
 		base.OnDestroy();
-		EntityDamageReciever damageReciever = this.DamageReciever;
-		damageReciever.OnModifyDamage = (EntityDamageReciever.ModifyDamageDelegate)Delegate.Remove(damageReciever.OnModifyDamage, new EntityDamageReciever.ModifyDamageDelegate(this.OnModifyDamage));
+		EntityDamageReciever damageReciever = DamageReciever;
+		damageReciever.OnModifyDamage = (EntityDamageReciever.ModifyDamageDelegate)Delegate.Remove(damageReciever.OnModifyDamage, new EntityDamageReciever.ModifyDamageDelegate(OnModifyDamage));
 	}
 
 	public virtual void OnModifyDamage(Damage damage)
@@ -54,102 +54,101 @@ public class FloatingRockLaserEnemy : Enemy
 
 	public void OnEnterIdle()
 	{
-		this.RestartAnimationLoop(this.Animation, this.Animations.Idle, 0);
-		this.RestartAnimationLoop(this.AnimationB, this.AnimationsB.Idle, 0);
-		this.RestartAnimationLoop(this.AnimationC, this.AnimationsC.Idle, 0);
-		if (this.IdleSound)
+		RestartAnimationLoop(Animation, Animations.Idle);
+		RestartAnimationLoop(AnimationB, AnimationsB.Idle);
+		RestartAnimationLoop(AnimationC, AnimationsC.Idle);
+		if (IdleSound)
 		{
-			this.IdleSound.Play();
+			IdleSound.Play();
 		}
 	}
 
 	public void OnExitIdle()
 	{
-		if (this.IdleSound)
+		if (IdleSound)
 		{
-			this.IdleSound.StopAndFadeOut(0.2f);
+			IdleSound.StopAndFadeOut(0.2f);
 		}
 	}
 
 	public void OnEnterCharge()
 	{
-		this.RestartAnimationLoop(this.Animation, this.Animations.Charging, 0);
-		this.RestartAnimationLoop(this.AnimationB, this.AnimationsB.Charging, 0);
-		this.RestartAnimationLoop(this.AnimationC, this.AnimationsC.Charging, 0);
-		base.PlaySound(this.ChargingSound);
-		base.SpawnPrefab(this.ChargingEffect);
+		RestartAnimationLoop(Animation, Animations.Charging);
+		RestartAnimationLoop(AnimationB, AnimationsB.Charging);
+		RestartAnimationLoop(AnimationC, AnimationsC.Charging);
+		PlaySound(ChargingSound);
+		SpawnPrefab(ChargingEffect);
 	}
 
 	public void OnEnterLaser()
 	{
-		this.RestartAnimationLoop(this.Animation, this.Animations.Laser, 0);
-		this.RestartAnimationLoop(this.AnimationB, this.AnimationsB.Laser, 0);
-		this.RestartAnimationLoop(this.AnimationC, this.AnimationsC.Laser, 0);
-		this.AimLaserAtPlayer();
-		this.ActivateLaser();
+		RestartAnimationLoop(Animation, Animations.Laser);
+		RestartAnimationLoop(AnimationB, AnimationsB.Laser);
+		RestartAnimationLoop(AnimationC, AnimationsC.Laser);
+		AimLaserAtPlayer();
+		ActivateLaser();
 	}
 
 	public void OnExitLaser()
 	{
-		this.DeactivateLaser();
+		DeactivateLaser();
 	}
 
 	public void OnEnterShooting()
 	{
-		this.RestartAnimationLoop(this.Animation, this.Animations.Shooting, 0);
-		this.RestartAnimationLoop(this.AnimationB, this.AnimationsB.Shooting, 0);
-		this.RestartAnimationLoop(this.AnimationC, this.AnimationsC.Shooting, 0);
-		base.PlaySound(this.ShootingSound);
-		base.SpawnPrefab(this.ShootingEffect);
-		this.ProjectileSpawner.AimAt(Characters.Sein.Controller.Transform);
-		Projectile projectile = this.ProjectileSpawner.SpawnProjectile();
-		projectile.GetComponent<DamageDealer>().Damage = this.Settings.ProjectileDamage;
-		this.Movement.ApplyImpulseForce(this.Settings.ShootingForce * this.ProjectileSpawner.Direction * -1f);
+		RestartAnimationLoop(Animation, Animations.Shooting);
+		RestartAnimationLoop(AnimationB, AnimationsB.Shooting);
+		RestartAnimationLoop(AnimationC, AnimationsC.Shooting);
+		PlaySound(ShootingSound);
+		SpawnPrefab(ShootingEffect);
+		ProjectileSpawner.AimAt(Characters.Sein.Controller.Transform);
+		Projectile projectile = ProjectileSpawner.SpawnProjectile();
+		projectile.GetComponent<DamageDealer>().Damage = Settings.ProjectileDamage;
+		Movement.ApplyImpulseForce(Settings.ShootingForce * ProjectileSpawner.Direction * -1f);
 	}
 
 	public void UpdateLaserState()
 	{
-		this.Movement.ApplyForce(-this.Settings.LaserForce * this.m_laserDirection);
-		this.UpdateLaserDirection();
-		this.UpdateLaser();
+		Movement.ApplyForce(-Settings.LaserForce * m_laserDirection);
+		UpdateLaserDirection();
+		UpdateLaser();
 	}
 
 	public new void Start()
 	{
 		base.Start();
-		this.State.Idle = new State();
-		this.State.Charge = new State();
-		this.State.Laser = new State();
-		this.State.Shooting = new State();
-		State idle = this.State.Idle;
-		idle.OnEnterEvent = (Action)Delegate.Combine(idle.OnEnterEvent, new Action(this.OnEnterIdle));
-		State idle2 = this.State.Idle;
-		idle2.OnExitEvent = (Action)Delegate.Combine(idle2.OnExitEvent, new Action(this.OnExitIdle));
-		State charge = this.State.Charge;
-		charge.OnEnterEvent = (Action)Delegate.Combine(charge.OnEnterEvent, new Action(this.OnEnterCharge));
-		State laser = this.State.Laser;
-		laser.OnEnterEvent = (Action)Delegate.Combine(laser.OnEnterEvent, new Action(this.OnEnterLaser));
-		State laser2 = this.State.Laser;
-		laser2.OnExitEvent = (Action)Delegate.Combine(laser2.OnExitEvent, new Action(this.OnExitLaser));
-		State shooting = this.State.Shooting;
-		shooting.OnEnterEvent = (Action)Delegate.Combine(shooting.OnEnterEvent, new Action(this.OnEnterShooting));
-		State laser3 = this.State.Laser;
-		laser3.UpdateStateEvent = (Action)Delegate.Combine(laser3.UpdateStateEvent, new Action(this.UpdateLaserState));
-		this.Controller.StateMachine.RegisterStates(new IState[]
-		{
-			this.State.Idle,
-			this.State.Charge,
-			this.State.Shooting
-		});
-		this.Controller.StateMachine.Configure(this.State.Idle).AddTransition<OnFixedUpdate>(this.State.Charge, new Func<bool>(this.ShouldCharge), null);
-		this.Controller.StateMachine.Configure(this.State.Charge).AddTransition<OnFixedUpdate>(this.State.Laser, () => base.AfterTime(this.Settings.ChargeDuration), null).AddTransition<OnFixedUpdate>(this.State.Idle, () => this.InCloseDistance(), null);
-		this.Controller.StateMachine.Configure(this.State.Laser).AddTransition<OnFixedUpdate>(this.State.Shooting, () => base.AfterTime(this.Settings.LaserDuration), null);
-		this.Controller.StateMachine.Configure(this.State.Shooting).AddTransition<OnFixedUpdate>(this.State.Idle, () => base.AfterTime(this.Settings.ShootingDuration), null).AddTransition<OnFixedUpdate>(this.State.Idle, () => this.InCloseDistance(), null);
-		this.Controller.StateMachine.ChangeState(this.State.Idle);
-		this.ProjectileSpawner.Projectile = this.Settings.Projectile;
-		this.ProjectileSpawner.Speed = this.Settings.ProjectileSpeed;
-		this.Laser.Activated = false;
-		this.Laser.gameObject.SetActive(false);
+		State.Idle = new State();
+		State.Charge = new State();
+		State.Laser = new State();
+		State.Shooting = new State();
+		State idle = State.Idle;
+		idle.OnEnterEvent = (Action)Delegate.Combine(idle.OnEnterEvent, new Action(OnEnterIdle));
+		State idle2 = State.Idle;
+		idle2.OnExitEvent = (Action)Delegate.Combine(idle2.OnExitEvent, new Action(OnExitIdle));
+		State charge = State.Charge;
+		charge.OnEnterEvent = (Action)Delegate.Combine(charge.OnEnterEvent, new Action(OnEnterCharge));
+		State laser = State.Laser;
+		laser.OnEnterEvent = (Action)Delegate.Combine(laser.OnEnterEvent, new Action(OnEnterLaser));
+		State laser2 = State.Laser;
+		laser2.OnExitEvent = (Action)Delegate.Combine(laser2.OnExitEvent, new Action(OnExitLaser));
+		State shooting = State.Shooting;
+		shooting.OnEnterEvent = (Action)Delegate.Combine(shooting.OnEnterEvent, new Action(OnEnterShooting));
+		State laser3 = State.Laser;
+		laser3.UpdateStateEvent = (Action)Delegate.Combine(laser3.UpdateStateEvent, new Action(UpdateLaserState));
+		Controller.StateMachine.RegisterStates(
+			State.Idle,
+		State.Charge,
+		State.Shooting
+		);
+		Controller.StateMachine.Configure(State.Idle).AddTransition<OnFixedUpdate>(State.Charge, ShouldCharge);
+		Controller.StateMachine.Configure(State.Charge).AddTransition<OnFixedUpdate>(State.Laser, () => AfterTime(Settings.ChargeDuration)).AddTransition<OnFixedUpdate>(State.Idle, () => InCloseDistance());
+		Controller.StateMachine.Configure(State.Laser).AddTransition<OnFixedUpdate>(State.Shooting, () => AfterTime(Settings.LaserDuration));
+		Controller.StateMachine.Configure(State.Shooting).AddTransition<OnFixedUpdate>(State.Idle, () => AfterTime(Settings.ShootingDuration)).AddTransition<OnFixedUpdate>(State.Idle, () => InCloseDistance());
+		Controller.StateMachine.ChangeState(State.Idle);
+		ProjectileSpawner.Projectile = Settings.Projectile;
+		ProjectileSpawner.Speed = Settings.ProjectileSpeed;
+		Laser.Activated = false;
+		Laser.gameObject.SetActive(false);
 	}
 
 	public void UpdateLaser()
@@ -160,70 +159,70 @@ public class FloatingRockLaserEnemy : Enemy
 	{
 		get
 		{
-			bool flag = Vector3.Dot(base.PositionToPlayerPosition.normalized, Vector3.Cross(this.m_laserDirection, Vector3.back)) > 0f;
-			return (float)((!flag) ? -1 : 1);
+			bool flag = Vector3.Dot(PositionToPlayerPosition.normalized, Vector3.Cross(m_laserDirection, Vector3.back)) > 0f;
+			return (!flag) ? -1 : 1;
 		}
 	}
 
 	public void UpdateLaserDirection()
 	{
-		if (this.Controller.NearSein)
+		if (Controller.NearSein)
 		{
-			this.m_laserRotationSpeed = Mathf.MoveTowards(this.m_laserRotationSpeed, this.DesiredLaserRotationDirection, Time.deltaTime * 4f);
+			m_laserRotationSpeed = Mathf.MoveTowards(m_laserRotationSpeed, DesiredLaserRotationDirection, Time.deltaTime * 4f);
 		}
-		float num = this.LaserAngleOverTimeCurve.Evaluate(this.Controller.StateMachine.CurrentStateTime / this.Settings.LaserDuration);
-		float num2 = this.Laser.CurrentLaserLength / this.Settings.LaserChaseSpeedDistance;
-		float num3 = (!Mathf.Approximately(num2, 0f)) ? (num * this.Settings.LaserChaseSpeed / num2) : 0f;
-		float num4 = MoonMath.Angle.AngleFromVector(this.m_laserDirection) + this.m_laserRotationSpeed * RandomizerBonusSkill.TimeScale(Time.deltaTime) * num3;
-		this.m_laserDirection = MoonMath.Angle.VectorFromAngle(num4);
-		this.Laser.transform.eulerAngles = new Vector3(0f, 0f, num4 - 90f);
+		float num = LaserAngleOverTimeCurve.Evaluate(Controller.StateMachine.CurrentStateTime / Settings.LaserDuration);
+		float num2 = Laser.CurrentLaserLength / Settings.LaserChaseSpeedDistance;
+		float num3 = (!Mathf.Approximately(num2, 0f)) ? (num * Settings.LaserChaseSpeed / num2) : 0f;
+		float num4 = MoonMath.Angle.AngleFromVector(m_laserDirection) + m_laserRotationSpeed * RandomizerBonusSkill.TimeScale(Time.deltaTime) * num3;
+		m_laserDirection = MoonMath.Angle.VectorFromAngle(num4);
+		Laser.transform.eulerAngles = new Vector3(0f, 0f, num4 - 90f);
 	}
 
 	public void ActivateLaser()
 	{
-		this.UpdateLaserDirection();
-		this.UpdateLaser();
-		this.Laser.gameObject.SetActive(true);
-		this.Laser.Activated = true;
+		UpdateLaserDirection();
+		UpdateLaser();
+		Laser.gameObject.SetActive(true);
+		Laser.Activated = true;
 	}
 
 	public void DeactivateLaser()
 	{
-		this.Laser.Activated = false;
+		Laser.Activated = false;
 	}
 
 	public void AimLaserAtPlayer()
 	{
 		Vector3 vector = Characters.Sein.PlatformBehaviour.PlatformMovement.WorldSpeed;
-		this.m_laserDirection = base.PositionToPlayerPosition.normalized;
-		bool flag = Vector3.Dot(vector.normalized, Vector3.Cross(this.m_laserDirection, Vector3.forward)) > 0f;
-		float num = MoonMath.Angle.AngleFromVector(this.m_laserDirection);
-		num += (float)((!flag) ? -1 : 1) * this.Settings.LaserAngularOffset;
-		this.m_laserDirection = MoonMath.Angle.VectorFromAngle(num);
-		this.m_laserRotationSpeed = this.DesiredLaserRotationDirection;
+		m_laserDirection = PositionToPlayerPosition.normalized;
+		bool flag = Vector3.Dot(vector.normalized, Vector3.Cross(m_laserDirection, Vector3.forward)) > 0f;
+		float num = MoonMath.Angle.AngleFromVector(m_laserDirection);
+		num += ((!flag) ? -1 : 1) * Settings.LaserAngularOffset;
+		m_laserDirection = MoonMath.Angle.VectorFromAngle(num);
+		m_laserRotationSpeed = DesiredLaserRotationDirection;
 	}
 
 	public new void FixedUpdate()
 	{
-		if (this.IsSuspended)
+		if (IsSuspended)
 		{
 			return;
 		}
-		this.Movement.ApplySpringForce(this.Settings.SpringForce, base.StartPosition);
-		this.Movement.ApplyDrag(this.Settings.Drag);
+		Movement.ApplySpringForce(Settings.SpringForce, StartPosition);
+		Movement.ApplyDrag(Settings.Drag);
 	}
 
 	public bool ShouldCharge()
 	{
-		return this.Controller.NearSein && !this.InCloseDistance();
+		return Controller.NearSein && !InCloseDistance();
 	}
 
 	public bool InCloseDistance()
 	{
-		return base.PositionToPlayerPosition.magnitude < this.Settings.CloseDistance;
+		return PositionToPlayerPosition.magnitude < Settings.CloseDistance;
 	}
 
-	public FloatingRockLaserEnemy.States State = new FloatingRockLaserEnemy.States();
+	public States State = new States();
 
 	public FloatingRockLaserEnemySettings Settings;
 

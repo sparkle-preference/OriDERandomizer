@@ -1,5 +1,4 @@
 using System;
-using Game;
 
 public class NewGameAction : ActionMethod
 {

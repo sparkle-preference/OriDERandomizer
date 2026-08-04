@@ -1,8 +1,7 @@
-using System;
 using System.Collections;
-using Core;
 using Game;
 using UnityEngine;
+using Input = Core.Input;
 
 public class GetAbilityPedestal : SaveSerialize
 {
@@ -10,56 +9,56 @@ public class GetAbilityPedestal : SaveSerialize
 	{
 		get
 		{
-			return !(Characters.Sein == null) && Vector3.Distance(this.m_transform.position, Characters.Sein.Position) < this.Radius;
+			return !(Characters.Sein == null) && Vector3.Distance(m_transform.position, Characters.Sein.Position) < Radius;
 		}
 	}
 
-	private void ChangeState(GetAbilityPedestal.States state)
+	private void ChangeState(States state)
 	{
-		if (this.CurrentState == GetAbilityPedestal.States.InRange)
+		if (CurrentState == States.InRange)
 		{
-			this.ExitInRangeState();
+			ExitInRangeState();
 		}
-		this.CurrentState = state;
+		CurrentState = state;
 	}
 
 	public void UpdateStates()
 	{
-		GetAbilityPedestal.States currentState = this.CurrentState;
+		States currentState = CurrentState;
 
-		if (currentState != GetAbilityPedestal.States.Completed && RandomizerLocationManager.IsPickupCollected(this.MoonGuid))
+		if (currentState != States.Completed && RandomizerLocationManager.IsPickupCollected(MoonGuid))
 		{
-			this.ChangeState(GetAbilityPedestal.States.Completed);
-			this.ActivatePedestalSequence.PerformInstantly(null);
+			ChangeState(States.Completed);
+			ActivatePedestalSequence.PerformInstantly(null);
 			return;
 		}
 
-		if (currentState != GetAbilityPedestal.States.OutOfRange)
+		if (currentState != States.OutOfRange)
 		{
-			if (currentState == GetAbilityPedestal.States.InRange)
+			if (currentState == States.InRange)
 			{
-				this.UpdateInRangeState();
+				UpdateInRangeState();
 			}
 		}
 		else
 		{
-			this.UpdateOutOfRange();
+			UpdateOutOfRange();
 		}
 	}
 
 	private void UpdateOutOfRange()
 	{
-		if (this.SeinInRange)
+		if (SeinInRange)
 		{
-			this.ChangeState(GetAbilityPedestal.States.InRange);
+			ChangeState(States.InRange);
 		}
 	}
 
 	private void ExitInRangeState()
 	{
-		if (this.m_message != null)
+		if (m_message != null)
 		{
-			this.m_message.HideMessageScreen();
+			m_message.HideMessageScreen();
 		}
 	}
 
@@ -67,41 +66,41 @@ public class GetAbilityPedestal : SaveSerialize
 	{
 		if (Characters.Sein.PlatformBehaviour.PlatformMovement.IsOnGround)
 		{
-			if (this.m_message == null && !SeinUI.DebugHideUI)
+			if (m_message == null && !SeinUI.DebugHideUI)
 			{
-				this.m_message = UI.Hints.Show(this.PressUpToActivatePedestalMessage, HintLayer.Gameplay, float.PositiveInfinity);
+				m_message = UI.Hints.Show(PressUpToActivatePedestalMessage, HintLayer.Gameplay, float.PositiveInfinity);
 			}
-			if (!Characters.Sein.IsSuspended && Characters.Sein.Controller.CanMove && Core.Input.SpiritFlame.OnPressed)
+			if (!Characters.Sein.IsSuspended && Characters.Sein.Controller.CanMove && Input.SpiritFlame.OnPressed)
 			{
-				Core.Input.SpiritFlame.Used = true;
-				this.ActivatePedestal();
+				Input.SpiritFlame.Used = true;
+				ActivatePedestal();
 				return;
 			}
 		}
-		if (!this.SeinInRange)
+		if (!SeinInRange)
 		{
-			this.ChangeState(GetAbilityPedestal.States.OutOfRange);
+			ChangeState(States.OutOfRange);
 		}
 	}
 
 	public void FixedUpdate()
 	{
-		this.UpdateStates();
+		UpdateStates();
 	}
 
 	public void ActivatePedestal()
 	{
-		base.StartCoroutine(this.MoveSeinToCenterSmoothly());
+		StartCoroutine(MoveSeinToCenterSmoothly());
 		if (Characters.Sein.Abilities.Carry && Characters.Sein.Abilities.Carry.CurrentCarryable != null)
 		{
 			Characters.Sein.Abilities.Carry.CurrentCarryable.Drop();
 		}
 		Characters.Sein.Mortality.Health.RestoreAllHealth();
 		Characters.Sein.Energy.RestoreAllEnergy();
-		Characters.Sein.Controller.PlayAnimation(this.GetAbilityAnimation);
-		RandomizerLocationManager.GivePickup(this.MoonGuid);
-		this.ChangeState(GetAbilityPedestal.States.Completed);
-		this.ActivatePedestalSequence.Perform(null);
+		Characters.Sein.Controller.PlayAnimation(GetAbilityAnimation);
+		RandomizerLocationManager.GivePickup(MoonGuid);
+		ChangeState(States.Completed);
+		ActivatePedestalSequence.Perform(null);
 		GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
 	}
 
@@ -110,10 +109,10 @@ public class GetAbilityPedestal : SaveSerialize
 		PlatformMovement seinPlatformMovement = Characters.Sein.PlatformBehaviour.PlatformMovement;
 		for (int i = 0; i < 10; i++)
 		{
-			seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, base.transform.position.x, 0.2f);
+			seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, transform.position.x, 0.2f);
 			yield return new WaitForFixedUpdate();
 		}
-		seinPlatformMovement.PositionX = base.transform.position.x;
+		seinPlatformMovement.PositionX = transform.position.x;
 		yield break;
 	}
 
@@ -122,18 +121,18 @@ public class GetAbilityPedestal : SaveSerialize
 		if (ar.Reading)
 		{
 			int state = ar.Serialize(0);
-			this.ChangeState((GetAbilityPedestal.States)state);
+			ChangeState((States)state);
 		}
 		else
 		{
-			ar.Serialize((int)this.CurrentState);
+			ar.Serialize((int)CurrentState);
 		}
 	}
 
 	public override void Awake()
 	{
 		base.Awake();
-		this.m_transform = base.transform;
+		m_transform = transform;
 	}
 
 	public override void OnDestroy()
@@ -141,7 +140,7 @@ public class GetAbilityPedestal : SaveSerialize
 		base.OnDestroy();
 	}
 
-	public GetAbilityPedestal.States CurrentState;
+	public States CurrentState;
 
 	public AbilityType Ability;
 

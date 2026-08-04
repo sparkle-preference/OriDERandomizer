@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
 using Core;
 using UnityEngine;
 
@@ -7,7 +6,7 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver
 {
 	static SeinDoubleJump()
 	{
-		SeinDoubleJump.OnDoubleJumpEvent = delegate
+		OnDoubleJumpEvent = delegate
 		{
 		};
 	}
@@ -23,7 +22,7 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver
 			{
 				return 999999;
 			}
-			if (this.Sein.PlayerAbilities.DoubleJumpUpgrade.HasAbility)
+			if (Sein.PlayerAbilities.DoubleJumpUpgrade.HasAbility)
 			{
 				return 2 + bonus;
 			}
@@ -35,7 +34,7 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.PlatformMovement;
+			return Sein.PlatformBehaviour.PlatformMovement;
 		}
 	}
 
@@ -43,7 +42,7 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.Abilities.Jump;
+			return Sein.Abilities.Jump;
 		}
 	}
 
@@ -51,96 +50,96 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return base.enabled && !this.PlatformMovement.IsOnGround && this.m_numberOfJumpsAvailable != 0 && this.m_remainingLockTime <= 0f && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.AllAbilities);
+			return enabled && !PlatformMovement.IsOnGround && m_numberOfJumpsAvailable != 0 && m_remainingLockTime <= 0f && !SeinAbilityRestrictZone.IsInside();
 		}
 	}
 
 	public void SetReferenceToSein(SeinCharacter sein)
 	{
-		this.Sein = sein;
-		this.Sein.Abilities.DoubleJump = this;
+		Sein = sein;
+		Sein.Abilities.DoubleJump = this;
 	}
 
 	public override void Serialize(Archive ar)
 	{
-		ar.Serialize(ref this.m_doubleJumpTime);
-		ar.Serialize(ref this.m_numberOfJumpsAvailable);
-		ar.Serialize(ref this.m_remainingLockTime);
+		ar.Serialize(ref m_doubleJumpTime);
+		ar.Serialize(ref m_numberOfJumpsAvailable);
+		ar.Serialize(ref m_remainingLockTime);
 	}
 
 	public void PerformDoubleJump()
 	{
-		if (this.Sein.Abilities.ChargeJump)
+		if (Sein.Abilities.ChargeJump)
 		{
-			this.Sein.Abilities.ChargeJump.OnDoubleJump();
+			Sein.Abilities.ChargeJump.OnDoubleJump();
 		}
-		this.PlatformMovement.LocalSpeedY = this.JumpStrength * RandomizerBonus.DoubleJumpscale;
-		this.m_numberOfJumpsAvailable--;
-		this.Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(this.DoubleJumpAnimation, 10, new Func<bool>(this.ShouldDoubleJumpAnimationKeepPlaying));
-		this.m_doubleJumpSound = Sound.Play(this.DoubleJumpSound.GetSound(null), this.Sein.PlatformBehaviour.PlatformMovement.Position, delegate
+		PlatformMovement.LocalSpeedY = JumpStrength * RandomizerBonus.DoubleJumpscale;
+		m_numberOfJumpsAvailable--;
+		Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(DoubleJumpAnimation, 10, ShouldDoubleJumpAnimationKeepPlaying);
+		m_doubleJumpSound = Sound.Play(DoubleJumpSound.GetSound(null), Sein.PlatformBehaviour.PlatformMovement.Position, delegate
 		{
-			this.m_doubleJumpSound = null;
+			m_doubleJumpSound = null;
 		});
-		SeinDoubleJump.OnDoubleJumpEvent(this.JumpStrength * RandomizerBonus.DoubleJumpscale);
-		GameObject original = this.DoubleJumpAfterShock;
-		if (this.m_numberOfJumpsAvailable == 0 && this.ExtraJumpsAvailable == 2)
+		OnDoubleJumpEvent(JumpStrength * RandomizerBonus.DoubleJumpscale);
+		GameObject original = DoubleJumpAfterShock;
+		if (m_numberOfJumpsAvailable == 0 && ExtraJumpsAvailable == 2)
 		{
-			original = this.TrippleJumpAfterShock;
+			original = TrippleJumpAfterShock;
 		}
-		Vector2 worldSpeed = this.PlatformMovement.WorldSpeed;
+		Vector2 worldSpeed = PlatformMovement.WorldSpeed;
 		float num = Mathf.Atan2(worldSpeed.x, worldSpeed.y) * 57.29578f;
-		InstantiateUtility.Instantiate(original, this.Sein.Position, Quaternion.Euler(0f, 0f, -num));
+		InstantiateUtility.Instantiate(original, Sein.Position, Quaternion.Euler(0f, 0f, -num));
 		JumpFlipPlatform.OnSeinDoubleJumpEvent();
 	}
 
 	public bool ShouldDoubleJumpAnimationKeepPlaying()
 	{
-		return this.PlatformMovement.IsInAir && !this.PlatformMovement.IsOnCeiling;
+		return PlatformMovement.IsInAir && !PlatformMovement.IsOnCeiling;
 	}
 
 	public override void UpdateCharacterState()
 	{
-		if (this.Sein.IsSuspended)
+		if (Sein.IsSuspended)
 		{
 			return;
 		}
-		if (this.PlatformMovement.IsOnGround && this.m_numberOfJumpsAvailable != this.ExtraJumpsAvailable)
+		if (PlatformMovement.IsOnGround && m_numberOfJumpsAvailable != ExtraJumpsAvailable)
 		{
-			this.ResetDoubleJump();
+			ResetDoubleJump();
 		}
-		if (this.m_doubleJumpSound && (this.PlatformMovement.IsOnWall || this.PlatformMovement.IsOnCeiling))
+		if (m_doubleJumpSound && (PlatformMovement.IsOnWall || PlatformMovement.IsOnCeiling))
 		{
-			this.m_doubleJumpSound.FadeOut(0.5f, true);
-			UberPoolManager.Instance.RemoveOnDestroyed(this.m_doubleJumpSound.gameObject);
-			this.m_doubleJumpSound = null;
+			m_doubleJumpSound.FadeOut(0.5f, true);
+			UberPoolManager.Instance.RemoveOnDestroyed(m_doubleJumpSound.gameObject);
+			m_doubleJumpSound = null;
 		}
-		if (this.m_remainingLockTime > 0f)
+		if (m_remainingLockTime > 0f)
 		{
-			this.m_remainingLockTime -= Time.deltaTime;
+			m_remainingLockTime -= Time.deltaTime;
 		}
-		if (this.m_doubleJumpTime > 0f)
+		if (m_doubleJumpTime > 0f)
 		{
-			if (this.PlatformMovement.LocalSpeedY <= 0f)
+			if (PlatformMovement.LocalSpeedY <= 0f)
 			{
-				this.m_doubleJumpTime = 0f;
+				m_doubleJumpTime = 0f;
 			}
-			this.m_doubleJumpTime -= Time.deltaTime;
+			m_doubleJumpTime -= Time.deltaTime;
 		}
 	}
 
 	public void ResetDoubleJump()
 	{
-		this.m_numberOfJumpsAvailable = this.ExtraJumpsAvailable;
+		m_numberOfJumpsAvailable = ExtraJumpsAvailable;
 	}
 
 	public void LockForDuration(float duration)
 	{
-		this.m_remainingLockTime = Mathf.Max(this.m_remainingLockTime, duration);
+		m_remainingLockTime = Mathf.Max(m_remainingLockTime, duration);
 	}
 
 	public void ResetLock()
 	{
-		this.m_remainingLockTime = 0f;
+		m_remainingLockTime = 0f;
 	}
 
 	public TextureAnimationWithTransitions[] DoubleJumpAnimation;

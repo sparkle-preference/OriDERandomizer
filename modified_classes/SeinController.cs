@@ -2,10 +2,11 @@ using System;
 using Core;
 using Game;
 using UnityEngine;
+using Input = Core.Input;
 
 public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISuspendable, ICanActivateStompers
 {
-	public event Action OnTriggeredAnimationFinished = delegate()
+	public event Action OnTriggeredAnimationFinished = delegate
 	{
 	};
 
@@ -13,7 +14,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return (this.Sein.Abilities.Lever && this.Sein.Abilities.Lever.InputLocked) || GameController.Instance.LockInput || GameController.Instance.LockInputByAction;
+			return (Sein.Abilities.Lever && Sein.Abilities.Lever.InputLocked) || GameController.Instance.LockInput || GameController.Instance.LockInputByAction;
 		}
 	}
 
@@ -21,7 +22,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return !this.InputLocked && !this.IsPlayingAnimation;
+			return !InputLocked && !IsPlayingAnimation;
 		}
 	}
 
@@ -29,11 +30,11 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.LeftRightMovement.SpriteMirror.FaceLeft;
+			return Sein.PlatformBehaviour.LeftRightMovement.SpriteMirror.FaceLeft;
 		}
 		set
 		{
-			this.Sein.PlatformBehaviour.LeftRightMovement.SpriteMirror.FaceLeft = value;
+			Sein.PlatformBehaviour.LeftRightMovement.SpriteMirror.FaceLeft = value;
 		}
 	}
 
@@ -41,7 +42,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.m_transform;
+			return m_transform;
 		}
 	}
 
@@ -49,7 +50,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.Crouch && this.Sein.Abilities.Crouch.IsCrouching;
+			return Sein.Abilities.Crouch && Sein.Abilities.Crouch.IsCrouching;
 		}
 	}
 
@@ -57,7 +58,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.GrabBlock && this.Sein.Abilities.GrabBlock.IsGrabbing;
+			return Sein.Abilities.GrabBlock && Sein.Abilities.GrabBlock.IsGrabbing;
 		}
 	}
 
@@ -65,7 +66,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.GrabWall && this.Sein.Abilities.GrabWall.IsGrabbing;
+			return Sein.Abilities.GrabWall && Sein.Abilities.GrabWall.IsGrabbing;
 		}
 	}
 
@@ -73,7 +74,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.Lever && this.Sein.Abilities.Lever.IsUsingLever;
+			return Sein.Abilities.Lever && Sein.Abilities.Lever.IsUsingLever;
 		}
 	}
 
@@ -81,7 +82,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.Glide && this.Sein.Abilities.Glide.IsGliding;
+			return Sein.Abilities.Glide && Sein.Abilities.Glide.IsGliding;
 		}
 	}
 
@@ -89,7 +90,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.GrabBlock && this.Sein.Abilities.GrabBlock.IsGrabbing;
+			return Sein.Abilities.GrabBlock && Sein.Abilities.GrabBlock.IsGrabbing;
 		}
 	}
 
@@ -97,7 +98,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.Swimming && this.Sein.Abilities.Swimming.IsSwimming;
+			return Sein.Abilities.Swimming && Sein.Abilities.Swimming.IsSwimming;
 		}
 	}
 
@@ -105,7 +106,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.Bash && this.Sein.Abilities.Bash.IsBashing;
+			return Sein.Abilities.Bash && Sein.Abilities.Bash.IsBashing;
 		}
 	}
 
@@ -113,7 +114,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.Grenade && this.Sein.Abilities.Grenade.IsAiming;
+			return Sein.Abilities.Grenade && Sein.Abilities.Grenade.IsAiming;
 		}
 	}
 
@@ -121,7 +122,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.SoulFlame.InsideCheckpointMarker;
+			return Sein.SoulFlame.InsideCheckpointMarker;
 		}
 	}
 
@@ -129,7 +130,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.Carry && (this.Sein.Abilities.Carry.IsCarrying || this.Sein.Abilities.Carry.IsPickingUp);
+			return Sein.Abilities.Carry && (Sein.Abilities.Carry.IsCarrying || Sein.Abilities.Carry.IsPickingUp);
 		}
 	}
 
@@ -137,7 +138,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.Stomp && this.Sein.Abilities.Stomp.IsStomping;
+			return Sein.Abilities.Stomp && Sein.Abilities.Stomp.IsStomping;
 		}
 	}
 
@@ -145,7 +146,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.ChargeFlame && this.Sein.Abilities.ChargeFlame.IsCharging;
+			return Sein.Abilities.ChargeFlame && Sein.Abilities.ChargeFlame.IsCharging;
 		}
 	}
 
@@ -153,7 +154,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.ChargeJumpCharging && this.Sein.Abilities.ChargeJumpCharging.IsCharging;
+			return Sein.Abilities.ChargeJumpCharging && Sein.Abilities.ChargeJumpCharging.IsCharging;
 		}
 	}
 
@@ -163,7 +164,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.m_suspendables;
+			return m_suspendables;
 		}
 	}
 
@@ -171,7 +172,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.IsPlayingAnimation && this.Sein.Animation.Animator.CurrentAnimation.AnimationMetaData != null;
+			return IsPlayingAnimation && Sein.Animation.Animator.CurrentAnimation.AnimationMetaData != null;
 		}
 	}
 
@@ -179,7 +180,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.Dash && this.Sein.Abilities.Dash.IsDashingOrChangeDashing;
+			return Sein.Abilities.Dash && Sein.Abilities.Dash.IsDashingOrChangeDashing;
 		}
 	}
 
@@ -187,22 +188,22 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		get
 		{
-			return this.Sein.Abilities.StandingOnEdge && this.Sein.Abilities.StandingOnEdge.StandingOnEdge;
+			return Sein.Abilities.StandingOnEdge && Sein.Abilities.StandingOnEdge.StandingOnEdge;
 		}
 	}
 
 	public void EnterPlayingAnimation()
 	{
-		this.IsPlayingAnimation = true;
-		if (this.Sein.PlatformBehaviour.PlatformMovement)
+		IsPlayingAnimation = true;
+		if (Sein.PlatformBehaviour.PlatformMovement)
 		{
-			Vector2 localSpeed = this.Sein.PlatformBehaviour.PlatformMovement.LocalSpeed;
+			Vector2 localSpeed = Sein.PlatformBehaviour.PlatformMovement.LocalSpeed;
 			localSpeed.x = 0f;
 			if (localSpeed.y > 0f)
 			{
 				localSpeed.y = 0f;
 			}
-			this.Sein.PlatformBehaviour.PlatformMovement.LocalSpeed = localSpeed;
+			Sein.PlatformBehaviour.PlatformMovement.LocalSpeed = localSpeed;
 		}
 	}
 
@@ -213,61 +214,61 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 
 	public void SetReferenceToSein(SeinCharacter sein)
 	{
-		this.Sein = sein;
+		Sein = sein;
 	}
 
 	public void HandleControllerInput()
 	{
-		if (this.Sein.PlatformBehaviour.LeftRightMovement == null)
+		if (Sein.PlatformBehaviour.LeftRightMovement == null)
 		{
 			return;
 		}
-		if (!this.IgnoreControllerInput)
+		if (!IgnoreControllerInput)
 		{
-			if (this.CanMove && !this.LockMovementInput)
+			if (CanMove && !LockMovementInput)
 			{
-				this.Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = (float)this.Sein.Input.NormalizedHorizontal;
-				if (this.Sein.Abilities.Run.Active && this.Sein.PlatformBehaviour.PlatformMovement.IsOnGround)
+				Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = Sein.Input.NormalizedHorizontal;
+				if (Sein.Abilities.Run.Active && Sein.PlatformBehaviour.PlatformMovement.IsOnGround)
 				{
-					float num = this.Sein.Controller.InputCurve.Evaluate(Mathf.Abs(this.Sein.Input.Horizontal)) * Mathf.Sign(this.Sein.Input.Horizontal);
-					this.Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = 0f;
+					float num = Sein.Controller.InputCurve.Evaluate(Mathf.Abs(Sein.Input.Horizontal)) * Mathf.Sign(Sein.Input.Horizontal);
+					Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = 0f;
 					if (num == 0f)
 					{
-						this.m_horizontalInputDelay = 0.06666667f;
+						m_horizontalInputDelay = 0.06666667f;
 					}
-					if (Mathf.Abs(num) > this.Sein.Controller.InputSettings.JogThreshold)
+					if (Mathf.Abs(num) > Sein.Controller.InputSettings.JogThreshold)
 					{
-						this.Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = num;
+						Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = num;
 					}
-					this.m_horizontalInputDelay = Mathf.Max(0f, this.m_horizontalInputDelay - Time.deltaTime);
-					if (this.m_horizontalInputDelay == 0f)
+					m_horizontalInputDelay = Mathf.Max(0f, m_horizontalInputDelay - Time.deltaTime);
+					if (m_horizontalInputDelay == 0f)
 					{
-						this.Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = num;
+						Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = num;
 					}
 				}
 				else
 				{
-					this.Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = (float)Core.Input.NormalizedHorizontal;
+					Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = Input.NormalizedHorizontal;
 				}
 			}
 			else
 			{
-				this.Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = 0f;
+				Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = 0f;
 			}
 		}
-		this.OnHorizontalInputPostCalculate();
+		OnHorizontalInputPostCalculate();
 	}
 
 	[UberBuildMethod]
 	private void ProvideComponents()
 	{
-		this.m_suspendables = base.gameObject.FindComponentsInChildren<ISuspendable>();
+		m_suspendables = gameObject.FindComponentsInChildren<ISuspendable>();
 	}
 
 	public override void Awake()
 	{
-		this.m_transform = base.transform;
-		this.ProvideComponents();
+		m_transform = transform;
+		ProvideComponents();
 		SuspensionManager.Register(this);
 		UI.Cameras.Current.ChangeTargetToCurrentCharacter();
 		base.Awake();
@@ -277,34 +278,34 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 	{
 		SuspensionManager.Unregister(this);
 		base.OnDestroy();
-		PlatformMovementPortalVisitor component = this.Sein.GetComponent<PlatformMovementPortalVisitor>();
+		PlatformMovementPortalVisitor component = Sein.GetComponent<PlatformMovementPortalVisitor>();
 		if (component)
 		{
 			PlatformMovementPortalVisitor platformMovementPortalVisitor = component;
-			platformMovementPortalVisitor.OnGoThroughPortalAction = (Action)Delegate.Remove(platformMovementPortalVisitor.OnGoThroughPortalAction, new Action(this.OnGoThroughPortal));
+			platformMovementPortalVisitor.OnGoThroughPortalAction = (Action)Delegate.Remove(platformMovementPortalVisitor.OnGoThroughPortalAction, new Action(OnGoThroughPortal));
 		}
 	}
 
 	public void OnGoThroughPortal()
 	{
-		this.Sein.ResetAirLimits();
+		Sein.ResetAirLimits();
 	}
 
 	public void Start()
 	{
-		this.Sein.PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
-		UI.Cameras.Current.MoveCameraToTargetInstantly(true);
-		PlatformMovementPortalVisitor component = this.Sein.GetComponent<PlatformMovementPortalVisitor>();
+		Sein.PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
+		UI.Cameras.Current.MoveCameraToTargetInstantly();
+		PlatformMovementPortalVisitor component = Sein.GetComponent<PlatformMovementPortalVisitor>();
 		if (component)
 		{
 			PlatformMovementPortalVisitor platformMovementPortalVisitor = component;
-			platformMovementPortalVisitor.OnGoThroughPortalAction = (Action)Delegate.Combine(platformMovementPortalVisitor.OnGoThroughPortalAction, new Action(this.OnGoThroughPortal));
+			platformMovementPortalVisitor.OnGoThroughPortalAction = (Action)Delegate.Combine(platformMovementPortalVisitor.OnGoThroughPortalAction, new Action(OnGoThroughPortal));
 		}
 	}
 
 	public void HandleJumping()
 	{
-		if (this.IgnoreControllerInput || this.LockMovementInput || !this.CanMove)
+		if (IgnoreControllerInput || LockMovementInput || !CanMove)
 		{
 			return;
 		}
@@ -320,70 +321,70 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 		if (Randomizer.GrenadeJumpQueued)
 		{
 			Randomizer.GrenadeJumpQueued = false;
-			if (grenadeJumpHeld && CharacterState.IsActive(this.Sein.Abilities.WallChargeJump) && this.Sein.Abilities.GrabWall && this.Sein.Abilities.WallChargeJump.CanChargeJump && this.IsAimingGrenade)
+			if (grenadeJumpHeld && CharacterState.IsActive(Sein.Abilities.WallChargeJump) && Sein.Abilities.GrabWall && Sein.Abilities.WallChargeJump.CanChargeJump && IsAimingGrenade)
 			{
-				Core.Input.LeftShoulder.IsPressed = true;
-				Core.Input.Jump.IsPressed = true;
+				Input.LeftShoulder.IsPressed = true;
+				Input.Jump.IsPressed = true;
 			}
 		}
 
-		if (grenadeJumpPressed && CharacterState.IsActive(this.Sein.Abilities.WallChargeJump) && this.Sein.Abilities.GrabWall && this.Sein.Abilities.WallChargeJump.CanChargeJump && this.Sein.Abilities.Grenade && this.Sein.Abilities.Grenade.CanAim && !this.IsAimingGrenade)
+		if (grenadeJumpPressed && CharacterState.IsActive(Sein.Abilities.WallChargeJump) && Sein.Abilities.GrabWall && Sein.Abilities.WallChargeJump.CanChargeJump && Sein.Abilities.Grenade && Sein.Abilities.Grenade.CanAim && !IsAimingGrenade)
 		{
 			Randomizer.GrenadeJumpQueued = true;
-			Core.Input.LeftShoulder.IsPressed = true;
-			Core.Input.Jump.IsPressed = false;
+			Input.LeftShoulder.IsPressed = true;
+			Input.Jump.IsPressed = false;
 		}
 
-		if (Core.Input.Jump.OnPressed)
+		if (Input.Jump.OnPressed)
 		{
-			this.PerformJump();
+			PerformJump();
 		}
 	}
 
 	public void PerformJump()
 	{
-		if (CharacterState.IsActive(this.Sein.Abilities.WallChargeJump) && this.Sein.Abilities.GrabWall && this.Sein.Abilities.WallChargeJump.CanChargeJump)
+		if (CharacterState.IsActive(Sein.Abilities.WallChargeJump) && Sein.Abilities.GrabWall && Sein.Abilities.WallChargeJump.CanChargeJump)
 		{
-			this.Sein.Abilities.WallChargeJump.PerformChargeJump();
+			Sein.Abilities.WallChargeJump.PerformChargeJump();
 		}
-		else if (CharacterState.IsActive(this.Sein.Abilities.WallJump) && this.Sein.Abilities.WallJump.CanPerformWallJump)
+		else if (CharacterState.IsActive(Sein.Abilities.WallJump) && Sein.Abilities.WallJump.CanPerformWallJump)
 		{
-			this.Sein.Abilities.WallJump.PerformWallJump();
+			Sein.Abilities.WallJump.PerformWallJump();
 		}
-		else if (!this.IsGrabbingBlock)
+		else if (!IsGrabbingBlock)
 		{
-			if (CharacterState.IsActive(this.Sein.Abilities.ChargeJump) && this.Sein.Abilities.ChargeJump.CanChargeJump)
+			if (CharacterState.IsActive(Sein.Abilities.ChargeJump) && Sein.Abilities.ChargeJump.CanChargeJump)
 			{
-				this.Sein.Abilities.ChargeJump.PerformChargeJump();
+				Sein.Abilities.ChargeJump.PerformChargeJump();
 			}
-			else if (CharacterState.IsActive(this.Sein.Abilities.Jump) && this.Sein.Abilities.Jump.CanJump)
+			else if (CharacterState.IsActive(Sein.Abilities.Jump) && Sein.Abilities.Jump.CanJump)
 			{
-				this.Sein.Abilities.Jump.PerformJump();
+				Sein.Abilities.Jump.PerformJump();
 			}
-			else if (CharacterState.IsActive(this.Sein.Abilities.DoubleJump) && this.Sein.Abilities.DoubleJump.CanDoubleJump)
+			else if (CharacterState.IsActive(Sein.Abilities.DoubleJump) && Sein.Abilities.DoubleJump.CanDoubleJump)
 			{
-				if (this.Sein.Controller.IsGliding)
+				if (Sein.Controller.IsGliding)
 				{
-					this.Sein.Abilities.Glide.Exit();
+					Sein.Abilities.Glide.Exit();
 				}
-				this.Sein.Abilities.DoubleJump.PerformDoubleJump();
+				Sein.Abilities.DoubleJump.PerformDoubleJump();
 			}
 		}
 	}
 
 	public bool RayTest(GameObject target)
 	{
-		return this.RayTest(target, Vector2.zero, Vector2.zero);
+		return RayTest(target, Vector2.zero, Vector2.zero);
 	}
 
 	public bool RayTest(GameObject target, Vector2 startOffset, Vector2 endOffset)
 	{
-		Vector3 vector = this.m_transform.position + (Vector3)startOffset;
+		Vector3 vector = m_transform.position + (Vector3)startOffset;
 		Vector3 a = target.transform.position + (Vector3)endOffset;
 		Vector3 vector2 = a - vector;
 		Rigidbody component = target.GetComponent<Rigidbody>();
 		RaycastHit raycastHit;
-		return !Physics.Raycast(vector, vector2.normalized, out raycastHit, vector2.magnitude, this.RayTestLayerMask) || !(raycastHit.collider.gameObject != target) || (component && !(component != raycastHit.collider.attachedRigidbody)) || raycastHit.collider.isTrigger;
+		return !Physics.Raycast(vector, vector2.normalized, out raycastHit, vector2.magnitude, RayTestLayerMask) || !(raycastHit.collider.gameObject != target) || (component && !(component != raycastHit.collider.attachedRigidbody)) || raycastHit.collider.isTrigger;
 	}
 
 	public bool RayTest(Vector3 position, Vector3 delta, out RaycastHit hitInfo)
@@ -394,7 +395,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 
 	public void StopAnimation()
 	{
-		this.IsPlayingAnimation = false;
+		IsPlayingAnimation = false;
 	}
 
 	public void PlayAnimation(TextureAnimationWithTransitions animation)
@@ -402,98 +403,98 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 		Characters.Sein.Controller.EnterPlayingAnimation();
 		if (animation.Animation.Loop)
 		{
-			this.Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(animation, 200, new Func<bool>(this.ShouldAnimationKeepPlaying), false);
+			Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(animation, 200, ShouldAnimationKeepPlaying);
 		}
 		else
 		{
-			this.Sein.PlatformBehaviour.Visuals.Animation.Play(animation, 200, new Func<bool>(this.ShouldAnimationKeepPlaying));
-			this.Sein.PlatformBehaviour.Visuals.Animation.Animator.OnAnimationEndEvent += this.OnAnimationEndEvent;
+			Sein.PlatformBehaviour.Visuals.Animation.Play(animation, 200, ShouldAnimationKeepPlaying);
+			Sein.PlatformBehaviour.Visuals.Animation.Animator.OnAnimationEndEvent += OnAnimationEndEvent;
 		}
 	}
 
 	private void OnAnimationEndEvent(TextureAnimation textureAnimation)
 	{
-		this.Sein.PlatformBehaviour.Visuals.Animation.Animator.OnAnimationEndEvent -= this.OnAnimationEndEvent;
-		if (this.IsPlayingAnimation)
+		Sein.PlatformBehaviour.Visuals.Animation.Animator.OnAnimationEndEvent -= OnAnimationEndEvent;
+		if (IsPlayingAnimation)
 		{
-			this.IsPlayingAnimation = false;
-			this.OnTriggeredAnimationFinished();
+			IsPlayingAnimation = false;
+			OnTriggeredAnimationFinished();
 		}
 	}
 
 	public bool ShouldAnimationKeepPlaying()
 	{
-		return this.IsPlayingAnimation;
+		return IsPlayingAnimation;
 	}
 
 	public void FixedUpdate()
 	{
-		if (this.IsSuspended)
+		if (IsSuspended)
 		{
 			return;
 		}
-		if (this.IsPlayingAnimation)
+		if (IsPlayingAnimation)
 		{
-			TextureAnimation currentAnimation = this.Sein.Animation.Animator.CurrentAnimation;
+			TextureAnimation currentAnimation = Sein.Animation.Animator.CurrentAnimation;
 			if (currentAnimation)
 			{
 				AnimationMetaData animationMetaData = currentAnimation.AnimationMetaData;
 				if (animationMetaData)
 				{
-					Vector3 deltaPositionAtTime = animationMetaData.CameraData.GetDeltaPositionAtTime(this.Sein.Animation.Animator.CurrentAnimationTime);
-					Vector3 a = Vector3.Scale(deltaPositionAtTime, this.Sein.PlatformBehaviour.Visuals.Sprite.transform.lossyScale);
-					if (this.FaceLeft)
+					Vector3 deltaPositionAtTime = animationMetaData.CameraData.GetDeltaPositionAtTime(Sein.Animation.Animator.CurrentAnimationTime);
+					Vector3 a = Vector3.Scale(deltaPositionAtTime, Sein.PlatformBehaviour.Visuals.Sprite.transform.lossyScale);
+					if (FaceLeft)
 					{
 						a.x *= -1f;
 					}
-					this.Sein.PlatformBehaviour.PlatformMovement.LocalSpeed = a / Time.deltaTime;
+					Sein.PlatformBehaviour.PlatformMovement.LocalSpeed = a / Time.deltaTime;
 				}
 				else
 				{
-					this.Sein.PlatformBehaviour.PlatformMovement.LocalSpeed = Vector2.zero;
+					Sein.PlatformBehaviour.PlatformMovement.LocalSpeed = Vector2.zero;
 				}
 			}
 		}
-		this.HandleControllerInput();
-		this.HandleJumping();
-		this.UpdateOriActiveState();
+		HandleControllerInput();
+		HandleJumping();
+		UpdateOriActiveState();
 	}
 
 	public void HandleOffscreenIssue()
 	{
-		if (Scenes.Manager.PositionInsideSceneStillLoading(this.Sein.Position))
+		if (Scenes.Manager.PositionInsideSceneStillLoading(Sein.Position))
 		{
-			this.Sein.PlatformBehaviour.PlatformMovement.LocalSpeed = Vector2.zero;
-			this.Sein.Mortality.DamageReciever.MakeInvincible(0.1f);
+			Sein.PlatformBehaviour.PlatformMovement.LocalSpeed = Vector2.zero;
+			Sein.Mortality.DamageReciever.MakeInvincible(0.1f);
 		}
 	}
 
 	public void UpdateOriActiveState()
 	{
-		if (Characters.Ori && Characters.Ori.gameObject.activeSelf != this.Sein.PlayerAbilities.SpiritFlame.HasAbility)
+		if (Characters.Ori && Characters.Ori.gameObject.activeSelf != Sein.PlayerAbilities.SpiritFlame.HasAbility)
 		{
-			Characters.Ori.gameObject.SetActive(this.Sein.PlayerAbilities.SpiritFlame.HasAbility);
+			Characters.Ori.gameObject.SetActive(Sein.PlayerAbilities.SpiritFlame.HasAbility);
 		}
 	}
 
 	public void UpdateMovementStuff()
 	{
-		this.Sein.Controller.HandleJumping();
+		Sein.Controller.HandleJumping();
 	}
 
 	public override void Serialize(Archive ar)
 	{
-		ar.Serialize(ref this.m_horizontalInputDelay);
+		ar.Serialize(ref m_horizontalInputDelay);
 		if (ar.Reading)
 		{
-			this.IsPlayingAnimation = false;
-			this.LockMovementInput = false;
+			IsPlayingAnimation = false;
+			LockMovementInput = false;
 		}
 	}
 
 	public void OnRecieveDamage(Damage damage)
 	{
-		this.Sein.Mortality.DamageReciever.OnRecieveDamage(damage);
+		Sein.Mortality.DamageReciever.OnRecieveDamage(damage);
 	}
 
 	public SeinAnimationSpeedSettings AnimationSpeedSettings;
@@ -512,7 +513,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 
 	public bool IsPlayingAnimation;
 
-	public Action OnHorizontalInputPostCalculate = delegate()
+	public Action OnHorizontalInputPostCalculate = delegate
 	{
 	};
 

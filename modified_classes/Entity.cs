@@ -7,29 +7,29 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 {
 	public Entity()
 	{
-		this.IsSuspended = false;
+		IsSuspended = false;
 	}
 
 	public void OnSceneUnloaded(SceneRoot sceneRoot)
 	{
-		if (!Scenes.Manager.IsInsideActiveSceneBoundary(base.transform.position))
+		if (!Scenes.Manager.IsInsideActiveSceneBoundary(transform.position))
 		{
-			InstantiateUtility.Destroy(base.gameObject);
+			InstantiateUtility.Destroy(gameObject);
 		}
 	}
 
 	public void ReclaimOwernship(RespawningPlaceholder placeholder)
 	{
-		base.transform.parent = placeholder.transform.parent;
-		Events.Scheduler.OnSceneRootDisabled.Remove(new Action<SceneRoot>(this.OnSceneUnloaded));
-		this.m_registeredToSceneRootDisabled = false;
+		transform.parent = placeholder.transform.parent;
+		Events.Scheduler.OnSceneRootDisabled.Remove(OnSceneUnloaded);
+		m_registeredToSceneRootDisabled = false;
 	}
 
 	public void FreeOwnership(RespawningPlaceholder placeholder)
 	{
-		base.transform.parent = null;
-		Events.Scheduler.OnSceneRootDisabled.Add(new Action<SceneRoot>(this.OnSceneUnloaded));
-		this.m_registeredToSceneRootDisabled = true;
+		transform.parent = null;
+		Events.Scheduler.OnSceneRootDisabled.Add(OnSceneUnloaded);
+		m_registeredToSceneRootDisabled = true;
 	}
 
 	public virtual bool CanBeOptimized()
@@ -41,73 +41,73 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	{
 		get
 		{
-			return WaterZone.PositionInWater(this.Position);
+			return WaterZone.PositionInWater(Position);
 		}
 	}
 
 	public void Drown()
 	{
-		Damage damage = new Damage(1000f, Vector3.zero, this.Position, DamageType.Water, base.gameObject);
-		this.DamageReciever.OnRecieveDamage(damage);
+		Damage damage = new Damage(1000f, Vector3.zero, Position, DamageType.Water, gameObject);
+		DamageReciever.OnRecieveDamage(damage);
 	}
 
 	public bool IsOnScreen()
 	{
-		return UI.Cameras.Current == null || UI.Cameras.Current.IsOnScreen(base.transform.position);
+		return UI.Cameras.Current == null || UI.Cameras.Current.IsOnScreen(transform.position);
 	}
 
 	public override void Awake()
 	{
 		SuspensionManager.Register(this);
-		if (this.FrustrumOptimized)
+		if (FrustrumOptimized)
 		{
 			CameraFrustumOptimizer.Register(this);
 		}
-		SceneRoot sceneRoot = SceneRoot.FindFromTransform(base.transform);
+		SceneRoot sceneRoot = SceneRoot.FindFromTransform(transform);
 		if (sceneRoot != null)
 		{
-			this.SceneRootGUID = sceneRoot.MetaData.SceneMoonGuid;
+			SceneRootGUID = sceneRoot.MetaData.SceneMoonGuid;
 		}
 		base.Awake();
 	}
 
 	public void SetSceneRoot(MoonGuid sceneRoot)
 	{
-		this.SceneRootGUID = sceneRoot;
+		SceneRootGUID = sceneRoot;
 	}
 
 	public override void OnDestroy()
 	{
 		SuspensionManager.Unregister(this);
-		if (this.FrustrumOptimized)
+		if (FrustrumOptimized)
 		{
 			CameraFrustumOptimizer.Unregister(this);
 		}
-		if (this.m_registeredToSceneRootDisabled)
+		if (m_registeredToSceneRootDisabled)
 		{
-			Events.Scheduler.OnSceneRootDisabled.Remove(new Action<SceneRoot>(this.OnSceneUnloaded));
+			Events.Scheduler.OnSceneRootDisabled.Remove(OnSceneUnloaded);
 		}
 		base.OnDestroy();
 	}
 
 	public override void Serialize(Archive ar)
 	{
-		this.Position = ar.Serialize(this.Position);
-		this.Rotation = ar.Serialize(this.Rotation);
+		Position = ar.Serialize(Position);
+		Rotation = ar.Serialize(Rotation);
 	}
 
 	public void Start()
 	{
-		this.StartPosition = base.transform.position;
+		StartPosition = transform.position;
 	}
 
 	public void FixedUpdate()
 	{
 		if (this is Enemy)
 			(this as Enemy).Animation.Animator.TextureAnimator.SpeedMultiplier = RandomizerBonusSkill.TimeScale(1f);
-		if (this.FrustrumOptimized && !this.m_insideFrustum && this.CanBeOptimized())
+		if (FrustrumOptimized && !m_insideFrustum && CanBeOptimized())
 		{
-			base.gameObject.SetActive(false);
+			gameObject.SetActive(false);
 		}
 	}
 
@@ -115,7 +115,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	{
 		get
 		{
-			return this.PositionToPlayerPosition.x < 0f;
+			return PositionToPlayerPosition.x < 0f;
 		}
 	}
 
@@ -131,11 +131,11 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	{
 		get
 		{
-			return base.transform.position;
+			return transform.position;
 		}
 		set
 		{
-			base.transform.position = value;
+			transform.position = value;
 		}
 	}
 
@@ -143,11 +143,11 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	{
 		get
 		{
-			return base.transform.rotation;
+			return transform.rotation;
 		}
 		set
 		{
-			base.transform.rotation = value;
+			transform.rotation = value;
 		}
 	}
 
@@ -155,7 +155,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	{
 		get
 		{
-			return base.transform.InverseTransformDirection(this.PlayerPosition - this.Position);
+			return transform.InverseTransformDirection(PlayerPosition - Position);
 		}
 	}
 
@@ -163,7 +163,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	{
 		get
 		{
-			return this.PlayerPosition - this.StartPosition;
+			return PlayerPosition - StartPosition;
 		}
 	}
 
@@ -171,7 +171,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	{
 		get
 		{
-			return this.StartPositionToPlayerPosition.x < 0f;
+			return StartPositionToPlayerPosition.x < 0f;
 		}
 	}
 
@@ -179,7 +179,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	{
 		get
 		{
-			return this.StartPosition - this.Position;
+			return StartPosition - Position;
 		}
 	}
 
@@ -187,7 +187,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 
 	public bool AfterTime(float duration)
 	{
-		return this.Controller.StateMachine.CurrentStateTime > duration;
+		return Controller.StateMachine.CurrentStateTime > duration;
 	}
 
 	public bool IsSuspended { get; set; }
@@ -198,7 +198,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 
 	public void RegisterRespawnDelegate(Action onRespawn)
 	{
-		this.DamageReciever.OnDeathEvent.Add(delegate(Damage a)
+		DamageReciever.OnDeathEvent.Add(delegate(Damage a)
 		{
 			onRespawn();
 		});
@@ -224,7 +224,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	{
 		if (sound != null)
 		{
-			Sound.Play(sound.GetSound(null), this.Position, null);
+			Sound.Play(sound.GetSound(null), Position, null);
 		}
 	}
 
@@ -240,7 +240,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	{
 		if (prefab != null)
 		{
-			InstantiateUtility.Instantiate(prefab, this.Position, base.transform.rotation);
+			InstantiateUtility.Instantiate(prefab, Position, transform.rotation);
 		}
 	}
 
@@ -254,43 +254,43 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 
 	public void ActivateDamageDealer()
 	{
-		this.DamageDealer.Activated = true;
+		DamageDealer.Activated = true;
 	}
 
 	public void DeactivateDamageDealer()
 	{
-		this.DamageDealer.Activated = false;
+		DamageDealer.Activated = false;
 	}
 
 	public void ActivateTargetting()
 	{
-		this.Targetting.Activated = true;
+		Targetting.Activated = true;
 	}
 
 	public void DeactivateTargetting()
 	{
-		this.Targetting.Activated = false;
+		Targetting.Activated = false;
 	}
 
 	public void OnFrustumEnter()
 	{
-		this.m_insideFrustum = true;
-		if (!this.DamageReciever || !this.DamageReciever.NoHealthLeft)
+		m_insideFrustum = true;
+		if (!DamageReciever || !DamageReciever.NoHealthLeft)
 		{
-			base.gameObject.SetActive(true);
+			gameObject.SetActive(true);
 		}
 	}
 
 	public void OnFrustumExit()
 	{
-		this.m_insideFrustum = false;
+		m_insideFrustum = false;
 	}
 
 	public bool InsideFrustum
 	{
 		get
 		{
-			return this.m_insideFrustum;
+			return m_insideFrustum;
 		}
 	}
 
@@ -298,9 +298,9 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	{
 		get
 		{
-			Vector3 size = new Vector3(this.BoundingBox.width, this.BoundingBox.height, 0f);
-			Vector3 vector = base.transform.position;
-			vector += new Vector3(this.BoundingBox.center.x, this.BoundingBox.center.y, 0f);
+			Vector3 size = new Vector3(BoundingBox.width, BoundingBox.height, 0f);
+			Vector3 vector = transform.position;
+			vector += new Vector3(BoundingBox.center.x, BoundingBox.center.y, 0f);
 			return new Bounds(vector, size);
 		}
 	}
@@ -308,7 +308,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 	public bool PlayerInsideSameScene()
 	{
 		RuntimeSceneMetaData currentScene = Scenes.Manager.CurrentScene;
-		return currentScene != null && currentScene.SceneMoonGuid == this.SceneRootGUID;
+		return currentScene != null && currentScene.SceneMoonGuid == SceneRootGUID;
 	}
 
 	public EntityController Controller;

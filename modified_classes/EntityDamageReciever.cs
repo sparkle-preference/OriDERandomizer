@@ -1,22 +1,22 @@
 using System;
 using Game;
 using UnityEngine;
-using Core;
+
 public class EntityDamageReciever : DamageReciever, IDynamicGraphicHierarchy, IProjectileDetonatable
 {
 	public new void OnValidate()
 	{
-		this.Entity = base.transform.FindComponentUpwards<Entity>();
-		this.Entity.DamageReciever = this;
+		Entity = transform.FindComponentUpwards<Entity>();
+		Entity.DamageReciever = this;
 		base.OnValidate();
 	}
 
 	public new void Awake()
 	{
 		base.Awake();
-		if (this.Entity == null)
+		if (Entity == null)
 		{
-			this.OnValidate();
+			OnValidate();
 		}
 	}
 
@@ -24,16 +24,16 @@ public class EntityDamageReciever : DamageReciever, IDynamicGraphicHierarchy, IP
 	{
 		get
 		{
-			return this.Entity.gameObject;
+			return Entity.gameObject;
 		}
 	}
 
 	public override void OnPoolSpawned()
 	{
-		this.OnModifyDamage = delegate
+		OnModifyDamage = delegate
 		{
 		};
-		EntityDamageReciever.OnEntityDeathEvent = delegate
+		OnEntityDeathEvent = delegate
 		{
 		};
 		base.OnPoolSpawned();
@@ -41,21 +41,21 @@ public class EntityDamageReciever : DamageReciever, IDynamicGraphicHierarchy, IP
 
 	public void OnTriggerEnter(Collider collider)
 	{
-		if (this.CanBeCrushed && collider.GetComponent<CrushPlayer>())
+		if (CanBeCrushed && collider.GetComponent<CrushPlayer>())
 		{
-			Damage damage = new Damage(10000f, Vector2.zero, this.Entity.Position, DamageType.Crush, base.gameObject);
-			damage.DealToComponents(base.gameObject);
+			Damage damage = new Damage(10000f, Vector2.zero, Entity.Position, DamageType.Crush, gameObject);
+			damage.DealToComponents(gameObject);
 		}
 	}
 
 	public override void OnRecieveDamage(Damage damage)
 	{
 		bool terrain = (damage.Type == DamageType.Crush || damage.Type == DamageType.Spikes || damage.Type == DamageType.Lava || damage.Type == DamageType.Laser);
-		if (this.Entity is Enemy && !(terrain || damage.Type == DamageType.Projectile || damage.Type == DamageType.Enemy))
+		if (Entity is Enemy && !(terrain || damage.Type == DamageType.Projectile || damage.Type == DamageType.Enemy))
 		{
 			RandomizerBonus.DamageDealt(damage.Amount);
 		}
-		this.OnModifyDamage(damage);
+		OnModifyDamage(damage);
 		if (damage.Type == DamageType.Enemy)
 		{
 			return;
@@ -68,15 +68,15 @@ public class EntityDamageReciever : DamageReciever, IDynamicGraphicHierarchy, IP
 		{
 			damage.SetAmount(1000f);
 		}
-		if (this.Entity.gameObject != base.gameObject)
+		if (Entity.gameObject != gameObject)
 		{
-			damage.DealToComponents(this.Entity.gameObject);
+			damage.DealToComponents(Entity.gameObject);
 		}
 		base.OnRecieveDamage(damage);
-		if (base.NoHealthLeft)
+		if (NoHealthLeft)
 		{
-			EntityDamageReciever.OnEntityDeathEvent(this.Entity);
-			if (damage.Type == DamageType.Projectile && this.Entity is Enemy)
+			OnEntityDeathEvent(Entity);
+			if (damage.Type == DamageType.Projectile && Entity is Enemy)
 			{
 				Projectile component = damage.Sender.GetComponent<Projectile>();
 				if (component != null && component.HasBeenBashedByOri)
@@ -90,14 +90,14 @@ public class EntityDamageReciever : DamageReciever, IDynamicGraphicHierarchy, IP
 			}
 			if (terrain)
 			{
-				Type type = this.Entity.GetType();
-				if (type != typeof(DropSlugEnemy) && type != typeof(KamikazeSootEnemy) && !base.gameObject.name.ToLower().Contains("wall"))
+				Type type = Entity.GetType();
+				if (type != typeof(DropSlugEnemy) && type != typeof(KamikazeSootEnemy) && !gameObject.name.ToLower().Contains("wall"))
 				{
 					AchievementsLogic.Instance.OnEnemyKilledItself();
 				}
 			}
-			BingoController.OnDestroyEntity(this.Entity, damage);
-			if (this.Entity is Enemy)
+			BingoController.OnDestroyEntity(Entity, damage);
+			if (Entity is Enemy)
 			{
 				RandomizerStatsManager.OnKill(damage.Type);
 				if (damage.Type == DamageType.ChargeFlame)
@@ -131,21 +131,21 @@ public class EntityDamageReciever : DamageReciever, IDynamicGraphicHierarchy, IP
 					AchievementsLogic.Instance.OnGrenaedKilledEnemy();
 				}
 			}
-			if (this.Entity is PetrifiedPlant)
+			if (Entity is PetrifiedPlant)
 			{
-				RandomizerLocationManager.GivePickup(this.Entity.MoonGuid);
+				RandomizerLocationManager.GivePickup(Entity.MoonGuid);
 			}
 		}
 	}
 
 	public bool CanDetonateProjectiles()
 	{
-		return this.IgnoreDamageCondition == null || !this.IgnoreDamageCondition(null);
+		return IgnoreDamageCondition == null || !IgnoreDamageCondition(null);
 	}
 
 	public Entity Entity;
 
-	public EntityDamageReciever.ModifyDamageDelegate OnModifyDamage = delegate
+	public ModifyDamageDelegate OnModifyDamage = delegate
 	{
 	};
 

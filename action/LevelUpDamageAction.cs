@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Game;
 using UnityEngine;
@@ -7,7 +6,7 @@ public class LevelUpDamageAction : ActionMethod, ISuspendable
 {
 	public override void Perform(IContext context)
 	{
-		this.m_active = true;
+		m_active = true;
 	}
 
 	public override void Awake()
@@ -24,16 +23,16 @@ public class LevelUpDamageAction : ActionMethod, ISuspendable
 
 	public void FixedUpdate()
 	{
-		if (!this.m_active)
+		if (!m_active)
 		{
 			return;
 		}
-		this.m_time += Time.deltaTime;
-		this.m_delayTime -= Time.deltaTime;
-		if (this.m_delayTime < 0f)
+		m_time += Time.deltaTime;
+		m_delayTime -= Time.deltaTime;
+		if (m_delayTime < 0f)
 		{
-			this.m_delayTime = 0.1f;
-			float num = this.DistanceOverTime.Evaluate(this.m_time);
+			m_delayTime = 0.1f;
+			float num = DistanceOverTime.Evaluate(m_time);
 			List<IAttackable> attackables = Targets.Attackables;
 			for (int i = 0; i < attackables.Count; i++)
 			{
@@ -42,12 +41,12 @@ public class LevelUpDamageAction : ActionMethod, ISuspendable
 				{
 					if (attackable.CanBeLevelUpBlasted())
 					{
-						if (!this.m_attackables.Contains(attackable))
+						if (!m_attackables.Contains(attackable))
 						{
-							if (Vector3.Distance(base.transform.position, attackable.Position) <= num)
+							if (Vector3.Distance(transform.position, attackable.Position) <= num)
 							{
-								this.m_attackables.Add(attackable);
-								Damage damage = new Damage((float)this.Damage, (attackable.Position - base.transform.position).normalized, attackable.Position, DamageType.LevelUp, base.gameObject);
+								m_attackables.Add(attackable);
+								Damage damage = new Damage(Damage, (attackable.Position - transform.position).normalized, attackable.Position, DamageType.LevelUp, gameObject);
 								damage.DealToComponents((attackable as Component).gameObject); 
 							}
 						}
@@ -55,11 +54,11 @@ public class LevelUpDamageAction : ActionMethod, ISuspendable
 				}
 			}
 		}
-		if (this.m_time > this.Duration)
+		if (m_time > Duration)
 		{
-			this.m_active = false;
-			this.m_time = 0f;
-			this.m_attackables.Clear();
+			m_active = false;
+			m_time = 0f;
+			m_attackables.Clear();
 		}
 	}
 

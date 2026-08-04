@@ -3,8 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Core;
 using UnityEngine;
+using Input = Core.Input;
 
 public static class RandomizerRebinding {
 	public static void WriteBindsToFile() {
@@ -47,7 +47,7 @@ public static class RandomizerRebinding {
 				if (!line.Contains(":")){
 					continue;
 				}
-				string[] parts = line.Split(new char[]{':'}, 2);
+				string[] parts = line.Split(new[]{':'}, 2);
 				string action = parts[0].Trim();
 				if(action == "Free Grenade Jump") {
 					action = "Grenade Jump";
@@ -142,9 +142,9 @@ public static class RandomizerRebinding {
 	public static BindSet ParseBinds(string action, string bindingString) {
 		List<SingleBind> binds = new List<SingleBind>();
 
-		foreach (string bind in bindingString.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries)) {
+		foreach (string bind in bindingString.Split(new[]{','}, StringSplitOptions.RemoveEmptyEntries)) {
 			List<SingleInput> singleBind = new List<SingleInput>();
-			foreach (string input in bind.Trim().Split(new char[]{'+'}, StringSplitOptions.RemoveEmptyEntries)) {
+			foreach (string input in bind.Trim().Split(new[]{'+'}, StringSplitOptions.RemoveEmptyEntries)) {
 				if (action == "Double Bash" && input.Trim().ToLower() == "tap") {
 					Randomizer.BashTap = true;
 				}
@@ -166,23 +166,23 @@ public static class RandomizerRebinding {
 		}
 	}
 
-	public static Dictionary<string, Core.Input.InputButtonProcessor> CoreInputMap = new Dictionary<string, Core.Input.InputButtonProcessor> { 
-				{"Jump", Core.Input.Jump},
-				{"SpiritFlame", Core.Input.SpiritFlame},
-				{"Bash", Core.Input.Bash},
-				{"SoulFlame", Core.Input.SoulFlame},
-				{"ChargeJump", Core.Input.ChargeJump},
-				{"Glide", Core.Input.Glide},
-				{"Dash", Core.Input.RightShoulder},
-				{"Grenade", Core.Input.LeftShoulder},
-				{"Left", Core.Input.Left},
-				{"Right", Core.Input.Right},
-				{"Up", Core.Input.Up},
-				{"Down", Core.Input.Down},
-				{"LeftStick", Core.Input.LeftStick},
-				{"RightStick", Core.Input.RightStick},
-				{"Start", Core.Input.Start},
-				{"Select", Core.Input.Select}
+	public static Dictionary<string, Input.InputButtonProcessor> CoreInputMap = new Dictionary<string, Input.InputButtonProcessor> { 
+				{"Jump", Input.Jump},
+				{"SpiritFlame", Input.SpiritFlame},
+				{"Bash", Input.Bash},
+				{"SoulFlame", Input.SoulFlame},
+				{"ChargeJump", Input.ChargeJump},
+				{"Glide", Input.Glide},
+				{"Dash", Input.RightShoulder},
+				{"Grenade", Input.LeftShoulder},
+				{"Left", Input.Left},
+				{"Right", Input.Right},
+				{"Up", Input.Up},
+				{"Down", Input.Down},
+				{"LeftStick", Input.LeftStick},
+				{"RightStick", Input.RightStick},
+				{"Start", Input.Start},
+				{"Select", Input.Select}
 			};
 	public static Dictionary<string, string> DefaultBinds = new Dictionary<string, string> { 
 				{"Replay Message", "LeftAlt+T, RightAlt+T"},
@@ -289,58 +289,58 @@ public static class RandomizerRebinding {
 		{"ChargeJump", "ChargeJumpCharge"}
 	};
 
-	public class SingleInput : Core.Input.InputButtonProcessor {
+	public class SingleInput : Input.InputButtonProcessor {
 		public SingleInput(string input) {
 			raw = input;
 			if (input.StartsWith("_")) {
-				this.Type = ActionType.ControllerButton;
-				this.Button = (PlayerInputRebinding.ControllerButton)Enum.Parse(typeof(PlayerInputRebinding.ControllerButton), input.Substring(1), true);
+				Type = ActionType.ControllerButton;
+				Button = (PlayerInputRebinding.ControllerButton)Enum.Parse(typeof(PlayerInputRebinding.ControllerButton), input.Substring(1), true);
 			}
 			else if (CoreInputMap.ContainsKey(input)) {
-				this.Type = ActionType.CoreInput;
-				this.CoreInput = CoreInputMap[input];
+				Type = ActionType.CoreInput;
+				CoreInput = CoreInputMap[input];
 			}
 			else {
-				this.Type = ActionType.KeyCode;
-				this.Key = StringToKeyBinding(input);
+				Type = ActionType.KeyCode;
+				Key = StringToKeyBinding(input);
 			}
 		}
 
 		public void FixedUpdate() {
-			switch (this.Type) {
+			switch (Type) {
 			case ActionType.CoreInput:
-				this.Update(this.CoreInput.Pressed);
+				Update(CoreInput.Pressed);
 				break;
 			case ActionType.ControllerButton:
-				this.Update(PlayerInput.Instance.ControllerButtonToButtonInput(this.Button).GetButton());
+				Update(PlayerInput.Instance.ControllerButtonToButtonInput(Button).GetButton());
 				break;
 			case ActionType.KeyCode:
-				this.Update(MoonInput.GetKey(this.Key));
+				Update(MoonInput.GetKey(Key));
 				break;
 			}
 		}
 
 		public override string ToString() {
-			switch (this.Type) {
+			switch (Type) {
 			case ActionType.CoreInput:
 				return $"[{(coreInputNameRepl.ContainsKey(raw) ? coreInputNameRepl[raw] : raw)}]";
 			case ActionType.ControllerButton:
-				return "_" + this.Button.ToString();
+				return "_" + Button;
 			case ActionType.KeyCode:
-				return this.Key.ToString();
+				return Key.ToString();
 			default:
 				return "";
 			}
 		}
 
 		public string RawStr() {
-			switch (this.Type) {
+			switch (Type) {
 			case ActionType.CoreInput:
 				return raw;
 			case ActionType.ControllerButton:
-				return $"_{this.Button}";
+				return $"_{Button}";
 			case ActionType.KeyCode:
-				return $"{this.Key}";
+				return $"{Key}";
 			default:
 				return "";
 			}			
@@ -351,7 +351,7 @@ public static class RandomizerRebinding {
 
 		private string raw;
 
-		public Core.Input.InputButtonProcessor CoreInput;
+		public Input.InputButtonProcessor CoreInput;
 
 		public PlayerInputRebinding.ControllerButton Button;
 
@@ -361,18 +361,18 @@ public static class RandomizerRebinding {
 			CoreInput,
 			ControllerButton,
 			KeyCode
-		};
+		}
 	}
 
-	public class SingleBind : Core.Input.InputButtonProcessor {
+	public class SingleBind : Input.InputButtonProcessor {
 		public SingleBind(List<SingleInput> inputs) {
-			this.Inputs = inputs;
+			Inputs = inputs;
 		}
 
 		public void FixedUpdate() {
 			bool pressed = true;
 
-			foreach (SingleInput input in this.Inputs) {
+			foreach (SingleInput input in Inputs) {
 				input.FixedUpdate();
 
 				if (input.Released) {
@@ -380,51 +380,51 @@ public static class RandomizerRebinding {
 				}
 			}
 
-			this.Update(pressed);
+			Update(pressed);
 		}
 
-		public override string ToString() => String.Join("+", this.Inputs.Select(input => input.ToString()).ToArray());
-		public string RawStr() => String.Join("+", this.Inputs.Select(input => input.RawStr()).ToArray());
+		public override string ToString() => String.Join("+", Inputs.Select(input => input.ToString()).ToArray());
+		public string RawStr() => String.Join("+", Inputs.Select(input => input.RawStr()).ToArray());
 		
 
 		public List<SingleInput> Inputs;
 	}
 
-	public class BindSet : Core.Input.InputButtonProcessor {
+	public class BindSet : Input.InputButtonProcessor {
 		public BindSet(List<SingleBind> binds) {
-			this.deprecated_wasPressed = true;
-			this.Binds = binds;
+			deprecated_wasPressed = true;
+			Binds = binds;
 		}
 
-		public override string ToString() => String.Join(", ", this.Binds.Select(binds => binds.RawStr()).ToArray());
+		public override string ToString() => String.Join(", ", Binds.Select(binds => binds.RawStr()).ToArray());
 
-		public string FirstBindName() {
+		public string FirstBindName()
+		{
 			if (HasBind()) 
-				return this.Binds[0].ToString();
-			else
-				return "<NO BIND>";
+				return Binds[0].ToString();
+			return "<NO BIND>";
 		}
 
-		public bool HasBind() => this.Binds.Count > 0;
+		public bool HasBind() => Binds.Count > 0;
 
 		public bool IsPressed() {
-			foreach (SingleBind bind in this.Binds) {
+			foreach (SingleBind bind in Binds) {
 				if (bind.Pressed) {
-					if (this.deprecated_wasPressed) {
+					if (deprecated_wasPressed) {
 						return false;
 					}
-					this.deprecated_wasPressed = true;
+					deprecated_wasPressed = true;
 					return true;
 				}
 			}
-			this.deprecated_wasPressed = false;
+			deprecated_wasPressed = false;
 			return false;
 		}
 
 		public void FixedUpdate() {
 			bool pressed = false;
 
-			foreach (SingleBind bind in this.Binds) {
+			foreach (SingleBind bind in Binds) {
 				bind.FixedUpdate();
 
 				if (bind.Pressed) {
@@ -432,7 +432,7 @@ public static class RandomizerRebinding {
 				}
 			}
 
-			this.Update(pressed);
+			Update(pressed);
 		}
 
 		public List<SingleBind> Binds;

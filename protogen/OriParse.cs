@@ -29,7 +29,7 @@ namespace Protogen
                 string line = ((commStart == -1) ? rawLine : rawLine.Substring(0, commStart)).Trim();
                 if (line.StartsWith("--") || line == "")
                     continue;
-                var segments = line.Split(new char[]{' '}, StringSplitOptions.RemoveEmptyEntries);
+                var segments = line.Split(new[]{' '}, StringSplitOptions.RemoveEmptyEntries);
                 var first = segments.First().Trim();
                 switch (first)
                 {
@@ -91,7 +91,7 @@ namespace Protogen
                 var trimmed = req.Trim();
                 if (trimmed.Contains("="))
                 {
-                    var parts = trimmed.Split(new char[]{'='});
+                    var parts = trimmed.Split('=');
                     var resource = parts[0].Trim();
                     var value = int.Parse(parts[1].Trim());
                     switch (resource)
@@ -228,7 +228,7 @@ namespace Protogen
         public static string[] healthSkills = {"UltraDefense"};
         public static string[] allowsAnything = {"glitched", "timed-level", "insane"};
         public static int invalidPathset = 1 << 19;
-        public static Dictionary<string, int> pathBits = new Dictionary<string, int>() {
+        public static Dictionary<string, int> pathBits = new Dictionary<string, int> {
             {"casual-core", 1 << 0},
             {"casual-dboost", 1 << 1},
             {"standard-core", 1 << 2},

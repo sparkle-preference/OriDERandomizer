@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Core;
 using UnityEngine;
+using Random = System.Random;
 
 public class RandomizerEnhancedMode
 {
@@ -22,7 +22,7 @@ public class RandomizerEnhancedMode
 
     public static void BootstrapSceneWater(SceneRoot sceneRoot)
     {
-        List<string> objectsToDeactivate = RandomizerEnhancedMode.WaterBootstrapScenes[sceneRoot.name];
+        List<string> objectsToDeactivate = WaterBootstrapScenes[sceneRoot.name];
 
         GameObject conditionObj = new GameObject("enhancedWaterLogic");
         conditionObj.transform.parent = sceneRoot.transform;
@@ -97,14 +97,16 @@ public class RandomizerEnhancedMode
         {
             return "$a skill$";
         }
-        else if (pickupAction.Action == "EV")
+
+        if (pickupAction.Action == "EV")
         {
             int eventPickup = (int)pickupAction.Value;
             if (eventPickup == 0 || eventPickup == 2 || eventPickup == 4)
             {
                 return "#a dungeon key#";
             }
-            else if (eventPickup == 1 || eventPickup == 3 || eventPickup == 5)
+
+            if (eventPickup == 1 || eventPickup == 3 || eventPickup == 5)
             {
                 return "#an event#";
             }
@@ -116,11 +118,13 @@ public class RandomizerEnhancedMode
             {
                 return "#a shard#";
             }
-            else if (bonus == 28)
+
+            if (bonus == 28)
             {
                 return "#a fragment#";
             }
-            else if (bonus >= 300 && bonus <= 311)
+
+            if (bonus >= 300 && bonus <= 311)
             {
                 return "#a keystone#";
             }
@@ -242,7 +246,7 @@ public class RandomizerEnhancedMode
             }
         }
 
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, index, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, index, new MessageDescriptor[1] {
             new MessageDescriptor(hintText)
         });
     }
@@ -250,14 +254,14 @@ public class RandomizerEnhancedMode
 	public static void BootstrapSeinRoomText(SceneRoot sceneRoot)
 	{
         ActionSequence seinSequence = sceneRoot.transform.FindChild("*setups/*story/findingOri/seinInterestZone/trigger/activateSequence").GetComponent<ActionSequence>();
-		RandomizerEnhancedMode.AddEnhancedModeTextAction(seinSequence, 27, new MessageDescriptor[3] {
+		AddEnhancedModeTextAction(seinSequence, 27, new MessageDescriptor[3] {
 			new MessageDescriptor("My voice... is returning...\nAt last, I can speak once more, after 8 years of silence."),
 			new MessageDescriptor("I am #Sein#, the light and eyes of the randomizer developers. I will be happy to waste your time during your journey."),
 			new MessageDescriptor("But if you really can't stand my presence, then you can silence me once more by pressing #Shift+Alt+U#.")
 		});
 
         ActionSequence postFightSequence = sceneRoot.transform.FindChild("*setups/*story/allEnemiesKilled/group/actionSequence").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(postFightSequence, 10, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(postFightSequence, 10, new MessageDescriptor[1] {
             new MessageDescriptor("These poor creatures...they could have lived, if you had just used the randomizer's Warp feature.", EmotionType.Sad, null)
         });
 	}
@@ -265,7 +269,7 @@ public class RandomizerEnhancedMode
 	public static void BootstrapSunkenGladesKeystoneDoorText(SceneRoot sceneRoot)
 	{
         ActionSequence sequence = sceneRoot.transform.FindChild("*allEnemiesKilled/activated/*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-		RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[2] {
+		AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[2] {
 			new MessageDescriptor("This is a #door#. A #door# is like a wall, except you can go through it."),
 			new MessageDescriptor("...what are you looking at me like that for? Of course you can't go through a wall! Don't be silly.")
 		});
@@ -314,7 +318,7 @@ public class RandomizerEnhancedMode
                 hintText = $"Don't worry, only {hintMapstones} of the mapstones are in {hintZone} this time!";
             }
 
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 8, new MessageDescriptor[3] {
+            AddEnhancedModeTextAction(sequence, 8, new MessageDescriptor[3] {
                 new MessageDescriptor("Ori, this is a #Map#. Or #Map Stone#? #Map Altar#? Honestly, I'm not even sure anymore."),
                 new MessageDescriptor("Anyway, you're going to have to place mapstones in all 9 #Map Monuments# to finish your journey."),
                 new MessageDescriptor(hintText)
@@ -337,7 +341,8 @@ public class RandomizerEnhancedMode
                     pickupHint = "$a skill$";
                     break;
                 }
-                else if (mapPickup.Action == "EV")
+
+                if (mapPickup.Action == "EV")
                 {
                     int eventPickup = (int)mapPickup.Value;
                     if (eventPickup == 0 || eventPickup == 2 || eventPickup == 4)
@@ -345,7 +350,8 @@ public class RandomizerEnhancedMode
                         pickupHint = "#a dungeon key#";
                         break;
                     }
-                    else if (eventPickup == 1 || eventPickup == 3 || eventPickup == 5)
+
+                    if (eventPickup == 1 || eventPickup == 3 || eventPickup == 5)
                     {
                         pickupHint = "#an event#";
                         break;
@@ -359,12 +365,14 @@ public class RandomizerEnhancedMode
                         pickupHint = "#a shard#";
                         break;
                     }
-                    else if (bonus == 28)
+
+                    if (bonus == 28)
                     {
                         pickupHint = "#a fragment#";
                         break;
                     }
-                    else if (bonus >= 300 && bonus <= 311)
+
+                    if (bonus >= 300 && bonus <= 311)
                     {
                         pickupHint = "#a keystone#";
                         break;
@@ -400,7 +408,7 @@ public class RandomizerEnhancedMode
 
             string hintMapAsText = (hintMap == 0 || hintMap == 1) ? "one mapstone in a #Map Pedestal#" : $"{hintMap} mapstones in #Map Pedestals#";
 
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 8, new MessageDescriptor[3] {
+            AddEnhancedModeTextAction(sequence, 8, new MessageDescriptor[3] {
                 new MessageDescriptor("Ori, this is a #Map#. Or #Map Stone#? #Map Altar#? Honestly, I'm not even sure anymore."),
                 new MessageDescriptor("Anyway, you can receive items by placing mapstones in these #Map Monuments#!"),
                 new MessageDescriptor($"For example, if you place {hintMapAsText}, you'll find {pickupHint}!")
@@ -411,7 +419,7 @@ public class RandomizerEnhancedMode
     public static void BootstrapWallJumpTreeText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*storySetups/storyTextWithTrigger/action").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[4] {
+        AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[4] {
             new MessageDescriptor("Ori."),
             new MessageDescriptor("Quaza."),
             new MessageDescriptor("Shaka."),
@@ -422,18 +430,18 @@ public class RandomizerEnhancedMode
     public static void BootstrapSpiritTreeText(SceneRoot sceneRoot)
     {
         ActionSequence attackSequence = sceneRoot.transform.FindChild("*spiritTreeStorySetup/container/actionSequences/02. kuroAttackActionSequence").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(attackSequence, 0, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(attackSequence, 0, new MessageDescriptor[1] {
             new MessageDescriptor("I'm sorry, Ori, but stepping on this #Spirit Well# triggers a lengthy cutscene.", EmotionType.Sad, null)
         }, true);
         (attackSequence.Actions[3] as WaitAction).LastAction = (attackSequence.Actions[0] as ShowEnhancedSpiritFlameTextAction);
 
         ActionSequence mapSequence = sceneRoot.transform.FindChild("*spiritTreeStorySetup/container/actionSequences/03. worldMapActionSequence").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(mapSequence, 15, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(mapSequence, 15, new MessageDescriptor[1] {
             new MessageDescriptor("It's possible to skip this cutscene using #Save Anywhere#. This may be a good idea if you're trying to complete your journey as quickly as possible!")
         });
 
         ActionSequence returnSequence = sceneRoot.transform.FindChild("*spiritTreeStorySetup/container/actionSequences/04. returnCameraToPlayerActionSequence").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(returnSequence, 5, new MessageDescriptor[2] {
+        AddEnhancedModeTextAction(returnSequence, 5, new MessageDescriptor[2] {
             new MessageDescriptor("Depending on the circumstances, skipping this cutscene may or not be the best option. Try it out sometimes and see how you feel about it!"),
             new MessageDescriptor("If you don't know how to do #Save Anywhere#, then you can ask on the #Discord#!", EmotionType.Happy, null)
         });
@@ -442,16 +450,16 @@ public class RandomizerEnhancedMode
     public static void BootstrapSpiritTreeMapText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*setup/actionSequence").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 4, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, 4, new MessageDescriptor[1] {
             new MessageDescriptor("Watching this cutscene takes around 40 seconds. You could already be checking the $Charge Flame$ tree by now!")
         });
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 10, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, 10, new MessageDescriptor[1] {
             new MessageDescriptor("Of course, if you skip this cutscene, then you don't activate this #Spirit Well# and you can't teleport to it.")
         });
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 16, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, 16, new MessageDescriptor[1] {
             new MessageDescriptor("But if you only return to this area once or twice, then it may still be faster overall to skip the cutscene.")
         });
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 22, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, 22, new MessageDescriptor[1] {
             new MessageDescriptor("There's also always a chance you get the teleporter as a pickup! That would save even more time!")
         });
     }
@@ -459,28 +467,28 @@ public class RandomizerEnhancedMode
     public static void BootstrapChargeFlameTreeText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.GenerateSkillTreeText(sequence, 8, "ChargeFlameSkillTree", "Charge Flame");
+        GenerateSkillTreeText(sequence, 8, "ChargeFlameSkillTree", "Charge Flame");
     }
 
     public static void BootstrapGinsoDoorText(SceneRoot sceneRoot)
     {
-        string itemHint = RandomizerEnhancedMode.GetItemHintForPickup("WaterVein");
+        string itemHint = GetItemHintForPickup("WaterVein");
         ActionSequence stealSequence = sceneRoot.transform.FindChild("*setups/stealingSetup/setupA/action").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(stealSequence, 11, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(stealSequence, 11, new MessageDescriptor[1] {
             new MessageDescriptor($"A #Gumon# from the #Forlorn Ruins#! He's running away with {itemHint}! Quickly, after him!", EmotionType.Urgent, null)
         });
 
         ActionSequence failSequence = sceneRoot.transform.FindChild("*setups/openingGinsoTree/oriInterestArea/failedAction").GetComponent<ActionSequence>();
         if (!Randomizer.Shards)
         {
-            string keyHint = RandomizerEnhancedMode.GetLocationHintForDungeonKey(0);
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(failSequence, 2, new MessageDescriptor[1] {
+            string keyHint = GetLocationHintForDungeonKey(0);
+            AddEnhancedModeTextAction(failSequence, 2, new MessageDescriptor[1] {
                 new MessageDescriptor($"Ori, you need the *Water Vein* to open this door. You can find it {keyHint}!")
             });
         }
         else
         {
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(failSequence, 2, new MessageDescriptor[1] {
+            AddEnhancedModeTextAction(failSequence, 2, new MessageDescriptor[1] {
                 new MessageDescriptor("Ori, you need the *Water Vein* to open this door. Good luck finding the shards!")
             });
         }
@@ -489,13 +497,13 @@ public class RandomizerEnhancedMode
     public static void BootstrapDoubleJumpTreeText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.GenerateSkillTreeText(sequence, 8, "DoubleJumpSkillTree", "Double Jump");
+        GenerateSkillTreeText(sequence, 8, "DoubleJumpSkillTree", "Double Jump");
     }
 
     public static void BootstrapGinsoEntranceText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*setup/*enterScene/action").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 15, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, 15, new MessageDescriptor[1] {
             new MessageDescriptor("I hope you brought some verticality, Ori! Or maybe $Dash$, if you know how to use it.")
         });
     }
@@ -503,22 +511,22 @@ public class RandomizerEnhancedMode
     public static void BootstrapBashTreeText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.GenerateSkillTreeText(sequence, 8, "BashSkillTree", "Bash");
+        GenerateSkillTreeText(sequence, 8, "BashSkillTree", "Bash");
     }
 
     public static void BootstrapWaterElementText(SceneRoot sceneRoot)
     {
         string pickupHint = GetItemHintForPickup("GinsoEscapeExit");
         ActionSequence seeHeartSequence = sceneRoot.transform.FindChild("*heartResurrection/seeHeartSetup/seeHeart").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(seeHeartSequence, 6, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(seeHeartSequence, 6, new MessageDescriptor[1] {
             new MessageDescriptor("Please tell me you'll actually restore the #Element of Waters#! Everyone always skips it.")
         });
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(seeHeartSequence, 11, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(seeHeartSequence, 11, new MessageDescriptor[1] {
             new MessageDescriptor($"Look...what if I told you that you can get {pickupHint} at the end of the escape? Would you do it then?")
         });
 
         ActionSequence startSequence = sceneRoot.transform.FindChild("*heartResurrection/restoringHeartWaterRising/waterSequenceStartAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(startSequence, 3, new MessageDescriptor[2] {
+        AddEnhancedModeTextAction(startSequence, 3, new MessageDescriptor[2] {
             new MessageDescriptor($"Thanks, Ori! Just so you know, I wasn't lying earlier when I said you would get {pickupHint}."),
             new MessageDescriptor("Or at least, if I was lying, you'll probably be too distracted to remember that I did.")
         });
@@ -527,21 +535,21 @@ public class RandomizerEnhancedMode
     public static void BootstrapStompTreeText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.GenerateSkillTreeText(sequence, 8, "StompSkillTree", "Stomp");
+        GenerateSkillTreeText(sequence, 8, "StompSkillTree", "Stomp");
     }
 
     public static void BootstrapValleyMainText(SceneRoot sceneRoot)
     {
         ActionSequence lowerSequence = sceneRoot.transform.FindChild("*getFeatherSetupContainer/*kuroCliffLowerHint/*action").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(lowerSequence, 9, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(lowerSequence, 9, new MessageDescriptor[1] {
             new MessageDescriptor("Ori, I'm sensing a large area of instant, guaranteed death ahead! What could be causing it?")
         });
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(lowerSequence, 16, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(lowerSequence, 16, new MessageDescriptor[1] {
             new MessageDescriptor("Oh heck, it's a bird!", EmotionType.Urgent, null)
         });
 
         ActionSequence higherSequence = sceneRoot.transform.FindChild("*getFeatherSetupContainer/*kuroCliffHigherHint/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(higherSequence, 10, new MessageDescriptor[3] {
+        AddEnhancedModeTextAction(higherSequence, 10, new MessageDescriptor[3] {
             new MessageDescriptor("Ori, I know you're thinking of #dropping those rocks on Kuro's head#, but that's extremely dangerous!"),
             new MessageDescriptor("A heavy impact to the head could cause a #concussion#, which is a type of brain injury that could lead to serious complications."),
             new MessageDescriptor("We should consider asking Kuro to put on a #helmet# first. You can never be too careful!")
@@ -552,7 +560,7 @@ public class RandomizerEnhancedMode
     {
         string pickupHint = GetItemHintForPickup("GumonSeal");
         ActionSequence sequence = sceneRoot.transform.FindChild("*storySetups/storyTextWithTrigger/action").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 8, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, 8, new MessageDescriptor[1] {
             new MessageDescriptor($"Look! #Atsu's Torch#! If you were to pick that up and slowly, painfully carry it for a long distance, you could get {pickupHint}!")
         });
     }
@@ -560,7 +568,7 @@ public class RandomizerEnhancedMode
     public static void BootstrapClimbTreeText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.GenerateSkillTreeText(sequence, 8, "ClimbSkillTree", "Climb");
+        GenerateSkillTreeText(sequence, 8, "ClimbSkillTree", "Climb");
     }
 
     public static void BootstrapGumonSealText(SceneRoot sceneRoot)
@@ -569,7 +577,7 @@ public class RandomizerEnhancedMode
 
         if (Randomizer.SeedMeta.Contains("Limitkeys"))
         {
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
+            AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
                 new MessageDescriptor("I hope this is your dungeon key, Ori, because otherwise it's probably in the #Forlorn Ruins#!")
             });
         }
@@ -577,26 +585,26 @@ public class RandomizerEnhancedMode
         {
             if (Randomizer.RelicZoneLookup.ContainsValue("Misty"))
             {
-                RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
+                AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
                     new MessageDescriptor("I hope this is your relic, Ori, because otherwise it's probably in the $Grenade$-locked pickup!")
                 });
             }
             else
             {
-                RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
+                AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
                     new MessageDescriptor("Ori, you know that there's no relic in Misty Woods this time, right?")
                 });
             }
         }
         else if (BingoController.Active)
         {
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
+            AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
                 new MessageDescriptor("Do you have a bingo goal to visit this location, Ori? Sorry to hear that.")
             });
         }
         else
         {
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
+            AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
                 new MessageDescriptor("Wow, you're really checking the #Gumon Seal# this time?")
             });
         }
@@ -607,14 +615,14 @@ public class RandomizerEnhancedMode
         ActionSequence sequence = sceneRoot.transform.FindChild("*setups/openingForlornRuins/oriInterestArea/failedAction").GetComponent<ActionSequence>();
         if (!Randomizer.Shards)
         {
-            string keyHint = RandomizerEnhancedMode.GetLocationHintForDungeonKey(2);
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
+            string keyHint = GetLocationHintForDungeonKey(2);
+            AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
                 new MessageDescriptor($"Ori, you need the #Gumon Seal# to open this door. You can find it {keyHint}!")
             });
         }
         else
         {
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
+            AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
                 new MessageDescriptor("Ori, you need the #Gumon Seal# to open this door. Good luck finding the shards!")
             });
         }
@@ -623,18 +631,18 @@ public class RandomizerEnhancedMode
     public static void BootstrapForlornEntranceText(SceneRoot sceneRoot)
     {
         ActionSequence enterSequence = sceneRoot.transform.FindChild("*enterRuins/enterScene").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(enterSequence, 11, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(enterSequence, 11, new MessageDescriptor[1] {
             new MessageDescriptor("Ah, these are the #Forlorn Ruins#, home to the #Gumon#. I wonder what makes them so forlorn? And why they're in ruins?")
         });
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(enterSequence, 15, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(enterSequence, 15, new MessageDescriptor[1] {
             new MessageDescriptor("Oh. Oh god. They're dead. They're all dead. All #seven# of them!", EmotionType.Sad, null)
         });
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(enterSequence, 19, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(enterSequence, 19, new MessageDescriptor[1] {
             new MessageDescriptor("Ori, I'm sorry...I didn't realize this game was so dark. If you need to step away for a while, I understand.", EmotionType.Sad, null)
         });
 
         ActionSequence orbSequence = sceneRoot.transform.FindChild("*storySetups/storyTextWithTrigger/action").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(orbSequence, 7, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(orbSequence, 7, new MessageDescriptor[1] {
             new MessageDescriptor("Orb.")
         });
     }
@@ -642,7 +650,7 @@ public class RandomizerEnhancedMode
     public static void BootstrapForlornLaserRoomText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
             new MessageDescriptor("This makes #eight#, I guess.")
         });
     }
@@ -650,11 +658,11 @@ public class RandomizerEnhancedMode
     public static void BootstrapWindElementText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*story/resurrectionSequence/*activateSequence").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
             new MessageDescriptor("Ori, do you remember when #Gareth Coker# visited an Ori speedrunner's stream?")
         });
 
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 12, new MessageDescriptor[2] {
+        AddEnhancedModeTextAction(sequence, 12, new MessageDescriptor[2] {
             new MessageDescriptor("It's true! He said that the music for this escape sequence was made at the last minute after they were already done recording music for the game."),
             new MessageDescriptor("Pay close attention and you might be able to hear that it's actually just the same music as the #Ginso Tree# escape, digitally pitched up half a step!")
         });
@@ -663,13 +671,13 @@ public class RandomizerEnhancedMode
     public static void BootstrapChargeJumpTreeText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.GenerateSkillTreeText(sequence, 8, "ChargeJumpSkillTree", "Charge Jump");
+        GenerateSkillTreeText(sequence, 8, "ChargeJumpSkillTree", "Charge Jump");
     }
 
     public static void BootstrapSunstoneText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*sunStoneSetup/*storySetups/storyTextWithTrigger/action").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
             new MessageDescriptor("Take your business straight to the top of #Nibel# with in-dialogue advertising! Your product could be right here! Contact @Vulajin@ for pricing inquiries.")
         });
     }
@@ -677,7 +685,7 @@ public class RandomizerEnhancedMode
     public static void BootstrapBlackrootEntranceText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*naruStatueHintSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 5, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, 5, new MessageDescriptor[1] {
             new MessageDescriptor("Don't forget to save after watching this cutscene! Dying in #Blackroot Burrows# can be frustrating enough without having to watch this again!")
         });
     }
@@ -685,7 +693,7 @@ public class RandomizerEnhancedMode
     public static void BootstrapBlackrootLanternText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*naruStorySetupA/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
             new MessageDescriptor("Did you know that the slime right above us drops a guaranteed energy fragment? *Eiko* taught me that!")
         });
     }
@@ -693,13 +701,13 @@ public class RandomizerEnhancedMode
     public static void BootstrapDashTreeText(SceneRoot sceneRoot)
     {
         ActionSequence darknessSequence = sceneRoot.transform.FindChild("*liftDarknessSetup/*pedestalSetup/actions/mainAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(darknessSequence, 21, new MessageDescriptor[2] {
+        AddEnhancedModeTextAction(darknessSequence, 21, new MessageDescriptor[2] {
             new MessageDescriptor("There are some cool cutscene skips you can do in this room! Some of them involve some tight timing though."),
             new MessageDescriptor("Actually, this dialogue might mess with some of that timing. Hopefully not!")
         });
 
         ActionSequence treeSequence = sceneRoot.transform.FindChild("*enabledByDarknessLifted/*naruStorySetupA/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.GenerateSkillTreeText(treeSequence, 10, "DashSkillTree", "Dash");
+        GenerateSkillTreeText(treeSequence, 10, "DashSkillTree", "Dash");
     }
 
     public static void BootstrapBlackrootTeleporterText(SceneRoot sceneRoot)
@@ -708,13 +716,13 @@ public class RandomizerEnhancedMode
 
         if (BingoController.Active)
         {
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
+            AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
                 new MessageDescriptor("Don't forget to die to the crushers below here! It might be on your bingo card!")
             });
         }
         else
         {
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
+            AddEnhancedModeTextAction(sequence, 23, new MessageDescriptor[1] {
                 new MessageDescriptor("Did you leave the fronkey below here alive? He may be able to help you break the floor to explore deeper!")
             });
         }
@@ -723,13 +731,13 @@ public class RandomizerEnhancedMode
     public static void BootstrapGrenadeTreeText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.GenerateSkillTreeText(sequence, 8, "GrenadeSkillTree", "Grenade");
+        GenerateSkillTreeText(sequence, 8, "GrenadeSkillTree", "Grenade");
     }
 
     public static void BootstrapLostGroveCutsceneText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*setup/objectiveSetupAction").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 39, new MessageDescriptor[1] {
+        AddEnhancedModeTextAction(sequence, 39, new MessageDescriptor[1] {
             new MessageDescriptor("Remember #those who have passed# and they will live on forever in your heart.", EmotionType.Happy, null)
         });
     }
@@ -739,14 +747,14 @@ public class RandomizerEnhancedMode
         ActionSequence sequence = sceneRoot.transform.FindChild("*storySetup(noKey)/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
         if (!Randomizer.Shards)
         {
-            string keyHint = RandomizerEnhancedMode.GetLocationHintForDungeonKey(4);
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
+            string keyHint = GetLocationHintForDungeonKey(4);
+            AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
                 new MessageDescriptor($"Ori, you need the @Sunstone@ to open this door. You can find it {keyHint}!")
             });
         }
         else
         {
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
+            AddEnhancedModeTextAction(sequence, 7, new MessageDescriptor[1] {
                 new MessageDescriptor("Ori, you need the @Sunstone@ to open this door. Good luck finding the shards!")
             });
         }
@@ -757,13 +765,13 @@ public class RandomizerEnhancedMode
     public static void BootstrapHoruEntranceText(SceneRoot sceneRoot)
     {
         string pickupHint = GetItemHintForPickup("DoorWarpExp");
-        int numTries = new System.Random(31 * Randomizer.SeedMeta.GetHashCode()).Next(20);
+        int numTries = new Random(31 * Randomizer.SeedMeta.GetHashCode()).Next(20);
         string tryText = (numTries == 1) ? "first" : ((numTries == 2) ? "second" : ((numTries == 3) ? "third" : $"{numTries}th"));
         ActionSequence sequence = sceneRoot.transform.FindChild("*enterScene/action").GetComponent<ActionSequence>();
         
         if (Randomizer.Inventory.GetRandomizerItem(801) > 0)
         {
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 17, new MessageDescriptor[3] {
+            AddEnhancedModeTextAction(sequence, 17, new MessageDescriptor[3] {
                 new MessageDescriptor("There's #so much lava# in here..."),
                 new MessageDescriptor("I think it would be nicer with #less lava#."),
                 new MessageDescriptor($"Anyway, good luck on #door warp#! I bet {pickupHint} you get it {tryText} try!")
@@ -771,7 +779,7 @@ public class RandomizerEnhancedMode
         }
         else
         {
-            RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 17, new MessageDescriptor[3] {
+            AddEnhancedModeTextAction(sequence, 17, new MessageDescriptor[3] {
                 new MessageDescriptor("Did you know that this place used to be #filled with lava#?"),
                 new MessageDescriptor("I think it's much nicer like this. You can explore #Mount Horu# however you like!"),
                 new MessageDescriptor($"Anyway, good luck on #door warp#! I bet {pickupHint} you get it {tryText} try!")
@@ -782,7 +790,7 @@ public class RandomizerEnhancedMode
     public static void BootstrapWarmthElementText(SceneRoot sceneRoot)
     {
         ActionSequence sequence = sceneRoot.transform.FindChild("*resurrection/resurrectionSequence/*activateSequence").GetComponent<ActionSequence>();
-        RandomizerEnhancedMode.AddEnhancedModeTextAction(sequence, 2, new MessageDescriptor[2] {
+        AddEnhancedModeTextAction(sequence, 2, new MessageDescriptor[2] {
             new MessageDescriptor("Ori, it looks like it's all going to come down to execution on the final escape!", EmotionType.Urgent, null),
             new MessageDescriptor("Good luck!")
         });
@@ -790,38 +798,38 @@ public class RandomizerEnhancedMode
 
     public static Dictionary<string, Action<SceneRoot>> TextBootstrapScenes = new Dictionary<string, Action<SceneRoot>>
     {
-        { "sunkenGladesOriRoom", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapSeinRoomText) },
-        { "sunkenGladesIntroSplitA", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapSunkenGladesKeystoneDoorText) },
-        { "sunkenGladesSpiritCavernSaveRoomB", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapGladesMapText) },
-        { "sunkenGladesSpiritCavernWalljumpB", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapWallJumpTreeText) },
-        { "spiritTreeRefined", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapSpiritTreeText) },
-        { "worldMapSpiritTree", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapSpiritTreeMapText) },
-        { "upperGladesBelowSpiritTree", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapChargeFlameTreeText) },
-        { "ginsoEntranceSketch", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapGinsoDoorText) },
-        { "moonGrottoDoubleJump", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapDoubleJumpTreeText) },
-        { "ginsoEntranceIntro", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapGinsoEntranceText) },
-        { "ginsoTreeBashRedirectArt", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapBashTreeText) },
-        { "ginsoTreeResurrection", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapWaterElementText) },
-        { "thornfeltSwampStompAbility", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapStompTreeText) },
-        { "valleyOfTheWindBackground", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapValleyMainText) },
-        { "mistyWoodsRopeBridge", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapMistyTorchText) },
-        { "mistyWoodsGetClimb", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapClimbTreeText) },
-        { "sorrowPassForestB", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapGumonSealText) },
-        { "forlornRuinsEntrancePlaceholder", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapForlornDoorText) },
-        { "forlornRuinsGetNightberry", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapForlornEntranceText) },
-        { "forlornRuinsRotatingLaserFlipped", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapForlornLaserRoomText) },
-        { "forlornRuinsResurrection", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapWindElementText) },
-        { "valleyOfTheWindGetChargeJump", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapChargeJumpTreeText) },
-        { "valleyOfTheWindTop", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapSunstoneText) },
-        { "sunkenGladesIntroSplitB", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapBlackrootEntranceText) },
-        { "northMangroveFallsLanternIntro", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapBlackrootLanternText) },
-        { "northMangroveFallsGetDash", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapDashTreeText) },
-        { "mangroveFallsDashEscalation", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapBlackrootTeleporterText) },
-        { "mangroveFallsGetGrenade", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapGrenadeTreeText) },
-        { "southMangroveFallsStoryRoomA", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapLostGroveCutsceneText) },
-        { "horuFieldsEntranceFrontalFlipped", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapHoruDoorText) },
-        { "mountHoruHubMid", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapHoruEntranceText) },
-        { "catAndMouseResurrectionRoom", new Action<SceneRoot>(RandomizerEnhancedMode.BootstrapWarmthElementText) },
+        { "sunkenGladesOriRoom", BootstrapSeinRoomText },
+        { "sunkenGladesIntroSplitA", BootstrapSunkenGladesKeystoneDoorText },
+        { "sunkenGladesSpiritCavernSaveRoomB", BootstrapGladesMapText },
+        { "sunkenGladesSpiritCavernWalljumpB", BootstrapWallJumpTreeText },
+        { "spiritTreeRefined", BootstrapSpiritTreeText },
+        { "worldMapSpiritTree", BootstrapSpiritTreeMapText },
+        { "upperGladesBelowSpiritTree", BootstrapChargeFlameTreeText },
+        { "ginsoEntranceSketch", BootstrapGinsoDoorText },
+        { "moonGrottoDoubleJump", BootstrapDoubleJumpTreeText },
+        { "ginsoEntranceIntro", BootstrapGinsoEntranceText },
+        { "ginsoTreeBashRedirectArt", BootstrapBashTreeText },
+        { "ginsoTreeResurrection", BootstrapWaterElementText },
+        { "thornfeltSwampStompAbility", BootstrapStompTreeText },
+        { "valleyOfTheWindBackground", BootstrapValleyMainText },
+        { "mistyWoodsRopeBridge", BootstrapMistyTorchText },
+        { "mistyWoodsGetClimb", BootstrapClimbTreeText },
+        { "sorrowPassForestB", BootstrapGumonSealText },
+        { "forlornRuinsEntrancePlaceholder", BootstrapForlornDoorText },
+        { "forlornRuinsGetNightberry", BootstrapForlornEntranceText },
+        { "forlornRuinsRotatingLaserFlipped", BootstrapForlornLaserRoomText },
+        { "forlornRuinsResurrection", BootstrapWindElementText },
+        { "valleyOfTheWindGetChargeJump", BootstrapChargeJumpTreeText },
+        { "valleyOfTheWindTop", BootstrapSunstoneText },
+        { "sunkenGladesIntroSplitB", BootstrapBlackrootEntranceText },
+        { "northMangroveFallsLanternIntro", BootstrapBlackrootLanternText },
+        { "northMangroveFallsGetDash", BootstrapDashTreeText },
+        { "mangroveFallsDashEscalation", BootstrapBlackrootTeleporterText },
+        { "mangroveFallsGetGrenade", BootstrapGrenadeTreeText },
+        { "southMangroveFallsStoryRoomA", BootstrapLostGroveCutsceneText },
+        { "horuFieldsEntranceFrontalFlipped", BootstrapHoruDoorText },
+        { "mountHoruHubMid", BootstrapHoruEntranceText },
+        { "catAndMouseResurrectionRoom", BootstrapWarmthElementText },
     };
 
     public static Dictionary<string, List<string>> WaterBootstrapScenes = new Dictionary<string, List<string>>

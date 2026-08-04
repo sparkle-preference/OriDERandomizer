@@ -8,18 +8,18 @@ using UnityEngine;
 [ExecuteInEditMode]
 public class MessageBox : MonoBehaviour
 {
-	public event Action OnMessageScreenHide = delegate()
+	public event Action OnMessageScreenHide = delegate
 	{
 	};
 
-	public event Action OnNextMessage = delegate()
+	public event Action OnNextMessage = delegate
 	{
 	};
 
 	public HashSet<ISuspendable> GetSuspendables()
 	{
 		HashSet<ISuspendable> hashSet = new HashSet<ISuspendable>();
-		foreach (ISuspendable item in base.GetComponentsInChildren(typeof(ISuspendable)))
+		foreach (ISuspendable item in GetComponentsInChildren(typeof(ISuspendable)))
 		{
 			hashSet.Add(item);
 		}
@@ -28,44 +28,44 @@ public class MessageBox : MonoBehaviour
 
 	public void OverrideLanuage(Language language)
 	{
-		this.m_language = language;
-		this.m_forceLanguage = true;
+		m_language = language;
+		m_forceLanguage = true;
 	}
 
 	public void SetAvatar(GameObject avatarPrefab)
 	{
-		if (this.m_avatar)
+		if (m_avatar)
 		{
-			InstantiateUtility.Destroy(this.m_avatar);
-			this.m_avatar = null;
+			InstantiateUtility.Destroy(m_avatar);
+			m_avatar = null;
 		}
 		if (avatarPrefab)
 		{
-			this.m_avatar = UnityEngine.Object.Instantiate<GameObject>(avatarPrefab);
-			this.m_avatar.transform.parent = this.Avatar;
-			this.m_avatar.transform.localPosition = Vector3.zero;
-			this.m_avatar.transform.localRotation = avatarPrefab.transform.localRotation;
-			this.m_avatar.transform.localScale = avatarPrefab.transform.localScale;
+			m_avatar = Instantiate(avatarPrefab);
+			m_avatar.transform.parent = Avatar;
+			m_avatar.transform.localPosition = Vector3.zero;
+			m_avatar.transform.localRotation = avatarPrefab.transform.localRotation;
+			m_avatar.transform.localScale = avatarPrefab.transform.localScale;
 		}
 	}
 
 	public void SetAvatarArray(GameObject[] avatarPrefabs)
 	{
-		this.m_avatarPrefabs = avatarPrefabs;
+		m_avatarPrefabs = avatarPrefabs;
 	}
 
 	public void HideMessageScreen()
 	{
-		this.Visibility.HideMessageScreen();
-		this.OnMessageScreenHide();
+		Visibility.HideMessageScreen();
+		OnMessageScreenHide();
 	}
 
 	public void Awake()
 	{
 		if (Application.isPlaying)
 		{
-			Events.Scheduler.OnGameLanguageChange.Add(new Action(this.RefreshText));
-			Events.Scheduler.OnGameControlSchemeChange.Add(new Action(this.RefreshText));
+			Events.Scheduler.OnGameLanguageChange.Add(RefreshText);
+			Events.Scheduler.OnGameControlSchemeChange.Add(RefreshText);
 		}
 	}
 
@@ -73,39 +73,39 @@ public class MessageBox : MonoBehaviour
 	{
 		if (Application.isPlaying)
 		{
-			Events.Scheduler.OnGameLanguageChange.Remove(new Action(this.RefreshText));
-			Events.Scheduler.OnGameControlSchemeChange.Remove(new Action(this.RefreshText));
+			Events.Scheduler.OnGameLanguageChange.Remove(RefreshText);
+			Events.Scheduler.OnGameControlSchemeChange.Remove(RefreshText);
 		}
 	}
 
 	public void Start()
 	{
-		this.RefreshText();
-		if (this.WriteOutTextBox)
+		RefreshText();
+		if (WriteOutTextBox)
 		{
-			this.WriteOutTextBox.GoToStart();
+			WriteOutTextBox.GoToStart();
 		}
 	}
 
 	public void Update()
 	{
-		if (this.m_previousOverrideText != this.OverrideText)
+		if (m_previousOverrideText != OverrideText)
 		{
-			this.m_previousOverrideText = this.OverrideText;
-			this.RefreshText();
+			m_previousOverrideText = OverrideText;
+			RefreshText();
 		}
 	}
 
 	public void RemoveMessageFade()
 	{
-		this.SetMessageFade(999999f);
+		SetMessageFade(999999f);
 	}
 
 	public void SetMessageFade(float time)
 	{
-		if (this.TextBox.textRenderers != null)
+		if (TextBox.textRenderers != null)
 		{
-			foreach (TextRenderer textRenderer in this.TextBox.textRenderers)
+			foreach (TextRenderer textRenderer in TextBox.textRenderers)
 			{
 				MoonTextMeshRenderer moonTextMeshRenderer = textRenderer as MoonTextMeshRenderer;
 				if (moonTextMeshRenderer != null)
@@ -113,7 +113,7 @@ public class MessageBox : MonoBehaviour
 					Renderer component = moonTextMeshRenderer.GetComponent<Renderer>();
 					if (component)
 					{
-						float val = time / this.FadeSpread;
+						float val = time / FadeSpread;
 						UberShaderAPI.SetFloat(component, val, "_TxtTime", true);
 					}
 				}
@@ -123,88 +123,88 @@ public class MessageBox : MonoBehaviour
 
 	public void SetMessage(MessageDescriptor messageDescriptor)
 	{
-		this.MessageProvider = null;
-		this.m_messageDescriptors = null;
-		this.m_currentMessage = messageDescriptor;
-		if (this.FormatText)
+		MessageProvider = null;
+		m_messageDescriptors = null;
+		m_currentMessage = messageDescriptor;
+		if (FormatText)
 		{
-			string text = MessageParserUtility.ProcessString(this.m_currentMessage.Message);
-			this.TextBox.SetText(text);
+			string text = MessageParserUtility.ProcessString(m_currentMessage.Message);
+			TextBox.SetText(text);
 		}
 		else
 		{
-			this.TextBox.SetText(this.m_currentMessage.Message);
+			TextBox.SetText(m_currentMessage.Message);
 		}
-		this.RefreshText();
+		RefreshText();
 	}
 
 	public void RefreshText()
 	{
-		if (this.m_forceLanguage)
+		if (m_forceLanguage)
 		{
-			this.TextBox.SetStyleCollection(this.LanguageStyles.GetStyle(this.m_language));
+			TextBox.SetStyleCollection(LanguageStyles.GetStyle(m_language));
 		}
 		else
 		{
-			this.TextBox.SetStyleCollection(this.LanguageStyles.Current);
+			TextBox.SetStyleCollection(LanguageStyles.Current);
 		}
-		if (this.MessageProvider)
+		if (MessageProvider)
 		{
-			this.m_messageDescriptors = this.MessageProvider.GetMessages().ToArray<MessageDescriptor>();
-			this.MessageIndex = Mathf.Clamp(this.MessageIndex, 0, this.m_messageDescriptors.Length);
-			this.m_currentMessage = this.m_messageDescriptors[this.MessageIndex];
-			string text = this.m_currentMessage.Message;
+			m_messageDescriptors = MessageProvider.GetMessages().ToArray();
+			MessageIndex = Mathf.Clamp(MessageIndex, 0, m_messageDescriptors.Length);
+			m_currentMessage = m_messageDescriptors[MessageIndex];
+			string text = m_currentMessage.Message;
 			if (text.StartsWith("ALIGNLEFT"))
 			{
-				this.TextBox.alignment = AlignmentMode.Left;
+				TextBox.alignment = AlignmentMode.Left;
 				text = text.Substring(9);
 			}
 			else if (text.StartsWith("ALIGNRIGHT"))
 			{
-				this.TextBox.alignment = AlignmentMode.Right;
+				TextBox.alignment = AlignmentMode.Right;
 				text = text.Substring(10);
 			}
 			if (text.StartsWith("ANCHORTOP"))
 			{
-				this.TextBox.verticalAnchor = VerticalAnchorMode.Top;
+				TextBox.verticalAnchor = VerticalAnchorMode.Top;
 				text = text.Substring(9);
 			} else if  (text.StartsWith("ANCHORBOT"))
 			{
-				this.TextBox.verticalAnchor = VerticalAnchorMode.Bottom;
+				TextBox.verticalAnchor = VerticalAnchorMode.Bottom;
 				text = text.Substring(9);
 			}
 			if (text.StartsWith("ANCHORLEFT"))
 			{
-				this.TextBox.horizontalAnchor = HorizontalAnchorMode.Left;
+				TextBox.horizontalAnchor = HorizontalAnchorMode.Left;
 				text = text.Substring(10);
 			} else if  (text.StartsWith("ANCHORRIGHT"))
 			{
-				this.TextBox.horizontalAnchor = HorizontalAnchorMode.Right;
+				TextBox.horizontalAnchor = HorizontalAnchorMode.Right;
 				text = text.Substring(11);
 			}
 			if (text.StartsWith("PADDING"))
 			{
-				Queue<string> p = new Queue<string>(text.Split(new char[]{'_'}));
+				Queue<string> p = new Queue<string>(text.Split('_'));
 				p.Dequeue();
-				this.TextBox.paddingBottom = float.Parse(p.Dequeue());
-				this.TextBox.paddingLeft = float.Parse(p.Dequeue());
-				this.TextBox.paddingRight = float.Parse(p.Dequeue());
-				this.TextBox.paddingTop = float.Parse(p.Dequeue());
+				TextBox.paddingBottom = float.Parse(p.Dequeue());
+				TextBox.paddingLeft = float.Parse(p.Dequeue());
+				TextBox.paddingRight = float.Parse(p.Dequeue());
+				TextBox.paddingTop = float.Parse(p.Dequeue());
 				text = string.Join("_", p.ToArray());
 			}
 			if (text.StartsWith("PARAMS"))
 			{
-				Queue<string> p = new Queue<string>(text.Split(new char[]{'_'}));
+				Queue<string> p = new Queue<string>(text.Split('_'));
 				p.Dequeue();
-				this.TextBox.maxHeight = float.Parse(p.Dequeue());
-				this.TextBox.width = float.Parse(p.Dequeue());
-				this.TextBox.TabSize = float.Parse(p.Dequeue());
+				TextBox.maxHeight = float.Parse(p.Dequeue());
+				TextBox.width = float.Parse(p.Dequeue());
+				TextBox.TabSize = float.Parse(p.Dequeue());
 				text = string.Join("_", p.ToArray());
 			}
 			float r = 0f,g = 0f,b = 0f,a = 0f;
 			if (text.StartsWith("BGCOLOR"))
 			{
-				Queue<string> p = new Queue<string>(text.Split(new char[]{'_'}));
+				Queue<string> p = new Queue<string>(text.Split('_'));
 				p.Dequeue();
 				r = float.Parse(p.Dequeue());
 				g = float.Parse(p.Dequeue());
@@ -222,54 +222,54 @@ public class MessageBox : MonoBehaviour
 				if(m_hasBackgroundColor)
 					text += $"Color: {r},{g},{b},{a}";
 			}
-			if (this.FormatText)
+			if (FormatText)
 			{
 				text = MessageParserUtility.ProcessString(text);
-				this.TextBox.SetText(text);
+				TextBox.SetText(text);
 			}
 			else
 			{
-				this.TextBox.SetText(text);
+				TextBox.SetText(text);
 			}
 		}
-		else if (this.OverrideText != string.Empty)
+		else if (OverrideText != string.Empty)
 		{
-			if (this.FormatText)
+			if (FormatText)
 			{
-				this.TextBox.SetText(MessageParserUtility.ProcessString(this.OverrideText));
+				TextBox.SetText(MessageParserUtility.ProcessString(OverrideText));
 			}
 			else
 			{
-				this.TextBox.SetText(this.OverrideText);
+				TextBox.SetText(OverrideText);
 			}
 		}
-		this.TextBox.CreateRendersIfThereAreNone();
-		TextRenderer[] textRenderers = this.TextBox.textRenderers;
+		TextBox.CreateRendersIfThereAreNone();
+		TextRenderer[] textRenderers = TextBox.textRenderers;
 		for (int i = 0; i < textRenderers.Length; i++)
 		{
 			MoonTextMeshRenderer moonTextMeshRenderer = textRenderers[i] as MoonTextMeshRenderer;
 			if (moonTextMeshRenderer)
 			{
-				moonTextMeshRenderer.FadeSpread = this.FadeSpread;
+				moonTextMeshRenderer.FadeSpread = FadeSpread;
 			}
 		}
-		this.TextBox.size = this.ScaleOverLetterCount.Evaluate((float)TextBoxExtended.CountLetters(this.TextBox));
-		this.TextBox.RenderText();
-		if (this.WriteOutTextBox)
+		TextBox.size = ScaleOverLetterCount.Evaluate(TextBoxExtended.CountLetters(TextBox));
+		TextBox.RenderText();
+		if (WriteOutTextBox)
 		{
-			this.WriteOutTextBox.OnTextChange();
+			WriteOutTextBox.OnTextChange();
 		}
 		else
 		{
-			this.RemoveMessageFade();
+			RemoveMessageFade();
 		}
-		if (this.m_avatarPrefabs != null)
+		if (m_avatarPrefabs != null)
 		{
-			this.SetAvatar(this.m_avatarPrefabs[this.MessageIndex]);
+			SetAvatar(m_avatarPrefabs[MessageIndex]);
 		}
 		if (!Application.isPlaying)
 		{
-			this.RemoveMessageFade();
+			RemoveMessageFade();
 		}
 	}
 
@@ -277,38 +277,38 @@ public class MessageBox : MonoBehaviour
 	{
 		if (!Application.isPlaying)
 		{
-			this.RemoveMessageFade();
+			RemoveMessageFade();
 		}
 	}
 
 	public void SetMessageProvider(MessageProvider messageProvider)
 	{
-		this.MessageProvider = messageProvider;
-		this.RefreshText();
+		MessageProvider = messageProvider;
+		RefreshText();
 	}
 
 	public int MessageCount
 	{
 		get
 		{
-			if (this.m_messageDescriptors == null)
+			if (m_messageDescriptors == null)
 			{
 				return 1;
 			}
-			return this.m_messageDescriptors.Length;
+			return m_messageDescriptors.Length;
 		}
 	}
 
 	public void SetWaitDuration(float duration)
 	{
-		this.Visibility.WaitDuration = duration;
+		Visibility.WaitDuration = duration;
 	}
 
 	public EmotionType CurrentEmotion
 	{
 		get
 		{
-			return this.m_currentMessage.Emotion;
+			return m_currentMessage.Emotion;
 		}
 	}
 
@@ -316,15 +316,15 @@ public class MessageBox : MonoBehaviour
 	{
 		get
 		{
-			return this.m_currentMessage.Sound;
+			return m_currentMessage.Sound;
 		}
 	}
 
 	public void FinishWriting()
 	{
-		if (this.WriteOutTextBox)
+		if (WriteOutTextBox)
 		{
-			this.WriteOutTextBox.AnimatorDriver.GoToEnd();
+			WriteOutTextBox.AnimatorDriver.GoToEnd();
 		}
 	}
 
@@ -332,7 +332,7 @@ public class MessageBox : MonoBehaviour
 	{
 		get
 		{
-			return this.m_messageDescriptors == null || this.MessageIndex == this.m_messageDescriptors.Length - 1;
+			return m_messageDescriptors == null || MessageIndex == m_messageDescriptors.Length - 1;
 		}
 	}
 
@@ -340,22 +340,22 @@ public class MessageBox : MonoBehaviour
 	{
 		get
 		{
-			return this.WriteOutTextBox == null || this.WriteOutTextBox.AtEnd;
+			return WriteOutTextBox == null || WriteOutTextBox.AtEnd;
 		}
 	}
 
 	public void NextMessage()
 	{
-		this.MessageIndex++;
-		this.RefreshText();
-		if (this.WriteOutTextBox)
+		MessageIndex++;
+		RefreshText();
+		if (WriteOutTextBox)
 		{
-			this.WriteOutTextBox.GoToStart();
+			WriteOutTextBox.GoToStart();
 		}
-		this.OnNextMessage();
-		if (this.NextMessageAnimator)
+		OnNextMessage();
+		if (NextMessageAnimator)
 		{
-			this.NextMessageAnimator.AnimatorDriver.Restart();
+			NextMessageAnimator.AnimatorDriver.Restart();
 		}
 	}
 

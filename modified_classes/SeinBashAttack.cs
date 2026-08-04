@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using Core;
 using Game;
 using UnityEngine;
+using Input = Core.Input;
 
 public class SeinBashAttack : CharacterState, ISeinReceiver
 {
 	static SeinBashAttack()
 	{
-		SeinBashAttack.OnBashAttackEvent = delegate(Vector2 A_0)
+		OnBashAttackEvent = delegate
 		{
 		};
-		SeinBashAttack.OnBashBegin = delegate
+		OnBashBegin = delegate
 		{
 		};
-		SeinBashAttack.OnBashEnemy = delegate(EntityTargetting A_0)
+		OnBashEnemy = delegate
 		{
 		};
 	}
@@ -29,7 +30,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Target as Component;
+			return Target as Component;
 		}
 	}
 
@@ -37,7 +38,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.AirNoDeceleration;
+			return Sein.PlatformBehaviour.AirNoDeceleration;
 		}
 	}
 
@@ -45,7 +46,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.Abilities.DoubleJump;
+			return Sein.Abilities.DoubleJump;
 		}
 	}
 
@@ -53,7 +54,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.ApplyFrictionToSpeed;
+			return Sein.PlatformBehaviour.ApplyFrictionToSpeed;
 		}
 	}
 
@@ -61,7 +62,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.Gravity;
+			return Sein.PlatformBehaviour.Gravity;
 		}
 	}
 
@@ -69,7 +70,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.LeftRightMovement;
+			return Sein.PlatformBehaviour.LeftRightMovement;
 		}
 	}
 
@@ -77,7 +78,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlayerAbilities;
+			return Sein.PlayerAbilities;
 		}
 	}
 
@@ -85,7 +86,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.PlatformBehaviour.PlatformMovement;
+			return Sein.PlatformBehaviour.PlatformMovement;
 		}
 	}
 
@@ -93,7 +94,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.Sein.Controller;
+			return Sein.Controller;
 		}
 	}
 
@@ -101,9 +102,9 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			Vector2 vector = this.m_directionToTarget;
+			Vector2 vector = m_directionToTarget;
 			float num = Mathf.Cos(0.3926991f);
-			SeinBashAttack.DirectionalAnimationSet directionalAnimationSet = (!this.Sein.Controller.IsSwimming) ? this.BashChargeAnimationSet : this.SwimBashChargeAnimationSet;
+			DirectionalAnimationSet directionalAnimationSet = (!Sein.Controller.IsSwimming) ? BashChargeAnimationSet : SwimBashChargeAnimationSet;
 			vector.x = Mathf.Abs(vector.x);
 			if (Vector3.Dot(Vector3.up, vector) > num)
 			{
@@ -135,9 +136,9 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			Vector2 vector = MoonMath.Angle.VectorFromAngle(this.m_bashAngle + 90f);
+			Vector2 vector = MoonMath.Angle.VectorFromAngle(m_bashAngle + 90f);
 			float num = Mathf.Cos(0.3926991f);
-			SeinBashAttack.DirectionalAnimationSet directionalAnimationSet = (!this.Sein.Controller.IsSwimming) ? this.BashJumpAnimationSet : this.SwimBashJumpAnimationSet;
+			DirectionalAnimationSet directionalAnimationSet = (!Sein.Controller.IsSwimming) ? BashJumpAnimationSet : SwimBashJumpAnimationSet;
 			vector.x = Mathf.Abs(vector.x);
 			if (Vector3.Dot(Vector3.up, vector) > num)
 			{
@@ -169,22 +170,22 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.m_spriteMirrorLock;
+			return m_spriteMirrorLock;
 		}
 		set
 		{
-			if (this.m_spriteMirrorLock != value)
+			if (m_spriteMirrorLock != value)
 			{
-				this.m_spriteMirrorLock = value;
+				m_spriteMirrorLock = value;
 				int @lock;
 				if (value)
 				{
-					CharacterSpriteMirror spriteMirror = this.Sein.PlatformBehaviour.Visuals.SpriteMirror;
+					CharacterSpriteMirror spriteMirror = Sein.PlatformBehaviour.Visuals.SpriteMirror;
 					@lock = spriteMirror.Lock;
 					spriteMirror.Lock = @lock + 1;
 					return;
 				}
-				CharacterSpriteMirror spriteMirror2 = this.Sein.PlatformBehaviour.Visuals.SpriteMirror;
+				CharacterSpriteMirror spriteMirror2 = Sein.PlatformBehaviour.Visuals.SpriteMirror;
 				@lock = spriteMirror2.Lock;
 				spriteMirror2.Lock = @lock - 1;
 			}
@@ -195,39 +196,39 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.PlayerAbilities.Bash.HasAbility && !(this.TargetAsComponent == null) && this.TargetAsComponent.gameObject.activeInHierarchy && (!(this.Sein != null) || this.Sein.Active) && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.AllAbilities);
+			return PlayerAbilities.Bash.HasAbility && !(TargetAsComponent == null) && TargetAsComponent.gameObject.activeInHierarchy && (!(Sein != null) || Sein.Active) && !SeinAbilityRestrictZone.IsInside();
 		}
 	}
 
 	public void SetReferenceToSein(SeinCharacter sein)
 	{
-		this.Sein = sein;
-		this.m_seinTransform = this.Sein.transform;
-		this.Sein.Abilities.Bash = this;
+		Sein = sein;
+		m_seinTransform = Sein.transform;
+		Sein.Abilities.Bash = this;
 	}
 
 	public void Start()
 	{
-		this.m_hasStarted = true;
-		Game.Checkpoint.Events.OnPostRestore.Add(new Action(this.OnRestoreCheckpoint));
-		this.CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent += this.ModifyHorizontalPlatformMovementSettings;
-		this.Gravity.ModifyGravityPlatformMovementSettingsEvent += this.ModifyGravityPlatformMovementSettings;
+		m_hasStarted = true;
+		Game.Checkpoint.Events.OnPostRestore.Add(OnRestoreCheckpoint);
+		CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent += ModifyHorizontalPlatformMovementSettings;
+		Gravity.ModifyGravityPlatformMovementSettingsEvent += ModifyGravityPlatformMovementSettings;
 	}
 
 	public new void OnDestroy()
 	{
 		base.OnDestroy();
-		if (this.m_hasStarted)
+		if (m_hasStarted)
 		{
-			Game.Checkpoint.Events.OnPostRestore.Remove(new Action(this.OnRestoreCheckpoint));
-			this.CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent -= this.ModifyHorizontalPlatformMovementSettings;
-			this.Gravity.ModifyGravityPlatformMovementSettingsEvent -= this.ModifyGravityPlatformMovementSettings;
+			Game.Checkpoint.Events.OnPostRestore.Remove(OnRestoreCheckpoint);
+			CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent -= ModifyHorizontalPlatformMovementSettings;
+			Gravity.ModifyGravityPlatformMovementSettingsEvent -= ModifyGravityPlatformMovementSettings;
 		}
 	}
 
 	public void ModifyGravityPlatformMovementSettings(GravityPlatformMovementSettings settings)
 	{
-		if (this.IsBashing)
+		if (IsBashing)
 		{
 			settings.GravityStrength = 0f;
 		}
@@ -235,7 +236,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 
 	public void ModifyHorizontalPlatformMovementSettings(HorizontalPlatformMovementSettings settings)
 	{
-		if (this.IsBashing)
+		if (IsBashing)
 		{
 			settings.LockInput = true;
 		}
@@ -243,19 +244,19 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 
 	public void OnRestoreCheckpoint()
 	{
-		if (this.IsBashing)
+		if (IsBashing)
 		{
-			this.ExitBash();
+			ExitBash();
 		}
-		this.ApplyFrictionToSpeed.SpeedFactor = 0f;
-		this.m_spriteMirrorLock = false;
+		ApplyFrictionToSpeed.SpeedFactor = 0f;
+		m_spriteMirrorLock = false;
 	}
 
 	public void OnDisable()
 	{
-		if (this.IsBashing)
+		if (IsBashing)
 		{
-			this.ExitBash();
+			ExitBash();
 		}
 	}
 
@@ -265,75 +266,75 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 		{
 			GameController.Instance.ResumeGameplay();
 		}
-		this.ApplyFrictionToSpeed.SpeedFactor = 0f;
-		this.IsBashing = false;
-		this.m_isEnhancedBashing = false;
+		ApplyFrictionToSpeed.SpeedFactor = 0f;
+		IsBashing = false;
+		m_isEnhancedBashing = false;
 	}
 
 	public void MovePlayerToTargetAndCreateEffect()
 	{
-		Component component = this.Target as Component;
-		Vector3 vector = (!InstantiateUtility.IsDestroyed(component)) ? component.transform.position : this.PlatformMovement.Position;
-		if (this.m_isEnhancedBashing)
+		Component component = Target as Component;
+		Vector3 vector = (!InstantiateUtility.IsDestroyed(component)) ? component.transform.position : PlatformMovement.Position;
+		if (m_isEnhancedBashing)
 		{
-			vector = this.m_enhancedBashTarget;
+			vector = m_enhancedBashTarget;
 		}
-		GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(this.BashFromFx);
+		GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(BashFromFx);
 		gameObject.transform.position = vector;
 		Vector3 localScale = gameObject.transform.localScale;
-		localScale.x = (vector - this.PlatformMovement.Position).magnitude;
+		localScale.x = (vector - PlatformMovement.Position).magnitude;
 		gameObject.transform.localScale = localScale;
-		gameObject.transform.localRotation = Quaternion.Euler(0f, 0f, MoonMath.Angle.AngleFromVector(this.PlatformMovement.Position - vector));
-		if (!this.PlatformMovement.IsOnGround)
+		gameObject.transform.localRotation = Quaternion.Euler(0f, 0f, MoonMath.Angle.AngleFromVector(PlatformMovement.Position - vector));
+		if (!PlatformMovement.IsOnGround)
 		{
-			this.PlatformMovement.Position2D = vector;
+			PlatformMovement.Position2D = vector;
 		}
 	}
 
 	public void BeginBash()
 	{
-		this.m_timeRemainingOfBashButtonPress = 0f;
-		this.IsBashing = true;
+		m_timeRemainingOfBashButtonPress = 0f;
+		IsBashing = true;
 		Vector3 target;
-		if (this.m_isEnhancedBashing)
+		if (m_isEnhancedBashing)
 		{
-			target = this.m_enhancedBashTarget = this.PlatformMovement.Position + Vector3.up;
+			target = m_enhancedBashTarget = PlatformMovement.Position + Vector3.up;
 		}
 		else
 		{
-			this.Target.OnEnterBash();
-			target = this.TargetAsComponent.transform.position;
+			Target.OnEnterBash();
+			target = TargetAsComponent.transform.position;
 		}
-		Sound.Play((!this.Sein.PlayerAbilities.BashBuff.HasAbility) ? this.BashStartSound.GetSound(null) : this.UpgradedBashStartSound.GetSound(null), this.m_seinTransform.position, null);
+		Sound.Play((!Sein.PlayerAbilities.BashBuff.HasAbility) ? BashStartSound.GetSound(null) : UpgradedBashStartSound.GetSound(null), m_seinTransform.position, null);
 		if (GameController.Instance)
 		{
 			GameController.Instance.SuspendGameplay();
 		}
 		if (UI.Cameras.Current != null)
 		{
-			SuspensionManager.GetSuspendables(this.m_bashSuspendables, UI.Cameras.Current.GameObject);
-			SuspensionManager.Resume(this.m_bashSuspendables);
-			this.m_bashSuspendables.Clear();
+			SuspensionManager.GetSuspendables(m_bashSuspendables, UI.Cameras.Current.GameObject);
+			SuspensionManager.Resume(m_bashSuspendables);
+			m_bashSuspendables.Clear();
 		}
-		this.PlatformMovement.LocalSpeed = Vector2.zero;
-		Vector3 vectorToTarget = target - this.PlatformMovement.Position;
-		GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(this.BashAttackGamePrefab);
-		this.m_bashAttackGame = gameObject.GetComponent<BashAttackGame>();
-		this.m_bashAttackGame.SendDirection(vectorToTarget);
-		this.m_bashAttackGame.BashGameComplete += this.BashGameComplete;
-		this.m_bashAttackGame.transform.position = target;
+		PlatformMovement.LocalSpeed = Vector2.zero;
+		Vector3 vectorToTarget = target - PlatformMovement.Position;
+		GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(BashAttackGamePrefab);
+		m_bashAttackGame = gameObject.GetComponent<BashAttackGame>();
+		m_bashAttackGame.SendDirection(vectorToTarget);
+		m_bashAttackGame.BashGameComplete += BashGameComplete;
+		m_bashAttackGame.transform.position = target;
 		vectorToTarget = Vector3.ClampMagnitude(vectorToTarget, 2f);
-		this.m_playerTargetPosition = target - vectorToTarget;
-		this.m_directionToTarget = vectorToTarget.normalized;
-		SeinBashAttack.OnBashBegin();
-		this.Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(this.BashChargeAnimation, 10, new Func<bool>(this.ShouldBashChargeAnimationKeepPlaying), false);
+		m_playerTargetPosition = target - vectorToTarget;
+		m_directionToTarget = vectorToTarget.normalized;
+		OnBashBegin();
+		Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(BashChargeAnimation, 10, ShouldBashChargeAnimationKeepPlaying);
 	}
 
 	public void BashGameComplete(float angle)
 	{
-		this.JumpOffTarget(angle);
-		this.AttackTarget();
-		this.ExitBash();
+		JumpOffTarget(angle);
+		AttackTarget();
+		ExitBash();
 	}
 
 	public void JumpOffTarget(float angle)
@@ -343,249 +344,249 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 			GameController.Instance.ResumeGameplay();
 		}
 		Vector2 vector = Quaternion.Euler(0f, 0f, angle) * Vector2.up;
-		Vector2 vector2 = vector * (this.BashVelocity  + this.BashVelocity * .10f * RandomizerBonus.Velocity());
-		this.PlatformMovement.WorldSpeed = vector2;
-		this.AirNoDeceleration.NoDeceleration = true;
-		this.Sein.ResetAirLimits();
-		this.m_frictionTimeRemaining = this.FrictionDuration;
-		this.ApplyFrictionToSpeed.SpeedToSlowDown = this.PlatformMovement.LocalSpeed;
-		this.MovePlayerToTargetAndCreateEffect();
-		Component component = this.Target as Component;
-		Vector3 position = (!InstantiateUtility.IsDestroyed(component)) ? component.transform.position : this.Sein.Position;
-		GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(this.BashOffFx);
+		Vector2 vector2 = vector * (BashVelocity  + BashVelocity * .10f * RandomizerBonus.Velocity());
+		PlatformMovement.WorldSpeed = vector2;
+		AirNoDeceleration.NoDeceleration = true;
+		Sein.ResetAirLimits();
+		m_frictionTimeRemaining = FrictionDuration;
+		ApplyFrictionToSpeed.SpeedToSlowDown = PlatformMovement.LocalSpeed;
+		MovePlayerToTargetAndCreateEffect();
+		Component component = Target as Component;
+		Vector3 position = (!InstantiateUtility.IsDestroyed(component)) ? component.transform.position : Sein.Position;
+		GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(BashOffFx);
 		gameObject.transform.position = position;
 		Vector3 localScale = gameObject.transform.localScale;
 		localScale.x = vector2.magnitude * 0.1f;
 		gameObject.transform.localScale = localScale;
 		gameObject.transform.localRotation = Quaternion.Euler(0f, 0f, MoonMath.Angle.AngleFromVector(vector));
-		if (this.BashReleaseEffect)
+		if (BashReleaseEffect)
 		{
-			((GameObject)InstantiateUtility.Instantiate(this.BashReleaseEffect)).transform.position = position;
+			((GameObject)InstantiateUtility.Instantiate(BashReleaseEffect)).transform.position = position;
 		}
-		SeinBashAttack.OnBashAttackEvent(vector2);
-		this.m_timeRemainingTillNextBash = this.DelayTillNextBash;
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.BashJumpAnimation, 10, new Func<bool>(this.ShouldBashJumpAnimationKeepPlaying));
-		characterAnimationState.OnStartPlaying = new Action(this.OnAnimationStart);
-		characterAnimationState.OnStopPlaying = new Action(this.OnAnimationEnd);
-		this.Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft = (vector2.x > 0f);
-		if (this.Sein.Abilities.Swimming)
+		OnBashAttackEvent(vector2);
+		m_timeRemainingTillNextBash = DelayTillNextBash;
+		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(BashJumpAnimation, 10, ShouldBashJumpAnimationKeepPlaying);
+		characterAnimationState.OnStartPlaying = OnAnimationStart;
+		characterAnimationState.OnStopPlaying = OnAnimationEnd;
+		Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft = (vector2.x > 0f);
+		if (Sein.Abilities.Swimming)
 		{
-			this.Sein.Abilities.Swimming.OnBash(angle);
+			Sein.Abilities.Swimming.OnBash(angle);
 		}
 	}
 
 	public void OnAnimationStart()
 	{
-		this.SpriteMirrorLock = true;
+		SpriteMirrorLock = true;
 	}
 
 	public void AttackTarget()
 	{
-		Component component = this.Target as Component;
+		Component component = Target as Component;
 		if (!InstantiateUtility.IsDestroyed(component))
 		{
-			Vector2 force = -MoonMath.Angle.VectorFromAngle(this.m_bashAngle + 90f) * (4f + (float)RandomizerBonus.Velocity());
-			new Damage(RandomizerBonusSkill.AbilityDamage((!this.Sein.PlayerAbilities.BashBuff.HasAbility) ? this.Damage : this.UpgradedDamage), force, Characters.Sein.Position, DamageType.Bash, base.gameObject).DealToComponents(component.gameObject);			EntityTargetting component2 = component.gameObject.GetComponent<EntityTargetting>();
+			Vector2 force = -MoonMath.Angle.VectorFromAngle(m_bashAngle + 90f) * (4f + RandomizerBonus.Velocity());
+			new Damage(RandomizerBonusSkill.AbilityDamage((!Sein.PlayerAbilities.BashBuff.HasAbility) ? Damage : UpgradedDamage), force, Characters.Sein.Position, DamageType.Bash, gameObject).DealToComponents(component.gameObject);			EntityTargetting component2 = component.gameObject.GetComponent<EntityTargetting>();
 			if (component2 && component2.Entity is Enemy)
 			{
-				SeinBashAttack.OnBashEnemy(component2);
+				OnBashEnemy(component2);
 			}
-			if (this.Sein.PlayerAbilities.BashBuff.HasAbility)
+			if (Sein.PlayerAbilities.BashBuff.HasAbility)
 			{
-				this.BeginBashThroughEnemies();
+				BeginBashThroughEnemies();
 			}
 		}
-		else if (this.m_isEnhancedBashing && this.Sein.PlayerAbilities.BashBuff.HasAbility)
+		else if (m_isEnhancedBashing && Sein.PlayerAbilities.BashBuff.HasAbility)
 		{
-			this.BeginBashThroughEnemies();
+			BeginBashThroughEnemies();
 		}
 	}
 
 	public void BeginBashThroughEnemies()
 	{
-		this.m_bashThroughEnemiesRemainingTime = 0.5f;
-		this.Sein.Mortality.DamageReciever.MakeInvincibleToEnemies(this.m_bashThroughEnemiesRemainingTime);
-		this.m_enemiesBashedThrough.Clear();
+		m_bashThroughEnemiesRemainingTime = 0.5f;
+		Sein.Mortality.DamageReciever.MakeInvincibleToEnemies(m_bashThroughEnemiesRemainingTime);
+		m_enemiesBashedThrough.Clear();
 	}
 
 	public void UpdateBashThroughEnemies()
 	{
-		if (this.m_bashThroughEnemiesRemainingTime > 0f)
+		if (m_bashThroughEnemiesRemainingTime > 0f)
 		{
-			this.m_bashThroughEnemiesRemainingTime -= Time.deltaTime;
+			m_bashThroughEnemiesRemainingTime -= Time.deltaTime;
 			for (int i = 0; i < Targets.Attackables.Count; i++)
 			{
 				IAttackable attackable = Targets.Attackables[i];
-				if (attackable.CanBeSpiritFlamed() && !this.m_enemiesBashedThrough.Contains(attackable))
+				if (attackable.CanBeSpiritFlamed() && !m_enemiesBashedThrough.Contains(attackable))
 				{
-					Vector3 vector = attackable.Position - this.Sein.PlatformBehaviour.PlatformMovement.Position;
-					if (vector.magnitude < 3f && Vector2.Dot(vector.normalized, this.PlatformMovement.LocalSpeed.normalized) > 0f)
+					Vector3 vector = attackable.Position - Sein.PlatformBehaviour.PlatformMovement.Position;
+					if (vector.magnitude < 3f && Vector2.Dot(vector.normalized, PlatformMovement.LocalSpeed.normalized) > 0f)
 					{
-						Damage damage = new Damage(this.UpgradedDamage, this.PlatformMovement.WorldSpeed.normalized, this.Sein.Position, DamageType.SpiritFlame, base.gameObject);
+						Damage damage = new Damage(UpgradedDamage, PlatformMovement.WorldSpeed.normalized, Sein.Position, DamageType.SpiritFlame, this.gameObject);
 						GameObject gameObject = ((Component)attackable).gameObject;
 						damage.DealToComponents(gameObject);
-						this.m_enemiesBashedThrough.Add(attackable);
+						m_enemiesBashedThrough.Add(attackable);
 						break;
 					}
 				}
 			}
-			if (this.m_bashThroughEnemiesRemainingTime <= 0f)
+			if (m_bashThroughEnemiesRemainingTime <= 0f)
 			{
-				this.m_bashThroughEnemiesRemainingTime = 0f;
-				this.FinishBashThroughEnemies();
+				m_bashThroughEnemiesRemainingTime = 0f;
+				FinishBashThroughEnemies();
 			}
 		}
 	}
 
 	public void FinishBashThroughEnemies()
 	{
-		this.m_enemiesBashedThrough.Clear();
+		m_enemiesBashedThrough.Clear();
 	}
 
 	public void UpdateBashingState()
 	{
-		this.HandleBashAngle();
-		this.Sein.Mortality.DamageReciever.MakeInvincibleToEnemies(0.2f);
-		this.HandleMovingTowardsBashTarget();
-		this.Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft = (this.m_directionToTarget.x < 0f);
+		HandleBashAngle();
+		Sein.Mortality.DamageReciever.MakeInvincibleToEnemies(0.2f);
+		HandleMovingTowardsBashTarget();
+		Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft = (m_directionToTarget.x < 0f);
 	}
 
 	public void BashFailed()
 	{
-		if (this.NoBashTargetEffect)
+		if (NoBashTargetEffect)
 		{
-			((GameObject)InstantiateUtility.Instantiate(this.NoBashTargetEffect, base.transform.position, Quaternion.identity)).transform.parent = this.m_seinTransform;
+			((GameObject)InstantiateUtility.Instantiate(NoBashTargetEffect, transform.position, Quaternion.identity)).transform.parent = m_seinTransform;
 		}
 	}
 
 	public void UpdateNormalState()
 	{
 		Randomizer.BashWasQueued = Randomizer.QueueBash;
-		if (Core.Input.Bash.OnPressed || Randomizer.QueueBash)
+		if (Input.Bash.OnPressed || Randomizer.QueueBash)
 		{
 			Randomizer.QueueBash = false;
-			this.m_timeRemainingOfBashButtonPress = 0.5f;
-			if (this.Sein.IsOnGround && this.Sein.Speed.x == 0f && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.AllAbilities) && !this.Sein.Abilities.Carry.IsCarrying)
+			m_timeRemainingOfBashButtonPress = 0.5f;
+			if (Sein.IsOnGround && Sein.Speed.x == 0f && !SeinAbilityRestrictZone.IsInside() && !Sein.Abilities.Carry.IsCarrying)
 			{
-				this.Sein.Animation.Play(this.BackFlipAnimation, 10, null);
-				this.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = this.BackFlipSpeed;
-				if ((!this.Sein.PlayerAbilities.BashBuff.HasAbility) ? this.StationaryBashSound : this.UpgradedStationaryBashSound)
+				Sein.Animation.Play(BackFlipAnimation, 10);
+				Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = BackFlipSpeed;
+				if ((!Sein.PlayerAbilities.BashBuff.HasAbility) ? StationaryBashSound : UpgradedStationaryBashSound)
 				{
-					Sound.Play((!this.Sein.PlayerAbilities.BashBuff.HasAbility) ? this.StationaryBashSound.GetSound(null) : this.UpgradedStationaryBashSound.GetSound(null), base.transform.position, null);
+					Sound.Play((!Sein.PlayerAbilities.BashBuff.HasAbility) ? StationaryBashSound.GetSound(null) : UpgradedStationaryBashSound.GetSound(null), transform.position, null);
 				}
 			}
 		}
-		if (this.m_timeRemainingOfBashButtonPress > 0f)
+		if (m_timeRemainingOfBashButtonPress > 0f)
 		{
-			this.m_timeRemainingOfBashButtonPress -= Time.deltaTime;
-			if ((Core.Input.Bash.OnReleased || ((double)this.m_timeRemainingOfBashButtonPress <= 0.4 && (double)this.m_timeRemainingOfBashButtonPress >= 0.4 - (double)Time.deltaTime)) && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.AllAbilities) && !this.Sein.Abilities.Carry.IsCarrying)
+			m_timeRemainingOfBashButtonPress -= Time.deltaTime;
+			if ((Input.Bash.OnReleased || (m_timeRemainingOfBashButtonPress <= 0.4 && m_timeRemainingOfBashButtonPress >= 0.4 - Time.deltaTime)) && !SeinAbilityRestrictZone.IsInside() && !Sein.Abilities.Carry.IsCarrying)
 			{
-				this.BashFailed();
+				BashFailed();
 			}
-			if (Core.Input.Bash.Released || this.m_timeRemainingOfBashButtonPress <= 0f)
+			if (Input.Bash.Released || m_timeRemainingOfBashButtonPress <= 0f)
 			{
-				this.m_timeRemainingOfBashButtonPress = 0f;
+				m_timeRemainingOfBashButtonPress = 0f;
 			}
-			if (RandomizerBonus.EnhancedBash && this.m_timeRemainingOfBashButtonPress <= 0.3f)
+			if (RandomizerBonus.EnhancedBash && m_timeRemainingOfBashButtonPress <= 0.3f)
 			{
-				this.m_isEnhancedBashing = true;
-				this.BeginBash();
+				m_isEnhancedBashing = true;
+				BeginBash();
 			}
 		}
-		if ((this.m_timeRemainingOfBashButtonPress > 0f || Randomizer.BashWasQueued) && this.CanBash)
+		if ((m_timeRemainingOfBashButtonPress > 0f || Randomizer.BashWasQueued) && CanBash)
 		{
-			this.BeginBash();
+			BeginBash();
 		}
-		this.HandleFindingTarget();
-		this.UpdateTargetHighlight(this.Target);
+		HandleFindingTarget();
+		UpdateTargetHighlight(Target);
 	}
 
 	public override void UpdateCharacterState()
 	{
-		if (this.Sein.IsSuspended)
+		if (Sein.IsSuspended)
 		{
 			return;
 		}
-		if (!this.Sein.PlayerAbilities.Bash.HasAbility)
+		if (!Sein.PlayerAbilities.Bash.HasAbility)
 		{
 			return;
 		}
-		if (!this.Sein.Active)
+		if (!Sein.Active)
 		{
-			this.ExitBash();
+			ExitBash();
 			return;
 		}
-		if (this.m_timeRemainingTillNextBash > 0f)
+		if (m_timeRemainingTillNextBash > 0f)
 		{
-			this.m_timeRemainingTillNextBash -= Time.deltaTime;
+			m_timeRemainingTillNextBash -= Time.deltaTime;
 		}
-		this.UpdateBashThroughEnemies();
-		if (this.m_frictionTimeRemaining > 0f)
+		UpdateBashThroughEnemies();
+		if (m_frictionTimeRemaining > 0f)
 		{
-			this.m_frictionTimeRemaining -= Time.deltaTime;
-			float time = this.FrictionDuration - this.m_frictionTimeRemaining;
-			this.ApplyFrictionToSpeed.SpeedFactor = this.FrictionCurve.Evaluate(time);
+			m_frictionTimeRemaining -= Time.deltaTime;
+			float time = FrictionDuration - m_frictionTimeRemaining;
+			ApplyFrictionToSpeed.SpeedFactor = FrictionCurve.Evaluate(time);
 		}
-		if (this.m_frictionTimeRemaining + this.NoAirDecelerationDuration - this.FrictionDuration > 0f)
+		if (m_frictionTimeRemaining + NoAirDecelerationDuration - FrictionDuration > 0f)
 		{
-			this.AirNoDeceleration.NoDeceleration = true;
+			AirNoDeceleration.NoDeceleration = true;
 		}
-		if (this.IsBashing)
+		if (IsBashing)
 		{
-			this.UpdateBashingState();
+			UpdateBashingState();
 			return;
 		}
-		this.UpdateNormalState();
+		UpdateNormalState();
 	}
 
 	public void HandleMovingTowardsBashTarget()
 	{
-		Vector3 a = this.m_playerTargetPosition - this.PlatformMovement.Position;
-		this.PlatformMovement.WorldSpeed = a / Time.deltaTime * 0.1f;
+		Vector3 a = m_playerTargetPosition - PlatformMovement.Position;
+		PlatformMovement.WorldSpeed = a / Time.deltaTime * 0.1f;
 	}
 
 	public void HandleBashAngle()
 	{
-		if (!InstantiateUtility.IsDestroyed(this.m_bashAttackGame))
+		if (!InstantiateUtility.IsDestroyed(m_bashAttackGame))
 		{
-			this.m_bashAngle = this.m_bashAttackGame.Angle;
+			m_bashAngle = m_bashAttackGame.Angle;
 		}
 	}
 
 	public void HandleFindingTarget()
 	{
-		if (this.Sein.Controller.IsCarrying)
+		if (Sein.Controller.IsCarrying)
 		{
-			this.Target = null;
+			Target = null;
 			return;
 		}
-		if (this.m_timeRemainingTillNextBash > 0f)
+		if (m_timeRemainingTillNextBash > 0f)
 		{
-			this.Target = null;
+			Target = null;
 			return;
 		}
-		if (this.PlayerAbilities.Bash.HasAbility)
+		if (PlayerAbilities.Bash.HasAbility)
 		{
-			this.Target = this.FindClosestAttackHandler();
+			Target = FindClosestAttackHandler();
 			return;
 		}
-		this.Target = null;
+		Target = null;
 	}
 
 	public void UpdateTargetHighlight(IBashAttackable target)
 	{
-		if (this.m_lastTarget == target)
+		if (m_lastTarget == target)
 		{
 			return;
 		}
-		if (!InstantiateUtility.IsDestroyed(this.m_lastTarget as Component))
+		if (!InstantiateUtility.IsDestroyed(m_lastTarget as Component))
 		{
-			this.m_lastTarget.OnBashDehighlight();
+			m_lastTarget.OnBashDehighlight();
 		}
-		this.m_lastTarget = target;
-		if (!InstantiateUtility.IsDestroyed(this.m_lastTarget as Component))
+		m_lastTarget = target;
+		if (!InstantiateUtility.IsDestroyed(m_lastTarget as Component))
 		{
-			this.m_lastTarget.OnBashHighlight();
+			m_lastTarget.OnBashHighlight();
 		}
 	}
 
@@ -594,20 +595,20 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 		IBashAttackable result = null;
 		float num = float.MaxValue;
 		int num2 = int.MinValue;
-		Vector3 position = this.Sein.Position;
+		Vector3 position = Sein.Position;
 		for (int i = 0; i < Targets.Attackables.Count; i++)
 		{
 			IAttackable attackable = Targets.Attackables[i];
 			if (attackable.CanBeBashed())
 			{
 				float magnitude = (attackable.Position - position).magnitude;
-				if (magnitude <= this.Range)
+				if (magnitude <= Range)
 				{
 					IBashAttackable bashAttackable = attackable as IBashAttackable;
 					if (bashAttackable != null)
 					{
 						int bashPriority = bashAttackable.BashPriority;
-						if ((bashPriority > num2 || (magnitude <= num && bashPriority == num2)) && this.Sein.Controller.RayTest(((Component)bashAttackable).gameObject))
+						if ((bashPriority > num2 || (magnitude <= num && bashPriority == num2)) && Sein.Controller.RayTest(((Component)bashAttackable).gameObject))
 						{
 							num = magnitude;
 							num2 = bashPriority;
@@ -622,39 +623,39 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 
 	public bool ShouldBashChargeAnimationKeepPlaying()
 	{
-		return this.IsBashing;
+		return IsBashing;
 	}
 
 	public bool ShouldBashJumpAnimationKeepPlaying()
 	{
-		return !this.PlatformMovement.IsOnGround;
+		return !PlatformMovement.IsOnGround;
 	}
 
 	public void OnAnimationEnd()
 	{
-		this.SpriteMirrorLock = false;
+		SpriteMirrorLock = false;
 	}
 
 	public override void Serialize(Archive ar)
 	{
-		ar.Serialize(ref this.m_timeRemainingOfBashButtonPress);
-		ar.Serialize(ref this.m_frictionTimeRemaining);
-		ar.Serialize(ref this.m_timeRemainingTillNextBash);
-		ar.Serialize(ref this.m_spriteMirrorLock);
+		ar.Serialize(ref m_timeRemainingOfBashButtonPress);
+		ar.Serialize(ref m_frictionTimeRemaining);
+		ar.Serialize(ref m_timeRemainingTillNextBash);
+		ar.Serialize(ref m_spriteMirrorLock);
 		base.Serialize(ar);
-		if (ar.Reading && !InstantiateUtility.IsDestroyed(this.m_bashAttackGame))
+		if (ar.Reading && !InstantiateUtility.IsDestroyed(m_bashAttackGame))
 		{
-			InstantiateUtility.Destroy(this.m_bashAttackGame.gameObject);
+			InstantiateUtility.Destroy(m_bashAttackGame.gameObject);
 		}
 	}
 
-	public SeinBashAttack.DirectionalAnimationSet BashChargeAnimationSet;
+	public DirectionalAnimationSet BashChargeAnimationSet;
 
-	public SeinBashAttack.DirectionalAnimationSet BashJumpAnimationSet;
+	public DirectionalAnimationSet BashJumpAnimationSet;
 
-	public SeinBashAttack.DirectionalAnimationSet SwimBashChargeAnimationSet;
+	public DirectionalAnimationSet SwimBashChargeAnimationSet;
 
-	public SeinBashAttack.DirectionalAnimationSet SwimBashJumpAnimationSet;
+	public DirectionalAnimationSet SwimBashJumpAnimationSet;
 
 	public TextureAnimationWithTransitions BackFlipAnimation;
 
@@ -738,7 +739,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 
 	private Vector3 m_enhancedBashTarget;
 
-	private bool m_isEnhancedBashing = false;
+	private bool m_isEnhancedBashing;
 
 	[Serializable]
 	public class DirectionalAnimationSet

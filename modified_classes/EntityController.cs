@@ -10,112 +10,112 @@ public class EntityController : SaveSerialize, INearSeinReceiver, IDamageRecieve
 	{
 		get
 		{
-			return this.Entity as SpriteEntity;
+			return Entity as SpriteEntity;
 		}
 	}
 
 	public void OnValidate()
 	{
-		this.Entity = base.transform.FindComponentUpwards<Entity>();
-		this.Entity.Controller = this;
+		Entity = transform.FindComponentUpwards<Entity>();
+		Entity.Controller = this;
 	}
 
 	public new void Awake()
 	{
 		base.Awake();
-		if (this.Entity == null)
+		if (Entity == null)
 		{
-			this.OnValidate();
+			OnValidate();
 		}
-		if (this.SpriteEntity && this.SpriteEntity.Animation)
+		if (SpriteEntity && SpriteEntity.Animation)
 		{
-			this.SpriteEntity.Animation.Animator.OnAnimationEndEvent += this.OnAnimationEnd;
+			SpriteEntity.Animation.Animator.OnAnimationEndEvent += OnAnimationEnd;
 		}
 	}
 
 	public void FixedUpdate()
 	{
-		if (this.Entity.IsSuspended)
+		if (Entity.IsSuspended)
 		{
 			return;
 		}
-		if (this.m_transManager == null)
+		if (m_transManager == null)
 		{
-			this.m_transManager = this.StateMachine.GetTransistionManager<OnFixedUpdate>();
+			m_transManager = StateMachine.GetTransistionManager<OnFixedUpdate>();
 		}
-		if (this.m_transManager == null)
+		if (m_transManager == null)
 		{
 			return;
 		}
 		float deltaTime = Time.deltaTime;
-		if (this.Entity is Enemy)
+		if (Entity is Enemy)
 		{
 			deltaTime = RandomizerBonusSkill.TimeScale(deltaTime);
 		}
-		this.StateMachine.UpdateState(deltaTime);
-		this.StateMachine.CurrentTrigger = null;
-		this.m_transManager.Process(this.StateMachine);
+		StateMachine.UpdateState(deltaTime);
+		StateMachine.CurrentTrigger = null;
+		m_transManager.Process(StateMachine);
 	}
 
 	public void OnAnimationEnd(TextureAnimation anim)
 	{
-		this.StateMachine.Trigger<OnAnimationOrTransitionEnded>();
-		if (!this.SpriteEntity.Animation.Animator.IsTransitionPlaying)
+		StateMachine.Trigger<OnAnimationOrTransitionEnded>();
+		if (!SpriteEntity.Animation.Animator.IsTransitionPlaying)
 		{
-			this.StateMachine.Trigger<OnAnimationEnded>();
+			StateMachine.Trigger<OnAnimationEnded>();
 		}
 	}
 
 	public void OnCollisionEnter(Collision collision)
 	{
-		this.StateMachine.Trigger(new OnCollisionEnter(collision));
+		StateMachine.Trigger(new OnCollisionEnter(collision));
 	}
 
 	public void OnCollisionStay(Collision collision)
 	{
-		this.StateMachine.Trigger(new OnCollisionStay(collision));
+		StateMachine.Trigger(new OnCollisionStay(collision));
 	}
 
 	public void OnCollisionExit(Collision collision)
 	{
-		this.StateMachine.Trigger(new OnCollisionExit(collision));
+		StateMachine.Trigger(new OnCollisionExit(collision));
 	}
 
 	public void OnRecieveDamage(Damage damage)
 	{
-		if (this.OnReceiveDamage != null)
+		if (OnReceiveDamage != null)
 		{
-			this.OnReceiveDamage(damage);
+			OnReceiveDamage(damage);
 		}
-		this.StateMachine.Trigger(new OnReceiveDamage(damage));
+		StateMachine.Trigger(new OnReceiveDamage(damage));
 	}
 
 	public void OnNearSeinEnter()
 	{
-		this.m_nearSein = true;
+		m_nearSein = true;
 	}
 
 	public void OnNearSeinExit()
 	{
-		this.m_nearSein = false;
+		m_nearSein = false;
 	}
 
 	public bool NearSein
 	{
 		get
 		{
-			return this.m_nearSein && Characters.Sein.Controller.CanMove;
+			return m_nearSein && Characters.Sein.Controller.CanMove;
 		}
 	}
 
 	public bool IsNearSein()
 	{
-		return this.NearSein;
+		return NearSein;
 	}
 
 	public void OnSeinNearStay()
 	{
-		this.LastSeenSeinPosition = Characters.Sein.Position;
+		LastSeenSeinPosition = Characters.Sein.Position;
 	}
 
 	public Vector3 LastSeenSeinPosition { get; private set; }
@@ -127,7 +127,7 @@ public class EntityController : SaveSerialize, INearSeinReceiver, IDamageRecieve
 
 	public override void Serialize(Archive ar)
 	{
-		this.StateMachine.Serialize(ar);
+		StateMachine.Serialize(ar);
 	}
 
 	public Entity Entity;

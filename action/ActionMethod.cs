@@ -1,5 +1,3 @@
-using System;
-
 public abstract class ActionMethod : SaveSerialize, IAction
 {
 	public void Start()
@@ -12,7 +10,7 @@ public abstract class ActionMethod : SaveSerialize, IAction
 
 	public virtual string GetNiceName()
 	{
-		return StringUtility.AddSpaces(base.GetType().Name);
+		return StringUtility.AddSpaces(GetType().Name);
 	}
 
 	public abstract void Perform(IContext context);

@@ -3,15 +3,15 @@ using UnityEngine;
 
 public class RollingMovement : SaveSerialize, ISuspendable
 {
-	public event Action<Vector3, float, Collider> OnCollisionGroundEvent = delegate(Vector3 A_0, float A_1, Collider A_2)
+	public event Action<Vector3, float, Collider> OnCollisionGroundEvent = delegate
 	{
 	};
 
-	public event Action<Vector3, float, Collider> OnCollisionWallLeftEvent = delegate(Vector3 A_0, float A_1, Collider A_2)
+	public event Action<Vector3, float, Collider> OnCollisionWallLeftEvent = delegate
 	{
 	};
 
-	public event Action<Vector3, float, Collider> OnCollisionWallRightEvent = delegate(Vector3 A_0, float A_1, Collider A_2)
+	public event Action<Vector3, float, Collider> OnCollisionWallRightEvent = delegate
 	{
 	};
 
@@ -19,11 +19,11 @@ public class RollingMovement : SaveSerialize, ISuspendable
 	{
 		get
 		{
-			return this.Speed.y;
+			return Speed.y;
 		}
 		set
 		{
-			this.Speed.y = value;
+			Speed.y = value;
 		}
 	}
 
@@ -31,11 +31,11 @@ public class RollingMovement : SaveSerialize, ISuspendable
 	{
 		get
 		{
-			return this.Speed.x;
+			return Speed.x;
 		}
 		set
 		{
-			this.Speed.x = value;
+			Speed.x = value;
 		}
 	}
 
@@ -43,18 +43,18 @@ public class RollingMovement : SaveSerialize, ISuspendable
 	{
 		get
 		{
-			return 57.29578f * Mathf.Atan2(-this.GroundNormal.x, this.GroundNormal.y);
+			return 57.29578f * Mathf.Atan2(-GroundNormal.x, GroundNormal.y);
 		}
 	}
 
 	public Vector2 WorldToGround(Vector2 world)
 	{
-		return MoonMath.Angle.Unrotate(world, this.GroundAngle);
+		return MoonMath.Angle.Unrotate(world, GroundAngle);
 	}
 
 	public Vector2 GroundToWorld(Vector2 local)
 	{
-		return MoonMath.Angle.Rotate(local, this.GroundAngle);
+		return MoonMath.Angle.Rotate(local, GroundAngle);
 	}
 
 	public bool IsSuspended { get; set; }
@@ -62,8 +62,8 @@ public class RollingMovement : SaveSerialize, ISuspendable
 	public new void Awake()
 	{
 		base.Awake();
-		this.m_rigidbody = base.GetComponent<Rigidbody>();
-		this.m_rigidbody.sleepThreshold = 0f;
+		m_rigidbody = GetComponent<Rigidbody>();
+		m_rigidbody.sleepThreshold = 0f;
 		SuspensionManager.Register(this);
 	}
 
@@ -74,39 +74,39 @@ public class RollingMovement : SaveSerialize, ISuspendable
 
 	public override void Serialize(Archive ar)
 	{
-		ar.Serialize(ref this.Speed);
+		ar.Serialize(ref Speed);
 	}
 
 	public void OnCollisionEnter(Collision collision)
 	{
-		this.OnCollision(collision);
+		OnCollision(collision);
 	}
 
 	public void OnCollisionStay(Collision collision)
 	{
-		this.OnCollision(collision);
+		OnCollision(collision);
 	}
 
 	public void OnCollision(Collision collision)
 	{
 		foreach (ContactPoint contactPoint in collision.contacts)
 		{
-			this.Speed -= Vector3.Dot(this.Speed.normalized, contactPoint.normal) * contactPoint.normal;
+			Speed -= Vector3.Dot(Speed.normalized, contactPoint.normal) * contactPoint.normal;
 			if (Vector3.Dot(contactPoint.normal, Vector3.up) > Mathf.Cos(0.7853982f))
 			{
-				this.m_groundNormal += contactPoint.normal;
-				this.Ground.FutureOn = true;
-				this.OnCollisionGroundEvent(contactPoint.normal, Vector3.Dot(collision.relativeVelocity, contactPoint.normal), collision.collider);
+				m_groundNormal += contactPoint.normal;
+				Ground.FutureOn = true;
+				OnCollisionGroundEvent(contactPoint.normal, Vector3.Dot(collision.relativeVelocity, contactPoint.normal), collision.collider);
 			}
 			if (Vector3.Dot(contactPoint.normal, Vector3.right) > Mathf.Cos(0.34906584f))
 			{
-				this.WallLeft.FutureOn = true;
-				this.OnCollisionWallLeftEvent(contactPoint.normal, Vector3.Dot(collision.relativeVelocity, contactPoint.normal), collision.collider);
+				WallLeft.FutureOn = true;
+				OnCollisionWallLeftEvent(contactPoint.normal, Vector3.Dot(collision.relativeVelocity, contactPoint.normal), collision.collider);
 			}
 			if (Vector3.Dot(contactPoint.normal, Vector3.left) > Mathf.Cos(0.34906584f))
 			{
-				this.WallRight.FutureOn = true;
-				this.OnCollisionWallRightEvent(contactPoint.normal, Vector3.Dot(collision.relativeVelocity, contactPoint.normal), collision.collider);
+				WallRight.FutureOn = true;
+				OnCollisionWallRightEvent(contactPoint.normal, Vector3.Dot(collision.relativeVelocity, contactPoint.normal), collision.collider);
 			}
 		}
 	}
@@ -115,21 +115,21 @@ public class RollingMovement : SaveSerialize, ISuspendable
 	{
 		get
 		{
-			return Vector3.Cross(this.GroundNormal, Vector3.forward);
+			return Vector3.Cross(GroundNormal, Vector3.forward);
 		}
 	}
 
 	public void FixedUpdate()
 	{
-		this.Ground.Update();
-		this.WallLeft.Update();
-		this.WallRight.Update();
-		this.GroundNormal = ((this.m_groundNormal.magnitude != 0f) ? this.m_groundNormal.normalized : Vector3.up);
-		this.IsOnGround = (this.m_groundNormal.magnitude != 0f);
-		this.m_groundNormal = Vector3.zero;
-		this.Speed.z = 0f;
-		this.m_rigidbody.velocity = ((!this.IsSuspended) ? RandomizerBonusSkill.TimeScale(this.Speed) : Vector3.zero);
-		this.m_rigidbody.detectCollisions = true;
+		Ground.Update();
+		WallLeft.Update();
+		WallRight.Update();
+		GroundNormal = ((m_groundNormal.magnitude != 0f) ? m_groundNormal.normalized : Vector3.up);
+		IsOnGround = (m_groundNormal.magnitude != 0f);
+		m_groundNormal = Vector3.zero;
+		Speed.z = 0f;
+		m_rigidbody.velocity = ((!IsSuspended) ? RandomizerBonusSkill.TimeScale(Speed) : Vector3.zero);
+		m_rigidbody.detectCollisions = true;
 	}
 
 	private Rigidbody m_rigidbody;

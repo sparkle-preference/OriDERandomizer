@@ -5,9 +5,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Core;
-using Frameworks;
 using Game;
 using UnityEngine;
+using Object = UnityEngine.Object;
+using Shader = Frameworks.Shader;
 
 public class GameController : SaveSerialize, ISuspendable
 {
@@ -17,16 +18,16 @@ public class GameController : SaveSerialize, ISuspendable
 	{
 		get
 		{
-			return Mathf.RoundToInt(this.Timer.CurrentTime);
+			return Mathf.RoundToInt(Timer.CurrentTime);
 		}
 	}
 
 	public void PerformSaveGameSequence()
 	{
 		RandomizerStatsManager.OnSave(false);
-		if (this.GameSaveSequence)
+		if (GameSaveSequence)
 		{
-			this.GameSaveSequence.Perform(null);
+			GameSaveSequence.Perform(null);
 		}
 	}
 
@@ -42,7 +43,7 @@ public class GameController : SaveSerialize, ISuspendable
 	{
 		get
 		{
-			return this.PCTrialValue;
+			return PCTrialValue;
 		}
 	}
 
@@ -50,26 +51,26 @@ public class GameController : SaveSerialize, ISuspendable
 	{
 		get
 		{
-			WorldEventsRuntime worldEventsRuntime = World.Events.Find(this.DebugWorldEvents);
-			return worldEventsRuntime.Value == this.DebugWorldEvents.GetIDFromName("Demo");
+			WorldEventsRuntime worldEventsRuntime = World.Events.Find(DebugWorldEvents);
+			return worldEventsRuntime.Value == DebugWorldEvents.GetIDFromName("Demo");
 		}
 	}
 
 	public void ExitGame()
 	{
-		if (this.IsTrial)
+		if (IsTrial)
 		{
-			GameController.Instance.GoToEndTrialScreen();
+			Instance.GoToEndTrialScreen();
 		}
 		else
 		{
-			GameController.Instance.QuitApplication();
+			Instance.QuitApplication();
 		}
 	}
 
 	public void ExitTrial()
 	{
-		GameController.Instance.RestartGame();
+		Instance.RestartGame();
 	}
 
 	public void QuitApplication()
@@ -79,15 +80,15 @@ public class GameController : SaveSerialize, ISuspendable
 
 	public void GoToEndTrialScreen()
 	{
-		this.MainMenuCanBeOpened = false;
+		MainMenuCanBeOpened = false;
 		GameStateMachine.Instance.SetToTrialEnd();
 		RuntimeSceneMetaData sceneInformation = Scenes.Manager.GetSceneInformation("trialEndScreen");
-		GoToSceneController.Instance.GoToScene(sceneInformation, new Action(this.OnFinishedLoadingTrialEndScene), false);
+		GoToSceneController.Instance.GoToScene(sceneInformation, OnFinishedLoadingTrialEndScene, false);
 	}
 
 	public void OnFinishedLoadingTrialEndScene()
 	{
-		this.RemoveGameplayObjects();
+		RemoveGameplayObjects();
 	}
 
 	public void OnGameReset()
@@ -126,7 +127,7 @@ public class GameController : SaveSerialize, ISuspendable
 		UI.Cameras.Current.Target = null;
 		if (UI.MainMenuVisible)
 		{
-			UI.Menu.HideMenuScreen(false);
+			UI.Menu.HideMenuScreen();
 		}
 		UI.Menu.RemoveGameplayObjects();
 		WorldMapUI.CancelLoading();
@@ -134,13 +135,13 @@ public class GameController : SaveSerialize, ISuspendable
 
 	public void ResetStateForDebugMenuGoToScene()
 	{
-		this.RemoveGameplayObjects();
-		this.RequireInitialValues = true;
+		RemoveGameplayObjects();
+		RequireInitialValues = true;
 	}
 
 	public void RestartGame()
 	{
-		if (this.m_isRestartingGame)
+		if (m_isRestartingGame)
 		{
 			return;
 		}
@@ -149,23 +150,23 @@ public class GameController : SaveSerialize, ISuspendable
 		{
 			return;
 		}
-		this.Timer.Reset();
-		this.MainMenuCanBeOpened = false;
-		this.RequireInitialValues = true;
-		GameController.Instance.IsLoadingGame = false;
+		Timer.Reset();
+		MainMenuCanBeOpened = false;
+		RequireInitialValues = true;
+		Instance.IsLoadingGame = false;
 		InstantLoadScenesController.Instance.OnGameReset();
-		GoToSceneController.Instance.GoToScene(sceneInformation, new Action(this.OnFinishedRestarting), false);
+		GoToSceneController.Instance.GoToScene(sceneInformation, OnFinishedRestarting, false);
 	}
 
 	private void OnFinishedRestarting()
 	{
-		base.StartCoroutine(this.RestartingCleanupNextFrame());
+		StartCoroutine(RestartingCleanupNextFrame());
 	}
 
 	public IEnumerator RestartingCleanupNextFrame()
 	{
-		this.RemoveGameplayObjects();
-		this.ResetInputLocks();
+		RemoveGameplayObjects();
+		ResetInputLocks();
 		if (UI.Fader.IsFadingInOrStay() || UI.Fader.IsTimelineFading())
 		{
 			UI.Fader.FadeOut(2f);
@@ -175,8 +176,8 @@ public class GameController : SaveSerialize, ISuspendable
 		XboxOneFlow.Engage = false;
 		XboxOneSession.EndSession();
 		yield return new WaitForFixedUpdate();
-		this.m_isRestartingGame = false;
-		this.ActiveObjectives.Clear();
+		m_isRestartingGame = false;
+		ActiveObjectives.Clear();
 		Game.Checkpoint.SaveGameData = new SaveGameData();
 		Events.Scheduler.OnGameSerializeLoad.Call();
 		Events.Scheduler.OnGameReset.Call();
@@ -185,7 +186,7 @@ public class GameController : SaveSerialize, ISuspendable
 			UI.Fader.FadeOut(2f);
 		}
 		TitleScreenManager.OnReturnToTitleScreen();
-		this.CreateCheckpoint();
+		CreateCheckpoint();
 		yield break;
 	}
 
@@ -197,7 +198,7 @@ public class GameController : SaveSerialize, ISuspendable
 	{
 		get
 		{
-			return this.LockInput || this.LockInputByAction;
+			return LockInput || LockInputByAction;
 		}
 	}
 
@@ -221,36 +222,36 @@ public class GameController : SaveSerialize, ISuspendable
 
 	public override void Awake()
 	{
-		if (GameController.Instance != null)
+		if (Instance != null)
 		{
-			UnityEngine.Object.Destroy(base.gameObject);
+			Destroy(gameObject);
 			return;
 		}
-		GameController.Instance = this;
-		this.HandleTrialData();
+		Instance = this;
+		HandleTrialData();
 		Randomizer.InitializeOnce();
-		this.WarmUpResources();
+		WarmUpResources();
 		base.Awake();
 		if (LoadingBootstrap.Instance)
 		{
-			UnityEngine.Object.Destroy(LoadingBootstrap.Instance.gameObject);
+			Destroy(LoadingBootstrap.Instance.gameObject);
 		}
-		this.GameScheduler.OnGameAwake.Add(new Action(this.OnGameAwake));
-		this.GameScheduler.OnGameAwake.Call();
-		this.GameScheduler.OnGameReset.Add(new Action(this.OnGameReset));
+		GameScheduler.OnGameAwake.Add(OnGameAwake);
+		GameScheduler.OnGameAwake.Call();
+		GameScheduler.OnGameReset.Add(OnGameReset);
 		UberGCManager.OnGameStart();
-		this.m_systemsGameObject = new GameObject("systems");
-		Utility.DontAssociateWithAnyScene(this.m_systemsGameObject);
-		base.transform.parent = this.m_systemsGameObject.transform;
-		foreach (GameObject gameObject in this.Systems)
+		m_systemsGameObject = new GameObject("systems");
+		Utility.DontAssociateWithAnyScene(m_systemsGameObject);
+		transform.parent = m_systemsGameObject.transform;
+		foreach (GameObject gameObject in Systems)
 		{
 			try
 			{
 				if (gameObject)
 				{
-					GameObject gameObject2 = UnityEngine.Object.Instantiate<GameObject>(gameObject);
+					GameObject gameObject2 = Instantiate(gameObject);
 					gameObject2.name = gameObject.name;
-					gameObject2.transform.SetParentMaintainingLocalTransform(this.m_systemsGameObject.transform);
+					gameObject2.transform.SetParentMaintainingLocalTransform(m_systemsGameObject.transform);
 				}
 			}
 			catch (Exception ex)
@@ -259,39 +260,39 @@ public class GameController : SaveSerialize, ISuspendable
 		}
 		new Telemetry();
 		UI.LoadMessageController();
-		this.Systems.Clear();
+		Systems.Clear();
 		Application.targetFrameRate = 60;
 		UberGCManager.CollectProactiveFull();
 	}
 
 	private void OnGameAwake()
 	{
-		this.m_restoreCheckpointController = new RestoreCheckpointController();
-		Frameworks.Shader.Globals.FogGradientRange = 100f;
-		Frameworks.Shader.Globals.FogGradientTexture = Frameworks.Shader.DefaultTextures.Transparent;
+		m_restoreCheckpointController = new RestoreCheckpointController();
+		Shader.Globals.FogGradientRange = 100f;
+		Shader.Globals.FogGradientTexture = Shader.DefaultTextures.Transparent;
 		FixedRandom.UpdateValues();
 		if (ScenesToSkip.Instance == null)
 		{
 			new ScenesToSkip();
 		}
-		SaveSceneManager.Master = base.GetComponent<SaveSceneManager>();
+		SaveSceneManager.Master = GetComponent<SaveSceneManager>();
 	}
 
 	public IEnumerator Start()
 	{
 		GameplayCamera currentCamera = UI.Cameras.Current;
 		currentCamera.ChangeTargetToCurrentCharacter();
-		Scenes.Manager.EnableDisabledScenesAtPosition(false);
+		Scenes.Manager.EnableDisabledScenesAtPosition();
 		currentCamera.UpdateTargetHelperPosition();
 		currentCamera.MoveCameraToTargetPosition();
 		currentCamera.OffsetController.UpdateOffset(true);
-		currentCamera.MoveCameraToTargetInstantly(true);
+		currentCamera.MoveCameraToTargetInstantly();
 		yield return new WaitForFixedUpdate();
 		GameSettings.Instance.LoadSettings();
-		this.CreateCheckpoint();
-		SaveSceneManager.Master.RegisterGameObject(this.m_systemsGameObject);
+		CreateCheckpoint();
+		SaveSceneManager.Master.RegisterGameObject(m_systemsGameObject);
 		SuspensionManager.Register(this);
-		if (!this.IsTrial)
+		if (!IsTrial)
 		{
 			WaitForSaveGameLogic.OnCompletedStatic = (Action)Delegate.Combine(WaitForSaveGameLogic.OnCompletedStatic, new Action(AchievementsLogic.Instance.HandleTrialAchievements));
 		}
@@ -302,17 +303,17 @@ public class GameController : SaveSerialize, ISuspendable
 	{
 		if (focusStatus)
 		{
-			this.m_setRunInBackgroundToFalse = false;
+			m_setRunInBackgroundToFalse = false;
 			Application.runInBackground = true;
-			if (this.CurVsyncValue != 0)
+			if (CurVsyncValue != 0)
 			{
-				QualitySettings.vSyncCount = this.CurVsyncValue;
-				this.CurVsyncValue = 0;
+				QualitySettings.vSyncCount = CurVsyncValue;
+				CurVsyncValue = 0;
 			}
 		}
 		else if (QualitySettings.vSyncCount != 0)
 		{
-			this.CurVsyncValue = QualitySettings.vSyncCount;
+			CurVsyncValue = QualitySettings.vSyncCount;
 			QualitySettings.vSyncCount = 0;
 		}
 	}
@@ -321,9 +322,9 @@ public class GameController : SaveSerialize, ISuspendable
 	{
 		yield return new WaitForEndOfFrame();
 		yield return new WaitForEndOfFrame();
-		if (this.m_setRunInBackgroundToFalse && !this.PreventFocusPause)
+		if (m_setRunInBackgroundToFalse && !PreventFocusPause)
 		{
-			this.m_setRunInBackgroundToFalse = false;
+			m_setRunInBackgroundToFalse = false;
 			Application.runInBackground = false;
 		}
 		yield break;
@@ -335,40 +336,40 @@ public class GameController : SaveSerialize, ISuspendable
 		{
 			WWW www = new WWW(assetToLoad);
 			yield return www;
-			UnityEngine.Object.Instantiate(www.assetBundle.mainAsset);
+			Instantiate(www.assetBundle.mainAsset);
 		}
 		yield break;
 	}
 
 	public override void OnDestroy()
 	{
-		InstantiateUtility.Destroy(this.m_systemsGameObject);
+		InstantiateUtility.Destroy(m_systemsGameObject);
 		SuspensionManager.Unregister(this);
 		base.OnDestroy();
 	}
 
 	public void ResetInputLocks()
 	{
-		this.LockInputByAction = false;
-		this.LockInput = false;
+		LockInputByAction = false;
+		LockInput = false;
 	}
 
 	public override void Serialize(Archive ar)
 	{
 		if (ar.Reading)
 		{
-			this.ResetInputLocks();
+			ResetInputLocks();
 		}
 		WorldEventsManager.Instance.Serialize(ar);
 		TriggerByString.SerializeStringTriggers(ar);
 		ar.Serialize(0f);
-		ar.Serialize(ref this.GameTime);
+		ar.Serialize(ref GameTime);
 		ar.Serialize(0);
 		ar.Serialize(0);
-		ar.Serialize(ref this.RequireInitialValues);
+		ar.Serialize(ref RequireInitialValues);
 		if (ar.Reading)
 		{
-			this.RequireInitialValues = false;
+			RequireInitialValues = false;
 		}
 		Game.Objectives.Serialize(ar);
 	}
@@ -385,27 +386,27 @@ public class GameController : SaveSerialize, ISuspendable
 		InteractionRotationModifier.WarmUpResource();
 		Randomizer.initialize();
 		timer.Report("Warming resources");
-		this.Resources.Clear();
+		Resources.Clear();
 	}
 
 	public void SetupGameplay(SceneRoot sceneRoot, WorldEventsOnAwake worldEventsOnAwake)
 	{
 		sceneRoot.MetaData.InitialValues.ApplyInitialValues();
-		this.WarmUpResources();
+		WarmUpResources();
 		if (worldEventsOnAwake != null)
 		{
 			worldEventsOnAwake.Apply();
 		}
 		Randomizer.SetupNewGame();
-		LateStartHook.AddLateStartMethod(new Action(this.CreateCheckpoint));
+		LateStartHook.AddLateStartMethod(CreateCheckpoint);
 	}
 
 	public void OnApplicationQuit()
 	{
-		GameController.IsClosing = true;
-		if (this.m_logCallbackHandler != null)
+		IsClosing = true;
+		if (m_logCallbackHandler != null)
 		{
-			this.m_logCallbackHandler.FlushEntriesToFile(this.m_logOutputFile);
+			m_logCallbackHandler.FlushEntriesToFile(m_logOutputFile);
 		}
 		MoonDebug.OnApplicationQuit();
 		Randomizer.OnApplicationQuit();
@@ -440,81 +441,81 @@ public class GameController : SaveSerialize, ISuspendable
 			RandomizerBootstrap.FixedUpdate();
 			Scenes.Manager.CheckForScenesFinishedLoading();
 		}
-		if (!GameController.FreezeFixedUpdate)
+		if (!FreezeFixedUpdate)
 		{
 			FixedRandom.FixedUpdateIndex++;
 			FixedRandom.UpdateValues();
 		}
 		Music.UpdateMusic();
 		Ambience.UpdateAmbience();
-		this.GameScheduler.OnGameFixedUpdate.Call();
+		GameScheduler.OnGameFixedUpdate.Call();
 		Respawner.UpdateRespawners();
-		if (!GameStateMachine.Instance.IsInExtendedTitleScreen() && !UI.MainMenuVisible && (Screen.width != this.m_previousScreenWidth || Screen.height != this.m_previousScreenHeight))
+		if (!GameStateMachine.Instance.IsInExtendedTitleScreen() && !UI.MainMenuVisible && (Screen.width != m_previousScreenWidth || Screen.height != m_previousScreenHeight))
 		{
 			UI.Menu.ShowResumeScreen();
 		}
-		this.m_previousScreenWidth = Screen.width;
-		this.m_previousScreenHeight = Screen.height;
-		if (this.m_lastDebugControlsEnabledValue != DebugMenuB.DebugControlsEnabled)
+		m_previousScreenWidth = Screen.width;
+		m_previousScreenHeight = Screen.height;
+		if (m_lastDebugControlsEnabledValue != DebugMenuB.DebugControlsEnabled)
 		{
-			this.m_lastDebugControlsEnabledValue = DebugMenuB.DebugControlsEnabled;
+			m_lastDebugControlsEnabledValue = DebugMenuB.DebugControlsEnabled;
 		}
-		if (!this.IsSuspended)
+		if (!IsSuspended)
 		{
-			this.GameTime += Time.deltaTime;
+			GameTime += Time.deltaTime;
 		}
 	}
 
 	public Objective GetObjectiveFromIndex(int index)
 	{
-		if (this.Objectives.Count > index && index >= 0)
+		if (Objectives.Count > index && index >= 0)
 		{
-			return this.Objectives[index];
+			return Objectives[index];
 		}
 		return null;
 	}
 
 	public int GetObjectiveIndex(Objective objective)
 	{
-		return this.Objectives.IndexOf(objective);
+		return Objectives.IndexOf(objective);
 	}
 
 	public void SuspendGameplay()
 	{
-		if (!this.GameplaySuspended)
+		if (!GameplaySuspended)
 		{
 			Component[] suspendables = Characters.Sein.Controller.Suspendables;
-			this.m_suspendablesToIgnoreForGameplay = new HashSet<ISuspendable>(suspendables.Cast<ISuspendable>());
-			SuspensionManager.SuspendExcluding(this.m_suspendablesToIgnoreForGameplay);
-			this.GameplaySuspended = true;
+			m_suspendablesToIgnoreForGameplay = new HashSet<ISuspendable>(suspendables.Cast<ISuspendable>());
+			SuspensionManager.SuspendExcluding(m_suspendablesToIgnoreForGameplay);
+			GameplaySuspended = true;
 		}
 	}
 
 	public void ResumeGameplay()
 	{
-		if (this.GameplaySuspended)
+		if (GameplaySuspended)
 		{
-			SuspensionManager.ResumeExcluding(this.m_suspendablesToIgnoreForGameplay);
-			this.m_suspendablesToIgnoreForGameplay.Clear();
-			this.GameplaySuspended = false;
+			SuspensionManager.ResumeExcluding(m_suspendablesToIgnoreForGameplay);
+			m_suspendablesToIgnoreForGameplay.Clear();
+			GameplaySuspended = false;
 		}
 	}
 
 	public void SuspendGameplayForUI()
 	{
-		if (!this.GameplaySuspendedForUI)
+		if (!GameplaySuspendedForUI)
 		{
 			SuspensionManager.SuspendAll();
-			this.GameplaySuspendedForUI = true;
+			GameplaySuspendedForUI = true;
 		}
 	}
 
 	public void ResumeGameplayForUI()
 	{
-		if (this.GameplaySuspendedForUI)
+		if (GameplaySuspendedForUI)
 		{
 			SuspensionManager.ResumeAll();
-			this.GameplaySuspendedForUI = false;
+			GameplaySuspendedForUI = false;
 		}
 	}
 
@@ -543,24 +544,24 @@ public class GameController : SaveSerialize, ISuspendable
 
 	public void RestoreCheckpoint(Action onFinished = null)
 	{
-		this.IsLoadingGame = true;
-		this.m_onRestoreCheckpointFinished = onFinished;
-		LateStartHook.AddLateStartMethod(new Action(this.RestoreCheckpointImmediate));
+		IsLoadingGame = true;
+		m_onRestoreCheckpointFinished = onFinished;
+		LateStartHook.AddLateStartMethod(RestoreCheckpointImmediate);
 	}
 
 	public void RestoreCheckpointImmediate()
 	{
-		this.m_restoreCheckpointController.RestoreCheckpoint();
-		if (this.m_onRestoreCheckpointFinished != null)
+		m_restoreCheckpointController.RestoreCheckpoint();
+		if (m_onRestoreCheckpointFinished != null)
 		{
-			this.m_onRestoreCheckpointFinished();
-			this.m_onRestoreCheckpointFinished = null;
+			m_onRestoreCheckpointFinished();
+			m_onRestoreCheckpointFinished = null;
 		}
 	}
 
 	private void HandleTrialData()
 	{
-		if (this.IsTrial)
+		if (IsTrial)
 		{
 			return;
 		}
@@ -689,7 +690,7 @@ public class GameController : SaveSerialize, ISuspendable
 
 	public bool IsLoadingGame;
 
-	public List<UnityEngine.Object> Resources;
+	public List<Object> Resources;
 
 	private bool m_lastDebugControlsEnabledValue;
 

@@ -1,14 +1,14 @@
-using System;
 using System.Collections.Generic;
 using Core;
 using Game;
 using UnityEngine;
+using Input = Core.Input;
 
 public class EnergyDoor : SaveSerialize
 {
 	public void OnValidate()
 	{
-		this.m_transform = base.transform;
+		m_transform = transform;
 	}
 
 	public override void Awake()
@@ -18,13 +18,13 @@ public class EnergyDoor : SaveSerialize
 
 	public void Highlight()
 	{
-		if (this.OriTarget)
+		if (OriTarget)
 		{
-			Characters.Ori.MoveOriToPosition(this.OriTarget.position, this.OriDuration);
+			Characters.Ori.MoveOriToPosition(OriTarget.position, OriDuration);
 		}
 		else
 		{
-			Characters.Ori.MoveOriToPosition(this.m_transform.position, this.OriDuration);
+			Characters.Ori.MoveOriToPosition(m_transform.position, OriDuration);
 		}
 		if (Characters.Sein.Abilities.SpiritFlame)
 		{
@@ -32,13 +32,13 @@ public class EnergyDoor : SaveSerialize
 		}
 		Characters.Ori.GetComponent<Rigidbody>().velocity = Vector3.zero;
 		Characters.Ori.EnableHoverWobbling = false;
-		if (this.m_hint == null)
+		if (m_hint == null)
 		{
-			this.m_hint = UI.Hints.Show(this.HintMessage, HintLayer.HintZone, 3f);
+			m_hint = UI.Hints.Show(HintMessage, HintLayer.HintZone);
 		}
-		if (this.OnOriEnterSoundProvider)
+		if (OnOriEnterSoundProvider)
 		{
-			Sound.Play(this.OnOriEnterSoundProvider.GetSound(null), this.m_transform.position, null);
+			Sound.Play(OnOriEnterSoundProvider.GetSound(null), m_transform.position, null);
 		}
 	}
 
@@ -50,53 +50,53 @@ public class EnergyDoor : SaveSerialize
 		{
 			Characters.Sein.Abilities.SpiritFlame.RemoveLock("energyDoor");
 		}
-		if (this.m_hint)
+		if (m_hint)
 		{
-			this.m_hint.HideMessageScreen();
+			m_hint.HideMessageScreen();
 		}
-		if (this.OnOriExitSoundProvider)
+		if (OnOriExitSoundProvider)
 		{
-			Sound.Play(this.OnOriExitSoundProvider.GetSound(null), this.m_transform.position, null);
+			Sound.Play(OnOriExitSoundProvider.GetSound(null), m_transform.position, null);
 		}
 	}
 
 	public void RestoreOrbs()
 	{
-		if (this.AmountOfEnergyUsed > 0 && this.RestoreSoundProvider)
+		if (AmountOfEnergyUsed > 0 && RestoreSoundProvider)
 		{
-			Sound.Play(this.RestoreSoundProvider.GetSound(null), this.m_transform.position, null);
+			Sound.Play(RestoreSoundProvider.GetSound(null), m_transform.position, null);
 		}
 		if (Characters.Sein)
 		{
-			Characters.Sein.Energy.Gain((float)this.AmountOfEnergyUsed);
+			Characters.Sein.Energy.Gain(AmountOfEnergyUsed);
 		}
-		this.AmountOfEnergyUsed = 0;
+		AmountOfEnergyUsed = 0;
 	}
 
 	public void OnDisable()
 	{
-		if (this.CurrentState == EnergyDoor.State.Highlighted)
+		if (CurrentState == State.Highlighted)
 		{
-			this.RestoreOrbs();
-			this.Unhighlight();
+			RestoreOrbs();
+			Unhighlight();
 		}
 	}
 
 	public override void Serialize(Archive ar)
 	{
-		ar.Serialize(ref this.m_slotsPending);
-		ar.Serialize(ref this.AmountOfEnergyUsed);
-		ar.Serialize(ref this.m_slotsFilled);
-		if (ar.Reading && this.CurrentState == EnergyDoor.State.Highlighted)
+		ar.Serialize(ref m_slotsPending);
+		ar.Serialize(ref AmountOfEnergyUsed);
+		ar.Serialize(ref m_slotsFilled);
+		if (ar.Reading && CurrentState == State.Highlighted)
 		{
-			this.Unhighlight();
-			this.CurrentState = EnergyDoor.State.Normal;
+			Unhighlight();
+			CurrentState = State.Normal;
 		}
-		this.CurrentState = (EnergyDoor.State)ar.Serialize((int)this.CurrentState);
-		if (ar.Reading && this.CurrentState == EnergyDoor.State.Highlighted)
+		CurrentState = (State)ar.Serialize((int)CurrentState);
+		if (ar.Reading && CurrentState == State.Highlighted)
 		{
-			this.RestoreOrbs();
-			this.CurrentState = EnergyDoor.State.Normal;
+			RestoreOrbs();
+			CurrentState = State.Normal;
 		}
 	}
 
@@ -104,7 +104,7 @@ public class EnergyDoor : SaveSerialize
 	{
 		get
 		{
-			return Vector3.Distance(this.m_transform.position, Characters.Sein.Position);
+			return Vector3.Distance(m_transform.position, Characters.Sein.Position);
 		}
 	}
 
@@ -121,18 +121,18 @@ public class EnergyDoor : SaveSerialize
 	{
 		get
 		{
-			return !this.OriHasTargets && this.DistanceToSein <= this.Radius;
+			return !OriHasTargets && DistanceToSein <= Radius;
 		}
 	}
 
 	public void RegisterSlot(EnergyDoorSlot slot)
 	{
-		this.m_slots.Add(slot);
+		m_slots.Add(slot);
 	}
 
 	public void UpdateSlots()
 	{
-		foreach (EnergyDoorSlot energyDoorSlot in this.m_slots)
+		foreach (EnergyDoorSlot energyDoorSlot in m_slots)
 		{
 			energyDoorSlot.Refresh();
 		}
@@ -144,60 +144,59 @@ public class EnergyDoor : SaveSerialize
 		{
 			return;
 		}
-		EnergyDoor.State currentState = this.CurrentState;
-		if (currentState != EnergyDoor.State.Normal)
+		State currentState = CurrentState;
+		if (currentState != State.Normal)
 		{
-			if (currentState == EnergyDoor.State.Highlighted)
+			if (currentState == State.Highlighted)
 			{
-				if (!this.SeinInRange)
+				if (!SeinInRange)
 				{
-					this.RestoreOrbs();
-					this.Unhighlight();
-					this.CurrentState = EnergyDoor.State.Normal;
+					RestoreOrbs();
+					Unhighlight();
+					CurrentState = State.Normal;
 				}
 				if (!Characters.Sein.Controller.CanMove)
 				{
-					this.RestoreOrbs();
-					this.Unhighlight();
-					this.CurrentState = EnergyDoor.State.Normal;
+					RestoreOrbs();
+					Unhighlight();
+					CurrentState = State.Normal;
 					return;
 				}
-				if (Characters.Sein.Controller.CanMove && !Characters.Sein.IsSuspended && Core.Input.SpiritFlame.OnPressed)
+				if (Characters.Sein.Controller.CanMove && !Characters.Sein.IsSuspended && Input.SpiritFlame.OnPressed)
 				{
-					if (Characters.Sein.Energy.Current < 1f && this.AmountOfEnergyRequired > this.AmountOfEnergyUsed)
+					if (Characters.Sein.Energy.Current < 1f && AmountOfEnergyRequired > AmountOfEnergyUsed)
 					{
-						this.OnFailAction.Perform(null);
+						OnFailAction.Perform(null);
 						Characters.Sein.Energy.NotifyOutOfEnergy();
 					}
-					if (Characters.Sein.Energy.Current >= 1f && this.AmountOfEnergyUsed < this.AmountOfEnergyRequired)
+					if (Characters.Sein.Energy.Current >= 1f && AmountOfEnergyUsed < AmountOfEnergyRequired)
 					{
-						this.AmountOfEnergyUsed++;
+						AmountOfEnergyUsed++;
 						Characters.Sein.Energy.Spend(1f);
-						this.UpdateSlots();
-						if (this.PlaceSlotSoundProvider)
+						UpdateSlots();
+						if (PlaceSlotSoundProvider)
 						{
-							Sound.Play(this.PlaceSlotSoundProvider.GetSound(null), this.m_transform.position, null);
+							Sound.Play(PlaceSlotSoundProvider.GetSound(null), m_transform.position, null);
 						}
 					}
-					if (this.AmountOfEnergyUsed == this.AmountOfEnergyRequired)
+					if (AmountOfEnergyUsed == AmountOfEnergyRequired)
 					{
-						BingoController.OnEnergyDoor(this.MoonGuid);
-						this.OnOpenedAction.Perform(null);
-						this.Unhighlight();
-						this.CurrentState = EnergyDoor.State.Opened;
-						if (this.ActivateSoundProvider)
+						BingoController.OnEnergyDoor(MoonGuid);
+						OnOpenedAction.Perform(null);
+						Unhighlight();
+						CurrentState = State.Opened;
+						if (ActivateSoundProvider)
 						{
-							Sound.Play(this.ActivateSoundProvider.GetSound(null), this.m_transform.position, null);
-							return;
+							Sound.Play(ActivateSoundProvider.GetSound(null), m_transform.position, null);
 						}
 					}
 				}
 			}
 		}
-		else if (this.SeinInRange && !this.OriHasTargets && Characters.Sein.Controller.CanMove)
+		else if (SeinInRange && !OriHasTargets && Characters.Sein.Controller.CanMove)
 		{
-			this.Highlight();
-			this.CurrentState = EnergyDoor.State.Highlighted;
+			Highlight();
+			CurrentState = State.Highlighted;
 		}
 	}
 
@@ -239,7 +238,7 @@ public class EnergyDoor : SaveSerialize
 
 	private MessageBox m_hint;
 
-	public EnergyDoor.State CurrentState;
+	public State CurrentState;
 
 	private List<EnergyDoorSlot> m_slots = new List<EnergyDoorSlot>();
 

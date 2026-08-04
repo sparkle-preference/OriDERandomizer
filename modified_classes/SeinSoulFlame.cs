@@ -1,14 +1,14 @@
 using System;
 using Core;
 using Game;
-using Sein.World;
 using UnityEngine;
+using Input = Core.Input;
 
 public class SeinSoulFlame : CharacterState, ISeinReceiver
 {
 	static SeinSoulFlame()
 	{
-		SeinSoulFlame.OnSoulFlameCast = delegate()
+		OnSoulFlameCast = delegate
 		{
 		};
 	}
@@ -19,7 +19,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.m_checkpointMarkerGameObject;
+			return m_checkpointMarkerGameObject;
 		}
 	}
 
@@ -27,88 +27,88 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.m_checkpointMarkerGameObject.transform.position;
+			return m_checkpointMarkerGameObject.transform.position;
 		}
 	}
 
 	public new void Awake()
 	{
 		base.Awake();
-		Game.Checkpoint.Events.OnPostRestore.Add(new Action(this.OnRestoreCheckpoint));
-		Game.Events.Scheduler.OnGameReset.Add(new Action(this.OnGameReset));
+		Game.Checkpoint.Events.OnPostRestore.Add(OnRestoreCheckpoint);
+		Events.Scheduler.OnGameReset.Add(OnGameReset);
 	}
 
 	public void OnGameReset()
 	{
-		this.m_numberOfSoulFlamesCast = 0;
+		m_numberOfSoulFlamesCast = 0;
 	}
 
 	public void OnRestoreCheckpoint()
 	{
-		if (this.CanAffordSoulFlame)
+		if (CanAffordSoulFlame)
 		{
-			this.m_cooldownRemaining = 0f;
+			m_cooldownRemaining = 0f;
 		}
-		this.LockSoulFlame = false;
-		this.m_nagTimer = this.NagDuration;
+		LockSoulFlame = false;
+		m_nagTimer = NagDuration;
 	}
 
 	public override void OnDestroy()
 	{
 		base.OnDestroy();
-		Game.Checkpoint.Events.OnPostRestore.Remove(new Action(this.OnRestoreCheckpoint));
-		Game.Events.Scheduler.OnGameReset.Remove(new Action(this.OnGameReset));
-		if (this.m_checkpointMarkerGameObject)
+		Game.Checkpoint.Events.OnPostRestore.Remove(OnRestoreCheckpoint);
+		Events.Scheduler.OnGameReset.Remove(OnGameReset);
+		if (m_checkpointMarkerGameObject)
 		{
-			InstantiateUtility.Destroy(this.m_checkpointMarkerGameObject);
-			this.m_soulFlame = null;
-			this.m_checkpointMarkerGameObject = null;
+			InstantiateUtility.Destroy(m_checkpointMarkerGameObject);
+			m_soulFlame = null;
+			m_checkpointMarkerGameObject = null;
 		}
 	}
 
 	public void FillSoulFlameBar()
 	{
-		this.m_cooldownRemaining = 0f;
-		this.m_nagTimer = 0f;
+		m_cooldownRemaining = 0f;
+		m_nagTimer = 0f;
 	}
 
 	public bool InsideCheckpointMarker
 	{
 		get
 		{
-			return this.m_soulFlame && this.m_soulFlame.IsInside;
+			return m_soulFlame && m_soulFlame.IsInside;
 		}
 	}
 
-	public SeinSoulFlame.SoulFlamePlacementSafety IsSafeToCastSoulFlame
+	public SoulFlamePlacementSafety IsSafeToCastSoulFlame
 	{
 		get
 		{
-			Vector3 position = this.m_sein.Position;
+			Vector3 position = m_sein.Position;
 			for (int i = 0; i < NoSoulFlameZone.All.Count; i++)
 			{
 				if (NoSoulFlameZone.All[i].BoundingRect.Contains(position))
 				{
-					return SeinSoulFlame.SoulFlamePlacementSafety.UnsafeZone;
+					return SoulFlamePlacementSafety.UnsafeZone;
 				}
 			}
 			if (!Sein.World.Events.DarknessLifted && SpiritLightDarknessZone.IsInsideDarknessZone(position) && !SaveInTheDarkZone.IsInside(position) && !LightSource.TestPosition(position, 0f))
 			{
-				return SeinSoulFlame.SoulFlamePlacementSafety.UnsafeZone;
+				return SoulFlamePlacementSafety.UnsafeZone;
 			}
 			for (int j = 0; j < SavePedestal.All.Count; j++)
 			{
 				if (SavePedestal.All[j].IsInside)
 				{
-					return SeinSoulFlame.SoulFlamePlacementSafety.SavePedestal;
+					return SoulFlamePlacementSafety.SavePedestal;
 				}
 			}
-			for (int k = 0; k < this.m_sein.Abilities.SpiritFlameTargetting.ClosestAttackables.Count; k++)
+			for (int k = 0; k < m_sein.Abilities.SpiritFlameTargetting.ClosestAttackables.Count; k++)
 			{
-				EntityTargetting entityTargetting = this.m_sein.Abilities.SpiritFlameTargetting.ClosestAttackables[k] as EntityTargetting;
+				EntityTargetting entityTargetting = m_sein.Abilities.SpiritFlameTargetting.ClosestAttackables[k] as EntityTargetting;
 				if (entityTargetting && entityTargetting.Entity is Enemy)
 				{
-					return SeinSoulFlame.SoulFlamePlacementSafety.UnsafeEnemies;
+					return SoulFlamePlacementSafety.UnsafeEnemies;
 				}
 			}
 			for (int l = 0; l < RespawningPlaceholder.All.Count; l++)
@@ -116,30 +116,30 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 				RespawningPlaceholder respawningPlaceholder = RespawningPlaceholder.All[l];
 				if (!respawningPlaceholder.EntityIsDead && Vector3.Distance(position, respawningPlaceholder.Position) < 10f)
 				{
-					return SeinSoulFlame.SoulFlamePlacementSafety.UnsafeEnemies;
+					return SoulFlamePlacementSafety.UnsafeEnemies;
 				}
 			}
-			if (this.m_sein.Mortality.DamageReciever.IsInvinsible)
+			if (m_sein.Mortality.DamageReciever.IsInvinsible)
 			{
-				return SeinSoulFlame.SoulFlamePlacementSafety.UnsafeZone;
+				return SoulFlamePlacementSafety.UnsafeZone;
 			}
-			Collider groundCollider = this.m_sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundCollider;
+			Collider groundCollider = m_sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundCollider;
 			if (groundCollider)
 			{
 				if (groundCollider.attachedRigidbody)
 				{
-					return SeinSoulFlame.SoulFlamePlacementSafety.UnsafeGround;
+					return SoulFlamePlacementSafety.UnsafeGround;
 				}
 				if (groundCollider.GetComponent<HeatUpPlatform>())
 				{
-					return SeinSoulFlame.SoulFlamePlacementSafety.UnsafeGround;
+					return SoulFlamePlacementSafety.UnsafeGround;
 				}
 			}
-			if (Physics.SphereCast(new Ray(position, Vector3.right), 0.5f, 0.7f, this.UnsafeMask) | Physics.SphereCast(new Ray(position, -Vector3.right), 0.5f, 0.7f, this.UnsafeMask))
+			if (Physics.SphereCast(new Ray(position, Vector3.right), 0.5f, 0.7f, UnsafeMask) | Physics.SphereCast(new Ray(position, -Vector3.right), 0.5f, 0.7f, UnsafeMask))
 			{
-				return SeinSoulFlame.SoulFlamePlacementSafety.UnsafeGround;
+				return SoulFlamePlacementSafety.UnsafeGround;
 			}
-			return SeinSoulFlame.SoulFlamePlacementSafety.Safe;
+			return SoulFlamePlacementSafety.Safe;
 		}
 	}
 
@@ -147,7 +147,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return (1f - this.CooldownRemaining) * (1f - this.m_holdDownTime);
+			return (1f - CooldownRemaining) * (1f - m_holdDownTime);
 		}
 	}
 
@@ -155,7 +155,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.m_cooldownRemaining;
+			return m_cooldownRemaining;
 		}
 	}
 
@@ -163,7 +163,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return Mathf.Approximately(this.BarValue, 1f);
+			return Mathf.Approximately(BarValue, 1f);
 		}
 	}
 
@@ -171,7 +171,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			if (this.m_sein.PlayerAbilities.SoulFlameEfficiency.HasAbility)
+			if (m_sein.PlayerAbilities.SoulFlameEfficiency.HasAbility)
 			{
 				return 0.5f;
 			}
@@ -183,7 +183,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.m_sein.Energy.CanAfford(this.SoulFlameCost);
+			return m_sein.Energy.CanAfford(SoulFlameCost);
 		}
 	}
 
@@ -191,7 +191,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return this.m_sein.Level.Current > 0 && this.IsSafeToCastSoulFlame == SeinSoulFlame.SoulFlamePlacementSafety.Safe;
+			return m_sein.Level.Current > 0 && IsSafeToCastSoulFlame == SoulFlamePlacementSafety.Safe;
 		}
 	}
 
@@ -199,139 +199,139 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return Characters.Sein.Controller.CanMove && !this.m_sein.Controller.IsSwimming && !UI.Fader.IsFadingInOrStay() && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.AllAbilities) && !this.LockSoulFlame;
+			return Characters.Sein.Controller.CanMove && !m_sein.Controller.IsSwimming && !UI.Fader.IsFadingInOrStay() && !SeinAbilityRestrictZone.IsInside() && !LockSoulFlame;
 		}
 	}
 
 	public void HandleNagging()
 	{
-		if (this.m_readyForReadySequence && this.PlayerCouldSoulFlame && this.IsSafeToCastSoulFlame == SeinSoulFlame.SoulFlamePlacementSafety.Safe && this.CanAffordSoulFlame)
+		if (m_readyForReadySequence && PlayerCouldSoulFlame && IsSafeToCastSoulFlame == SoulFlamePlacementSafety.Safe && CanAffordSoulFlame)
 		{
-			this.m_readyForReadySequence = false;
-			InstantiateUtility.Instantiate(this.SoulFlameReadyText, Characters.Ori.transform.position, Quaternion.identity);
+			m_readyForReadySequence = false;
+			InstantiateUtility.Instantiate(SoulFlameReadyText, Characters.Ori.transform.position, Quaternion.identity);
 			UI.SeinUI.OnSoulFlameReady();
-			GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(this.SoulFlameReadyEffect);
+			GameObject gameObject = Instantiate(SoulFlameReadyEffect);
 			gameObject.transform.parent = Characters.Ori.transform;
 			gameObject.transform.localPosition = Vector3.zero;
-			Sound.Play(this.SoulFlameReadySoundProvider.GetSound(null), Characters.Sein.Position, null);
-			this.m_nagTimer = this.NagDuration;
+			Sound.Play(SoulFlameReadySoundProvider.GetSound(null), Characters.Sein.Position, null);
+			m_nagTimer = NagDuration;
 		}
-		if (this.m_nagTimer > 0f)
+		if (m_nagTimer > 0f)
 		{
-			this.m_nagTimer -= Time.deltaTime;
-			if (this.m_nagTimer <= 0f)
+			m_nagTimer -= Time.deltaTime;
+			if (m_nagTimer <= 0f)
 			{
-				if (this.PlayerCouldSoulFlame && this.CanAffordSoulFlame && this.IsSafeToCastSoulFlame == SeinSoulFlame.SoulFlamePlacementSafety.Safe)
+				if (PlayerCouldSoulFlame && CanAffordSoulFlame && IsSafeToCastSoulFlame == SoulFlamePlacementSafety.Safe)
 				{
-					this.m_nagTimer = 0f;
-					InstantiateUtility.Instantiate(this.SoulFlameReadyText, Characters.Ori.transform.position, Quaternion.identity);
+					m_nagTimer = 0f;
+					InstantiateUtility.Instantiate(SoulFlameReadyText, Characters.Ori.transform.position, Quaternion.identity);
 					UI.SeinUI.OnSoulFlameReady();
-					Sound.Play(this.SoulFlameReadySoundProvider.GetSound(null), Characters.Sein.Position, null);
-					this.m_nagTimer = this.NagDuration;
+					Sound.Play(SoulFlameReadySoundProvider.GetSound(null), Characters.Sein.Position, null);
+					m_nagTimer = NagDuration;
 					return;
 				}
-				this.m_nagTimer = 2f;
+				m_nagTimer = 2f;
 			}
 		}
 	}
 
 	private void HandleDelayOnGround()
 	{
-		if (!this.m_sein.IsOnGround)
+		if (!m_sein.IsOnGround)
 		{
-			this.m_delayOnGround = 0.1f;
+			m_delayOnGround = 0.1f;
 			return;
 		}
-		this.m_delayOnGround = Mathf.Max(0f, this.m_delayOnGround - Time.deltaTime);
+		m_delayOnGround = Mathf.Max(0f, m_delayOnGround - Time.deltaTime);
 	}
 
 	public override void UpdateCharacterState()
 	{
-		if (this.m_sein.Controller.IsBashing)
+		if (m_sein.Controller.IsBashing)
 		{
 			return;
 		}
-		this.HandleDelayOnGround();
-		this.HandleCooldown();
-		this.HandleCheckpointMarkerVisibility();
-		this.HandleNagging();
-		this.HandleSkillTreeHint();
-		this.HandleCharging();
-		if (this.m_sein.Energy.Max == 0f)
+		HandleDelayOnGround();
+		HandleCooldown();
+		HandleCheckpointMarkerVisibility();
+		HandleNagging();
+		HandleSkillTreeHint();
+		HandleCharging();
+		if (m_sein.Energy.Max == 0f)
 		{
-			this.m_cooldownRemaining = 1f;
+			m_cooldownRemaining = 1f;
 		}
 		if (!UI.Fader.IsFadingInOrStay())
 		{
-			if (Core.Input.SoulFlame.OnPressed && !Core.Input.SoulFlame.Used && !Core.Input.Cancel.Used)
+			if (Input.SoulFlame.OnPressed && !Input.SoulFlame.Used && !Input.Cancel.Used)
 			{
-				this.m_isCasting = true;
-				if (this.InsideCheckpointMarker)
+				m_isCasting = true;
+				if (InsideCheckpointMarker)
 				{
-					this.m_tapRemainingTime = 0.3f;
+					m_tapRemainingTime = 0.3f;
 				}
-				else if (!this.CanAffordSoulFlame)
+				else if (!CanAffordSoulFlame)
 				{
-					this.HideOtherMessages();
+					HideOtherMessages();
 					UI.SeinUI.ShakeEnergyOrbBar();
-					this.m_sein.Energy.NotifyOutOfEnergy();
+					m_sein.Energy.NotifyOutOfEnergy();
 				}
-				else if (this.m_cooldownRemaining != 0f)
+				else if (m_cooldownRemaining != 0f)
 				{
-					this.HideOtherMessages();
-					this.m_notReadyHint = UI.Hints.Show(this.NotReadyMessage, HintLayer.SoulFlame, 1f);
-					Sound.Play(this.NotReadySound.GetSound(null), base.transform.position, null);
+					HideOtherMessages();
+					m_notReadyHint = UI.Hints.Show(NotReadyMessage, HintLayer.SoulFlame, 1f);
+					Sound.Play(NotReadySound.GetSound(null), transform.position, null);
 				}
-				else if (this.IsSafeToCastSoulFlame != SeinSoulFlame.SoulFlamePlacementSafety.Safe)
+				else if (IsSafeToCastSoulFlame != SoulFlamePlacementSafety.Safe)
 				{
-					this.HideOtherMessages();
-					switch (this.IsSafeToCastSoulFlame)
+					HideOtherMessages();
+					switch (IsSafeToCastSoulFlame)
 					{
-					case SeinSoulFlame.SoulFlamePlacementSafety.UnsafeEnemies:
-						this.m_notSafeHint = UI.Hints.Show(this.NotSafeEnemiesMessage, HintLayer.SoulFlame, 1f);
+					case SoulFlamePlacementSafety.UnsafeEnemies:
+						m_notSafeHint = UI.Hints.Show(NotSafeEnemiesMessage, HintLayer.SoulFlame, 1f);
 						break;
-					case SeinSoulFlame.SoulFlamePlacementSafety.UnsafeGround:
-						this.m_notSafeHint = UI.Hints.Show(this.NotSafeGroundMessage, HintLayer.SoulFlame, 1f);
+					case SoulFlamePlacementSafety.UnsafeGround:
+						m_notSafeHint = UI.Hints.Show(NotSafeGroundMessage, HintLayer.SoulFlame, 1f);
 						break;
-					case SeinSoulFlame.SoulFlamePlacementSafety.UnsafeZone:
-						this.m_notSafeHint = UI.Hints.Show(this.NotSafeZoneMessage, HintLayer.SoulFlame, 1f);
+					case SoulFlamePlacementSafety.UnsafeZone:
+						m_notSafeHint = UI.Hints.Show(NotSafeZoneMessage, HintLayer.SoulFlame, 1f);
 						break;
-					case SeinSoulFlame.SoulFlamePlacementSafety.SavePedestal:
-						this.m_notSafeHint = UI.Hints.Show(this.SavePedestalZoneMessage, HintLayer.SoulFlame, 1f);
+					case SoulFlamePlacementSafety.SavePedestal:
+						m_notSafeHint = UI.Hints.Show(SavePedestalZoneMessage, HintLayer.SoulFlame, 1f);
 						break;
 					}
-					Sound.Play(this.NotSafeSound.GetSound(null), base.transform.position, null);
+					Sound.Play(NotSafeSound.GetSound(null), transform.position, null);
 				}
 			}
-			if (this.m_isCasting && this.m_sein.IsOnGround && this.m_delayOnGround == 0f && this.m_tapRemainingTime > 0f)
+			if (m_isCasting && m_sein.IsOnGround && m_delayOnGround == 0f && m_tapRemainingTime > 0f)
 			{
-				this.m_tapRemainingTime -= Time.deltaTime;
-				if (this.m_tapRemainingTime < 0f && this.InsideCheckpointMarker && Characters.Sein.PlayerAbilities.Rekindle.HasAbility && this.IsSafeToCastSoulFlame == SeinSoulFlame.SoulFlamePlacementSafety.Safe)
+				m_tapRemainingTime -= Time.deltaTime;
+				if (m_tapRemainingTime < 0f && InsideCheckpointMarker && Characters.Sein.PlayerAbilities.Rekindle.HasAbility && IsSafeToCastSoulFlame == SoulFlamePlacementSafety.Safe)
 				{
-					SeinSoulFlame.OnSoulFlameCast();
+					OnSoulFlameCast();
 					Vector3 position = Characters.Sein.Position;
-					Characters.Sein.Position = this.m_soulFlame.Position;
+					Characters.Sein.Position = m_soulFlame.Position;
 					SaveSlotBackupsManager.CreateCurrentBackup();
 					GameController.Instance.CreateCheckpoint();
 					Characters.Sein.Position = position;
 					GameController.Instance.SaveGameController.PerformSave();
-					this.m_soulFlame.OnRekindle();
+					m_soulFlame.OnRekindle();
 					GameController.Instance.PerformSaveGameSequence();
 				}
 			}
-			if (Core.Input.SoulFlame.Released)
+			if (Input.SoulFlame.Released)
 			{
-				this.m_isCasting = false;
-				if (this.m_tapRemainingTime > 0f)
+				m_isCasting = false;
+				if (m_tapRemainingTime > 0f)
 				{
-					this.m_tapRemainingTime = 0f;
-					if (this.AllowedToAccessSkillTree && this.InsideCheckpointMarker)
+					m_tapRemainingTime = 0f;
+					if (AllowedToAccessSkillTree && InsideCheckpointMarker)
 					{
-						if (this.m_skillTreeHint)
+						if (m_skillTreeHint)
 						{
-							this.m_skillTreeHint.Visibility.HideImmediately();
+							m_skillTreeHint.Visibility.HideImmediately();
 						}
-						Core.Input.Start.Used = true;
+						Input.Start.Used = true;
 						UI.Menu.ShowSkillTree();
 					}
 				}
@@ -339,92 +339,92 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 		}
 		else
 		{
-			this.m_tapRemainingTime = 0f;
+			m_tapRemainingTime = 0f;
 		}
-		if (this.m_holdDownTime == 1f && this.m_sein.IsOnGround && this.m_delayOnGround == 0f)
+		if (m_holdDownTime == 1f && m_sein.IsOnGround && m_delayOnGround == 0f)
 		{
-			this.CastSoulFlame();
+			CastSoulFlame();
 		}
 	}
 
 	private void CastSoulFlame()
 	{
-		if (this.ChargingSound)
+		if (ChargingSound)
 		{
-			this.ChargingSound.StopAndFadeOut(0.1f);
+			ChargingSound.StopAndFadeOut(0.1f);
 		}
-		this.m_sein.Energy.Spend(this.SoulFlameCost);
-		this.m_cooldownRemaining = 1f;
-		this.m_holdDownTime = 0f;
-		if (this.m_sein.PlayerAbilities.Regroup.HasAbility)
+		m_sein.Energy.Spend(SoulFlameCost);
+		m_cooldownRemaining = 1f;
+		m_holdDownTime = 0f;
+		if (m_sein.PlayerAbilities.Regroup.HasAbility)
 		{
-			this.m_sein.Mortality.Health.GainHealth(4);
+			m_sein.Mortality.Health.GainHealth(4);
 		}
-		if (this.m_sein.PlayerAbilities.UltraSoulFlame.HasAbility)
+		if (m_sein.PlayerAbilities.UltraSoulFlame.HasAbility)
 		{
-			this.m_sein.Mortality.Health.GainHealth(4);
+			m_sein.Mortality.Health.GainHealth(4);
 		}
-		this.m_sceneCheckpoint = new MoonGuid(Scenes.Manager.CurrentScene.SceneMoonGuid);
-		if (this.m_checkpointMarkerGameObject)
+		m_sceneCheckpoint = new MoonGuid(Scenes.Manager.CurrentScene.SceneMoonGuid);
+		if (m_checkpointMarkerGameObject)
 		{
-			this.m_checkpointMarkerGameObject.GetComponent<SoulFlame>().Disappear();
+			m_checkpointMarkerGameObject.GetComponent<SoulFlame>().Disappear();
 		}
-		this.SpawnSoulFlame(Characters.Sein.Position);
+		SpawnSoulFlame(Characters.Sein.Position);
 		RandomizerBonusSkill.LastSoulLink = Characters.Sein.Position;
 		RandomizerStatsManager.OnSave();
-		SeinSoulFlame.OnSoulFlameCast();
+		OnSoulFlameCast();
 		SaveSlotBackupsManager.CreateCurrentBackup();
 		GameController.Instance.CreateCheckpoint();
 		GameController.Instance.SaveGameController.PerformSave();
-		this.m_numberOfSoulFlamesCast++;
-		if (this.m_numberOfSoulFlamesCast == 50)
+		m_numberOfSoulFlamesCast++;
+		if (m_numberOfSoulFlamesCast == 50)
 		{
 			AchievementsController.AwardAchievement(AchievementsLogic.Instance.SoulLinkManyTimesAchievementAsset);
 		}
-		if (this.CheckpointSequence)
+		if (CheckpointSequence)
 		{
-			this.CheckpointSequence.Perform(null);
+			CheckpointSequence.Perform(null);
 		}
 	}
 
 	private void HandleCharging()
 	{
-		if (this.m_isCasting && this.CanAffordSoulFlame && this.IsSafeToCastSoulFlame == SeinSoulFlame.SoulFlamePlacementSafety.Safe && this.m_cooldownRemaining == 0f && !this.InsideCheckpointMarker && this.PlayerCouldSoulFlame)
+		if (m_isCasting && CanAffordSoulFlame && IsSafeToCastSoulFlame == SoulFlamePlacementSafety.Safe && m_cooldownRemaining == 0f && !InsideCheckpointMarker && PlayerCouldSoulFlame)
 		{
-			if (this.m_holdDownTime == 0f && this.ChargingSound)
+			if (m_holdDownTime == 0f && ChargingSound)
 			{
-				this.ChargingSound.Play();
+				ChargingSound.Play();
 			}
-			this.m_holdDownTime += Time.deltaTime / this.HoldDownDuration;
-			if (this.m_holdDownTime > 1f)
+			m_holdDownTime += Time.deltaTime / HoldDownDuration;
+			if (m_holdDownTime > 1f)
 			{
-				this.m_holdDownTime = 1f;
+				m_holdDownTime = 1f;
 			}
-			this.ChargeEffectAnimator.AnimatorDriver.ContinueForward();
+			ChargeEffectAnimator.AnimatorDriver.ContinueForward();
 			return;
 		}
-		this.ChargeEffectAnimator.AnimatorDriver.ContinueBackwards();
-		if (this.ChargingSound && this.ChargingSound.IsPlaying)
+		ChargeEffectAnimator.AnimatorDriver.ContinueBackwards();
+		if (ChargingSound && ChargingSound.IsPlaying)
 		{
-			this.ChargingSound.StopAndFadeOut(0.1f);
+			ChargingSound.StopAndFadeOut(0.1f);
 		}
-		if (this.m_holdDownTime > 0f)
+		if (m_holdDownTime > 0f)
 		{
-			if (this.AbortChargingSound && !this.AbortChargingSound.IsPlaying)
+			if (AbortChargingSound && !AbortChargingSound.IsPlaying)
 			{
-				this.AbortChargingSound.Play();
+				AbortChargingSound.Play();
 			}
-			this.m_holdDownTime -= Time.deltaTime / this.HoldDownDuration;
-			if (this.m_holdDownTime <= 0f)
+			m_holdDownTime -= Time.deltaTime / HoldDownDuration;
+			if (m_holdDownTime <= 0f)
 			{
-				this.m_holdDownTime = 0f;
-				if (this.AbortChargingSound)
+				m_holdDownTime = 0f;
+				if (AbortChargingSound)
 				{
-					this.AbortChargingSound.StopAndFadeOut(0.1f);
+					AbortChargingSound.StopAndFadeOut(0.1f);
 				}
-				if (this.FullyAbortedSound)
+				if (FullyAbortedSound)
 				{
-					Sound.Play(this.FullyAbortedSound.GetSound(null), base.transform.position, null);
+					Sound.Play(FullyAbortedSound.GetSound(null), transform.position, null);
 				}
 			}
 		}
@@ -432,99 +432,96 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 
 	private void HandleCooldown()
 	{
-		if (this.m_cooldownRemaining > 0f)
+		if (m_cooldownRemaining > 0f)
 		{
-			this.m_nagTimer = 0f;
-			if (this.m_sein.PlayerAbilities.Rekindle.HasAbility)
+			m_nagTimer = 0f;
+			if (m_sein.PlayerAbilities.Rekindle.HasAbility)
 			{
-				this.m_cooldownRemaining -= Time.deltaTime / this.RekindleCooldownDuration;
+				m_cooldownRemaining -= Time.deltaTime / RekindleCooldownDuration;
 			}
 			else
 			{
-				this.m_cooldownRemaining -= Time.deltaTime / this.CooldownDuration;
+				m_cooldownRemaining -= Time.deltaTime / CooldownDuration;
 			}
-			if (this.m_cooldownRemaining <= 0f)
+			if (m_cooldownRemaining <= 0f)
 			{
-				this.m_cooldownRemaining = 0f;
-				this.m_readyForReadySequence = true;
+				m_cooldownRemaining = 0f;
+				m_readyForReadySequence = true;
 			}
 		}
 	}
 
 	private void HandleCheckpointMarkerVisibility()
 	{
-		if (this.m_checkpointMarkerGameObject)
+		if (m_checkpointMarkerGameObject)
 		{
-			bool flag = Scenes.Manager.SceneIsEnabled(this.m_sceneCheckpoint);
-			bool flag2 = UI.Cameras.Current.IsOnScreenPadded(this.m_soulFlame.Position, 5f);
-			if (this.m_checkpointMarkerGameObject.activeSelf)
+			bool flag = Scenes.Manager.SceneIsEnabled(m_sceneCheckpoint);
+			bool flag2 = UI.Cameras.Current.IsOnScreenPadded(m_soulFlame.Position, 5f);
+			if (m_checkpointMarkerGameObject.activeSelf)
 			{
 				if (!flag && !flag2)
 				{
-					this.m_checkpointMarkerGameObject.SetActive(false);
-					return;
+					m_checkpointMarkerGameObject.SetActive(false);
 				}
 			}
 			else if (flag)
 			{
-				this.m_checkpointMarkerGameObject.SetActive(true);
+				m_checkpointMarkerGameObject.SetActive(true);
 			}
 		}
 	}
 
 	private void HandleSkillTreeHint()
 	{
-		if (this.AllowedToAccessSkillTree)
+		if (AllowedToAccessSkillTree)
 		{
-			if (this.InsideCheckpointMarker && this.SkillTreeMessage && this.SkillTreeRekindleMessage && this.PlayerCouldSoulFlame)
+			if (InsideCheckpointMarker && SkillTreeMessage && SkillTreeRekindleMessage && PlayerCouldSoulFlame)
 			{
-				if (this.m_skillTreeHint == null)
+				if (m_skillTreeHint == null)
 				{
-					MessageProvider messageProvider = (!Characters.Sein.PlayerAbilities.Rekindle.HasAbility || this.IsSafeToCastSoulFlame != SeinSoulFlame.SoulFlamePlacementSafety.Safe) ? this.SkillTreeMessage : this.SkillTreeRekindleMessage;
-					this.m_skillTreeHint = UI.Hints.Show(messageProvider, HintLayer.SoulFlame, float.PositiveInfinity);
-					return;
+					MessageProvider messageProvider = (!Characters.Sein.PlayerAbilities.Rekindle.HasAbility || IsSafeToCastSoulFlame != SoulFlamePlacementSafety.Safe) ? SkillTreeMessage : SkillTreeRekindleMessage;
+					m_skillTreeHint = UI.Hints.Show(messageProvider, HintLayer.SoulFlame, float.PositiveInfinity);
 				}
 			}
-			else if (this.m_skillTreeHint)
+			else if (m_skillTreeHint)
 			{
-				this.m_skillTreeHint.HideMessageScreen();
+				m_skillTreeHint.HideMessageScreen();
 			}
 		}
 	}
 
 	public void HideOtherMessages()
 	{
-		if (this.m_notReadyHint)
+		if (m_notReadyHint)
 		{
-			this.m_notReadyHint.HideMessageScreen();
+			m_notReadyHint.HideMessageScreen();
 		}
-		if (this.m_notSafeHint)
+		if (m_notSafeHint)
 		{
-			this.m_notSafeHint.HideMessageScreen();
+			m_notSafeHint.HideMessageScreen();
 		}
 	}
 
 	public void SetReferenceToSein(SeinCharacter sein)
 	{
-		this.m_sein = sein;
-		this.m_sein.SoulFlame = this;
+		m_sein = sein;
+		m_sein.SoulFlame = this;
 	}
 
 	public override void Serialize(Archive ar)
 	{
 		base.Serialize(ar);
-		ar.Serialize(ref this.m_cooldownRemaining);
-		ar.Serialize(ref this.m_readyForReadySequence);
-		ar.Serialize(ref this.m_nagTimer);
-		this.m_sceneCheckpoint.Serialize(ar);
-		ar.Serialize(ref this.m_numberOfSoulFlamesCast);
+		ar.Serialize(ref m_cooldownRemaining);
+		ar.Serialize(ref m_readyForReadySequence);
+		ar.Serialize(ref m_nagTimer);
+		m_sceneCheckpoint.Serialize(ar);
+		ar.Serialize(ref m_numberOfSoulFlamesCast);
 		if (ar.Writing)
 		{
-			ar.Serialize(this.m_soulFlame != null);
-			if (this.m_soulFlame)
+			ar.Serialize(m_soulFlame != null);
+			if (m_soulFlame)
 			{
-				ar.Serialize(this.m_soulFlame.Position);
-				return;
+				ar.Serialize(m_soulFlame.Position);
 			}
 		}
 		else
@@ -535,34 +532,33 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 			{
 				Vector3 zero = Vector3.zero;
 				ar.Serialize(ref zero);
-				if (this.m_soulFlame)
+				if (m_soulFlame)
 				{
-					this.m_soulFlame.Position = zero;
+					m_soulFlame.Position = zero;
 					return;
 				}
-				this.SpawnSoulFlame(zero);
-				return;
+				SpawnSoulFlame(zero);
 			}
 			else
 			{
-				this.DestroySoulFlame();
+				DestroySoulFlame();
 			}
 		}
 	}
 
 	public void SpawnSoulFlame(Vector3 position)
 	{
-		this.m_checkpointMarkerGameObject = (GameObject)InstantiateUtility.Instantiate(this.CheckpointMarker, position, Quaternion.identity);
-		this.m_soulFlame = this.m_checkpointMarkerGameObject.GetComponent<SoulFlame>();
+		m_checkpointMarkerGameObject = (GameObject)InstantiateUtility.Instantiate(CheckpointMarker, position, Quaternion.identity);
+		m_soulFlame = m_checkpointMarkerGameObject.GetComponent<SoulFlame>();
 	}
 
 	public void DestroySoulFlame()
 	{
-		if (this.m_soulFlame)
+		if (m_soulFlame)
 		{
-			InstantiateUtility.Destroy(this.m_soulFlame.gameObject);
-			this.m_soulFlame = null;
-			this.m_checkpointMarkerGameObject = null;
+			InstantiateUtility.Destroy(m_soulFlame.gameObject);
+			m_soulFlame = null;
+			m_checkpointMarkerGameObject = null;
 		}
 	}
 

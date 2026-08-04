@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Game;
 using Protogen;
-using Sein.World;
 using UnityEngine;
 
 public class RandomizerLocationManager
@@ -18,17 +19,17 @@ public class RandomizerLocationManager
         while (line != null)
         {
             Location newLocation = new Location(line.Trim());
-            RandomizerLocationManager.LocationsByName[newLocation.Name] = newLocation;
-            RandomizerLocationManager.LocationsByKey[newLocation.Key] = newLocation;
+            LocationsByName[newLocation.Name] = newLocation;
+            LocationsByKey[newLocation.Key] = newLocation;
 
             if (newLocation.Type == Location.LocationType.ProgressiveMap)
             {
-                RandomizerLocationManager.ProgressiveMapLocations[newLocation.Difficulty] = newLocation;
+                ProgressiveMapLocations[newLocation.Difficulty] = newLocation;
             }
             else
             {
-                RandomizerLocationManager.LocationsByGuid[newLocation.MoonGuid] = newLocation;
-                RandomizerLocationManager.LocationsByWorldMapGuid[newLocation.WorldMapGuid] = newLocation;
+                LocationsByGuid[newLocation.MoonGuid] = newLocation;
+                LocationsByWorldMapGuid[newLocation.WorldMapGuid] = newLocation;
             }
             line = reader.ReadLine();
         }
@@ -36,7 +37,7 @@ public class RandomizerLocationManager
         for (var index = 0; index < RandomizerLocationData.KeystoneDoors.Count; ++index){
             var ksDoor = new KeystoneDoor(index, RandomizerLocationData.KeystoneDoors[index]);
             KeystoneDoors[ksDoor.MoonGuid] = ksDoor;
-            RandomizerLocationManager.KeystoneDoorMapGuidToMoonGuid[ksDoor.MapGuid] = ksDoor.MoonGuid;
+            KeystoneDoorMapGuidToMoonGuid[ksDoor.MapGuid] = ksDoor.MoonGuid;
         }
 
         if (!HaveDownloadedAreas && (DLThread == null)) {
@@ -53,9 +54,9 @@ public class RandomizerLocationManager
 
         if (!File.Exists("areas.ori"))
         {
-            RandomizerLocationManager.Areas = null;
-            RandomizerLocationManager.s_logicLastUpdated = DateTime.MinValue;
-            RandomizerLocationManager.s_lastLogicPaths = paths;
+            Areas = null;
+            s_logicLastUpdated = DateTime.MinValue;
+            s_lastLogicPaths = paths;
             Randomizer.log("No areas.ori found, will not update logic.");
             RandomizerSettings.CurrentFilter = RandomizerSettings.MapFilterMode.Uncollected;
             return;
@@ -71,13 +72,13 @@ public class RandomizerLocationManager
             }
         }
 
-        if (RandomizerLocationManager.s_logicLastUpdated == DateTime.MinValue || File.GetLastWriteTime("areas.ori") > RandomizerLocationManager.s_logicLastUpdated || !paths.SetEquals(RandomizerLocationManager.s_lastLogicPaths))
+        if (s_logicLastUpdated == DateTime.MinValue || File.GetLastWriteTime("areas.ori") > s_logicLastUpdated || !paths.SetEquals(s_lastLogicPaths))
         {
-            RandomizerLocationManager.Areas = OriParse.Parse("areas.ori", paths);
-            RandomizerLocationManager.s_logicLastUpdated = File.GetLastWriteTime("areas.ori");
-            RandomizerLocationManager.s_lastLogicPaths = paths;
+            Areas = OriParse.Parse("areas.ori", paths);
+            s_logicLastUpdated = File.GetLastWriteTime("areas.ori");
+            s_lastLogicPaths = paths;
 
-            foreach (Location location in RandomizerLocationManager.LocationsByName.Values)
+            foreach (Location location in LocationsByName.Values)
             {
                 location.Reachable = false;
             }
@@ -172,7 +173,7 @@ public class RandomizerLocationManager
 
     public static RandomizerPickupAction AddPickupAction(GameObject parentObj, string pickupName, string actionName = null)
     {
-        if (!RandomizerLocationManager.LocationsByName.ContainsKey(pickupName))
+        if (!LocationsByName.ContainsKey(pickupName))
         {
             return null;
         }
@@ -181,29 +182,29 @@ public class RandomizerLocationManager
         obj.transform.parent = parentObj.transform;
 
         RandomizerPickupAction pickupAction = obj.AddComponent<RandomizerPickupAction>();
-        pickupAction.MoonGuid = new MoonGuid(RandomizerLocationManager.LocationsByName[pickupName].MoonGuid);
+        pickupAction.MoonGuid = new MoonGuid(LocationsByName[pickupName].MoonGuid);
         pickupAction.LocationName = pickupName;
         return pickupAction;
     }
 
     public static void PlacePickup(int key, string action, object value, bool repeatable = false)
     {
-        if (!RandomizerLocationManager.LocationsByKey.ContainsKey(key))
+        if (!LocationsByKey.ContainsKey(key))
         {
             Randomizer.printInfo("Error: Unknown location key " + key + " in seed file " + Randomizer.SeedFilePath);
             return;
         }
 
-        Location pickupLocation = RandomizerLocationManager.LocationsByKey[key];
+        Location pickupLocation = LocationsByKey[key];
         pickupLocation.Pickup = new RandomizerAction(action, value);
         pickupLocation.Repeatable = repeatable;
     }
 
     public static bool IsPickupCollected(MoonGuid pickupGuid)
     {
-        if (RandomizerLocationManager.LocationsByGuid.ContainsKey(pickupGuid))
+        if (LocationsByGuid.ContainsKey(pickupGuid))
         {
-            return RandomizerLocationManager.LocationsByGuid[pickupGuid].Collected;
+            return LocationsByGuid[pickupGuid].Collected;
         }
 
         return false;
@@ -211,18 +212,18 @@ public class RandomizerLocationManager
 
     public static bool HasPickupBeenTouched(MoonGuid pickupGuid)
     {
-        if (RandomizerLocationManager.LocationsByGuid.ContainsKey(pickupGuid))
+        if (LocationsByGuid.ContainsKey(pickupGuid))
         {
-            return RandomizerLocationManager.LocationsByGuid[pickupGuid].Touched;
+            return LocationsByGuid[pickupGuid].Touched;
         }
         return false;
     }
 
     public static bool IsPickupRepeatable(MoonGuid pickupGuid)
     {
-        if (RandomizerLocationManager.LocationsByGuid.ContainsKey(pickupGuid))
+        if (LocationsByGuid.ContainsKey(pickupGuid))
         {
-            return RandomizerLocationManager.LocationsByGuid[pickupGuid].Repeatable;
+            return LocationsByGuid[pickupGuid].Repeatable;
         }
 
         return false;
@@ -230,17 +231,17 @@ public class RandomizerLocationManager
 
     public static void GivePickup(MoonGuid pickupGuid)
     {
-        if (RandomizerLocationManager.LocationsByGuid.ContainsKey(pickupGuid))
+        if (LocationsByGuid.ContainsKey(pickupGuid))
         {
-            RandomizerLocationManager.LocationsByGuid[pickupGuid].Give();
+            LocationsByGuid[pickupGuid].Give();
         }
     }
 
     public static void GivePickupByWorldMapGuid(MoonGuid pickupMapGuid)
     {
-        if (RandomizerLocationManager.LocationsByWorldMapGuid.ContainsKey(pickupMapGuid))
+        if (LocationsByWorldMapGuid.ContainsKey(pickupMapGuid))
         {
-            RandomizerLocationManager.LocationsByWorldMapGuid[pickupMapGuid].Give();
+            LocationsByWorldMapGuid[pickupMapGuid].Give();
         }
     }
 
@@ -249,7 +250,7 @@ public class RandomizerLocationManager
         var door = KeystoneDoors[doorGuid];
         int current = Randomizer.Inventory.GetRandomizerItem(72);
         Randomizer.Inventory.SetRandomizerItem(72, current | (1 << door.Index));
-        RandomizerLocationManager.UpdateReachable();
+        UpdateReachable();
     }
 
     public static bool IsDoorOpen(MoonGuid doorGuid) => 1 == (1 & Randomizer.Inventory.GetRandomizerItem(72) >> KeystoneDoors[doorGuid].Index);
@@ -283,10 +284,10 @@ public class RandomizerLocationManager
         try {
             if (!File.Exists("areas.ori"))
                 return "none";
-            using (var sha = System.Security.Cryptography.SHA256.Create())
+            using (var sha = SHA256.Create())
             {
                 byte[] h = sha.ComputeHash(File.ReadAllBytes("areas.ori"));
-                var sb = new System.Text.StringBuilder();
+                var sb = new StringBuilder();
                 foreach (byte b in h)
                     sb.Append(b.ToString("x2"));
                 return sb.ToString();
@@ -335,7 +336,7 @@ public class RandomizerLocationManager
     }
 
     public static void UpdateReachableWorker() {
-        if (RandomizerLocationManager.Areas == null)
+        if (Areas == null)
             return;
 
         Inventory currentInventory = Inventory.FromCharacter();
@@ -384,7 +385,7 @@ public class RandomizerLocationManager
             }
         }
 
-        HashSet<string> reachable = OriReachable.Reachable(RandomizerLocationManager.Areas, currentInventory, spawnNodeName, primedPaths);
+        HashSet<string> reachable = OriReachable.Reachable(Areas, currentInventory, spawnNodeName, primedPaths);
 
         if (reachable.Contains("FronkeyFight")) { // hacky hack hack
             reachable.Add("FirstEnergyCell");
@@ -394,7 +395,7 @@ public class RandomizerLocationManager
         if (reachable.Contains("ForlornEscape"))
             reachable.Add("ForlornEscapePlant");
 
-        foreach (var item in RandomizerLocationManager.LocationsByName) 
+        foreach (var item in LocationsByName) 
             item.Value.Reachable = reachable.Contains(item.Key);
 /* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
         {
@@ -426,15 +427,15 @@ public class RandomizerLocationManager
 
     public static Thread DLThread;
 
-    public static bool HaveDownloadedAreas = false;
+    public static bool HaveDownloadedAreas;
 
     public static string AreasURL() => $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/areas";
 
     private static DateTime s_logicLastUpdated = DateTime.MinValue;
 
-    private static HashSet<string> s_lastLogicPaths = null;
+    private static HashSet<string> s_lastLogicPaths;
 
-    private static Dictionary<string, string> stupidBullshit = new Dictionary<string, string>() {
+    private static Dictionary<string, string> stupidBullshit = new Dictionary<string, string> {
         {"-159,-114,force", "SpiritTreeRefined"},
         {"491,-73,force", "SwampTeleporter"},
         {"519,-174,force",  "MoonGrotto"},
@@ -446,7 +447,7 @@ public class RandomizerLocationManager
         {"381,-297,force",  "BlackrootGrottoConnection"}
     };
 
-    private static string spawnNodeName = null;
+    private static string spawnNodeName;
 
     public static Dictionary<MoonGuid, KeystoneDoor> KeystoneDoors = new Dictionary<MoonGuid, KeystoneDoor>();
 
@@ -457,34 +458,34 @@ public class RandomizerLocationManager
         public Location(string locationData)
         {
             string[] parts = locationData.Split();
-            this.Name = parts[0];
-            this.FriendlyName = Regex.Replace(this.Name, "([A-Z0-9]+)", " $1") + "\n" + parts[5];
-            this.Position = new Vector2(float.Parse(parts[1]), float.Parse(parts[2]));
-            this.Type = (LocationType)Enum.Parse(typeof(LocationType), parts[3]);
-            this.Difficulty = int.Parse(parts[4]);
-            this.Zone = parts[5];
+            Name = parts[0];
+            FriendlyName = Regex.Replace(Name, "([A-Z0-9]+)", " $1") + "\n" + parts[5];
+            Position = new Vector2(float.Parse(parts[1]), float.Parse(parts[2]));
+            Type = (LocationType)Enum.Parse(typeof(LocationType), parts[3]);
+            Difficulty = int.Parse(parts[4]);
+            Zone = parts[5];
 
-            this.MoonGuid = new MoonGuid(int.Parse(parts[6]), int.Parse(parts[7]), int.Parse(parts[8]), int.Parse(parts[9]));
+            MoonGuid = new MoonGuid(int.Parse(parts[6]), int.Parse(parts[7]), int.Parse(parts[8]), int.Parse(parts[9]));
 
             if (parts.Length >= 14)
             {
-                this.WorldMapGuid = new MoonGuid(int.Parse(parts[10]), int.Parse(parts[11]), int.Parse(parts[12]), int.Parse(parts[13]));
+                WorldMapGuid = new MoonGuid(int.Parse(parts[10]), int.Parse(parts[11]), int.Parse(parts[12]), int.Parse(parts[13]));
             }
             else
             {
-                this.WorldMapGuid = this.MoonGuid;
+                WorldMapGuid = MoonGuid;
             }
 
-            if (this.Type == LocationType.Skill || this.Type == LocationType.Map)
+            if (Type == LocationType.Skill || Type == LocationType.Map)
             {
-                this.SpecialIndex = int.Parse(parts[parts.Length - 1]);
+                SpecialIndex = int.Parse(parts[parts.Length - 1]);
             }
         }
 
         public void Give()
         {
             // special case for Sein pickup because it doesn't technically have a valid location key
-            if (this.Type == LocationType.Skill && this.SpecialIndex == 0)
+            if (Type == LocationType.Skill && SpecialIndex == 0)
             {
                 RandomizerTrackedDataManager.SetTree(0);
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.SpiritFlame, true);
@@ -496,26 +497,24 @@ public class RandomizerLocationManager
                 return;
             }
 
-            if (this.Collected)
+            if (Collected)
             {
                 return;
             }
 
-            switch (this.Type)
+            switch (Type)
             {
             case LocationType.Map:
-                RandomizerTrackedDataManager.SetMapstone(this.SpecialIndex);
+                RandomizerTrackedDataManager.SetMapstone(SpecialIndex);
                 break;
             case LocationType.Skill:
-                RandomizerTrackedDataManager.SetTree(this.SpecialIndex);
-                break;
-            default:
+                RandomizerTrackedDataManager.SetTree(SpecialIndex);
                 break;
             }
 
-            if (this.Type == LocationType.Map && Randomizer.ProgressiveMapStones)
+            if (Type == LocationType.Map && Randomizer.ProgressiveMapStones)
             {
-                RandomizerLocationManager.ProgressiveMapLocations[RandomizerBonus.MapStoneProgression()].Give();
+                ProgressiveMapLocations[RandomizerBonus.MapStoneProgression()].Give();
                 return;
             }
 
@@ -524,45 +523,45 @@ public class RandomizerLocationManager
                 Randomizer.changeColor();
             }
 
-            if (this.Type == LocationType.ProgressiveMap)
+            if (Type == LocationType.ProgressiveMap)
             {
                 RandomizerBonus.CollectMapstone();
                 RandomizerStatsManager.FoundMapstone();
             }
             else
             {
-                RandomizerStatsManager.IncPickup(this.Key);
+                RandomizerStatsManager.IncPickup(Key);
             }
 
-            BingoController.OnLoc(this.Key);
-            if (this.Key == -7320236) {
+            BingoController.OnLoc(Key);
+            if (Key == -7320236) {
                 Randomizer.Inventory.SetRandomizerItem(1106, 1);
             }
-            RandomizerSwitch.GivePickup(this.Pickup, this.Key);
-            RandomizerLocationManager.UpdateReachable();
+            RandomizerSwitch.GivePickup(Pickup, Key);
+            UpdateReachable();
 
-            if (Randomizer.HotColdItems.ContainsKey(this.Key))
+            if (Randomizer.HotColdItems.ContainsKey(Key))
             {
-                Randomizer.Inventory.SetRandomizerItem(Randomizer.HotColdItems[this.Key].Id, 1);
+                Randomizer.Inventory.SetRandomizerItem(Randomizer.HotColdItems[Key].Id, 1);
                 RandomizerColorManager.UpdateHotColdTarget();
             }
-            else if (Randomizer.HotColdFrags.ContainsKey(this.Key))
+            else if (Randomizer.HotColdFrags.ContainsKey(Key))
             {
-                Randomizer.Inventory.SetRandomizerItem(Randomizer.HotColdFrags[this.Key].Id, 1);
+                Randomizer.Inventory.SetRandomizerItem(Randomizer.HotColdFrags[Key].Id, 1);
                 RandomizerColorManager.UpdateHotColdTarget();
             }
 
-            if (this.Type == LocationType.Skill)
+            if (Type == LocationType.Skill)
             {
                 Randomizer.showProgress();
             }
         }
 
-        public int Key => (int)(Mathf.Floor((float)((int)this.Position.x) / 4f) * 4f) * 10000 + (int)(Mathf.Floor((float)((int)this.Position.y) / 4f) * 4f);
+        public int Key => (int)(Mathf.Floor((int)Position.x / 4f) * 4f) * 10000 + (int)(Mathf.Floor((int)Position.y / 4f) * 4f);
 
-        public bool Collected => this.Repeatable ? false : (this.Type == LocationType.Map ? RandomizerTrackedDataManager.GetMapstone(this.SpecialIndex) : Randomizer.HaveCoord(this.Key));
+        public bool Collected => Repeatable ? false : (Type == LocationType.Map ? RandomizerTrackedDataManager.GetMapstone(SpecialIndex) : Randomizer.HaveCoord(Key));
 
-        public bool Touched => Collected || this.Repeatable && Randomizer.HaveCoord(this.Key);
+        public bool Touched => Collected || Repeatable && Randomizer.HaveCoord(Key);
 
         public MoonGuid MoonGuid;
 
@@ -612,11 +611,11 @@ public class RandomizerLocationManager
         public KeystoneDoor(int index, string doorData)
         {
             string[] parts = doorData.Split();
-            this.Index = index;
-            this.Source = parts[0];
-            this.Destination = parts[1];
-            this.MoonGuid = new MoonGuid(int.Parse(parts[2]), int.Parse(parts[3]), int.Parse(parts[4]), int.Parse(parts[5]));
-            this.MapGuid = new MoonGuid(int.Parse(parts[6]), int.Parse(parts[7]), int.Parse(parts[8]), int.Parse(parts[9]));
+            Index = index;
+            Source = parts[0];
+            Destination = parts[1];
+            MoonGuid = new MoonGuid(int.Parse(parts[2]), int.Parse(parts[3]), int.Parse(parts[4]), int.Parse(parts[5]));
+            MapGuid = new MoonGuid(int.Parse(parts[6]), int.Parse(parts[7]), int.Parse(parts[8]), int.Parse(parts[9]));
         }
 
         public int Index;

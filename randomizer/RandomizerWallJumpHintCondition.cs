@@ -1,6 +1,4 @@
-using System;
 using Game;
-using UnityEngine;
 
 public class RandomizerWallJumpHintCondition : Condition
 {
@@ -22,9 +20,5 @@ public class RandomizerWallJumpHintCondition : Condition
             return false;
         }
         return true;
-	}
-
-	public RandomizerWallJumpHintCondition()
-	{
 	}
 }

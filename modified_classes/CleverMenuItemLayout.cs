@@ -1,19 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class CleverMenuItemLayout : MonoBehaviour
 {
 	public void OnEnable()
 	{
-		this.Sort();
+		Sort();
 	}
 
 	[ContextMenu("Apply")]
 	public void Sort()
 	{
 		float num = 0f;
-		foreach (CleverMenuItem cleverMenuItem in this.MenuItems)
+		foreach (CleverMenuItem cleverMenuItem in MenuItems)
 		{
 			if (cleverMenuItem.IsVisible)
 			{
@@ -21,15 +20,15 @@ public class CleverMenuItemLayout : MonoBehaviour
 				num += cleverMenuItem.Space;
 			}
 		}
-		foreach (CleverMenuItem cleverMenuItem2 in this.MenuItems)
+		foreach (CleverMenuItem cleverMenuItem2 in MenuItems)
 		{
 			if (cleverMenuItem2.IsVisible)
 			{
-				if (this.VerticalAlignment == CleverMenuItemLayout.Alignment.Center)
+				if (VerticalAlignment == Alignment.Center)
 				{
 					cleverMenuItem2.transform.localPosition += Vector3.up * num * 0.5f;
 				}
-				if (this.VerticalAlignment == CleverMenuItemLayout.Alignment.Bottom)
+				if (VerticalAlignment == Alignment.Bottom)
 				{
 					cleverMenuItem2.transform.localPosition += Vector3.up * num;
 				}
@@ -39,19 +38,19 @@ public class CleverMenuItemLayout : MonoBehaviour
 
 	public void AddItem(CleverMenuItem item)
 	{
-		this.MenuItems.Add(item);
-		this.Sort();
+		MenuItems.Add(item);
+		Sort();
 	}
 
 	public void AddItem(CleverMenuItem item, int index)
 	{
-		this.MenuItems.Insert(index, item);
-		this.Sort();
+		MenuItems.Insert(index, item);
+		Sort();
 	}
 
 	public List<CleverMenuItem> MenuItems = new List<CleverMenuItem>();
 
-	public CleverMenuItemLayout.Alignment VerticalAlignment;
+	public Alignment VerticalAlignment;
 
 	public enum Alignment
 	{

@@ -7,66 +7,66 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
 {
 	public void OnValidate()
 	{
-		this.m_onKillRecievers = base.GetComponentsInChildren(typeof(IKillReciever));
-		if (this.DestroyTarget == null)
+		m_onKillRecievers = GetComponentsInChildren(typeof(IKillReciever));
+		if (DestroyTarget == null)
 		{
-			this.DestroyTarget = base.gameObject;
+			DestroyTarget = gameObject;
 		}
-		this.m_transform = base.transform;
+		m_transform = transform;
 	}
 
 	public void OnPoolSpawned()
 	{
-		this.OnCollectedEvent = delegate()
+		OnCollectedEvent = delegate
 		{
 		};
-		this.IsCollected = false;
-		this.m_currentTime = 0f;
+		IsCollected = false;
+		m_currentTime = 0f;
 	}
 
 	public override void Awake()
 	{
 		base.Awake();
-		this.m_bounds = new Bounds(base.transform.position, Vector3.one * 4f);
+		m_bounds = new Bounds(transform.position, Vector3.one * 4f);
 	}
 
 	public void FixedUpdate()
 	{
-		if (this.FrustrumOptimized && !this.m_insideFrustum)
+		if (FrustrumOptimized && !m_insideFrustum)
 		{
-			base.gameObject.SetActive(false);
+			gameObject.SetActive(false);
 			return;
 		}
 
-		if (!this.IsCollected && RandomizerLocationManager.IsPickupCollected(this.MoonGuid))
+		if (!IsCollected && RandomizerLocationManager.IsPickupCollected(MoonGuid))
 		{
-			this.IsCollected = true;
+			IsCollected = true;
 
-			if (this.OnCollectedAction != null)
+			if (OnCollectedAction != null)
 			{
-				this.OnCollectedAction.PerformInstantly(null);
+				OnCollectedAction.PerformInstantly(null);
 			}
 
-			this.OnCollectedEvent();
+			OnCollectedEvent();
 
-			if (this.DestroyOnCollect)
+			if (DestroyOnCollect)
 			{
-				InstantiateUtility.Destroy(this.DestroyTarget);
+				InstantiateUtility.Destroy(DestroyTarget);
 			}
 			else
 			{
-				base.gameObject.SetActive(false);
+				gameObject.SetActive(false);
 			}
 		}
 
-		this.m_currentTime += Time.deltaTime;
-		if (this.m_currentTime < this.DelayBeforeCollectable)
+		m_currentTime += Time.deltaTime;
+		if (m_currentTime < DelayBeforeCollectable)
 		{
 			return;
 		}
-		if (!this.IsCollected && Characters.Sein && Vector3.Distance(this.m_transform.position, Characters.Sein.Position) < this.Radius)
+		if (!IsCollected && Characters.Sein && Vector3.Distance(m_transform.position, Characters.Sein.Position) < Radius)
 		{
-			this.OnCollectorCandidateTouch(Characters.Sein.gameObject);
+			OnCollectorCandidateTouch(Characters.Sein.gameObject);
 		}
 	}
 
@@ -74,49 +74,49 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
 
 	public void SpawnCollectedEffect()
 	{
-		if (this.CollectedEffect)
+		if (CollectedEffect)
 		{
-			InstantiateUtility.Instantiate(this.CollectedEffect, this.m_transform.position, Quaternion.identity);
+			InstantiateUtility.Instantiate(CollectedEffect, m_transform.position, Quaternion.identity);
 		}
 	}
 
 	public virtual void Collected()
 	{
-		this.IsCollected = true;
-		this.SpawnCollectedEffect();
-		if (this.CollectedSoundProvider != null)
+		IsCollected = true;
+		SpawnCollectedEffect();
+		if (CollectedSoundProvider != null)
 		{
-			Sound.Play(this.CollectedSoundProvider.GetSound(null), this.m_transform.position, null);
+			Sound.Play(CollectedSoundProvider.GetSound(null), m_transform.position, null);
 		}
-		for (int i = 0; i < this.m_onKillRecievers.Length; i++)
+		for (int i = 0; i < m_onKillRecievers.Length; i++)
 		{
-			if (this.m_onKillRecievers[i])
+			if (m_onKillRecievers[i])
 			{
-				((IKillReciever)this.m_onKillRecievers[i]).OnKill();
+				((IKillReciever)m_onKillRecievers[i]).OnKill();
 			}
 		}
-		if (this.OnCollectedAction != null)
+		if (OnCollectedAction != null)
 		{
-			this.OnCollectedAction.Perform(null);
+			OnCollectedAction.Perform(null);
 		}
-		this.OnCollectedEvent();
-		if (this.DestroyOnCollect)
+		OnCollectedEvent();
+		if (DestroyOnCollect)
 		{
-			InstantiateUtility.Destroy(this.DestroyTarget);
+			InstantiateUtility.Destroy(DestroyTarget);
 		}
 		else
 		{
-			base.gameObject.SetActive(false);
+			gameObject.SetActive(false);
 		}
 	}
 
 	public override void Serialize(Archive ar)
 	{
-		ar.Serialize(ref this.m_currentTime);
-		ar.Serialize(ref this.IsCollected);
+		ar.Serialize(ref m_currentTime);
+		ar.Serialize(ref IsCollected);
 		if (ar.Reading)
 		{
-			base.gameObject.SetActive(!this.IsCollected);
+			gameObject.SetActive(!IsCollected);
 		}
 	}
 
@@ -124,30 +124,30 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
 	{
 		get
 		{
-			this.m_bounds.center = this.m_transform.position;
-			return this.m_bounds;
+			m_bounds.center = m_transform.position;
+			return m_bounds;
 		}
 	}
 
 	public void OnFrustumEnter()
 	{
-		this.m_insideFrustum = true;
-		if (!this.IsCollected)
+		m_insideFrustum = true;
+		if (!IsCollected)
 		{
-			base.gameObject.SetActive(true);
+			gameObject.SetActive(true);
 		}
 	}
 
 	public void OnFrustumExit()
 	{
-		this.m_insideFrustum = false;
+		m_insideFrustum = false;
 	}
 
 	public bool InsideFrustum
 	{
 		get
 		{
-			return this.m_insideFrustum;
+			return m_insideFrustum;
 		}
 	}
 
@@ -155,7 +155,7 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
 
 	public SoundProvider CollectedSoundProvider;
 
-	public Action OnCollectedEvent = delegate()
+	public Action OnCollectedEvent = delegate
 	{
 	};
 

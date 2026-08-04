@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using Game;
 using UnityEngine;
@@ -8,14 +7,14 @@ public class LegacyDiscoverWorldMapAreasAction : ActionMethod
 {
 	public override void Perform(IContext context)
 	{
-		this.m_isInstant = false;
-		base.StartCoroutine(this.ShowWorldMap());
+		m_isInstant = false;
+		StartCoroutine(ShowWorldMap());
 	}
 
 	public override void PerformInstantly(IContext context)
 	{
-		this.m_isInstant = true;
-		base.StartCoroutine(this.ShowWorldMap());
+		m_isInstant = true;
+		StartCoroutine(ShowWorldMap());
 	}
 
 	public IEnumerator ShowWorldMap()
@@ -29,20 +28,19 @@ public class LegacyDiscoverWorldMapAreasAction : ActionMethod
 			canvas.UpdateAreaMaskTextureB();
 			AreaMapUI.Instance.Navigation.UpdateScrollLimits();
 			AreaMapUI.Instance.IconManager.ShowAreaIcons();
-			base.StartCoroutine(this.ReleaseTexture(canvas));
+			StartCoroutine(ReleaseTexture(canvas));
 		}
-		if (this.OnClosedAction)
+		if (OnClosedAction)
 		{
-			if (this.m_isInstant)
+			if (m_isInstant)
 			{
-				this.OnClosedAction.PerformInstantly(null);
+				OnClosedAction.PerformInstantly(null);
 			}
 			else
 			{
-				this.OnClosedAction.Perform(null);
+				OnClosedAction.Perform(null);
 			}
 		}
-		yield break;
 	}
 
 	public IEnumerator ReleaseTexture(AreaMapCanvas canvas)
