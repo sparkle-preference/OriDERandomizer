@@ -38,11 +38,11 @@ public class SeinGlide : CharacterState, ISeinReceiver {
     }
 
     public bool IsGliding {
-        get => m_isGliding;
+        get => isGliding;
         set {
-            if (m_isGliding != value) {
-                m_isGliding = value;
-                if (m_isGliding) {
+            if (isGliding != value) {
+                isGliding = value;
+                if (isGliding) {
                     OnEnterGlide();
                 } else {
                     OnExitGlide();
@@ -56,8 +56,8 @@ public class SeinGlide : CharacterState, ISeinReceiver {
     }
 
     public void OnExitGlide() {
-        if (m_parachuteLoopLastSound) {
-            m_parachuteLoopLastSound.FadeOut(1f, true);
+        if (parachuteLoopLastSound) {
+            parachuteLoopLastSound.FadeOut(1f, true);
         }
 
         base.OnExit();
@@ -66,15 +66,15 @@ public class SeinGlide : CharacterState, ISeinReceiver {
         }
 
         RunningTime = 0f;
-        m_playedOpenSound = false;
+        playedOpenSound = false;
     }
 
     public bool CanGlide => !PlatformMovement.IsOnGround && !PlatformMovement.IsOnWall && !Sein.Controller.InputLocked && !SeinAbilityRestrictZone.IsInside();
 
-    public bool WantsToGlide => Input.Glide.Pressed && !NeedsRightTriggerReleased && m_lockGlidingRemainingTime <= 0f;
+    public bool WantsToGlide => Input.Glide.Pressed && !NeedsRightTriggerReleased && lockGlidingRemainingTime <= 0f;
 
     public void LockGliding(float time) {
-        m_lockGlidingRemainingTime = time;
+        lockGlidingRemainingTime = time;
     }
 
     public void UpdateGliding() {
@@ -82,11 +82,11 @@ public class SeinGlide : CharacterState, ISeinReceiver {
             IsGliding = false;
         }
 
-        m_pressedMoveHorizontally = false;
+        pressedMoveHorizontally = false;
         RunningTime += Time.deltaTime;
-        if (!m_playedOpenSound && RunningTime > 0.15f && RunningTime < 0.2f) {
+        if (!playedOpenSound && RunningTime > 0.15f && RunningTime < 0.2f) {
             Sound.Play(OpenParachuteSound.GetSound(null), PlatformMovement.Position, null);
-            m_playedOpenSound = true;
+            playedOpenSound = true;
         }
 
         if (!IsGliding) {
@@ -99,22 +99,22 @@ public class SeinGlide : CharacterState, ISeinReceiver {
         }
 
         UpdateAnimations();
-        if (m_pressedMoveHorizontally && !m_wasMovingHorizantally) {
+        if (pressedMoveHorizontally && !wasMovingHorizontally) {
             Sound.Play(TurnLeftRightSound.GetSound(null), PlatformMovement.Position, null);
-        } else if (m_parachuteLoopLastSound == null) {
-            m_parachuteLoopLastSound = Sound.Play(ParachuteLoopSound.GetSound(null), PlatformMovement.Position, delegate { m_parachuteLoopLastSound = null; });
-            if (m_parachuteLoopLastSound) {
-                m_parachuteLoopLastSound.AttachTo = PlatformMovement.transform;
+        } else if (parachuteLoopLastSound == null) {
+            parachuteLoopLastSound = Sound.Play(ParachuteLoopSound.GetSound(null), PlatformMovement.Position, delegate { parachuteLoopLastSound = null; });
+            if (parachuteLoopLastSound) {
+                parachuteLoopLastSound.AttachTo = PlatformMovement.transform;
             }
         }
 
-        m_wasMovingHorizantally = m_pressedMoveHorizontally;
+        wasMovingHorizontally = pressedMoveHorizontally;
         HandleFloatZones();
     }
 
     private void UpdateAnimations() {
         if (ShouldGlideMovingAnimationPlay) {
-            m_pressedMoveHorizontally = true;
+            pressedMoveHorizontally = true;
             Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(MovingAnimation, 110, ShouldGlideMovingAnimationKeepPlaying);
         } else if (ShouldGlideIdleAnimationPlay) {
             Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(IdleAnimation, 110, ShouldGlideIdleAnimationKeepPlaying);
@@ -165,15 +165,15 @@ public class SeinGlide : CharacterState, ISeinReceiver {
 
     public override void UpdateCharacterState() {
         if (CharacterLeftRightMovement.HorizontalInput != 0f) {
-            m_isMoveAnimation = 3;
-        } else if (m_isMoveAnimation > 0) {
-            m_isMoveAnimation--;
+            isMoveAnimation = 3;
+        } else if (isMoveAnimation > 0) {
+            isMoveAnimation--;
         }
 
-        if (m_lockGlidingRemainingTime > 0f) {
-            m_lockGlidingRemainingTime -= Time.deltaTime;
-            if (m_lockGlidingRemainingTime < 0f) {
-                m_lockGlidingRemainingTime = 0f;
+        if (lockGlidingRemainingTime > 0f) {
+            lockGlidingRemainingTime -= Time.deltaTime;
+            if (lockGlidingRemainingTime < 0f) {
+                lockGlidingRemainingTime = 0f;
             }
         }
 
@@ -209,7 +209,7 @@ public class SeinGlide : CharacterState, ISeinReceiver {
     }
 
     public bool ShouldGlideMovingAnimationKeepPlaying() {
-        return IsGliding && m_isMoveAnimation > 0;
+        return IsGliding && isMoveAnimation > 0;
     }
 
     public void SetReferenceToSein(SeinCharacter sein) {
@@ -231,27 +231,23 @@ public class SeinGlide : CharacterState, ISeinReceiver {
 
     public SoundProvider TurnLeftRightSound;
 
-    private SoundPlayer m_parachuteLoopLastSound;
+    private SoundPlayer parachuteLoopLastSound;
 
-    private bool m_playedOpenSound;
+    private bool playedOpenSound;
 
-    private bool m_pressedMoveHorizontally;
+    private bool pressedMoveHorizontally;
 
-    private bool m_wasMovingHorizantally;
+    private bool wasMovingHorizontally;
 
-    private bool m_isGliding;
+    private bool isGliding;
 
     public bool NeedsRightTriggerReleased;
 
-    private float m_lockGlidingRemainingTime;
+    private float lockGlidingRemainingTime;
 
-    private int m_isMoveAnimation;
+    private int isMoveAnimation;
 
     public float RunningTime;
-
-    public int Level;
-
-    public float MinHeightToGlide = 2f;
 
     public float GlideSpeed;
 

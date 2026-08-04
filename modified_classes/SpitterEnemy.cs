@@ -5,10 +5,6 @@ using UnityEngine;
 public class SpitterEnemy : GroundEnemy {
     public Vector2 ThrownDirection { get; set; }
 
-    public override void Awake() {
-        base.Awake();
-    }
-
     public override bool CanBeOptimized() {
         var currentState = Controller.StateMachine.CurrentState;
         return currentState == State.Idle || currentState == State.Walk;
@@ -107,8 +103,8 @@ public class SpitterEnemy : GroundEnemy {
             Drown();
         }
 
-        if (WilhelmScreamZoneRectanglesContain(transform.position) && !m_hasEnteredZone && EnterZoneAction) {
-            m_hasEnteredZone = true;
+        if (WilhelmScreamZoneRectanglesContain(transform.position) && !hasEnteredZone && EnterZoneAction) {
+            hasEnteredZone = true;
             BingoController.OnScream();
             EnterZoneAction.Perform(null);
         }
@@ -158,7 +154,7 @@ public class SpitterEnemy : GroundEnemy {
 
     public Transform[] ActionZones;
 
-    private bool m_hasEnteredZone;
+    private bool hasEnteredZone;
 
     public States State = new States();
 

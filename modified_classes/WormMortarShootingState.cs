@@ -2,48 +2,48 @@
 
 public class WormMortarShootingState : WormState {
     public WormMortarShootingState(WormEnemy worm, MortarWormDirectionalAnimations shoot, PrefabSpawner shootEffect, SoundSource shootSound, ProjectileSpawner projectileSpawner, float shootDelay, float projectileDamage) : base(worm) {
-        m_shoot = shoot;
-        m_shootEffect = shootEffect;
-        m_shootSound = shootSound;
-        m_projectileSpawner = projectileSpawner;
-        m_shootDelay = shootDelay;
-        m_projectileDamage = projectileDamage;
+        this.shoot = shoot;
+        this.shootEffect = shootEffect;
+        this.shootSound = shootSound;
+        this.projectileSpawner = projectileSpawner;
+        this.shootDelay = shootDelay;
+        this.projectileDamage = projectileDamage;
     }
 
     public override void OnEnter() {
         var mortarWormEnemy = (MortarWormEnemy)Worm;
-        var direction = (m_projectileSpawner.Speed * m_projectileSpawner.Direction + 0.5f * m_projectileSpawner.Gravity * m_shootDelay * m_shootDelay * Vector3.down).normalized;
+        var direction = (projectileSpawner.Speed * projectileSpawner.Direction + 0.5f * projectileSpawner.Gravity * shootDelay * shootDelay * Vector3.down).normalized;
         direction = mortarWormEnemy.transform.InverseTransformDirection(direction);
         if (mortarWormEnemy.FaceLeft) {
             direction.x *= -1f;
         }
 
-        Worm.Animation.Play(m_shoot.PickWithDirection(direction));
-        m_projectileAnimationPosition = mortarWormEnemy.Spawn.FindPosition(direction);
+        Worm.Animation.Play(shoot.PickWithDirection(direction));
+        projectileAnimationPosition = mortarWormEnemy.Spawn.FindPosition(direction);
     }
 
     public override void OnExit() {
-        m_hasShot = false;
+        hasShot = false;
         base.OnExit();
     }
 
     public override void UpdateState() {
-        if (CurrentStateTime >= m_shootDelay && !m_hasShot) {
-            m_hasShot = true;
-            if (m_shootEffect) {
-                m_shootEffect.Spawn(null);
+        if (CurrentStateTime >= shootDelay && !hasShot) {
+            hasShot = true;
+            if (shootEffect) {
+                shootEffect.Spawn(null);
             }
 
-            if (m_shootSound) {
-                m_shootSound.Play();
+            if (shootSound) {
+                shootSound.Play();
             }
 
-            var projectile = m_projectileSpawner.SpawnProjectile();
-            var b = RandomizerBonusSkill.TimeScale(projectile.Direction * projectile.Speed * m_shootDelay + Vector3.down * projectile.Gravity * m_shootDelay * m_shootDelay * 0.5f);
+            var projectile = projectileSpawner.SpawnProjectile();
+            var b = RandomizerBonusSkill.TimeScale(projectile.Direction * projectile.Speed * shootDelay + Vector3.down * projectile.Gravity * shootDelay * shootDelay * 0.5f);
             projectile.Position += b;
-            projectile.SpeedVector += Vector3.down * projectile.Gravity * m_shootDelay;
-            projectile.GetComponent<DamageDealer>().Damage = m_projectileDamage;
-            var vector = m_projectileAnimationPosition - projectile.Position;
+            projectile.SpeedVector += Vector3.down * projectile.Gravity * shootDelay;
+            projectile.GetComponent<DamageDealer>().Damage = projectileDamage;
+            var vector = projectileAnimationPosition - projectile.Position;
             vector.z = 0f;
             projectile.Position += vector;
             projectile.Displacement = vector;
@@ -52,19 +52,19 @@ public class WormMortarShootingState : WormState {
         base.UpdateState();
     }
 
-    private readonly MortarWormDirectionalAnimations m_shoot;
+    private readonly MortarWormDirectionalAnimations shoot;
 
-    private readonly PrefabSpawner m_shootEffect;
+    private readonly PrefabSpawner shootEffect;
 
-    private readonly SoundSource m_shootSound;
+    private readonly SoundSource shootSound;
 
-    private readonly ProjectileSpawner m_projectileSpawner;
+    private readonly ProjectileSpawner projectileSpawner;
 
-    private readonly float m_shootDelay;
+    private readonly float shootDelay;
 
-    private readonly float m_projectileDamage;
+    private readonly float projectileDamage;
 
-    private Vector3 m_projectileAnimationPosition;
+    private Vector3 projectileAnimationPosition;
 
-    private bool m_hasShot;
+    private bool hasShot;
 }

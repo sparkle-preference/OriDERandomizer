@@ -110,8 +110,6 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable {
 
     public GameObject Projectile;
 
-    public List<Collider> CollidersToIgnore;
-
     public GameObject Owner;
 
     public bool WaitForProjectileToBeDestroyed;

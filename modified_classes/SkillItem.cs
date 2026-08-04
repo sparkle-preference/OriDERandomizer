@@ -24,13 +24,13 @@ public class SkillItem : MonoBehaviour {
     }
 
     public int TotalRequiredHardSkillPoints {
-        get => m_totalRequiredHardPoints;
-        set => m_totalRequiredHardPoints = value;
+        get => totalRequiredHardPoints;
+        set => totalRequiredHardPoints = value;
     }
 
     public int TotalRequiredSkillPoints {
-        get => m_totalRequiredPoints;
-        set => m_totalRequiredPoints = value;
+        get => totalRequiredPoints;
+        set => totalRequiredPoints = value;
     }
 
     public Color LargeIconColor { get; set; }
@@ -56,7 +56,7 @@ public class SkillItem : MonoBehaviour {
     }
 
     public void Awake() {
-        m_animator = Icon.GetComponent<TransparencyAnimator>();
+        animator = Icon.GetComponent<TransparencyAnimator>();
     }
 
     public bool CanEarnSkill => SoulRequirementMet && AbilitiesRequirementMet;
@@ -68,12 +68,12 @@ public class SkillItem : MonoBehaviour {
     public void UpdateItem() {
         LearntSkillGlow.SetActive(HasSkillItem && Visible);
         Icon.gameObject.SetActive(Visible);
-        if (HasSkillItem == m_animator.AnimatorDriver.IsReversed) {
-            m_animator.Initialize();
+        if (HasSkillItem == animator.AnimatorDriver.IsReversed) {
+            animator.Initialize();
             if (HasSkillItem) {
-                m_animator.AnimatorDriver.ContinueForward();
+                animator.AnimatorDriver.ContinueForward();
             } else {
-                m_animator.AnimatorDriver.ContinueBackwards();
+                animator.AnimatorDriver.ContinueBackwards();
             }
         }
     }
@@ -81,11 +81,11 @@ public class SkillItem : MonoBehaviour {
     public void OnEnable() {
         HasSkillItem = Characters.Sein.PlayerAbilities.HasAbility(Ability);
         UpdateItem();
-        m_animator.Initialize();
+        animator.Initialize();
         if (HasSkillItem) {
-            m_animator.AnimatorDriver.GoToEnd();
+            animator.AnimatorDriver.GoToEnd();
         } else {
-            m_animator.AnimatorDriver.GoToStart();
+            animator.AnimatorDriver.GoToStart();
         }
     }
 
@@ -113,13 +113,13 @@ public class SkillItem : MonoBehaviour {
 
     public ActionMethod GainSkillSequence;
 
-    private TransparencyAnimator m_animator;
+    private TransparencyAnimator animator;
 
     public GameObject LearntSkillGlow;
 
     public bool HasSkillItem;
 
-    private int m_totalRequiredPoints;
+    private int totalRequiredPoints;
 
-    private int m_totalRequiredHardPoints;
+    private int totalRequiredHardPoints;
 }

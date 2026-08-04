@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class TeleporterController : SaveSerialize, ISuspendable {
     private void Nullify() {
-        m_teleportingStartSound = null;
+        teleportingStartSound = null;
     }
 
     public override void Serialize(Archive ar) {
@@ -126,11 +126,11 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
     public void CancelTeleport() {
         Randomizer.IsUsingRandomizerTeleportAnywhere = false;
-        m_isTeleporting = false;
-        m_isBlooming = false;
-        if (!InstantiateUtility.IsDestroyed(m_teleportingStartSound)) {
-            m_teleportingStartSound.FadeOut(0.1f, true);
-            m_teleportingStartSound = null;
+        isTeleporting = false;
+        isBlooming = false;
+        if (!InstantiateUtility.IsDestroyed(teleportingStartSound)) {
+            teleportingStartSound.FadeOut(0.1f, true);
+            teleportingStartSound = null;
         }
     }
 
@@ -193,10 +193,10 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
         if (!Instance.DontTeleportForAnimationTesting) {
             Scenes.Manager.AdditivelyLoadScenesAtPosition(selectedTeleporter.WorldPosition, true, false, true);
-            Instance.m_teleporterTargetPosition = selectedTeleporter.WorldPosition;
+            Instance.teleporterTargetPosition = selectedTeleporter.WorldPosition;
         }
 
-        Instance.m_isTeleporting = true;
+        Instance.isTeleporting = true;
         Characters.Sein.Controller.PlayAnimation(Instance.TeleportingStartAnimation);
         if (GameMapUI.Instance.Teleporters.StartTeleportingSound) {
             Sound.Play(GameMapUI.Instance.Teleporters.StartTeleportingSound.GetSound(null), Vector3.zero, null);
@@ -207,11 +207,11 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         }
 
         if (Instance.TeleportingStartSound != null) {
-            Instance.m_teleportingStartSound = Sound.Play(Instance.TeleportingStartSound.GetSound(null), Characters.Sein.Position, Instance.Nullify);
+            Instance.teleportingStartSound = Sound.Play(Instance.TeleportingStartSound.GetSound(null), Characters.Sein.Position, Instance.Nullify);
         }
 
         Characters.Sein.Controller.OnTriggeredAnimationFinished += OnFinishedTeleportingStartAnimation;
-        Instance.m_startTime = Time.time;
+        Instance.startTime = Time.time;
         foreach (var savePedestal in SavePedestal.All) {
             savePedestal.OnBeginTeleporting();
         }
@@ -219,29 +219,29 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
     public static void OnFinishedTeleportingStartAnimation() {
         Characters.Sein.Controller.OnTriggeredAnimationFinished -= OnFinishedTeleportingStartAnimation;
-        if (Instance.m_isTeleporting) {
+        if (Instance.isTeleporting) {
             Characters.Sein.Controller.PlayAnimation(Instance.TeleportingLoopAnimation);
             Instance.TeleportingTwirlAnimationSound.Play();
         }
     }
 
     public void FixedUpdate() {
-        if (m_isTeleporting) {
+        if (isTeleporting) {
             var time = Time.time;
             var num = 7f;
             if (DontTeleportForAnimationTesting) {
-                if (time > m_startTime + NoTeleportAnimationTime) {
+                if (time > startTime + NoTeleportAnimationTime) {
                     Characters.Sein.Controller.StopAnimation();
                     Characters.Sein.Controller.PlayAnimation(Instance.TeleportingFinishAnimation);
                     Instance.TeleportingTwirlAnimationSound.Stop();
-                    m_isTeleporting = false;
+                    isTeleporting = false;
                 }
-            } else if (!Scenes.Manager.IsLoadingScenes && time > m_startTime + num) {
-                m_isTeleporting = false;
+            } else if (!Scenes.Manager.IsLoadingScenes && time > startTime + num) {
+                isTeleporting = false;
                 if (BloomFade) {
                     InstantiateUtility.Instantiate(BloomFade);
-                    m_bloomCurrentTime = 0f;
-                    m_isBlooming = true;
+                    bloomCurrentTime = 0f;
+                    isBlooming = true;
                     if (TeleportingBloomSound) {
                         Sound.Play(TeleportingBloomSound.GetSound(null), Characters.Sein.Position, null);
                     }
@@ -251,11 +251,11 @@ public class TeleporterController : SaveSerialize, ISuspendable {
             }
         }
 
-        if (m_isBlooming) {
-            m_bloomCurrentTime += !IsSuspended ? Time.deltaTime : 0f;
-            if (m_bloomCurrentTime > BloomFadeDuration) {
+        if (isBlooming) {
+            bloomCurrentTime += !IsSuspended ? Time.deltaTime : 0f;
+            if (bloomCurrentTime > BloomFadeDuration) {
                 OnFadedToBlack();
-                m_isBlooming = false;
+                isBlooming = false;
             }
         }
     }
@@ -265,9 +265,9 @@ public class TeleporterController : SaveSerialize, ISuspendable {
             savePedestal.OnFinishedTeleporting();
         }
 
-        if (!InstantiateUtility.IsDestroyed(m_teleportingStartSound)) {
-            m_teleportingStartSound.FadeOut(0.5f, true);
-            m_teleportingStartSound = null;
+        if (!InstantiateUtility.IsDestroyed(teleportingStartSound)) {
+            teleportingStartSound.FadeOut(0.5f, true);
+            teleportingStartSound = null;
         }
 
         if (BloomFade) {
@@ -278,7 +278,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
             RandomizerBonusSkill.LastAltR = Characters.Sein.Position;
         }
 
-        Characters.Sein.Position = m_teleporterTargetPosition + Vector3.up * 1.6f;
+        Characters.Sein.Position = teleporterTargetPosition + Vector3.up * 1.6f;
         CameraPivotZone.InstantUpdate();
         Scenes.Manager.UpdatePosition();
         Scenes.Manager.UnloadScenesAtPosition(true);
@@ -313,7 +313,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
         TeleportingTwirlAnimationSound.Stop();
         if (TeleporterFinishEffect) {
-            InstantiateUtility.Instantiate(TeleporterFinishEffect, m_teleporterTargetPosition, Quaternion.identity);
+            InstantiateUtility.Instantiate(TeleporterFinishEffect, teleporterTargetPosition, Quaternion.identity);
         }
 
         if (TeleportingEndSound) {
@@ -364,7 +364,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
                 return false;
             }
 
-            return Instance.m_isTeleporting;
+            return Instance.isTeleporting;
         }
     }
 
@@ -386,9 +386,9 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
     public SoundProvider TeleportingEndSound;
 
-    private SoundPlayer m_teleportingStartSound;
+    private SoundPlayer teleportingStartSound;
 
-    private float m_startTime;
+    private float startTime;
 
     public bool DontTeleportForAnimationTesting;
 
@@ -404,11 +404,11 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
     public GameObject TeleporterFinishEffect;
 
-    private bool m_isTeleporting;
+    private bool isTeleporting;
 
-    private bool m_isBlooming;
+    private bool isBlooming;
 
-    private float m_bloomCurrentTime;
+    private float bloomCurrentTime;
 
-    private Vector3 m_teleporterTargetPosition;
+    private Vector3 teleporterTargetPosition;
 }

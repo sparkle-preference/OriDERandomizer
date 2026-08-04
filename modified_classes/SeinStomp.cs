@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using fsm;
 using Game;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Input = Core.Input;
 
 public class SeinStomp : CharacterState, ISeinReceiver {
@@ -101,16 +102,16 @@ public class SeinStomp : CharacterState, ISeinReceiver {
     }
 
     public void DoBlastRadius(IAttackable landedStompAttackable) {
-        m_stompBlastAttackables.Clear();
-        m_stompBlastAttackables.AddRange(Targets.Attackables);
-        for (var i = 0; i < m_stompBlastAttackables.Count; i++) {
-            var attackable = m_stompBlastAttackables[i];
+        StompBlastAttackables.Clear();
+        StompBlastAttackables.AddRange(Targets.Attackables);
+        for (var i = 0; i < StompBlastAttackables.Count; i++) {
+            var attackable = StompBlastAttackables[i];
             if (!InstantiateUtility.IsDestroyed(attackable as Component)) {
                 if (attackable != landedStompAttackable) {
                     if (attackable.CanBeStomped()) {
                         var vector = attackable.Position - Sein.Position;
                         var magnitude = vector.magnitude;
-                        if (magnitude < StompBlashRadius) {
+                        if (magnitude < StompBlastRadius) {
                             var normalized = (vector.normalized + StompDirection * -2f).normalized;
                             var gameObject = ((Component)attackable).gameObject;
                             var stompDamage = StompDamage;
@@ -122,7 +123,7 @@ public class SeinStomp : CharacterState, ISeinReceiver {
             }
         }
 
-        m_stompBlastAttackables.Clear();
+        StompBlastAttackables.Clear();
     }
 
     public override void Awake() {
@@ -237,9 +238,9 @@ public class SeinStomp : CharacterState, ISeinReceiver {
         PlatformMovement.LocalSpeedX = 0f;
         PlatformMovement.LocalSpeedY = 0f;
         if (RandomizerBonus.EnhancedStomp && Input.Axis != Vector2.zero) {
-            m_stompDirection = Input.Axis.normalized;
+            stompDirection = Input.Axis.normalized;
         } else {
-            m_stompDirection = Vector2.down;
+            stompDirection = Vector2.down;
         }
     }
 
@@ -273,15 +274,15 @@ public class SeinStomp : CharacterState, ISeinReceiver {
         }
 
         if (RandomizerBonus.EnhancedStomp && Input.Axis != Vector2.zero) {
-            m_stompDirection = (Input.Axis.normalized + PlatformMovement.LocalSpeed.normalized).normalized;
-            SpriteRotation = Mathf.Atan2(m_stompDirection.y, m_stompDirection.x) * 57.29578f + 90f;
+            stompDirection = (Input.Axis.normalized + PlatformMovement.LocalSpeed.normalized).normalized;
+            SpriteRotation = Mathf.Atan2(stompDirection.y, stompDirection.x) * 57.29578f + 90f;
         } else {
-            m_stompDirection = Vector2.down;
+            stompDirection = Vector2.down;
             SpriteRotation = 0f;
         }
 
         var targetVelocity = StompSpeed + StompSpeed * 0.2f * RandomizerBonus.Velocity();
-        PlatformMovement.LocalSpeed = m_stompDirection * targetVelocity;
+        PlatformMovement.LocalSpeed = stompDirection * targetVelocity;
         Sein.Mortality.DamageReciever.MakeInvincibleToEnemies(0.2f);
 
         if (Sein.Controller.IsSwimming) {
@@ -335,7 +336,7 @@ public class SeinStomp : CharacterState, ISeinReceiver {
         base.Serialize(ar);
     }
 
-    public Vector3 StompDirection => new Vector3(m_stompDirection.x, m_stompDirection.y, 0f);
+    public Vector3 StompDirection => new Vector3(stompDirection.x, stompDirection.y, 0f);
 
     public float IdleDuration;
 
@@ -345,7 +346,7 @@ public class SeinStomp : CharacterState, ISeinReceiver {
 
     public States State = new States();
 
-    public float StompBlashRadius = 10f;
+    [FormerlySerializedAs("StompBlashRadius")] public float StompBlastRadius = 10f;
 
     public float Damage = 15f;
 
@@ -385,9 +386,9 @@ public class SeinStomp : CharacterState, ISeinReceiver {
 
     public float UpwardDeceleration;
 
-    public List<IAttackable> m_stompBlastAttackables = new List<IAttackable>();
+    public List<IAttackable> StompBlastAttackables = new List<IAttackable>();
 
-    private Vector2 m_stompDirection;
+    private Vector2 stompDirection;
 
     public float SpriteRotation;
 

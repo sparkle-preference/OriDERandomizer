@@ -2,11 +2,11 @@ using UnityEngine;
 
 public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
     public void BeginTiltLeftRightInAir(float duration) {
-        m_tiltLeftRightTimer = duration;
+        tiltLeftRightTimer = duration;
     }
 
     public void BeginTiltUpDownInAir(float duration) {
-        m_tiltUpDownTimer = duration;
+        tiltUpDownTimer = duration;
     }
 
     public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
@@ -31,23 +31,23 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
 
     private void UpdateCinematicRotation() {
         if (PlatformMovement.IsOnGround) {
-            m_groundAngle = Mathf.LerpAngle(m_groundAngle, PlatformMovement.GroundAngle, 0.1f);
+            groundAngle = Mathf.LerpAngle(groundAngle, PlatformMovement.GroundAngle, 0.1f);
         } else {
-            m_groundAngle = Mathf.LerpAngle(m_groundAngle, 0f, 0.1f);
+            groundAngle = Mathf.LerpAngle(groundAngle, 0f, 0.1f);
         }
 
-        FeetAngle = m_groundAngle;
+        FeetAngle = groundAngle;
         HeadAngle = 0f;
         CenterAngle = 0f;
     }
 
     private void UpdateRegularRotation() {
-        if (m_tiltLeftRightTimer > 0f) {
-            m_tiltLeftRightTimer = Mathf.Max(m_tiltLeftRightTimer - Time.deltaTime, 0f);
+        if (tiltLeftRightTimer > 0f) {
+            tiltLeftRightTimer = Mathf.Max(tiltLeftRightTimer - Time.deltaTime, 0f);
         }
 
-        if (m_tiltUpDownTimer > 0f) {
-            m_tiltUpDownTimer = Mathf.Max(m_tiltUpDownTimer - Time.deltaTime, 0f);
+        if (tiltUpDownTimer > 0f) {
+            tiltUpDownTimer = Mathf.Max(tiltUpDownTimer - Time.deltaTime, 0f);
         }
 
         CenterAngle = 0f;
@@ -55,9 +55,9 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
         FeetAngle = 0f;
         if (PlatformMovement.HasWallLeft) {
             if (!PlatformMovement.WallLeft.WasOn) {
-                m_wallLeftAngle = !PlatformMovement.WallLeftRayHit ? PlatformMovement.GravityAngle : PlatformMovement.WallLeftAngle;
+                wallLeftAngle = !PlatformMovement.WallLeftRayHit ? PlatformMovement.GravityAngle : PlatformMovement.WallLeftAngle;
             } else if (PlatformMovement.WallLeftRayHit) {
-                m_wallLeftAngle = Mathf.LerpAngle(m_wallLeftAngle, PlatformMovement.WallLeftAngle, 0.2f);
+                wallLeftAngle = Mathf.LerpAngle(wallLeftAngle, PlatformMovement.WallLeftAngle, 0.2f);
             }
 
             if (Sein.Abilities.Swimming && Sein.Abilities.Swimming.IsSwimming) {
@@ -65,14 +65,14 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
             } else if (PlatformMovement.IsOnGround && Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft) {
                 FeetAngle = PlatformMovement.GravityAngle;
             } else {
-                FeetAngle = Mathf.Max(0f, m_wallLeftAngle);
-                HeadAngle = Mathf.Min(0f, m_wallLeftAngle);
+                FeetAngle = Mathf.Max(0f, wallLeftAngle);
+                HeadAngle = Mathf.Min(0f, wallLeftAngle);
             }
         } else if (PlatformMovement.HasWallRight) {
             if (!PlatformMovement.WallRight.WasOn) {
-                m_wallRightAngle = !PlatformMovement.WallRightRayHit ? PlatformMovement.GravityAngle : PlatformMovement.WallRightAngle;
+                wallRightAngle = !PlatformMovement.WallRightRayHit ? PlatformMovement.GravityAngle : PlatformMovement.WallRightAngle;
             } else if (PlatformMovement.WallRightRayHit) {
-                m_wallRightAngle = Mathf.LerpAngle(m_wallRightAngle, PlatformMovement.WallRightAngle, 0.2f);
+                wallRightAngle = Mathf.LerpAngle(wallRightAngle, PlatformMovement.WallRightAngle, 0.2f);
             }
 
             if (Sein.Abilities.Swimming && Sein.Abilities.Swimming.IsSwimming) {
@@ -80,16 +80,16 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
             } else if (PlatformMovement.IsOnGround && !Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft) {
                 FeetAngle = PlatformMovement.GravityAngle;
             } else {
-                HeadAngle = Mathf.Max(0f, m_wallRightAngle);
-                FeetAngle = Mathf.Min(0f, m_wallRightAngle);
+                HeadAngle = Mathf.Max(0f, wallRightAngle);
+                FeetAngle = Mathf.Min(0f, wallRightAngle);
             }
         } else if (PlatformMovement.IsOnGround) {
             if (Sein.Controller.IsAimingGrenade) {
-                m_groundAngle = PlatformMovement.GroundAngle;
+                groundAngle = PlatformMovement.GroundAngle;
             } else if (!PlatformMovement.Ground.WasOn) {
-                m_groundAngle = !PlatformMovement.GroundRayHit ? PlatformMovement.GravityAngle : PlatformMovement.GroundAngle;
+                groundAngle = !PlatformMovement.GroundRayHit ? PlatformMovement.GravityAngle : PlatformMovement.GroundAngle;
             } else if (PlatformMovement.GroundRayHit) {
-                m_groundAngle = Mathf.LerpAngle(m_groundAngle, PlatformMovement.GroundAngle, 0.2f);
+                groundAngle = Mathf.LerpAngle(groundAngle, PlatformMovement.GroundAngle, 0.2f);
             }
 
             if (Sein.Abilities.Swimming && Sein.Abilities.Swimming.IsSwimming) {
@@ -97,16 +97,16 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
             } else if (PlatformMovement.IsOnCeiling && Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft == PlatformMovement.CeilingNormal.x > 0f) {
                 FeetAngle = PlatformMovement.GravityAngle;
             } else {
-                FeetAngle = m_groundAngle;
+                FeetAngle = groundAngle;
             }
         } else {
             FeetAngle = PlatformMovement.GravityAngle;
-            if (m_tiltLeftRightTimer > 0f) {
-                CenterAngle -= Mathf.Atan2(PlatformMovement.LocalSpeedX, 12f) * 57.29578f * 0.5f * Mathf.Clamp01(m_tiltLeftRightTimer);
+            if (tiltLeftRightTimer > 0f) {
+                CenterAngle -= Mathf.Atan2(PlatformMovement.LocalSpeedX, 12f) * 57.29578f * 0.5f * Mathf.Clamp01(tiltLeftRightTimer);
             }
 
-            if (m_tiltUpDownTimer > 0f) {
-                CenterAngle += (!Sein.FaceLeft ? 1 : -1) * Mathf.Atan2(PlatformMovement.LocalSpeedY, 12f) * 57.29578f * 0.5f * Mathf.Clamp01(m_tiltUpDownTimer);
+            if (tiltUpDownTimer > 0f) {
+                CenterAngle += (!Sein.FaceLeft ? 1 : -1) * Mathf.Atan2(PlatformMovement.LocalSpeedY, 12f) * 57.29578f * 0.5f * Mathf.Clamp01(tiltUpDownTimer);
             }
         }
 
@@ -162,11 +162,11 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
     public override void Serialize(Archive ar) {
         ar.Serialize(ref FeetAngle);
         ar.Serialize(ref CenterAngle);
-        ar.Serialize(ref m_ceilingAngle);
-        ar.Serialize(ref m_groundAngle);
-        ar.Serialize(ref m_localPosition);
-        ar.Serialize(ref m_wallLeftAngle);
-        ar.Serialize(ref m_wallRightAngle);
+        ar.Serialize(ref ceilingAngle);
+        ar.Serialize(ref groundAngle);
+        ar.Serialize(ref localPosition);
+        ar.Serialize(ref wallLeftAngle);
+        ar.Serialize(ref wallRightAngle);
         if (ar.Reading) {
             UpdateRotation();
         }
@@ -188,17 +188,17 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
 
     public SeinCharacter Sein;
 
-    private float m_ceilingAngle;
+    private float ceilingAngle;
 
-    private float m_groundAngle;
+    private float groundAngle;
 
-    private Vector2 m_localPosition;
+    private Vector2 localPosition;
 
-    private float m_wallLeftAngle;
+    private float wallLeftAngle;
 
-    private float m_wallRightAngle;
+    private float wallRightAngle;
 
-    private float m_tiltLeftRightTimer;
+    private float tiltLeftRightTimer;
 
-    private float m_tiltUpDownTimer;
+    private float tiltUpDownTimer;
 }

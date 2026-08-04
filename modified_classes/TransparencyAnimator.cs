@@ -7,12 +7,12 @@ public class TransparencyAnimator : BaseAnimator {
         var array = new bool[3];
         array[0] = true;
         array[1] = true;
-        s_disableRenderer = array;
+        disableRenderer = array;
     }
 
     [ContextMenu("Print out renderer data")]
     public void PrintOutRendererData() {
-        foreach (var rendererData in m_rendererData) {
+        foreach (var rendererData in rendererData) {
             if (rendererData.Renderer != null) {
             }
         }
@@ -20,21 +20,21 @@ public class TransparencyAnimator : BaseAnimator {
 
     private int PropertyId {
         get {
-            if (s_propIds == null) {
-                s_propIds = new int[s_propNames.Length];
-                for (var i = 0; i < s_propNames.Length; i++) {
-                    s_propIds[i] = Shader.PropertyToID(s_propNames[i]);
+            if (propIds == null) {
+                propIds = new int[propNames.Length];
+                for (var i = 0; i < propNames.Length; i++) {
+                    propIds[i] = Shader.PropertyToID(propNames[i]);
                 }
             }
 
-            return s_propIds[(int)Mode];
+            return propIds[(int)Mode];
         }
     }
 
-    private bool UseSharedMaterial => (IsInScene && !m_forceUseRendererMaterial) || !Application.isPlaying;
+    private bool UseSharedMaterial => (IsInScene && !forceUseRendererMaterial) || !Application.isPlaying;
 
     public new void Awake() {
-        m_forceUseRendererMaterial = GetComponentInChildren<TextBox>() != null;
+        forceUseRendererMaterial = GetComponentInChildren<TextBox>() != null;
         base.Awake();
     }
 
@@ -43,8 +43,8 @@ public class TransparencyAnimator : BaseAnimator {
     }
 
     public override void CacheOriginals() {
-        m_rendererData.Clear();
-        m_renderers.Clear();
+        rendererData.Clear();
+        renderers.Clear();
         AddChild(transform);
         if (AnimateChildren) {
             AddChildren(transform);
@@ -53,9 +53,9 @@ public class TransparencyAnimator : BaseAnimator {
 
     private void AddChild(Transform child) {
         var component = child.GetComponent<Renderer>();
-        if (component && CanBeAnimated(component) && !m_renderers.Contains(component)) {
-            m_rendererData.Add(new RendererData(component, PropertyId));
-            m_renderers.Add(component);
+        if (component && CanBeAnimated(component) && !renderers.Contains(component)) {
+            rendererData.Add(new RendererData(component, PropertyId));
+            renderers.Add(component);
         }
     }
 
@@ -65,15 +65,15 @@ public class TransparencyAnimator : BaseAnimator {
             var child = childTransform.GetChild(i);
             var component = child.GetComponent<TransparencyAnimator>();
             if (component != null) {
-                m_childTransparencyAnimators.Add(component);
+                childTransparencyAnimators.Add(component);
             } else {
                 var component2 = child.GetComponent<CleverMenuItem>();
                 if (component2 != null && component2.AnimateColors) {
-                    if (m_cleverMenuItems == null) {
-                        m_cleverMenuItems = new List<CleverMenuItem>();
+                    if (cleverMenuItems == null) {
+                        cleverMenuItems = new List<CleverMenuItem>();
                     }
 
-                    m_cleverMenuItems.Add(component2);
+                    cleverMenuItems.Add(component2);
                 }
 
                 AddChild(child);
@@ -102,17 +102,17 @@ public class TransparencyAnimator : BaseAnimator {
 
         var component = child.GetComponent<TransparencyAnimator>();
         if (component) {
-            m_childTransparencyAnimators.Add(component);
+            childTransparencyAnimators.Add(component);
             return;
         }
 
         var component2 = child.GetComponent<CleverMenuItem>();
         if (component2 != null && component2.AnimateColors) {
-            if (m_cleverMenuItems == null) {
-                m_cleverMenuItems = new List<CleverMenuItem>();
+            if (cleverMenuItems == null) {
+                cleverMenuItems = new List<CleverMenuItem>();
             }
 
-            m_cleverMenuItems.Add(component2);
+            cleverMenuItems.Add(component2);
             return;
         }
 
@@ -123,84 +123,84 @@ public class TransparencyAnimator : BaseAnimator {
 
     public override void SampleValue(float value, bool forceSample) {
         value = TimeToAnimationCurveTime(value);
-        m_opacity = AnimationCurve.Evaluate(value);
+        opacity = AnimationCurve.Evaluate(value);
         ApplyTransparency(false);
     }
 
     public void ApplyTransparency(bool force = true) {
         var finalOpacity = FinalOpacity;
-        if (!Mathf.Approximately(m_lastFinalOpacity, finalOpacity) || force) {
-            m_lastFinalOpacity = finalOpacity;
-            for (var i = 0; i < m_rendererData.Count; i++) {
-                m_rendererData[i].SetRendererAlpha((int)Mode, PropertyId, UseSharedMaterial, finalOpacity);
+        if (!Mathf.Approximately(lastFinalOpacity, finalOpacity) || force) {
+            lastFinalOpacity = finalOpacity;
+            for (var i = 0; i < rendererData.Count; i++) {
+                rendererData[i].SetRendererAlpha((int)Mode, PropertyId, UseSharedMaterial, finalOpacity);
             }
 
-            for (var j = 0; j < m_childTransparencyAnimators.Count; j++) {
-                m_childTransparencyAnimators[j].SetParentOpacity(finalOpacity);
+            for (var j = 0; j < childTransparencyAnimators.Count; j++) {
+                childTransparencyAnimators[j].SetParentOpacity(finalOpacity);
             }
 
-            if (m_cleverMenuItems != null) {
-                for (var k = 0; k < m_cleverMenuItems.Count; k++) {
-                    m_cleverMenuItems[k].SetParentOpacity(finalOpacity);
+            if (cleverMenuItems != null) {
+                for (var k = 0; k < cleverMenuItems.Count; k++) {
+                    cleverMenuItems[k].SetParentOpacity(finalOpacity);
                 }
             }
         }
     }
 
     public void SetParentOpacity(float opacity) {
-        if (!Mathf.Approximately(opacity, m_parentOpacity)) {
-            m_parentOpacity = opacity;
+        if (!Mathf.Approximately(opacity, parentOpacity)) {
+            parentOpacity = opacity;
             if (IsInitialized) {
                 ApplyTransparency();
             }
         }
     }
 
-    public float FinalOpacity => m_opacity * m_parentOpacity;
+    public float FinalOpacity => opacity * parentOpacity;
 
     public override float Duration => AnimationCurveTimeToTime(AnimationCurve.CurveDuration());
 
     public override void RestoreToOriginalState() {
-        m_parentOpacity = 1f;
-        m_opacity = 1f;
-        for (var i = 0; i < m_childTransparencyAnimators.Count; i++) {
-            m_childTransparencyAnimators[i].RestoreToOriginalState();
+        parentOpacity = 1f;
+        opacity = 1f;
+        for (var i = 0; i < childTransparencyAnimators.Count; i++) {
+            childTransparencyAnimators[i].RestoreToOriginalState();
         }
 
-        for (var j = 0; j < m_rendererData.Count; j++) {
-            m_rendererData[j].SetRendererAlpha((int)Mode, PropertyId, UseSharedMaterial, 1f);
+        for (var j = 0; j < rendererData.Count; j++) {
+            rendererData[j].SetRendererAlpha((int)Mode, PropertyId, UseSharedMaterial, 1f);
         }
     }
 
     public override bool IsLooping => AnimationCurve.postWrapMode != WrapMode.ClampForever;
 
     public void Reset() {
-        if (m_childTransparencyAnimators != null) {
-            m_childTransparencyAnimators.Clear();
+        if (childTransparencyAnimators != null) {
+            childTransparencyAnimators.Clear();
         }
 
-        if (m_cleverMenuItems != null) {
-            m_cleverMenuItems.Clear();
+        if (cleverMenuItems != null) {
+            cleverMenuItems.Clear();
         }
 
-        if (m_rendererData != null) {
-            m_rendererData.Clear();
+        if (rendererData != null) {
+            rendererData.Clear();
         }
 
-        if (m_renderers != null) {
-            m_renderers.Clear();
+        if (renderers != null) {
+            renderers.Clear();
         }
     }
 
-    private static string[] s_propNames = {
+    private static string[] propNames = {
         "_Color",
         "_MaskDissolveColor",
         "_AdditiveLayerColor",
     };
 
-    private static bool[] s_disableRenderer;
+    private static bool[] disableRenderer;
 
-    private static int[] s_propIds;
+    private static int[] propIds;
 
     public AnimationCurve AnimationCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
@@ -208,21 +208,21 @@ public class TransparencyAnimator : BaseAnimator {
 
     public AnimateMode Mode;
 
-    [PooledSafe] private readonly List<RendererData> m_rendererData = new List<RendererData>(4);
+    [PooledSafe] private readonly List<RendererData> rendererData = new List<RendererData>(4);
 
-    [PooledSafe] private readonly List<TransparencyAnimator> m_childTransparencyAnimators = new List<TransparencyAnimator>(4);
+    [PooledSafe] private readonly List<TransparencyAnimator> childTransparencyAnimators = new List<TransparencyAnimator>(4);
 
-    [PooledSafe] private List<CleverMenuItem> m_cleverMenuItems;
+    [PooledSafe] private List<CleverMenuItem> cleverMenuItems;
 
-    private bool m_forceUseRendererMaterial;
+    private bool forceUseRendererMaterial;
 
-    private float m_parentOpacity = 1f;
+    private float parentOpacity = 1f;
 
-    private float m_opacity = 1f;
+    private float opacity = 1f;
 
-    [PooledSafe] private readonly HashSet<Renderer> m_renderers = new HashSet<Renderer>();
+    [PooledSafe] private readonly HashSet<Renderer> renderers = new HashSet<Renderer>();
 
-    private float m_lastFinalOpacity = 123456792f;
+    private float lastFinalOpacity = 123456792f;
 
     public enum AnimateMode {
         Color,
@@ -241,7 +241,7 @@ public class TransparencyAnimator : BaseAnimator {
                 return;
             }
 
-            if (s_disableRenderer[mode]) {
+            if (disableRenderer[mode]) {
                 Renderer.enabled = value > 0.01f;
             }
 

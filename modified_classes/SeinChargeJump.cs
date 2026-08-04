@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Core;
 using Game;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class SeinChargeJump : CharacterState, ISeinReceiver {
     public event Action<float> OnJumpEvent = delegate { };
@@ -30,25 +31,25 @@ public class SeinChargeJump : CharacterState, ISeinReceiver {
 
     public void ChangeState(State state) {
         CurrentState = state;
-        m_stateCurrentTime = 0f;
-        m_attackablesIgnore.Clear();
+        StateCurrentTime = 0f;
+        AttackablesIgnore.Clear();
         var currentState = CurrentState;
     }
 
     public void UpdateState() {
         var currentState = CurrentState;
         if (currentState == State.Jumping) {
-            if (m_stateCurrentTime > JumpDuration) {
+            if (StateCurrentTime > JumpDuration) {
                 ChangeState(State.Normal);
             }
 
             for (var i = 0; i < Targets.Attackables.Count; i++) {
                 var attackable = Targets.Attackables[i];
-                if (!InstantiateUtility.IsDestroyed(attackable as Component) && !m_attackablesIgnore.Contains(attackable) && attackable.CanBeStomped()) {
+                if (!InstantiateUtility.IsDestroyed(attackable as Component) && !AttackablesIgnore.Contains(attackable) && attackable.CanBeStomped()) {
                     var vector = attackable.Position - Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
                     var magnitude = vector.magnitude;
                     if (magnitude < 3f && Vector2.Dot(vector.normalized, PlatformMovement.LocalSpeed.normalized) > 0f) {
-                        m_attackablesIgnore.Add(attackable);
+                        AttackablesIgnore.Add(attackable);
                         var damage = new Damage(Damage, PlatformMovement.WorldSpeed.normalized * 3f, Sein.Position, DamageType.Stomp, gameObject);
                         damage.DealToComponents(((Component)attackable).gameObject);
                         if (attackable.IsDead() && attackable is IStompAttackable && ((IStompAttackable)attackable).CountsTowardsSuperJumpAchievement()) {
@@ -80,7 +81,7 @@ public class SeinChargeJump : CharacterState, ISeinReceiver {
             }
         }
 
-        m_stateCurrentTime += Time.deltaTime;
+        StateCurrentTime += Time.deltaTime;
     }
 
     public bool CanChargeJump => Sein.Abilities.ChargeJumpCharging.IsCharged && PlatformMovement.IsOnGround;
@@ -114,7 +115,7 @@ public class SeinChargeJump : CharacterState, ISeinReceiver {
 
     public override void Serialize(Archive ar) {
         base.Serialize(ar);
-        ar.Serialize(ref m_superJumpedEnemies);
+        ar.Serialize(ref SuperJumpedEnemies);
     }
 
     public SeinCharacter Sein;
@@ -127,9 +128,9 @@ public class SeinChargeJump : CharacterState, ISeinReceiver {
 
     public State CurrentState;
 
-    public float m_stateCurrentTime;
+    [FormerlySerializedAs("m_stateCurrentTime")] public float StateCurrentTime;
 
-    public HashSet<IAttackable> m_attackablesIgnore = new HashSet<IAttackable>();
+    public HashSet<IAttackable> AttackablesIgnore = new HashSet<IAttackable>();
 
     public GameObject ExplosionEffect;
 
@@ -141,7 +142,7 @@ public class SeinChargeJump : CharacterState, ISeinReceiver {
 
     public float Deceleration = 20f;
 
-    public int m_superJumpedEnemies;
+    [FormerlySerializedAs("m_superJumpedEnemies")] public int SuperJumpedEnemies;
 
     public enum State {
         Normal,

@@ -15,7 +15,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
 
     public static event Action OnWallDashEvent;
 
-    public bool HasEnoughEnergy => m_sein.Energy.CanAfford(AdjustedEnergyCost);
+    public bool HasEnoughEnergy => sein.Energy.CanAfford(AdjustedEnergyCost);
 
     public override void Serialize(Archive ar) {
         if (ar.Reading) {
@@ -35,11 +35,11 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
     public void ReturnToNormal() {
         if (CurrentState != State.Normal) {
             if (CurrentState == State.Dashing) {
-                m_sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = (!m_faceLeft ? 1 : -1) * DashSpeedOverTime.Evaluate(DashSpeedOverTime.length);
+                sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = (!faceLeft ? 1 : -1) * DashSpeedOverTime.Evaluate(DashSpeedOverTime.length);
             }
 
             if (CurrentState == State.ChargeDashing) {
-                m_sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = (!m_faceLeft ? 1 : -1) * ChargeDashSpeedOverTime.Evaluate(ChargeDashSpeedOverTime.length);
+                sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = (!faceLeft ? 1 : -1) * ChargeDashSpeedOverTime.Evaluate(ChargeDashSpeedOverTime.length);
             }
 
             UI.Cameras.Current.ChaseTarget.CameraSpeedMultiplier.x = 1f;
@@ -52,15 +52,15 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
     }
 
     public void SpendEnergy() {
-        m_sein.Energy.Spend(AdjustedEnergyCost);
+        sein.Energy.Spend(AdjustedEnergyCost);
     }
 
     public void RestoreEnergy() {
-        m_sein.Energy.Gain(AdjustedEnergyCost);
+        sein.Energy.Gain(AdjustedEnergyCost);
     }
 
     public void SetReferenceToSein(SeinCharacter sein) {
-        m_sein = sein;
+        this.sein = sein;
         sein.Abilities.Dash = this;
     }
 
@@ -71,17 +71,17 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
     public bool IsDashingOrChangeDashing {
         get {
             if (CurrentState == State.Dashing) {
-                return m_stateCurrentTime < DashTime;
+                return stateCurrentTime < DashTime;
             }
 
-            return CurrentState == State.ChargeDashing && m_stateCurrentTime < ChargeDashTime;
+            return CurrentState == State.ChargeDashing && stateCurrentTime < ChargeDashTime;
         }
     }
 
     public void ChangeState(State state) {
         CurrentState = state;
-        m_stateCurrentTime = 0f;
-        m_attackablesIgnore.Clear();
+        stateCurrentTime = 0f;
+        attackablesIgnore.Clear();
     }
 
     public IChargeDashAttackable FindClosestAttackable {
@@ -92,7 +92,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
                 if (attackable as Component && attackable.CanBeChargeDashed() && attackable is IChargeDashAttackable) {
                     var chargeDashAttackable = (IChargeDashAttackable)attackable;
                     if (UI.Cameras.Current.IsOnScreen(attackable.Position)) {
-                        var magnitude = (attackable.Position - m_sein.Position).magnitude;
+                        var magnitude = (attackable.Position - sein.Position).magnitude;
                         if (magnitude < num && magnitude < ChargeDashTargetMaxDistance) {
                             result = chargeDashAttackable;
                             num = magnitude;
@@ -109,17 +109,17 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
         var i = 0;
         while (i < Targets.Attackables.Count) {
             var attackable = Targets.Attackables[i];
-            if (!InstantiateUtility.IsDestroyed(attackable as Component) && !m_attackablesIgnore.Contains(attackable) && attackable.CanBeChargeFlamed() && (attackable.Position - m_sein.PlatformBehaviour.PlatformMovement.HeadPosition).magnitude <= 3f) {
-                m_attackablesIgnore.Add(attackable);
-                var v = !m_chargeDashAtTarget ? (!m_faceLeft ? Vector3.right : Vector3.left) * 3f : m_chargeDashDirection * 3f;
+            if (!InstantiateUtility.IsDestroyed(attackable as Component) && !attackablesIgnore.Contains(attackable) && attackable.CanBeChargeFlamed() && (attackable.Position - sein.PlatformBehaviour.PlatformMovement.HeadPosition).magnitude <= 3f) {
+                attackablesIgnore.Add(attackable);
+                var v = !chargeDashAtTarget ? (!faceLeft ? Vector3.right : Vector3.left) * 3f : chargeDashDirection * 3f;
                 if (RandomizerBonus.EnhancedDash) {
-                    v = m_enhancedDashDirection * 3f;
+                    v = enhancedDashDirection * 3f;
                 }
 
-                new Damage(Damage, v, m_sein.Position, DamageType.ChargeFlame, gameObject).DealToComponents(((Component)attackable).gameObject);
-                m_hasHitAttackable = true;
-                if (ExplosionEffect && Time.time - m_timeOfLastExplosionEffect > 0.1f) {
-                    m_timeOfLastExplosionEffect = Time.time;
+                new Damage(Damage, v, sein.Position, DamageType.ChargeFlame, gameObject).DealToComponents(((Component)attackable).gameObject);
+                hasHitAttackable = true;
+                if (ExplosionEffect && Time.time - timeOfLastExplosionEffect > 0.1f) {
+                    timeOfLastExplosionEffect = Time.time;
                     InstantiateUtility.Instantiate(ExplosionEffect, Vector3.Lerp(transform.position, attackable.Position, 0.5f), Quaternion.identity);
                 }
 
@@ -131,71 +131,71 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
     }
 
     private void PerformDash(TextureAnimationWithTransitions dashAnimation, SoundProvider dashSound) {
-        m_sein.Mortality.DamageReciever.ResetInviciblity();
-        m_hasDashed = true;
+        sein.Mortality.DamageReciever.ResetInviciblity();
+        hasDashed = true;
         if (RandomizerBonus.DoubleAirDash() && !RandomizerBonus.DoubleAirDashUsed) {
-            m_hasDashed = false;
+            hasDashed = false;
             RandomizerBonus.DoubleAirDashUsed = true;
         }
 
-        m_isOnGround = m_sein.IsOnGround;
-        m_lastDashTime = Time.time;
-        m_lastPressTime = 0f;
-        SpriteRotation = m_sein.PlatformBehaviour.PlatformMovement.GroundAngle;
-        m_allowNoDecelerationForThisDash = true;
-        if (m_chargeDashAtTarget) {
-            m_faceLeft = m_chargeDashDirection.x < 0f;
-        } else if (m_sein.PlatformBehaviour.PlatformMovement.HasWallLeft) {
-            m_faceLeft = false;
-        } else if (m_sein.PlatformBehaviour.PlatformMovement.HasWallRight) {
-            m_faceLeft = true;
-        } else if (m_sein.Input.NormalizedHorizontal != 0) {
-            m_faceLeft = m_sein.Input.NormalizedHorizontal < 0;
-        } else if (!Mathf.Approximately(m_sein.Speed.x, 0f)) {
-            m_faceLeft = m_sein.Speed.x < 0f;
+        isOnGround = sein.IsOnGround;
+        lastDashTime = Time.time;
+        lastPressTime = 0f;
+        SpriteRotation = sein.PlatformBehaviour.PlatformMovement.GroundAngle;
+        allowNoDecelerationForThisDash = true;
+        if (chargeDashAtTarget) {
+            faceLeft = chargeDashDirection.x < 0f;
+        } else if (sein.PlatformBehaviour.PlatformMovement.HasWallLeft) {
+            faceLeft = false;
+        } else if (sein.PlatformBehaviour.PlatformMovement.HasWallRight) {
+            faceLeft = true;
+        } else if (sein.Input.NormalizedHorizontal != 0) {
+            faceLeft = sein.Input.NormalizedHorizontal < 0;
+        } else if (!Mathf.Approximately(sein.Speed.x, 0f)) {
+            faceLeft = sein.Speed.x < 0f;
         } else {
-            m_faceLeft = m_sein.FaceLeft;
-            m_allowNoDecelerationForThisDash = false;
+            faceLeft = sein.FaceLeft;
+            allowNoDecelerationForThisDash = false;
         }
 
-        m_sein.FaceLeft = m_faceLeft;
-        m_stopAnimation = false;
-        if (!m_chargeDashAtTarget && RandomizerBonus.EnhancedDash) {
-            m_enhancedDashDirection = m_faceLeft ? Vector3.left : Vector3.right;
+        sein.FaceLeft = faceLeft;
+        stopAnimation = false;
+        if (!chargeDashAtTarget && RandomizerBonus.EnhancedDash) {
+            enhancedDashDirection = faceLeft ? Vector3.left : Vector3.right;
 
             if (Input.Axis.magnitude > 0f) {
-                if (!m_sein.IsOnGround) {
-                    m_enhancedDashDirection = Input.Axis.normalized;
+                if (!sein.IsOnGround) {
+                    enhancedDashDirection = Input.Axis.normalized;
                 } else if (Input.Axis.y > 0f) {
                     var dot = Vector3.Dot(Input.Axis.normalized, Vector3.left);
                     if (dot < 0.94f && dot > -0.94f) {
-                        m_enhancedDashDirection = Input.Axis.normalized;
+                        enhancedDashDirection = Input.Axis.normalized;
                     }
                 }
             }
 
-            SpriteRotation = Mathf.Atan2(m_enhancedDashDirection.y, m_enhancedDashDirection.x) * 57.29578f;
-            if (m_faceLeft) {
+            SpriteRotation = Mathf.Atan2(enhancedDashDirection.y, enhancedDashDirection.x) * 57.29578f;
+            if (faceLeft) {
                 SpriteRotation = Mathf.Repeat(SpriteRotation, 360f) - 180f;
             }
         }
 
         if (dashSound) {
-            Sound.Play(dashSound.GetSound(null), m_sein.Position, null);
+            Sound.Play(dashSound.GetSound(null), sein.Position, null);
         }
 
-        m_sein.Animation.Play(dashAnimation, 154, KeepDashAnimationPlaying);
+        sein.Animation.Play(dashAnimation, 154, KeepDashAnimationPlaying);
         if (RainbowDashActivated) {
-            ((GameObject)InstantiateUtility.Instantiate(DashFollowRainbowEffect, m_sein.Position, Quaternion.identity)).transform.parent = m_sein.Transform;
+            ((GameObject)InstantiateUtility.Instantiate(DashFollowRainbowEffect, sein.Position, Quaternion.identity)).transform.parent = sein.Transform;
         }
 
-        m_sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = -DashDownwardSpeed;
+        sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = -DashDownwardSpeed;
     }
 
     public void PerformDash() {
-        m_chargeDashAtTarget = false;
+        chargeDashAtTarget = false;
         var dashSound = !RainbowDashActivated ? DashSound : RainbowDashSound;
-        var isGliding = m_sein.Controller.IsGliding;
+        var isGliding = sein.Controller.IsGliding;
         PerformDash(!isGliding ? DashAnimation : GlideDashAnimation, dashSound);
         ChangeState(State.Dashing);
         UpdateDashing();
@@ -203,7 +203,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
     }
 
     public void PerformWallDash() {
-        m_chargeDashAtTarget = false;
+        chargeDashAtTarget = false;
         var dashSound = !RainbowDashActivated ? DashSound : RainbowDashSound;
         PerformDash(DashAnimation, dashSound);
         ChangeState(State.Dashing);
@@ -212,32 +212,31 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
     }
 
     public void PerformDashIntoWall() {
-        m_lastPressTime = 0f;
-        m_lastDashTime = Time.time;
-        m_sein.Animation.Play(DashIntoWallAnimation, 154, KeepDashIntoWallAnimationPlaying);
-        Sound.Play(DashIntoWallSound.GetSound(null), m_sein.Position, null);
+        lastPressTime = 0f;
+        lastDashTime = Time.time;
+        sein.Animation.Play(DashIntoWallAnimation, 154, KeepDashIntoWallAnimationPlaying);
+        Sound.Play(DashIntoWallSound.GetSound(null), sein.Position, null);
     }
 
     public bool KeepDashIntoWallAnimationPlaying() {
-        return AgainstWall() && m_sein.IsOnGround;
+        return AgainstWall() && sein.IsOnGround;
     }
 
     public void PerformChargeDash() {
-        m_hasHitAttackable = false;
-        m_chargeJumpWasReleased = false;
-        m_chargeDashAttackTarget = FindClosestAttackable as IAttackable;
-        if (m_chargeDashAttackTarget != null) {
-            m_chargeDashAtTarget = true;
-            m_chargeDashDirection = (m_chargeDashAttackTarget.Position - m_sein.Position).normalized;
-            m_chargeDashAtTargetPosition = m_chargeDashAttackTarget.Position;
+        hasHitAttackable = false;
+        chargeJumpWasReleased = false;
+        chargeDashAttackTarget = FindClosestAttackable as IAttackable;
+        if (chargeDashAttackTarget != null) {
+            chargeDashAtTarget = true;
+            chargeDashDirection = (chargeDashAttackTarget.Position - sein.Position).normalized;
         } else {
-            m_chargeDashAtTarget = false;
+            chargeDashAtTarget = false;
         }
 
         var dashSound = !RainbowDashActivated ? ChargeDashSound : RainbowDashSound;
         PerformDash(ChargeDashAnimation, dashSound);
-        if (m_chargeDashAtTarget) {
-            SpriteRotation = Mathf.Atan2(m_chargeDashDirection.y, m_chargeDashDirection.x) * 57.29578f - (!m_faceLeft ? 0 : 180);
+        if (chargeDashAtTarget) {
+            SpriteRotation = Mathf.Atan2(chargeDashDirection.y, chargeDashDirection.x) * 57.29578f - (!faceLeft ? 0 : 180);
         }
 
         ChangeState(State.ChargeDashing);
@@ -246,40 +245,40 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
     }
 
     private bool HasChargeDashSkill() {
-        return m_sein.PlayerAbilities.ChargeDash.HasAbility;
+        return sein.PlayerAbilities.ChargeDash.HasAbility;
     }
 
     private bool HasAirDashSkill() {
-        return m_sein.PlayerAbilities.AirDash.HasAbility;
+        return sein.PlayerAbilities.AirDash.HasAbility;
     }
 
     private bool CanChargeDash() {
-        return HasChargeDashSkill() && Input.ChargeJump.Pressed && m_chargeJumpWasReleased && !Characters.Sein.Abilities.Swimming.IsSwimming;
+        return HasChargeDashSkill() && Input.ChargeJump.Pressed && chargeJumpWasReleased && !Characters.Sein.Abilities.Swimming.IsSwimming;
     }
 
     public void CompleteChargeEffect() {
-        if (m_sein.Abilities.ChargeJumpCharging) {
-            m_sein.Abilities.ChargeJumpCharging.EndCharge();
+        if (sein.Abilities.ChargeJumpCharging) {
+            sein.Abilities.ChargeJumpCharging.EndCharge();
         }
     }
 
     private void UpdateTargetHighlight(IChargeDashAttackable target) {
-        if (m_lastTarget == target) {
+        if (lastTarget == target) {
             return;
         }
 
-        if (!InstantiateUtility.IsDestroyed(m_lastTarget as Component)) {
-            m_lastTarget.OnChargeDashDehighlight();
+        if (!InstantiateUtility.IsDestroyed(lastTarget as Component)) {
+            lastTarget.OnChargeDashDehighlight();
         }
 
-        m_lastTarget = target;
-        if (!InstantiateUtility.IsDestroyed(m_lastTarget as Component)) {
-            m_lastTarget.OnChargeDashHighlight();
+        lastTarget = target;
+        if (!InstantiateUtility.IsDestroyed(lastTarget as Component)) {
+            lastTarget.OnChargeDashHighlight();
         }
     }
 
     public bool KeepDashAnimationPlaying() {
-        return !m_stopAnimation && !m_sein.Abilities.WallSlide.IsOnWall && Active;
+        return !stopAnimation && !sein.Abilities.WallSlide.IsOnWall && Active;
     }
 
     public bool KeepChargeDashAnimationPlaying() {
@@ -287,35 +286,35 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
     }
 
     public bool AgainstWall() {
-        var platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
-        return (platformMovement.HasWallLeft && m_sein.FaceLeft) || (platformMovement.HasWallRight && !m_sein.FaceLeft);
+        var platformMovement = sein.PlatformBehaviour.PlatformMovement;
+        return (platformMovement.HasWallLeft && sein.FaceLeft) || (platformMovement.HasWallRight && !sein.FaceLeft);
     }
 
     public bool CanPerformNormalDash() {
-        return (HasAirDashSkill() || m_sein.IsOnGround || (RandomizerBonus.GravitySuit() && Characters.Sein.Abilities.Swimming.IsSwimming)) && !AgainstWall() && DashHasCooledDown && !m_hasDashed;
+        return (HasAirDashSkill() || sein.IsOnGround || (RandomizerBonus.GravitySuit() && Characters.Sein.Abilities.Swimming.IsSwimming)) && !AgainstWall() && DashHasCooledDown && !hasDashed;
     }
 
-    private bool DashHasCooledDown => Time.time - m_lastDashTime > 0.4f;
+    private bool DashHasCooledDown => Time.time - lastDashTime > 0.4f;
 
     public bool CanPerformDashIntoWall() {
-        return m_sein.IsOnGround && AgainstWall() && DashHasCooledDown;
+        return sein.IsOnGround && AgainstWall() && DashHasCooledDown;
     }
 
     public bool CanWallDash() {
-        var platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
-        return ((platformMovement.HasWallLeft && m_sein.Input.Horizontal >= 0f) || (platformMovement.HasWallRight && m_sein.Input.Horizontal <= 0f)) && !m_sein.IsOnGround && m_sein.PlayerAbilities.AirDash.HasAbility;
+        var platformMovement = sein.PlatformBehaviour.PlatformMovement;
+        return ((platformMovement.HasWallLeft && sein.Input.Horizontal >= 0f) || (platformMovement.HasWallRight && sein.Input.Horizontal <= 0f)) && !sein.IsOnGround && sein.PlayerAbilities.AirDash.HasAbility;
     }
 
     public void UpdateNormal() {
-        var num = Time.time - m_lastPressTime;
-        if (m_sein.IsOnGround || (RandomizerBonus.GravitySuit() && Characters.Sein.Abilities.Swimming.IsSwimming)) {
-            m_hasDashed = false;
+        var num = Time.time - lastPressTime;
+        if (sein.IsOnGround || (RandomizerBonus.GravitySuit() && Characters.Sein.Abilities.Swimming.IsSwimming)) {
+            hasDashed = false;
             RandomizerBonus.DoubleAirDashUsed = false;
         }
 
-        if (Input.Glide.Pressed && m_timeWhenDashJumpHappened + 5f > Time.time) {
-            m_timeWhenDashJumpHappened = 0f;
-            var platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
+        if (Input.Glide.Pressed && timeWhenDashJumpHappened + 5f > Time.time) {
+            timeWhenDashJumpHappened = 0f;
+            var platformMovement = sein.PlatformBehaviour.PlatformMovement;
             var num2 = OffGroundSpeed - 2f;
             if (Mathf.Abs(platformMovement.LocalSpeedX) > num2) {
                 platformMovement.LocalSpeedX = Mathf.Sign(platformMovement.LocalSpeedX) * num2;
@@ -339,7 +338,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
                 }
 
                 ShowNotEnoughEnergy();
-                m_lastPressTime = 0f;
+                lastPressTime = 0f;
             } else {
                 if (CanPerformNormalDash()) {
                     PerformDash();
@@ -366,42 +365,42 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
     }
 
     public void UpdateDashing() {
-        var platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
-        UI.Cameras.Current.ChaseTarget.CameraSpeedMultiplier.x = Mathf.Clamp01(m_stateCurrentTime / DashTime);
-        var velocity = DashSpeedOverTime.Evaluate(m_stateCurrentTime);
+        var platformMovement = sein.PlatformBehaviour.PlatformMovement;
+        UI.Cameras.Current.ChaseTarget.CameraSpeedMultiplier.x = Mathf.Clamp01(stateCurrentTime / DashTime);
+        var velocity = DashSpeedOverTime.Evaluate(stateCurrentTime);
         velocity *= 1.0f + .2f * RandomizerBonus.Velocity();
         if (RandomizerBonus.GravitySuit() && Characters.Sein.Abilities.Swimming.IsSwimming) {
             var newSpeed = new Vector2(velocity, 0f);
-            platformMovement.LocalSpeed = newSpeed.Rotate(m_sein.Abilities.Swimming.SwimAngle);
-        } else if (RandomizerBonus.EnhancedDash && m_enhancedDashDirection.y != 0f) {
-            platformMovement.LocalSpeed = m_enhancedDashDirection * velocity;
+            platformMovement.LocalSpeed = newSpeed.Rotate(sein.Abilities.Swimming.SwimAngle);
+        } else if (RandomizerBonus.EnhancedDash && enhancedDashDirection.y != 0f) {
+            platformMovement.LocalSpeed = enhancedDashDirection * velocity;
         } else {
-            platformMovement.LocalSpeedX = (!m_faceLeft ? 1 : -1) * velocity;
+            platformMovement.LocalSpeedX = (!faceLeft ? 1 : -1) * velocity;
         }
 
-        m_sein.FaceLeft = m_faceLeft;
+        sein.FaceLeft = faceLeft;
         if (AgainstWall()) {
             platformMovement.LocalSpeed = Vector2.zero;
         }
 
-        SpriteRotation = Mathf.Lerp(SpriteRotation, m_sein.PlatformBehaviour.PlatformMovement.GroundAngle, 0.2f);
-        if (m_sein.IsOnGround) {
-            if (Input.Horizontal > 0f && m_faceLeft) {
+        SpriteRotation = Mathf.Lerp(SpriteRotation, sein.PlatformBehaviour.PlatformMovement.GroundAngle, 0.2f);
+        if (sein.IsOnGround) {
+            if (Input.Horizontal > 0f && faceLeft) {
                 StopDashing();
             }
 
-            if (Input.Horizontal < 0f && !m_faceLeft) {
+            if (Input.Horizontal < 0f && !faceLeft) {
                 StopDashing();
             }
 
-            if (!m_isOnGround && RandomizerBonus.EnhancedDash) {
-                m_isOnGround = true;
-                m_enhancedDashDirection = m_faceLeft ? Vector3.left : Vector3.right;
-                SpriteRotation = m_sein.PlatformBehaviour.PlatformMovement.GroundAngle;
+            if (!isOnGround && RandomizerBonus.EnhancedDash) {
+                isOnGround = true;
+                enhancedDashDirection = faceLeft ? Vector3.left : Vector3.right;
+                SpriteRotation = sein.PlatformBehaviour.PlatformMovement.GroundAngle;
             }
         }
 
-        if (m_stateCurrentTime > DashTime) {
+        if (stateCurrentTime > DashTime) {
             if (platformMovement.IsOnGround && Input.Horizontal == 0f) {
                 platformMovement.LocalSpeedX = 0f;
             }
@@ -410,23 +409,23 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
         }
 
         if (Input.Jump.OnPressed || Input.Glide.OnPressed) {
-            platformMovement.LocalSpeedX = !m_faceLeft ? OffGroundSpeed : -OffGroundSpeed;
-            m_sein.PlatformBehaviour.AirNoDeceleration.NoDeceleration = m_allowNoDecelerationForThisDash;
-            m_stopAnimation = true;
+            platformMovement.LocalSpeedX = !faceLeft ? OffGroundSpeed : -OffGroundSpeed;
+            sein.PlatformBehaviour.AirNoDeceleration.NoDeceleration = allowNoDecelerationForThisDash;
+            stopAnimation = true;
             ChangeState(State.Normal);
-            m_timeWhenDashJumpHappened = Time.time;
+            timeWhenDashJumpHappened = Time.time;
         }
 
-        if (RaycastTest() && m_isOnGround) {
+        if (RaycastTest() && isOnGround) {
             StickOntoGround();
             return;
         }
 
-        m_isOnGround = false;
+        isOnGround = false;
     }
 
     private void StickOntoGround() {
-        var platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
+        var platformMovement = sein.PlatformBehaviour.PlatformMovement;
         var vector = platformMovement.Position;
         platformMovement.PlaceOnGround(0f, 8f);
         var vector2 = vector;
@@ -441,72 +440,72 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
     }
 
     public void UpdateChargeDashing() {
-        var platformMovement = m_sein.PlatformBehaviour.PlatformMovement;
+        var platformMovement = sein.PlatformBehaviour.PlatformMovement;
         AttackNearbyEnemies();
-        m_sein.Mortality.DamageReciever.MakeInvincibleToEnemies(1f);
-        var velocity = ChargeDashSpeedOverTime.Evaluate(m_stateCurrentTime);
+        sein.Mortality.DamageReciever.MakeInvincibleToEnemies(1f);
+        var velocity = ChargeDashSpeedOverTime.Evaluate(stateCurrentTime);
         velocity *= 1.0f + .2f * RandomizerBonus.Velocity();
-        if (m_chargeDashAtTarget) {
-            platformMovement.LocalSpeed = m_chargeDashDirection * velocity;
-        } else if (RandomizerBonus.EnhancedDash && m_enhancedDashDirection.y != 0f) {
-            platformMovement.LocalSpeed = m_enhancedDashDirection * velocity;
+        if (chargeDashAtTarget) {
+            platformMovement.LocalSpeed = chargeDashDirection * velocity;
+        } else if (RandomizerBonus.EnhancedDash && enhancedDashDirection.y != 0f) {
+            platformMovement.LocalSpeed = enhancedDashDirection * velocity;
         } else {
-            platformMovement.LocalSpeedX = (!m_faceLeft ? 1 : -1) * velocity;
+            platformMovement.LocalSpeedX = (!faceLeft ? 1 : -1) * velocity;
         }
 
-        if (m_hasHitAttackable) {
+        if (hasHitAttackable) {
             platformMovement.LocalSpeed *= 0.33f;
         }
 
-        m_sein.FaceLeft = m_faceLeft;
-        SpriteRotation = Mathf.Lerp(SpriteRotation, m_sein.PlatformBehaviour.PlatformMovement.GroundAngle, 0.3f);
+        sein.FaceLeft = faceLeft;
+        SpriteRotation = Mathf.Lerp(SpriteRotation, sein.PlatformBehaviour.PlatformMovement.GroundAngle, 0.3f);
         if (AgainstWall()) {
             platformMovement.LocalSpeed = Vector2.zero;
         }
 
-        if (m_sein.IsOnGround) {
-            if (Input.Horizontal > 0f && m_faceLeft) {
+        if (sein.IsOnGround) {
+            if (Input.Horizontal > 0f && faceLeft) {
                 StopDashing();
             }
 
-            if (Input.Horizontal < 0f && !m_faceLeft) {
+            if (Input.Horizontal < 0f && !faceLeft) {
                 StopDashing();
             }
 
-            if (!m_isOnGround && RandomizerBonus.EnhancedDash) {
-                m_isOnGround = true;
-                m_enhancedDashDirection = m_faceLeft ? Vector3.left : Vector3.right;
-                SpriteRotation = m_sein.PlatformBehaviour.PlatformMovement.GroundAngle;
+            if (!isOnGround && RandomizerBonus.EnhancedDash) {
+                isOnGround = true;
+                enhancedDashDirection = faceLeft ? Vector3.left : Vector3.right;
+                SpriteRotation = sein.PlatformBehaviour.PlatformMovement.GroundAngle;
             }
         }
 
-        if (m_stateCurrentTime > ChargeDashTime) {
+        if (stateCurrentTime > ChargeDashTime) {
             ChangeState(State.Normal);
         }
 
         if (Input.Jump.OnPressed || Input.Glide.OnPressed) {
-            platformMovement.LocalSpeedX = !m_faceLeft ? OffGroundSpeed : -OffGroundSpeed;
-            m_sein.PlatformBehaviour.AirNoDeceleration.NoDeceleration = true;
-            m_stopAnimation = true;
+            platformMovement.LocalSpeedX = !faceLeft ? OffGroundSpeed : -OffGroundSpeed;
+            sein.PlatformBehaviour.AirNoDeceleration.NoDeceleration = true;
+            stopAnimation = true;
             ChangeState(State.Normal);
         }
 
-        if (RaycastTest() && m_isOnGround && !m_chargeDashAtTarget) {
+        if (RaycastTest() && isOnGround && !chargeDashAtTarget) {
             StickOntoGround();
             return;
         }
 
-        m_isOnGround = false;
+        isOnGround = false;
     }
 
     public void UpdateState() {
         UI.Cameras.Current.ChaseTarget.CameraSpeedMultiplier.x = 1f;
         if (Input.RightShoulder.OnPressed) {
-            m_lastPressTime = Time.time;
+            lastPressTime = Time.time;
         }
 
         if (Input.ChargeJump.Released) {
-            m_chargeJumpWasReleased = true;
+            chargeJumpWasReleased = true;
         }
 
         switch (CurrentState) {
@@ -521,28 +520,27 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
                 break;
         }
 
-        m_stateCurrentTime += Time.deltaTime;
+        stateCurrentTime += Time.deltaTime;
     }
 
     public void StopDashing() {
-        m_sein.PlatformBehaviour.PlatformMovement.LocalSpeed = Vector2.zero;
+        sein.PlatformBehaviour.PlatformMovement.LocalSpeed = Vector2.zero;
         ChangeState(State.Normal);
-        m_stopAnimation = true;
-        m_chargeDashAtTarget = false;
+        stopAnimation = true;
+        chargeDashAtTarget = false;
     }
 
     private bool RaycastTest() {
-        var a = Vector3.Cross(m_sein.PlatformBehaviour.PlatformMovement.GroundRayNormal, Vector3.forward);
-        var num = m_sein.Speed.x * Time.deltaTime;
-        var vector = m_sein.Position + a * num + Vector3.up;
+        var a = Vector3.Cross(sein.PlatformBehaviour.PlatformMovement.GroundRayNormal, Vector3.forward);
+        var num = sein.Speed.x * Time.deltaTime;
+        var vector = sein.Position + a * num + Vector3.up;
         var vector2 = Vector3.down * (1.8f + Mathf.Abs(num));
         Debug.DrawRay(vector, vector2, Color.yellow, 0.5f);
-        RaycastHit raycastHit;
-        return m_sein.Controller.RayTest(vector, vector2, out raycastHit);
+        return sein.Controller.RayTest(vector, vector2, out _);
     }
 
     public void ResetDashLimit() {
-        m_hasDashed = false;
+        hasDashed = false;
         RandomizerBonus.DoubleAirDashUsed = false;
     }
 
@@ -608,51 +606,49 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
 
     public GameObject DashFollowRainbowEffect;
 
-    private SeinCharacter m_sein;
+    private SeinCharacter sein;
 
-    private bool m_faceLeft;
+    private bool faceLeft;
 
-    private float m_stateCurrentTime;
+    private float stateCurrentTime;
 
-    private HashSet<IAttackable> m_attackablesIgnore = new HashSet<IAttackable>();
+    private HashSet<IAttackable> attackablesIgnore = new HashSet<IAttackable>();
 
-    private bool m_stopAnimation;
+    private bool stopAnimation;
 
-    private float m_lastPressTime;
+    private float lastPressTime;
 
-    private float m_lastDashTime;
+    private float lastDashTime;
 
-    private bool m_isOnGround;
+    private bool isOnGround;
 
     public static bool RainbowDashActivated;
 
-    private bool m_hasDashed;
+    private bool hasDashed;
 
     public float ChargeDashTargetMaxDistance = 20f;
 
-    private float m_timeOfLastExplosionEffect;
+    private float timeOfLastExplosionEffect;
 
-    private float m_timeWhenDashJumpHappened;
+    private float timeWhenDashJumpHappened;
 
-    private bool m_allowNoDecelerationForThisDash;
+    private bool allowNoDecelerationForThisDash;
 
-    private IAttackable m_chargeDashAttackTarget;
+    private IAttackable chargeDashAttackTarget;
 
-    private bool m_hasHitAttackable;
+    private bool hasHitAttackable;
 
-    private bool m_chargeJumpWasReleased = true;
+    private bool chargeJumpWasReleased = true;
 
-    private IChargeDashAttackable m_lastTarget;
+    private IChargeDashAttackable lastTarget;
 
     public float SpriteRotation;
 
-    private Vector3 m_chargeDashDirection;
+    private Vector3 chargeDashDirection;
 
-    private bool m_chargeDashAtTarget;
+    private bool chargeDashAtTarget;
 
-    private Vector3 m_chargeDashAtTargetPosition;
-
-    private Vector3 m_enhancedDashDirection;
+    private Vector3 enhancedDashDirection;
 
     public enum State {
         Normal,

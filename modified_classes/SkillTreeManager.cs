@@ -118,16 +118,6 @@ public class SkillTreeManager : MenuScreen {
 
     public MessageDescriptor AbilityMastered => new MessageDescriptor("$" + AbilityMasteredMessageProvider + "$");
 
-    public MessageProvider AbilityName(AbilityType ability) {
-        foreach (var abilityMessageProvider in AbilityMessages) {
-            if (abilityMessageProvider.AbilityType == ability) {
-                return abilityMessageProvider.MessageProvider;
-            }
-        }
-
-        return null;
-    }
-
     public string RequiredAbilitiesText(SkillItem skillItem) {
         var abilitiesRequirementMet = skillItem.AbilitiesRequirementMet;
         var stringBuilder = new StringBuilder(30);
@@ -169,18 +159,6 @@ public class SkillTreeManager : MenuScreen {
 
             RequirementsLineA.SetMessage(new MessageDescriptor(RequiredSoulsText(CurrentSkillItem)));
         }
-    }
-
-    public string NameText(SkillItem skillItem) {
-        if (skillItem.HasSkillItem) {
-            return "$" + skillItem.Name + "$";
-        }
-
-        if (skillItem.CanEarnSkill) {
-            return "#" + skillItem.Name + "#";
-        }
-
-        return "@" + skillItem.Name + "@";
     }
 
     public string RequiredSoulsText(SkillItem skillItem) {

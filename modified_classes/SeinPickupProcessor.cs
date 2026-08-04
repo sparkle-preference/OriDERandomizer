@@ -64,10 +64,10 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
 
             RandomizerBonus.ExpWithBonuses(expOrbPickup.Amount, true);
             Sein.Level.GainExperience(num);
-            if (m_expText && m_expText.gameObject.activeInHierarchy) {
-                m_expText.Amount += num;
+            if (expText && expText.gameObject.activeInHierarchy) {
+                expText.Amount += num;
             } else {
-                m_expText = Orbs.OrbDisplayText.Create(Characters.Sein.Transform, Vector3.up, num);
+                expText = Orbs.OrbDisplayText.Create(Characters.Sein.Transform, Vector3.up, num);
             }
 
             UI.SeinUI.ShakeExperienceBar();
@@ -173,10 +173,10 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
         ar.Serialize(ref SmallExpOrbInfo.HasBeenCollectedBefore);
         ar.Serialize(ref MediumExpOrbInfo.HasBeenCollectedBefore);
         ar.Serialize(ref LargeExpOrbInfo.HasBeenCollectedBefore);
-        ar.Serialize(ref m_collectedMaxEnergySlotsCount);
-        ar.Serialize(ref m_energySlotsAchievementAwarded);
-        ar.Serialize(ref m_collectedHealthSlotsCount);
-        ar.Serialize(ref m_healthSlotsAchievementAwarded);
+        ar.Serialize(ref collectedMaxEnergySlotsCount);
+        ar.Serialize(ref energySlotsAchievementAwarded);
+        ar.Serialize(ref collectedHealthSlotsCount);
+        ar.Serialize(ref healthSlotsAchievementAwarded);
     }
 
     public SeinCharacter Sein;
@@ -203,7 +203,7 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
 
     public ActionMethod MapStoneSequence;
 
-    private ExpText m_expText;
+    private ExpText expText;
 
     public AchievementAsset Collect200EnergyCrystalsAchievementAsset;
 
@@ -211,13 +211,13 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
 
     public AchievementAsset AllHealthCellsCollected;
 
-    private int m_collectedMaxEnergySlotsCount;
+    private int collectedMaxEnergySlotsCount;
 
-    private bool m_energySlotsAchievementAwarded;
+    private bool energySlotsAchievementAwarded;
 
-    private int m_collectedHealthSlotsCount;
+    private int collectedHealthSlotsCount;
 
-    private bool m_healthSlotsAchievementAwarded;
+    private bool healthSlotsAchievementAwarded;
 
     public static Action OnCollectMaxEnergyContainer = delegate { };
 

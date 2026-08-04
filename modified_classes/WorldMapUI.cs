@@ -5,14 +5,14 @@ using UnityEngine;
 public class WorldMapUI : MonoBehaviour {
     public static bool IsReady => Instance != null;
 
-    public static bool UseCameraSettings => !(Instance == null) && Instance.m_enabled;
+    public static bool UseCameraSettings => !(Instance == null) && Instance.enabled;
 
     public void OnEnable() {
-        m_enabled = true;
+        enabled = true;
     }
 
     public void OnDisable() {
-        m_enabled = false;
+        enabled = false;
     }
 
     public static CameraSettings CameraSettings {
@@ -21,11 +21,11 @@ public class WorldMapUI : MonoBehaviour {
                 return null;
             }
 
-            if (Instance.m_cameraSettings == null) {
-                Instance.m_cameraSettings = new CameraSettings(Instance.CameraSettingsAsset, Instance.Fog);
+            if (Instance.cameraSettings == null) {
+                Instance.cameraSettings = new CameraSettings(Instance.CameraSettingsAsset, Instance.Fog);
             }
 
-            return Instance.m_cameraSettings;
+            return Instance.cameraSettings;
         }
     }
 
@@ -39,7 +39,7 @@ public class WorldMapUI : MonoBehaviour {
     }
 
     public void OnMenuItemChange() {
-        if (m_ignoreNavigationMenuItemChange) {
+        if (ignoreNavigationMenuItemChange) {
             return;
         }
 
@@ -62,14 +62,14 @@ public class WorldMapUI : MonoBehaviour {
             ShowAreaSelection();
         }
 
-        m_ignoreNavigationMenuItemChange = true;
+        ignoreNavigationMenuItemChange = true;
         foreach (var worldMapOverworldArea in NavigationManager.GetComponentsInChildren<WorldMapOverworldArea>()) {
             if (worldMapOverworldArea.Area == GameMapUI.Instance.CurrentHighlightedArea.Area) {
                 NavigationManager.SetCurrentMenuItem(worldMapOverworldArea.GetComponent<CleverMenuItem>());
             }
         }
 
-        m_ignoreNavigationMenuItemChange = false;
+        ignoreNavigationMenuItemChange = false;
     }
 
     public void Deactivate() {
@@ -149,16 +149,16 @@ public class WorldMapUI : MonoBehaviour {
     }
 
     public static void Initialize() {
-        if (m_isLoadingWorldMapScene) {
-            m_cancelLoading = false;
+        if (isLoadingWorldMapScene) {
+            cancelLoading = false;
         } else {
-            m_isLoadingWorldMapScene = true;
+            isLoadingWorldMapScene = true;
             Application.LoadLevelAdditiveAsync("worldMapScene");
         }
     }
 
     public static void OnFinishedLoading(SceneRoot sceneRoot) {
-        if (m_cancelLoading) {
+        if (cancelLoading) {
             DestroyObject(sceneRoot.gameObject);
         } else {
             sceneRoot.EarlyStart();
@@ -168,13 +168,13 @@ public class WorldMapUI : MonoBehaviour {
             sceneRoot.gameObject.SetActive(true);
         }
 
-        m_isLoadingWorldMapScene = false;
-        m_cancelLoading = false;
+        isLoadingWorldMapScene = false;
+        cancelLoading = false;
     }
 
     public static void CancelLoading() {
-        if (m_isLoadingWorldMapScene) {
-            m_cancelLoading = true;
+        if (isLoadingWorldMapScene) {
+            cancelLoading = true;
         }
     }
 
@@ -206,13 +206,13 @@ public class WorldMapUI : MonoBehaviour {
 
     public Vector3 CameraOffset;
 
-    private CameraSettings m_cameraSettings;
+    private CameraSettings cameraSettings;
 
-    private bool m_enabled;
+    private new bool enabled;
 
-    private bool m_ignoreNavigationMenuItemChange;
+    private bool ignoreNavigationMenuItemChange;
 
-    private static bool m_isLoadingWorldMapScene;
+    private static bool isLoadingWorldMapScene;
 
-    private static bool m_cancelLoading;
+    private static bool cancelLoading;
 }

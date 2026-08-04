@@ -6,7 +6,7 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
     public new void Awake() {
         base.Awake();
         SuspensionManager.Register(this);
-        m_transform = transform;
+        transform = base.transform;
     }
 
     public override void OnDestroy() {
@@ -15,26 +15,26 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
     }
 
     public void Start() {
-        m_distanceStompedIntoGround = 0f;
-        m_startLocalPosition = transform.localPosition;
+        distanceStompedIntoGround = 0f;
+        startLocalPosition = base.transform.localPosition;
     }
 
     public void OnRecieveDamage(Damage damage) {
-        if (damage.Type == DamageType.Stomp && Vector3.Dot(transform.rotation * Vector3.down, Characters.Sein.PlatformBehaviour.PlatformMovement.GravityDirection) > Mathf.Cos(0.17453292f) && !m_activated) {
-            m_distanceStompedIntoGround = Mathf.Min(StompIntoGroundAmount, m_distanceStompedIntoGround + StompIntoGroundAmount / NumberOfStomps);
-            m_remainingRiseDelayTime = RisingDelay;
-            if (Mathf.Approximately(m_distanceStompedIntoGround, StompIntoGroundAmount)) {
+        if (damage.Type == DamageType.Stomp && Vector3.Dot(base.transform.rotation * Vector3.down, Characters.Sein.PlatformBehaviour.PlatformMovement.GravityDirection) > Mathf.Cos(0.17453292f) && !activated) {
+            distanceStompedIntoGround = Mathf.Min(StompIntoGroundAmount, distanceStompedIntoGround + StompIntoGroundAmount / NumberOfStomps);
+            remainingRiseDelayTime = RisingDelay;
+            if (Mathf.Approximately(distanceStompedIntoGround, StompIntoGroundAmount)) {
                 BingoController.OnStompPost(MoonGuid);
-                m_activated = true;
+                activated = true;
                 if (AllTheWayInAction) {
                     AllTheWayInAction.Perform(null);
                 }
 
                 if (AllTheWayInSound) {
-                    Sound.Play(AllTheWayInSound.GetSound(null), m_transform.position, null);
+                    Sound.Play(AllTheWayInSound.GetSound(null), transform.position, null);
                 }
             } else if (StompSound) {
-                Sound.Play(StompSound.GetSound(null), m_transform.position, null);
+                Sound.Play(StompSound.GetSound(null), transform.position, null);
             }
         }
     }
@@ -44,32 +44,32 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
             return;
         }
 
-        if (m_remainingRiseDelayTime > 0f) {
-            m_remainingRiseDelayTime -= Time.deltaTime;
-            if (m_remainingRiseDelayTime < 0f) {
-                m_remainingRiseDelayTime = 0f;
+        if (remainingRiseDelayTime > 0f) {
+            remainingRiseDelayTime -= Time.deltaTime;
+            if (remainingRiseDelayTime < 0f) {
+                remainingRiseDelayTime = 0f;
             }
         }
 
-        if (!m_activated && m_remainingRiseDelayTime < 0f) {
-            m_distanceStompedIntoGround -= Time.deltaTime * RiseSpeed;
-            if (m_distanceStompedIntoGround < 0f) {
-                m_distanceStompedIntoGround = 0f;
+        if (!activated && remainingRiseDelayTime < 0f) {
+            distanceStompedIntoGround -= Time.deltaTime * RiseSpeed;
+            if (distanceStompedIntoGround < 0f) {
+                distanceStompedIntoGround = 0f;
             }
         }
 
-        transform.localPosition = Vector3.Lerp(transform.localPosition, m_startLocalPosition + Vector3.down * m_distanceStompedIntoGround, 0.3f);
+        base.transform.localPosition = Vector3.Lerp(base.transform.localPosition, startLocalPosition + Vector3.down * distanceStompedIntoGround, 0.3f);
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref m_activated);
-        ar.Serialize(ref m_distanceStompedIntoGround);
-        ar.Serialize(ref m_remainingRiseDelayTime);
+        ar.Serialize(ref activated);
+        ar.Serialize(ref distanceStompedIntoGround);
+        ar.Serialize(ref remainingRiseDelayTime);
     }
 
     public bool IsSuspended { get; set; }
 
-    public Vector3 Position => m_transform.position;
+    public Vector3 Position => transform.position;
 
     public bool CanBeChargeFlamed() {
         return false;
@@ -112,8 +112,8 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
     }
 
     public void ForceActivate() {
-        m_activated = true;
-        transform.localPosition += Vector3.down * StompIntoGroundAmount;
+        activated = true;
+        base.transform.localPosition += Vector3.down * StompIntoGroundAmount;
     }
 
     public int NumberOfStomps = 3;
@@ -130,13 +130,13 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
 
     public ActionMethod AllTheWayInAction;
 
-    private Vector3 m_startLocalPosition;
+    private Vector3 startLocalPosition;
 
-    private Transform m_transform;
+    private new Transform transform;
 
-    private float m_distanceStompedIntoGround;
+    private float distanceStompedIntoGround;
 
-    private float m_remainingRiseDelayTime;
+    private float remainingRiseDelayTime;
 
-    private bool m_activated;
+    private bool activated;
 }

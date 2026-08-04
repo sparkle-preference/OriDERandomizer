@@ -18,10 +18,10 @@ public class SeinWallJump : CharacterState, ISeinReceiver {
     public bool CanPerformWallJump => enabled && Sein.Abilities.WallSlide.IsOnWall && !PlatformMovement.IsOnGround && Sein.PlayerAbilities.WallJump.HasAbility;
 
     public bool SpriteMirrorLock {
-        get => m_spriteMirrorLock;
+        get => spriteMirrorLock;
         set {
-            if (m_spriteMirrorLock != value) {
-                m_spriteMirrorLock = value;
+            if (spriteMirrorLock != value) {
+                spriteMirrorLock = value;
                 if (value) {
                     CharacterSpriteMirror.Lock++;
                 } else {
@@ -47,7 +47,7 @@ public class SeinWallJump : CharacterState, ISeinReceiver {
     }
 
     public void PerformWallJumpLeft() {
-        if (m_hasWallJumpedLeft) {
+        if (hasWallJumpedLeft) {
             return;
         }
 
@@ -60,10 +60,10 @@ public class SeinWallJump : CharacterState, ISeinReceiver {
         }
 
         if (LimitWallJumping) {
-            m_hasWallJumpedLeft = true;
+            hasWallJumpedLeft = true;
         }
 
-        m_hasWallJumpedRight = false;
+        hasWallJumpedRight = false;
         PlatformMovement.LocalSpeedX = -JumpStrength.x * RandomizerBonus.Jumpscale;
         PlatformMovement.LocalSpeedY = JumpStrength.y * RandomizerBonus.Jumpscale;
         var localSpeed = PlatformMovement.LocalSpeed;
@@ -165,7 +165,7 @@ public class SeinWallJump : CharacterState, ISeinReceiver {
     }
 
     public void PerformWallJumpRight() {
-        if (m_hasWallJumpedRight) {
+        if (hasWallJumpedRight) {
             return;
         }
 
@@ -178,10 +178,10 @@ public class SeinWallJump : CharacterState, ISeinReceiver {
         }
 
         if (LimitWallJumping) {
-            m_hasWallJumpedRight = true;
+            hasWallJumpedRight = true;
         }
 
-        m_hasWallJumpedLeft = false;
+        hasWallJumpedLeft = false;
         PlatformMovement.LocalSpeedX = JumpStrength.x * RandomizerBonus.Jumpscale;
         PlatformMovement.LocalSpeedY = JumpStrength.y * RandomizerBonus.Jumpscale;
         var localSpeed = PlatformMovement.LocalSpeed;
@@ -260,20 +260,20 @@ public class SeinWallJump : CharacterState, ISeinReceiver {
 
     public override void UpdateCharacterState() {
         if (PlatformMovement.IsOnGround) {
-            m_hasWallJumpedLeft = false;
-            m_hasWallJumpedRight = false;
+            hasWallJumpedLeft = false;
+            hasWallJumpedRight = false;
         }
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref m_hasWallJumpedLeft);
-        ar.Serialize(ref m_hasWallJumpedRight);
-        ar.Serialize(ref m_lockInputTimeRemaining);
-        ar.Serialize(ref m_spriteMirrorLock);
+        ar.Serialize(ref hasWallJumpedLeft);
+        ar.Serialize(ref hasWallJumpedRight);
+        ar.Serialize(ref lockInputTimeRemaining);
+        ar.Serialize(ref spriteMirrorLock);
     }
 
     public void OnRestoreCheckpoint() {
-        m_spriteMirrorLock = false;
+        spriteMirrorLock = false;
     }
 
     public TextureAnimationWithTransitions[] AwayAnimation;
@@ -300,11 +300,11 @@ public class SeinWallJump : CharacterState, ISeinReceiver {
 
     public SurfaceToSoundProviderMap WallJumpSound;
 
-    private bool m_hasWallJumpedLeft;
+    private bool hasWallJumpedLeft;
 
-    private bool m_hasWallJumpedRight;
+    private bool hasWallJumpedRight;
 
-    private float m_lockInputTimeRemaining;
+    private float lockInputTimeRemaining;
 
-    private bool m_spriteMirrorLock;
+    private bool spriteMirrorLock;
 }
