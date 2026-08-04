@@ -51,7 +51,7 @@ public class ActivateAction : ActionMethod
 	{
 		get
 		{
-			return !(Target != null) ? "unkown" : Target.name;
+			return !(Target != null) ? "unknown" : Target.name;
 		}
 	}
 
