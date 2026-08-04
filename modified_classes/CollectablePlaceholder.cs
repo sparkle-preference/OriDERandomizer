@@ -93,8 +93,6 @@ public class CollectablePlaceholder : SaveSerialize, ISuspendable, IDynamicGraph
 
     public static AllContainer<CollectablePlaceholder> All = new AllContainer<CollectablePlaceholder>();
 
-    public bool UseDebug;
-
     private float remainingRespawnTime;
 
     private GameObject instance;

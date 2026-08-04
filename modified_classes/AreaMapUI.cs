@@ -199,8 +199,6 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
     public GameObject ObjectivePrefab;
 
-    public GameObject IconPrefab;
-
     public SoundProvider OpenSound;
 
     public SoundProvider CloseSound;
@@ -214,8 +212,6 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
     public AreaMapLegend AreaMapLegend;
 
     public MessageProvider ObjectiveMessageProvider;
-
-    public MessageProvider CompletedMessageProvider;
 
     public Vector3 PlayerPositionOffset;
 

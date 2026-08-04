@@ -42,12 +42,6 @@ public class AreaMapDebugNavigation : MonoBehaviour {
         areaMapUi.Navigation.UpdateScrollLimits();
     }
 
-    public GameObject DebugSceneBoundsMarkerPrefab;
-
-    public float HiddenColorAlpha;
-
-    public float UndiscoveredColorAlpha = 0.2f;
-
     private AreaMapUI areaMapUi;
 
     public bool UndiscoveredMapVisible;

@@ -196,8 +196,6 @@ public class DoorWithSlots : SaveSerialize {
 
     public Transform OriTarget;
 
-    public Color OriHoverColor;
-
     [FormerlySerializedAs("m_transform")] [SerializeField] [HideInInspector] private Transform Transform;
 
     private int slotsPending;
@@ -229,10 +227,6 @@ public class DoorWithSlots : SaveSerialize {
     public float Radius = 10f;
 
     public MessageProvider HintMessage;
-
-    public CameraShakeAsset DoorKeyInsertShake;
-
-    public ControllerShakeAsset DoorKeyInsertControllerShake;
 
     private MessageBox hint;
 

@@ -94,10 +94,6 @@ public class BashAttackCritical : Suspendable, IPooled {
 
     private float stateCurrentTime;
 
-    public Texture2D BashAttackArrow;
-
-    public Texture2D RedirectArrow;
-
     public enum State {
         Charging,
         Critical,

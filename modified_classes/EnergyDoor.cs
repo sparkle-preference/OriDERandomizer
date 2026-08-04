@@ -187,8 +187,6 @@ public class EnergyDoor : SaveSerialize {
 
     public float Radius = 10f;
 
-    public Texture2D HintTexture;
-
     public MessageProvider HintMessage;
 
     private MessageBox hint;
