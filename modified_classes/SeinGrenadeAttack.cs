@@ -606,8 +606,6 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
 
     public int MaxSpamGrenades = 3;
 
-    public float EnergyCost = 1f;
-
     public SoundProvider NotEnoughEnergySound;
 
     public SoundProvider TurnAroundAimingSound;

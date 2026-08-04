@@ -249,10 +249,6 @@ public class SeinGlide : CharacterState, ISeinReceiver {
 
     public float RunningTime;
 
-    public int Level;
-
-    public float MinHeightToGlide = 2f;
-
     public float GlideSpeed;
 
     public float GravityMultiplier = 0.5f;

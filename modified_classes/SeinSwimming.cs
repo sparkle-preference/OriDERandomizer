@@ -585,8 +585,6 @@ public class SeinSwimming : CharacterState, ISeinReceiver {
 
     public float SkipSurfaceSpeedIn = 20f;
 
-    public float SkipSurfaceSpeedOut = 10f;
-
     public SoundSource SurfaceSwimmingSoundProvider;
 
     public SoundSource UnderwaterSwimmingSoundProvider;
@@ -598,8 +596,6 @@ public class SeinSwimming : CharacterState, ISeinReceiver {
     public SoundProvider EmergeLowBreathSoundProvider;
 
     public SoundProvider BoostSwimsoundProvider;
-
-    public float SwimGravity = 13f;
 
     public float SwimSpeed = 6f;
 
@@ -623,8 +619,6 @@ public class SeinSwimming : CharacterState, ISeinReceiver {
 
     private float swimAccelerationTime;
 
-    public float SwimUpwardsGravity = 13f;
-
     public HorizontalPlatformMovementSettings.SpeedMultiplierSet SwimmingOnSurfaceHorizontalSpeed;
 
     public GameObject WaterSplashPrefab;
@@ -641,10 +635,6 @@ public class SeinSwimming : CharacterState, ISeinReceiver {
 
     private Ambience.Layer ambienceLayer;
 
-    public bool CanHorizontalSwimJump;
-
-    public float Deceleration = 10f;
-
     public float MaxFallSpeed = 4f;
 
     public float BashTime = 1f;
@@ -654,12 +644,6 @@ public class SeinSwimming : CharacterState, ISeinReceiver {
     public AnimationCurve AccelerationOverTime;
 
     private float boostAnimationRemainingTime;
-
-    public bool CanJumpUnderwater;
-
-    public bool HoldAToSwimLoop;
-
-    public float SwimJumpSpeedDelta = 100f;
 
     [Serializable]
     public class MovingAndIdleAnimationPair {
