@@ -57,20 +57,11 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable
 		}
 	}
 
-	public bool IsVisible
-	{
-		get
-		{
-			return m_isVisible;
-		}
-	}
+	public bool IsVisible => m_isVisible;
 
 	public bool IsHighlightVisible
 	{
-		get
-		{
-			return m_isHighlightVisible;
-		}
+		get => m_isHighlightVisible;
 		set
 		{
 			m_isHighlightVisible = value;
@@ -114,14 +105,8 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable
 
 	public bool IsActive
 	{
-		get
-		{
-			return m_isActive;
-		}
-		set
-		{
-			m_isActive = value;
-		}
+		get => m_isActive;
+		set => m_isActive = value;
 	}
 
 	public bool IsLocked { get; set; }

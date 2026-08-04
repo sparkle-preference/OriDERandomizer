@@ -15,21 +15,9 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 
 	public static event Action OnSoulFlameCast;
 
-	public bool SoulFlameExists
-	{
-		get
-		{
-			return m_checkpointMarkerGameObject;
-		}
-	}
+	public bool SoulFlameExists => m_checkpointMarkerGameObject;
 
-	public Vector3 SoulFlamePosition
-	{
-		get
-		{
-			return m_checkpointMarkerGameObject.transform.position;
-		}
-	}
+	public Vector3 SoulFlamePosition => m_checkpointMarkerGameObject.transform.position;
 
 	public new void Awake()
 	{
@@ -72,13 +60,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 		m_nagTimer = 0f;
 	}
 
-	public bool InsideCheckpointMarker
-	{
-		get
-		{
-			return m_soulFlame && m_soulFlame.IsInside;
-		}
-	}
+	public bool InsideCheckpointMarker => m_soulFlame && m_soulFlame.IsInside;
 
 	public SoulFlamePlacementSafety IsSafeToCastSoulFlame
 	{
@@ -143,29 +125,11 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 		}
 	}
 
-	public float BarValue
-	{
-		get
-		{
-			return (1f - CooldownRemaining) * (1f - m_holdDownTime);
-		}
-	}
+	public float BarValue => (1f - CooldownRemaining) * (1f - m_holdDownTime);
 
-	public float CooldownRemaining
-	{
-		get
-		{
-			return m_cooldownRemaining;
-		}
-	}
+	public float CooldownRemaining => m_cooldownRemaining;
 
-	public bool ShowFlameOnUI
-	{
-		get
-		{
-			return Mathf.Approximately(BarValue, 1f);
-		}
-	}
+	public bool ShowFlameOnUI => Mathf.Approximately(BarValue, 1f);
 
 	public float SoulFlameCost
 	{
@@ -179,29 +143,11 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver
 		}
 	}
 
-	public bool CanAffordSoulFlame
-	{
-		get
-		{
-			return m_sein.Energy.CanAfford(SoulFlameCost);
-		}
-	}
+	public bool CanAffordSoulFlame => m_sein.Energy.CanAfford(SoulFlameCost);
 
-	public bool AllowedToAccessSkillTree
-	{
-		get
-		{
-			return m_sein.Level.Current > 0 && IsSafeToCastSoulFlame == SoulFlamePlacementSafety.Safe;
-		}
-	}
+	public bool AllowedToAccessSkillTree => m_sein.Level.Current > 0 && IsSafeToCastSoulFlame == SoulFlamePlacementSafety.Safe;
 
-	public bool PlayerCouldSoulFlame
-	{
-		get
-		{
-			return Characters.Sein.Controller.CanMove && !m_sein.Controller.IsSwimming && !UI.Fader.IsFadingInOrStay() && !SeinAbilityRestrictZone.IsInside() && !LockSoulFlame;
-		}
-	}
+	public bool PlayerCouldSoulFlame => Characters.Sein.Controller.CanMove && !m_sein.Controller.IsSwimming && !UI.Fader.IsFadingInOrStay() && !SeinAbilityRestrictZone.IsInside() && !LockSoulFlame;
 
 	public void HandleNagging()
 	{

@@ -24,14 +24,8 @@ public class Naru : MonoBehaviour, ICharacter
 
 	public Vector3 Position
 	{
-		get
-		{
-			return transform.position;
-		}
-		set
-		{
-			transform.position = value;
-		}
+		get => transform.position;
+		set => transform.position = value;
 	}
 
 	public void Activate(bool active)
@@ -39,53 +33,23 @@ public class Naru : MonoBehaviour, ICharacter
 		gameObject.SetActive(active);
 	}
 
-	public GameObject GameObject
-	{
-		get
-		{
-			return gameObject;
-		}
-	}
+	public GameObject GameObject => gameObject;
 
 	public bool FaceLeft
 	{
-		get
-		{
-			return Animation.SpriteMirror.FaceLeft;
-		}
-		set
-		{
-			Animation.SpriteMirror.FaceLeft = value;
-		}
+		get => Animation.SpriteMirror.FaceLeft;
+		set => Animation.SpriteMirror.FaceLeft = value;
 	}
 
 	public Vector3 Speed
 	{
-		get
-		{
-			return PlatformBehaviour.PlatformMovement.LocalSpeed;
-		}
-		set
-		{
-			PlatformBehaviour.PlatformMovement.LocalSpeed = value;
-		}
+		get => PlatformBehaviour.PlatformMovement.LocalSpeed;
+		set => PlatformBehaviour.PlatformMovement.LocalSpeed = value;
 	}
 
-	public Transform Transform
-	{
-		get
-		{
-			return transform;
-		}
-	}
+	public Transform Transform => transform;
 
-	public bool IsOnGround
-	{
-		get
-		{
-			return PlatformBehaviour.PlatformMovement.IsOnGround;
-		}
-	}
+	public bool IsOnGround => PlatformBehaviour.PlatformMovement.IsOnGround;
 
 	public void PlaceOnGround()
 	{

@@ -11,28 +11,13 @@ public class SeinJump : CharacterState, ISeinReceiver
 	{
 	};
 
-	public bool CanJump
-	{
-		get
-		{
-			return enabled && Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY <= 0.0001f && m_timeWeCanJumpRemaining > 0f && !Sein.PlatformBehaviour.PlatformMovement.Ceiling.IsOn && !SeinAbilityRestrictZone.IsInside();
-		}
-	}
+	public bool CanJump => enabled && Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY <= 0.0001f && m_timeWeCanJumpRemaining > 0f && !Sein.PlatformBehaviour.PlatformMovement.Ceiling.IsOn && !SeinAbilityRestrictZone.IsInside();
 
-	public PlatformMovement PlatformMovement
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.PlatformMovement;
-		}
-	}
+	public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
 	public bool SpriteMirrorLock
 	{
-		get
-		{
-			return m_spriteMirrorLock;
-		}
+		get => m_spriteMirrorLock;
 		set
 		{
 			if (m_spriteMirrorLock != value)
@@ -50,21 +35,9 @@ public class SeinJump : CharacterState, ISeinReceiver
 		}
 	}
 
-	public CharacterSpriteMirror CharacterSpriteMirror
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.Visuals.SpriteMirror;
-		}
-	}
+	public CharacterSpriteMirror CharacterSpriteMirror => Sein.PlatformBehaviour.Visuals.SpriteMirror;
 
-	public bool HasSharplyTurnedAround
-	{
-		get
-		{
-			return (m_timeSinceMovingRight > 0f && m_timeSinceMovingRight < 0.2f && PlatformMovement.LocalSpeedX < 0f) || (m_timeSinceMovingLeft > 0f && m_timeSinceMovingLeft < 0.2f && PlatformMovement.LocalSpeedX > 0f);
-		}
-	}
+	public bool HasSharplyTurnedAround => (m_timeSinceMovingRight > 0f && m_timeSinceMovingRight < 0.2f && PlatformMovement.LocalSpeedX < 0f) || (m_timeSinceMovingLeft > 0f && m_timeSinceMovingLeft < 0.2f && PlatformMovement.LocalSpeedX > 0f);
 
 	public void SetReferenceToSein(SeinCharacter sein)
 	{

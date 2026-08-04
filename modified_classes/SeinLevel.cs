@@ -5,53 +5,17 @@ using UnityEngine;
 
 public class SeinLevel : SaveSerialize, ISeinReceiver
 {
-	public int TotalExperience
-	{
-		get
-		{
-			return Experience + ConsumedExperience;
-		}
-	}
+	public int TotalExperience => Experience + ConsumedExperience;
 
-	public int TotalExperienceForNextLevel
-	{
-		get
-		{
-			return ExperienceForNextLevel + ConsumedExperience;
-		}
-	}
+	public int TotalExperienceForNextLevel => ExperienceForNextLevel + ConsumedExperience;
 
-	public int ExperienceNeedForNextLevel
-	{
-		get
-		{
-			return ExperienceForNextLevel - Experience;
-		}
-	}
+	public int ExperienceNeedForNextLevel => ExperienceForNextLevel - Experience;
 
-	public float ExperienceVisualMinNormalized
-	{
-		get
-		{
-			return ExperienceVisualMin / ExperienceForNextLevel;
-		}
-	}
+	public float ExperienceVisualMinNormalized => ExperienceVisualMin / ExperienceForNextLevel;
 
-	public float ExperienceVisualMaxNormalized
-	{
-		get
-		{
-			return ExperienceVisualMax / ExperienceForNextLevel;
-		}
-	}
+	public float ExperienceVisualMaxNormalized => ExperienceVisualMax / ExperienceForNextLevel;
 
-	public int ExperienceForNextLevel
-	{
-		get
-		{
-			return Mathf.RoundToInt(ExperienceRequiredPerLevel.Evaluate(Current));
-		}
-	}
+	public int ExperienceForNextLevel => Mathf.RoundToInt(ExperienceRequiredPerLevel.Evaluate(Current));
 
 	public int ConsumedExperience
 	{

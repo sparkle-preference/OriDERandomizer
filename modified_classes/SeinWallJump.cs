@@ -10,52 +10,19 @@ public class SeinWallJump : CharacterState, ISeinReceiver
 	{
 	};
 
-	public PlatformMovement PlatformMovement
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.PlatformMovement;
-		}
-	}
+	public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
-	public SeinDoubleJump DoubleJump
-	{
-		get
-		{
-			return Sein.Abilities.DoubleJump;
-		}
-	}
+	public SeinDoubleJump DoubleJump => Sein.Abilities.DoubleJump;
 
-	public CharacterLeftRightMovement LeftRightMovement
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.LeftRightMovement;
-		}
-	}
+	public CharacterLeftRightMovement LeftRightMovement => Sein.PlatformBehaviour.LeftRightMovement;
 
-	public CharacterSpriteMirror CharacterSpriteMirror
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.Visuals.SpriteMirror;
-		}
-	}
+	public CharacterSpriteMirror CharacterSpriteMirror => Sein.PlatformBehaviour.Visuals.SpriteMirror;
 
-	public bool CanPerformWallJump
-	{
-		get
-		{
-			return enabled && Sein.Abilities.WallSlide.IsOnWall && !PlatformMovement.IsOnGround && Sein.PlayerAbilities.WallJump.HasAbility;
-		}
-	}
+	public bool CanPerformWallJump => enabled && Sein.Abilities.WallSlide.IsOnWall && !PlatformMovement.IsOnGround && Sein.PlayerAbilities.WallJump.HasAbility;
 
 	public bool SpriteMirrorLock
 	{
-		get
-		{
-			return m_spriteMirrorLock;
-		}
+		get => m_spriteMirrorLock;
 		set
 		{
 			if (m_spriteMirrorLock != value)

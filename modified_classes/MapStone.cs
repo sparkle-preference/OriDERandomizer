@@ -90,26 +90,14 @@ public class MapStone : SaveSerialize
 		}
 	}
 
-	public bool Activated
-	{
-		get
-		{
-			return CurrentState == State.Activated;
-		}
-	}
+	public bool Activated => CurrentState == State.Activated;
 
 	public override void Serialize(Archive ar)
 	{
 		CurrentState = (State)ar.Serialize((int)CurrentState);
 	}
 
-	public float DistanceToSein
-	{
-		get
-		{
-			return Vector3.Distance(m_transform.position, Characters.Sein.Position);
-		}
-	}
+	public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
 
 	public void FixedUpdate()
 	{

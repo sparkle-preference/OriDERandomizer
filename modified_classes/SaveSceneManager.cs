@@ -322,14 +322,8 @@ public class SaveSceneManager : MonoBehaviour
 	{
 		public ISerializable Save
 		{
-			get
-			{
-				return (ISerializable)SaveObject;
-			}
-			set
-			{
-				SaveObject = (Object)value;
-			}
+			get => (ISerializable)SaveObject;
+			set => SaveObject = (Object)value;
 		}
 
 		public MoonGuid Id;

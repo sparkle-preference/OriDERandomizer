@@ -3,21 +3,9 @@ using UnityEngine;
 
 public class SeinEdgeClamber : CharacterState, ISeinReceiver
 {
-	public PlatformMovement PlatformMovement
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.PlatformMovement;
-		}
-	}
+	public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
-	public CharacterLeftRightMovement LeftRightMovement
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.LeftRightMovement;
-		}
-	}
+	public CharacterLeftRightMovement LeftRightMovement => Sein.PlatformBehaviour.LeftRightMovement;
 
 	public void SetReferenceToSein(SeinCharacter sein)
 	{

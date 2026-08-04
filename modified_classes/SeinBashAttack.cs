@@ -26,77 +26,23 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 
 	public static event Action<EntityTargetting> OnBashEnemy;
 
-	public Component TargetAsComponent
-	{
-		get
-		{
-			return Target as Component;
-		}
-	}
+	public Component TargetAsComponent => Target as Component;
 
-	public CharacterAirNoDeceleration AirNoDeceleration
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.AirNoDeceleration;
-		}
-	}
+	public CharacterAirNoDeceleration AirNoDeceleration => Sein.PlatformBehaviour.AirNoDeceleration;
 
-	public SeinDoubleJump DoubleJump
-	{
-		get
-		{
-			return Sein.Abilities.DoubleJump;
-		}
-	}
+	public SeinDoubleJump DoubleJump => Sein.Abilities.DoubleJump;
 
-	public CharacterApplyFrictionToSpeed ApplyFrictionToSpeed
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.ApplyFrictionToSpeed;
-		}
-	}
+	public CharacterApplyFrictionToSpeed ApplyFrictionToSpeed => Sein.PlatformBehaviour.ApplyFrictionToSpeed;
 
-	public CharacterGravity Gravity
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.Gravity;
-		}
-	}
+	public CharacterGravity Gravity => Sein.PlatformBehaviour.Gravity;
 
-	public CharacterLeftRightMovement CharacterLeftRightMovement
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.LeftRightMovement;
-		}
-	}
+	public CharacterLeftRightMovement CharacterLeftRightMovement => Sein.PlatformBehaviour.LeftRightMovement;
 
-	public PlayerAbilities PlayerAbilities
-	{
-		get
-		{
-			return Sein.PlayerAbilities;
-		}
-	}
+	public PlayerAbilities PlayerAbilities => Sein.PlayerAbilities;
 
-	public PlatformMovement PlatformMovement
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.PlatformMovement;
-		}
-	}
+	public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
-	public SeinController SeinController
-	{
-		get
-		{
-			return Sein.Controller;
-		}
-	}
+	public SeinController SeinController => Sein.Controller;
 
 	public TextureAnimationWithTransitions BashChargeAnimation
 	{
@@ -168,10 +114,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 
 	public bool SpriteMirrorLock
 	{
-		get
-		{
-			return m_spriteMirrorLock;
-		}
+		get => m_spriteMirrorLock;
 		set
 		{
 			if (m_spriteMirrorLock != value)
@@ -192,13 +135,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver
 		}
 	}
 
-	public bool CanBash
-	{
-		get
-		{
-			return PlayerAbilities.Bash.HasAbility && !(TargetAsComponent == null) && TargetAsComponent.gameObject.activeInHierarchy && (!(Sein != null) || Sein.Active) && !SeinAbilityRestrictZone.IsInside();
-		}
-	}
+	public bool CanBash => PlayerAbilities.Bash.HasAbility && !(TargetAsComponent == null) && TargetAsComponent.gameObject.activeInHierarchy && (!(Sein != null) || Sein.Active) && !SeinAbilityRestrictZone.IsInside();
 
 	public void SetReferenceToSein(SeinCharacter sein)
 	{

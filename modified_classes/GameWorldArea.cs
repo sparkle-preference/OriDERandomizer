@@ -17,23 +17,15 @@ public class GameWorldArea : MonoBehaviour
 	public CageStructureTool BoundaryCage;
 	public Condition VisitableCondition;
 
-	public Bounds Bounds
-	{
-		get => new Bounds(BoundingTransform.position, BoundingTransform.localScale);
-	}
+	public Bounds Bounds => new Bounds(BoundingTransform.position, BoundingTransform.localScale);
 
-	public Rect BoundingRect
-	{
-		get
+	public Rect BoundingRect =>
+		new Rect
 		{
-			return new Rect
-			{
-				width = BoundingTransform.lossyScale.x,
-				height = BoundingTransform.lossyScale.y,
-				center = BoundingTransform.position
-			};
-		}
-	}
+			width = BoundingTransform.lossyScale.x,
+			height = BoundingTransform.lossyScale.y,
+			center = BoundingTransform.position
+		};
 
 	public bool InsideFace(Vector3 worldPosition)
 	{

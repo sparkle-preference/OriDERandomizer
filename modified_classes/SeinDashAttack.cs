@@ -21,13 +21,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 
 	public static event Action OnWallDashEvent;
 
-	public bool HasEnoughEnergy
-	{
-		get
-		{
-			return m_sein.Energy.CanAfford(AdjustedEnergyCost);
-		}
-	}
+	public bool HasEnoughEnergy => m_sein.Energy.CanAfford(AdjustedEnergyCost);
 
 	public override void Serialize(Archive ar)
 	{
@@ -363,13 +357,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver
 		return	(HasAirDashSkill() || m_sein.IsOnGround || (RandomizerBonus.GravitySuit() && Characters.Sein.Abilities.Swimming.IsSwimming)) && !AgainstWall() && DashHasCooledDown && !m_hasDashed;
 	}
 
-	private bool DashHasCooledDown
-	{
-		get
-		{
-			return Time.time - m_lastDashTime > 0.4f;
-		}
-	}
+	private bool DashHasCooledDown => Time.time - m_lastDashTime > 0.4f;
 
 	public bool CanPerformDashIntoWall()
 	{

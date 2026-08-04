@@ -6,10 +6,7 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase
 {
 	public override bool IsVisible
 	{
-		get
-		{
-			return SelectionManager.IsVisible;
-		}
+		get => SelectionManager.IsVisible;
 		set
 		{
 			if (SelectionManager.FadeAnimator && SelectionManager.FadeAnimator.FinalOpacity < 0.05f && !value)
@@ -23,20 +20,11 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase
 		}
 	}
 
-	public override bool CanBeEntered
-	{
-		get
-		{
-			return !CanBeEnteredCondition || CanBeEnteredCondition.Validate(null);
-		}
-	}
+	public override bool CanBeEntered => !CanBeEnteredCondition || CanBeEnteredCondition.Validate(null);
 
 	public override bool IsActive
 	{
-		get
-		{
-			return SelectionManager.IsActive;
-		}
+		get => SelectionManager.IsActive;
 		set
 		{
 			SelectionManager.IsActive = value;
@@ -75,14 +63,8 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase
 
 	public override bool IsHighlightVisible
 	{
-		get
-		{
-			return SelectionManager.IsHighlightVisible;
-		}
-		set
-		{
-			SelectionManager.IsHighlightVisible = value;
-		}
+		get => SelectionManager.IsHighlightVisible;
+		set => SelectionManager.IsHighlightVisible = value;
 	}
 
 	public void OnSelectionManagerBackPressed()

@@ -30,26 +30,14 @@ public class SkillItem : MonoBehaviour
 
 	public int TotalRequiredHardSkillPoints
 	{
-		get
-		{
-			return m_totalRequiredHardPoints;
-		}
-		set
-		{
-			m_totalRequiredHardPoints = value;
-		}
+		get => m_totalRequiredHardPoints;
+		set => m_totalRequiredHardPoints = value;
 	}
 
 	public int TotalRequiredSkillPoints
 	{
-		get
-		{
-			return m_totalRequiredPoints;
-		}
-		set
-		{
-			m_totalRequiredPoints = value;
-		}
+		get => m_totalRequiredPoints;
+		set => m_totalRequiredPoints = value;
 	}
 
 	public Color LargeIconColor
@@ -58,29 +46,11 @@ public class SkillItem : MonoBehaviour
 		set;
 	}
 
-	public bool Visible
-	{
-		get
-		{
-			return true;
-		}
-	}
+	public bool Visible => true;
 
-	public bool RequiresAbilitiesOrItems
-	{
-		get
-		{
-			return RequiredAbilities.Count != 0 || RequiredItems.Count != 0;
-		}
-	}
+	public bool RequiresAbilitiesOrItems => RequiredAbilities.Count != 0 || RequiredItems.Count != 0;
 
-	public bool SoulRequirementMet
-	{
-		get
-		{
-			return ActualRequiredSkillPoints <= Characters.Sein.Level.SkillPoints;
-		}
-	}
+	public bool SoulRequirementMet => ActualRequiredSkillPoints <= Characters.Sein.Level.SkillPoints;
 
 	public bool AbilitiesRequirementMet
 	{
@@ -105,13 +75,7 @@ public class SkillItem : MonoBehaviour
 		m_animator = Icon.GetComponent<TransparencyAnimator>();
 	}
 
-	public bool CanEarnSkill
-	{
-		get
-		{
-			return SoulRequirementMet && AbilitiesRequirementMet;
-		}
-	}
+	public bool CanEarnSkill => SoulRequirementMet && AbilitiesRequirementMet;
 
 	public void FixedUpdate()
 	{
@@ -151,21 +115,9 @@ public class SkillItem : MonoBehaviour
 		}
 	}
 
-	public MessageProvider Name
-	{
-		get
-		{
-			return RandomizerText.GetAbilityName(Ability) ?? NameMessageProvider;
-		}
-	}
+	public MessageProvider Name => RandomizerText.GetAbilityName(Ability) ?? NameMessageProvider;
 
-	public MessageProvider Description
-	{
-		get
-		{
-			return RandomizerText.GetAbilityDescription(Ability) ?? DescriptionMessageProvider;
-		}
-	}
+	public MessageProvider Description => RandomizerText.GetAbilityDescription(Ability) ?? DescriptionMessageProvider;
 
 	public int RequiredSkillPoints = 1;
 

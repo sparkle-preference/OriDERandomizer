@@ -6,13 +6,7 @@ using UnityEngine;
 
 public class SkillTreeManager : MenuScreen
 {
-	public bool AllLanesFull
-	{
-		get
-		{
-			return EnergyLane.HasAllSkills && UtilityLane.HasAllSkills && CombatLane.HasAllSkills;
-		}
-	}
+	public bool AllLanesFull => EnergyLane.HasAllSkills && UtilityLane.HasAllSkills && CombatLane.HasAllSkills;
 
 	public void Awake()
 	{
@@ -133,13 +127,7 @@ public class SkillTreeManager : MenuScreen
 		}
 	}
 
-	public MessageDescriptor AbilityMastered
-	{
-		get
-		{
-			return new MessageDescriptor("$" + AbilityMasteredMessageProvider + "$");
-		}
-	}
+	public MessageDescriptor AbilityMastered => new MessageDescriptor("$" + AbilityMasteredMessageProvider + "$");
 
 	public MessageProvider AbilityName(AbilityType ability)
 	{

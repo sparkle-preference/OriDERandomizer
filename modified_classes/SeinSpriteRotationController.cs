@@ -12,45 +12,15 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver
 		m_tiltUpDownTimer = duration;
 	}
 
-	public PlatformMovement PlatformMovement
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.PlatformMovement;
-		}
-	}
+	public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
-	public SeinCrouch Crouch
-	{
-		get
-		{
-			return Sein.Abilities.Crouch;
-		}
-	}
+	public SeinCrouch Crouch => Sein.Abilities.Crouch;
 
-	public SeinStomp Stomp
-	{
-		get
-		{
-			return Sein.Abilities.Stomp;
-		}
-	}
+	public SeinStomp Stomp => Sein.Abilities.Stomp;
 
-	public SeinBashAttack BashAttack
-	{
-		get
-		{
-			return Sein.Abilities.Bash;
-		}
-	}
+	public SeinBashAttack BashAttack => Sein.Abilities.Bash;
 
-	public bool IsStomping
-	{
-		get
-		{
-			return Stomp && Stomp.Active;
-		}
-	}
+	public bool IsStomping => Stomp && Stomp.Active;
 
 	public void SetReferenceToSein(SeinCharacter sein)
 	{

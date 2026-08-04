@@ -10,21 +10,9 @@ public class SeinInventory : SaveSerialize
 	{
 	};
 
-	public bool HasKeystones
-	{
-		get
-		{
-			return Keystones != 0;
-		}
-	}
+	public bool HasKeystones => Keystones != 0;
 
-	public bool HasMapstones
-	{
-		get
-		{
-			return MapStones != 0;
-		}
-	}
+	public bool HasMapstones => MapStones != 0;
 
 	public bool CanAfford(int cost)
 	{

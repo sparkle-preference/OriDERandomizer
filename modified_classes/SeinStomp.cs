@@ -26,53 +26,17 @@ public class SeinStomp : CharacterState, ISeinReceiver
 
 	public static event Action OnStompDownEvent;
 
-	public CharacterLeftRightMovement LeftRightMovement
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.LeftRightMovement;
-		}
-	}
+	public CharacterLeftRightMovement LeftRightMovement => Sein.PlatformBehaviour.LeftRightMovement;
 
-	public SeinDoubleJump DoubleJump
-	{
-		get
-		{
-			return Sein.Abilities.DoubleJump;
-		}
-	}
+	public SeinDoubleJump DoubleJump => Sein.Abilities.DoubleJump;
 
-	public CharacterUpwardsDeceleration UpwardsDeceleration
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.UpwardsDeceleration;
-		}
-	}
+	public CharacterUpwardsDeceleration UpwardsDeceleration => Sein.PlatformBehaviour.UpwardsDeceleration;
 
-	public PlatformMovement PlatformMovement
-	{
-		get
-		{
-			return Sein.PlatformBehaviour.PlatformMovement;
-		}
-	}
+	public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
-	public bool Finished
-	{
-		get
-		{
-			return Logic.CurrentState == State.Inactive;
-		}
-	}
+	public bool Finished => Logic.CurrentState == State.Inactive;
 
-	public bool IsStomping
-	{
-		get
-		{
-			return Logic.CurrentState != State.Inactive;
-		}
-	}
+	public bool IsStomping => Logic.CurrentState != State.Inactive;
 
 	public void OnRestoreCheckpoint()
 	{
@@ -443,13 +407,7 @@ public class SeinStomp : CharacterState, ISeinReceiver
 		base.Serialize(ar);
 	}
 
-	public Vector3 StompDirection
-	{
-		get
-		{
-			return new Vector3(m_stompDirection.x, m_stompDirection.y, 0f);
-		}
-	}
+	public Vector3 StompDirection => new Vector3(m_stompDirection.x, m_stompDirection.y, 0f);
 
 	public float IdleDuration;
 

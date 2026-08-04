@@ -5,13 +5,7 @@ using Input = Core.Input;
 
 public class GetAbilityPedestal : SaveSerialize
 {
-	public bool SeinInRange
-	{
-		get
-		{
-			return !(Characters.Sein == null) && Vector3.Distance(m_transform.position, Characters.Sein.Position) < Radius;
-		}
-	}
+	public bool SeinInRange => !(Characters.Sein == null) && Vector3.Distance(m_transform.position, Characters.Sein.Position) < Radius;
 
 	private void ChangeState(States state)
 	{

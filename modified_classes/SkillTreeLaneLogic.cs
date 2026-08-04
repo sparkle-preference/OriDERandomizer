@@ -4,13 +4,7 @@ using UnityEngine;
 
 public class SkillTreeLaneLogic : SaveSerialize
 {
-	public float Index
-	{
-		get
-		{
-			return m_index;
-		}
-	}
+	public float Index => m_index;
 
 	public void OnEnable()
 	{

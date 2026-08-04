@@ -205,13 +205,7 @@ public class HierarchyDebugMenu : MonoBehaviour
 
 	public class GameObjectItem
 	{
-		public bool HasChildren
-		{
-			get
-			{
-				return Children.Count > 0;
-			}
-		}
+		public bool HasChildren => Children.Count > 0;
 
 		public GameObjectItem(GameObject go)
 		{

@@ -22,21 +22,9 @@ public class SeinEnergy : SaveSerialize
 		return Current >= amount;
 	}
 
-	public float VisualMin
-	{
-		get
-		{
-			return MinVisual / Max;
-		}
-	}
+	public float VisualMin => MinVisual / Max;
 
-	public float VisualMax
-	{
-		get
-		{
-			return MaxVisual / Max;
-		}
-	}
+	public float VisualMax => MaxVisual / Max;
 
 	public void Gain(float amount)
 	{
@@ -72,37 +60,13 @@ public class SeinEnergy : SaveSerialize
 		}
 	}
 
-	public bool EnergyActive
-	{
-		get
-		{
-			return Max > 0f;
-		}
-	}
+	public bool EnergyActive => Max > 0f;
 
-	public float VisualMaxNormalized
-	{
-		get
-		{
-			return MaxVisual / Max;
-		}
-	}
+	public float VisualMaxNormalized => MaxVisual / Max;
 
-	public float VisualMinNormalized
-	{
-		get
-		{
-			return MinVisual / Max;
-		}
-	}
+	public float VisualMinNormalized => MinVisual / Max;
 
-	public object EnergyUpgradesCollected
-	{
-		get
-		{
-			return Max;
-		}
-	}
+	public object EnergyUpgradesCollected => Max;
 
 	public void Update()
 	{

@@ -47,13 +47,7 @@ public class ActivateAction : ActionMethod
 		}
 	}
 
-	private string TargetName
-	{
-		get
-		{
-			return !(Target != null) ? "unknown" : Target.name;
-		}
-	}
+	private string TargetName => !(Target != null) ? "unknown" : Target.name;
 
 	public override string GetNiceName()
 	{

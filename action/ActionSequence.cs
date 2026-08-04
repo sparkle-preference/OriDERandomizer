@@ -7,26 +7,14 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable
 {
 	public bool IsRunning
 	{
-		get
-		{
-			return m_isRunning;
-		}
-		set
-		{
-			m_isRunning = value;
-		}
+		get => m_isRunning;
+		set => m_isRunning = value;
 	}
 
 	public int Index
 	{
-		get
-		{
-			return m_index;
-		}
-		set
-		{
-			m_index = value;
-		}
+		get => m_index;
+		set => m_index = value;
 	}
 
 	public void OnPoolSpawned()
@@ -205,14 +193,8 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable
 
 	public bool IsSuspended
 	{
-		get
-		{
-			return m_isSuspended;
-		}
-		set
-		{
-			m_isSuspended = value;
-		}
+		get => m_isSuspended;
+		set => m_isSuspended = value;
 	}
 
 	public override void Stop()
@@ -223,13 +205,7 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable
 		m_context = null;
 	}
 
-	public override bool IsPerforming
-	{
-		get
-		{
-			return m_isRunning;
-		}
-	}
+	public override bool IsPerforming => m_isRunning;
 
 	public override void Serialize(Archive ar)
 	{

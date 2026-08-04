@@ -4,21 +4,9 @@ using UnityEngine;
 
 public class WorldMapUI : MonoBehaviour
 {
-	public static bool IsReady
-	{
-		get
-		{
-			return Instance != null;
-		}
-	}
+	public static bool IsReady => Instance != null;
 
-	public static bool UseCameraSettings
-	{
-		get
-		{
-			return !(Instance == null) && Instance.m_enabled;
-		}
-	}
+	public static bool UseCameraSettings => !(Instance == null) && Instance.m_enabled;
 
 	public void OnEnable()
 	{
@@ -46,13 +34,7 @@ public class WorldMapUI : MonoBehaviour
 		}
 	}
 
-	public Transform FadeOutGroup
-	{
-		get
-		{
-			return CrossFade.transform;
-		}
-	}
+	public Transform FadeOutGroup => CrossFade.transform;
 
 	public void Awake()
 	{
@@ -105,21 +87,9 @@ public class WorldMapUI : MonoBehaviour
 		gameObject.SetActive(false);
 	}
 
-	public float ZoomTime
-	{
-		get
-		{
-			return AreaMapUI.Instance.Navigation.ZoomTime;
-		}
-	}
+	public float ZoomTime => AreaMapUI.Instance.Navigation.ZoomTime;
 
-	public Vector3 ScrollPosition
-	{
-		get
-		{
-			return AreaMapUI.Instance.Navigation.ScrollPosition;
-		}
-	}
+	public Vector3 ScrollPosition => AreaMapUI.Instance.Navigation.ScrollPosition;
 
 	public Vector3 WorldToProjectedPosition(Vector3 position)
 	{
@@ -131,29 +101,11 @@ public class WorldMapUI : MonoBehaviour
 		return WorldToScreenToUI(WorldToProjectedPosition(position));
 	}
 
-	public Vector3 ClosePosition
-	{
-		get
-		{
-			return WorldToProjectedPosition(ScrollPosition) + Vector3.back * CloseZoom;
-		}
-	}
+	public Vector3 ClosePosition => WorldToProjectedPosition(ScrollPosition) + Vector3.back * CloseZoom;
 
-	public Vector3 FarPosition
-	{
-		get
-		{
-			return Vector3.back * FullZoom + CameraOffset;
-		}
-	}
+	public Vector3 FarPosition => Vector3.back * FullZoom + CameraOffset;
 
-	public WorldMapOverworldArea CurrentArea
-	{
-		get
-		{
-			return NavigationManager.CurrentMenuItem.GetComponent<WorldMapOverworldArea>();
-		}
-	}
+	public WorldMapOverworldArea CurrentArea => NavigationManager.CurrentMenuItem.GetComponent<WorldMapOverworldArea>();
 
 	public void UpdateCameraPosition()
 	{

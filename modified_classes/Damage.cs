@@ -15,45 +15,15 @@ public class Damage
 		}
 	}
 
-	public float Amount
-	{
-		get
-		{
-			return m_amount;
-		}
-	}
+	public float Amount => m_amount;
 
-	public Vector2 Force
-	{
-		get
-		{
-			return m_force;
-		}
-	}
+	public Vector2 Force => m_force;
 
-	public Vector3 Position
-	{
-		get
-		{
-			return m_position;
-		}
-	}
+	public Vector3 Position => m_position;
 
-	public DamageType Type
-	{
-		get
-		{
-			return m_type;
-		}
-	}
+	public DamageType Type => m_type;
 
-	public GameObject Sender
-	{
-		get
-		{
-			return m_sender;
-		}
-	}
+	public GameObject Sender => m_sender;
 
 	public void SetAmount(float amount)
 	{

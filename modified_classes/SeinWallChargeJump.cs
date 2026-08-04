@@ -6,21 +6,9 @@ using Input = Core.Input;
 
 public class SeinWallChargeJump : CharacterState, ISeinReceiver
 {
-	public PlayerAbilities PlayerAbilities
-	{
-		get
-		{
-			return m_sein.PlayerAbilities;
-		}
-	}
+	public PlayerAbilities PlayerAbilities => m_sein.PlayerAbilities;
 
-	public PlatformMovement PlatformMovement
-	{
-		get
-		{
-			return m_sein.PlatformBehaviour.PlatformMovement;
-		}
-	}
+	public PlatformMovement PlatformMovement => m_sein.PlatformBehaviour.PlatformMovement;
 
 	public void OnDoubleJump()
 	{
@@ -36,13 +24,7 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver
 		UpdateState();
 	}
 
-	public float AngularElevation
-	{
-		get
-		{
-			return m_angularElevation;
-		}
-	}
+	public float AngularElevation => m_angularElevation;
 
 	public override void OnExit()
 	{
@@ -114,21 +96,9 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver
 		}
 	}
 
-	public bool IsCharged
-	{
-		get
-		{
-			return m_sein.Controller.IsGrabbingWall && m_sein.Abilities.GrabWall.IsGrabbingAway && Characters.Sein.Controller.CanMove && m_sein.Abilities.ChargeJumpCharging.IsCharged;
-		}
-	}
+	public bool IsCharged => m_sein.Controller.IsGrabbingWall && m_sein.Abilities.GrabWall.IsGrabbingAway && Characters.Sein.Controller.CanMove && m_sein.Abilities.ChargeJumpCharging.IsCharged;
 
-	public bool IsCharging
-	{
-		get
-		{
-			return m_sein.Controller.IsGrabbingWall && m_sein.Abilities.GrabWall.IsGrabbingAway && Characters.Sein.Controller.CanMove && m_sein.Abilities.ChargeJumpCharging.IsCharging;
-		}
-	}
+	public bool IsCharging => m_sein.Controller.IsGrabbingWall && m_sein.Abilities.GrabWall.IsGrabbingAway && Characters.Sein.Controller.CanMove && m_sein.Abilities.ChargeJumpCharging.IsCharging;
 
 	public void UpdateState()
 	{
@@ -261,13 +231,7 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver
 		}
 	}
 
-	public bool CanChargeJump
-	{
-		get
-		{
-			return m_sein.Abilities.GrabWall.IsGrabbing && m_sein.Abilities.ChargeJumpCharging.IsCharged && m_currentState == State.Aiming;
-		}
-	}
+	public bool CanChargeJump => m_sein.Abilities.GrabWall.IsGrabbing && m_sein.Abilities.ChargeJumpCharging.IsCharged && m_currentState == State.Aiming;
 
 	public void OnRestoreCheckpoint()
 	{
@@ -280,20 +244,11 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver
 		Game.Checkpoint.Events.OnPostRestore.Add(OnRestoreCheckpoint);
 	}
 
-	public CharacterSpriteMirror CharacterSpriteMirror
-	{
-		get
-		{
-			return m_sein.PlatformBehaviour.Visuals.SpriteMirror;
-		}
-	}
+	public CharacterSpriteMirror CharacterSpriteMirror => m_sein.PlatformBehaviour.Visuals.SpriteMirror;
 
 	public bool SpriteMirrorLock
 	{
-		get
-		{
-			return m_spriteMirrorLock;
-		}
+		get => m_spriteMirrorLock;
 		set
 		{
 			if (m_spriteMirrorLock != value)

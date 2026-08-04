@@ -2,21 +2,9 @@ using UnityEngine;
 
 public class DifficultyToggler : MonoBehaviour, IDebugMenuToggleable
 {
-	public string Name
-	{
-		get
-		{
-			return "Difficulty";
-		}
-	}
+	public string Name => "Difficulty";
 
-	public string HelpText
-	{
-		get
-		{
-			return "Toggle difficulty";
-		}
-	}
+	public string HelpText => "Toggle difficulty";
 
 	public string[] ToggleOptions
 	{
@@ -34,14 +22,8 @@ public class DifficultyToggler : MonoBehaviour, IDebugMenuToggleable
 
 	public int CurrentToggleOptionId
 	{
-		get
-		{
-			return (int)DifficultyController.Instance.Difficulty;
-		}
-		set
-		{
-			DifficultyController.Instance.Difficulty = (DifficultyMode)((value % ToggleOptions.Length + ToggleOptions.Length) % ToggleOptions.Length);
-		}
+		get => (int)DifficultyController.Instance.Difficulty;
+		set => DifficultyController.Instance.Difficulty = (DifficultyMode)((value % ToggleOptions.Length + ToggleOptions.Length) % ToggleOptions.Length);
 	}
 
 	private int m_currentOption;

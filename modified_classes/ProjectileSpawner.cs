@@ -4,13 +4,7 @@ using UnityEngine;
 
 public class ProjectileSpawner : SaveSerialize, ISuspendable
 {
-	public Vector3 Position
-	{
-		get
-		{
-			return m_transform.position;
-		}
-	}
+	public Vector3 Position => m_transform.position;
 
 	public float TimeSinceLastShot { get; set; }
 
@@ -39,10 +33,7 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable
 
 	private bool TimerPaused
 	{
-		get
-		{
-			return m_timedTrigger && m_timedTrigger.Paused;
-		}
+		get => m_timedTrigger && m_timedTrigger.Paused;
 		set
 		{
 			if (m_timedTrigger)

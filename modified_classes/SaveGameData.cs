@@ -50,13 +50,7 @@ public class SaveGameData
 		return true;
 	}
 
-	public SaveScene Master
-	{
-		get
-		{
-			return InsertScene(MoonGuid.Empty);
-		}
-	}
+	public SaveScene Master => InsertScene(MoonGuid.Empty);
 
 	public SaveScene GetScene(MoonGuid sceneGuid)
 	{

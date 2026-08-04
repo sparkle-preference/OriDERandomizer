@@ -39,13 +39,7 @@ public class TransparencyAnimator : BaseAnimator
 		}
 	}
 
-	private bool UseSharedMaterial
-	{
-		get
-		{
-			return (IsInScene && !m_forceUseRendererMaterial) || !Application.isPlaying;
-		}
-	}
+	private bool UseSharedMaterial => (IsInScene && !m_forceUseRendererMaterial) || !Application.isPlaying;
 
 	public new void Awake()
 	{
@@ -192,21 +186,9 @@ public class TransparencyAnimator : BaseAnimator
 		}
 	}
 
-	public float FinalOpacity
-	{
-		get
-		{
-			return m_opacity * m_parentOpacity;
-		}
-	}
+	public float FinalOpacity => m_opacity * m_parentOpacity;
 
-	public override float Duration
-	{
-		get
-		{
-			return AnimationCurveTimeToTime(AnimationCurve.CurveDuration());
-		}
-	}
+	public override float Duration => AnimationCurveTimeToTime(AnimationCurve.CurveDuration());
 
 	public override void RestoreToOriginalState()
 	{
@@ -222,13 +204,7 @@ public class TransparencyAnimator : BaseAnimator
 		}
 	}
 
-	public override bool IsLooping
-	{
-		get
-		{
-			return AnimationCurve.postWrapMode != WrapMode.ClampForever;
-		}
-	}
+	public override bool IsLooping => AnimationCurve.postWrapMode != WrapMode.ClampForever;
 
 	public void Reset()
 	{

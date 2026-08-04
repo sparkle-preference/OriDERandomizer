@@ -6,13 +6,7 @@ using UnityEngine;
 
 public class EntityController : SaveSerialize, INearSeinReceiver, IDamageReciever
 {
-	private SpriteEntity SpriteEntity
-	{
-		get
-		{
-			return Entity as SpriteEntity;
-		}
-	}
+	private SpriteEntity SpriteEntity => Entity as SpriteEntity;
 
 	public void OnValidate()
 	{
@@ -100,13 +94,7 @@ public class EntityController : SaveSerialize, INearSeinReceiver, IDamageRecieve
 		m_nearSein = false;
 	}
 
-	public bool NearSein
-	{
-		get
-		{
-			return m_nearSein && Characters.Sein.Controller.CanMove;
-		}
-	}
+	public bool NearSein => m_nearSein && Characters.Sein.Controller.CanMove;
 
 	public bool IsNearSein()
 	{

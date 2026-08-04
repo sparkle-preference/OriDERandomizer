@@ -143,13 +143,7 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
 		m_insideFrustum = false;
 	}
 
-	public bool InsideFrustum
-	{
-		get
-		{
-			return m_insideFrustum;
-		}
-	}
+	public bool InsideFrustum => m_insideFrustum;
 
 	public bool IsCollected;
 

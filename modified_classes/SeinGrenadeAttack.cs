@@ -7,21 +7,9 @@ using Input = Core.Input;
 
 public class SeinGrenadeAttack : CharacterState, ISeinReceiver
 {
-	private bool IsGrabbingWall
-	{
-		get
-		{
-			return m_sein.Controller.IsGrabbingWall;
-		}
-	}
+	private bool IsGrabbingWall => m_sein.Controller.IsGrabbingWall;
 
-	private bool IsInAir
-	{
-		get
-		{
-			return !m_isAiming;
-		}
-	}
+	private bool IsInAir => !m_isAiming;
 
 	private void ResetAimToDefault()
 	{
@@ -49,26 +37,14 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver
 		return animations[num];
 	}
 
-	private float EnergyCostFinal
-	{
-		get
-		{
-			return 0f;
-		}
-	}
+	private float EnergyCostFinal => 0f;
 
 	private bool HasGrenadeEfficiencySkill()
 	{
 		return m_sein.PlayerAbilities.GrenadeEfficiency.HasAbility;
 	}
 
-	private bool HasEnoughEnergy
-	{
-		get
-		{
-			return m_sein.Energy.CanAfford(EnergyCostFinal);
-		}
-	}
+	private bool HasEnoughEnergy => m_sein.Energy.CanAfford(EnergyCostFinal);
 
 	private void SpendEnergy()
 	{
@@ -98,21 +74,9 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver
 		CancelAiming();
 	}
 
-	public CharacterLeftRightMovement CharacterLeftRightMovement
-	{
-		get
-		{
-			return m_sein.PlatformBehaviour.LeftRightMovement;
-		}
-	}
+	public CharacterLeftRightMovement CharacterLeftRightMovement => m_sein.PlatformBehaviour.LeftRightMovement;
 
-	public CharacterGravity CharacterGravity
-	{
-		get
-		{
-			return m_sein.PlatformBehaviour.Gravity;
-		}
-	}
+	public CharacterGravity CharacterGravity => m_sein.PlatformBehaviour.Gravity;
 
 	private void ModifyHorizontalPlatformMovementSettings(HorizontalPlatformMovementSettings settings)
 	{
@@ -157,13 +121,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver
 		return m_sein.PlayerAbilities.GrenadeUpgrade.HasAbility;
 	}
 
-	private Vector3 GrenadeSpawnPosition
-	{
-		get
-		{
-			return m_sein.Position;
-		}
-	}
+	private Vector3 GrenadeSpawnPosition => m_sein.Position;
 
 	private SpiritGrenade SpawnGrenade(Vector2 velocity)
 	{
@@ -189,21 +147,9 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver
 		m_spiritGrenades.RemoveAll(a => a == null);
 	}
 
-	public bool IsAiming
-	{
-		get
-		{
-			return m_isAiming;
-		}
-	}
+	public bool IsAiming => m_isAiming;
 
-	public bool CanAim
-	{
-		get
-		{
-			return !m_sein.PlatformBehaviour.PlatformMovement.MovingHorizontally && (m_sein.IsOnGround || IsGrabbingWall);
-		}
-	}
+	public bool CanAim => !m_sein.PlatformBehaviour.PlatformMovement.MovingHorizontally && (m_sein.IsOnGround || IsGrabbingWall);
 
 	public void PlayAimAnimation()
 	{
@@ -225,13 +171,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver
 		Sound.Play(ThrowGrenadeSound.GetSound(null), transform.position, null);
 	}
 
-	public float GrenadeGravity
-	{
-		get
-		{
-			return Trajectory.Gravity;
-		}
-	}
+	public float GrenadeGravity => Trajectory.Gravity;
 
 	public void UpdateAiming()
 	{

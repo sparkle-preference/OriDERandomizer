@@ -25,37 +25,13 @@ public class AreaMapCanvas : MonoBehaviour
 		SetFade(0f);
 	}
 
-	public Texture WorldMapTexture
-	{
-		get
-		{
-			return Area.WorldMapTexture;
-		}
-	}
+	public Texture WorldMapTexture => Area.WorldMapTexture;
 
-	public Bounds Bounds
-	{
-		get
-		{
-			return Area.Bounds;
-		}
-	}
+	public Bounds Bounds => Area.Bounds;
 
-	public CageStructureTool CageStructureTool
-	{
-		get
-		{
-			return Area.CageStructureTool;
-		}
-	}
+	public CageStructureTool CageStructureTool => Area.CageStructureTool;
 
-	public Vector2 WorldMapTextureSize
-	{
-		get
-		{
-			return new Vector2(WorldMapTexture.width, WorldMapTexture.height);
-		}
-	}
+	public Vector2 WorldMapTextureSize => new Vector2(WorldMapTexture.width, WorldMapTexture.height);
 
 	public RenderTexture GenerateAreaMaskMaskTexture()
 	{

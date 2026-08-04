@@ -8,13 +8,7 @@ public class ShowWorldMapObjectiveAction : PerformingAction
 	{
 	}
 
-	public override bool IsPerforming
-	{
-		get
-		{
-			return m_isPerforming;
-		}
-	}
+	public override bool IsPerforming => m_isPerforming;
 
 	public void OnFinish()
 	{

@@ -6,13 +6,7 @@ using Input = Core.Input;
 
 public class GameMapTeleporters : MonoBehaviour
 {
-	public List<GameMapTeleporter> Teleporters
-	{
-		get
-		{
-			return TeleporterController.Instance.Teleporters;
-		}
-	}
+	public List<GameMapTeleporter> Teleporters => TeleporterController.Instance.Teleporters;
 
 	[ContextMenu("Show teleporters")]
 	public void ShowTeleporters()
@@ -238,13 +232,7 @@ public class GameMapTeleporters : MonoBehaviour
 		}
 	}
 
-	public GameMapTeleporter SelectedTeleporter
-	{
-		get
-		{
-			return Teleporters[SelectedIndex];
-		}
-	}
+	public GameMapTeleporter SelectedTeleporter => Teleporters[SelectedIndex];
 
 	public void Select(string identifier)
 	{

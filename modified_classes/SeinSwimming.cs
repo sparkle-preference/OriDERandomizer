@@ -16,63 +16,21 @@ public class SeinSwimming : CharacterState, ISeinReceiver
 		CurrentState = state;
 	}
 
-	public bool IsUpsideDown
-	{
-		get
-		{
-			return Vector3.Dot(MoonMath.Angle.VectorFromAngle(SwimAngle), !m_sein.Controller.FaceLeft ? Vector3.left : Vector3.right) > Mathf.Cos(0.87266463f);
-		}
-	}
+	public bool IsUpsideDown => Vector3.Dot(MoonMath.Angle.VectorFromAngle(SwimAngle), !m_sein.Controller.FaceLeft ? Vector3.left : Vector3.right) > Mathf.Cos(0.87266463f);
 
 	public float RemainingBreath { get; set; }
 
-	public bool HasUnlimitedBreathingUnderwater
-	{
-		get
-		{
-			return m_sein.PlayerAbilities.WaterBreath.HasAbility;
-		}
-	}
+	public bool HasUnlimitedBreathingUnderwater => m_sein.PlayerAbilities.WaterBreath.HasAbility;
 
-	public PlatformMovement PlatformMovement
-	{
-		get
-		{
-			return m_sein.PlatformBehaviour.PlatformMovement;
-		}
-	}
+	public PlatformMovement PlatformMovement => m_sein.PlatformBehaviour.PlatformMovement;
 
-	public CharacterLeftRightMovement LeftRightMovement
-	{
-		get
-		{
-			return m_sein.PlatformBehaviour.LeftRightMovement;
-		}
-	}
+	public CharacterLeftRightMovement LeftRightMovement => m_sein.PlatformBehaviour.LeftRightMovement;
 
-	public CharacterGravity Gravity
-	{
-		get
-		{
-			return m_sein.PlatformBehaviour.Gravity;
-		}
-	}
+	public CharacterGravity Gravity => m_sein.PlatformBehaviour.Gravity;
 
-	public bool IsSwimming
-	{
-		get
-		{
-			return CurrentState != State.OutOfWater;
-		}
-	}
+	public bool IsSwimming => CurrentState != State.OutOfWater;
 
-	private float WaterSurfacePositionY
-	{
-		get
-		{
-			return m_currentWater.Bounds.yMax;
-		}
-	}
+	private float WaterSurfacePositionY => m_currentWater.Bounds.yMax;
 
 	public Rect WaterSurfaceBound
 	{
@@ -93,13 +51,7 @@ public class SeinSwimming : CharacterState, ISeinReceiver
 
 	public bool IsSuspended { get; set; }
 
-	public bool IsUnderwater
-	{
-		get
-		{
-			return CurrentState == State.SwimMovingUnderwater || CurrentState == State.SwimIdleUnderwater;
-		}
-	}
+	public bool IsUnderwater => CurrentState == State.SwimMovingUnderwater || CurrentState == State.SwimIdleUnderwater;
 
 	public void HideBreathingUI()
 	{

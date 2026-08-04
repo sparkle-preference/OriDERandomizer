@@ -20,13 +20,7 @@ public class EntityDamageReciever : DamageReciever, IDynamicGraphicHierarchy, IP
 		}
 	}
 
-	public override GameObject DisableTarget
-	{
-		get
-		{
-			return Entity.gameObject;
-		}
-	}
+	public override GameObject DisableTarget => Entity.gameObject;
 
 	public override void OnPoolSpawned()
 	{

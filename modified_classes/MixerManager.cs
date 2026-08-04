@@ -22,13 +22,7 @@ public class MixerManager : MonoBehaviour
 		s_manager = this;
 	}
 
-	public static MixerManager Instance
-	{
-		get
-		{
-			return s_manager;
-		}
-	}
+	public static MixerManager Instance => s_manager;
 
 	public void RegisterActiveSnapshot(MixerSnapshot snapshot)
 	{

@@ -11,13 +11,7 @@ public class DebugMenu : MonoBehaviour
 		SuspensionManager.SuspendExcluding(SuspendablesToIgnoreForGameplay);
 	}
 
-	public static bool DashOrGrenadeEnabled
-	{
-		get
-		{
-			return Characters.Sein && (Characters.Sein.PlayerAbilities.Dash.HasAbility || Characters.Sein.PlayerAbilities.Grenade.HasAbility);
-		}
-	}
+	public static bool DashOrGrenadeEnabled => Characters.Sein && (Characters.Sein.PlayerAbilities.Dash.HasAbility || Characters.Sein.PlayerAbilities.Grenade.HasAbility);
 
 	private static void ResumeGameplay()
 	{

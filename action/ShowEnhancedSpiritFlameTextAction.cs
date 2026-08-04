@@ -44,13 +44,7 @@ public class ShowEnhancedSpiritFlameTextAction : PerformingAction
 	{
 	}
 
-	public override bool IsPerforming
-	{
-		get
-		{
-			return m_messageBox;
-		}
-	}
+	public override bool IsPerforming => m_messageBox;
 
 	public MessageDescriptor[] Messages;
 

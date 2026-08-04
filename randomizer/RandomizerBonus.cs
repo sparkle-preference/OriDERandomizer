@@ -698,9 +698,10 @@ public static class RandomizerBonus
             return 0;
         }
     }
-    public static float Jumpscale {get {return 1f + .25f * Jumpgrades();}}
-    public static float DoubleJumpscale {get {return 1f + .10f * Jumpgrades();}}
-    public static float Veloscale {get {return 1f + .20f * Velocity();}}
+    public static float Jumpscale => 1f + .25f * Jumpgrades();
+    public static float DoubleJumpscale => 1f + .10f * Jumpgrades();
+    public static float Veloscale => 1f + .20f * Velocity();
+
     public static bool GravitySuit()
     {
         return Characters.Sein.Inventory.GetRandomizerItem(36) > 0;
@@ -739,18 +740,18 @@ public static class RandomizerBonus
         } else Randomizer.printInfo("No bonus passives");
     }
 
-    public static bool EnhancedSpiritFlame { get { return Randomizer.Inventory.GetRandomizerItem(410) > 0; } }
-    public static bool EnhancedWallJump { get { return Randomizer.Inventory.GetRandomizerItem(411) > 0 && !RandomizerBonusSkill.IsActive(115); } }
-    public static bool EnhancedChargeFlame { get { return Randomizer.Inventory.GetRandomizerItem(412) > 0 && !RandomizerBonusSkill.IsActive(115); } }
-    public static bool EnhancedDoubleJump { get { return Randomizer.Inventory.GetRandomizerItem(413) > 0 && !RandomizerBonusSkill.IsActive(115); } }
-    public static bool EnhancedBash { get { return Randomizer.Inventory.GetRandomizerItem(414) > 0 && !RandomizerBonusSkill.IsActive(115); } }
-    public static bool EnhancedStomp { get { return Randomizer.Inventory.GetRandomizerItem(415) > 0 && !RandomizerBonusSkill.IsActive(115); } }
-    public static bool EnhancedGlide { get { return Randomizer.Inventory.GetRandomizerItem(416) > 0 && !RandomizerBonusSkill.IsActive(115); } }
-    public static bool EnhancedClimb { get { return Randomizer.Inventory.GetRandomizerItem(417) > 0 && !RandomizerBonusSkill.IsActive(115); } }
-    public static bool EnhancedChargeJump { get { return Randomizer.Inventory.GetRandomizerItem(418) > 0 && !RandomizerBonusSkill.IsActive(115); } }
-    public static bool EnhancedDash { get { return Randomizer.Inventory.GetRandomizerItem(419) > 0 && !RandomizerBonusSkill.IsActive(115); } }
-    public static bool EnhancedGrenade { get { return Randomizer.Inventory.GetRandomizerItem(420) > 0 && !RandomizerBonusSkill.IsActive(115); } }
-    public static bool EnhancedCleanWater { get { return Randomizer.Inventory.GetRandomizerItem(422) > 0 && !RandomizerBonusSkill.IsActive(115); } }
+    public static bool EnhancedSpiritFlame => Randomizer.Inventory.GetRandomizerItem(410) > 0;
+    public static bool EnhancedWallJump => Randomizer.Inventory.GetRandomizerItem(411) > 0 && !RandomizerBonusSkill.IsActive(115);
+    public static bool EnhancedChargeFlame => Randomizer.Inventory.GetRandomizerItem(412) > 0 && !RandomizerBonusSkill.IsActive(115);
+    public static bool EnhancedDoubleJump => Randomizer.Inventory.GetRandomizerItem(413) > 0 && !RandomizerBonusSkill.IsActive(115);
+    public static bool EnhancedBash => Randomizer.Inventory.GetRandomizerItem(414) > 0 && !RandomizerBonusSkill.IsActive(115);
+    public static bool EnhancedStomp => Randomizer.Inventory.GetRandomizerItem(415) > 0 && !RandomizerBonusSkill.IsActive(115);
+    public static bool EnhancedGlide => Randomizer.Inventory.GetRandomizerItem(416) > 0 && !RandomizerBonusSkill.IsActive(115);
+    public static bool EnhancedClimb => Randomizer.Inventory.GetRandomizerItem(417) > 0 && !RandomizerBonusSkill.IsActive(115);
+    public static bool EnhancedChargeJump => Randomizer.Inventory.GetRandomizerItem(418) > 0 && !RandomizerBonusSkill.IsActive(115);
+    public static bool EnhancedDash => Randomizer.Inventory.GetRandomizerItem(419) > 0 && !RandomizerBonusSkill.IsActive(115);
+    public static bool EnhancedGrenade => Randomizer.Inventory.GetRandomizerItem(420) > 0 && !RandomizerBonusSkill.IsActive(115);
+    public static bool EnhancedCleanWater => Randomizer.Inventory.GetRandomizerItem(422) > 0 && !RandomizerBonusSkill.IsActive(115);
 
     private static Dictionary<int, String> BonusNames = new Dictionary<int, String> {
         {6, "Attack Upgrade"},

@@ -7,14 +7,8 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 {
 	Vector3 IPortalVisitor.Speed
 	{
-		get
-		{
-			return Direction;
-		}
-		set
-		{
-			Direction = value;
-		}
+		get => Direction;
+		set => Direction = value;
 	}
 
 	public Vector3 Direction { get; set; }
@@ -145,13 +139,7 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 	{
 	}
 
-	public int BashPriority
-	{
-		get
-		{
-			return 40;
-		}
-	}
+	public int BashPriority => 40;
 
 	public void OnRecieveDamage(Damage damage)
 	{
@@ -190,14 +178,8 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 
 	public Vector3 Position
 	{
-		get
-		{
-			return transform.position;
-		}
-		set
-		{
-			transform.position = value;
-		}
+		get => transform.position;
+		set => transform.position = value;
 	}
 
 	public bool CanBeStomped()
@@ -358,10 +340,7 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 
 	public Vector3 SpeedVector
 	{
-		get
-		{
-			return Speed * Direction;
-		}
+		get => Speed * Direction;
 		set
 		{
 			Speed = value.magnitude;

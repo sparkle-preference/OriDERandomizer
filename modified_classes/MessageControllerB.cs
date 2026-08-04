@@ -3,13 +3,7 @@ using UnityEngine;
 
 public class MessageControllerB : MonoBehaviour
 {
-	public bool AnyAbilityPickupStoryMessagesVisible
-	{
-		get
-		{
-			return m_currentMessageBox;
-		}
-	}
+	public bool AnyAbilityPickupStoryMessagesVisible => m_currentMessageBox;
 
 	public GameObject ShowMessageBox(GameObject messageBoxPrefab, MessageProvider messageProvider, Vector3 position, float duration = 3f)
 	{

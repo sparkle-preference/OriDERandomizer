@@ -68,13 +68,7 @@ public class IgnitableSpiritTorch : SaveSerialize
 		}
 	}
 
-	public Vector3 Position
-	{
-		get
-		{
-			return m_transform.position;
-		}
-	}
+	public Vector3 Position => m_transform.position;
 
 	public override void Serialize(Archive ar)
 	{

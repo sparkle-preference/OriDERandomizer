@@ -83,13 +83,7 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
 
 	public bool IsSuspended { get; set; }
 
-	public Vector3 Position
-	{
-		get
-		{
-			return m_transform.position;
-		}
-	}
+	public Vector3 Position => m_transform.position;
 
 	public bool CanBeChargeFlamed()
 	{

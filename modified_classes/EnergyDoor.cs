@@ -100,13 +100,7 @@ public class EnergyDoor : SaveSerialize
 		}
 	}
 
-	public float DistanceToSein
-	{
-		get
-		{
-			return Vector3.Distance(m_transform.position, Characters.Sein.Position);
-		}
-	}
+	public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
 
 	public bool OriHasTargets
 	{
@@ -117,13 +111,7 @@ public class EnergyDoor : SaveSerialize
 		}
 	}
 
-	public bool SeinInRange
-	{
-		get
-		{
-			return !OriHasTargets && DistanceToSein <= Radius;
-		}
-	}
+	public bool SeinInRange => !OriHasTargets && DistanceToSein <= Radius;
 
 	public void RegisterSlot(EnergyDoorSlot slot)
 	{

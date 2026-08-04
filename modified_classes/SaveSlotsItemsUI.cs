@@ -5,10 +5,7 @@ public class SaveSlotsItemsUI : MonoBehaviour
 {
 	public float TargetScroll
 	{
-		get
-		{
-			return m_targetScroll;
-		}
+		get => m_targetScroll;
 		set
 		{
 			m_targetScroll = value;

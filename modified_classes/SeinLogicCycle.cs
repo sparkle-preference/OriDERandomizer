@@ -8,29 +8,11 @@ public class SeinLogicCycle : MonoBehaviour
 		Sein = Characters.Sein;
 	}
 
-	public SeinMortality Mortality
-	{
-		get
-		{
-			return Sein.Mortality;
-		}
-	}
+	public SeinMortality Mortality => Sein.Mortality;
 
-	public SeinAbilities Abilities
-	{
-		get
-		{
-			return Sein.Abilities;
-		}
-	}
+	public SeinAbilities Abilities => Sein.Abilities;
 
-	public PlatformBehaviour PlatformBehaviour
-	{
-		get
-		{
-			return Sein.PlatformBehaviour;
-		}
-	}
+	public PlatformBehaviour PlatformBehaviour => Sein.PlatformBehaviour;
 
 	public void FixedUpdate()
 	{
@@ -129,341 +111,89 @@ public class SeinLogicCycle : MonoBehaviour
 		Sein.Controller.HandleOffscreenIssue();
 	}
 
-	public bool AllowInvincibility
-	{
-		get
-		{
-			return true;
-		}
-	}
+	public bool AllowInvincibility => true;
 
-	public bool AllowAirNoDeceleration
-	{
-		get
-		{
-			return true;
-		}
-	}
+	public bool AllowAirNoDeceleration => true;
 
-	public bool ApplyFrictionToSpeed
-	{
-		get
-		{
-			return true;
-		}
-	}
+	public bool ApplyFrictionToSpeed => true;
 
-	public bool AllowSpiritFlameTargetting
-	{
-		get
-		{
-			return Sein.PlayerAbilities.SpiritFlame.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsBashing;
-		}
-	}
+	public bool AllowSpiritFlameTargetting => Sein.PlayerAbilities.SpiritFlame.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsBashing;
 
-	public bool AllowCrushDetector
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowCrushDetector => !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowSpriteRotater
-	{
-		get
-		{
-			return true;
-		}
-	}
+	public bool AllowSpriteRotater => true;
 
-	public bool AllowDamageReciever
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowDamageReciever => !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowJumpSustain
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowJumpSustain => !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowUpwardsDeceleration
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowUpwardsDeceleration => !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowForceController
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowForceController => !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowGravity
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowGravity => !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowGravityToGround
-	{
-		get
-		{
-			return !Sein.Controller.IsSwimming && !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowGravityToGround => !Sein.Controller.IsSwimming && !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowSwimming
-	{
-		get
-		{
-			return true;
-		}
-	}
+	public bool AllowSwimming => true;
 
-	public bool AllowDash
-	{
-		get
-		{
-			return !RandomizerBonus.Swimming() && !Sein.Controller.IsGrabbingLever && !Sein.Controller.IsCarrying && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsPushPulling && !Sein.Controller.IsAimingGrenade && !Sein.Controller.IsStomping && !Sein.Controller.IsBashing && !SeinAbilityRestrictZone.IsInside() && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.Dash) && Sein.Controller.CanMove;
-		}
-	}
+	public bool AllowDash => !RandomizerBonus.Swimming() && !Sein.Controller.IsGrabbingLever && !Sein.Controller.IsCarrying && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsPushPulling && !Sein.Controller.IsAimingGrenade && !Sein.Controller.IsStomping && !Sein.Controller.IsBashing && !SeinAbilityRestrictZone.IsInside() && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.Dash) && Sein.Controller.CanMove;
 
-	public bool AllowGrenade
-	{
-		get
-		{
-			return !RandomizerBonus.Swimming() && !Sein.Controller.IsGrabbingLever && !Sein.Controller.IsCarrying && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsPushPulling && !SeinAbilityRestrictZone.IsInside() && Sein.Controller.CanMove && !Sein.Controller.IsBashing && !Sein.Controller.IsStandingOnEdge && !Sein.Controller.IsDashing;
-		}
-	}
+	public bool AllowGrenade => !RandomizerBonus.Swimming() && !Sein.Controller.IsGrabbingLever && !Sein.Controller.IsCarrying && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsPushPulling && !SeinAbilityRestrictZone.IsInside() && Sein.Controller.CanMove && !Sein.Controller.IsBashing && !Sein.Controller.IsStandingOnEdge && !Sein.Controller.IsDashing;
 
-	public bool AllowInstantStop
-	{
-		get
-		{
-			return !Sein.Controller.IsSwimming && !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowInstantStop => !Sein.Controller.IsSwimming && !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowLeftRightMovement
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation && (!Sein.Controller.IsSwimming || !Sein.Abilities.Swimming.IsUnderwater);
-		}
-	}
+	public bool AllowLeftRightMovement => !Sein.Controller.IsPlayingAnimation && (!Sein.Controller.IsSwimming || !Sein.Abilities.Swimming.IsUnderwater);
 
-	public bool AllowBash
-	{
-		get
-		{
-			return Sein.PlayerAbilities.Bash.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsPushPulling && !Sein.Controller.IsGrabbingLever && !Sein.Controller.IsAimingGrenade;
-		}
-	}
+	public bool AllowBash => Sein.PlayerAbilities.Bash.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsPushPulling && !Sein.Controller.IsGrabbingLever && !Sein.Controller.IsAimingGrenade;
 
-	public bool AllowLooking
-	{
-		get
-		{
-			return !Sein.Controller.IsSwimming && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade;
-		}
-	}
+	public bool AllowLooking => !Sein.Controller.IsSwimming && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade;
 
-	public bool AllowLever
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsPushPulling && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping && !Sein.Controller.IsAimingGrenade;
-		}
-	}
+	public bool AllowLever => !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsPushPulling && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping && !Sein.Controller.IsAimingGrenade;
 
-	public bool AllowFootsteps
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsSwimming;
-		}
-	}
+	public bool AllowFootsteps => !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsSwimming;
 
-	public bool AllowStandardSpiritFlame
-	{
-		get
-		{
-			return Sein.PlayerAbilities.SpiritFlame.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsBashing;
-		}
-	}
+	public bool AllowStandardSpiritFlame => Sein.PlayerAbilities.SpiritFlame.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsBashing;
 
-	public bool AllowChargeFlame
-	{
-		get
-		{
-			return Sein.PlayerAbilities.ChargeFlame.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsBashing;
-		}
-	}
+	public bool AllowChargeFlame => Sein.PlayerAbilities.ChargeFlame.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsBashing;
 
-	public bool AllowWallSlide
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsCarrying && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsGliding && !Sein.Controller.IsStomping;
-		}
-	}
+	public bool AllowWallSlide => !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsCarrying && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsGliding && !Sein.Controller.IsStomping;
 
-	public bool AllowStomp
-	{
-		get
-		{
-			return Sein.PlayerAbilities.Stomp.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsCarrying && !Sein.Controller.IsBashing && !Sein.Controller.IsGrabbingWall && !Sein.Controller.IsAimingGrenade;
-		}
-	}
+	public bool AllowStomp => Sein.PlayerAbilities.Stomp.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsCarrying && !Sein.Controller.IsBashing && !Sein.Controller.IsGrabbingWall && !Sein.Controller.IsAimingGrenade;
 
-	public bool AllowCarry
-	{
-		get
-		{
-			return !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping && !Sein.Controller.IsAimingGrenade;
-		}
-	}
+	public bool AllowCarry => !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping && !Sein.Controller.IsAimingGrenade;
 
-	public bool AllowFall
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing;
-		}
-	}
+	public bool AllowFall => !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing;
 
-	public bool AllowGrabBlock
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsBashing && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsAimingGrenade;
-		}
-	}
+	public bool AllowGrabBlock => !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsBashing && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsAimingGrenade;
 
-	public bool AllowIdle
-	{
-		get
-		{
-			return !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsCarrying && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsPushPulling;
-		}
-	}
+	public bool AllowIdle => !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsCarrying && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsPushPulling;
 
-	public bool AllowRun
-	{
-		get
-		{
-			return !Sein.Controller.IsCarrying && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsPushPulling;
-		}
-	}
+	public bool AllowRun => !Sein.Controller.IsCarrying && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsPushPulling;
 
-	public bool AllowCrouching
-	{
-		get
-		{
-			return !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade && !Sein.Controller.IsDashing;
-		}
-	}
+	public bool AllowCrouching => !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade && !Sein.Controller.IsDashing;
 
-	public bool AllowWallGrabbing
-	{
-		get
-		{
-			return (Sein.PlayerAbilities.Climb.HasAbility || (RandomizerBonus.EnhancedWallJump && Sein.PlayerAbilities.WallJump.HasAbility)) && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowWallGrabbing => (Sein.PlayerAbilities.Climb.HasAbility || (RandomizerBonus.EnhancedWallJump && Sein.PlayerAbilities.WallJump.HasAbility)) && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowJumping
-	{
-		get
-		{
-			return !Sein.Controller.IsSwimming && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowJumping => !Sein.Controller.IsSwimming && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowDoubleJump
-	{
-		get
-		{
-			return Sein.PlayerAbilities.DoubleJump.HasAbility && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowDoubleJump => Sein.PlayerAbilities.DoubleJump.HasAbility && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowGliding
-	{
-		get
-		{
-			return Sein.PlayerAbilities.Glide.HasAbility && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsGrabbingWall && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsDashing;
-		}
-	}
+	public bool AllowGliding => Sein.PlayerAbilities.Glide.HasAbility && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsGrabbingWall && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsDashing;
 
-	public bool AllowWallJump
-	{
-		get
-		{
-			return (Sein.PlayerAbilities.WallJump.HasAbility || (RandomizerBonus.EnhancedClimb && Sein.PlayerAbilities.Climb.HasAbility)) && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsGliding && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowWallJump => (Sein.PlayerAbilities.WallJump.HasAbility || (RandomizerBonus.EnhancedClimb && Sein.PlayerAbilities.Climb.HasAbility)) && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsGliding && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowChargeJumpCharging
-	{
-		get
-		{
-			return AllowChargeJump || AllowDash;
-		}
-	}
+	public bool AllowChargeJumpCharging => AllowChargeJump || AllowDash;
 
-	public bool AllowChargeJump
-	{
-		get
-		{
-			return Sein.PlayerAbilities.ChargeJump.HasAbility && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade;
-		}
-	}
+	public bool AllowChargeJump => Sein.PlayerAbilities.ChargeJump.HasAbility && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade;
 
-	public bool AllowWallChargeJump
-	{
-		get
-		{
-			return !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade;
-		}
-	}
+	public bool AllowWallChargeJump => !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade;
 
-	public bool AllowStandingOnEdge
-	{
-		get
-		{
-			return !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade;
-		}
-	}
+	public bool AllowStandingOnEdge => !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade;
 
-	public bool AllowPushAgainstWall
-	{
-		get
-		{
-			return !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowPushAgainstWall => !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsPlayingAnimation;
 
-	public bool AllowEdgeClamber
-	{
-		get
-		{
-			return !Sein.Controller.IsCarrying && !Sein.Controller.IsSwimming && !Sein.Controller.IsPlayingAnimation;
-		}
-	}
+	public bool AllowEdgeClamber => !Sein.Controller.IsCarrying && !Sein.Controller.IsSwimming && !Sein.Controller.IsPlayingAnimation;
 
 	public SeinCharacter Sein;
 }

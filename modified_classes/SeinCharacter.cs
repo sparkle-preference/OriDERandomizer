@@ -12,44 +12,20 @@ public class SeinCharacter : MonoBehaviour, ICharacter
 		}
 	}
 
-	public CharacterAnimationSystem Animation
-	{
-		get
-		{
-			return PlatformBehaviour.Visuals.Animation;
-		}
-	}
+	public CharacterAnimationSystem Animation => PlatformBehaviour.Visuals.Animation;
 
-	public bool IsSuspended
-	{
-		get
-		{
-			return PlatformBehaviour.PlatformMovement.IsSuspended;
-		}
-	}
+	public bool IsSuspended => PlatformBehaviour.PlatformMovement.IsSuspended;
 
 	public Vector3 Position
 	{
-		get
-		{
-			return PlatformBehaviour.PlatformMovement.Position;
-		}
-		set
-		{
-			PlatformBehaviour.PlatformMovement.Position = value;
-		}
+		get => PlatformBehaviour.PlatformMovement.Position;
+		set => PlatformBehaviour.PlatformMovement.Position = value;
 	}
 
 	public bool Active
 	{
-		get
-		{
-			return gameObject.activeSelf;
-		}
-		set
-		{
-			gameObject.SetActive(value);
-		}
+		get => gameObject.activeSelf;
+		set => gameObject.SetActive(value);
 	}
 
 	public void Awake()
@@ -91,53 +67,23 @@ public class SeinCharacter : MonoBehaviour, ICharacter
 		}
 	}
 
-	public GameObject GameObject
-	{
-		get
-		{
-			return gameObject;
-		}
-	}
+	public GameObject GameObject => gameObject;
 
 	public bool FaceLeft
 	{
-		get
-		{
-			return Animation.SpriteMirror.FaceLeft;
-		}
-		set
-		{
-			Animation.SpriteMirror.FaceLeft = value;
-		}
+		get => Animation.SpriteMirror.FaceLeft;
+		set => Animation.SpriteMirror.FaceLeft = value;
 	}
 
 	public Vector3 Speed
 	{
-		get
-		{
-			return PlatformBehaviour.PlatformMovement.LocalSpeed;
-		}
-		set
-		{
-			PlatformBehaviour.PlatformMovement.LocalSpeed = value;
-		}
+		get => PlatformBehaviour.PlatformMovement.LocalSpeed;
+		set => PlatformBehaviour.PlatformMovement.LocalSpeed = value;
 	}
 
-	public Transform Transform
-	{
-		get
-		{
-			return transform;
-		}
-	}
+	public Transform Transform => transform;
 
-	public bool IsOnGround
-	{
-		get
-		{
-			return PlatformBehaviour.PlatformMovement.IsOnGround;
-		}
-	}
+	public bool IsOnGround => PlatformBehaviour.PlatformMovement.IsOnGround;
 
 	public void PlaceOnGround()
 	{

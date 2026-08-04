@@ -37,13 +37,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 		return true;
 	}
 
-	public bool IsInWater
-	{
-		get
-		{
-			return WaterZone.PositionInWater(Position);
-		}
-	}
+	public bool IsInWater => WaterZone.PositionInWater(Position);
 
 	public void Drown()
 	{
@@ -111,77 +105,29 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 		}
 	}
 
-	public bool PlayerIsToLeft
-	{
-		get
-		{
-			return PositionToPlayerPosition.x < 0f;
-		}
-	}
+	public bool PlayerIsToLeft => PositionToPlayerPosition.x < 0f;
 
-	public Vector3 PlayerPosition
-	{
-		get
-		{
-			return Characters.Sein.PlatformBehaviour.PlatformMovement.Position;
-		}
-	}
+	public Vector3 PlayerPosition => Characters.Sein.PlatformBehaviour.PlatformMovement.Position;
 
 	public Vector3 Position
 	{
-		get
-		{
-			return transform.position;
-		}
-		set
-		{
-			transform.position = value;
-		}
+		get => transform.position;
+		set => transform.position = value;
 	}
 
 	public Quaternion Rotation
 	{
-		get
-		{
-			return transform.rotation;
-		}
-		set
-		{
-			transform.rotation = value;
-		}
+		get => transform.rotation;
+		set => transform.rotation = value;
 	}
 
-	public Vector3 PositionToPlayerPosition
-	{
-		get
-		{
-			return transform.InverseTransformDirection(PlayerPosition - Position);
-		}
-	}
+	public Vector3 PositionToPlayerPosition => transform.InverseTransformDirection(PlayerPosition - Position);
 
-	public Vector3 StartPositionToPlayerPosition
-	{
-		get
-		{
-			return PlayerPosition - StartPosition;
-		}
-	}
+	public Vector3 StartPositionToPlayerPosition => PlayerPosition - StartPosition;
 
-	public bool LeftOfStartPosition
-	{
-		get
-		{
-			return StartPositionToPlayerPosition.x < 0f;
-		}
-	}
+	public bool LeftOfStartPosition => StartPositionToPlayerPosition.x < 0f;
 
-	public Vector3 PositionToStartPosition
-	{
-		get
-		{
-			return StartPosition - Position;
-		}
-	}
+	public Vector3 PositionToStartPosition => StartPosition - Position;
 
 	public Vector3 StartPosition { get; set; }
 
@@ -286,13 +232,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
 		m_insideFrustum = false;
 	}
 
-	public bool InsideFrustum
-	{
-		get
-		{
-			return m_insideFrustum;
-		}
-	}
+	public bool InsideFrustum => m_insideFrustum;
 
 	public Bounds Bounds
 	{

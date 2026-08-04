@@ -304,21 +304,9 @@ public class MessageBox : MonoBehaviour
 		Visibility.WaitDuration = duration;
 	}
 
-	public EmotionType CurrentEmotion
-	{
-		get
-		{
-			return m_currentMessage.Emotion;
-		}
-	}
+	public EmotionType CurrentEmotion => m_currentMessage.Emotion;
 
-	public SoundProvider CurrentMessageSound
-	{
-		get
-		{
-			return m_currentMessage.Sound;
-		}
-	}
+	public SoundProvider CurrentMessageSound => m_currentMessage.Sound;
 
 	public void FinishWriting()
 	{
@@ -328,21 +316,9 @@ public class MessageBox : MonoBehaviour
 		}
 	}
 
-	public bool IsLastMessage
-	{
-		get
-		{
-			return m_messageDescriptors == null || MessageIndex == m_messageDescriptors.Length - 1;
-		}
-	}
+	public bool IsLastMessage => m_messageDescriptors == null || MessageIndex == m_messageDescriptors.Length - 1;
 
-	public bool FinishedWriting
-	{
-		get
-		{
-			return WriteOutTextBox == null || WriteOutTextBox.AtEnd;
-		}
-	}
+	public bool FinishedWriting => WriteOutTextBox == null || WriteOutTextBox.AtEnd;
 
 	public void NextMessage()
 	{
