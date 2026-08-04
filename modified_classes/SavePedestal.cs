@@ -198,7 +198,6 @@ public class SavePedestal : SaveSerialize {
         }
 
         seinPlatformMovement.PositionX = ((Component)this).transform.position.x;
-        yield break;
     }
 
     public static List<SavePedestal> All = new List<SavePedestal>();

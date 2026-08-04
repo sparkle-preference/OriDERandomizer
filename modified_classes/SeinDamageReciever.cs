@@ -245,8 +245,6 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
             SpriteMaterialTintColor(new Color(0f, 0f, 0f, 0f));
             yield return new WaitForSeconds(0.05f);
         }
-
-        yield break;
     }
 
     public void SpriteMaterialTintColor(Color color) {
