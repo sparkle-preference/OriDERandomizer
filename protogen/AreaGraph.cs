@@ -1,23 +1,18 @@
 using System.Collections.Generic;
 
-namespace Protogen
-{
-    public class AreaGraph
-    {
-        public AreaGraph(Node origin, List<Node> nodes, List<Connection> connections)
-        {
+namespace Protogen {
+    public class AreaGraph {
+        public AreaGraph(Node origin, List<Node> nodes, List<Connection> connections) {
             Origin = origin;
             Nodes = nodes;
             Connections = connections;
 
-            foreach (var node in Nodes)
-            {
+            foreach (var node in Nodes) {
                 NodesByName[node.Name] = node;
                 OutgoingConnections[node.Name] = new List<Connection>();
             }
 
-            foreach (var connection in Connections)
-            {
+            foreach (var connection in Connections) {
                 OutgoingConnections[connection.Source.Name].Add(connection);
             }
         }

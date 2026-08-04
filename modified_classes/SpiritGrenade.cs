@@ -2,210 +2,177 @@ using System;
 using Game;
 using UnityEngine;
 
-public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashAttackable, ISuspendable
-{
-	public bool IsInsideSpiritTorch => m_ignitableTorch != null;
+public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashAttackable, ISuspendable {
+    public bool IsInsideSpiritTorch => m_ignitableTorch != null;
 
-	public void Awake()
-	{
-		var damageDealer = DamageDealer;
-		damageDealer.OnDamageDealtEvent = (Action<GameObject, Damage>)Delegate.Combine(damageDealer.OnDamageDealtEvent, new Action<GameObject, Damage>(OnDamageDealt));
-		var damageDealer2 = DamageDealer;
-		damageDealer2.ShouldDealDamage = (Func<GameObject, bool>)Delegate.Combine(damageDealer2.ShouldDealDamage, new Func<GameObject, bool>(ShouldDealDamage));
-		SuspensionManager.Register(this);
-		Targets.Attackables.Add(this);
-		m_rigidbody = GetComponent<Rigidbody>();
-	}
+    public void Awake() {
+        var damageDealer = DamageDealer;
+        damageDealer.OnDamageDealtEvent = (Action<GameObject, Damage>)Delegate.Combine(damageDealer.OnDamageDealtEvent, new Action<GameObject, Damage>(OnDamageDealt));
+        var damageDealer2 = DamageDealer;
+        damageDealer2.ShouldDealDamage = (Func<GameObject, bool>)Delegate.Combine(damageDealer2.ShouldDealDamage, new Func<GameObject, bool>(ShouldDealDamage));
+        SuspensionManager.Register(this);
+        Targets.Attackables.Add(this);
+        m_rigidbody = GetComponent<Rigidbody>();
+    }
 
-	public void Start()
-	{
-		m_time = 0f;
-	}
+    public void Start() {
+        m_time = 0f;
+    }
 
-	public void OnDestroy()
-	{
-		var damageDealer = DamageDealer;
-		damageDealer.OnDamageDealtEvent = (Action<GameObject, Damage>)Delegate.Remove(damageDealer.OnDamageDealtEvent, new Action<GameObject, Damage>(OnDamageDealt));
-		var damageDealer2 = DamageDealer;
-		damageDealer2.ShouldDealDamage = (Func<GameObject, bool>)Delegate.Remove(damageDealer2.ShouldDealDamage, new Func<GameObject, bool>(ShouldDealDamage));
-		SuspensionManager.Unregister(this);
-		Targets.Attackables.Remove(this);
-	}
+    public void OnDestroy() {
+        var damageDealer = DamageDealer;
+        damageDealer.OnDamageDealtEvent = (Action<GameObject, Damage>)Delegate.Remove(damageDealer.OnDamageDealtEvent, new Action<GameObject, Damage>(OnDamageDealt));
+        var damageDealer2 = DamageDealer;
+        damageDealer2.ShouldDealDamage = (Func<GameObject, bool>)Delegate.Remove(damageDealer2.ShouldDealDamage, new Func<GameObject, bool>(ShouldDealDamage));
+        SuspensionManager.Unregister(this);
+        Targets.Attackables.Remove(this);
+    }
 
-	public bool ShouldDealDamage(GameObject target)
-	{
-		if (IsInsideSpiritTorch)
-		{
-			return false;
-		}
-		var attackable = target.FindComponent<IAttackable>();
-		return attackable as Component && attackable.CanBeGrenaded();
-	}
-
-	public void OnDamageDealt(GameObject go, Damage damage)
-	{
-		if (!IsInsideSpiritTorch && !go.GetComponent<Projectile>())
-		{
-			Explode();
-		}
-	}
-
-	public void Explode()
-	{
-		InstantiateUtility.Destroy(gameObject);
-		InstantiateUtility.Instantiate(Explosion, transform.position, Quaternion.identity);
-        HasExploded = true;
-	}
-
-	public void SetTrajectory(Vector2 speed)
-	{
-		var component = GetComponent<Rigidbody>();
-		component.velocity = speed;
-	}
-
-	public void FixedUpdate()
-	{
-		if (IsSuspended)
-		{
-			return;
-		}
-		m_time += Time.deltaTime;
-		if (IsInsideSpiritTorch)
-		{
-			m_rigidbody.velocity = (m_ignitableTorch.Position - m_rigidbody.position + new Vector3(0.2f, 0.4f)) * 8f;
-			if (m_time > 0.8f)
-			{
-				InstantiateUtility.Destroy(gameObject);
-			}
-		}
-		else
-		{
-			m_rigidbody.velocity += Vector3.down * Gravity * Time.deltaTime;
-			var ignitableSpiritTorch = IgnitableSpiritTorch.IgniteAnyTorchesNearPosition(transform.position);
-			if (ignitableSpiritTorch)
-			{
-				m_ignitableTorch = ignitableSpiritTorch;
-				m_time = 0f;
-				return;
-			}
-			if (m_time > Duration)
-			{
-				Explode();
-			}
-		}
-		if (WaterZone.PositionInWater(Position))
-		{
-			m_rigidbody.velocity *= 0.9f;
-		}
-	}
-
-	public Vector3 Position => transform.position;
-
-	public bool IsDead()
-	{
-		return gameObject.activeSelf;
-	}
-
-	public bool CanBeChargeFlamed()
-	{
-		return false;
-	}
-
-	public bool CanBeChargeDashed()
-	{
-		return false;
-	}
-
-	public bool CanBeGrenaded()
-	{
-		return false;
-	}
-
-	public bool CanBeStomped()
-	{
-		return false;
-	}
-
-	public bool CanBeBashed()
-	{
-		return !IsInsideSpiritTorch && Bashable;
-	}
-
-	public bool CanBeSpiritFlamed()
-	{
-		return false;
-	}
-
-	public bool IsStompBouncable()
-	{
-		return false;
-	}
-
-	public bool CanBeLevelUpBlasted()
-	{
-		return false;
-	}
-
-	public void OnEnterBash()
-	{
-	}
-
-	public void OnBashHighlight()
-	{
-	}
-
-	public void OnBashDehighlight()
-	{
-	}
-
-	public int BashPriority => 100;
-
-	public bool IsSuspended { get; set; }
-
-	public void OnSpring(float height, Vector2 direction)
-	{
-		m_rigidbody.velocity = direction * MoonMath.Physics.SpeedFromHeightAndGravity(Gravity, height);
-	}
-
-	public void OnRecieveDamage(Damage damage)
-	{
-		if (damage.Type == DamageType.Spikes || damage.Type == DamageType.Lava || damage.Type == DamageType.Laser || damage.Type == DamageType.Bash)
-		{
-			Explode();
-		}
-	}
-
-    public void OnCollisionEnter(Collision collision)
-    {
-        // If the collision causes it explode then the explosion happens before this collision callback.
-        var plant = collision.gameObject.GetComponent<PetrifiedPlant>();
-        if (plant != null && !HasExploded)
-        {
-            Explode();
+    public bool ShouldDealDamage(GameObject target) {
+        if (IsInsideSpiritTorch) {
+            return false;
         }
-        
-        var floor = collision.gameObject.GetComponent<StompableFloor>();
-        if (RandomizerBonus.EnhancedGrenade && floor != null && !HasExploded)
-        {
-        	Explode();
+
+        var attackable = target.FindComponent<IAttackable>();
+        return attackable as Component && attackable.CanBeGrenaded();
+    }
+
+    public void OnDamageDealt(GameObject go, Damage damage) {
+        if (!IsInsideSpiritTorch && !go.GetComponent<Projectile>()) {
+            Explode();
         }
     }
 
-	public float Gravity;
+    public void Explode() {
+        InstantiateUtility.Destroy(gameObject);
+        InstantiateUtility.Instantiate(Explosion, transform.position, Quaternion.identity);
+        HasExploded = true;
+    }
 
-	public DamageDealer DamageDealer;
+    public void SetTrajectory(Vector2 speed) {
+        var component = GetComponent<Rigidbody>();
+        component.velocity = speed;
+    }
 
-	public GameObject Explosion;
+    public void FixedUpdate() {
+        if (IsSuspended) {
+            return;
+        }
 
-	public float Duration = 4f;
+        m_time += Time.deltaTime;
+        if (IsInsideSpiritTorch) {
+            m_rigidbody.velocity = (m_ignitableTorch.Position - m_rigidbody.position + new Vector3(0.2f, 0.4f)) * 8f;
+            if (m_time > 0.8f) {
+                InstantiateUtility.Destroy(gameObject);
+            }
+        } else {
+            m_rigidbody.velocity += Vector3.down * Gravity * Time.deltaTime;
+            var ignitableSpiritTorch = IgnitableSpiritTorch.IgniteAnyTorchesNearPosition(transform.position);
+            if (ignitableSpiritTorch) {
+                m_ignitableTorch = ignitableSpiritTorch;
+                m_time = 0f;
+                return;
+            }
 
-	private float m_time;
+            if (m_time > Duration) {
+                Explode();
+            }
+        }
 
-	private Rigidbody m_rigidbody;
+        if (WaterZone.PositionInWater(Position)) {
+            m_rigidbody.velocity *= 0.9f;
+        }
+    }
 
-	private IgnitableSpiritTorch m_ignitableTorch;
+    public Vector3 Position => transform.position;
 
-	public bool Bashable = true;
+    public bool IsDead() {
+        return gameObject.activeSelf;
+    }
+
+    public bool CanBeChargeFlamed() {
+        return false;
+    }
+
+    public bool CanBeChargeDashed() {
+        return false;
+    }
+
+    public bool CanBeGrenaded() {
+        return false;
+    }
+
+    public bool CanBeStomped() {
+        return false;
+    }
+
+    public bool CanBeBashed() {
+        return !IsInsideSpiritTorch && Bashable;
+    }
+
+    public bool CanBeSpiritFlamed() {
+        return false;
+    }
+
+    public bool IsStompBouncable() {
+        return false;
+    }
+
+    public bool CanBeLevelUpBlasted() {
+        return false;
+    }
+
+    public void OnEnterBash() {
+    }
+
+    public void OnBashHighlight() {
+    }
+
+    public void OnBashDehighlight() {
+    }
+
+    public int BashPriority => 100;
+
+    public bool IsSuspended { get; set; }
+
+    public void OnSpring(float height, Vector2 direction) {
+        m_rigidbody.velocity = direction * MoonMath.Physics.SpeedFromHeightAndGravity(Gravity, height);
+    }
+
+    public void OnRecieveDamage(Damage damage) {
+        if (damage.Type == DamageType.Spikes || damage.Type == DamageType.Lava || damage.Type == DamageType.Laser || damage.Type == DamageType.Bash) {
+            Explode();
+        }
+    }
+
+    public void OnCollisionEnter(Collision collision) {
+        // If the collision causes it explode then the explosion happens before this collision callback.
+        var plant = collision.gameObject.GetComponent<PetrifiedPlant>();
+        if (plant != null && !HasExploded) {
+            Explode();
+        }
+
+        var floor = collision.gameObject.GetComponent<StompableFloor>();
+        if (RandomizerBonus.EnhancedGrenade && floor != null && !HasExploded) {
+            Explode();
+        }
+    }
+
+    public float Gravity;
+
+    public DamageDealer DamageDealer;
+
+    public GameObject Explosion;
+
+    public float Duration = 4f;
+
+    private float m_time;
+
+    private Rigidbody m_rigidbody;
+
+    private IgnitableSpiritTorch m_ignitableTorch;
+
+    public bool Bashable = true;
 
     public bool HasExploded;
 }

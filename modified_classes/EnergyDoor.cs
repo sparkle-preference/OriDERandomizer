@@ -4,236 +4,205 @@ using Game;
 using UnityEngine;
 using Input = Core.Input;
 
-public class EnergyDoor : SaveSerialize
-{
-	public void OnValidate()
-	{
-		m_transform = transform;
-	}
+public class EnergyDoor : SaveSerialize {
+    public void OnValidate() {
+        m_transform = transform;
+    }
 
-	public override void Awake()
-	{
-		base.Awake();
-	}
+    public override void Awake() {
+        base.Awake();
+    }
 
-	public void Highlight()
-	{
-		if (OriTarget)
-		{
-			Characters.Ori.MoveOriToPosition(OriTarget.position, OriDuration);
-		}
-		else
-		{
-			Characters.Ori.MoveOriToPosition(m_transform.position, OriDuration);
-		}
-		if (Characters.Sein.Abilities.SpiritFlame)
-		{
-			Characters.Sein.Abilities.SpiritFlame.AddLock("energyDoor");
-		}
-		Characters.Ori.GetComponent<Rigidbody>().velocity = Vector3.zero;
-		Characters.Ori.EnableHoverWobbling = false;
-		if (m_hint == null)
-		{
-			m_hint = UI.Hints.Show(HintMessage, HintLayer.HintZone);
-		}
-		if (OnOriEnterSoundProvider)
-		{
-			Sound.Play(OnOriEnterSoundProvider.GetSound(null), m_transform.position, null);
-		}
-	}
+    public void Highlight() {
+        if (OriTarget) {
+            Characters.Ori.MoveOriToPosition(OriTarget.position, OriDuration);
+        } else {
+            Characters.Ori.MoveOriToPosition(m_transform.position, OriDuration);
+        }
 
-	public void Unhighlight()
-	{
-		Characters.Ori.ChangeState(Ori.State.Hovering);
-		Characters.Ori.EnableHoverWobbling = true;
-		if (Characters.Sein.Abilities.SpiritFlame)
-		{
-			Characters.Sein.Abilities.SpiritFlame.RemoveLock("energyDoor");
-		}
-		if (m_hint)
-		{
-			m_hint.HideMessageScreen();
-		}
-		if (OnOriExitSoundProvider)
-		{
-			Sound.Play(OnOriExitSoundProvider.GetSound(null), m_transform.position, null);
-		}
-	}
+        if (Characters.Sein.Abilities.SpiritFlame) {
+            Characters.Sein.Abilities.SpiritFlame.AddLock("energyDoor");
+        }
 
-	public void RestoreOrbs()
-	{
-		if (AmountOfEnergyUsed > 0 && RestoreSoundProvider)
-		{
-			Sound.Play(RestoreSoundProvider.GetSound(null), m_transform.position, null);
-		}
-		if (Characters.Sein)
-		{
-			Characters.Sein.Energy.Gain(AmountOfEnergyUsed);
-		}
-		AmountOfEnergyUsed = 0;
-	}
+        Characters.Ori.GetComponent<Rigidbody>().velocity = Vector3.zero;
+        Characters.Ori.EnableHoverWobbling = false;
+        if (m_hint == null) {
+            m_hint = UI.Hints.Show(HintMessage, HintLayer.HintZone);
+        }
 
-	public void OnDisable()
-	{
-		if (CurrentState == State.Highlighted)
-		{
-			RestoreOrbs();
-			Unhighlight();
-		}
-	}
+        if (OnOriEnterSoundProvider) {
+            Sound.Play(OnOriEnterSoundProvider.GetSound(null), m_transform.position, null);
+        }
+    }
 
-	public override void Serialize(Archive ar)
-	{
-		ar.Serialize(ref m_slotsPending);
-		ar.Serialize(ref AmountOfEnergyUsed);
-		ar.Serialize(ref m_slotsFilled);
-		if (ar.Reading && CurrentState == State.Highlighted)
-		{
-			Unhighlight();
-			CurrentState = State.Normal;
-		}
-		CurrentState = (State)ar.Serialize((int)CurrentState);
-		if (ar.Reading && CurrentState == State.Highlighted)
-		{
-			RestoreOrbs();
-			CurrentState = State.Normal;
-		}
-	}
+    public void Unhighlight() {
+        Characters.Ori.ChangeState(Ori.State.Hovering);
+        Characters.Ori.EnableHoverWobbling = true;
+        if (Characters.Sein.Abilities.SpiritFlame) {
+            Characters.Sein.Abilities.SpiritFlame.RemoveLock("energyDoor");
+        }
 
-	public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
+        if (m_hint) {
+            m_hint.HideMessageScreen();
+        }
 
-	public bool OriHasTargets
-	{
-		get
-		{
-			var spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
-			return spiritFlameTargetting && spiritFlameTargetting.ClosestAttackables.Count > 0;
-		}
-	}
+        if (OnOriExitSoundProvider) {
+            Sound.Play(OnOriExitSoundProvider.GetSound(null), m_transform.position, null);
+        }
+    }
 
-	public bool SeinInRange => !OriHasTargets && DistanceToSein <= Radius;
+    public void RestoreOrbs() {
+        if (AmountOfEnergyUsed > 0 && RestoreSoundProvider) {
+            Sound.Play(RestoreSoundProvider.GetSound(null), m_transform.position, null);
+        }
 
-	public void RegisterSlot(EnergyDoorSlot slot)
-	{
-		m_slots.Add(slot);
-	}
+        if (Characters.Sein) {
+            Characters.Sein.Energy.Gain(AmountOfEnergyUsed);
+        }
 
-	public void UpdateSlots()
-	{
-		foreach (var energyDoorSlot in m_slots)
-		{
-			energyDoorSlot.Refresh();
-		}
-	}
+        AmountOfEnergyUsed = 0;
+    }
 
-	public void FixedUpdate()
-	{
-		if (!Characters.Sein)
-		{
-			return;
-		}
-		var currentState = CurrentState;
-		if (currentState != State.Normal)
-		{
-			if (currentState == State.Highlighted)
-			{
-				if (!SeinInRange)
-				{
-					RestoreOrbs();
-					Unhighlight();
-					CurrentState = State.Normal;
-				}
-				if (!Characters.Sein.Controller.CanMove)
-				{
-					RestoreOrbs();
-					Unhighlight();
-					CurrentState = State.Normal;
-					return;
-				}
-				if (Characters.Sein.Controller.CanMove && !Characters.Sein.IsSuspended && Input.SpiritFlame.OnPressed)
-				{
-					if (Characters.Sein.Energy.Current < 1f && AmountOfEnergyRequired > AmountOfEnergyUsed)
-					{
-						OnFailAction.Perform(null);
-						Characters.Sein.Energy.NotifyOutOfEnergy();
-					}
-					if (Characters.Sein.Energy.Current >= 1f && AmountOfEnergyUsed < AmountOfEnergyRequired)
-					{
-						AmountOfEnergyUsed++;
-						Characters.Sein.Energy.Spend(1f);
-						UpdateSlots();
-						if (PlaceSlotSoundProvider)
-						{
-							Sound.Play(PlaceSlotSoundProvider.GetSound(null), m_transform.position, null);
-						}
-					}
-					if (AmountOfEnergyUsed == AmountOfEnergyRequired)
-					{
-						BingoController.OnEnergyDoor();
-						OnOpenedAction.Perform(null);
-						Unhighlight();
-						CurrentState = State.Opened;
-						if (ActivateSoundProvider)
-						{
-							Sound.Play(ActivateSoundProvider.GetSound(null), m_transform.position, null);
-						}
-					}
-				}
-			}
-		}
-		else if (SeinInRange && !OriHasTargets && Characters.Sein.Controller.CanMove)
-		{
-			Highlight();
-			CurrentState = State.Highlighted;
-		}
-	}
+    public void OnDisable() {
+        if (CurrentState == State.Highlighted) {
+            RestoreOrbs();
+            Unhighlight();
+        }
+    }
 
-	public Transform OriTarget;
+    public override void Serialize(Archive ar) {
+        ar.Serialize(ref m_slotsPending);
+        ar.Serialize(ref AmountOfEnergyUsed);
+        ar.Serialize(ref m_slotsFilled);
+        if (ar.Reading && CurrentState == State.Highlighted) {
+            Unhighlight();
+            CurrentState = State.Normal;
+        }
 
-	[SerializeField]
-	[HideInInspector]
-	private Transform m_transform;
+        CurrentState = (State)ar.Serialize((int)CurrentState);
+        if (ar.Reading && CurrentState == State.Highlighted) {
+            RestoreOrbs();
+            CurrentState = State.Normal;
+        }
+    }
 
-	private int m_slotsPending;
+    public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
 
-	private int m_slotsFilled;
+    public bool OriHasTargets {
+        get {
+            var spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
+            return spiritFlameTargetting && spiritFlameTargetting.ClosestAttackables.Count > 0;
+        }
+    }
 
-	public ActionMethod OnOpenedAction;
+    public bool SeinInRange => !OriHasTargets && DistanceToSein <= Radius;
 
-	public ActionMethod OnFailAction;
+    public void RegisterSlot(EnergyDoorSlot slot) {
+        m_slots.Add(slot);
+    }
 
-	public int AmountOfEnergyRequired;
+    public void UpdateSlots() {
+        foreach (var energyDoorSlot in m_slots) {
+            energyDoorSlot.Refresh();
+        }
+    }
 
-	public int AmountOfEnergyUsed;
+    public void FixedUpdate() {
+        if (!Characters.Sein) {
+            return;
+        }
 
-	public SoundProvider PlaceSlotSoundProvider;
+        var currentState = CurrentState;
+        if (currentState != State.Normal) {
+            if (currentState == State.Highlighted) {
+                if (!SeinInRange) {
+                    RestoreOrbs();
+                    Unhighlight();
+                    CurrentState = State.Normal;
+                }
 
-	public SoundProvider ActivateSoundProvider;
+                if (!Characters.Sein.Controller.CanMove) {
+                    RestoreOrbs();
+                    Unhighlight();
+                    CurrentState = State.Normal;
+                    return;
+                }
 
-	public SoundProvider RestoreSoundProvider;
+                if (Characters.Sein.Controller.CanMove && !Characters.Sein.IsSuspended && Input.SpiritFlame.OnPressed) {
+                    if (Characters.Sein.Energy.Current < 1f && AmountOfEnergyRequired > AmountOfEnergyUsed) {
+                        OnFailAction.Perform(null);
+                        Characters.Sein.Energy.NotifyOutOfEnergy();
+                    }
 
-	public SoundProvider OnOriEnterSoundProvider;
+                    if (Characters.Sein.Energy.Current >= 1f && AmountOfEnergyUsed < AmountOfEnergyRequired) {
+                        AmountOfEnergyUsed++;
+                        Characters.Sein.Energy.Spend(1f);
+                        UpdateSlots();
+                        if (PlaceSlotSoundProvider) {
+                            Sound.Play(PlaceSlotSoundProvider.GetSound(null), m_transform.position, null);
+                        }
+                    }
 
-	public SoundProvider OnOriExitSoundProvider;
+                    if (AmountOfEnergyUsed == AmountOfEnergyRequired) {
+                        BingoController.OnEnergyDoor();
+                        OnOpenedAction.Perform(null);
+                        Unhighlight();
+                        CurrentState = State.Opened;
+                        if (ActivateSoundProvider) {
+                            Sound.Play(ActivateSoundProvider.GetSound(null), m_transform.position, null);
+                        }
+                    }
+                }
+            }
+        } else if (SeinInRange && !OriHasTargets && Characters.Sein.Controller.CanMove) {
+            Highlight();
+            CurrentState = State.Highlighted;
+        }
+    }
 
-	public float OriDuration = 1f;
+    public Transform OriTarget;
 
-	public float Radius = 10f;
+    [SerializeField] [HideInInspector] private Transform m_transform;
 
-	public Texture2D HintTexture;
+    private int m_slotsPending;
 
-	public MessageProvider HintMessage;
+    private int m_slotsFilled;
 
-	private MessageBox m_hint;
+    public ActionMethod OnOpenedAction;
 
-	public State CurrentState;
+    public ActionMethod OnFailAction;
 
-	private List<EnergyDoorSlot> m_slots = new List<EnergyDoorSlot>();
+    public int AmountOfEnergyRequired;
 
-	public enum State
-	{
-		Normal,
-		Highlighted,
-		Opened
-	}
+    public int AmountOfEnergyUsed;
+
+    public SoundProvider PlaceSlotSoundProvider;
+
+    public SoundProvider ActivateSoundProvider;
+
+    public SoundProvider RestoreSoundProvider;
+
+    public SoundProvider OnOriEnterSoundProvider;
+
+    public SoundProvider OnOriExitSoundProvider;
+
+    public float OriDuration = 1f;
+
+    public float Radius = 10f;
+
+    public Texture2D HintTexture;
+
+    public MessageProvider HintMessage;
+
+    private MessageBox m_hint;
+
+    public State CurrentState;
+
+    private List<EnergyDoorSlot> m_slots = new List<EnergyDoorSlot>();
+
+    public enum State {
+        Normal,
+        Highlighted,
+        Opened,
+    }
 }

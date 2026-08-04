@@ -10,31 +10,26 @@ using Game;
 using Protogen;
 using UnityEngine;
 
-public class RandomizerLocationManager
-{
-    public static void Initialize()
-    {
+public class RandomizerLocationManager {
+    public static void Initialize() {
         var reader = new StringReader(RandomizerLocationData.All);
-        var line = reader.ReadLine();        
-        while (line != null)
-        {
+        var line = reader.ReadLine();
+        while (line != null) {
             var newLocation = new Location(line.Trim());
             LocationsByName[newLocation.Name] = newLocation;
             LocationsByKey[newLocation.Key] = newLocation;
 
-            if (newLocation.Type == Location.LocationType.ProgressiveMap)
-            {
+            if (newLocation.Type == Location.LocationType.ProgressiveMap) {
                 ProgressiveMapLocations[newLocation.Difficulty] = newLocation;
-            }
-            else
-            {
+            } else {
                 LocationsByGuid[newLocation.MoonGuid] = newLocation;
                 LocationsByWorldMapGuid[newLocation.WorldMapGuid] = newLocation;
             }
+
             line = reader.ReadLine();
         }
 
-        for (var index = 0; index < RandomizerLocationData.KeystoneDoors.Count; ++index){
+        for (var index = 0; index < RandomizerLocationData.KeystoneDoors.Count; ++index) {
             var ksDoor = new KeystoneDoor(index, RandomizerLocationData.KeystoneDoors[index]);
             KeystoneDoors[ksDoor.MoonGuid] = ksDoor;
             KeystoneDoorMapGuidToMoonGuid[ksDoor.MapGuid] = ksDoor.MoonGuid;
@@ -46,14 +41,14 @@ public class RandomizerLocationManager
         }
     }
 
-    public static void InitializeLogic()
-    {
-        if (!HaveDownloadedAreas) return; //Areas thread hasn't returned yet, skip. It'll run this on its own on completion.
-        
+    public static void InitializeLogic() {
+        if (!HaveDownloadedAreas) {
+            return; //Areas thread hasn't returned yet, skip. It'll run this on its own on completion.
+        }
+
         var paths = InitializePaths();
 
-        if (!File.Exists("areas.ori"))
-        {
+        if (!File.Exists("areas.ori")) {
             Areas = null;
             s_logicLastUpdated = DateTime.MinValue;
             s_lastLogicPaths = paths;
@@ -72,41 +67,38 @@ public class RandomizerLocationManager
             }
         }
 
-        if (s_logicLastUpdated == DateTime.MinValue || File.GetLastWriteTime("areas.ori") > s_logicLastUpdated || !paths.SetEquals(s_lastLogicPaths))
-        {
+        if (s_logicLastUpdated == DateTime.MinValue || File.GetLastWriteTime("areas.ori") > s_logicLastUpdated || !paths.SetEquals(s_lastLogicPaths)) {
             Areas = OriParse.Parse("areas.ori", paths);
             s_logicLastUpdated = File.GetLastWriteTime("areas.ori");
             s_lastLogicPaths = paths;
 
-            foreach (var location in LocationsByName.Values)
-            {
+            foreach (var location in LocationsByName.Values) {
                 location.Reachable = false;
             }
-        }       
+        }
     }
 
-    private static HashSet<string> InitializePaths()
-    {
+    private static HashSet<string> InitializePaths() {
         var paths = new HashSet<string>();
 
         var flagLine = Randomizer.SeedMeta.Split(new[] { '|' }, 1)[0];
         var firstComma = flagLine.IndexOf(',');
-        if (firstComma < 0)
+        if (firstComma < 0) {
             return paths;
+        }
 
         var preset = flagLine.Substring(0, firstComma);
 
-        if (preset.StartsWith("Sync"))
-        {
+        if (preset.StartsWith("Sync")) {
             var secondComma = flagLine.IndexOf(',', firstComma + 1);
-            if (secondComma < 0)
+            if (secondComma < 0) {
                 return paths;
+            }
 
             preset = flagLine.Substring(firstComma + 1, secondComma - firstComma - 1);
         }
 
-        switch (preset)
-        {
+        switch (preset) {
             case "Casual":
                 paths.Add("casual-core");
                 paths.Add("casual-dboost");
@@ -151,19 +143,18 @@ public class RandomizerLocationManager
                 paths.Add("gjump");
                 break;
             default:
-                if (preset.StartsWith("Custom"))
-                {
+                if (preset.StartsWith("Custom")) {
                     var pathMask = 0;
-                    if (int.TryParse(preset.Remove(0, "Custom".Length), out pathMask))
-                    {
+                    if (int.TryParse(preset.Remove(0, "Custom".Length), out pathMask)) {
                         var newPaths = OriParse.PathMaskToPathSet(pathMask);
                         if (newPaths != null)
-                        {
                             //Randomizer.log("Got custom pathset: " + OriParse.PathMaskToString(pathMask));
+                        {
                             paths = newPaths;
                         }
                     }
                 }
+
                 paths.Add("casual-core");
                 break;
         }
@@ -171,10 +162,8 @@ public class RandomizerLocationManager
         return paths;
     }
 
-    public static RandomizerPickupAction AddPickupAction(GameObject parentObj, string pickupName, string actionName = null)
-    {
-        if (!LocationsByName.ContainsKey(pickupName))
-        {
+    public static RandomizerPickupAction AddPickupAction(GameObject parentObj, string pickupName, string actionName = null) {
+        if (!LocationsByName.ContainsKey(pickupName)) {
             return null;
         }
 
@@ -187,10 +176,8 @@ public class RandomizerLocationManager
         return pickupAction;
     }
 
-    public static void PlacePickup(int key, string action, object value, bool repeatable = false)
-    {
-        if (!LocationsByKey.ContainsKey(key))
-        {
+    public static void PlacePickup(int key, string action, object value, bool repeatable = false) {
+        if (!LocationsByKey.ContainsKey(key)) {
             Randomizer.printInfo("Error: Unknown location key " + key + " in seed file " + Randomizer.SeedFilePath);
             return;
         }
@@ -200,67 +187,59 @@ public class RandomizerLocationManager
         pickupLocation.Repeatable = repeatable;
     }
 
-    public static bool IsPickupCollected(MoonGuid pickupGuid)
-    {
-        if (LocationsByGuid.ContainsKey(pickupGuid))
-        {
+    public static bool IsPickupCollected(MoonGuid pickupGuid) {
+        if (LocationsByGuid.ContainsKey(pickupGuid)) {
             return LocationsByGuid[pickupGuid].Collected;
         }
 
         return false;
     }
 
-    public static bool HasPickupBeenTouched(MoonGuid pickupGuid)
-    {
-        if (LocationsByGuid.ContainsKey(pickupGuid))
-        {
+    public static bool HasPickupBeenTouched(MoonGuid pickupGuid) {
+        if (LocationsByGuid.ContainsKey(pickupGuid)) {
             return LocationsByGuid[pickupGuid].Touched;
         }
+
         return false;
     }
 
-    public static bool IsPickupRepeatable(MoonGuid pickupGuid)
-    {
-        if (LocationsByGuid.ContainsKey(pickupGuid))
-        {
+    public static bool IsPickupRepeatable(MoonGuid pickupGuid) {
+        if (LocationsByGuid.ContainsKey(pickupGuid)) {
             return LocationsByGuid[pickupGuid].Repeatable;
         }
 
         return false;
     }
 
-    public static void GivePickup(MoonGuid pickupGuid)
-    {
-        if (LocationsByGuid.ContainsKey(pickupGuid))
-        {
+    public static void GivePickup(MoonGuid pickupGuid) {
+        if (LocationsByGuid.ContainsKey(pickupGuid)) {
             LocationsByGuid[pickupGuid].Give();
         }
     }
 
-    public static void GivePickupByWorldMapGuid(MoonGuid pickupMapGuid)
-    {
-        if (LocationsByWorldMapGuid.ContainsKey(pickupMapGuid))
-        {
+    public static void GivePickupByWorldMapGuid(MoonGuid pickupMapGuid) {
+        if (LocationsByWorldMapGuid.ContainsKey(pickupMapGuid)) {
             LocationsByWorldMapGuid[pickupMapGuid].Give();
         }
     }
 
-    public static void OpenDoorByGuid(MoonGuid doorGuid)
-    {
+    public static void OpenDoorByGuid(MoonGuid doorGuid) {
         var door = KeystoneDoors[doorGuid];
         var current = Randomizer.Inventory.GetRandomizerItem(72);
         Randomizer.Inventory.SetRandomizerItem(72, current | (1 << door.Index));
         UpdateReachable();
     }
 
-    public static bool IsDoorOpen(MoonGuid doorGuid) => 1 == (1 & Randomizer.Inventory.GetRandomizerItem(72) >> KeystoneDoors[doorGuid].Index);
+    public static bool IsDoorOpen(MoonGuid doorGuid) {
+        return 1 == (1 & (Randomizer.Inventory.GetRandomizerItem(72) >> KeystoneDoors[doorGuid].Index));
+    }
 
-    public static void UpdateReachable()
-    {
+    public static void UpdateReachable() {
         if (LogicThread != null && LogicThread.IsAlive) {
             LogicThread.Abort();
             Randomizer.log("Killing existing logic thread");
         }
+
         LogicThread = new Thread(UpdateReachableWorker);
         LogicThread.Start();
     }
@@ -282,17 +261,20 @@ public class RandomizerLocationManager
     // (areas:<content> frame). Survives the http host's retirement.
     public static string AreasHash() {
         try {
-            if (!File.Exists("areas.ori"))
+            if (!File.Exists("areas.ori")) {
                 return "none";
-            using (var sha = SHA256.Create())
-            {
+            }
+
+            using (var sha = SHA256.Create()) {
                 var h = sha.ComputeHash(File.ReadAllBytes("areas.ori"));
                 var sb = new StringBuilder();
-                foreach (var b in h)
+                foreach (var b in h) {
                     sb.Append(b.ToString("x2"));
+                }
+
                 return sb.ToString();
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             Randomizer.log($"AreasHash: {e.Message}");
             return "none";
         }
@@ -304,81 +286,99 @@ public class RandomizerLocationManager
 
     private static void ApplyAreasWorker(string content) {
         try {
-            if (!RandomizerSettings.DevSettings.AreasOri) return; // flag disables areas worker
-            if(File.Exists("areas.ori")) File.Move("areas.ori", "areas.ori.old"); // backup
+            if (!RandomizerSettings.DevSettings.AreasOri) {
+                return; // flag disables areas worker
+            }
+
+            if (File.Exists("areas.ori")) {
+                File.Move("areas.ori", "areas.ori.old"); // backup
+            }
+
             File.WriteAllText("areas.ori", content);
-            if(File.Exists("areas.ori.old")) File.Delete("areas.ori.old");
+            if (File.Exists("areas.ori.old")) {
+                File.Delete("areas.ori.old");
+            }
+
             Randomizer.log("ws: areas.ori updated from server, reloading logic");
             InitializeLogic();
-        } catch(Exception e) {
+        } catch (Exception e) {
             Randomizer.log($"ApplyAreasUpdate: {e}");
-            if(!File.Exists("areas.ori") && File.Exists("areas.ori.old")) File.Move("areas.ori.old", "areas.ori");
+            if (!File.Exists("areas.ori") && File.Exists("areas.ori.old")) {
+                File.Move("areas.ori.old", "areas.ori");
+            }
         }
     }
 
     public static void DownloadAreas() {
-        if (RandomizerSettings.DevSettings.AreasOri)
-        {
+        if (RandomizerSettings.DevSettings.AreasOri) {
             var webClient = new QuickWebClient();
             try {
-                if(File.Exists("areas.ori")) File.Move("areas.ori", "areas.ori.old"); // backup
+                if (File.Exists("areas.ori")) {
+                    File.Move("areas.ori", "areas.ori.old"); // backup
+                }
+
                 ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
                 webClient.DownloadFile(AreasURL(), "areas.ori");
-                if(File.Exists("areas.ori.old")) File.Delete("areas.ori.old"); // clean backup
-            } catch(Exception e) {
+                if (File.Exists("areas.ori.old")) {
+                    File.Delete("areas.ori.old"); // clean backup
+                }
+            } catch (Exception e) {
                 Randomizer.LogError($"Failed to download areas.ori: ${e}");
-                if(File.Exists("areas.ori")) File.Delete("areas.ori");                       // remove broken / failed
-                if(File.Exists("areas.ori.old")) File.Move("areas.ori.old", "areas.ori");    // restore backup
+                if (File.Exists("areas.ori")) {
+                    File.Delete("areas.ori"); // remove broken / failed
+                }
+
+                if (File.Exists("areas.ori.old")) {
+                    File.Move("areas.ori.old", "areas.ori"); // restore backup
+                }
             }
         }
+
         HaveDownloadedAreas = true;
         InitializeLogic();
     }
 
     public static void UpdateReachableWorker() {
-        if (Areas == null)
+        if (Areas == null) {
             return;
+        }
 
         var currentInventory = Inventory.FromCharacter();
         currentInventory.Unlocks.Add("Mapstone");
 
-        if (Randomizer.Inventory.GetRandomizerItem(71) > currentInventory.Mapstones)
-        {
+        if (Randomizer.Inventory.GetRandomizerItem(71) > currentInventory.Mapstones) {
             currentInventory.Mapstones = Randomizer.Inventory.GetRandomizerItem(71);
         }
 
-        if (Randomizer.OpenMode)
-        {
+        if (Randomizer.OpenMode) {
             currentInventory.Unlocks.Add("Open");
         }
 
-        if (Randomizer.OpenWorld)
-        {
+        if (Randomizer.OpenWorld) {
             currentInventory.Unlocks.Add("OpenWorld");
         }
 
         var primedPaths = new Dictionary<string, HashSet<string>>();
         var keystoneDoorsOpened = Randomizer.Inventory.GetRandomizerItem(72);
 
-        foreach (var ksDoor in KeystoneDoors.Values)
-        {
-            if ((keystoneDoorsOpened & (1 << ksDoor.Index)) == 0)
+        foreach (var ksDoor in KeystoneDoors.Values) {
+            if ((keystoneDoorsOpened & (1 << ksDoor.Index)) == 0) {
                 continue;
+            }
 
-            if (!primedPaths.ContainsKey(ksDoor.Source))
+            if (!primedPaths.ContainsKey(ksDoor.Source)) {
                 primedPaths[ksDoor.Source] = new HashSet<string>();
+            }
 
             primedPaths[ksDoor.Source].Add(ksDoor.Destination);
         }
 
-        if (Randomizer.InLogicWarps)
-        {
-            foreach (var teleporter in TeleporterController.Instance.Teleporters)
-            {
-                if (Randomizer.WarpLogicLocations.Contains(teleporter.Identifier))
-                {
-                    if (!primedPaths.ContainsKey(spawnNodeName))
+        if (Randomizer.InLogicWarps) {
+            foreach (var teleporter in TeleporterController.Instance.Teleporters) {
+                if (Randomizer.WarpLogicLocations.Contains(teleporter.Identifier)) {
+                    if (!primedPaths.ContainsKey(spawnNodeName)) {
                         primedPaths[spawnNodeName] = new HashSet<string>();
+                    }
 
                     primedPaths[spawnNodeName].Add((string)Randomizer.WarpLogicLocations[teleporter.Identifier]);
                 }
@@ -387,17 +387,20 @@ public class RandomizerLocationManager
 
         var reachable = OriReachable.Reachable(Areas, currentInventory, spawnNodeName, primedPaths);
 
-        if (reachable.Contains("FronkeyFight")) { // hacky hack hack
+        if (reachable.Contains("FronkeyFight")) {
+            // hacky hack hack
             reachable.Add("FirstEnergyCell");
             reachable.Add("Sein");
         }
 
-        if (reachable.Contains("ForlornEscape"))
+        if (reachable.Contains("ForlornEscape")) {
             reachable.Add("ForlornEscapePlant");
+        }
 
-        foreach (var item in LocationsByName) 
+        foreach (var item in LocationsByName) {
             item.Value.Reachable = reachable.Contains(item.Key);
-/* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
+        }
+        /* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
         {
             if (reachable.Contains(item.Key))
             {
@@ -429,22 +432,24 @@ public class RandomizerLocationManager
 
     public static bool HaveDownloadedAreas;
 
-    public static string AreasURL() => $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/areas";
+    public static string AreasURL() {
+        return $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/areas";
+    }
 
     private static DateTime s_logicLastUpdated = DateTime.MinValue;
 
     private static HashSet<string> s_lastLogicPaths;
 
     private static Dictionary<string, string> stupidBullshit = new Dictionary<string, string> {
-        {"-159,-114,force", "SpiritTreeRefined"},
-        {"491,-73,force", "SwampTeleporter"},
-        {"519,-174,force",  "MoonGrotto"},
-        {"-914,-298,force", "ForlornTeleporter"},
-        {"-430,0,force",  "ValleyTeleporter"},
-        {"88,142,force",   "HoruTeleporter"},
-        {"570,539,force", "GinsoTeleporter"},
-        {"-594,496,force",  "SorrowTeleporter"},
-        {"381,-297,force",  "BlackrootGrottoConnection"}
+        { "-159,-114,force", "SpiritTreeRefined" },
+        { "491,-73,force", "SwampTeleporter" },
+        { "519,-174,force", "MoonGrotto" },
+        { "-914,-298,force", "ForlornTeleporter" },
+        { "-430,0,force", "ValleyTeleporter" },
+        { "88,142,force", "HoruTeleporter" },
+        { "570,539,force", "GinsoTeleporter" },
+        { "-594,496,force", "SorrowTeleporter" },
+        { "381,-297,force", "BlackrootGrottoConnection" },
     };
 
     private static string spawnNodeName;
@@ -453,10 +458,8 @@ public class RandomizerLocationManager
 
     public static Dictionary<MoonGuid, MoonGuid> KeystoneDoorMapGuidToMoonGuid = new Dictionary<MoonGuid, MoonGuid>();
 
-    public class Location
-    {
-        public Location(string locationData)
-        {
+    public class Location {
+        public Location(string locationData) {
             var parts = locationData.Split();
             Name = parts[0];
             FriendlyName = Regex.Replace(Name, "([A-Z0-9]+)", " $1") + "\n" + parts[5];
@@ -467,69 +470,56 @@ public class RandomizerLocationManager
 
             MoonGuid = new MoonGuid(int.Parse(parts[6]), int.Parse(parts[7]), int.Parse(parts[8]), int.Parse(parts[9]));
 
-            if (parts.Length >= 14)
-            {
+            if (parts.Length >= 14) {
                 WorldMapGuid = new MoonGuid(int.Parse(parts[10]), int.Parse(parts[11]), int.Parse(parts[12]), int.Parse(parts[13]));
-            }
-            else
-            {
+            } else {
                 WorldMapGuid = MoonGuid;
             }
 
-            if (Type == LocationType.Skill || Type == LocationType.Map)
-            {
+            if (Type == LocationType.Skill || Type == LocationType.Map) {
                 SpecialIndex = int.Parse(parts[parts.Length - 1]);
             }
         }
 
-        public void Give()
-        {
+        public void Give() {
             // special case for Sein pickup because it doesn't technically have a valid location key
-            if (Type == LocationType.Skill && SpecialIndex == 0)
-            {
+            if (Type == LocationType.Skill && SpecialIndex == 0) {
                 RandomizerTrackedDataManager.SetTree(0);
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.SpiritFlame, true);
-                if (Randomizer.EnhancedMode)
-                {
+                if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(410);
                 }
+
                 TeleporterController.Activate("sunkenGlades");
                 return;
             }
 
-            if (Collected)
-            {
+            if (Collected) {
                 return;
             }
 
-            switch (Type)
-            {
-            case LocationType.Map:
-                RandomizerTrackedDataManager.SetMapstone(SpecialIndex);
-                break;
-            case LocationType.Skill:
-                RandomizerTrackedDataManager.SetTree(SpecialIndex);
-                break;
+            switch (Type) {
+                case LocationType.Map:
+                    RandomizerTrackedDataManager.SetMapstone(SpecialIndex);
+                    break;
+                case LocationType.Skill:
+                    RandomizerTrackedDataManager.SetTree(SpecialIndex);
+                    break;
             }
 
-            if (Type == LocationType.Map && Randomizer.ProgressiveMapStones)
-            {
+            if (Type == LocationType.Map && Randomizer.ProgressiveMapStones) {
                 ProgressiveMapLocations[RandomizerBonus.MapStoneProgression()].Give();
                 return;
             }
 
-            if (Randomizer.ColorShift)
-            {
+            if (Randomizer.ColorShift) {
                 Randomizer.changeColor();
             }
 
-            if (Type == LocationType.ProgressiveMap)
-            {
+            if (Type == LocationType.ProgressiveMap) {
                 RandomizerBonus.CollectMapstone();
                 RandomizerStatsManager.FoundMapstone();
-            }
-            else
-            {
+            } else {
                 RandomizerStatsManager.IncPickup(Key);
             }
 
@@ -537,22 +527,19 @@ public class RandomizerLocationManager
             if (Key == -7320236) {
                 Randomizer.Inventory.SetRandomizerItem(1106, 1);
             }
+
             RandomizerSwitch.GivePickup(Pickup, Key);
             UpdateReachable();
 
-            if (Randomizer.HotColdItems.ContainsKey(Key))
-            {
+            if (Randomizer.HotColdItems.ContainsKey(Key)) {
                 Randomizer.Inventory.SetRandomizerItem(Randomizer.HotColdItems[Key].Id, 1);
                 RandomizerColorManager.UpdateHotColdTarget();
-            }
-            else if (Randomizer.HotColdFrags.ContainsKey(Key))
-            {
+            } else if (Randomizer.HotColdFrags.ContainsKey(Key)) {
                 Randomizer.Inventory.SetRandomizerItem(Randomizer.HotColdFrags[Key].Id, 1);
                 RandomizerColorManager.UpdateHotColdTarget();
             }
 
-            if (Type == LocationType.Skill)
-            {
+            if (Type == LocationType.Skill) {
                 Randomizer.showProgress();
             }
         }
@@ -561,7 +548,7 @@ public class RandomizerLocationManager
 
         public bool Collected => Repeatable ? false : Type == LocationType.Map ? RandomizerTrackedDataManager.GetMapstone(SpecialIndex) : Randomizer.HaveCoord(Key);
 
-        public bool Touched => Collected || Repeatable && Randomizer.HaveCoord(Key);
+        public bool Touched => Collected || (Repeatable && Randomizer.HaveCoord(Key));
 
         public MoonGuid MoonGuid;
 
@@ -587,8 +574,7 @@ public class RandomizerLocationManager
 
         public bool Reachable;
 
-        public enum LocationType
-        {
+        public enum LocationType {
             ExpSmall,
             ExpMedium,
             ExpLarge,
@@ -602,14 +588,12 @@ public class RandomizerLocationManager
             Map,
             Event,
             Cutscene,
-            ProgressiveMap
+            ProgressiveMap,
         }
     }
 
-    public class KeystoneDoor
-    {
-        public KeystoneDoor(int index, string doorData)
-        {
+    public class KeystoneDoor {
+        public KeystoneDoor(int index, string doorData) {
             var parts = doorData.Split();
             Index = index;
             Source = parts[0];

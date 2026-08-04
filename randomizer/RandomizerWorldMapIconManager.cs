@@ -1,13 +1,11 @@
 using UnityEngine;
 
-public class RandomizerWorldMapIconManager
-{
-    public static readonly RandomizerWorldMapIcon[] Icons =
-    {
+public class RandomizerWorldMapIconManager {
+    public static readonly RandomizerWorldMapIcon[] Icons = {
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.WaterVein, new Vector3(503.9977f, -246.8492f), "WaterVein"),
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.CleanWater, new Vector3(524.7007f, 573.2695f), "GinsoEscapeExit"),
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.WindRestored, new Vector3(-733.6296f, -229.0052f), "ForlornEscape"),
-        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Sunstone, new Vector3(-558.3355f, 604.2133f),  "Sunstone"),
+        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Sunstone, new Vector3(-558.3355f, 604.2133f), "Sunstone"),
 
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.SkillTree, new Vector3(-162.4078f, -257.7189f), "Sein"),
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.SkillTree, new Vector3(-456.1564f, -13.787f), "GlideSkillFeather"),
@@ -46,33 +44,30 @@ public class RandomizerWorldMapIconManager
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Plant, new Vector3(318.5f, 245.6f), "HoruR3Plant"),
 
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-979.3f, 23.6f), "MistyFrogNookExp"),
-		new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-1083f, 8.3f), "MistyMortarCorridorUpperExp"),
-		new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-1009f, -35f), "MistyMortarCorridorHiddenExp"),
-		new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Plant, new Vector3(-1102f, -67f), "MistyPlant"),
-		new RandomizerWorldMapIcon(RandomizerWorldMapIconType.SkillTree, new Vector3(-1188f, -100f), "ClimbSkillTree"),
-		new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Keystone, new Vector3(-912f, -36f), "MistyKeystone3"),
-		new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-837.7f, -123.5f), "MistyPostClimbSpikeCave"),
-		new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-796f, -144f), "MistyPostClimbAboveSpikePit"),
-		new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Keystone, new Vector3(-768f, -144f), "MistyKeystone4"),
-		new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-671.9f, -39.4f), "MistyGrenade"),
-		new RandomizerWorldMapIcon(RandomizerWorldMapIconType.GumonSeal, new Vector3(-720f, -24f), "GumonSeal")
+        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-1083f, 8.3f), "MistyMortarCorridorUpperExp"),
+        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-1009f, -35f), "MistyMortarCorridorHiddenExp"),
+        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Plant, new Vector3(-1102f, -67f), "MistyPlant"),
+        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.SkillTree, new Vector3(-1188f, -100f), "ClimbSkillTree"),
+        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Keystone, new Vector3(-912f, -36f), "MistyKeystone3"),
+        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-837.7f, -123.5f), "MistyPostClimbSpikeCave"),
+        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-796f, -144f), "MistyPostClimbAboveSpikePit"),
+        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Keystone, new Vector3(-768f, -144f), "MistyKeystone4"),
+        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-671.9f, -39.4f), "MistyGrenade"),
+        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.GumonSeal, new Vector3(-720f, -24f), "GumonSeal"),
     };
 
-    public class RandomizerWorldMapIcon
-    {
+    public class RandomizerWorldMapIcon {
         public MoonGuid Guid;
         public RandomizerWorldMapIconType Type;
         public Vector3 Position;
 
-        public RandomizerWorldMapIcon(RandomizerWorldMapIconType type, Vector3 position, MoonGuid guid)
-        {
+        public RandomizerWorldMapIcon(RandomizerWorldMapIconType type, Vector3 position, MoonGuid guid) {
             Guid = guid;
             Type = type;
             Position = position;
         }
 
-        public RandomizerWorldMapIcon(RandomizerWorldMapIconType type, Vector3 position, string name)
-        {
+        public RandomizerWorldMapIcon(RandomizerWorldMapIconType type, Vector3 position, string name) {
             Guid = RandomizerLocationManager.LocationsByName[name].WorldMapGuid;
             Type = type;
             Position = position;

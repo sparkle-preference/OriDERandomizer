@@ -4,291 +4,261 @@ using Game;
 using Sein.World;
 using UnityEngine;
 
-public class InventoryManager : MenuScreen
-{
-	public override void Show()
-	{
-		NavigationManager.SetVisible(true);
-		NavigationManager.SetIndexToFirst();
-	}
+public class InventoryManager : MenuScreen {
+    public override void Show() {
+        NavigationManager.SetVisible(true);
+        NavigationManager.SetIndexToFirst();
+    }
 
-	public override void Hide()
-	{
-		NavigationManager.SetVisible(false);
-	}
+    public override void Hide() {
+        NavigationManager.SetVisible(false);
+    }
 
-	public override void ShowImmediate()
-	{
-		NavigationManager.SetVisibleImmediate(true);
-		NavigationManager.SetIndexToFirst();
-	}
+    public override void ShowImmediate() {
+        NavigationManager.SetVisibleImmediate(true);
+        NavigationManager.SetIndexToFirst();
+    }
 
-	public override void HideImmediate()
-	{
-		NavigationManager.SetVisibleImmediate(false);
-	}
+    public override void HideImmediate() {
+        NavigationManager.SetVisibleImmediate(false);
+    }
 
-	public void Awake()
-	{
-		Instance = this;
-		
-		var navigationManager = NavigationManager;
-		navigationManager.OptionChangeCallback = (Action)Delegate.Combine(navigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
-		navigationManager.OptionPressedCallback = (Action)Delegate.Combine(navigationManager.OptionPressedCallback, new Action(OnMenuItemPressed));
-		navigationManager.OnBackPressedCallback = (Action)Delegate.Combine(navigationManager.OnBackPressedCallback, new Action(OnBackPressed));
-		
-		var instance = DifficultyController.Instance;
-		instance.OnDifficultyChanged = (Action)Delegate.Combine(instance.OnDifficultyChanged, new Action(OnDifficultyChanged));
+    public void Awake() {
+        Instance = this;
 
-		if (Difficulty)
-		{
-			var difficultyProvider = (DifficultyModeMessageProvider)Difficulty.MessageProvider;
-			difficultyProvider.Easy = RandomizerText.DifficultyOverrides.Easy.NameOverrideUpper;
-			difficultyProvider.Normal = RandomizerText.DifficultyOverrides.Normal.NameOverrideUpper;
-			difficultyProvider.Hard = RandomizerText.DifficultyOverrides.Hard.NameOverrideUpper;
-			difficultyProvider.OneLife = RandomizerText.DifficultyOverrides.OneLife.NameOverrideUpper;
+        var navigationManager = NavigationManager;
+        navigationManager.OptionChangeCallback = (Action)Delegate.Combine(navigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
+        navigationManager.OptionPressedCallback = (Action)Delegate.Combine(navigationManager.OptionPressedCallback, new Action(OnMenuItemPressed));
+        navigationManager.OnBackPressedCallback = (Action)Delegate.Combine(navigationManager.OnBackPressedCallback, new Action(OnBackPressed));
 
-			var difficultySequence = (ActionSequence)Difficulty.transform.parent.GetComponent<RunActionCondition>().Action;
-			var difficultyAction = (InstantiateAction)difficultySequence.Actions[0];
-			var difficultyScreen = difficultyAction.Prefab.GetComponent<ChangeDifficultyScreen>();
-			difficultyScreen.Easy = RandomizerText.DifficultyOverrides.Easy.NameOverride;
-			difficultyScreen.Normal = RandomizerText.DifficultyOverrides.Normal.NameOverride;
-			difficultyScreen.Hard = RandomizerText.DifficultyOverrides.Hard.NameOverride;
-			difficultyScreen.OneLife = RandomizerText.DifficultyOverrides.OneLife.NameOverride;
+        var instance = DifficultyController.Instance;
+        instance.OnDifficultyChanged = (Action)Delegate.Combine(instance.OnDifficultyChanged, new Action(OnDifficultyChanged));
 
-			var changeDifficultyManager = difficultyAction.Prefab.GetComponent<CleverMenuItemSelectionManager>();
-			changeDifficultyManager.MenuItems[0].GetComponentInChildren<MessageBox>().SetMessageProvider(RandomizerText.DifficultyOverrides.Easy.NameOverrideUpper);
-			changeDifficultyManager.MenuItems[1].GetComponentInChildren<MessageBox>().SetMessageProvider(RandomizerText.DifficultyOverrides.Normal.NameOverrideUpper);
-			changeDifficultyManager.MenuItems[2].GetComponentInChildren<MessageBox>().SetMessageProvider(RandomizerText.DifficultyOverrides.Hard.NameOverrideUpper);
-		}
+        if (Difficulty) {
+            var difficultyProvider = (DifficultyModeMessageProvider)Difficulty.MessageProvider;
+            difficultyProvider.Easy = RandomizerText.DifficultyOverrides.Easy.NameOverrideUpper;
+            difficultyProvider.Normal = RandomizerText.DifficultyOverrides.Normal.NameOverrideUpper;
+            difficultyProvider.Hard = RandomizerText.DifficultyOverrides.Hard.NameOverrideUpper;
+            difficultyProvider.OneLife = RandomizerText.DifficultyOverrides.OneLife.NameOverrideUpper;
 
-		waterVeinClueText = Instantiate(EnergyUpgradesText);
-		waterVeinClueText.transform.position = GinsoTreeKey.transform.position + Vector3.down * 0.55f;
-		waterVeinClueText.transform.SetParent(GinsoTreeKey.transform);
-		gumonSealClueText = Instantiate(EnergyUpgradesText);
-		gumonSealClueText.transform.position = ForlornRuinsKey.transform.position + Vector3.down * 0.55f;
-		gumonSealClueText.transform.SetParent(ForlornRuinsKey.transform);
-		sunstoneClueText = Instantiate(EnergyUpgradesText);
-		sunstoneClueText.transform.position = MountHoruKey.transform.position + Vector3.down * 0.55f;
-		sunstoneClueText.transform.SetParent(MountHoruKey.transform);
-	}
+            var difficultySequence = (ActionSequence)Difficulty.transform.parent.GetComponent<RunActionCondition>().Action;
+            var difficultyAction = (InstantiateAction)difficultySequence.Actions[0];
+            var difficultyScreen = difficultyAction.Prefab.GetComponent<ChangeDifficultyScreen>();
+            difficultyScreen.Easy = RandomizerText.DifficultyOverrides.Easy.NameOverride;
+            difficultyScreen.Normal = RandomizerText.DifficultyOverrides.Normal.NameOverride;
+            difficultyScreen.Hard = RandomizerText.DifficultyOverrides.Hard.NameOverride;
+            difficultyScreen.OneLife = RandomizerText.DifficultyOverrides.OneLife.NameOverride;
 
-	public void OnBackPressed()
-	{
-		UI.Menu.HideMenuScreen();
-	}
+            var changeDifficultyManager = difficultyAction.Prefab.GetComponent<CleverMenuItemSelectionManager>();
+            changeDifficultyManager.MenuItems[0].GetComponentInChildren<MessageBox>().SetMessageProvider(RandomizerText.DifficultyOverrides.Easy.NameOverrideUpper);
+            changeDifficultyManager.MenuItems[1].GetComponentInChildren<MessageBox>().SetMessageProvider(RandomizerText.DifficultyOverrides.Normal.NameOverrideUpper);
+            changeDifficultyManager.MenuItems[2].GetComponentInChildren<MessageBox>().SetMessageProvider(RandomizerText.DifficultyOverrides.Hard.NameOverrideUpper);
+        }
 
-	public void OnMenuItemChange()
-	{
-	}
+        waterVeinClueText = Instantiate(EnergyUpgradesText);
+        waterVeinClueText.transform.position = GinsoTreeKey.transform.position + Vector3.down * 0.55f;
+        waterVeinClueText.transform.SetParent(GinsoTreeKey.transform);
+        gumonSealClueText = Instantiate(EnergyUpgradesText);
+        gumonSealClueText.transform.position = ForlornRuinsKey.transform.position + Vector3.down * 0.55f;
+        gumonSealClueText.transform.SetParent(ForlornRuinsKey.transform);
+        sunstoneClueText = Instantiate(EnergyUpgradesText);
+        sunstoneClueText.transform.position = MountHoruKey.transform.position + Vector3.down * 0.55f;
+        sunstoneClueText.transform.SetParent(MountHoruKey.transform);
+    }
 
-	public void OnMenuItemPressed()
-	{
-		var component = NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
-		if (component && !component.HasAbility)
-		{
-			if (PressUngainedAbilityOptionSound)
-			{
-				Sound.Play(PressUngainedAbilityOptionSound.GetSound(null), transform.position, null);
-			}
-			return;
-		}
-		var component2 = NavigationManager.CurrentMenuItem.GetComponent<InventoryItemHelpText>();
-		if (component2)
-		{
-			SuspensionManager.SuspendAll();
-			var messageBox = UI.MessageController.ShowMessageBoxB(HelpMessageBox, component2.HelpMessage, Vector3.zero, float.PositiveInfinity);
-			if (messageBox)
-			{
-				messageBox.SetAvatar(component2.Avatar);
-				messageBox.OnMessageScreenHide += OnMessageScreenHide;
-			}
-			else
-			{
-				SuspensionManager.ResumeAll();
-			}
-			m_currentCloseMessageSound = !component ? CloseStatisticsMessageSound : CloseAbilityMessageSound;
-			if (component && PressAbilityOptionSound)
-			{
-				Sound.Play(PressAbilityOptionSound.GetSound(null), transform.position, null);
-			}
-		}
-	}
+    public void OnBackPressed() {
+        UI.Menu.HideMenuScreen();
+    }
 
-	public void OnMessageScreenHide()
-	{
-		SuspensionManager.ResumeAll();
-		if (m_currentCloseMessageSound && transform)
-		{
-			Sound.Play(m_currentCloseMessageSound.GetSound(null), transform.position, null);
-		}
-	}
+    public void OnMenuItemChange() {
+    }
 
-	public void OnDestroy()
-	{
-		if (Instance == this)
-		{
-			Instance = null;
-		}
+    public void OnMenuItemPressed() {
+        var component = NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
+        if (component && !component.HasAbility) {
+            if (PressUngainedAbilityOptionSound) {
+                Sound.Play(PressUngainedAbilityOptionSound.GetSound(null), transform.position, null);
+            }
 
-		var navigationManager = NavigationManager;
-		navigationManager.OptionChangeCallback = (Action)Delegate.Remove(navigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
-		navigationManager.OptionPressedCallback = (Action)Delegate.Remove(navigationManager.OptionPressedCallback, new Action(OnMenuItemPressed));
-		navigationManager.OnBackPressedCallback = (Action)Delegate.Remove(navigationManager.OnBackPressedCallback, new Action(OnBackPressed));
+            return;
+        }
 
-		var instance = DifficultyController.Instance;
-		instance.OnDifficultyChanged = (Action)Delegate.Remove(instance.OnDifficultyChanged, new Action(OnDifficultyChanged));
-	}
+        var component2 = NavigationManager.CurrentMenuItem.GetComponent<InventoryItemHelpText>();
+        if (component2) {
+            SuspensionManager.SuspendAll();
+            var messageBox = UI.MessageController.ShowMessageBoxB(HelpMessageBox, component2.HelpMessage, Vector3.zero, float.PositiveInfinity);
+            if (messageBox) {
+                messageBox.SetAvatar(component2.Avatar);
+                messageBox.OnMessageScreenHide += OnMessageScreenHide;
+            } else {
+                SuspensionManager.ResumeAll();
+            }
 
-	public void OnDifficultyChanged()
-	{
-		if (Difficulty)
-		{
-			Difficulty.RefreshText();
-		}
-	}
+            m_currentCloseMessageSound = !component ? CloseStatisticsMessageSound : CloseAbilityMessageSound;
+            if (component && PressAbilityOptionSound) {
+                Sound.Play(PressAbilityOptionSound.GetSound(null), transform.position, null);
+            }
+        }
+    }
 
-	public void UpdateItems()
-	{
-		SeinCharacter sein = Characters.Sein;
-		if (sein == null)
-		{
-			return;
-		}
-		CompletionText.SetMessage(new MessageDescriptor(GameWorld.Instance.CompletionPercentage + "%"));
-		DeathText.SetMessage(new MessageDescriptor(SeinDeathCounter.Count.ToString()));
-		HealthUpgradesText.SetMessage(new MessageDescriptor(sein.Mortality.Health.HealthUpgradesCollected + " / " + 12));
-		EnergyUpgradesText.SetMessage(new MessageDescriptor(sein.Energy.EnergyUpgradesCollected + " / " + 15));
-		SkillPointUniquesText.SetMessage(new MessageDescriptor(sein.Inventory.SkillPointsCollected + " / " + 33));
-		waterVeinClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.GinsoTree, RandomizerBonus.WaterVeinShards(), 0)));
-		gumonSealClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.ForlornRuins, RandomizerBonus.GumonSealShards(), 1)));
-		sunstoneClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.MountHoru, RandomizerBonus.SunstoneShards(), 2)));
-		var timer = GameController.Instance.Timer;
-		TimeText.SetMessage(new MessageDescriptor(string.Format("{0:D2}:{1:D2}:{2:D2}", timer.Hours, timer.Minutes, timer.Seconds)));
-		var component = NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
-		if (component)
-		{
-			AbilityNameText.gameObject.SetActive(true);
-			AbilityItemHighlight.SetActive(true);
-			AbilityItemHighlight.transform.position = component.transform.position;
-			if (component.HasAbility)
-			{
-				AbilityNameText.SetMessageProvider(component.AbilityName);
-			}
-			else
-			{
-				AbilityNameText.SetMessageProvider(LockedMessageProvider);
-			}
-		}
-		else
-		{
-			AbilityNameText.gameObject.SetActive(false);
-			AbilityItemHighlight.SetActive(false);
-		}
-		if (Difficulty)
-		{
-			Difficulty.RefreshText();
-		}
-	}
+    public void OnMessageScreenHide() {
+        SuspensionManager.ResumeAll();
+        if (m_currentCloseMessageSound && transform) {
+            Sound.Play(m_currentCloseMessageSound.GetSound(null), transform.position, null);
+        }
+    }
 
-	public void FixedUpdate()
-	{
-		UpdateItems();
-	}
+    public void OnDestroy() {
+        if (Instance == this) {
+            Instance = null;
+        }
 
-	public void OnEnable()
-	{
-		UpdateItems();
-	}
+        var navigationManager = NavigationManager;
+        navigationManager.OptionChangeCallback = (Action)Delegate.Remove(navigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
+        navigationManager.OptionPressedCallback = (Action)Delegate.Remove(navigationManager.OptionPressedCallback, new Action(OnMenuItemPressed));
+        navigationManager.OnBackPressedCallback = (Action)Delegate.Remove(navigationManager.OnBackPressedCallback, new Action(OnBackPressed));
 
-	public string GetKeyLabel(bool hasKey, int shards, int keyIndex)
-	{
-		if (hasKey)
-		{
-			return "";
-		}
-		if (Randomizer.Shards)
-		{
-			return string.Format("{0}/3", shards);
-		}
-		if (!Randomizer.CluesMode)
-		{
-			return "";
-		}
-		if (RandomizerBonus.SkillTreeProgression() >= RandomizerClues.RevealOrder[keyIndex] * 3)
-		{
-			return RandomizerClues.Clues[RandomizerClues.RevealOrder[keyIndex] - 1];
-		}
-		return "";
-	}
+        var instance = DifficultyController.Instance;
+        instance.OnDifficultyChanged = (Action)Delegate.Remove(instance.OnDifficultyChanged, new Action(OnDifficultyChanged));
+    }
 
-	public const int TotalHealthUpgrades = 12;
+    public void OnDifficultyChanged() {
+        if (Difficulty) {
+            Difficulty.RefreshText();
+        }
+    }
 
-	public const int TotalEnergyUpgrades = 15;
+    public void UpdateItems() {
+        SeinCharacter sein = Characters.Sein;
+        if (sein == null) {
+            return;
+        }
 
-	public const int TotalSkillPoints = 33;
+        CompletionText.SetMessage(new MessageDescriptor(GameWorld.Instance.CompletionPercentage + "%"));
+        DeathText.SetMessage(new MessageDescriptor(SeinDeathCounter.Count.ToString()));
+        HealthUpgradesText.SetMessage(new MessageDescriptor(sein.Mortality.Health.HealthUpgradesCollected + " / " + 12));
+        EnergyUpgradesText.SetMessage(new MessageDescriptor(sein.Energy.EnergyUpgradesCollected + " / " + 15));
+        SkillPointUniquesText.SetMessage(new MessageDescriptor(sein.Inventory.SkillPointsCollected + " / " + 33));
+        waterVeinClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.GinsoTree, RandomizerBonus.WaterVeinShards(), 0)));
+        gumonSealClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.ForlornRuins, RandomizerBonus.GumonSealShards(), 1)));
+        sunstoneClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.MountHoru, RandomizerBonus.SunstoneShards(), 2)));
+        var timer = GameController.Instance.Timer;
+        TimeText.SetMessage(new MessageDescriptor(string.Format("{0:D2}:{1:D2}:{2:D2}", timer.Hours, timer.Minutes, timer.Seconds)));
+        var component = NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
+        if (component) {
+            AbilityNameText.gameObject.SetActive(true);
+            AbilityItemHighlight.SetActive(true);
+            AbilityItemHighlight.transform.position = component.transform.position;
+            if (component.HasAbility) {
+                AbilityNameText.SetMessageProvider(component.AbilityName);
+            } else {
+                AbilityNameText.SetMessageProvider(LockedMessageProvider);
+            }
+        } else {
+            AbilityNameText.gameObject.SetActive(false);
+            AbilityItemHighlight.SetActive(false);
+        }
 
-	public const int MaxLevel = 20;
+        if (Difficulty) {
+            Difficulty.RefreshText();
+        }
+    }
 
-	public static InventoryManager Instance;
+    public void FixedUpdate() {
+        UpdateItems();
+    }
 
-	public CleverMenuItemSelectionManager NavigationManager;
+    public void OnEnable() {
+        UpdateItems();
+    }
 
-	public SoundProvider OpenSound;
+    public string GetKeyLabel(bool hasKey, int shards, int keyIndex) {
+        if (hasKey) {
+            return "";
+        }
 
-	public SoundProvider CloseSound;
+        if (Randomizer.Shards) {
+            return string.Format("{0}/3", shards);
+        }
 
-	public SoundProvider PressAbilityOptionSound;
+        if (!Randomizer.CluesMode) {
+            return "";
+        }
 
-	public SoundProvider PressUngainedAbilityOptionSound;
+        if (RandomizerBonus.SkillTreeProgression() >= RandomizerClues.RevealOrder[keyIndex] * 3) {
+            return RandomizerClues.Clues[RandomizerClues.RevealOrder[keyIndex] - 1];
+        }
 
-	public SoundProvider CloseAbilityMessageSound;
+        return "";
+    }
 
-	public SoundProvider CloseStatisticsMessageSound;
+    public const int TotalHealthUpgrades = 12;
 
-	private SoundProvider m_currentCloseMessageSound;
+    public const int TotalEnergyUpgrades = 15;
 
-	public GameObject AbilityItemHighlight;
+    public const int TotalSkillPoints = 33;
 
-	public MessageBox AbilityNameText;
+    public const int MaxLevel = 20;
 
-	public MessageBox TimeText;
+    public static InventoryManager Instance;
 
-	public MessageBox CompletionText;
+    public CleverMenuItemSelectionManager NavigationManager;
 
-	public MessageBox DeathText;
+    public SoundProvider OpenSound;
 
-	public MessageBox HealthUpgradesText;
+    public SoundProvider CloseSound;
 
-	public MessageBox EnergyUpgradesText;
+    public SoundProvider PressAbilityOptionSound;
 
-	public MessageBox SkillPointUniquesText;
+    public SoundProvider PressUngainedAbilityOptionSound;
 
-	public GameObject GinsoTreeKey;
+    public SoundProvider CloseAbilityMessageSound;
 
-	public GameObject ForlornRuinsKey;
+    public SoundProvider CloseStatisticsMessageSound;
 
-	public GameObject MountHoruKey;
+    private SoundProvider m_currentCloseMessageSound;
 
-	public GameObject WorldEventsGroup;
+    public GameObject AbilityItemHighlight;
 
-	public MessageBox Difficulty;
+    public MessageBox AbilityNameText;
 
-	public MessageProvider LockedMessageProvider;
+    public MessageBox TimeText;
 
-	public MessageProvider NotAvailableYetMessageProvider;
+    public MessageBox CompletionText;
 
-	public MessageProvider DiedZeroTimesMessageProvider;
+    public MessageBox DeathText;
 
-	public MessageProvider DiedOneTimeMessagProvider;
+    public MessageBox HealthUpgradesText;
 
-	public MessageProvider DiedMultipleTimesMessageProvider;
+    public MessageBox EnergyUpgradesText;
 
-	public GameObject HelpMessageBox;
+    public MessageBox SkillPointUniquesText;
 
-	private MessageBox gumonSealClueText;
+    public GameObject GinsoTreeKey;
 
-	private MessageBox waterVeinClueText;
+    public GameObject ForlornRuinsKey;
 
-	private MessageBox sunstoneClueText;
+    public GameObject MountHoruKey;
+
+    public GameObject WorldEventsGroup;
+
+    public MessageBox Difficulty;
+
+    public MessageProvider LockedMessageProvider;
+
+    public MessageProvider NotAvailableYetMessageProvider;
+
+    public MessageProvider DiedZeroTimesMessageProvider;
+
+    public MessageProvider DiedOneTimeMessagProvider;
+
+    public MessageProvider DiedMultipleTimesMessageProvider;
+
+    public GameObject HelpMessageBox;
+
+    private MessageBox gumonSealClueText;
+
+    private MessageBox waterVeinClueText;
+
+    private MessageBox sunstoneClueText;
 }

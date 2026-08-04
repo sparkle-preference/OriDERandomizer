@@ -3,58 +3,51 @@ using Game;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class RandomizerChaosColor : RandomizerChaosEffect
-{
-	public override void Clear()
-	{
-		Countdown = 0;
-		Fading = false;
-		if (Activated)
-		{
-			Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color = new Color(InitialColor.r, InitialColor.g, InitialColor.b, 0.5f);
-		}
-	}
+public class RandomizerChaosColor : RandomizerChaosEffect {
+    public override void Clear() {
+        Countdown = 0;
+        Fading = false;
+        if (Activated) {
+            Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color = new Color(InitialColor.r, InitialColor.g, InitialColor.b, 0.5f);
+        }
+    }
 
-	public override void Start()
-	{
-		Activated = true;
-		Fading = false;
-		Countdown = Random.Range(600, 3600);
-		InitialColor = Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color;
-		if (Random.Range(0, 2) == 0)
-		{
-			Randomizer.showChaosEffect("Invisible Ori");
-			Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color = new Color(InitialColor.r, InitialColor.g, InitialColor.b, 0f);
-			return;
-		}
-		Randomizer.showChaosEffect("Ghostly Ori");
-		Fading = true;
-		FadeRate = Random.Range(0.5f, 2f) / Countdown;
-	}
+    public override void Start() {
+        Activated = true;
+        Fading = false;
+        Countdown = Random.Range(600, 3600);
+        InitialColor = Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color;
+        if (Random.Range(0, 2) == 0) {
+            Randomizer.showChaosEffect("Invisible Ori");
+            Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color = new Color(InitialColor.r, InitialColor.g, InitialColor.b, 0f);
+            return;
+        }
 
-	public override void Update()
-	{
-		if (Countdown > 0)
-		{
-			if (Fading)
-			{
-				Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color = new Color(InitialColor.r, InitialColor.g, InitialColor.b, Math.Max(0f, Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color.a - FadeRate));
-			}
-			Countdown--;
-			if (Countdown == 0)
-			{
-				Clear();
-			}
-		}
-	}
+        Randomizer.showChaosEffect("Ghostly Ori");
+        Fading = true;
+        FadeRate = Random.Range(0.5f, 2f) / Countdown;
+    }
 
-	public int Countdown;
+    public override void Update() {
+        if (Countdown > 0) {
+            if (Fading) {
+                Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color = new Color(InitialColor.r, InitialColor.g, InitialColor.b, Math.Max(0f, Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color.a - FadeRate));
+            }
 
-	public Color InitialColor;
+            Countdown--;
+            if (Countdown == 0) {
+                Clear();
+            }
+        }
+    }
 
-	public float FadeRate;
+    public int Countdown;
 
-	public bool Fading;
+    public Color InitialColor;
 
-	public bool Activated;
+    public float FadeRate;
+
+    public bool Fading;
+
+    public bool Activated;
 }

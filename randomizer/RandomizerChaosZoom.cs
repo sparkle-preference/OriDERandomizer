@@ -1,74 +1,67 @@
 using Game;
 using UnityEngine;
 
-public class RandomizerChaosZoom : RandomizerChaosEffect
-{
-	public override void Clear()
-	{
-		Countdown = 0;
-		Zooming = false;
-		UI.Cameras.Current.OffsetController.AdditiveDefaultOffset = new Vector3(UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.x, UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.y, InitialOffset);
-	}
+public class RandomizerChaosZoom : RandomizerChaosEffect {
+    public override void Clear() {
+        Countdown = 0;
+        Zooming = false;
+        UI.Cameras.Current.OffsetController.AdditiveDefaultOffset = new Vector3(UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.x, UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.y, InitialOffset);
+    }
 
-	public override void Start()
-	{
-		Zooming = false;
-		if (Countdown == 0)
-		{
-			InitialOffset = UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.z;
-		}
-		Countdown = Random.Range(360, 1200);
-		var num = Random.Range(0, 16);
-		if (num <= 5)
-		{
-			Randomizer.showChaosEffect("Zoom in");
-			var z = Random.Range(-20f, -1f);
-			UI.Cameras.Current.OffsetController.AdditiveDefaultOffset = new Vector3(UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.x, UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.y, z);
-			return;
-		}
-		if (num <= 11)
-		{
-			Randomizer.showChaosEffect("Zoom out");
-			var z2 = Random.Range(1f, 100f);
-			UI.Cameras.Current.OffsetController.AdditiveDefaultOffset = new Vector3(UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.x, UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.y, z2);
-			return;
-		}
-		if (num <= 13)
-		{
-			Randomizer.showChaosEffect("Zoom in");
-			Zooming = true;
-			ZoomRate = Random.Range(-20f, -1f) / Countdown;
-			return;
-		}
-		if (num <= 15)
-		{
-			Randomizer.showChaosEffect("Zoom out");
-			Zooming = true;
-			ZoomRate = Random.Range(1f, 100f) / Countdown;
-		}
-	}
+    public override void Start() {
+        Zooming = false;
+        if (Countdown == 0) {
+            InitialOffset = UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.z;
+        }
 
-	public override void Update()
-	{
-		if (Countdown > 0)
-		{
-			if (Zooming)
-			{
-				UI.Cameras.Current.OffsetController.AdditiveDefaultOffset = new Vector3(UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.x, UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.y, UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.z + ZoomRate);
-			}
-			Countdown--;
-			if (Countdown == 0)
-			{
-				Clear();
-			}
-		}
-	}
+        Countdown = Random.Range(360, 1200);
+        var num = Random.Range(0, 16);
+        if (num <= 5) {
+            Randomizer.showChaosEffect("Zoom in");
+            var z = Random.Range(-20f, -1f);
+            UI.Cameras.Current.OffsetController.AdditiveDefaultOffset = new Vector3(UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.x, UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.y, z);
+            return;
+        }
 
-	public int Countdown;
+        if (num <= 11) {
+            Randomizer.showChaosEffect("Zoom out");
+            var z2 = Random.Range(1f, 100f);
+            UI.Cameras.Current.OffsetController.AdditiveDefaultOffset = new Vector3(UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.x, UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.y, z2);
+            return;
+        }
 
-	public float InitialOffset;
+        if (num <= 13) {
+            Randomizer.showChaosEffect("Zoom in");
+            Zooming = true;
+            ZoomRate = Random.Range(-20f, -1f) / Countdown;
+            return;
+        }
 
-	public bool Zooming;
+        if (num <= 15) {
+            Randomizer.showChaosEffect("Zoom out");
+            Zooming = true;
+            ZoomRate = Random.Range(1f, 100f) / Countdown;
+        }
+    }
 
-	public float ZoomRate;
+    public override void Update() {
+        if (Countdown > 0) {
+            if (Zooming) {
+                UI.Cameras.Current.OffsetController.AdditiveDefaultOffset = new Vector3(UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.x, UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.y, UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.z + ZoomRate);
+            }
+
+            Countdown--;
+            if (Countdown == 0) {
+                Clear();
+            }
+        }
+    }
+
+    public int Countdown;
+
+    public float InitialOffset;
+
+    public bool Zooming;
+
+    public float ZoomRate;
 }

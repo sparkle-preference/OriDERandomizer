@@ -3,154 +3,134 @@ using System.Collections.Generic;
 using Game;
 using UnityEngine;
 
-public class SeinLevel : SaveSerialize, ISeinReceiver
-{
-	public int TotalExperience => Experience + ConsumedExperience;
+public class SeinLevel : SaveSerialize, ISeinReceiver {
+    public int TotalExperience => Experience + ConsumedExperience;
 
-	public int TotalExperienceForNextLevel => ExperienceForNextLevel + ConsumedExperience;
+    public int TotalExperienceForNextLevel => ExperienceForNextLevel + ConsumedExperience;
 
-	public int ExperienceNeedForNextLevel => ExperienceForNextLevel - Experience;
+    public int ExperienceNeedForNextLevel => ExperienceForNextLevel - Experience;
 
-	public float ExperienceVisualMinNormalized => ExperienceVisualMin / ExperienceForNextLevel;
+    public float ExperienceVisualMinNormalized => ExperienceVisualMin / ExperienceForNextLevel;
 
-	public float ExperienceVisualMaxNormalized => ExperienceVisualMax / ExperienceForNextLevel;
+    public float ExperienceVisualMaxNormalized => ExperienceVisualMax / ExperienceForNextLevel;
 
-	public int ExperienceForNextLevel => Mathf.RoundToInt(ExperienceRequiredPerLevel.Evaluate(Current));
+    public int ExperienceForNextLevel => Mathf.RoundToInt(ExperienceRequiredPerLevel.Evaluate(Current));
 
-	public int ConsumedExperience
-	{
-		get
-		{
-			var num = 0;
-			for (var i = Current - 1; i >= 0; i--)
-			{
-				num += Mathf.RoundToInt(ExperienceRequiredPerLevel.Evaluate(i));
-			}
-			return num;
-		}
-	}
+    public int ConsumedExperience {
+        get {
+            var num = 0;
+            for (var i = Current - 1; i >= 0; i--) {
+                num += Mathf.RoundToInt(ExperienceRequiredPerLevel.Evaluate(i));
+            }
 
-	public void GainExperience(int amount)
-	{
-		Experience += amount;
-		ExperienceVisualMax = Experience;
-	}
+            return num;
+        }
+    }
 
-	public void Update()
-	{
-	}
+    public void GainExperience(int amount) {
+        Experience += amount;
+        ExperienceVisualMax = Experience;
+    }
 
-	public void FixedUpdate()
-	{
-		if (m_sein.IsSuspended)
-		{
-			return;
-		}
-		var maxDelta = Time.deltaTime * ExperienceGainPerSecond * ExperienceForNextLevel;
-		ExperienceVisualMax = Mathf.MoveTowards(ExperienceVisualMax, Experience, maxDelta);
-		ExperienceVisualMin = Mathf.MoveTowards(ExperienceVisualMin, Experience, maxDelta);
-		if (ExperienceVisualMin >= ExperienceForNextLevel)
-		{
-			LevelUp();
-		}
-	}
+    public void Update() {
+    }
 
-	public void LevelUp()
-	{
-		Experience -= ExperienceForNextLevel;
-		ExperienceVisualMin = 0f;
-		ExperienceVisualMax = Experience;
-		if (Current < 99)
-		{
-			Current++;
-			SkillPoints++;
-		}
-		AttemptInstantiateLevelUp();
-	}
+    public void FixedUpdate() {
+        if (m_sein.IsSuspended) {
+            return;
+        }
 
-	public void LoseExperience(int amount)
-	{
-		Experience -= amount;
-		ExperienceVisualMin = Experience;
-		if (Experience < 0)
-		{
-			Experience = 0;
-		}
-	}
+        var maxDelta = Time.deltaTime * ExperienceGainPerSecond * ExperienceForNextLevel;
+        ExperienceVisualMax = Mathf.MoveTowards(ExperienceVisualMax, Experience, maxDelta);
+        ExperienceVisualMin = Mathf.MoveTowards(ExperienceVisualMin, Experience, maxDelta);
+        if (ExperienceVisualMin >= ExperienceForNextLevel) {
+            LevelUp();
+        }
+    }
 
-	public override void Serialize(Archive ar)
-	{
-		ar.Serialize(ref Current);
-		ar.Serialize(ref Experience);
-		ar.Serialize(ref SkillPoints);
-		ar.Serialize(ref HasSpentSkillPoint);
-		if (ar.Reading)
-		{
-			ExperienceVisualMax = ExperienceVisualMin = Current;
-		}
-	}
+    public void LevelUp() {
+        Experience -= ExperienceForNextLevel;
+        ExperienceVisualMin = 0f;
+        ExperienceVisualMax = Experience;
+        if (Current < 99) {
+            Current++;
+            SkillPoints++;
+        }
 
-	public float ApplyLevelingToDamage(float damage)
-	{
-		return damage + damage * m_sein.PlayerAbilities.OriStrength * 0.5f;
-	}
+        AttemptInstantiateLevelUp();
+    }
 
-	public float CalculateLevelBasedMaxHealth(int level, float health)
-	{
-		return Mathf.RoundToInt(health * DamageMultiplierPerOriStrength.Evaluate(level));
-	}
+    public void LoseExperience(int amount) {
+        Experience -= amount;
+        ExperienceVisualMin = Experience;
+        if (Experience < 0) {
+            Experience = 0;
+        }
+    }
 
-	public void SetReferenceToSein(SeinCharacter sein)
-	{
-		m_sein = sein;
-	}
+    public override void Serialize(Archive ar) {
+        ar.Serialize(ref Current);
+        ar.Serialize(ref Experience);
+        ar.Serialize(ref SkillPoints);
+        ar.Serialize(ref HasSpentSkillPoint);
+        if (ar.Reading) {
+            ExperienceVisualMax = ExperienceVisualMin = Current;
+        }
+    }
 
-	public void GainSkillPoint()
-	{
-		SkillPoints++;
-	}
+    public float ApplyLevelingToDamage(float damage) {
+        return damage + damage * m_sein.PlayerAbilities.OriStrength * 0.5f;
+    }
 
-	public void AttemptInstantiateLevelUp()
-	{
-		if (OnLevelUpGameObject)
-		{
-			var obj = (GameObject)InstantiateUtility.Instantiate(OnLevelUpGameObject, Characters.Sein.Position, Quaternion.identity);
-			var target = obj.GetComponent<TargetPositionFollower>();
-			target.Target = Characters.Sein.Transform;
-		}
-	}
+    public float CalculateLevelBasedMaxHealth(int level, float health) {
+        return Mathf.RoundToInt(health * DamageMultiplierPerOriStrength.Evaluate(level));
+    }
 
-	public int SkillPoints;
+    public void SetReferenceToSein(SeinCharacter sein) {
+        m_sein = sein;
+    }
 
-	public int Current;
+    public void GainSkillPoint() {
+        SkillPoints++;
+    }
 
-	public AnimationCurve DamageMultiplierPerOriStrength;
+    public void AttemptInstantiateLevelUp() {
+        if (OnLevelUpGameObject) {
+            var obj = (GameObject)InstantiateUtility.Instantiate(OnLevelUpGameObject, Characters.Sein.Position, Quaternion.identity);
+            var target = obj.GetComponent<TargetPositionFollower>();
+            target.Target = Characters.Sein.Transform;
+        }
+    }
 
-	public int Experience;
+    public int SkillPoints;
 
-	public float ExperienceVisualMin;
+    public int Current;
 
-	public float ExperienceVisualMax;
+    public AnimationCurve DamageMultiplierPerOriStrength;
 
-	public AnimationCurve ExperienceRequiredPerLevel;
+    public int Experience;
 
-	public GameObject OnLevelUpGameObject;
+    public float ExperienceVisualMin;
 
-	public static bool HasSpentSkillPoint;
+    public float ExperienceVisualMax;
 
-	public float ExperienceGainPerSecond = 30f;
+    public AnimationCurve ExperienceRequiredPerLevel;
 
-	private static readonly HashSet<string> CollectablesToSerialize = new HashSet<string>
-	{
-		"largeExpOrbPlaceholder",
-		"mediumExpOrbPlaceholder",
-		"smallExpOrbPlaceholder"
-	};
+    public GameObject OnLevelUpGameObject;
 
-	private static HashSet<Type> TypesToSerialize = new HashSet<Type>
-	{
-		typeof(ExpOrbPickup)
-	};
+    public static bool HasSpentSkillPoint;
 
-	private SeinCharacter m_sein;
+    public float ExperienceGainPerSecond = 30f;
+
+    private static readonly HashSet<string> CollectablesToSerialize = new HashSet<string> {
+        "largeExpOrbPlaceholder",
+        "mediumExpOrbPlaceholder",
+        "smallExpOrbPlaceholder",
+    };
+
+    private static HashSet<Type> TypesToSerialize = new HashSet<Type> {
+        typeof(ExpOrbPickup),
+    };
+
+    private SeinCharacter m_sein;
 }

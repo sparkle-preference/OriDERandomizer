@@ -2,142 +2,129 @@ using System.Collections.Generic;
 using Core;
 using UnityEngine;
 
-public class ProjectileSpawner : SaveSerialize, ISuspendable
-{
-	public Vector3 Position => m_transform.position;
+public class ProjectileSpawner : SaveSerialize, ISuspendable {
+    public Vector3 Position => m_transform.position;
 
-	public float TimeSinceLastShot { get; set; }
+    public float TimeSinceLastShot { get; set; }
 
-	public override void Awake()
-	{
-		TimeSinceLastShot = float.MaxValue;
-		base.Awake();
-		SuspensionManager.Register(this);
-	}
+    public override void Awake() {
+        TimeSinceLastShot = float.MaxValue;
+        base.Awake();
+        SuspensionManager.Register(this);
+    }
 
-	public override void OnDestroy()
-	{
-		base.OnDestroy();
-		SuspensionManager.Unregister(this);
-	}
+    public override void OnDestroy() {
+        base.OnDestroy();
+        SuspensionManager.Unregister(this);
+    }
 
-	public void Start()
-	{
-		m_timedTrigger = GetComponent<TimedTrigger>();
-		if (m_timedTrigger != null)
-		{
-			trueTimedDuration = m_timedTrigger.Duration;
-		}
-		m_transform = transform;
-	}
+    public void Start() {
+        m_timedTrigger = GetComponent<TimedTrigger>();
+        if (m_timedTrigger != null) {
+            trueTimedDuration = m_timedTrigger.Duration;
+        }
 
-	private bool TimerPaused
-	{
-		get => m_timedTrigger && m_timedTrigger.Paused;
-		set
-		{
-			if (m_timedTrigger)
-			{
-				m_timedTrigger.Paused = value;
-			}
-		}
-	}
+        m_transform = transform;
+    }
 
-	public void OnDisable()
-	{
-		TimerPaused = false;
-	}
+    private bool TimerPaused {
+        get => m_timedTrigger && m_timedTrigger.Paused;
+        set {
+            if (m_timedTrigger) {
+                m_timedTrigger.Paused = value;
+            }
+        }
+    }
 
-	public void OnTimedTrigger()
-	{
-		SpawnProjectile();
-	}
+    public void OnDisable() {
+        TimerPaused = false;
+    }
 
-	public Projectile SpawnProjectile()
-	{
-		TimeSinceLastShot = 0f;
-		var gameObject = InstantiateUtility.Instantiate(Projectile) as GameObject;
-		gameObject.transform.SetParentMaintainingLocalTransform(transform.root);
-		m_lastProjectile = gameObject;
-		gameObject.transform.position = transform.position;
-		var component = gameObject.GetComponent<Projectile>();
-		component.Speed = Speed;
-		component.Direction = Direction;
-		if (Direction == Vector3.zero)
-		{
-			component.Direction = transform.up;
-		}
-		component.Gravity = Gravity;
-		if (Owner)
-		{
-			component.Owner = Owner;
-		}
-		if (SpawnSound)
-		{
-			Sound.Play(SpawnSound, transform.position, null, SpawnSoundVolume, null);
-		}
-		return component;
-	}
+    public void OnTimedTrigger() {
+        SpawnProjectile();
+    }
 
-	public void AimAt(Transform target)
-	{
-		Direction = (target.position - m_transform.position).normalized;
-	}
+    public Projectile SpawnProjectile() {
+        TimeSinceLastShot = 0f;
+        var gameObject = InstantiateUtility.Instantiate(Projectile) as GameObject;
+        gameObject.transform.SetParentMaintainingLocalTransform(transform.root);
+        m_lastProjectile = gameObject;
+        gameObject.transform.position = transform.position;
+        var component = gameObject.GetComponent<Projectile>();
+        component.Speed = Speed;
+        component.Direction = Direction;
+        if (Direction == Vector3.zero) {
+            component.Direction = transform.up;
+        }
 
-	public override void Serialize(Archive ar)
-	{
-	}
+        component.Gravity = Gravity;
+        if (Owner) {
+            component.Owner = Owner;
+        }
 
-	public void FixedUpdate()
-	{
-		if (IsSuspended)
-		{
-			return;
-		}
-		if (trueTimedDuration != null)
-		{
-			m_timedTrigger.Duration = trueTimedDuration.Value / RandomizerBonusSkill.TimeScale(1f);
-		}
-		if (InstantiateUtility.IsDestroyed(m_lastProjectile))
-		{
-			m_lastProjectile = null;
-		}
-		if (WaitForProjectileToBeDestroyed && !TimerPaused && m_lastProjectile != null)
-		{
-			TimerPaused = true;
-		}
-		if (WaitForProjectileToBeDestroyed && TimerPaused && m_lastProjectile == null)
-		{
-			TimerPaused = false;
-		}
-		TimeSinceLastShot += Time.deltaTime;
-	}
+        if (SpawnSound) {
+            Sound.Play(SpawnSound, transform.position, null, SpawnSoundVolume, null);
+        }
 
-	public bool IsSuspended { get; set; }
+        return component;
+    }
 
-	public float Speed;
+    public void AimAt(Transform target) {
+        Direction = (target.position - m_transform.position).normalized;
+    }
 
-	public Vector3 Direction = Vector3.zero;
+    public override void Serialize(Archive ar) {
+    }
 
-	public float Gravity;
+    public void FixedUpdate() {
+        if (IsSuspended) {
+            return;
+        }
 
-	public GameObject Projectile;
+        if (trueTimedDuration != null) {
+            m_timedTrigger.Duration = trueTimedDuration.Value / RandomizerBonusSkill.TimeScale(1f);
+        }
 
-	public List<Collider> CollidersToIgnore;
+        if (InstantiateUtility.IsDestroyed(m_lastProjectile)) {
+            m_lastProjectile = null;
+        }
 
-	public GameObject Owner;
+        if (WaitForProjectileToBeDestroyed && !TimerPaused && m_lastProjectile != null) {
+            TimerPaused = true;
+        }
 
-	public bool WaitForProjectileToBeDestroyed;
+        if (WaitForProjectileToBeDestroyed && TimerPaused && m_lastProjectile == null) {
+            TimerPaused = false;
+        }
 
-	public AudioClip SpawnSound;
+        TimeSinceLastShot += Time.deltaTime;
+    }
 
-	public float SpawnSoundVolume = 0.3f;
+    public bool IsSuspended { get; set; }
 
-	protected TimedTrigger m_timedTrigger;
+    public float Speed;
 
-	private GameObject m_lastProjectile;
+    public Vector3 Direction = Vector3.zero;
 
-	private Transform m_transform;
+    public float Gravity;
 
-	private float? trueTimedDuration;
+    public GameObject Projectile;
+
+    public List<Collider> CollidersToIgnore;
+
+    public GameObject Owner;
+
+    public bool WaitForProjectileToBeDestroyed;
+
+    public AudioClip SpawnSound;
+
+    public float SpawnSoundVolume = 0.3f;
+
+    protected TimedTrigger m_timedTrigger;
+
+    private GameObject m_lastProjectile;
+
+    private Transform m_transform;
+
+    private float? trueTimedDuration;
 }

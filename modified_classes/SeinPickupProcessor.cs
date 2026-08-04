@@ -2,262 +2,232 @@ using System;
 using Game;
 using UnityEngine;
 
-public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollector, ICheckpointZoneReciever
-{
-	public void OnCollectSkillPointPickup(SkillPointPickup skillPointPickup)
-	{
-		if (!RandomizerLocationManager.IsPickupRepeatable(skillPointPickup.MoonGuid) || Randomizer.RepeatableCheck())
-		{
-			RandomizerLocationManager.GivePickup(skillPointPickup.MoonGuid);
-		}
+public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollector, ICheckpointZoneReciever {
+    public void OnCollectSkillPointPickup(SkillPointPickup skillPointPickup) {
+        if (!RandomizerLocationManager.IsPickupRepeatable(skillPointPickup.MoonGuid) || Randomizer.RepeatableCheck()) {
+            RandomizerLocationManager.GivePickup(skillPointPickup.MoonGuid);
+        }
 
-		if (RandomizerLocationManager.IsPickupRepeatable(skillPointPickup.MoonGuid))
-		{
-			return;
-		}
+        if (RandomizerLocationManager.IsPickupRepeatable(skillPointPickup.MoonGuid)) {
+            return;
+        }
 
-		skillPointPickup.Collected();
-		if (GameWorld.Instance.CurrentArea != null)
-		{
-			GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
-		}
-	}
+        skillPointPickup.Collected();
+        if (GameWorld.Instance.CurrentArea != null) {
+            GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
+        }
+    }
 
-	public void OnCollectEnergyOrbPickup(EnergyOrbPickup energyOrbPickup)
-	{
-		float num = energyOrbPickup.Amount;
-		if (Sein.PlayerAbilities.EnergyEfficiency.HasAbility)
-		{
-			num *= 1.5f;
-		}
-		var couldAffordBefore = Sein.SoulFlame.CanAffordSoulFlame;
-		AchievementsLogic.Instance.OnCollectedEnergyShard();
-		Sein.Energy.Gain(num);
-		energyOrbPickup.Collected();
-		if (!couldAffordBefore && Sein.SoulFlame.CanAffordSoulFlame)
-		{
-			UI.SeinUI.ShakeSoulFlame();
-		}
-		if (!Sein.PlayerAbilities.WallJump.HasAbility)
-		{
-			EnergyOrbInfo.RunActionIfFirstTime();
-		}
-		UI.SeinUI.ShakeEnergyOrbBar();
-	}
+    public void OnCollectEnergyOrbPickup(EnergyOrbPickup energyOrbPickup) {
+        float num = energyOrbPickup.Amount;
+        if (Sein.PlayerAbilities.EnergyEfficiency.HasAbility) {
+            num *= 1.5f;
+        }
 
-	public void OnCollectMaxEnergyContainerPickup(MaxEnergyContainerPickup energyContainerPickup)
-	{
-		if (!RandomizerLocationManager.IsPickupRepeatable(energyContainerPickup.MoonGuid) || Randomizer.RepeatableCheck())
-		{
-			RandomizerLocationManager.GivePickup(energyContainerPickup.MoonGuid);
-		}
+        var couldAffordBefore = Sein.SoulFlame.CanAffordSoulFlame;
+        AchievementsLogic.Instance.OnCollectedEnergyShard();
+        Sein.Energy.Gain(num);
+        energyOrbPickup.Collected();
+        if (!couldAffordBefore && Sein.SoulFlame.CanAffordSoulFlame) {
+            UI.SeinUI.ShakeSoulFlame();
+        }
 
-		if (RandomizerLocationManager.IsPickupRepeatable(energyContainerPickup.MoonGuid))
-		{
-			return;
-		}
+        if (!Sein.PlayerAbilities.WallJump.HasAbility) {
+            EnergyOrbInfo.RunActionIfFirstTime();
+        }
 
-		energyContainerPickup.Collected();
-		if (GameWorld.Instance.CurrentArea != null)
-		{
-			GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
-		}
-	}
+        UI.SeinUI.ShakeEnergyOrbBar();
+    }
 
-	public void OnCollectExpOrbPickup(ExpOrbPickup expOrbPickup)
-	{
-		var num = RandomizerBonus.ExpWithBonuses(expOrbPickup.Amount, false);
-		if (expOrbPickup.MessageType == ExpOrbPickup.ExpOrbMessageType.None)
-		{
-			expOrbPickup.Collected();
-			if (Randomizer.IgnoreEnemyExp)
-				return;
-			RandomizerBonus.ExpWithBonuses(expOrbPickup.Amount, true);
-			Sein.Level.GainExperience(num);
-			if (m_expText && m_expText.gameObject.activeInHierarchy)
-				m_expText.Amount += num;
-			else
-				m_expText = Orbs.OrbDisplayText.Create(Characters.Sein.Transform, Vector3.up, num);
-			UI.SeinUI.ShakeExperienceBar();
-			if (GameWorld.Instance.CurrentArea != null)
-				GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
-		}
-		else
-		{
-			if (!RandomizerLocationManager.IsPickupRepeatable(expOrbPickup.MoonGuid) || Randomizer.RepeatableCheck())
-			{
-				RandomizerLocationManager.GivePickup(expOrbPickup.MoonGuid);
-			}
+    public void OnCollectMaxEnergyContainerPickup(MaxEnergyContainerPickup energyContainerPickup) {
+        if (!RandomizerLocationManager.IsPickupRepeatable(energyContainerPickup.MoonGuid) || Randomizer.RepeatableCheck()) {
+            RandomizerLocationManager.GivePickup(energyContainerPickup.MoonGuid);
+        }
 
-			if (RandomizerLocationManager.IsPickupRepeatable(expOrbPickup.MoonGuid))
-			{
-				return;
-			}
+        if (RandomizerLocationManager.IsPickupRepeatable(energyContainerPickup.MoonGuid)) {
+            return;
+        }
 
-			if (GameWorld.Instance.CurrentArea != null)
-				GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
-			expOrbPickup.Collected();
-		}
-	}
+        energyContainerPickup.Collected();
+        if (GameWorld.Instance.CurrentArea != null) {
+            GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
+        }
+    }
 
-	public void OnCollectKeystonePickup(KeystonePickup keystonePickup)
-	{
-		if (!RandomizerLocationManager.IsPickupRepeatable(keystonePickup.MoonGuid) || Randomizer.RepeatableCheck())
-		{
-			RandomizerLocationManager.GivePickup(keystonePickup.MoonGuid);
-		}
+    public void OnCollectExpOrbPickup(ExpOrbPickup expOrbPickup) {
+        var num = RandomizerBonus.ExpWithBonuses(expOrbPickup.Amount, false);
+        if (expOrbPickup.MessageType == ExpOrbPickup.ExpOrbMessageType.None) {
+            expOrbPickup.Collected();
+            if (Randomizer.IgnoreEnemyExp) {
+                return;
+            }
 
-		if (RandomizerLocationManager.IsPickupRepeatable(keystonePickup.MoonGuid))
-		{
-			return;
-		}
+            RandomizerBonus.ExpWithBonuses(expOrbPickup.Amount, true);
+            Sein.Level.GainExperience(num);
+            if (m_expText && m_expText.gameObject.activeInHierarchy) {
+                m_expText.Amount += num;
+            } else {
+                m_expText = Orbs.OrbDisplayText.Create(Characters.Sein.Transform, Vector3.up, num);
+            }
 
-		keystonePickup.Collected();
-		if (GameWorld.Instance.CurrentArea != null)
-		{
-			GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
-		}
-	}
+            UI.SeinUI.ShakeExperienceBar();
+            if (GameWorld.Instance.CurrentArea != null) {
+                GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
+            }
+        } else {
+            if (!RandomizerLocationManager.IsPickupRepeatable(expOrbPickup.MoonGuid) || Randomizer.RepeatableCheck()) {
+                RandomizerLocationManager.GivePickup(expOrbPickup.MoonGuid);
+            }
 
-	public void OnCollectMaxHealthContainerPickup(MaxHealthContainerPickup maxHealthContainerPickup)
-	{
-		if (!RandomizerLocationManager.IsPickupRepeatable(maxHealthContainerPickup.MoonGuid) || Randomizer.RepeatableCheck())
-		{
-			RandomizerLocationManager.GivePickup(maxHealthContainerPickup.MoonGuid);
-		}
+            if (RandomizerLocationManager.IsPickupRepeatable(expOrbPickup.MoonGuid)) {
+                return;
+            }
 
-		if (RandomizerLocationManager.IsPickupRepeatable(maxHealthContainerPickup.MoonGuid))
-		{
-			return;
-		}
+            if (GameWorld.Instance.CurrentArea != null) {
+                GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
+            }
 
-		maxHealthContainerPickup.Collected();
-		if (GameWorld.Instance.CurrentArea != null)
-		{
-			GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
-		}
-	}
+            expOrbPickup.Collected();
+        }
+    }
 
-	public void OnCollectRestoreHealthPickup(RestoreHealthPickup restoreHealthPickup)
-	{
-		var amount = restoreHealthPickup.Amount * (!Sein.PlayerAbilities.HealthEfficiency.HasAbility ? 1 : 2);
-		Sein.Mortality.Health.GainHealth(amount);
-		restoreHealthPickup.Collected();
-		UI.SeinUI.ShakeHealthbar();
-		if (!Sein.PlayerAbilities.WallJump.HasAbility)
-		{
-			HealthOrbInfo.RunActionIfFirstTime();
-		}
-	}
+    public void OnCollectKeystonePickup(KeystonePickup keystonePickup) {
+        if (!RandomizerLocationManager.IsPickupRepeatable(keystonePickup.MoonGuid) || Randomizer.RepeatableCheck()) {
+            RandomizerLocationManager.GivePickup(keystonePickup.MoonGuid);
+        }
 
-	public void OnCollectMapStonePickup(MapStonePickup mapStonePickup)
-	{
-		if (!RandomizerLocationManager.IsPickupRepeatable(mapStonePickup.MoonGuid) || Randomizer.RepeatableCheck())
-		{
-			RandomizerLocationManager.GivePickup(mapStonePickup.MoonGuid);
-		}
+        if (RandomizerLocationManager.IsPickupRepeatable(keystonePickup.MoonGuid)) {
+            return;
+        }
 
-		if (RandomizerLocationManager.IsPickupRepeatable(mapStonePickup.MoonGuid))
-		{
-			return;
-		}
+        keystonePickup.Collected();
+        if (GameWorld.Instance.CurrentArea != null) {
+            GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
+        }
+    }
 
-		mapStonePickup.Collected();
-		if (GameWorld.Instance.CurrentArea != null)
-		{
-			GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
-		}
-	}
+    public void OnCollectMaxHealthContainerPickup(MaxHealthContainerPickup maxHealthContainerPickup) {
+        if (!RandomizerLocationManager.IsPickupRepeatable(maxHealthContainerPickup.MoonGuid) || Randomizer.RepeatableCheck()) {
+            RandomizerLocationManager.GivePickup(maxHealthContainerPickup.MoonGuid);
+        }
 
-	public void SetReferenceToSein(SeinCharacter sein)
-	{
-		Sein = sein;
-	}
+        if (RandomizerLocationManager.IsPickupRepeatable(maxHealthContainerPickup.MoonGuid)) {
+            return;
+        }
 
-	public void OnEnterCheckpoint(InvisibleCheckpoint checkpoint)
-	{
-		if (Sein.IsSuspended)
-		{
-			return;
-		}
-		var position = Sein.Position;
-		if (checkpoint.RespawnPosition != Vector2.zero)
-		{
-			Sein.Position = new Vector3(checkpoint.RespawnPosition.x, checkpoint.RespawnPosition.y) + checkpoint.transform.position;
-		}
-		GameController.Instance.CreateCheckpoint();
-		Sein.Position = position;
-		checkpoint.OnCheckpointCreated();
-	}
+        maxHealthContainerPickup.Collected();
+        if (GameWorld.Instance.CurrentArea != null) {
+            GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
+        }
+    }
 
-	public override void Serialize(Archive ar)
-	{
-		ar.Serialize(ref ExpOrbInfo.HasBeenCollectedBefore);
-		ar.Serialize(ref KeystoneInfo.HasBeenCollectedBefore);
-		ar.Serialize(ref EnergyOrbInfo.HasBeenCollectedBefore);
-		ar.Serialize(ref HealthOrbInfo.HasBeenCollectedBefore);
-		ar.Serialize(ref SmallExpOrbInfo.HasBeenCollectedBefore);
-		ar.Serialize(ref MediumExpOrbInfo.HasBeenCollectedBefore);
-		ar.Serialize(ref LargeExpOrbInfo.HasBeenCollectedBefore);
-		ar.Serialize(ref m_collectedMaxEnergySlotsCount);
-		ar.Serialize(ref m_energySlotsAchievementAwarded);
-		ar.Serialize(ref m_collectedHealthSlotsCount);
-		ar.Serialize(ref m_healthSlotsAchievementAwarded);
-	}
+    public void OnCollectRestoreHealthPickup(RestoreHealthPickup restoreHealthPickup) {
+        var amount = restoreHealthPickup.Amount * (!Sein.PlayerAbilities.HealthEfficiency.HasAbility ? 1 : 2);
+        Sein.Mortality.Health.GainHealth(amount);
+        restoreHealthPickup.Collected();
+        UI.SeinUI.ShakeHealthbar();
+        if (!Sein.PlayerAbilities.WallJump.HasAbility) {
+            HealthOrbInfo.RunActionIfFirstTime();
+        }
+    }
 
-	public SeinCharacter Sein;
+    public void OnCollectMapStonePickup(MapStonePickup mapStonePickup) {
+        if (!RandomizerLocationManager.IsPickupRepeatable(mapStonePickup.MoonGuid) || Randomizer.RepeatableCheck()) {
+            RandomizerLocationManager.GivePickup(mapStonePickup.MoonGuid);
+        }
 
-	public CollectableInformation ExpOrbInfo = new CollectableInformation();
+        if (RandomizerLocationManager.IsPickupRepeatable(mapStonePickup.MoonGuid)) {
+            return;
+        }
 
-	public CollectableInformation KeystoneInfo = new CollectableInformation();
+        mapStonePickup.Collected();
+        if (GameWorld.Instance.CurrentArea != null) {
+            GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
+        }
+    }
 
-	public CollectableInformation EnergyOrbInfo = new CollectableInformation();
+    public void SetReferenceToSein(SeinCharacter sein) {
+        Sein = sein;
+    }
 
-	public CollectableInformation HealthOrbInfo = new CollectableInformation();
+    public void OnEnterCheckpoint(InvisibleCheckpoint checkpoint) {
+        if (Sein.IsSuspended) {
+            return;
+        }
 
-	public CollectableInformation SmallExpOrbInfo = new CollectableInformation();
+        var position = Sein.Position;
+        if (checkpoint.RespawnPosition != Vector2.zero) {
+            Sein.Position = new Vector3(checkpoint.RespawnPosition.x, checkpoint.RespawnPosition.y) + checkpoint.transform.position;
+        }
 
-	public CollectableInformation MediumExpOrbInfo = new CollectableInformation();
+        GameController.Instance.CreateCheckpoint();
+        Sein.Position = position;
+        checkpoint.OnCheckpointCreated();
+    }
 
-	public CollectableInformation LargeExpOrbInfo = new CollectableInformation();
+    public override void Serialize(Archive ar) {
+        ar.Serialize(ref ExpOrbInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref KeystoneInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref EnergyOrbInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref HealthOrbInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref SmallExpOrbInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref MediumExpOrbInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref LargeExpOrbInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref m_collectedMaxEnergySlotsCount);
+        ar.Serialize(ref m_energySlotsAchievementAwarded);
+        ar.Serialize(ref m_collectedHealthSlotsCount);
+        ar.Serialize(ref m_healthSlotsAchievementAwarded);
+    }
 
-	public ActionMethod HeartContainerSequence;
+    public SeinCharacter Sein;
 
-	public ActionMethod SkillPointSequence;
+    public CollectableInformation ExpOrbInfo = new CollectableInformation();
 
-	public ActionMethod EnergyContainerSequence;
+    public CollectableInformation KeystoneInfo = new CollectableInformation();
 
-	public ActionMethod MapStoneSequence;
+    public CollectableInformation EnergyOrbInfo = new CollectableInformation();
 
-	private ExpText m_expText;
+    public CollectableInformation HealthOrbInfo = new CollectableInformation();
 
-	public AchievementAsset Collect200EnergyCrystalsAchievementAsset;
+    public CollectableInformation SmallExpOrbInfo = new CollectableInformation();
 
-	public AchievementAsset AllEnergyCellsCollected;
+    public CollectableInformation MediumExpOrbInfo = new CollectableInformation();
 
-	public AchievementAsset AllHealthCellsCollected;
+    public CollectableInformation LargeExpOrbInfo = new CollectableInformation();
 
-	private int m_collectedMaxEnergySlotsCount;
+    public ActionMethod HeartContainerSequence;
 
-	private bool m_energySlotsAchievementAwarded;
+    public ActionMethod SkillPointSequence;
 
-	private int m_collectedHealthSlotsCount;
+    public ActionMethod EnergyContainerSequence;
 
-	private bool m_healthSlotsAchievementAwarded;
+    public ActionMethod MapStoneSequence;
 
-	public static Action OnCollectMaxEnergyContainer = delegate
-	{
-	};
+    private ExpText m_expText;
 
-	[Serializable]
-	public class CollectableInformation
-	{
-		public void RunActionIfFirstTime()
-		{
-		}
+    public AchievementAsset Collect200EnergyCrystalsAchievementAsset;
 
-		public bool HasBeenCollectedBefore;
+    public AchievementAsset AllEnergyCellsCollected;
 
-		public ActionMethod FirstTimeCollectedSequence;
-	}
+    public AchievementAsset AllHealthCellsCollected;
+
+    private int m_collectedMaxEnergySlotsCount;
+
+    private bool m_energySlotsAchievementAwarded;
+
+    private int m_collectedHealthSlotsCount;
+
+    private bool m_healthSlotsAchievementAwarded;
+
+    public static Action OnCollectMaxEnergyContainer = delegate { };
+
+    [Serializable]
+    public class CollectableInformation {
+        public void RunActionIfFirstTime() {
+        }
+
+        public bool HasBeenCollectedBefore;
+
+        public ActionMethod FirstTimeCollectedSequence;
+    }
 }

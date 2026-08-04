@@ -1,68 +1,59 @@
 using Game;
 using UnityEngine;
 
-public class Naru : MonoBehaviour, ICharacter
-{
-	public void Awake()
-	{
-		Characters.Naru = this;
-		Characters.Current = this;
-	}
+public class Naru : MonoBehaviour, ICharacter {
+    public void Awake() {
+        Characters.Naru = this;
+        Characters.Current = this;
+    }
 
-	public void OnDestroy()
-	{
-		Randomizer.onNaruDestroyed();
-		if (Characters.Naru == this)
-		{
-			Characters.Naru = null;
-		}
-		if (Characters.Current == this)
-		{
-			Characters.Current = null;
-		}
-	}
+    public void OnDestroy() {
+        Randomizer.onNaruDestroyed();
+        if (Characters.Naru == this) {
+            Characters.Naru = null;
+        }
 
-	public Vector3 Position
-	{
-		get => transform.position;
-		set => transform.position = value;
-	}
+        if (Characters.Current == this) {
+            Characters.Current = null;
+        }
+    }
 
-	public void Activate(bool active)
-	{
-		gameObject.SetActive(active);
-	}
+    public Vector3 Position {
+        get => transform.position;
+        set => transform.position = value;
+    }
 
-	public GameObject GameObject => gameObject;
+    public void Activate(bool active) {
+        gameObject.SetActive(active);
+    }
 
-	public bool FaceLeft
-	{
-		get => Animation.SpriteMirror.FaceLeft;
-		set => Animation.SpriteMirror.FaceLeft = value;
-	}
+    public GameObject GameObject => gameObject;
 
-	public Vector3 Speed
-	{
-		get => PlatformBehaviour.PlatformMovement.LocalSpeed;
-		set => PlatformBehaviour.PlatformMovement.LocalSpeed = value;
-	}
+    public bool FaceLeft {
+        get => Animation.SpriteMirror.FaceLeft;
+        set => Animation.SpriteMirror.FaceLeft = value;
+    }
 
-	public Transform Transform => transform;
+    public Vector3 Speed {
+        get => PlatformBehaviour.PlatformMovement.LocalSpeed;
+        set => PlatformBehaviour.PlatformMovement.LocalSpeed = value;
+    }
 
-	public bool IsOnGround => PlatformBehaviour.PlatformMovement.IsOnGround;
+    public Transform Transform => transform;
 
-	public void PlaceOnGround()
-	{
-		PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
-	}
+    public bool IsOnGround => PlatformBehaviour.PlatformMovement.IsOnGround;
 
-	public CharacterAnimationSystem Animation;
+    public void PlaceOnGround() {
+        PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
+    }
 
-	public NaruController Controller;
+    public CharacterAnimationSystem Animation;
 
-	public PlatformBehaviour PlatformBehaviour;
+    public NaruController Controller;
 
-	public bool SeinNaruComboEnabled;
+    public PlatformBehaviour PlatformBehaviour;
 
-	public NaruSounds Sounds;
+    public bool SeinNaruComboEnabled;
+
+    public NaruSounds Sounds;
 }

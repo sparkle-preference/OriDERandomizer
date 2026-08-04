@@ -7,437 +7,451 @@ using UnityEngine;
 using Input = Core.Input;
 
 public static class RandomizerRebinding {
-	public static void WriteBindsToFile() {
-		var streamWriter = new StreamWriter("RandomizerRebinding.txt");
-		streamWriter.WriteLine("Bind syntax: Key1+Key2, Key1+Key3+Key4, ... Syntax errors will load default binds.");
-		streamWriter.WriteLine("Functions are unbound if there is no binding specified.");
-		streamWriter.WriteLine("Supported binds are Unity KeyCodes (https://docs.unity3d.com/ScriptReference/KeyCode.html) and the following actions:");
-		streamWriter.WriteLine("Jump, SpiritFlame, Bash, SoulFlame, ChargeJump, Glide, Dash, Grenade, Left, Right, Up, Down, LeftStick, RightStick, Start, Select");
-		streamWriter.WriteLine("");
-		streamWriter.WriteLine("In addition, Xbox-style controller buttons are supported, and must be preceded by an underscore:");
-		streamWriter.WriteLine("_A (bottom), _B (right), _X (left), _Y (top), _LB, _RB, _LT, _RT, _DUp, _DDown, _DLeft, _DRight,");
-		streamWriter.WriteLine("_LUp, _LDown, _LLeft, _LRight, _RUp, _RDown, _RLeft, _RRight, _LS, _RS, _Start, _Back");
-		streamWriter.WriteLine("--------");
-		streamWriter.WriteLine("");
-		foreach(var bindparts in rebindMap) {
-			if(bindparts.Value.HasBind())
-				streamWriter.WriteLine($"{bindparts.Key}: {bindparts.Value}{(bindparts.Key == "Double Bash" && Randomizer.BashTap ? ", Tap" : "")}");
-			else
-				streamWriter.WriteLine($"{bindparts.Key}: {DefaultBinds[bindparts.Key]}");
-		}
-		streamWriter.Flush();
-		streamWriter.Close();
-	}
+    public static void WriteBindsToFile() {
+        var streamWriter = new StreamWriter("RandomizerRebinding.txt");
+        streamWriter.WriteLine("Bind syntax: Key1+Key2, Key1+Key3+Key4, ... Syntax errors will load default binds.");
+        streamWriter.WriteLine("Functions are unbound if there is no binding specified.");
+        streamWriter.WriteLine("Supported binds are Unity KeyCodes (https://docs.unity3d.com/ScriptReference/KeyCode.html) and the following actions:");
+        streamWriter.WriteLine("Jump, SpiritFlame, Bash, SoulFlame, ChargeJump, Glide, Dash, Grenade, Left, Right, Up, Down, LeftStick, RightStick, Start, Select");
+        streamWriter.WriteLine("");
+        streamWriter.WriteLine("In addition, Xbox-style controller buttons are supported, and must be preceded by an underscore:");
+        streamWriter.WriteLine("_A (bottom), _B (right), _X (left), _Y (top), _LB, _RB, _LT, _RT, _DUp, _DDown, _DLeft, _DRight,");
+        streamWriter.WriteLine("_LUp, _LDown, _LLeft, _LRight, _RUp, _RDown, _RLeft, _RRight, _LS, _RS, _Start, _Back");
+        streamWriter.WriteLine("--------");
+        streamWriter.WriteLine("");
+        foreach (var bindparts in rebindMap) {
+            if (bindparts.Value.HasBind()) {
+                streamWriter.WriteLine($"{bindparts.Key}: {bindparts.Value}{(bindparts.Key == "Double Bash" && Randomizer.BashTap ? ", Tap" : "")}");
+            } else {
+                streamWriter.WriteLine($"{bindparts.Key}: {DefaultBinds[bindparts.Key]}");
+            }
+        }
+
+        streamWriter.Flush();
+        streamWriter.Close();
+    }
 
 
-	public static void ParseRebinding() {
-		var dirty = false;
+    public static void ParseRebinding() {
+        var dirty = false;
 
-		try {
-			if (!File.Exists("RandomizerRebinding.txt")) {
-				WriteBindsToFile();
-			}
+        try {
+            if (!File.Exists("RandomizerRebinding.txt")) {
+                WriteBindsToFile();
+            }
 
-			var lines = File.ReadAllLines("RandomizerRebinding.txt");
-			var unseenActions = new ArrayList(DefaultBinds.Keys);
-			var writeList = new List<string>();
+            var lines = File.ReadAllLines("RandomizerRebinding.txt");
+            var unseenActions = new ArrayList(DefaultBinds.Keys);
+            var writeList = new List<string>();
 
-			// parse step 1: read binds from file
-			foreach (var line in lines) {
-				if (!line.Contains(":")){
-					continue;
-				}
-				var parts = line.Split(new[]{':'}, 2);
-				var action = parts[0].Trim();
-				if(action == "Free Grenade Jump") {
-					action = "Grenade Jump";
-					dirty = true;
-				} else if(action == "Return to Start") {
-					action = "Warp";
-					dirty = true;
-				}
+            // parse step 1: read binds from file
+            foreach (var line in lines) {
+                if (!line.Contains(":")) {
+                    continue;
+                }
 
-				if (!DefaultBinds.ContainsKey(action))
-					continue;
+                var parts = line.Split(new[] { ':' }, 2);
+                var action = parts[0].Trim();
+                if (action == "Free Grenade Jump") {
+                    action = "Grenade Jump";
+                    dirty = true;
+                } else if (action == "Return to Start") {
+                    action = "Warp";
+                    dirty = true;
+                }
 
-				var bindingString = parts[1].Trim();
-				AssignBind(action, bindingString, writeList);
-				unseenActions.Remove(action);
-			}
+                if (!DefaultBinds.ContainsKey(action)) {
+                    continue;
+                }
 
-			// parse step 2: load defaults for missing binds
-			foreach (string missingAction in unseenActions) {
-				AssignBind(missingAction, null, writeList);
-				if(missingAction == "Show Keysanity Progress") {
-					AssignBind("Toggle Chaos", null, writeList);
-					dirty = true;
-				}
-			}
+                var bindingString = parts[1].Trim();
+                AssignBind(action, bindingString, writeList);
+                unseenActions.Remove(action);
+            }
 
-			if (writeList.Count > 0) {
-				var warnList = new List<string>();
+            // parse step 2: load defaults for missing binds
+            foreach (string missingAction in unseenActions) {
+                AssignBind(missingAction, null, writeList);
+                if (missingAction == "Show Keysanity Progress") {
+                    AssignBind("Toggle Chaos", null, writeList);
+                    dirty = true;
+                }
+            }
 
-				foreach (var writeAction in writeList) {
-					if (DefaultBinds[writeAction] != "") {
-						warnList.Add(writeAction);
-					}
-				}
+            if (writeList.Count > 0) {
+                var warnList = new List<string>();
 
-				if (warnList.Count > 0) {
-					Randomizer.printInfo("Default Binds written for these missing binds: " + String.Join(", ", warnList.ToArray()) + ".", 480);
-				}
+                foreach (var writeAction in writeList) {
+                    if (DefaultBinds[writeAction] != "") {
+                        warnList.Add(writeAction);
+                    }
+                }
 
-				var writeText = "";
-				foreach (var writeAction in writeList) {
-					writeText += Environment.NewLine + writeAction + ": " + DefaultBinds[writeAction];
-				}
+                if (warnList.Count > 0) {
+                    Randomizer.printInfo("Default Binds written for these missing binds: " + string.Join(", ", warnList.ToArray()) + ".", 480);
+                }
 
-				File.AppendAllText("RandomizerRebinding.txt", writeText);
-			} 
-			if(dirty) {
-				// this is redundant with the above but who cares! :D 
-				WriteBindsToFile();
-			}
+                var writeText = "";
+                foreach (var writeAction in writeList) {
+                    writeText += Environment.NewLine + writeAction + ": " + DefaultBinds[writeAction];
+                }
 
-		}
-		catch (Exception e) {
-			Randomizer.LogError("Error parsing bindings: " + e.Message);
-		}
-	}
+                File.AppendAllText("RandomizerRebinding.txt", writeText);
+            }
 
-	public static void AssignBind(string action, string bindingString, List<string> writeList) {
-		if (!rebindMap.ContainsKey(action)) {
-			return;
-		}
+            if (dirty)
+                // this is redundant with the above but who cares! :D 
+            {
+                WriteBindsToFile();
+            }
+        } catch (Exception e) {
+            Randomizer.LogError("Error parsing bindings: " + e.Message);
+        }
+    }
 
-		rebindMap[action].Binds = ParseOrDefault(action, bindingString, writeList).Binds;
-		rebindMap[action].deprecated_wasPressed = true;
-	}
+    public static void AssignBind(string action, string bindingString, List<string> writeList) {
+        if (!rebindMap.ContainsKey(action)) {
+            return;
+        }
 
-	public static BindSet ParseOrDefault(string action, string bindingString, List<string> writeList) {
-		var defaultBinds = DefaultBinds[action];
-		if (bindingString == null) {
-			bindingString = defaultBinds;
-			writeList.Add(action);
-		}
+        rebindMap[action].Binds = ParseOrDefault(action, bindingString, writeList).Binds;
+        rebindMap[action].deprecated_wasPressed = true;
+    }
 
-		try {
-			return ParseBinds(action, bindingString);
-		}
-		catch (Exception) {
-			Randomizer.printInfo("@" + action + ": failed to parse '" + bindingString + "'. Using default value: '" + defaultBinds + "'@", 240);
-			bindingString = defaultBinds;
-		}
+    public static BindSet ParseOrDefault(string action, string bindingString, List<string> writeList) {
+        var defaultBinds = DefaultBinds[action];
+        if (bindingString == null) {
+            bindingString = defaultBinds;
+            writeList.Add(action);
+        }
 
-		return ParseBinds(action, bindingString);
-	}
+        try {
+            return ParseBinds(action, bindingString);
+        } catch (Exception) {
+            Randomizer.printInfo("@" + action + ": failed to parse '" + bindingString + "'. Using default value: '" + defaultBinds + "'@", 240);
+            bindingString = defaultBinds;
+        }
 
-	public static KeyCode StringToKeyBinding(string s) {
-		if (s != "") {
-			return (KeyCode)Enum.Parse(typeof(KeyCode), s, true);
-		}
-		return KeyCode.None;
-	}
+        return ParseBinds(action, bindingString);
+    }
 
-	public static BindSet ParseBinds(string action, string bindingString) {
-		var binds = new List<SingleBind>();
+    public static KeyCode StringToKeyBinding(string s) {
+        if (s != "") {
+            return (KeyCode)Enum.Parse(typeof(KeyCode), s, true);
+        }
 
-		foreach (var bind in bindingString.Split(new[]{','}, StringSplitOptions.RemoveEmptyEntries)) {
-			var singleBind = new List<SingleInput>();
-			foreach (var input in bind.Trim().Split(new[]{'+'}, StringSplitOptions.RemoveEmptyEntries)) {
-				if (action == "Double Bash" && input.Trim().ToLower() == "tap") {
-					Randomizer.BashTap = true;
-				}
-				else {
-					singleBind.Add(new SingleInput(input.Trim()));
-				}
-			}
-			if (singleBind.Count > 0) {
-				binds.Add(new SingleBind(singleBind));
-			}
-		}
+        return KeyCode.None;
+    }
 
-		return new BindSet(binds);
-	}
+    public static BindSet ParseBinds(string action, string bindingString) {
+        var binds = new List<SingleBind>();
 
-	public static void FixedUpdate() {
-		foreach (var bindSet in rebindMap.Values) {
-			bindSet.FixedUpdate();
-		}
-	}
+        foreach (var bind in bindingString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)) {
+            var singleBind = new List<SingleInput>();
+            foreach (var input in bind.Trim().Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries)) {
+                if (action == "Double Bash" && input.Trim().ToLower() == "tap") {
+                    Randomizer.BashTap = true;
+                } else {
+                    singleBind.Add(new SingleInput(input.Trim()));
+                }
+            }
 
-	public static Dictionary<string, Input.InputButtonProcessor> CoreInputMap = new Dictionary<string, Input.InputButtonProcessor> { 
-				{"Jump", Input.Jump},
-				{"SpiritFlame", Input.SpiritFlame},
-				{"Bash", Input.Bash},
-				{"SoulFlame", Input.SoulFlame},
-				{"ChargeJump", Input.ChargeJump},
-				{"Glide", Input.Glide},
-				{"Dash", Input.RightShoulder},
-				{"Grenade", Input.LeftShoulder},
-				{"Left", Input.Left},
-				{"Right", Input.Right},
-				{"Up", Input.Up},
-				{"Down", Input.Down},
-				{"LeftStick", Input.LeftStick},
-				{"RightStick", Input.RightStick},
-				{"Start", Input.Start},
-				{"Select", Input.Select}
-			};
-	public static Dictionary<string, string> DefaultBinds = new Dictionary<string, string> { 
-				{"Replay Message", "LeftAlt+T, RightAlt+T"},
-				{"Warp", "LeftAlt+R, RightAlt+R"},
-				{"Reload Seed", "LeftAlt+L, RightAlt+L"},
-				{"Toggle Chaos", ""},
-				{"Chaos Verbosity", "LeftAlt+V, RightAlt+V"},
-				{"Force Chaos Effect","LeftAlt+F, RightAlt+F"},
-				{"Show Progress", "LeftAlt+P, RightAlt+P"},
-				{"Color Shift", "LeftAlt+C, RightAlt+C"},
-				{"Double Bash", "Grenade"},
-				{"Toggle Map Mode", "Grenade"},
-				{"Grenade Jump", "Grenade+Jump"},
-				{"Show Bonuses", "LeftAlt+B, RightAlt+B"},
-				{"Bonus Switch", "LeftAlt+Q, RightAlt+Q"},
-				{"Bonus Toggle", "LeftAlt+Mouse1, RightAlt+Mouse1"},
-				{"Reset Grenade Aim",""},
-				{"Suppress Autofire",""},
-				{"List Trees", "LeftAlt+Alpha1, RightAlt+Alpha1"},
-				{"List Map Altars", "LeftAlt+Alpha2, RightAlt+Alpha2"},
-				{"List Teleporters", "LeftAlt+Alpha3, RightAlt+Alpha3"},
-				{"List Relics", "LeftAlt+Alpha4, RightAlt+Alpha4"},
-				{"Show Stats", "LeftAlt+Alpha5, RightAlt+Alpha5"},
-				{"Show Keysanity Progress", "LeftAlt+K, RightAlt+K"},
-				{"Bonus 1",""},
-				{"Bonus 2",""},
-				{"Bonus 3",""},
-				{"Bonus 4",""},
-				{"Bonus 5",""},
-				{"Bonus 6",""},
-				{"Bonus 7",""},
-				{"Bonus 8",""},
-				{"Bonus 9",""},
-			};
+            if (singleBind.Count > 0) {
+                binds.Add(new SingleBind(singleBind));
+            }
+        }
 
-	public static BindSet ReplayMessage = new BindSet(new List<SingleBind>());
-	public static BindSet ReturnToStart = new BindSet(new List<SingleBind>());
-	public static BindSet ReloadSeed = new BindSet(new List<SingleBind>());
-	public static BindSet ToggleChaos = new BindSet(new List<SingleBind>());
-	public static BindSet ChaosVerbosity = new BindSet(new List<SingleBind>());
-	public static BindSet ForceChaosEffect = new BindSet(new List<SingleBind>());
-	public static BindSet ShowProgress = new BindSet(new List<SingleBind>());
-	public static BindSet ColorShift = new BindSet(new List<SingleBind>());
-	public static BindSet DoubleBash = new BindSet(new List<SingleBind>());
-	public static BindSet FreeGrenadeJump = new BindSet(new List<SingleBind>());
-	public static BindSet ToggleMapMode = new BindSet(new List<SingleBind>());
-	public static BindSet ShowBonuses = new BindSet(new List<SingleBind>());
-	public static BindSet BonusSwitch = new BindSet(new List<SingleBind>());
-	public static BindSet BonusToggle = new BindSet(new List<SingleBind>());
-	public static BindSet ResetGrenadeAim = new BindSet(new List<SingleBind>());
-	public static BindSet SuppressAutofire = new BindSet(new List<SingleBind>());
-	public static BindSet ListTrees = new BindSet(new List<SingleBind>());
-	public static BindSet ListRelics = new BindSet(new List<SingleBind>());
-	public static BindSet ListMapAltars = new BindSet(new List<SingleBind>());
-	public static BindSet ListTeleporters = new BindSet(new List<SingleBind>());
-	public static BindSet ShowStats = new BindSet(new List<SingleBind>());
-	public static BindSet ShowKeysanityProgress = new BindSet(new List<SingleBind>());
-	public static BindSet Bonus1 = new BindSet(new List<SingleBind>());
-	public static BindSet Bonus2 = new BindSet(new List<SingleBind>());
-	public static BindSet Bonus3 = new BindSet(new List<SingleBind>());
-	public static BindSet Bonus4 = new BindSet(new List<SingleBind>());
-	public static BindSet Bonus5 = new BindSet(new List<SingleBind>());
-	public static BindSet Bonus6 = new BindSet(new List<SingleBind>());
-	public static BindSet Bonus7 = new BindSet(new List<SingleBind>());
-	public static BindSet Bonus8 = new BindSet(new List<SingleBind>());
-	public static BindSet Bonus9 = new BindSet(new List<SingleBind>());
+        return new BindSet(binds);
+    }
 
-	private static Dictionary<string, BindSet> rebindMap = new Dictionary<string, BindSet> { 
-		{"Replay Message", ReplayMessage}, 
-		{"Warp", ReturnToStart}, 
-		{"Reload Seed", ReloadSeed}, 
-		{"Show Progress", ShowProgress}, 
-		{"Color Shift", ColorShift}, 
-		{"Double Bash", DoubleBash},
-		{"Grenade Jump", FreeGrenadeJump}, 
-		{"Toggle Map Mode", ToggleMapMode},
-		{"Show Bonuses", ShowBonuses}, 
-		{"Bonus Switch", BonusSwitch},
-	 	{"Bonus Toggle", BonusToggle},
-	 	{"Reset Grenade Aim", ResetGrenadeAim},
-	 	{"Suppress Autofire", SuppressAutofire},
-	 	{"List Trees", ListTrees},
-	 	{"List Relics", ListRelics},
-		{"List Map Altars", ListMapAltars},
-		{"List Teleporters", ListTeleporters},
-		{"Show Stats", ShowStats},
-		{"Show Keysanity Progress", ShowKeysanityProgress},
-		{"Bonus 1", Bonus1},
-		{"Bonus 2", Bonus2},
-		{"Bonus 3", Bonus3},
-		{"Bonus 4", Bonus4},
-		{"Bonus 5", Bonus5},
-		{"Bonus 6", Bonus6},
-		{"Bonus 7", Bonus7},
-		{"Bonus 8", Bonus8},
-		{"Bonus 9", Bonus9},
-		{"Toggle Chaos", ToggleChaos},
-		{"Chaos Verbosity", ChaosVerbosity},
-		{"Force Chaos Effect", ForceChaosEffect}
-	};
+    public static void FixedUpdate() {
+        foreach (var bindSet in rebindMap.Values) {
+            bindSet.FixedUpdate();
+        }
+    }
 
-	private static Dictionary<string, string> coreInputNameRepl = new Dictionary<string, string> { 
-		{"Grenade", "LightSpheres"},
-		{"ChargeJump", "ChargeJumpCharge"}
-	};
+    public static Dictionary<string, Input.InputButtonProcessor> CoreInputMap = new Dictionary<string, Input.InputButtonProcessor> {
+        { "Jump", Input.Jump },
+        { "SpiritFlame", Input.SpiritFlame },
+        { "Bash", Input.Bash },
+        { "SoulFlame", Input.SoulFlame },
+        { "ChargeJump", Input.ChargeJump },
+        { "Glide", Input.Glide },
+        { "Dash", Input.RightShoulder },
+        { "Grenade", Input.LeftShoulder },
+        { "Left", Input.Left },
+        { "Right", Input.Right },
+        { "Up", Input.Up },
+        { "Down", Input.Down },
+        { "LeftStick", Input.LeftStick },
+        { "RightStick", Input.RightStick },
+        { "Start", Input.Start },
+        { "Select", Input.Select },
+    };
 
-	public class SingleInput : Input.InputButtonProcessor {
-		public SingleInput(string input) {
-			raw = input;
-			if (input.StartsWith("_")) {
-				Type = ActionType.ControllerButton;
-				Button = (PlayerInputRebinding.ControllerButton)Enum.Parse(typeof(PlayerInputRebinding.ControllerButton), input.Substring(1), true);
-			}
-			else if (CoreInputMap.ContainsKey(input)) {
-				Type = ActionType.CoreInput;
-				CoreInput = CoreInputMap[input];
-			}
-			else {
-				Type = ActionType.KeyCode;
-				Key = StringToKeyBinding(input);
-			}
-		}
+    public static Dictionary<string, string> DefaultBinds = new Dictionary<string, string> {
+        { "Replay Message", "LeftAlt+T, RightAlt+T" },
+        { "Warp", "LeftAlt+R, RightAlt+R" },
+        { "Reload Seed", "LeftAlt+L, RightAlt+L" },
+        { "Toggle Chaos", "" },
+        { "Chaos Verbosity", "LeftAlt+V, RightAlt+V" },
+        { "Force Chaos Effect", "LeftAlt+F, RightAlt+F" },
+        { "Show Progress", "LeftAlt+P, RightAlt+P" },
+        { "Color Shift", "LeftAlt+C, RightAlt+C" },
+        { "Double Bash", "Grenade" },
+        { "Toggle Map Mode", "Grenade" },
+        { "Grenade Jump", "Grenade+Jump" },
+        { "Show Bonuses", "LeftAlt+B, RightAlt+B" },
+        { "Bonus Switch", "LeftAlt+Q, RightAlt+Q" },
+        { "Bonus Toggle", "LeftAlt+Mouse1, RightAlt+Mouse1" },
+        { "Reset Grenade Aim", "" },
+        { "Suppress Autofire", "" },
+        { "List Trees", "LeftAlt+Alpha1, RightAlt+Alpha1" },
+        { "List Map Altars", "LeftAlt+Alpha2, RightAlt+Alpha2" },
+        { "List Teleporters", "LeftAlt+Alpha3, RightAlt+Alpha3" },
+        { "List Relics", "LeftAlt+Alpha4, RightAlt+Alpha4" },
+        { "Show Stats", "LeftAlt+Alpha5, RightAlt+Alpha5" },
+        { "Show Keysanity Progress", "LeftAlt+K, RightAlt+K" },
+        { "Bonus 1", "" },
+        { "Bonus 2", "" },
+        { "Bonus 3", "" },
+        { "Bonus 4", "" },
+        { "Bonus 5", "" },
+        { "Bonus 6", "" },
+        { "Bonus 7", "" },
+        { "Bonus 8", "" },
+        { "Bonus 9", "" },
+    };
 
-		public void FixedUpdate() {
-			switch (Type) {
-			case ActionType.CoreInput:
-				Update(CoreInput.Pressed);
-				break;
-			case ActionType.ControllerButton:
-				Update(PlayerInput.Instance.ControllerButtonToButtonInput(Button).GetButton());
-				break;
-			case ActionType.KeyCode:
-				Update(MoonInput.GetKey(Key));
-				break;
-			}
-		}
+    public static BindSet ReplayMessage = new BindSet(new List<SingleBind>());
+    public static BindSet ReturnToStart = new BindSet(new List<SingleBind>());
+    public static BindSet ReloadSeed = new BindSet(new List<SingleBind>());
+    public static BindSet ToggleChaos = new BindSet(new List<SingleBind>());
+    public static BindSet ChaosVerbosity = new BindSet(new List<SingleBind>());
+    public static BindSet ForceChaosEffect = new BindSet(new List<SingleBind>());
+    public static BindSet ShowProgress = new BindSet(new List<SingleBind>());
+    public static BindSet ColorShift = new BindSet(new List<SingleBind>());
+    public static BindSet DoubleBash = new BindSet(new List<SingleBind>());
+    public static BindSet FreeGrenadeJump = new BindSet(new List<SingleBind>());
+    public static BindSet ToggleMapMode = new BindSet(new List<SingleBind>());
+    public static BindSet ShowBonuses = new BindSet(new List<SingleBind>());
+    public static BindSet BonusSwitch = new BindSet(new List<SingleBind>());
+    public static BindSet BonusToggle = new BindSet(new List<SingleBind>());
+    public static BindSet ResetGrenadeAim = new BindSet(new List<SingleBind>());
+    public static BindSet SuppressAutofire = new BindSet(new List<SingleBind>());
+    public static BindSet ListTrees = new BindSet(new List<SingleBind>());
+    public static BindSet ListRelics = new BindSet(new List<SingleBind>());
+    public static BindSet ListMapAltars = new BindSet(new List<SingleBind>());
+    public static BindSet ListTeleporters = new BindSet(new List<SingleBind>());
+    public static BindSet ShowStats = new BindSet(new List<SingleBind>());
+    public static BindSet ShowKeysanityProgress = new BindSet(new List<SingleBind>());
+    public static BindSet Bonus1 = new BindSet(new List<SingleBind>());
+    public static BindSet Bonus2 = new BindSet(new List<SingleBind>());
+    public static BindSet Bonus3 = new BindSet(new List<SingleBind>());
+    public static BindSet Bonus4 = new BindSet(new List<SingleBind>());
+    public static BindSet Bonus5 = new BindSet(new List<SingleBind>());
+    public static BindSet Bonus6 = new BindSet(new List<SingleBind>());
+    public static BindSet Bonus7 = new BindSet(new List<SingleBind>());
+    public static BindSet Bonus8 = new BindSet(new List<SingleBind>());
+    public static BindSet Bonus9 = new BindSet(new List<SingleBind>());
 
-		public override string ToString() {
-			switch (Type) {
-			case ActionType.CoreInput:
-				return $"[{(coreInputNameRepl.ContainsKey(raw) ? coreInputNameRepl[raw] : raw)}]";
-			case ActionType.ControllerButton:
-				return "_" + Button;
-			case ActionType.KeyCode:
-				return Key.ToString();
-			default:
-				return "";
-			}
-		}
+    private static Dictionary<string, BindSet> rebindMap = new Dictionary<string, BindSet> {
+        { "Replay Message", ReplayMessage },
+        { "Warp", ReturnToStart },
+        { "Reload Seed", ReloadSeed },
+        { "Show Progress", ShowProgress },
+        { "Color Shift", ColorShift },
+        { "Double Bash", DoubleBash },
+        { "Grenade Jump", FreeGrenadeJump },
+        { "Toggle Map Mode", ToggleMapMode },
+        { "Show Bonuses", ShowBonuses },
+        { "Bonus Switch", BonusSwitch },
+        { "Bonus Toggle", BonusToggle },
+        { "Reset Grenade Aim", ResetGrenadeAim },
+        { "Suppress Autofire", SuppressAutofire },
+        { "List Trees", ListTrees },
+        { "List Relics", ListRelics },
+        { "List Map Altars", ListMapAltars },
+        { "List Teleporters", ListTeleporters },
+        { "Show Stats", ShowStats },
+        { "Show Keysanity Progress", ShowKeysanityProgress },
+        { "Bonus 1", Bonus1 },
+        { "Bonus 2", Bonus2 },
+        { "Bonus 3", Bonus3 },
+        { "Bonus 4", Bonus4 },
+        { "Bonus 5", Bonus5 },
+        { "Bonus 6", Bonus6 },
+        { "Bonus 7", Bonus7 },
+        { "Bonus 8", Bonus8 },
+        { "Bonus 9", Bonus9 },
+        { "Toggle Chaos", ToggleChaos },
+        { "Chaos Verbosity", ChaosVerbosity },
+        { "Force Chaos Effect", ForceChaosEffect },
+    };
 
-		public string RawStr() {
-			switch (Type) {
-			case ActionType.CoreInput:
-				return raw;
-			case ActionType.ControllerButton:
-				return $"_{Button}";
-			case ActionType.KeyCode:
-				return $"{Key}";
-			default:
-				return "";
-			}			
-		}
+    private static Dictionary<string, string> coreInputNameRepl = new Dictionary<string, string> {
+        { "Grenade", "LightSpheres" },
+        { "ChargeJump", "ChargeJumpCharge" },
+    };
+
+    public class SingleInput : Input.InputButtonProcessor {
+        public SingleInput(string input) {
+            raw = input;
+            if (input.StartsWith("_")) {
+                Type = ActionType.ControllerButton;
+                Button = (PlayerInputRebinding.ControllerButton)Enum.Parse(typeof(PlayerInputRebinding.ControllerButton), input.Substring(1), true);
+            } else if (CoreInputMap.ContainsKey(input)) {
+                Type = ActionType.CoreInput;
+                CoreInput = CoreInputMap[input];
+            } else {
+                Type = ActionType.KeyCode;
+                Key = StringToKeyBinding(input);
+            }
+        }
+
+        public void FixedUpdate() {
+            switch (Type) {
+                case ActionType.CoreInput:
+                    Update(CoreInput.Pressed);
+                    break;
+                case ActionType.ControllerButton:
+                    Update(PlayerInput.Instance.ControllerButtonToButtonInput(Button).GetButton());
+                    break;
+                case ActionType.KeyCode:
+                    Update(MoonInput.GetKey(Key));
+                    break;
+            }
+        }
+
+        public override string ToString() {
+            switch (Type) {
+                case ActionType.CoreInput:
+                    return $"[{(coreInputNameRepl.ContainsKey(raw) ? coreInputNameRepl[raw] : raw)}]";
+                case ActionType.ControllerButton:
+                    return "_" + Button;
+                case ActionType.KeyCode:
+                    return Key.ToString();
+                default:
+                    return "";
+            }
+        }
+
+        public string RawStr() {
+            switch (Type) {
+                case ActionType.CoreInput:
+                    return raw;
+                case ActionType.ControllerButton:
+                    return $"_{Button}";
+                case ActionType.KeyCode:
+                    return $"{Key}";
+                default:
+                    return "";
+            }
+        }
 
 
-		public KeyCode Key;
+        public KeyCode Key;
 
-		private string raw;
+        private string raw;
 
-		public Input.InputButtonProcessor CoreInput;
+        public Input.InputButtonProcessor CoreInput;
 
-		public PlayerInputRebinding.ControllerButton Button;
+        public PlayerInputRebinding.ControllerButton Button;
 
-		public ActionType Type;
+        public ActionType Type;
 
-		public enum ActionType {
-			CoreInput,
-			ControllerButton,
-			KeyCode
-		}
-	}
+        public enum ActionType {
+            CoreInput,
+            ControllerButton,
+            KeyCode,
+        }
+    }
 
-	public class SingleBind : Input.InputButtonProcessor {
-		public SingleBind(List<SingleInput> inputs) {
-			Inputs = inputs;
-		}
+    public class SingleBind : Input.InputButtonProcessor {
+        public SingleBind(List<SingleInput> inputs) {
+            Inputs = inputs;
+        }
 
-		public void FixedUpdate() {
-			var pressed = true;
+        public void FixedUpdate() {
+            var pressed = true;
 
-			foreach (var input in Inputs) {
-				input.FixedUpdate();
+            foreach (var input in Inputs) {
+                input.FixedUpdate();
 
-				if (input.Released) {
-					pressed = false;
-				}
-			}
+                if (input.Released) {
+                    pressed = false;
+                }
+            }
 
-			Update(pressed);
-		}
+            Update(pressed);
+        }
 
-		public override string ToString() => String.Join("+", Inputs.Select(input => input.ToString()).ToArray());
-		public string RawStr() => String.Join("+", Inputs.Select(input => input.RawStr()).ToArray());
-		
+        public override string ToString() {
+            return string.Join("+", Inputs.Select(input => input.ToString()).ToArray());
+        }
 
-		public List<SingleInput> Inputs;
-	}
+        public string RawStr() {
+            return string.Join("+", Inputs.Select(input => input.RawStr()).ToArray());
+        }
 
-	public class BindSet : Input.InputButtonProcessor {
-		public BindSet(List<SingleBind> binds) {
-			deprecated_wasPressed = true;
-			Binds = binds;
-		}
 
-		public override string ToString() => String.Join(", ", Binds.Select(binds => binds.RawStr()).ToArray());
+        public List<SingleInput> Inputs;
+    }
 
-		public string FirstBindName()
-		{
-			if (HasBind()) 
-				return Binds[0].ToString();
-			return "<NO BIND>";
-		}
+    public class BindSet : Input.InputButtonProcessor {
+        public BindSet(List<SingleBind> binds) {
+            deprecated_wasPressed = true;
+            Binds = binds;
+        }
 
-		public bool HasBind() => Binds.Count > 0;
+        public override string ToString() {
+            return string.Join(", ", Binds.Select(binds => binds.RawStr()).ToArray());
+        }
 
-		public bool IsPressed() {
-			foreach (var bind in Binds) {
-				if (bind.Pressed) {
-					if (deprecated_wasPressed) {
-						return false;
-					}
-					deprecated_wasPressed = true;
-					return true;
-				}
-			}
-			deprecated_wasPressed = false;
-			return false;
-		}
+        public string FirstBindName() {
+            if (HasBind()) {
+                return Binds[0].ToString();
+            }
 
-		public void FixedUpdate() {
-			var pressed = false;
+            return "<NO BIND>";
+        }
 
-			foreach (var bind in Binds) {
-				bind.FixedUpdate();
+        public bool HasBind() {
+            return Binds.Count > 0;
+        }
 
-				if (bind.Pressed) {
-					pressed = true;
-				}
-			}
+        public bool IsPressed() {
+            foreach (var bind in Binds) {
+                if (bind.Pressed) {
+                    if (deprecated_wasPressed) {
+                        return false;
+                    }
 
-			Update(pressed);
-		}
+                    deprecated_wasPressed = true;
+                    return true;
+                }
+            }
 
-		public List<SingleBind> Binds;
+            deprecated_wasPressed = false;
+            return false;
+        }
 
-		public bool deprecated_wasPressed;
-	}
+        public void FixedUpdate() {
+            var pressed = false;
 
+            foreach (var bind in Binds) {
+                bind.FixedUpdate();
+
+                if (bind.Pressed) {
+                    pressed = true;
+                }
+            }
+
+            Update(pressed);
+        }
+
+        public List<SingleBind> Binds;
+
+        public bool deprecated_wasPressed;
+    }
 }

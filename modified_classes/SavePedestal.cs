@@ -5,272 +5,242 @@ using Game;
 using UnityEngine;
 using Input = Core.Input;
 
-public class SavePedestal : SaveSerialize
-{
-	public bool IsInside => CurrentState == State.Highlighted;
+public class SavePedestal : SaveSerialize {
+    public bool IsInside => CurrentState == State.Highlighted;
 
-	public override void Awake()
-	{
-		base.Awake();
-		m_transform = transform;
-		m_sceneTeleporter = GetComponent<SceneTeleporter>();
-		All.Add(this);
-	}
+    public override void Awake() {
+        base.Awake();
+        m_transform = transform;
+        m_sceneTeleporter = GetComponent<SceneTeleporter>();
+        All.Add(this);
+    }
 
-	public override void OnDestroy()
-	{
-		base.OnDestroy();
-		All.Remove(this);
-	}
+    public override void OnDestroy() {
+        base.OnDestroy();
+        All.Remove(this);
+    }
 
-	public override void Serialize(Archive ar)
-	{
-		ar.Serialize(ref m_hasBeenUsedBefore);
-	}
+    public override void Serialize(Archive ar) {
+        ar.Serialize(ref m_hasBeenUsedBefore);
+    }
 
-	private bool CanTeleport => m_sceneTeleporter && TeleporterController.CanTeleport(m_sceneTeleporter.Identifier);
+    private bool CanTeleport => m_sceneTeleporter && TeleporterController.CanTeleport(m_sceneTeleporter.Identifier);
 
-	public void Highlight()
-	{
-		if (OriTarget)
-		{
-			Characters.Ori.MoveOriToPosition(OriTarget.position, OriDuration);
-		}
-		if (Characters.Sein.Abilities.SpiritFlame)
-		{
-			Characters.Sein.Abilities.SpiritFlame.AddLock("savePedestal");
-		}
-		Characters.Ori.GetComponent<Rigidbody>().velocity = Vector3.zero;
-		Characters.Ori.EnableHoverWobbling = false;
-		if (OriEnterAction)
-		{
-			OriEnterAction.Perform(null);
-		}
-		if (m_hint == null)
-		{
-			m_hint = UI.Hints.Show(SaveAndTeleportHintMessage, HintLayer.HintZone);
-		}
-		if (OnOriEnter)
-		{
-			Sound.Play(OnOriEnter.GetSound(null), transform.position, null);
-		}
-		if (m_sceneTeleporter)
-		{
-			TeleporterController.Activate(m_sceneTeleporter.Identifier);
-			BingoController.OnPedestalTouch(m_sceneTeleporter.Identifier);
-		}
-	}
+    public void Highlight() {
+        if (OriTarget) {
+            Characters.Ori.MoveOriToPosition(OriTarget.position, OriDuration);
+        }
 
-	public void Unhighlight()
-	{
-		m_used = false;
-		Characters.Ori.ChangeState(Ori.State.Hovering);
-		Characters.Ori.EnableHoverWobbling = true;
-		if (Characters.Sein.Abilities.SpiritFlame)
-		{
-			Characters.Sein.Abilities.SpiritFlame.RemoveLock("savePedestal");
-		}
-		if (OriExitAction)
-		{
-			OriExitAction.Perform(null);
-		}
-		if (m_hint)
-		{
-			m_hint.HideMessageScreen();
-		}
-		if (OnOriExit)
-		{
-			Sound.Play(OnOriExit.GetSound(null), transform.position, null);
-		}
-	}
+        if (Characters.Sein.Abilities.SpiritFlame) {
+            Characters.Sein.Abilities.SpiritFlame.AddLock("savePedestal");
+        }
 
-	public bool OriHasTargets
-	{
-		get
-		{
-			var spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
-			return spiritFlameTargetting && spiritFlameTargetting.ClosestAttackables.Count > 0;
-		}
-	}
+        Characters.Ori.GetComponent<Rigidbody>().velocity = Vector3.zero;
+        Characters.Ori.EnableHoverWobbling = false;
+        if (OriEnterAction) {
+            OriEnterAction.Perform(null);
+        }
 
-	public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
+        if (m_hint == null) {
+            m_hint = UI.Hints.Show(SaveAndTeleportHintMessage, HintLayer.HintZone);
+        }
 
-	public void FixedUpdate()
-	{
-		if (Characters.Sein == null)
-		{
-			return;
-		}
-		if (Characters.Sein.IsSuspended)
-		{
-			return;
-		}
-		var currentState = CurrentState;
-		if (currentState != State.Normal)
-		{
-			if (currentState == State.Highlighted)
-			{
-				if ((!Characters.Sein.Controller.IsPlayingAnimation && DistanceToSein > Radius) || OriHasTargets)
-				{
-					Unhighlight();
-					CurrentState = State.Normal;
-				}
-				if (Characters.Sein.Controller.CanMove && Characters.Sein.PlatformBehaviour.PlatformMovement.IsOnGround)
-				{
-					if (Input.SpiritFlame.OnPressed && !m_used)
-					{
-						SaveOnPedestal();
-						return;
-					}
-					if (Input.SoulFlame.OnPressedNotUsed && !Input.Cancel.Used)
-					{
-						if (m_hint)
-						{
-							m_hint.HideMessageScreen();
-						}
-						Input.SoulFlame.Used = true;
-						UI.Menu.ShowSkillTree();
-						return;
-					}
-					if (Input.SpiritFlame.OnPressed && m_used)
-					{
-						if (OnSaveSecondTime)
-						{
-							Sound.Play(OnSaveSecondTime.GetSound(null), transform.position, null);
-						}
-					}
-					else if (Input.Bash.OnPressed && WorldMapUI.IsReady)
-					{
-						if (CanTeleport)
-						{
-							TeleportOnPedestal();
-							return;
-						}
-						UI.Hints.Show(CantTeleportMessage, HintLayer.Gameplay, 2f);
-					}
-				}
-			}
-		}
-		else if (DistanceToSein < Radius && !OriHasTargets)
-		{
-			Highlight();
-			CurrentState = State.Highlighted;
-		}
-	}
+        if (OnOriEnter) {
+            Sound.Play(OnOriEnter.GetSound(null), transform.position, null);
+        }
 
-	private void TeleportOnPedestal()
-	{
-		if (m_hint)
-		{
-			m_hint.HideMessageScreen();
-		}
-		MarkAsUsed();
-		Characters.Sein.PlatformBehaviour.PlatformMovement.PositionX = transform.position.x;
-		TeleporterController.Show(m_sceneTeleporter.Identifier);
-	}
+        if (m_sceneTeleporter) {
+            TeleporterController.Activate(m_sceneTeleporter.Identifier);
+            BingoController.OnPedestalTouch(m_sceneTeleporter.Identifier);
+        }
+    }
 
-	public void OnBeginTeleporting()
-	{
-		if (TeleportEffect)
-		{
-			TeleportEffect.gameObject.SetActive(true);
-			TeleportEffect.Initialize();
-			TeleportEffect.AnimatorDriver.Restart();
-		}
-	}
+    public void Unhighlight() {
+        m_used = false;
+        Characters.Ori.ChangeState(Ori.State.Hovering);
+        Characters.Ori.EnableHoverWobbling = true;
+        if (Characters.Sein.Abilities.SpiritFlame) {
+            Characters.Sein.Abilities.SpiritFlame.RemoveLock("savePedestal");
+        }
 
-	public void OnFinishedTeleporting()
-	{
-		if (TeleportEffect)
-		{
-			TeleportEffect.gameObject.SetActive(false);
-		}
-	}
+        if (OriExitAction) {
+            OriExitAction.Perform(null);
+        }
 
-	public void MarkAsUsed()
-	{
-		if (!m_hasBeenUsedBefore)
-		{
-			m_hasBeenUsedBefore = true;
-			AchievementsLogic.Instance.OnSavePedestalUsedFirstTime();
-		}
-	}
+        if (m_hint) {
+            m_hint.HideMessageScreen();
+        }
 
-	private void SaveOnPedestal()
-	{
-		if (m_hint)
-		{
-			m_hint.HideMessageScreen();
-		}
-		m_used = true;
-		MarkAsUsed();
-		RandomizerStatsManager.OnSave();
-		if (Characters.Sein.Abilities.Carry && Characters.Sein.Abilities.Carry.CurrentCarryable != null)
-		{
-			Characters.Sein.Abilities.Carry.CurrentCarryable.Drop();
-		}
-		if (OnOpenedAction)
-		{
-			OnOpenedAction.Perform(null);
-		}
-		StartCoroutine(MoveSeinToCenterSmoothly());
-	}
+        if (OnOriExit) {
+            Sound.Play(OnOriExit.GetSound(null), transform.position, null);
+        }
+    }
 
-	public IEnumerator MoveSeinToCenterSmoothly()
-	{
-		var seinPlatformMovement = Characters.Sein.PlatformBehaviour.PlatformMovement;
-		int num;
-		for (var i = 0; i < 10; i = num + 1)
-		{
-			seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, transform.position.x, 0.2f);
-			yield return new WaitForFixedUpdate();
-			num = i;
-		}
-		seinPlatformMovement.PositionX = transform.position.x;
-		yield break;
-	}
+    public bool OriHasTargets {
+        get {
+            var spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
+            return spiritFlameTargetting && spiritFlameTargetting.ClosestAttackables.Count > 0;
+        }
+    }
 
-	public static List<SavePedestal> All = new List<SavePedestal>();
+    public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
 
-	public Transform OriTarget;
+    public void FixedUpdate() {
+        if (Characters.Sein == null) {
+            return;
+        }
 
-	public float Radius = 2f;
+        if (Characters.Sein.IsSuspended) {
+            return;
+        }
 
-	public float OriDuration = 1f;
+        var currentState = CurrentState;
+        if (currentState != State.Normal) {
+            if (currentState == State.Highlighted) {
+                if ((!Characters.Sein.Controller.IsPlayingAnimation && DistanceToSein > Radius) || OriHasTargets) {
+                    Unhighlight();
+                    CurrentState = State.Normal;
+                }
 
-	private Transform m_transform;
+                if (Characters.Sein.Controller.CanMove && Characters.Sein.PlatformBehaviour.PlatformMovement.IsOnGround) {
+                    if (Input.SpiritFlame.OnPressed && !m_used) {
+                        SaveOnPedestal();
+                        return;
+                    }
 
-	private MessageBox m_hint;
+                    if (Input.SoulFlame.OnPressedNotUsed && !Input.Cancel.Used) {
+                        if (m_hint) {
+                            m_hint.HideMessageScreen();
+                        }
 
-	public MessageProvider CantTeleportMessage;
+                        Input.SoulFlame.Used = true;
+                        UI.Menu.ShowSkillTree();
+                        return;
+                    }
 
-	public MessageProvider SaveAndTeleportHintMessage;
+                    if (Input.SpiritFlame.OnPressed && m_used) {
+                        if (OnSaveSecondTime) {
+                            Sound.Play(OnSaveSecondTime.GetSound(null), transform.position, null);
+                        }
+                    } else if (Input.Bash.OnPressed && WorldMapUI.IsReady) {
+                        if (CanTeleport) {
+                            TeleportOnPedestal();
+                            return;
+                        }
 
-	public SoundProvider OnOriEnter;
+                        UI.Hints.Show(CantTeleportMessage, HintLayer.Gameplay, 2f);
+                    }
+                }
+            }
+        } else if (DistanceToSein < Radius && !OriHasTargets) {
+            Highlight();
+            CurrentState = State.Highlighted;
+        }
+    }
 
-	public SoundProvider OnOriExit;
+    private void TeleportOnPedestal() {
+        if (m_hint) {
+            m_hint.HideMessageScreen();
+        }
 
-	public SoundProvider OnSaveSecondTime;
+        MarkAsUsed();
+        Characters.Sein.PlatformBehaviour.PlatformMovement.PositionX = transform.position.x;
+        TeleporterController.Show(m_sceneTeleporter.Identifier);
+    }
 
-	private bool m_hasBeenUsedBefore;
+    public void OnBeginTeleporting() {
+        if (TeleportEffect) {
+            TeleportEffect.gameObject.SetActive(true);
+            TeleportEffect.Initialize();
+            TeleportEffect.AnimatorDriver.Restart();
+        }
+    }
 
-	private SceneTeleporter m_sceneTeleporter;
+    public void OnFinishedTeleporting() {
+        if (TeleportEffect) {
+            TeleportEffect.gameObject.SetActive(false);
+        }
+    }
 
-	public TimelineSequence TeleportEffect;
+    public void MarkAsUsed() {
+        if (!m_hasBeenUsedBefore) {
+            m_hasBeenUsedBefore = true;
+            AchievementsLogic.Instance.OnSavePedestalUsedFirstTime();
+        }
+    }
 
-	public ActionMethod OriEnterAction;
+    private void SaveOnPedestal() {
+        if (m_hint) {
+            m_hint.HideMessageScreen();
+        }
 
-	public ActionMethod OriExitAction;
+        m_used = true;
+        MarkAsUsed();
+        RandomizerStatsManager.OnSave();
+        if (Characters.Sein.Abilities.Carry && Characters.Sein.Abilities.Carry.CurrentCarryable != null) {
+            Characters.Sein.Abilities.Carry.CurrentCarryable.Drop();
+        }
 
-	public ActionMethod OnOpenedAction;
+        if (OnOpenedAction) {
+            OnOpenedAction.Perform(null);
+        }
 
-	private bool m_used;
+        StartCoroutine(MoveSeinToCenterSmoothly());
+    }
 
-	public State CurrentState;
+    public IEnumerator MoveSeinToCenterSmoothly() {
+        var seinPlatformMovement = Characters.Sein.PlatformBehaviour.PlatformMovement;
+        int num;
+        for (var i = 0; i < 10; i = num + 1) {
+            seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, transform.position.x, 0.2f);
+            yield return new WaitForFixedUpdate();
+            num = i;
+        }
 
-	public enum State
-	{
-		Normal,
-		Highlighted
-	}
+        seinPlatformMovement.PositionX = transform.position.x;
+        yield break;
+    }
+
+    public static List<SavePedestal> All = new List<SavePedestal>();
+
+    public Transform OriTarget;
+
+    public float Radius = 2f;
+
+    public float OriDuration = 1f;
+
+    private Transform m_transform;
+
+    private MessageBox m_hint;
+
+    public MessageProvider CantTeleportMessage;
+
+    public MessageProvider SaveAndTeleportHintMessage;
+
+    public SoundProvider OnOriEnter;
+
+    public SoundProvider OnOriExit;
+
+    public SoundProvider OnSaveSecondTime;
+
+    private bool m_hasBeenUsedBefore;
+
+    private SceneTeleporter m_sceneTeleporter;
+
+    public TimelineSequence TeleportEffect;
+
+    public ActionMethod OriEnterAction;
+
+    public ActionMethod OriExitAction;
+
+    public ActionMethod OnOpenedAction;
+
+    private bool m_used;
+
+    public State CurrentState;
+
+    public enum State {
+        Normal,
+        Highlighted,
+    }
 }

@@ -1,9 +1,6 @@
-namespace Protogen
-{
-    public class Node
-    {
-        public Node(string name, NodeType type)
-        {
+namespace Protogen {
+    public class Node {
+        public Node(string name, NodeType type) {
             Name = name;
             Type = type;
         }

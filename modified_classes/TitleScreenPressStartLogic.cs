@@ -1,17 +1,14 @@
 using UnityEngine;
 
-public class TitleScreenPressStartLogic : MonoBehaviour
-{
-	public void FixedUpdate()
-	{
-		XboxLiveController.Instance.StartPressedOnMainMenu(OnStartPressedCallback);
-	}
+public class TitleScreenPressStartLogic : MonoBehaviour {
+    public void FixedUpdate() {
+        XboxLiveController.Instance.StartPressedOnMainMenu(OnStartPressedCallback);
+    }
 
-	public void OnStartPressedCallback()
-	{
-		GameStateMachine.Instance.SetToTitleScreen();
-		OnPressed.Perform(null);
-	}
+    public void OnStartPressedCallback() {
+        GameStateMachine.Instance.SetToTitleScreen();
+        OnPressed.Perform(null);
+    }
 
-	public ActionMethod OnPressed;
+    public ActionMethod OnPressed;
 }

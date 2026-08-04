@@ -1,38 +1,33 @@
 using UnityEngine;
 
-public class CameraShakeLogic : MonoBehaviour, ISuspendable
-{
-	public void Awake()
-	{
-		SuspensionManager.Register(this);
-	}
+public class CameraShakeLogic : MonoBehaviour, ISuspendable {
+    public void Awake() {
+        SuspensionManager.Register(this);
+    }
 
-	public void OnDestroy()
-	{
-		SuspensionManager.Unregister(this);
-	}
+    public void OnDestroy() {
+        SuspensionManager.Unregister(this);
+    }
 
-	public void UpdateOffset()
-	{
-		var shakeOffset = Vector3.zero;
-		var shakeRotation = Vector3.zero;
-		
-		for (var i = 0; i < CameraShake.All.Count; i++)
-		{
-			var cameraShake = CameraShake.All[i];
-			var modifiedStrength = cameraShake.ModifiedStrength;
-			shakeOffset += cameraShake.CurrentOffset * modifiedStrength;
-			shakeRotation += cameraShake.CurrentRotation * modifiedStrength;
-		}
+    public void UpdateOffset() {
+        var shakeOffset = Vector3.zero;
+        var shakeRotation = Vector3.zero;
 
-		shakeOffset *= RandomizerSettings.Accessibility.CameraShakeFactor;
-		shakeRotation *= RandomizerSettings.Accessibility.CameraShakeFactor;
+        for (var i = 0; i < CameraShake.All.Count; i++) {
+            var cameraShake = CameraShake.All[i];
+            var modifiedStrength = cameraShake.ModifiedStrength;
+            shakeOffset += cameraShake.CurrentOffset * modifiedStrength;
+            shakeRotation += cameraShake.CurrentRotation * modifiedStrength;
+        }
 
-		Target.localPosition = shakeOffset;
-		Target.localEulerAngles = shakeRotation;
-	}
+        shakeOffset *= RandomizerSettings.Accessibility.CameraShakeFactor;
+        shakeRotation *= RandomizerSettings.Accessibility.CameraShakeFactor;
 
-	public bool IsSuspended { get; set; }
+        Target.localPosition = shakeOffset;
+        Target.localEulerAngles = shakeRotation;
+    }
 
-	public Transform Target;
+    public bool IsSuspended { get; set; }
+
+    public Transform Target;
 }

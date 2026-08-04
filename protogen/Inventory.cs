@@ -5,11 +5,9 @@ using Game;
 using Sein.World;
 using Events = Sein.World.Events;
 
-namespace Protogen
-{
-    public class Inventory
-    {
-        public HashSet<string> Unlocks = new HashSet<string>{"Free"};
+namespace Protogen {
+    public class Inventory {
+        public HashSet<string> Unlocks = new HashSet<string> { "Free" };
 
         public int Keystones;
 
@@ -21,8 +19,7 @@ namespace Protogen
 
         public int Acs;
 
-        public bool Contains(Inventory other)
-        {
+        public bool Contains(Inventory other) {
             return Unlocks.IsSupersetOf(other.Unlocks)
                    && other.Acs <= Acs
                    && other.Energy <= Energy
@@ -31,51 +28,42 @@ namespace Protogen
                    && other.Mapstones <= Mapstones;
         }
 
-        public override string ToString()
-        {
+        public override string ToString() {
             var parts = new List<string>();
             parts.AddRange(Unlocks.ToList());
 
-            if (Keystones > 0)
-            {
+            if (Keystones > 0) {
                 parts.Add("Keystone=" + Keystones);
             }
 
-            if (Mapstones > 0)
-            {
+            if (Mapstones > 0) {
                 parts.Add("Mapstone=" + Mapstones);
             }
 
-            if (Health > 0)
-            {
+            if (Health > 0) {
                 parts.Add("Health=" + Health);
             }
 
-            if (Energy > 0)
-            {
+            if (Energy > 0) {
                 parts.Add("Energy=" + Energy);
             }
 
-            if (Acs > 0)
-            {
+            if (Acs > 0) {
                 parts.Add("Ability=" + Acs);
             }
 
-            return String.Join(", ", parts.ToArray());
+            return string.Join(", ", parts.ToArray());
         }
 
-        public static Inventory operator +(Inventory a, Inventory b)
-        {
-            return new Inventory{Unlocks = new HashSet<string>(a.Unlocks.Union(b.Unlocks)), Keystones = a.Keystones + b.Keystones, Mapstones = a.Mapstones + b.Mapstones, Health = a.Health + b.Health, Energy = a.Energy + b.Energy, Acs = a.Acs + b.Acs};
+        public static Inventory operator +(Inventory a, Inventory b) {
+            return new Inventory { Unlocks = new HashSet<string>(a.Unlocks.Union(b.Unlocks)), Keystones = a.Keystones + b.Keystones, Mapstones = a.Mapstones + b.Mapstones, Health = a.Health + b.Health, Energy = a.Energy + b.Energy, Acs = a.Acs + b.Acs };
         }
 
-        public static Inventory operator -(Inventory a, Inventory b)
-        {
-            return new Inventory{Unlocks = new HashSet<string>(a.Unlocks.Except(b.Unlocks)), Keystones = a.Keystones - b.Keystones, Mapstones = a.Mapstones - b.Mapstones, Health = a.Health - b.Health, Energy = a.Energy - b.Energy, Acs = a.Acs - b.Acs};
+        public static Inventory operator -(Inventory a, Inventory b) {
+            return new Inventory { Unlocks = new HashSet<string>(a.Unlocks.Except(b.Unlocks)), Keystones = a.Keystones - b.Keystones, Mapstones = a.Mapstones - b.Mapstones, Health = a.Health - b.Health, Energy = a.Energy - b.Energy, Acs = a.Acs - b.Acs };
         }
 
-        public static Inventory FromCharacter()
-        {
+        public static Inventory FromCharacter() {
             var currentInventory = new Inventory();
             currentInventory.Health = (int)(Characters.Sein.Mortality.Health.MaxHealth / 4f);
             currentInventory.Energy = (int)Characters.Sein.Energy.Max;
@@ -83,77 +71,66 @@ namespace Protogen
             currentInventory.Mapstones = Characters.Sein.Inventory.MapStones;
             currentInventory.Acs = Characters.Sein.Inventory.SkillPointsCollected;
 
-            if (Characters.Sein.PlayerAbilities.WallJump.HasAbility)
-            {
+            if (Characters.Sein.PlayerAbilities.WallJump.HasAbility) {
                 currentInventory.Unlocks.Add("WallJump");
             }
 
-            if (Characters.Sein.PlayerAbilities.ChargeFlame.HasAbility)
-            {
+            if (Characters.Sein.PlayerAbilities.ChargeFlame.HasAbility) {
                 currentInventory.Unlocks.Add("ChargeFlame");
                 if (currentInventory.Acs >= 3) {
                     currentInventory.Unlocks.Add("ChargeFlameBurn");
                 }
             }
 
-            if (Characters.Sein.PlayerAbilities.DoubleJump.HasAbility)
-            {
+            if (Characters.Sein.PlayerAbilities.DoubleJump.HasAbility) {
                 currentInventory.Unlocks.Add("DoubleJump");
                 if (currentInventory.Acs >= 12) {
                     currentInventory.Unlocks.Add("TripleJump");
                 }
             }
 
-            if (Characters.Sein.PlayerAbilities.Bash.HasAbility)
-            {
+            if (Characters.Sein.PlayerAbilities.Bash.HasAbility) {
                 currentInventory.Unlocks.Add("Bash");
                 currentInventory.Unlocks.Add("DoubleBash");
             }
 
-            if (Characters.Sein.PlayerAbilities.Stomp.HasAbility)
-            {
+            if (Characters.Sein.PlayerAbilities.Stomp.HasAbility) {
                 currentInventory.Unlocks.Add("Stomp");
             }
 
-            if (Characters.Sein.PlayerAbilities.Glide.HasAbility)
-            {
+            if (Characters.Sein.PlayerAbilities.Glide.HasAbility) {
                 currentInventory.Unlocks.Add("Glide");
             }
 
-            if (Characters.Sein.PlayerAbilities.Climb.HasAbility)
-            {
+            if (Characters.Sein.PlayerAbilities.Climb.HasAbility) {
                 currentInventory.Unlocks.Add("Climb");
             }
 
-            if (Characters.Sein.PlayerAbilities.ChargeJump.HasAbility)
-            {
+            if (Characters.Sein.PlayerAbilities.ChargeJump.HasAbility) {
                 currentInventory.Unlocks.Add("ChargeJump");
             }
 
-            if (Characters.Sein.PlayerAbilities.Grenade.HasAbility)
-            {
+            if (Characters.Sein.PlayerAbilities.Grenade.HasAbility) {
                 currentInventory.Unlocks.Add("Grenade");
             }
 
-            if (Characters.Sein.PlayerAbilities.Dash.HasAbility)
-            {
+            if (Characters.Sein.PlayerAbilities.Dash.HasAbility) {
                 currentInventory.Unlocks.Add("Dash");
                 if (currentInventory.Acs >= 3) {
                     currentInventory.Unlocks.Add("AirDash");
                 }
+
                 if (currentInventory.Acs >= 6) {
                     currentInventory.Unlocks.Add("ChargeDash");
                     currentInventory.Unlocks.Add("RocketJump");
                 }
             }
 
-            if (Characters.Sein.PlayerAbilities.ChargeJump.HasAbility && Characters.Sein.PlayerAbilities.Climb.HasAbility && Characters.Sein.PlayerAbilities.Grenade.HasAbility)
-            {
+            if (Characters.Sein.PlayerAbilities.ChargeJump.HasAbility && Characters.Sein.PlayerAbilities.Climb.HasAbility && Characters.Sein.PlayerAbilities.Grenade.HasAbility) {
                 currentInventory.Unlocks.Add("GrenadeJump");
             }
 
-            if (Characters.Sein.PlayerAbilities.Bash.HasAbility && Characters.Sein.PlayerAbilities.Grenade.HasAbility)
-            {
+            if (Characters.Sein.PlayerAbilities.Bash.HasAbility && Characters.Sein.PlayerAbilities.Grenade.HasAbility) {
                 currentInventory.Unlocks.Add("BashGrenade");
             }
 
@@ -174,67 +151,59 @@ namespace Protogen
 
             currentInventory.Unlocks.Add("Lure");
 
-            if (Events.WaterPurified)
-            {
+            if (Events.WaterPurified) {
                 currentInventory.Unlocks.Add("Water");
             }
 
-            if (Events.WindRestored)
-            {
+            if (Events.WindRestored) {
                 currentInventory.Unlocks.Add("Wind");
             }
 
-            if (Keys.GinsoTree)
-            {
+            if (Keys.GinsoTree) {
                 currentInventory.Unlocks.Add("GinsoKey");
             }
 
-            if (Keys.ForlornRuins)
-            {
+            if (Keys.ForlornRuins) {
                 currentInventory.Unlocks.Add("ForlornKey");
             }
 
-            if (Keys.MountHoru)
-            {
+            if (Keys.MountHoru) {
                 currentInventory.Unlocks.Add("HoruKey");
             }
 
-            foreach (var teleporter in TeleporterController.Instance.Teleporters)
-            {
-                if (teleporter.Activated)
-                {
-                    switch (teleporter.Identifier)
-                    {
-                    case "spiritTree":
-                        currentInventory.Unlocks.Add("TPGrove");
-                        break;
-                    case "swamp":
-                        currentInventory.Unlocks.Add("TPSwamp");
-                        break;
-                    case "moonGrotto":
-                        currentInventory.Unlocks.Add("TPGrotto");
-                        break;
-                    case "sorrowPass":
-                        currentInventory.Unlocks.Add("TPValley");
-                        break;
-                    case "valleyOfTheWind":
-                        currentInventory.Unlocks.Add("TPSorrow");
-                        break;
-                    case "ginsoTree":
-                        currentInventory.Unlocks.Add("TPGinso");
-                        break;
-                    case "forlorn":
-                        currentInventory.Unlocks.Add("TPForlorn");
-                        break;
-                    case "mountHoru":
-                        currentInventory.Unlocks.Add("TPHoru");
-                        break;
-                    case "sunkenGlades":
-						currentInventory.Unlocks.Add("TPGlades");
-                        break;
-                    case "mangroveFalls":
-                        currentInventory.Unlocks.Add("TPBlackroot");
-                        break;
+            foreach (var teleporter in TeleporterController.Instance.Teleporters) {
+                if (teleporter.Activated) {
+                    switch (teleporter.Identifier) {
+                        case "spiritTree":
+                            currentInventory.Unlocks.Add("TPGrove");
+                            break;
+                        case "swamp":
+                            currentInventory.Unlocks.Add("TPSwamp");
+                            break;
+                        case "moonGrotto":
+                            currentInventory.Unlocks.Add("TPGrotto");
+                            break;
+                        case "sorrowPass":
+                            currentInventory.Unlocks.Add("TPValley");
+                            break;
+                        case "valleyOfTheWind":
+                            currentInventory.Unlocks.Add("TPSorrow");
+                            break;
+                        case "ginsoTree":
+                            currentInventory.Unlocks.Add("TPGinso");
+                            break;
+                        case "forlorn":
+                            currentInventory.Unlocks.Add("TPForlorn");
+                            break;
+                        case "mountHoru":
+                            currentInventory.Unlocks.Add("TPHoru");
+                            break;
+                        case "sunkenGlades":
+                            currentInventory.Unlocks.Add("TPGlades");
+                            break;
+                        case "mangroveFalls":
+                            currentInventory.Unlocks.Add("TPBlackroot");
+                            break;
                     }
                 }
             }

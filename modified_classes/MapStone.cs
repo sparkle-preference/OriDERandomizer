@@ -2,193 +2,167 @@ using Game;
 using UnityEngine;
 using Input = Core.Input;
 
-public class MapStone : SaveSerialize
-{
-	public override void Awake()
-	{
-		base.Awake();
-		m_transform = transform;
-	}
+public class MapStone : SaveSerialize {
+    public override void Awake() {
+        base.Awake();
+        m_transform = transform;
+    }
 
-	public void FindWorldArea()
-	{
-		if (GameWorld.Instance)
-		{
-			WorldArea = GameWorld.Instance.WorldAreaAtPosition(m_transform.position);
-		}
-		if (WorldArea == null)
-		{
-		}
-	}
+    public void FindWorldArea() {
+        if (GameWorld.Instance) {
+            WorldArea = GameWorld.Instance.WorldAreaAtPosition(m_transform.position);
+        }
 
-	public void Start()
-	{
-		if (WorldArea == null)
-		{
-			FindWorldArea();
-		}
-	}
+        if (WorldArea == null) {
+        }
+    }
 
-	public bool OriHasTargets
-	{
-		get
-		{
-			var spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
-			return spiritFlameTargetting && spiritFlameTargetting.ClosestAttackables.Count > 0;
-		}
-	}
+    public void Start() {
+        if (WorldArea == null) {
+            FindWorldArea();
+        }
+    }
 
-	public void Highlight()
-	{
-		if (OriTarget)
-		{
-			Characters.Ori.MoveOriToPosition(OriTarget.position, OriDuration);
-		}
-		if (Characters.Sein.Abilities.SpiritFlame)
-		{
-			Characters.Sein.Abilities.SpiritFlame.AddLock("mapStone");
-		}
-		Characters.Ori.GetComponent<Rigidbody>().velocity = Vector3.zero;
-		Characters.Ori.EnableHoverWobbling = false;
-		Characters.Ori.InsideMapstone = true;
-		BingoController.OnTouchMapstone();
-		if (m_hint == null)
-		{
-			m_hint = UI.Hints.Show(HintMessage, HintLayer.HintZone);
-		}
-		if (OriEnterAction)
-		{
-			OriEnterAction.Perform(null);
-		}
-	}
+    public bool OriHasTargets {
+        get {
+            var spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
+            return spiritFlameTargetting && spiritFlameTargetting.ClosestAttackables.Count > 0;
+        }
+    }
 
-	public void Unhighlight()
-	{
-		Characters.Ori.ChangeState(Ori.State.Hovering);
-		Characters.Ori.EnableHoverWobbling = true;
-		Characters.Ori.InsideMapstone = false;
-		if (Characters.Sein.Abilities.SpiritFlame)
-		{
-			Characters.Sein.Abilities.SpiritFlame.RemoveLock("mapStone");
-		}
-		if (OriExitAction)
-		{
-			OriExitAction.Perform(null);
-		}
-		if (m_hint)
-		{
-			m_hint.HideMessageScreen();
-		}
-	}
+    public void Highlight() {
+        if (OriTarget) {
+            Characters.Ori.MoveOriToPosition(OriTarget.position, OriDuration);
+        }
 
-	public void OnDisable()
-	{
-		if (CurrentState == State.Highlighted)
-		{
-			CurrentState = State.Normal;
-			Unhighlight();
-		}
-	}
+        if (Characters.Sein.Abilities.SpiritFlame) {
+            Characters.Sein.Abilities.SpiritFlame.AddLock("mapStone");
+        }
 
-	public bool Activated => CurrentState == State.Activated;
+        Characters.Ori.GetComponent<Rigidbody>().velocity = Vector3.zero;
+        Characters.Ori.EnableHoverWobbling = false;
+        Characters.Ori.InsideMapstone = true;
+        BingoController.OnTouchMapstone();
+        if (m_hint == null) {
+            m_hint = UI.Hints.Show(HintMessage, HintLayer.HintZone);
+        }
 
-	public override void Serialize(Archive ar)
-	{
-		CurrentState = (State)ar.Serialize((int)CurrentState);
-	}
+        if (OriEnterAction) {
+            OriEnterAction.Perform(null);
+        }
+    }
 
-	public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
+    public void Unhighlight() {
+        Characters.Ori.ChangeState(Ori.State.Hovering);
+        Characters.Ori.EnableHoverWobbling = true;
+        Characters.Ori.InsideMapstone = false;
+        if (Characters.Sein.Abilities.SpiritFlame) {
+            Characters.Sein.Abilities.SpiritFlame.RemoveLock("mapStone");
+        }
 
-	public void FixedUpdate()
-	{
-		var currentState = CurrentState;
-		if (currentState != State.Activated && RandomizerLocationManager.IsPickupCollected(MoonGuid))
-		{
-			if (currentState == State.Highlighted)
-			{
-				Unhighlight();
-			}
+        if (OriExitAction) {
+            OriExitAction.Perform(null);
+        }
 
-			if (OnOpenedAction)
-			{
-				OnOpenedAction.PerformInstantly(null);
-			}
+        if (m_hint) {
+            m_hint.HideMessageScreen();
+        }
+    }
 
-			CurrentState = State.Activated;
-			return;
-		}
+    public void OnDisable() {
+        if (CurrentState == State.Highlighted) {
+            CurrentState = State.Normal;
+            Unhighlight();
+        }
+    }
 
-		if (currentState != State.Normal)
-		{
-			if (currentState == State.Highlighted)
-			{
-				if (DistanceToSein > Radius || OriHasTargets || !Characters.Sein.IsOnGround)
-				{
-					Unhighlight();
-					CurrentState = State.Normal;
-				}
-				if (Characters.Sein.Controller.CanMove && !Characters.Sein.IsSuspended && Input.SpiritFlame.OnPressed)
-				{
-					if (Characters.Sein.Inventory.MapStones > 0)
-					{
-						Characters.Sein.Inventory.MapStones--;
-						if (OnOpenedAction)
-						{
-							OnOpenedAction.Perform(null);
-						}
-						AchievementsLogic.Instance.OnMapStoneActivated();
-						CurrentState = State.Activated;
-						RandomizerLocationManager.GivePickup(MoonGuid);
-						GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
-						return;
-					}
-					UI.SeinUI.ShakeMapstones();
-					if (OnFailAction)
-					{
-						OnFailAction.Perform(null);
-					}
-				}
-			}
-		}
-		else if (DistanceToSein < Radius && !OriHasTargets && Characters.Sein.IsOnGround)
-		{
-			Highlight();
-			CurrentState = State.Highlighted;
-		}
-	}
+    public bool Activated => CurrentState == State.Activated;
 
-	public Transform OriTarget;
+    public override void Serialize(Archive ar) {
+        CurrentState = (State)ar.Serialize((int)CurrentState);
+    }
 
-	public Color OriHoverColor;
+    public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
 
-	public float Radius = 2f;
+    public void FixedUpdate() {
+        var currentState = CurrentState;
+        if (currentState != State.Activated && RandomizerLocationManager.IsPickupCollected(MoonGuid)) {
+            if (currentState == State.Highlighted) {
+                Unhighlight();
+            }
 
-	private Transform m_transform;
+            if (OnOpenedAction) {
+                OnOpenedAction.PerformInstantly(null);
+            }
 
-	public GameWorldArea WorldArea;
+            CurrentState = State.Activated;
+            return;
+        }
 
-	public Texture2D HintTexture;
+        if (currentState != State.Normal) {
+            if (currentState == State.Highlighted) {
+                if (DistanceToSein > Radius || OriHasTargets || !Characters.Sein.IsOnGround) {
+                    Unhighlight();
+                    CurrentState = State.Normal;
+                }
 
-	public MessageProvider HintMessage;
+                if (Characters.Sein.Controller.CanMove && !Characters.Sein.IsSuspended && Input.SpiritFlame.OnPressed) {
+                    if (Characters.Sein.Inventory.MapStones > 0) {
+                        Characters.Sein.Inventory.MapStones--;
+                        if (OnOpenedAction) {
+                            OnOpenedAction.Perform(null);
+                        }
 
-	private MessageBox m_hint;
+                        AchievementsLogic.Instance.OnMapStoneActivated();
+                        CurrentState = State.Activated;
+                        RandomizerLocationManager.GivePickup(MoonGuid);
+                        GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
+                        return;
+                    }
 
-	public ActionMethod OriEnterAction;
+                    UI.SeinUI.ShakeMapstones();
+                    if (OnFailAction) {
+                        OnFailAction.Perform(null);
+                    }
+                }
+            }
+        } else if (DistanceToSein < Radius && !OriHasTargets && Characters.Sein.IsOnGround) {
+            Highlight();
+            CurrentState = State.Highlighted;
+        }
+    }
 
-	public ActionMethod OriExitAction;
+    public Transform OriTarget;
 
-	public ActionMethod OnOpenedAction;
+    public Color OriHoverColor;
 
-	public ActionMethod OnFailAction;
+    public float Radius = 2f;
 
-	public float OriDuration = 1f;
+    private Transform m_transform;
 
-	public State CurrentState;
+    public GameWorldArea WorldArea;
 
-	public enum State
-	{
-		Normal,
-		Highlighted,
-		Activated
-	}
+    public Texture2D HintTexture;
+
+    public MessageProvider HintMessage;
+
+    private MessageBox m_hint;
+
+    public ActionMethod OriEnterAction;
+
+    public ActionMethod OriExitAction;
+
+    public ActionMethod OnOpenedAction;
+
+    public ActionMethod OnFailAction;
+
+    public float OriDuration = 1f;
+
+    public State CurrentState;
+
+    public enum State {
+        Normal,
+        Highlighted,
+        Activated,
+    }
 }

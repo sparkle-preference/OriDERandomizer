@@ -1,5 +1,4 @@
-public enum RandomizerWorldMapIconType
-{
+public enum RandomizerWorldMapIconType {
     None,
     Plant,
     WaterVein,
@@ -10,5 +9,5 @@ public enum RandomizerWorldMapIconType
     SkillTree,
     GumonSeal,
     Keystone,
-    Experience
+    Experience,
 }

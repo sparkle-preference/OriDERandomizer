@@ -2,118 +2,102 @@ using System;
 using Game;
 using UnityEngine;
 
-public class CollectablePlaceholder : SaveSerialize, ISuspendable, IDynamicGraphic
-{
-	public override void Awake()
-	{
-		All.Add(this);
-		if (Prefab == null)
-		{
-			InstantiateUtility.Destroy(gameObject);
-			return;
-		}
-		base.Awake();
-		GetComponent<Renderer>().enabled = false;
-		SuspensionManager.Register(this);
-	}
+public class CollectablePlaceholder : SaveSerialize, ISuspendable, IDynamicGraphic {
+    public override void Awake() {
+        All.Add(this);
+        if (Prefab == null) {
+            InstantiateUtility.Destroy(gameObject);
+            return;
+        }
 
-	public override void OnDestroy()
-	{
-		SuspensionManager.Unregister(this);
-		base.OnDestroy();
-		All.Remove(this);
-	}
+        base.Awake();
+        GetComponent<Renderer>().enabled = false;
+        SuspensionManager.Register(this);
+    }
 
-	public void Spawn()
-	{
-		if (!InstantiateUtility.IsDestroyed(m_instance))
-		{
-			InstantiateUtility.Destroy(m_instance);
-			m_instance = null;
-		}
-		Instantiate();
-	}
+    public override void OnDestroy() {
+        SuspensionManager.Unregister(this);
+        base.OnDestroy();
+        All.Remove(this);
+    }
 
-	public void OnCollect()
-	{
-		m_collected = true;
-		m_remainingRespawnTime = RespawnTime;
-	}
+    public void Spawn() {
+        if (!InstantiateUtility.IsDestroyed(m_instance)) {
+            InstantiateUtility.Destroy(m_instance);
+            m_instance = null;
+        }
 
-	public void FixedUpdate()
-	{
-		if (IsSuspended)
-		{
-			return;
-		}
+        Instantiate();
+    }
 
-		if (!m_collected && RandomizerLocationManager.IsPickupCollected(MoonGuid))
-		{
-			// only do anything if the pickup isn't spawned; if it's spawned, PickupBase will mark itself collected
-			if (m_instance == null)
-			{
-				OnCollect();
-			}
-		}
+    public void OnCollect() {
+        m_collected = true;
+        m_remainingRespawnTime = RespawnTime;
+    }
 
-		if (m_remainingRespawnTime > 0f)
-		{
-			m_remainingRespawnTime -= Time.deltaTime;
-			m_collected = false;
-		}
-		if (m_instance == null && !m_collected && UI.Cameras.Current.IsOnScreenPadded(transform.position, 5f))
-		{
-			Instantiate();
-		}
-	}
+    public void FixedUpdate() {
+        if (IsSuspended) {
+            return;
+        }
 
-	public void Instantiate()
-	{
-		m_instance = InstantiateUtility.Instantiate(Prefab, transform.position, transform.rotation) as GameObject;
-		UberPoolManager.Instance.AddOnDestroyed(m_instance, delegate
-		{
-			m_instance = null;
-		});
+        if (!m_collected && RandomizerLocationManager.IsPickupCollected(MoonGuid))
+            // only do anything if the pickup isn't spawned; if it's spawned, PickupBase will mark itself collected
+        {
+            if (m_instance == null) {
+                OnCollect();
+            }
+        }
 
-		var pickupBase = m_instance.GetComponentInChildren<PickupBase>();
-		pickupBase.MoonGuid = MoonGuid;
-		pickupBase.OnCollectedEvent = (Action)Delegate.Combine(pickupBase.OnCollectedEvent, new Action(OnCollect));
+        if (m_remainingRespawnTime > 0f) {
+            m_remainingRespawnTime -= Time.deltaTime;
+            m_collected = false;
+        }
 
-		if (m_instance.GetComponent<DestroyOnRestoreCheckpoint>() == null)
-		{
-			m_instance.AddComponent<DestroyOnRestoreCheckpoint>();
-		}
+        if (m_instance == null && !m_collected && UI.Cameras.Current.IsOnScreenPadded(transform.position, 5f)) {
+            Instantiate();
+        }
+    }
 
-		if (GetComponent<VisibleOnWorldMap>() && m_instance.GetComponent<VisibleOnWorldMap>())
-		{
-			m_instance.GetComponent<VisibleOnWorldMap>().MoonGuid = GetComponent<VisibleOnWorldMap>().MoonGuid;
-		}
+    public void Instantiate() {
+        m_instance = InstantiateUtility.Instantiate(Prefab, transform.position, transform.rotation) as GameObject;
+        UberPoolManager.Instance.AddOnDestroyed(m_instance, delegate { m_instance = null; });
 
-		m_instance.transform.parent = transform.parent;
-		m_instance.name = Prefab.name;
-	}
+        var pickupBase = m_instance.GetComponentInChildren<PickupBase>();
+        pickupBase.MoonGuid = MoonGuid;
+        pickupBase.OnCollectedEvent = (Action)Delegate.Combine(pickupBase.OnCollectedEvent, new Action(OnCollect));
 
-	public override void Serialize(Archive ar)
-	{
-		ar.Serialize(ref m_collected);
-		ar.Serialize(ref m_remainingRespawnTime);
-	}
+        if (m_instance.GetComponent<DestroyOnRestoreCheckpoint>() == null) {
+            m_instance.AddComponent<DestroyOnRestoreCheckpoint>();
+        }
 
-	public bool Collected => m_collected;
+        if (GetComponent<VisibleOnWorldMap>() && m_instance.GetComponent<VisibleOnWorldMap>()) {
+            m_instance.GetComponent<VisibleOnWorldMap>().MoonGuid = GetComponent<VisibleOnWorldMap>().MoonGuid;
+        }
 
-	public bool IsSuspended { get; set; }
+        m_instance.transform.parent = transform.parent;
+        m_instance.name = Prefab.name;
+    }
 
-	public float RespawnTime;
+    public override void Serialize(Archive ar) {
+        ar.Serialize(ref m_collected);
+        ar.Serialize(ref m_remainingRespawnTime);
+    }
 
-	public GameObject Prefab;
+    public bool Collected => m_collected;
 
-	public static AllContainer<CollectablePlaceholder> All = new AllContainer<CollectablePlaceholder>();
+    public bool IsSuspended { get; set; }
 
-	public bool UseDebug;
+    public float RespawnTime;
 
-	private float m_remainingRespawnTime;
+    public GameObject Prefab;
 
-	private GameObject m_instance;
+    public static AllContainer<CollectablePlaceholder> All = new AllContainer<CollectablePlaceholder>();
 
-	private bool m_collected;
+    public bool UseDebug;
+
+    private float m_remainingRespawnTime;
+
+    private GameObject m_instance;
+
+    private bool m_collected;
 }

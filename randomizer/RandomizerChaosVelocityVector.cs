@@ -1,54 +1,47 @@
 using Game;
 using UnityEngine;
 
-public class RandomizerChaosVelocityVector : RandomizerChaosEffect
-{
-	public override void Clear()
-	{
-		Countdown = 0;
-		Pushing = false;
-	}
+public class RandomizerChaosVelocityVector : RandomizerChaosEffect {
+    public override void Clear() {
+        Countdown = 0;
+        Pushing = false;
+    }
 
-	public override void Start()
-	{
-		Countdown = Random.Range(1, 300);
-		Pushing = false;
-		var num = Random.Range(0, 8);
-		if (num <= 5)
-		{
-			Randomizer.showChaosEffect("Throw");
-			Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = Random.Range(-100f, 100f);
-			Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = Random.Range(-100f, 100f);
-			return;
-		}
-		if (num <= 7)
-		{
-			Randomizer.showChaosEffect("Push");
-			Pushing = true;
-			Push = new Vector2(Random.Range(-40f, 40f), Random.Range(-40f, 40f));
-		}
-	}
+    public override void Start() {
+        Countdown = Random.Range(1, 300);
+        Pushing = false;
+        var num = Random.Range(0, 8);
+        if (num <= 5) {
+            Randomizer.showChaosEffect("Throw");
+            Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = Random.Range(-100f, 100f);
+            Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = Random.Range(-100f, 100f);
+            return;
+        }
 
-	public override void Update()
-	{
-		if (Countdown > 0)
-		{
-			Countdown--;
-			if (Countdown == 0)
-			{
-				Clear();
-			}
-			if (Pushing)
-			{
-				Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = Push.x;
-				Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = Push.y;
-			}
-		}
-	}
+        if (num <= 7) {
+            Randomizer.showChaosEffect("Push");
+            Pushing = true;
+            Push = new Vector2(Random.Range(-40f, 40f), Random.Range(-40f, 40f));
+        }
+    }
 
-	public int Countdown;
+    public override void Update() {
+        if (Countdown > 0) {
+            Countdown--;
+            if (Countdown == 0) {
+                Clear();
+            }
 
-	public bool Pushing;
+            if (Pushing) {
+                Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = Push.x;
+                Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = Push.y;
+            }
+        }
+    }
 
-	public Vector2 Push;
+    public int Countdown;
+
+    public bool Pushing;
+
+    public Vector2 Push;
 }
