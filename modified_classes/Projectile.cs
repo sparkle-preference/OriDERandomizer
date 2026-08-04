@@ -136,7 +136,6 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
                 Owner = null;
                 return;
             case DamageType.Grenade:
-            case DamageType.StompBlast:
                 break;
             default:
                 if (type != DamageType.ChargeFlame) {

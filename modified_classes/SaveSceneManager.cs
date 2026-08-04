@@ -145,7 +145,7 @@ public class SaveSceneManager : MonoBehaviour {
             var saveId = SaveData[j];
             try {
                 if (saveId.Save as Component != null) {
-                    if (saveCache.TryGetValue(saveId.Id, out var archive)) {
+                    if (m_saveCache.TryGetValue(saveId.Id, out var archive)) {
                         archive.WriteMode();
                         saveId.Save.Serialize(archive);
                     } else {

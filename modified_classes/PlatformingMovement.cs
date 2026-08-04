@@ -69,7 +69,7 @@ public class PlatformingMovement : PlatformMovement {
                 transform.position += GroundBinormal * LocalSpeedX * Time.deltaTime;
                 transform.position += GroundNormal * 0.02f;
                 var vector = (0.04f + Mathf.Abs(LocalSpeedX) * Time.deltaTime) * -GroundNormal;
-                if (rigidbody.SweepTest(vector.normalized, out var raycastHit, vector.magnitude)) {
+                if (m_rigidbody.SweepTest(vector.normalized, out var raycastHit, vector.magnitude)) {
                     transform.position += vector.normalized * (raycastHit.distance + 0.02f);
                 } else {
                     transform.position -= GroundNormal * 0.02f;
@@ -99,7 +99,7 @@ public class PlatformingMovement : PlatformMovement {
         }
 
         Vector3 vector = LocalToWorld(Vector3.down * distance);
-        if (rigidbody.SweepTest(vector.normalized, out var raycastHit, vector.magnitude)) {
+        if (m_rigidbody.SweepTest(vector.normalized, out var raycastHit, vector.magnitude)) {
             Position += raycastHit.distance * vector.normalized;
         } else {
             Position += (Vector3)LocalToWorld(Vector3.down * 0.5f);

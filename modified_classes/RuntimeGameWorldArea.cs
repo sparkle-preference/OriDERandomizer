@@ -115,7 +115,7 @@ public class RuntimeGameWorldArea {
         var position = Area.CageStructureTool.transform.InverseTransformPoint(worldPosition);
         var face = Area.CageStructureTool.FindFaceAtPositionFaster(position);
         if (face != null) {
-            if (worldAreaStates.TryGetValue(face.ID, out var worldMapAreaState)) {
+            if (m_worldAreaStates.TryGetValue(face.ID, out var worldMapAreaState)) {
                 if (worldMapAreaState != WorldMapAreaState.Visited) {
                     m_dirtyCompletionAmount = true;
                     m_worldAreaStates[face.ID] = WorldMapAreaState.Visited;
@@ -207,11 +207,11 @@ public class RuntimeGameWorldArea {
     }
 
     public bool FaceIsDiscoveredOrVisited(int id) {
-        return worldAreaStates.TryGetValue(id, out var worldMapAreaState) && (worldMapAreaState == WorldMapAreaState.Discovered || worldMapAreaState == WorldMapAreaState.Visited);
+        return m_worldAreaStates.TryGetValue(id, out var worldMapAreaState) && (worldMapAreaState == WorldMapAreaState.Discovered || worldMapAreaState == WorldMapAreaState.Visited);
     }
 
     public WorldMapAreaState GetFaceState(int id) {
-        if (worldAreaStates.TryGetValue(id, out var result)) {
+        if (m_worldAreaStates.TryGetValue(id, out var result)) {
         }
 
         return result;
