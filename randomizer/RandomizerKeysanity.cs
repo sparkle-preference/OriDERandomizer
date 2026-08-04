@@ -67,7 +67,7 @@ public class RandomizerKeysanity {
         };
     }
 
-    public void ApplyKeystoneCount(MoonGuid guid, int numberUsed) { 
+    public void ApplyKeystoneCount(MoonGuid guid, int numberUsed) {
         if (!IsActive) {
             return;
         }
@@ -99,7 +99,7 @@ public class RandomizerKeysanity {
             if(!IsActive) return hintMap[id];
 
             var count = inventory.GetRandomizerItem(id);
-            if(count == countForDoor(id)) 
+            if(count == countForDoor(id))
                 return $"${hintMap[id]} {count}/{count}\n(Openable!)$";
 
             if(GetDoorHint(guid))

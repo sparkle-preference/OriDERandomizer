@@ -169,7 +169,7 @@ public class EnergyDoor : SaveSerialize
 					}
 					if (AmountOfEnergyUsed == AmountOfEnergyRequired)
 					{
-						BingoController.OnEnergyDoor(MoonGuid);
+						BingoController.OnEnergyDoor();
 						OnOpenedAction.Perform(null);
 						Unhighlight();
 						CurrentState = State.Opened;

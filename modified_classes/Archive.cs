@@ -177,7 +177,7 @@ public class Archive
 			if (m_write)
 			{
 				foreach(var key in value.Keys) {
-					pairs += key + ":"+value[key]+",";	
+					pairs += key + ":"+value[key]+",";
 				}
 				pairs = pairs.TrimEnd(',');
 
@@ -188,7 +188,7 @@ public class Archive
 			pairs = m_binaryReader.ReadString();
 			foreach(var pair in pairs.Split(',')) {
 				var kandv = pair.Split(':');
-				value[int.Parse(kandv[0])] = int.Parse(kandv[1]);							
+				value[int.Parse(kandv[0])] = int.Parse(kandv[1]);
 			}
 			return value;
 		}

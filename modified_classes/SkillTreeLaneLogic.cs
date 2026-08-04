@@ -34,7 +34,7 @@ public class SkillTreeLaneLogic : SaveSerialize
 				{
 					firstUnlearnedIndex = i + 1;
 				}
-				
+
 				totalPointsNeeded += skillItem.RequiredSkillPoints;
 				totalHardPointsNeeded += skillItem.RequiredHardSkillPoints;
 				skillItem.TotalRequiredSkillPoints = totalPointsNeeded;

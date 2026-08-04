@@ -35,18 +35,18 @@ public class GameMapTeleporter
 				foreach (var index in multiplicative)
 				{
 					var originalColor = componentsInChildren[index].material.color;
-					var newColor = new Color(RandomizerSettings.Customization.WarpTeleporterColor.Value.r * originalColor.r, 
-						RandomizerSettings.Customization.WarpTeleporterColor.Value.g * originalColor.g, 
-						RandomizerSettings.Customization.WarpTeleporterColor.Value.b * originalColor.b, 
+					var newColor = new Color(RandomizerSettings.Customization.WarpTeleporterColor.Value.r * originalColor.r,
+						RandomizerSettings.Customization.WarpTeleporterColor.Value.g * originalColor.g,
+						RandomizerSettings.Customization.WarpTeleporterColor.Value.b * originalColor.b,
 						originalColor.a);
 					componentsInChildren[index].material.color = newColor;
 				}
 				foreach (var index2 in others)
 				{
 					var originalColor2 = componentsInChildren[index2].material.color;
-					var newColor2 = new Color(RandomizerSettings.Customization.WarpTeleporterColor.Value.r, 
-						RandomizerSettings.Customization.WarpTeleporterColor.Value.g, 
-						RandomizerSettings.Customization.WarpTeleporterColor.Value.b, 
+					var newColor2 = new Color(RandomizerSettings.Customization.WarpTeleporterColor.Value.r,
+						RandomizerSettings.Customization.WarpTeleporterColor.Value.g,
+						RandomizerSettings.Customization.WarpTeleporterColor.Value.b,
 						originalColor2.a);
 					componentsInChildren[index2].material.color = newColor2;
 				}
@@ -73,18 +73,18 @@ public class GameMapTeleporter
 				foreach (var index3 in multiplicative2)
 				{
 					var originalColor3 = componentsInChildren2[index3].material.color;
-					var newColor3 = new Color(RandomizerSettings.Customization.WarpTeleporterColor.Value.r * originalColor3.r, 
-						RandomizerSettings.Customization.WarpTeleporterColor.Value.g * originalColor3.g, 
-						RandomizerSettings.Customization.WarpTeleporterColor.Value.b * originalColor3.b, 
+					var newColor3 = new Color(RandomizerSettings.Customization.WarpTeleporterColor.Value.r * originalColor3.r,
+						RandomizerSettings.Customization.WarpTeleporterColor.Value.g * originalColor3.g,
+						RandomizerSettings.Customization.WarpTeleporterColor.Value.b * originalColor3.b,
 						originalColor3.a);
 					componentsInChildren2[index3].material.color = newColor3;
 				}
 				foreach (var index4 in others2)
 				{
 					var originalColor4 = componentsInChildren2[index4].material.color;
-					var newColor4 = new Color(RandomizerSettings.Customization.WarpTeleporterColor.Value.r, 
-						RandomizerSettings.Customization.WarpTeleporterColor.Value.g, 
-						RandomizerSettings.Customization.WarpTeleporterColor.Value.b, 
+					var newColor4 = new Color(RandomizerSettings.Customization.WarpTeleporterColor.Value.r,
+						RandomizerSettings.Customization.WarpTeleporterColor.Value.g,
+						RandomizerSettings.Customization.WarpTeleporterColor.Value.b,
 						originalColor4.a);
 					componentsInChildren2[index4].material.color = newColor4;
 				}
