@@ -6,7 +6,8 @@ using Input = Core.Input;
 
 public class PlayerInput : MonoBehaviour {
     public PlayerInput() {
-        lastPressedButtonInput = -1;
+        m_lastPressedButtonInput = -1;
+        m_lastPressedAxisInput = -1;
     }
 
     public void ClearControls() {
@@ -55,7 +56,7 @@ public class PlayerInput : MonoBehaviour {
         VerticalAnalogLeft.Add(new ControllerAxisInput(XboxControllerInput.Axis.LeftStickY));
         HorizontalAnalogRight.Add(new ControllerAxisInput(XboxControllerInput.Axis.RightStickX));
         VerticalAnalogRight.Add(new ControllerAxisInput(XboxControllerInput.Axis.RightStickY));
-        var controllerRebindings = PlayerInputRebinding.ControllerRebindingSettings;
+        var controllerRebindings = PlayerInputRebinding.ControllerRebindings;
         foreach (var button in controllerRebindings.HorizontalDigiPadLeft) {
             HorizontalDigiPad.Add(new ButtonAxisInput(ControllerButtonToButtonInput(button), ButtonAxisInput.Mode.Negative));
         }
@@ -167,7 +168,7 @@ public class PlayerInput : MonoBehaviour {
         RefreshControlScheme();
         LeftClick = new KeyCodeButtonInput(KeyCode.Mouse0);
         RightClick = new KeyCodeButtonInput(KeyCode.Mouse1);
-        AllButtonInput = new List<IButtonInput> {
+        m_allButtonInput = new List<IButtonInput> {
             Jump,
             SpiritFlame,
             SoulFlame,
@@ -196,7 +197,7 @@ public class PlayerInput : MonoBehaviour {
             Legend,
             Stomp,
         };
-        AllButtonProcessor = new List<Input.InputButtonProcessor> {
+        m_allButtonProcessor = new List<Input.InputButtonProcessor> {
             Input.Jump,
             Input.SpiritFlame,
             Input.SoulFlame,
@@ -225,7 +226,7 @@ public class PlayerInput : MonoBehaviour {
             Input.Legend,
             Input.Stomp,
         };
-        new List<IAxisInput> {
+        m_allAxisInput = new List<IAxisInput> {
             HorizontalAnalogLeft,
             VerticalAnalogLeft,
             HorizontalAnalogRight,
@@ -267,21 +268,21 @@ public class PlayerInput : MonoBehaviour {
         Input.ZoomOut.Update(ZoomOut.GetButton());
         Input.LeftClick.Update(LeftClick.GetButton());
         Input.RightClick.Update(RightClick.GetButton());
-        lastPressedButtonInput = -1;
-        for (var i = 0; i < AllButtonInput.Count; i++) {
-            var button = AllButtonInput[i].GetButton();
+        m_lastPressedButtonInput = -1;
+        for (var i = 0; i < m_allButtonInput.Count; i++) {
+            var button = m_allButtonInput[i].GetButton();
             if (button) {
-                lastPressedButtonInput = i;
+                m_lastPressedButtonInput = i;
             }
 
-            AllButtonProcessor[i].Update(button);
+            m_allButtonProcessor[i].Update(button);
         }
 
         RefreshControls();
-        if (!ControlsScreen.IsVisible && lastPressedButtonInput != -1) {
+        if (!ControlsScreen.IsVisible && m_lastPressedButtonInput != -1) {
             var flag = WasKeyboardUsedLast;
-            if (lastPressedButtonInput != -1) {
-                flag = KeyboardUsedLast(AllButtonInput[lastPressedButtonInput]);
+            if (m_lastPressedButtonInput != -1) {
+                flag = KeyboardUsedLast(m_allButtonInput[m_lastPressedButtonInput]);
             }
 
             if (flag != WasKeyboardUsedLast) {
@@ -310,6 +311,17 @@ public class PlayerInput : MonoBehaviour {
         AddXboxOneControls();
         AddKeyboardControls();
         PlayerInputRebinding.RefreshControllerButtonRemappings();
+    }
+
+    private void RefreshLastPressedButton() {
+        m_lastPressedButtonInput = -1;
+        m_lastPressedAxisInput = -1;
+        for (var i = 0; i < m_allButtonInput.Count; i++) {
+            if (m_allButtonInput[i].GetButton()) {
+                m_lastPressedButtonInput = i;
+                return;
+            }
+        }
     }
 
     public bool WasKeyboardUsedLast => GameSettings.Instance.CurrentControlScheme > ControlScheme.Controller;
@@ -485,11 +497,15 @@ public class PlayerInput : MonoBehaviour {
 
     public IButtonInput RightClick;
 
-    public List<IButtonInput> AllButtonInput;
+    public List<IButtonInput> m_allButtonInput;
 
-    public List<Input.InputButtonProcessor> AllButtonProcessor;
+    public List<Input.InputButtonProcessor> m_allButtonProcessor;
 
-    private int lastPressedButtonInput;
+    public List<IAxisInput> m_allAxisInput;
+
+    private int m_lastPressedButtonInput;
+
+    private int m_lastPressedAxisInput;
 
     public CompoundButtonInput Stomp = new CompoundButtonInput();
 }

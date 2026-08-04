@@ -4,14 +4,14 @@ using UnityEngine;
 
 public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
     public void OnPoolSpawned() {
-        suspended = false;
-        time = 0f;
-        waitDelay = 0f;
+        m_suspended = false;
+        m_time = 0f;
+        m_waitDelay = 0f;
     }
 
     public static void IgnoreOnLastInstance(IAttackable attackable) {
-        if (lastInstance) {
-            lastInstance.damageAttackables.Add(attackable);
+        if (m_lastInstance) {
+            m_lastInstance.m_damageAttackables.Add(attackable);
         }
     }
 
@@ -24,30 +24,30 @@ public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
     }
 
     public void OnEnable() {
-        lastInstance = this;
+        m_lastInstance = this;
     }
 
     public void OnDisable() {
-        damageAttackables.Clear();
-        if (lastInstance == this) {
-            lastInstance = null;
+        m_damageAttackables.Clear();
+        if (m_lastInstance == this) {
+            m_lastInstance = null;
         }
     }
 
     public void Start() {
         DealDamage();
-        time = 0f;
-        waitDelay = 0f;
+        m_time = 0f;
+        m_waitDelay = 0f;
     }
 
     public void DealDamage() {
         var position = transform.position;
         foreach (var attackable in Targets.Attackables.ToArray()) {
-            if (!InstantiateUtility.IsDestroyed(attackable as Component) && !damageAttackables.Contains(attackable) && attackable.CanBeGrenaded()) {
+            if (!InstantiateUtility.IsDestroyed(attackable as Component) && !m_damageAttackables.Contains(attackable) && attackable.CanBeGrenaded()) {
                 var position2 = attackable.Position;
                 var vector = position2 - position;
                 if (vector.magnitude <= BurstRadius + RandomizerBonus.SpiritFlameLevel()) {
-                    damageAttackables.Add(attackable);
+                    m_damageAttackables.Add(attackable);
                     var gameObject = ((Component)attackable).gameObject;
                     new Damage(DamageAmount + 3 * RandomizerBonus.SpiritFlameLevel(), vector.normalized * 3f, position, DamageType.Grenade, this.gameObject).DealToComponents(gameObject);
                     if (!attackable.IsDead()) {
@@ -56,11 +56,11 @@ public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
                         gameObject2.GetComponent<FollowPositionRotation>().SetTarget(gameObject.transform);
                     }
                 }
-            } else if (RandomizerBonus.EnhancedGrenade && !InstantiateUtility.IsDestroyed(attackable as Component) && !damageAttackables.Contains(attackable) && attackable.CanBeStomped()) {
+            } else if (RandomizerBonus.EnhancedGrenade && !InstantiateUtility.IsDestroyed(attackable as Component) && !m_damageAttackables.Contains(attackable) && attackable.CanBeStomped()) {
                 var position2 = attackable.Position;
                 var vector = position2 - position;
                 if (vector.magnitude <= BurstRadius + 1f + RandomizerBonus.SpiritFlameLevel()) {
-                    damageAttackables.Add(attackable);
+                    m_damageAttackables.Add(attackable);
                     var gameObject = ((Component)attackable).gameObject;
                     new Damage(DamageAmount + 3 * RandomizerBonus.SpiritFlameLevel(), vector.normalized * 3f, position, DamageType.Stomp, this.gameObject).DealToComponents(gameObject);
                     if (!attackable.IsDead()) {
@@ -72,24 +72,24 @@ public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
             }
         }
 
-        waitDelay = 0.1f;
+        m_waitDelay = 0.1f;
     }
 
     public void FixedUpdate() {
-        if (suspended) {
+        if (m_suspended) {
             return;
         }
 
-        time += Time.deltaTime;
-        waitDelay -= Time.deltaTime;
-        if (time < DealDamageDuration && waitDelay <= 0f) {
+        m_time += Time.deltaTime;
+        m_waitDelay -= Time.deltaTime;
+        if (m_time < DealDamageDuration && m_waitDelay <= 0f) {
             DealDamage();
         }
     }
 
     public bool IsSuspended {
-        get => suspended;
-        set => suspended = value;
+        get => m_suspended;
+        set => m_suspended = value;
     }
 
     public float BurstRadius = 5f;
@@ -100,13 +100,13 @@ public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
 
     public float DealDamageDuration = 0.5f;
 
-    private float time;
+    private float m_time;
 
-    private float waitDelay;
+    private float m_waitDelay;
 
-    private readonly HashSet<IAttackable> damageAttackables = new HashSet<IAttackable>();
+    private readonly HashSet<IAttackable> m_damageAttackables = new HashSet<IAttackable>();
 
-    private static GrenadeBurst lastInstance;
+    private static GrenadeBurst m_lastInstance;
 
-    private bool suspended;
+    private bool m_suspended;
 }

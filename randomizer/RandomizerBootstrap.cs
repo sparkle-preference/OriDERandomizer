@@ -697,7 +697,7 @@ public class RandomizerBootstrap {
         var collisionTrigger = reentryHintTransform.gameObject.AddComponent<PlayerCollisionTrigger>();
         collisionTrigger.ActionToRun = reentryHint;
         var goingLeftCondition = reentryHintTransform.gameObject.AddComponent<RandomizerGoingDirectionCondition>();
-        goingLeftCondition.Left = true;
+        goingLeftCondition.left = true;
         var mistyCompleteCondition = sceneRoot.transform.FindChild("*toggleTorchSetup/toggleTorchSetup/oriInterestTrigger/activateAction").GetComponent<GetWorldEventCondition>();
         var compoundCondition = reentryHintTransform.gameObject.AddComponent<CompoundCondition>();
         var conditionInformation = new CompoundCondition.ConditionInformation();

@@ -26,12 +26,12 @@ public class GoToSceneController : MonoBehaviour {
             GameStateMachine.Instance.SetToStartScreen();
         }
 
-        onCompleteLoad = onComplete;
-        this.position = position;
-        ScenesManager.SetTargetPositions(this.position);
+        m_onCompleteLoad = onComplete;
+        m_position = position;
+        ScenesManager.SetTargetPositions(m_position);
         InstantLoadScenesController.Instance.LoadScenesAtPosition(null, async);
-        createCheckpointLater = createCheckpoint;
-        useAfterSceneLoad = true;
+        m_createCheckpointLater = createCheckpoint;
+        m_useAfterSceneLoad = true;
         ScenesManager.AllowUnloadingOnScenes(position);
     }
 
@@ -39,28 +39,28 @@ public class GoToSceneController : MonoBehaviour {
         UI.Cameras.Current.MoveCameraToTargetInstantly(false);
         ScenesManager.UnloadScenesAtPosition(true);
         ScenesManager.AutoLoadingUnloading = true;
-        if (onCompleteImmediateLoad != null) {
-            onCompleteImmediateLoad();
-            onCompleteImmediateLoad = null;
+        if (m_onCompleteImmediateLoad != null) {
+            m_onCompleteImmediateLoad();
+            m_onCompleteImmediateLoad = null;
         }
 
         UI.Cameras.Current.Controller.UpdateCamera();
     }
 
     public void OnScenesEnabled() {
-        if (useAfterSceneLoad) {
-            useAfterSceneLoad = false;
+        if (m_useAfterSceneLoad) {
+            m_useAfterSceneLoad = false;
             CompleteGoingToAScene();
         }
     }
 
     public void CompleteGoingToAScene() {
         if (Characters.Current != null) {
-            Characters.Current.Position = position;
+            Characters.Current.Position = m_position;
             Characters.Current.PlaceOnGround();
         }
 
-        UI.Cameras.Current.CameraTarget.SetTargetPosition(position);
+        UI.Cameras.Current.CameraTarget.SetTargetPosition(m_position);
         UI.Cameras.Current.Controller.PuppetController.Reset();
         UI.Cameras.Current.GoToChaseMode();
         UI.Cameras.Current.MoveCameraToTargetInstantly(false);
@@ -72,14 +72,14 @@ public class GoToSceneController : MonoBehaviour {
     }
 
     public void OnInstantLoadScenesControllerCompletedLoading() {
-        if (onCompleteLoad != null) {
-            onCompleteLoad();
-            onCompleteLoad = null;
+        if (m_onCompleteLoad != null) {
+            m_onCompleteLoad();
+            m_onCompleteLoad = null;
         }
 
         UI.Cameras.Current.Controller.UpdateCamera();
-        if (createCheckpointLater) {
-            createCheckpointLater = false;
+        if (m_createCheckpointLater) {
+            m_createCheckpointLater = false;
             GameController.Instance.CreateCheckpoint();
             GameController.Instance.SaveGameController.PerformSave();
             GameController.Instance.PerformSaveGameSequence();
@@ -87,9 +87,9 @@ public class GoToSceneController : MonoBehaviour {
     }
 
     public void OnScenesManagerFixedUpdate() {
-        if (isMovingImmediately) {
-            isMovingImmediately = false;
-            ScenesManager.SetTargetPositions(position);
+        if (m_isMovingImmediately) {
+            m_isMovingImmediately = false;
+            ScenesManager.SetTargetPositions(m_position);
             ScenesManager.AutoLoadingUnloading = false;
             ScenesManager.EnableDisabledScenesAtPosition();
             CompleteGoingToAScene();
@@ -115,9 +115,9 @@ public class GoToSceneController : MonoBehaviour {
 
     public void GoToSceneImmediately(SceneMetaData scene, Action onComplete) {
         StartInScene = scene.SceneMoonGuid;
-        position = scene.SeinPlaceholderPosition;
-        onCompleteImmediateLoad = onComplete;
-        isMovingImmediately = true;
+        m_position = scene.SeinPlaceholderPosition;
+        m_onCompleteImmediateLoad = onComplete;
+        m_isMovingImmediately = true;
     }
 
     public void GoToScene(string path) {
@@ -133,15 +133,15 @@ public class GoToSceneController : MonoBehaviour {
 
     public MoonGuid StartInScene;
 
-    private Vector3 position;
+    private Vector3 m_position;
 
-    private bool useAfterSceneLoad;
+    private bool m_useAfterSceneLoad;
 
-    private bool createCheckpointLater;
+    private bool m_createCheckpointLater;
 
-    private Action onCompleteLoad;
+    private Action m_onCompleteLoad;
 
-    private Action onCompleteImmediateLoad;
+    private Action m_onCompleteImmediateLoad;
 
-    private bool isMovingImmediately;
+    private bool m_isMovingImmediately;
 }

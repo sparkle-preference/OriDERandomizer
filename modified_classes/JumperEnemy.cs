@@ -42,16 +42,16 @@ public class JumperEnemy : GroundEnemy {
             State.Stomped,
             State.Respawn
         );
-        if (timedRespawn) {
+        if (m_timedRespawn) {
             Controller.StateMachine.ChangeState(State.Respawn);
-            timedRespawn = false;
+            m_timedRespawn = false;
         } else {
             Controller.StateMachine.ChangeState(State.Idle);
         }
     }
 
     public new void OnTimedRespawn() {
-        timedRespawn = true;
+        m_timedRespawn = true;
     }
 
     public bool OutOfJumpingZone() {
@@ -83,7 +83,7 @@ public class JumperEnemy : GroundEnemy {
             PlatformMovement.LocalSpeedY *= -0.5f;
         }
 
-        thrownDirection = onReceiveDamage.Damage.Force.normalized;
+        m_thrownDirection = onReceiveDamage.Damage.Force.normalized;
         FaceLeft = PlatformMovement.LocalSpeedX < 0f;
     }
 
@@ -94,7 +94,7 @@ public class JumperEnemy : GroundEnemy {
             PlatformMovement.LocalSpeedY *= -0.5f;
         }
 
-        thrownDirection = onReceiveDamage.Damage.Force.normalized;
+        m_thrownDirection = onReceiveDamage.Damage.Force.normalized;
         FaceLeft = PlatformMovement.LocalSpeedX < 0f;
     }
 
@@ -105,18 +105,18 @@ public class JumperEnemy : GroundEnemy {
         localSpeed.x = Settings.JumpDistance / num;
         if (OutOfJumpingZone()) {
             localSpeed.x = Mathf.Clamp((JumpingZone.position.x - Position.x) / num, -localSpeed.x, localSpeed.x);
-            shouldStomp = false;
+            m_shouldStomp = false;
         } else {
             localSpeed.x = Mathf.Clamp(PositionToPlayerPosition.x / num, -localSpeed.x, localSpeed.x);
-            shouldStomp = Mathf.Abs((PlayerPosition + playerSmoothSpeed - Position).x) < Settings.StompAttackDistance;
+            m_shouldStomp = Mathf.Abs((PlayerPosition + m_playerSmoothSpeed - Position).x) < Settings.StompAttackDistance;
         }
 
         var vector = new Vector3(localSpeed.x * num * 0.5f, Settings.JumpHeight);
         var flag = Mathf.Sign(localSpeed.x) != FaceLeftSign;
-        if (Physics.Raycast(new Ray(Position, vector.normalized), vector.magnitude, RaycastLayerMask) || !shouldStomp) {
+        if (Physics.Raycast(new Ray(Position, vector.normalized), vector.magnitude, RaycastLayerMask) || !m_shouldStomp) {
             localSpeed.y = PhysicsHelper.CalculateSpeedFromHeight(Settings.ShortJumpHeight, Settings.Gravity);
             Animation.Play(!flag ? Animations.ShortJump : Animations.JumpFlip, 1, () => !PlatformMovement.IsOnGround);
-            shouldStomp = false;
+            m_shouldStomp = false;
         } else {
             Animation.Play(!flag ? Animations.Jump : Animations.JumpFlip, 1, () => !PlatformMovement.IsOnGround);
         }
@@ -150,7 +150,7 @@ public class JumperEnemy : GroundEnemy {
 
         UpdateRotation();
         if (Characters.Sein) {
-            playerSmoothSpeed = Vector3.Lerp(playerSmoothSpeed, Characters.Sein.Speed, 0.1f);
+            m_playerSmoothSpeed = Vector3.Lerp(m_playerSmoothSpeed, Characters.Sein.Speed, 0.1f);
         }
 
         if (IsInWater) {
@@ -163,7 +163,7 @@ public class JumperEnemy : GroundEnemy {
         var currentStateTime = Controller.StateMachine.CurrentStateTime;
         if (currentState == State.Thrown) {
             var num = 1f - Mathf.InverseLerp(0.3f, 0.6f, currentStateTime);
-            FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(thrownDirection) - 90f) * num);
+            FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(m_thrownDirection) - 90f) * num);
         } else {
             var b = !PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle;
             FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.2f));
@@ -175,7 +175,7 @@ public class JumperEnemy : GroundEnemy {
     }
 
     public void OnLanded() {
-        if (shouldStomp && Settings.HasStompExplosion) {
+        if (m_shouldStomp && Settings.HasStompExplosion) {
             if (StompEffect) {
                 var gameObject = (GameObject)InstantiateUtility.Instantiate(StompEffect, Position, Quaternion.identity);
                 gameObject.GetComponentInChildren<DamageDealer>().Damage = Settings.ExplosionDamage;
@@ -211,13 +211,13 @@ public class JumperEnemy : GroundEnemy {
 
     public LayerMask RaycastLayerMask;
 
-    private Vector3 playerSmoothSpeed;
+    private Vector3 m_playerSmoothSpeed;
 
-    private bool shouldStomp;
+    private bool m_shouldStomp;
 
-    private Vector3 thrownDirection;
+    private Vector3 m_thrownDirection;
 
-    private bool timedRespawn;
+    private bool m_timedRespawn;
 
     public GameObject StompEffect;
 

@@ -13,16 +13,16 @@ public class HierarchyDebugMenu : MonoBehaviour {
     }
 
     public void OnEnable() {
-        selectionIndex = 0;
+        m_selectionIndex = 0;
         SuspensionManager.SuspendAll();
-        items.Clear();
+        m_items.Clear();
         foreach (var gameObject in Resources.FindObjectsOfTypeAll<GameObject>()) {
             if (gameObject.hideFlags == HideFlags.None && gameObject.transform.parent == null && gameObject.activeInHierarchy == gameObject.activeSelf) {
-                items.Add(new GameObjectItem(gameObject));
+                m_items.Add(new GameObjectItem(gameObject));
             }
         }
 
-        items.Sort((a, b) => string.Compare(a.Target.name, b.Target.name, StringComparison.Ordinal));
+        m_items.Sort((a, b) => string.Compare(a.Target.name, b.Target.name, StringComparison.Ordinal));
     }
 
     public void OnDisable() {
@@ -35,22 +35,22 @@ public class HierarchyDebugMenu : MonoBehaviour {
         GUILayout.BeginArea(new Rect(Screen.width / 2 - 200f, 0f, 400f, Screen.height), GUI.skin.box);
         GUILayout.BeginVertical(GUI.skin.box);
         GUILayout.FlexibleSpace();
-        foreach (var item in items) {
+        foreach (var item in m_items) {
             OnItemGUI(item, ref num, depth);
         }
 
-        maxIndex = num - 1;
+        m_maxIndex = num - 1;
         GUILayout.FlexibleSpace();
         GUILayout.EndVertical();
         GUILayout.EndArea();
     }
 
     public void MoveSelectionDown() {
-        selectionIndex = Mathf.Min(maxIndex, selectionIndex + 1);
+        m_selectionIndex = Mathf.Min(m_maxIndex, m_selectionIndex + 1);
     }
 
     public void MoveSelectionUp() {
-        selectionIndex = Mathf.Max(0, selectionIndex - 1);
+        m_selectionIndex = Mathf.Max(0, m_selectionIndex - 1);
     }
 
     private void ResetHold() {
@@ -61,17 +61,17 @@ public class HierarchyDebugMenu : MonoBehaviour {
     public void FixedUpdate() {
         if (Input.GetKeyDown(KeyCode.Backslash)) {
             var verbose = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-            DebugWidget.Instance.TargetObject(selected.Target, verbose);
+            DebugWidget.Instance.TargetObject(m_selected.Target, verbose);
         }
 
         if (Input.GetKeyDown(KeyCode.Home)) {
-            Debug.Log(selected.Label + "(" + selectionIndex + ")");
-            var num = items.FindIndex(g => g.Label == "systems");
-            var gameObjectItem = items[num];
+            Debug.Log(m_selected.Label + "(" + m_selectionIndex + ")");
+            var num = m_items.FindIndex(g => g.Label == "systems");
+            var gameObjectItem = m_items[num];
             gameObjectItem.Expanded = true;
             var num2 = gameObjectItem.Children.FindIndex(g => g.Label == "menuScreenManager");
-            selected = items[num2];
-            selectionIndex = num + num2 + 1;
+            m_selected = m_items[num2];
+            m_selectionIndex = num + num2 + 1;
         }
 
         if (Core.Input.Up.OnPressed) {
@@ -85,15 +85,15 @@ public class HierarchyDebugMenu : MonoBehaviour {
         }
 
         if (Core.Input.ActionButtonA.OnPressed) {
-            selected.Target.SetActive(!selected.Target.activeSelf);
+            m_selected.Target.SetActive(!m_selected.Target.activeSelf);
         }
 
         if (Core.Input.Right.OnPressed) {
-            selected.Expanded = true;
+            m_selected.Expanded = true;
         }
 
         if (Core.Input.Left.OnPressed) {
-            selected.Expanded = false;
+            m_selected.Expanded = false;
         }
 
         if (Core.Input.Cancel.OnPressed) {
@@ -123,24 +123,24 @@ public class HierarchyDebugMenu : MonoBehaviour {
             return;
         }
 
-        var num = index - selectionIndex;
+        var num = index - m_selectionIndex;
         if (num == 0) {
-            selected = item;
+            m_selected = item;
         }
 
         var num2 = ShowAboveCount;
         var num3 = ShowBelowCount;
-        if (selectionIndex < num2) {
-            num3 += num2 - selectionIndex;
+        if (m_selectionIndex < num2) {
+            num3 += num2 - m_selectionIndex;
         }
 
-        if (selectionIndex > maxIndex - num3) {
-            num2 += num3 - (maxIndex - selectionIndex);
+        if (m_selectionIndex > m_maxIndex - num3) {
+            num2 += num3 - (m_maxIndex - m_selectionIndex);
         }
 
         if (num > -num2 && num < num3) {
             GUI.color = !item.Target.activeInHierarchy ? Color.gray : Color.white;
-            GUILayout.BeginHorizontal(selected != item ? Style : SelectedStyle);
+            GUILayout.BeginHorizontal(m_selected != item ? Style : SelectedStyle);
             GUILayout.Space(depth * 16);
             GUILayout.Label(
                 !item.HasChildren ? string.Empty : !item.Expanded ? "»" : "«",
@@ -183,13 +183,13 @@ public class HierarchyDebugMenu : MonoBehaviour {
 
     public int ShowBelowCount = 10;
 
-    private readonly List<GameObjectItem> items = new List<GameObjectItem>();
+    private readonly List<GameObjectItem> m_items = new List<GameObjectItem>();
 
-    private int selectionIndex;
+    private int m_selectionIndex;
 
-    private int maxIndex;
+    private int m_maxIndex;
 
-    private GameObjectItem selected;
+    private GameObjectItem m_selected;
 
     public class GameObjectItem {
         public bool HasChildren => Children.Count > 0;

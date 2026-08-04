@@ -2,7 +2,6 @@
 using Core;
 using Game;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFlameAttackable, IStompAttackable, IBashAttackable, IPooled, ISuspendable, IPortalVisitor, IReflectable {
     Vector3 IPortalVisitor.Speed {
@@ -21,19 +20,19 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
     public bool IsSuspended { get; set; }
 
     public void OnValidate() {
-        OnKillReceivers = GetComponentsInChildren(typeof(IKillReciever));
+        m_onKillRecievers = GetComponentsInChildren(typeof(IKillReciever));
     }
 
     public void OnPoolSpawned() {
         HasBeenBashedByOri = false;
         CurrentTime = 0f;
-        Gravity = originalGravity;
+        Gravity = m_originalGravity;
         Direction = Vector3.left;
         Speed = 0f;
-        collider.enabled = colliderEnabledAtStart;
-        explode = false;
-        explodeLater = false;
-        lastLoop = null;
+        m_collider.enabled = m_colliderEnabledAtStart;
+        m_explode = false;
+        m_explodeLater = false;
+        m_lastLoop = null;
         LastReflector = null;
         Displacement = Vector3.zero;
         IsSuspended = false;
@@ -46,17 +45,17 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
         }
 
         if (EnableCollisionGracePeriod) {
-            collider.enabled = false;
+            m_collider.enabled = false;
         }
     }
 
     public void Awake() {
-        nullify = delegate { lastLoop = null; };
+        m_nullify = delegate { m_lastLoop = null; };
         SuspensionManager.Register(this);
         Direction = Vector3.left;
         Speed = 0f;
-        collider = GetComponent<Collider>();
-        colliderEnabledAtStart = collider.enabled;
+        m_collider = GetComponent<Collider>();
+        m_colliderEnabledAtStart = m_collider.enabled;
         Rigidbody = GetComponent<Rigidbody>();
         var component = GetComponent<DamageDealer>();
         if (component) {
@@ -65,13 +64,13 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
         }
 
         if (ProjectileLoop) {
-            lastLoop = Sound.Play(ProjectileLoop.GetSound(null), transform.position, nullify);
-            if (lastLoop) {
-                lastLoop.AttachTo = transform;
+            m_lastLoop = Sound.Play(ProjectileLoop.GetSound(null), transform.position, m_nullify);
+            if (m_lastLoop) {
+                m_lastLoop.AttachTo = transform;
             }
         }
 
-        originalGravity = Gravity;
+        m_originalGravity = Gravity;
     }
 
     public void OnEnable() {
@@ -107,8 +106,8 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
     }
 
     public void OnEnterBash() {
-        if (lastLoop) {
-            lastLoop.FadeOut(0.3f, true);
+        if (m_lastLoop) {
+            m_lastLoop.FadeOut(0.3f, true);
         }
     }
 
@@ -145,6 +144,10 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
                 }
 
                 break;
+            case DamageType.StompBlast:
+                Direction = damage.Force.normalized;
+                Owner = null;
+                return;
         }
 
         Direction = damage.Force.normalized;
@@ -221,23 +224,23 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
         }
 
         if (EnableCollisionGracePeriod && CurrentTime > CollisionGracePeriod) {
-            collider.enabled = true;
+            m_collider.enabled = true;
         }
 
-        if (lastLoop == null && ProjectileLoop != null) {
-            lastLoop = Sound.Play(ProjectileLoop.GetSound(null), transform.position, nullify);
-            if (lastLoop) {
-                lastLoop.AttachTo = transform;
+        if (m_lastLoop == null && ProjectileLoop != null) {
+            m_lastLoop = Sound.Play(ProjectileLoop.GetSound(null), transform.position, m_nullify);
+            if (m_lastLoop) {
+                m_lastLoop.AttachTo = transform;
             }
         }
 
         CurrentTime += Time.deltaTime;
         if (CurrentTime > MaximumLiveTime) {
-            explode = true;
+            m_explode = true;
         }
 
         if (WaterZone.PositionInWater(Position)) {
-            explode = true;
+            m_explode = true;
         }
 
         if (Gravity > 0f) {
@@ -251,24 +254,24 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
             transform.eulerAngles = new Vector3(0f, 0f, num);
         }
 
-        if (explode) {
+        if (m_explode) {
             ExplodeProjectile();
         }
 
-        if (explodeLater) {
-            explode = true;
-            explodeLater = false;
+        if (m_explodeLater) {
+            m_explode = true;
+            m_explodeLater = false;
         }
     }
 
     public void ExplodeProjectile() {
-        if (lastLoop) {
-            lastLoop.FadeOut(0.3f, true);
+        if (m_lastLoop) {
+            m_lastLoop.FadeOut(0.3f, true);
         }
 
-        for (var i = 0; i < OnKillReceivers.Length; i++) {
-            if (OnKillReceivers[i]) {
-                ((IKillReciever)OnKillReceivers[i]).OnKill();
+        for (var i = 0; i < m_onKillRecievers.Length; i++) {
+            if (m_onKillRecievers[i]) {
+                ((IKillReciever)m_onKillRecievers[i]).OnKill();
             }
         }
 
@@ -276,11 +279,11 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
     }
 
     public void OnCollisionEnter(Collision collision) {
-        explodeLater = true;
+        m_explodeLater = true;
     }
 
     public void OnCollisionStay(Collision collision) {
-        explode = true;
+        m_explode = true;
     }
 
     public void UpdateVelocity() {
@@ -330,21 +333,21 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 
     protected float CurrentTime;
 
-    private float originalGravity;
+    private float m_originalGravity;
 
-    private SoundPlayer lastLoop;
+    private SoundPlayer m_lastLoop;
 
-    private bool explode;
+    private bool m_explode;
 
-    private bool explodeLater;
+    private bool m_explodeLater;
 
-    private Action nullify;
+    private Action m_nullify;
 
     protected Rigidbody Rigidbody;
 
-    private Collider collider;
+    private Collider m_collider;
 
-    private bool colliderEnabledAtStart;
+    private bool m_colliderEnabledAtStart;
 
-    [FormerlySerializedAs("m_onKillRecievers")] [SerializeField] [HideInInspector] private Component[] OnKillReceivers;
+    [SerializeField] [HideInInspector] private Component[] m_onKillRecievers;
 }

@@ -32,8 +32,8 @@ public class RollingMovement : SaveSerialize, ISuspendable {
 
     public new void Awake() {
         base.Awake();
-        rigidbody = GetComponent<Rigidbody>();
-        rigidbody.sleepThreshold = 0f;
+        m_rigidbody = GetComponent<Rigidbody>();
+        m_rigidbody.sleepThreshold = 0f;
         SuspensionManager.Register(this);
     }
 
@@ -57,7 +57,7 @@ public class RollingMovement : SaveSerialize, ISuspendable {
         foreach (var contactPoint in collision.contacts) {
             Speed -= Vector3.Dot(Speed.normalized, contactPoint.normal) * contactPoint.normal;
             if (Vector3.Dot(contactPoint.normal, Vector3.up) > Mathf.Cos(0.7853982f)) {
-                groundNormal += contactPoint.normal;
+                m_groundNormal += contactPoint.normal;
                 Ground.FutureOn = true;
                 OnCollisionGroundEvent(contactPoint.normal, Vector3.Dot(collision.relativeVelocity, contactPoint.normal), collision.collider);
             }
@@ -80,19 +80,19 @@ public class RollingMovement : SaveSerialize, ISuspendable {
         Ground.Update();
         WallLeft.Update();
         WallRight.Update();
-        GroundNormal = groundNormal.magnitude != 0f ? groundNormal.normalized : Vector3.up;
-        IsOnGround = groundNormal.magnitude != 0f;
-        groundNormal = Vector3.zero;
+        GroundNormal = m_groundNormal.magnitude != 0f ? m_groundNormal.normalized : Vector3.up;
+        IsOnGround = m_groundNormal.magnitude != 0f;
+        m_groundNormal = Vector3.zero;
         Speed.z = 0f;
-        rigidbody.velocity = !IsSuspended ? RandomizerBonusSkill.TimeScale(Speed) : Vector3.zero;
-        rigidbody.detectCollisions = true;
+        m_rigidbody.velocity = !IsSuspended ? RandomizerBonusSkill.TimeScale(Speed) : Vector3.zero;
+        m_rigidbody.detectCollisions = true;
     }
 
-    private Rigidbody rigidbody;
+    private Rigidbody m_rigidbody;
 
     public Vector3 Speed;
 
-    private Vector3 groundNormal;
+    private Vector3 m_groundNormal;
 
     public Vector3 GroundNormal;
 

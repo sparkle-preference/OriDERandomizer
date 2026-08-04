@@ -9,19 +9,19 @@ public class Kickback {
 
     public float CurrentKickbackSpeed {
         get {
-            if (kickbackTimeRemaining <= 0f) {
+            if (m_kickbackTimeRemaining <= 0f) {
                 return 0f;
             }
 
-            return kickbackMultiplier * KickbackCurve.Evaluate(KickbackDuration - kickbackTimeRemaining);
+            return m_kickbackMultiplier * KickbackCurve.Evaluate(KickbackDuration - m_kickbackTimeRemaining);
         }
     }
 
     public Vector2 KickbackVector => CurrentKickbackSpeed * KickbackDirection;
 
     public void ApplyKickback(float kickbackMultiplier) {
-        this.kickbackMultiplier = kickbackMultiplier;
-        kickbackTimeRemaining = KickbackDuration;
+        m_kickbackMultiplier = kickbackMultiplier;
+        m_kickbackTimeRemaining = KickbackDuration;
     }
 
     public void ApplyKickback(float kickbackMultiplier, Vector2 kickbackDirection) {
@@ -30,16 +30,16 @@ public class Kickback {
     }
 
     public void AdvanceTime() {
-        kickbackTimeRemaining -= RandomizerBonusSkill.TimeScale(Time.deltaTime);
+        m_kickbackTimeRemaining -= RandomizerBonusSkill.TimeScale(Time.deltaTime);
     }
 
     public void Stop() {
-        kickbackTimeRemaining = 0f;
+        m_kickbackTimeRemaining = 0f;
     }
 
     public AnimationCurve KickbackCurve;
 
-    private float kickbackTimeRemaining;
+    private float m_kickbackTimeRemaining;
 
-    private float kickbackMultiplier;
+    private float m_kickbackMultiplier;
 }

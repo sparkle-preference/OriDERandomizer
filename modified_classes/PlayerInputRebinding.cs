@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class PlayerInputRebinding {
     static PlayerInputRebinding() {
-        controllerButtonRemappings = new[] {
+        m_controllerButtonRemappings = new[] {
             0,
             1,
             2,
@@ -22,7 +22,7 @@ public class PlayerInputRebinding {
             12,
             13,
         };
-        hasReadControllerRemappingsFile = false;
+        m_hasReadControllerRemappingsFile = false;
         intToButton = new[] {
             XboxControllerInput.Button.ButtonA,
             XboxControllerInput.Button.ButtonB,
@@ -43,7 +43,7 @@ public class PlayerInputRebinding {
 
     public static KeyBindingSettings KeyRebindings {
         get {
-            if (keyRebindings == null) {
+            if (m_keyRebindings == null) {
                 if (!File.Exists(KeyRebindingFile)) {
                     SetDefaultKeyBindingSettings();
                     WriteKeyRebindSettings();
@@ -52,7 +52,7 @@ public class PlayerInputRebinding {
                 }
             }
 
-            return keyRebindings;
+            return m_keyRebindings;
         }
     }
 
@@ -65,7 +65,7 @@ public class PlayerInputRebinding {
                 streamReader.ReadLine();
                 streamReader.ReadLine();
                 streamReader.ReadLine();
-                keyRebindings = new KeyBindingSettings {
+                m_keyRebindings = new KeyBindingSettings {
                     IsRebinding = true,
                     HorizontalDigiPadLeft = StringToKeyBinding(streamReader.ReadLine()),
                     HorizontalDigiPadRight = StringToKeyBinding(streamReader.ReadLine()),
@@ -101,9 +101,9 @@ public class PlayerInputRebinding {
                     Legend = StringToKeyBinding(streamReader.ReadLine()),
                 };
                 try {
-                    keyRebindings.Stomp = StringToKeyBinding(streamReader.ReadLine());
+                    m_keyRebindings.Stomp = StringToKeyBinding(streamReader.ReadLine());
                 } catch {
-                    keyRebindings.Stomp = new[] {
+                    m_keyRebindings.Stomp = new[] {
                         KeyCode.S,
                     };
                 }
@@ -136,7 +136,7 @@ public class PlayerInputRebinding {
 
     public static void WriteKeyRebindSettings() {
         using (var streamWriter = new StreamWriter(new FileStream(KeyRebindingFile, FileMode.OpenOrCreate))) {
-            var keyRebindings = PlayerInputRebinding.keyRebindings;
+            var keyRebindings = m_keyRebindings;
             streamWriter.WriteLine("Keyboard Rebindings");
             streamWriter.WriteLine("--------");
             streamWriter.WriteLine("Activate Key Rebinding: " + keyRebindings.IsRebinding);
@@ -202,7 +202,7 @@ public class PlayerInputRebinding {
     }
 
     public static void SetDefaultKeyBindingSettings() {
-        keyRebindings = DefaultKeyBindingSettings();
+        m_keyRebindings = DefaultKeyBindingSettings();
     }
 
     private static KeyBindingSettings DefaultKeyBindingSettings() {
@@ -370,7 +370,7 @@ public class PlayerInputRebinding {
     private static string ControllerRemappingFile => Path.Combine(OutputFolder.PlayerDataFolderPath, controllerRebindingFileName);
 
     public static XboxControllerInput.Button GetRemappedJoystickButton(XboxControllerInput.Button joystickButtonIndex) {
-        return intToButton[controllerButtonRemappings[ButtonToInt(joystickButtonIndex)]];
+        return intToButton[m_controllerButtonRemappings[ButtonToInt(joystickButtonIndex)]];
     }
 
     public static void GetControllerButtonRemappingsFromFile() {
@@ -390,8 +390,8 @@ public class PlayerInputRebinding {
                 );
                 if (flag) {
                     streamReader.ReadLine();
-                    controllerIsRemappingButtons = flag;
-                    controllerButtonRemappings[0] = int.Parse(
+                    m_controllerIsRemappingButtons = flag;
+                    m_controllerButtonRemappings[0] = int.Parse(
                         streamReader.ReadLine().Split(
                             new[] {
                                 ": ",
@@ -399,7 +399,7 @@ public class PlayerInputRebinding {
                             StringSplitOptions.None
                         )[1]
                     ) - 1;
-                    controllerButtonRemappings[1] = int.Parse(
+                    m_controllerButtonRemappings[1] = int.Parse(
                         streamReader.ReadLine().Split(
                             new[] {
                                 ": ",
@@ -407,7 +407,7 @@ public class PlayerInputRebinding {
                             StringSplitOptions.None
                         )[1]
                     ) - 1;
-                    controllerButtonRemappings[2] = int.Parse(
+                    m_controllerButtonRemappings[2] = int.Parse(
                         streamReader.ReadLine().Split(
                             new[] {
                                 ": ",
@@ -415,7 +415,7 @@ public class PlayerInputRebinding {
                             StringSplitOptions.None
                         )[1]
                     ) - 1;
-                    controllerButtonRemappings[3] = int.Parse(
+                    m_controllerButtonRemappings[3] = int.Parse(
                         streamReader.ReadLine().Split(
                             new[] {
                                 ": ",
@@ -423,7 +423,7 @@ public class PlayerInputRebinding {
                             StringSplitOptions.None
                         )[1]
                     ) - 1;
-                    controllerButtonRemappings[4] = int.Parse(
+                    m_controllerButtonRemappings[4] = int.Parse(
                         streamReader.ReadLine().Split(
                             new[] {
                                 ": ",
@@ -431,7 +431,7 @@ public class PlayerInputRebinding {
                             StringSplitOptions.None
                         )[1]
                     ) - 1;
-                    controllerButtonRemappings[5] = int.Parse(
+                    m_controllerButtonRemappings[5] = int.Parse(
                         streamReader.ReadLine().Split(
                             new[] {
                                 ": ",
@@ -439,7 +439,7 @@ public class PlayerInputRebinding {
                             StringSplitOptions.None
                         )[1]
                     ) - 1;
-                    controllerButtonRemappings[6] = int.Parse(
+                    m_controllerButtonRemappings[6] = int.Parse(
                         streamReader.ReadLine().Split(
                             new[] {
                                 ": ",
@@ -447,7 +447,7 @@ public class PlayerInputRebinding {
                             StringSplitOptions.None
                         )[1]
                     ) - 1;
-                    controllerButtonRemappings[7] = int.Parse(
+                    m_controllerButtonRemappings[7] = int.Parse(
                         streamReader.ReadLine().Split(
                             new[] {
                                 ": ",
@@ -455,7 +455,7 @@ public class PlayerInputRebinding {
                             StringSplitOptions.None
                         )[1]
                     ) - 1;
-                    controllerButtonRemappings[8] = int.Parse(
+                    m_controllerButtonRemappings[8] = int.Parse(
                         streamReader.ReadLine().Split(
                             new[] {
                                 ": ",
@@ -463,7 +463,7 @@ public class PlayerInputRebinding {
                             StringSplitOptions.None
                         )[1]
                     ) - 1;
-                    controllerButtonRemappings[9] = int.Parse(
+                    m_controllerButtonRemappings[9] = int.Parse(
                         streamReader.ReadLine().Split(
                             new[] {
                                 ": ",
@@ -471,7 +471,7 @@ public class PlayerInputRebinding {
                             StringSplitOptions.None
                         )[1]
                     ) - 1;
-                    controllerButtonRemappings[12] = int.Parse(
+                    m_controllerButtonRemappings[12] = int.Parse(
                         streamReader.ReadLine().Split(
                             new[] {
                                 ": ",
@@ -479,7 +479,7 @@ public class PlayerInputRebinding {
                             StringSplitOptions.None
                         )[1]
                     ) - 1;
-                    controllerButtonRemappings[13] = int.Parse(
+                    m_controllerButtonRemappings[13] = int.Parse(
                         streamReader.ReadLine().Split(
                             new[] {
                                 ": ",
@@ -488,13 +488,13 @@ public class PlayerInputRebinding {
                         )[1]
                     ) - 1;
                     for (var i = 0; i < 10; i++) {
-                        if (controllerButtonRemappings[i] < 0 || controllerButtonRemappings[i] > 11) {
+                        if (m_controllerButtonRemappings[i] < 0 || m_controllerButtonRemappings[i] > 11) {
                             SetDefaultControllerButtonRemappings();
                         }
                     }
 
                     for (var j = 12; j < 14; j++) {
-                        if (controllerButtonRemappings[j] < 0 || controllerButtonRemappings[j] > 13) {
+                        if (m_controllerButtonRemappings[j] < 0 || m_controllerButtonRemappings[j] > 13) {
                             SetDefaultControllerButtonRemappings();
                         }
                     }
@@ -510,20 +510,20 @@ public class PlayerInputRebinding {
             streamWriter.WriteLine("Controller Button Remapping - remaps controller buttons to different DirectInput button IDs");
             streamWriter.WriteLine("Only for DirectInput controllers");
             streamWriter.WriteLine("--------");
-            streamWriter.WriteLine("Activate DirectInput Button Rebinding: " + controllerIsRemappingButtons);
+            streamWriter.WriteLine("Activate DirectInput Button Rebinding: " + m_controllerIsRemappingButtons);
             streamWriter.WriteLine("--------");
-            streamWriter.WriteLine("A: " + (controllerButtonRemappings[0] + 1));
-            streamWriter.WriteLine("B: " + (controllerButtonRemappings[1] + 1));
-            streamWriter.WriteLine("X: " + (controllerButtonRemappings[2] + 1));
-            streamWriter.WriteLine("Y: " + (controllerButtonRemappings[3] + 1));
-            streamWriter.WriteLine("LShoulder: " + (controllerButtonRemappings[4] + 1));
-            streamWriter.WriteLine("RShoulder: " + (controllerButtonRemappings[5] + 1));
-            streamWriter.WriteLine("Select: " + (controllerButtonRemappings[6] + 1));
-            streamWriter.WriteLine("Start: " + (controllerButtonRemappings[7] + 1));
-            streamWriter.WriteLine("LStick: " + (controllerButtonRemappings[8] + 1));
-            streamWriter.WriteLine("RStick: " + (controllerButtonRemappings[9] + 1));
-            streamWriter.WriteLine("LTrigger: " + (controllerButtonRemappings[12] + 1));
-            streamWriter.WriteLine("RTrigger: " + (controllerButtonRemappings[13] + 1));
+            streamWriter.WriteLine("A: " + (m_controllerButtonRemappings[0] + 1));
+            streamWriter.WriteLine("B: " + (m_controllerButtonRemappings[1] + 1));
+            streamWriter.WriteLine("X: " + (m_controllerButtonRemappings[2] + 1));
+            streamWriter.WriteLine("Y: " + (m_controllerButtonRemappings[3] + 1));
+            streamWriter.WriteLine("LShoulder: " + (m_controllerButtonRemappings[4] + 1));
+            streamWriter.WriteLine("RShoulder: " + (m_controllerButtonRemappings[5] + 1));
+            streamWriter.WriteLine("Select: " + (m_controllerButtonRemappings[6] + 1));
+            streamWriter.WriteLine("Start: " + (m_controllerButtonRemappings[7] + 1));
+            streamWriter.WriteLine("LStick: " + (m_controllerButtonRemappings[8] + 1));
+            streamWriter.WriteLine("RStick: " + (m_controllerButtonRemappings[9] + 1));
+            streamWriter.WriteLine("LTrigger: " + (m_controllerButtonRemappings[12] + 1));
+            streamWriter.WriteLine("RTrigger: " + (m_controllerButtonRemappings[13] + 1));
             streamWriter.WriteLine("--------");
             streamWriter.WriteLine("Usage:");
             streamWriter.WriteLine("- There is no guarantee of the game still being playable after button remapping. Please use with caution and delete this file in case of breakage");
@@ -543,7 +543,7 @@ public class PlayerInputRebinding {
     }
 
     public static void RefreshControllerButtonRemappings() {
-        if (!hasReadControllerRemappingsFile) {
+        if (!m_hasReadControllerRemappingsFile) {
             if (!File.Exists(ControllerRemappingFile)) {
                 SetDefaultControllerButtonRemappings();
                 WriteControllerButtonRemappings();
@@ -551,12 +551,12 @@ public class PlayerInputRebinding {
                 GetControllerButtonRemappingsFromFile();
             }
 
-            hasReadControllerRemappingsFile = true;
+            m_hasReadControllerRemappingsFile = true;
         }
     }
 
     public static void SetDefaultControllerButtonRemappings() {
-        controllerButtonRemappings = new[] {
+        m_controllerButtonRemappings = new[] {
             0,
             1,
             2,
@@ -616,7 +616,7 @@ public class PlayerInputRebinding {
             using (var streamReader = new StreamReader(new FileStream(ControllerRebindingFile, FileMode.Open))) {
                 streamReader.ReadLine();
                 streamReader.ReadLine();
-                ControllerRebindings = new ControllerBindingSettings {
+                m_controllerRebindings = new ControllerBindingSettings {
                     HorizontalDigiPadLeft = StringToControllerBinding(streamReader.ReadLine()),
                     HorizontalDigiPadRight = StringToControllerBinding(streamReader.ReadLine()),
                     VerticalDigiPadDown = StringToControllerBinding(streamReader.ReadLine()),
@@ -680,7 +680,7 @@ public class PlayerInputRebinding {
 
     public static void WriteControllerRebindSettings() {
         using (var streamWriter = new StreamWriter(new FileStream(ControllerRebindingFile, FileMode.OpenOrCreate))) {
-            var controllerRebindings = ControllerRebindings;
+            var controllerRebindings = m_controllerRebindings;
             streamWriter.WriteLine("Controller Rebindings");
             streamWriter.WriteLine("--------");
             streamWriter.WriteLine("Movement Left: " + ControllerBindingToString(controllerRebindings.HorizontalDigiPadLeft));
@@ -747,7 +747,7 @@ public class PlayerInputRebinding {
     }
 
     public static void SetDefaultControllerBindingSettings() {
-        ControllerRebindings = DefaultControllerBindingSettings();
+        m_controllerRebindings = DefaultControllerBindingSettings();
     }
 
     public static ControllerBindingSettings DefaultControllerBindingSettings() {
@@ -855,9 +855,9 @@ public class PlayerInputRebinding {
         };
     }
 
-    public static ControllerBindingSettings ControllerRebindingSettings {
+    public static ControllerBindingSettings ControllerRebindings {
         get {
-            if (ControllerRebindings == null) {
+            if (m_controllerRebindings == null) {
                 if (!File.Exists(ControllerRebindingFile)) {
                     SetDefaultControllerBindingSettings();
                     WriteControllerRebindSettings();
@@ -866,29 +866,29 @@ public class PlayerInputRebinding {
                 }
             }
 
-            return ControllerRebindings;
+            return m_controllerRebindings;
         }
     }
 
-    public static string ControllerRebindingFile => Path.Combine(OutputFolder.PlayerDataFolderPath, ControllerInputRebindingsFileName);
+    public static string ControllerRebindingFile => Path.Combine(OutputFolder.PlayerDataFolderPath, controllerInputRebindingsFileName);
 
     private static string keyRebindingFileName = "KeyRebindings.txt";
 
     private static string controllerRebindingFileName = "ControllerButtonRemaps.txt";
 
-    private static KeyBindingSettings keyRebindings;
+    private static KeyBindingSettings m_keyRebindings;
 
-    private static int[] controllerButtonRemappings;
+    private static int[] m_controllerButtonRemappings;
 
-    private static bool controllerIsRemappingButtons;
+    private static bool m_controllerIsRemappingButtons;
 
-    private static bool hasReadControllerRemappingsFile;
+    private static bool m_hasReadControllerRemappingsFile;
 
     private static XboxControllerInput.Button[] intToButton;
 
-    public static string ControllerInputRebindingsFileName = "ControllerRebindings.txt";
+    public static string controllerInputRebindingsFileName = "ControllerRebindings.txt";
 
-    public static ControllerBindingSettings ControllerRebindings;
+    public static ControllerBindingSettings m_controllerRebindings;
 
     public class KeyBindingSettings {
         public KeyBindingSettings() {

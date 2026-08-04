@@ -2,31 +2,30 @@ using System;
 using Core;
 using Game;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, IDynamicGraphicHierarchy {
     public void OnValidate() {
-        OnKillReceivers = GetComponentsInChildren(typeof(IKillReciever));
+        m_onKillRecievers = GetComponentsInChildren(typeof(IKillReciever));
         if (DestroyTarget == null) {
             DestroyTarget = gameObject;
         }
 
-        Transform = transform;
+        m_transform = transform;
     }
 
     public void OnPoolSpawned() {
         OnCollectedEvent = delegate { };
         IsCollected = false;
-        currentTime = 0f;
+        m_currentTime = 0f;
     }
 
     public override void Awake() {
         base.Awake();
-        bounds = new Bounds(transform.position, Vector3.one * 4f);
+        m_bounds = new Bounds(transform.position, Vector3.one * 4f);
     }
 
     public void FixedUpdate() {
-        if (FrustrumOptimized && !insideFrustum) {
+        if (FrustrumOptimized && !m_insideFrustum) {
             gameObject.SetActive(false);
             return;
         }
@@ -47,12 +46,12 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
             }
         }
 
-        currentTime += Time.deltaTime;
-        if (currentTime < DelayBeforeCollectable) {
+        m_currentTime += Time.deltaTime;
+        if (m_currentTime < DelayBeforeCollectable) {
             return;
         }
 
-        if (!IsCollected && Characters.Sein && Vector3.Distance(Transform.position, Characters.Sein.Position) < Radius) {
+        if (!IsCollected && Characters.Sein && Vector3.Distance(m_transform.position, Characters.Sein.Position) < Radius) {
             OnCollectorCandidateTouch(Characters.Sein.gameObject);
         }
     }
@@ -61,7 +60,7 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
 
     public void SpawnCollectedEffect() {
         if (CollectedEffect) {
-            InstantiateUtility.Instantiate(CollectedEffect, Transform.position, Quaternion.identity);
+            InstantiateUtility.Instantiate(CollectedEffect, m_transform.position, Quaternion.identity);
         }
     }
 
@@ -69,12 +68,12 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
         IsCollected = true;
         SpawnCollectedEffect();
         if (CollectedSoundProvider != null) {
-            Sound.Play(CollectedSoundProvider.GetSound(null), Transform.position, null);
+            Sound.Play(CollectedSoundProvider.GetSound(null), m_transform.position, null);
         }
 
-        for (var i = 0; i < OnKillReceivers.Length; i++) {
-            if (OnKillReceivers[i]) {
-                ((IKillReciever)OnKillReceivers[i]).OnKill();
+        for (var i = 0; i < m_onKillRecievers.Length; i++) {
+            if (m_onKillRecievers[i]) {
+                ((IKillReciever)m_onKillRecievers[i]).OnKill();
             }
         }
 
@@ -91,7 +90,7 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref currentTime);
+        ar.Serialize(ref m_currentTime);
         ar.Serialize(ref IsCollected);
         if (ar.Reading) {
             gameObject.SetActive(!IsCollected);
@@ -100,23 +99,23 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
 
     public Bounds Bounds {
         get {
-            bounds.center = Transform.position;
-            return bounds;
+            m_bounds.center = m_transform.position;
+            return m_bounds;
         }
     }
 
     public void OnFrustumEnter() {
-        insideFrustum = true;
+        m_insideFrustum = true;
         if (!IsCollected) {
             gameObject.SetActive(true);
         }
     }
 
     public void OnFrustumExit() {
-        insideFrustum = false;
+        m_insideFrustum = false;
     }
 
-    public bool InsideFrustum => insideFrustum;
+    public bool InsideFrustum => m_insideFrustum;
 
     public bool IsCollected;
 
@@ -138,13 +137,13 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
 
     public bool FrustrumOptimized;
 
-    [FormerlySerializedAs("m_onKillRecievers")] [HideInInspector] [SerializeField] private Component[] OnKillReceivers;
+    [HideInInspector] [SerializeField] private Component[] m_onKillRecievers;
 
-    [FormerlySerializedAs("m_transform")] [HideInInspector] [SerializeField] private Transform Transform;
+    [HideInInspector] [SerializeField] private Transform m_transform;
 
-    private float currentTime;
+    private float m_currentTime;
 
-    private Bounds bounds;
+    private Bounds m_bounds;
 
-    private bool insideFrustum = true;
+    private bool m_insideFrustum = true;
 }

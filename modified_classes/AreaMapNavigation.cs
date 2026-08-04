@@ -219,7 +219,7 @@ public class AreaMapNavigation : MonoBehaviour {
 
             foreach (RuntimeGameWorldArea runtimeArea in GameWorld.Instance.RuntimeAreas)
             foreach (var runtimeIcon in runtimeArea.Icons) {
-                if (!runtimeIcon.IsVisible() || runtimeIcon.Icon == WorldMapIconType.Invisible) {
+                if (!runtimeIcon.IsVisible(areaMapUi) || runtimeIcon.Icon == WorldMapIconType.Invisible) {
                     continue;
                 }
 
