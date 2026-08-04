@@ -60,7 +60,6 @@ public static class BingoController {
         if (SingleGuidSwitchListeners.ContainsKey(guid)) {
             SingleGuidSwitchListeners[guid].Handle();
         }
-        //        if(RandomizerSettings.Dev) Randomizer.log("Stomped post, guid " + guid.ToString() + locStr());
     }
 
     public static void OnPurpleDoor(MoonGuid guid) {
@@ -71,7 +70,6 @@ public static class BingoController {
         if (SingleGuidSwitchListeners.ContainsKey(guid)) {
             SingleGuidSwitchListeners[guid].Handle();
         }
-        //        if(RandomizerSettings.Dev) Randomizer.log("opend purple door, guid " + guid.ToString() + locStr());
     }
 
     public static void OnLanternLit(MoonGuid guid, bool byGrenade) {
@@ -86,7 +84,6 @@ public static class BingoController {
         if (!BlackrootLanterns.Contains(guid)) {
             IntGoals["LightLanterns"].Value++;
         }
-        //        if(RandomizerSettings.Dev) Randomizer.log("Lit lantern with " + (byGrenade ? "grenade " : "orb ")  + guid.ToString() + locStr());
     }
 
     public static void OnDestroyEntity(Entity entity, Damage damage) {
@@ -122,7 +119,6 @@ public static class BingoController {
             if (SingleGuidSwitchListeners.ContainsKey(entity.MoonGuid)) {
                 SingleGuidSwitchListeners[entity.MoonGuid].Handle();
             }
-            //            if(RandomizerSettings.Dev) Randomizer.log("destroyed entity, name " + entity.name + ", guid " + entity.MoonGuid.ToString() + " with damage (" + damage.Type.ToString() + ", " + damage.Amount.ToString() + ")"  + locStr());
         } catch (Exception e) {
             Randomizer.LogError("OnDestroyEntity: " + e.Message);
         }
@@ -316,8 +312,8 @@ public static class BingoController {
         "spiritTree", "mangroveB", "horuFields", "ginsoTree", "forlorn", "mountHoru",
     };
 
-    public const int LastTouchedId = 2626;
-    public const int JourneyBaseId = 2627; // one bitfield per origin well: 2627-2638
+    public const int LAST_TOUCHED_ID = 2626;
+    public const int JOURNEY_BASE_ID = 2627; // one bitfield per origin well: 2627-2638
 
     public static string JourneyKey(string from, string to) {
         return from + "-" + to;
@@ -332,7 +328,7 @@ public static class BingoController {
             return "";
         }
 
-        var last = Get(LastTouchedId);
+        var last = Get(LAST_TOUCHED_ID);
         return last > 0 && last <= Teleporters.Length ? Teleporters[last - 1] : "";
     }
 
@@ -352,8 +348,8 @@ public static class BingoController {
                 return;
             }
 
-            var from = Get(LastTouchedId) - 1;
-            Set(LastTouchedId, to + 1);
+            var from = Get(LAST_TOUCHED_ID) - 1;
+            Set(LAST_TOUCHED_ID, to + 1);
             if (from < 0 || from == to) {
                 return;
             }
@@ -371,7 +367,7 @@ public static class BingoController {
                 return;
             }
 
-            Set(LastTouchedId, 0);
+            Set(LAST_TOUCHED_ID, 0);
         } catch (Exception e) {
             Randomizer.LogError("BingoController.OnWarp: " + e.Message);
         }
@@ -657,7 +653,7 @@ public static class BingoController {
             for (var from = 0; from < Teleporters.Length; from++)
             for (var to = 0; to < Teleporters.Length; to++) {
                 if (from != to) {
-                    pairs.Add(new BitfieldBoolGoal(JourneyKey(Teleporters[from], Teleporters[to]), JourneyBaseId + from, to));
+                    pairs.Add(new BitfieldBoolGoal(JourneyKey(Teleporters[from], Teleporters[to]), JOURNEY_BASE_ID + from, to));
                 }
             }
 

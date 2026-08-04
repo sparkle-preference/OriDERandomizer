@@ -9,12 +9,12 @@ public class KeybindControl : MonoBehaviour {
 
     public void BeginEditing() {
         currentKeys.Clear();
-        currentKeys.AddRange(GetKeys());
+        currentKeys.AddRange(getKeys());
         SuspensionManager.SuspendAll();
         editing = true;
         exit = 0;
         tooltipProvider.SetMessage("Backspace: remove bind\nEnter: finish editing");
-        owner.tooltipController.UpdateTooltip();
+        owner.TooltipController.UpdateTooltip();
     }
 
     public void Update() {
@@ -30,11 +30,11 @@ public class KeybindControl : MonoBehaviour {
         if (Input.GetKeyDown(KeyCode.Return) && currentKeys.Count > 0) {
             editing = false;
             SuspensionManager.ResumeAll();
-            SetKeys(currentKeys.ToArray());
+            setKeys(currentKeys.ToArray());
             PlayerInputRebinding.WriteKeyRebindSettings();
             PlayerInput.Instance.RefreshControlScheme();
             tooltipProvider.SetMessage(owner.DefaultTooltip);
-            owner.tooltipController.UpdateTooltip();
+            owner.TooltipController.UpdateTooltip();
             return;
         }
 
@@ -71,25 +71,25 @@ public class KeybindControl : MonoBehaviour {
     }
 
     public void Reset() {
-        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
         editing = false;
     }
 
     public void Init(Func<KeyCode[]> getKeys, Action<KeyCode[]> setKeys, CustomSettingsScreen owner) {
         this.owner = owner;
-        GetKeys = getKeys;
-        SetKeys = setKeys;
+        this.getKeys = getKeys;
+        this.setKeys = setKeys;
         messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
         var component = GetComponent<CleverMenuItemTooltip>();
         tooltipProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
         tooltipProvider.SetMessage(owner.DefaultTooltip);
         component.Tooltip = tooltipProvider;
-        owner.tooltipController.UpdateTooltip();
+        owner.TooltipController.UpdateTooltip();
     }
 
-    private Func<KeyCode[]> GetKeys;
+    private Func<KeyCode[]> getKeys;
 
-    private Action<KeyCode[]> SetKeys;
+    private Action<KeyCode[]> setKeys;
 
     private bool editing;
 

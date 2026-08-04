@@ -38,7 +38,6 @@ public class LegacyDiscoverWorldMapAreasAction : ActionMethod {
     public IEnumerator ReleaseTexture(AreaMapCanvas canvas) {
         yield return new WaitForSeconds(1f);
         canvas.ReleaseAreaMaskTextureB();
-        yield break;
     }
 
     public ActionMethod OnClosedAction;
