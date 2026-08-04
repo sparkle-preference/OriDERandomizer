@@ -2,28 +2,28 @@ using UnityEngine;
 
 public class Damage {
     public Damage(float amount, Vector2 force, Vector3 position, DamageType type, GameObject sender) {
-        m_amount = amount;
-        m_force = force;
-        m_position = position;
-        m_type = type;
-        m_sender = sender;
+        this.amount = amount;
+        this.force = force;
+        this.position = position;
+        this.type = type;
+        this.sender = sender;
         if (type == DamageType.SpiritFlame) {
-            m_amount += RandomizerBonus.SpiritFlameLevel();
+            this.amount += RandomizerBonus.SpiritFlameLevel();
         }
     }
 
-    public float Amount => m_amount;
+    public float Amount => amount;
 
-    public Vector2 Force => m_force;
+    public Vector2 Force => force;
 
-    public Vector3 Position => m_position;
+    public Vector3 Position => position;
 
-    public DamageType Type => m_type;
+    public DamageType Type => type;
 
-    public GameObject Sender => m_sender;
+    public GameObject Sender => sender;
 
     public void SetAmount(float amount) {
-        m_amount = amount;
+        this.amount = amount;
     }
 
     public void DealToComponents(GameObject target) {
@@ -32,13 +32,13 @@ public class Damage {
         }
     }
 
-    private float m_amount;
+    private float amount;
 
-    private Vector2 m_force;
+    private Vector2 force;
 
-    private Vector3 m_position;
+    private Vector3 position;
 
-    private DamageType m_type;
+    private DamageType type;
 
-    private GameObject m_sender;
+    private GameObject sender;
 }

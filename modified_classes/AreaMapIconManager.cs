@@ -2,9 +2,6 @@ using System;
 using UnityEngine;
 
 public class AreaMapIconManager : MonoBehaviour {
-    public void Awake() {
-    }
-
     public void ShowAreaIcons() {
         for (var i = 0; i < GameWorld.Instance.RuntimeAreas.Count; i++) {
             RuntimeGameWorldArea runtimeGameWorldArea = GameWorld.Instance.RuntimeAreas[i];

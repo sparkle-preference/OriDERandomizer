@@ -4,16 +4,16 @@ using Game;
 
 public class AllEnemiesKilledTrigger : Trigger {
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref m_counter);
+        ar.Serialize(ref counter);
         base.Serialize(ar);
-        if (ActionOnAwakeTrigger && m_counter >= TriggerOnCounter) {
+        if (ActionOnAwakeTrigger && counter >= TriggerOnCounter) {
             ActionOnAwakeTrigger.Perform(null);
         }
     }
 
     public void Increment() {
-        m_counter++;
-        if (m_counter == TriggerOnCounter) {
+        counter++;
+        if (counter == TriggerOnCounter) {
             BingoController.OnPurpleDoor(MoonGuid);
             DoTrigger();
         }
@@ -76,18 +76,18 @@ public class AllEnemiesKilledTrigger : Trigger {
     private void EnemyKilled() {
         if (Active) {
             Increment();
-            if (m_lastMessageBox) {
-                m_lastMessageBox.HideMessageScreen();
+            if (lastMessageBox) {
+                lastMessageBox.HideMessageScreen();
             }
 
             if (ShowMessages) {
-                var num = TriggerOnCounter - m_counter - 1;
+                var num = TriggerOnCounter - counter - 1;
                 if (num >= Messages.Count) {
                     num = Messages.Count - 1;
                 }
 
                 if (num > 0) {
-                    m_lastMessageBox = UI.Hints.Show(Messages[num], HintLayer.Gameplay, 1f);
+                    lastMessageBox = UI.Hints.Show(Messages[num], HintLayer.Gameplay, 1f);
                 }
             }
         }
@@ -103,9 +103,9 @@ public class AllEnemiesKilledTrigger : Trigger {
 
     public int TriggerOnCounter;
 
-    private int m_counter;
+    private int counter;
 
-    private MessageBox m_lastMessageBox;
+    private MessageBox lastMessageBox;
 
     public ActionMethod ActionOnAwakeTrigger;
 }

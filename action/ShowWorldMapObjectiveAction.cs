@@ -5,13 +5,13 @@ public class ShowWorldMapObjectiveAction : PerformingAction {
     public override void Stop() {
     }
 
-    public override bool IsPerforming => m_isPerforming;
+    public override bool IsPerforming => isPerforming;
 
     public void OnFinish() {
-        m_isPerforming = false;
+        isPerforming = false;
     }
 
     public Objective Objective;
 
-    private bool m_isPerforming;
+    private bool isPerforming;
 }

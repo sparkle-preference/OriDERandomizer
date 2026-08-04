@@ -2,18 +2,19 @@ using System;
 using System.Collections.Generic;
 using SmartInput;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class ControllerBindControl : MonoBehaviour {
     public void Awake() {
-        messageBox = transform.Find("text/stateText").GetComponent<MessageBox>();
+        MessageBox = transform.Find("text/stateText").GetComponent<MessageBox>();
     }
 
     public void BeginEditing() {
-        currentKeys.Clear();
+        CurrentKeys.Clear();
         UpdateMessageBox();
         SuspensionManager.SuspendAll();
-        editing = true;
-        exit = 0;
+        Editing = true;
+        Exit = 0;
         allButtons = (XboxControllerInput.Button[])Enum.GetValues(typeof(XboxControllerInput.Button));
         buttonsPressed = new bool[allButtons.Length];
         for (var i = 0; i < buttonsPressed.Length; i++) {
@@ -21,33 +22,33 @@ public class ControllerBindControl : MonoBehaviour {
         }
 
         tooltipProvider.SetMessage("Start: finish editing");
-        owner.tooltipController.UpdateTooltip();
+        owner.TooltipController.UpdateTooltip();
     }
 
     public void Update() {
-        if (!editing) {
+        if (!Editing) {
             return;
         }
 
-        if (exit < 2) {
-            exit++;
+        if (Exit < 2) {
+            Exit++;
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape) || (WasPressed(XboxControllerInput.Button.Start) && currentKeys.Count > 0)) {
-            editing = false;
+        if (Input.GetKeyDown(KeyCode.Escape) || (WasPressed(XboxControllerInput.Button.Start) && CurrentKeys.Count > 0)) {
+            Editing = false;
             SuspensionManager.ResumeAll();
-            SetKeys(currentKeys.ToArray());
+            SetKeys(CurrentKeys.ToArray());
             PlayerInputRebinding.WriteControllerRebindSettings();
             PlayerInput.Instance.RefreshControlScheme();
             tooltipProvider.SetMessage(owner.DefaultTooltip);
-            owner.tooltipController.UpdateTooltip();
+            owner.TooltipController.UpdateTooltip();
             return;
         }
 
         var pressedButtonAsBind = GetPressedButtonAsBind();
-        if (pressedButtonAsBind != null && !currentKeys.Contains(pressedButtonAsBind.Value)) {
-            currentKeys.Add(pressedButtonAsBind.Value);
+        if (pressedButtonAsBind != null && !CurrentKeys.Contains(pressedButtonAsBind.Value)) {
+            CurrentKeys.Add(pressedButtonAsBind.Value);
             UpdateMessageBox();
         }
 
@@ -57,7 +58,7 @@ public class ControllerBindControl : MonoBehaviour {
     }
 
     public void UpdateMessageBox() {
-        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(currentKeys.ToArray())));
+        MessageBox.SetMessage(new MessageDescriptor(KeyBindingToString(CurrentKeys.ToArray())));
     }
 
     public static string KeyBindingToString(PlayerInputRebinding.ControllerButton[] codes) {
@@ -73,8 +74,8 @@ public class ControllerBindControl : MonoBehaviour {
     }
 
     public void Reset() {
-        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
-        editing = false;
+        MessageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+        Editing = false;
     }
 
     private bool WasPressed(XboxControllerInput.Button button) {
@@ -174,25 +175,25 @@ public class ControllerBindControl : MonoBehaviour {
         this.owner = owner;
         GetKeys = getKeys;
         SetKeys = setKeys;
-        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
+        MessageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
         var component = GetComponent<CleverMenuItemTooltip>();
         tooltipProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
         tooltipProvider.SetMessage(owner.DefaultTooltip);
         component.Tooltip = tooltipProvider;
-        owner.tooltipController.UpdateTooltip();
+        owner.TooltipController.UpdateTooltip();
     }
 
     public Func<PlayerInputRebinding.ControllerButton[]> GetKeys;
 
     public Action<PlayerInputRebinding.ControllerButton[]> SetKeys;
 
-    public bool editing;
+    [FormerlySerializedAs("editing")] public bool Editing;
 
-    public MessageBox messageBox;
+    [FormerlySerializedAs("messageBox")] public MessageBox MessageBox;
 
-    public List<PlayerInputRebinding.ControllerButton> currentKeys = new List<PlayerInputRebinding.ControllerButton>();
+    [FormerlySerializedAs("currentKeys")] public List<PlayerInputRebinding.ControllerButton> CurrentKeys = new List<PlayerInputRebinding.ControllerButton>();
 
-    public int exit;
+    [FormerlySerializedAs("exit")] public int Exit;
 
     private bool[] buttonsPressed;
 

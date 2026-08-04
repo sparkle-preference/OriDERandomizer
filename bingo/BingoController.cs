@@ -60,7 +60,6 @@ public static class BingoController {
         if (SingleGuidSwitchListeners.ContainsKey(guid)) {
             SingleGuidSwitchListeners[guid].Handle();
         }
-        //        if(RandomizerSettings.Dev) Randomizer.log("Stomped post, guid " + guid.ToString() + locStr());
     }
 
     public static void OnPurpleDoor(MoonGuid guid) {
@@ -71,7 +70,6 @@ public static class BingoController {
         if (SingleGuidSwitchListeners.ContainsKey(guid)) {
             SingleGuidSwitchListeners[guid].Handle();
         }
-        //        if(RandomizerSettings.Dev) Randomizer.log("opend purple door, guid " + guid.ToString() + locStr());
     }
 
     public static void OnLanternLit(MoonGuid guid, bool byGrenade) {
@@ -86,7 +84,6 @@ public static class BingoController {
         if (!BlackrootLanterns.Contains(guid)) {
             IntGoals["LightLanterns"].Value++;
         }
-        //        if(RandomizerSettings.Dev) Randomizer.log("Lit lantern with " + (byGrenade ? "grenade " : "orb ")  + guid.ToString() + locStr());
     }
 
     public static void OnDestroyEntity(Entity entity, Damage damage) {
@@ -122,7 +119,6 @@ public static class BingoController {
             if (SingleGuidSwitchListeners.ContainsKey(entity.MoonGuid)) {
                 SingleGuidSwitchListeners[entity.MoonGuid].Handle();
             }
-            //            if(RandomizerSettings.Dev) Randomizer.log("destroyed entity, name " + entity.name + ", guid " + entity.MoonGuid.ToString() + " with damage (" + damage.Type.ToString() + ", " + damage.Amount.ToString() + ")"  + locStr());
         } catch (Exception e) {
             Randomizer.LogError("OnDestroyEntity: " + e.Message);
         }
@@ -448,7 +444,6 @@ public static class BingoController {
     }
 
     public interface SingleLocListener {
-        string GetName();
         void Handle();
     }
 

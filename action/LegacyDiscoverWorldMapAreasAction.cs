@@ -5,12 +5,12 @@ using UnityEngine;
 [Category("World Map")]
 public class LegacyDiscoverWorldMapAreasAction : ActionMethod {
     public override void Perform(IContext context) {
-        m_isInstant = false;
+        isInstant = false;
         StartCoroutine(ShowWorldMap());
     }
 
     public override void PerformInstantly(IContext context) {
-        m_isInstant = true;
+        isInstant = true;
         StartCoroutine(ShowWorldMap());
     }
 
@@ -27,7 +27,7 @@ public class LegacyDiscoverWorldMapAreasAction : ActionMethod {
         }
 
         if (OnClosedAction) {
-            if (m_isInstant) {
+            if (isInstant) {
                 OnClosedAction.PerformInstantly(null);
             } else {
                 OnClosedAction.Perform(null);
@@ -38,7 +38,6 @@ public class LegacyDiscoverWorldMapAreasAction : ActionMethod {
     public IEnumerator ReleaseTexture(AreaMapCanvas canvas) {
         yield return new WaitForSeconds(1f);
         canvas.ReleaseAreaMaskTextureB();
-        yield break;
     }
 
     public ActionMethod OnClosedAction;
@@ -53,5 +52,5 @@ public class LegacyDiscoverWorldMapAreasAction : ActionMethod {
 
     public Transform RevealPosition;
 
-    private bool m_isInstant;
+    private bool isInstant;
 }

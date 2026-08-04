@@ -26,35 +26,35 @@ public class DebugMenu : MonoBehaviour {
 
         if (Characters.Current as Component && !UI.MainMenuVisible && !GameController.Instance.GameInTitleScreen) {
             if (DebugMenuB.DebugControlsEnabled && !Input.RightShoulder.Used && Input.RightShoulder.IsPressed && !DashOrGrenadeEnabled && !DebugMenuB.Active) {
-                if (!m_noClipParamsEnabled) {
-                    m_noClipGhost = (GameObject)InstantiateUtility.Instantiate(NoClipGhostPrefab);
-                    m_noClipGhost.transform.position = Characters.Current.Position;
-                    UI.Cameras.Current.ChangeTarget(m_noClipGhost.transform);
+                if (!noClipParamsEnabled) {
+                    noClipGhost = (GameObject)InstantiateUtility.Instantiate(NoClipGhostPrefab);
+                    noClipGhost.transform.position = Characters.Current.Position;
+                    UI.Cameras.Current.ChangeTarget(noClipGhost.transform);
                     SuspendGameplay();
-                    m_noClipParamsEnabled = true;
+                    noClipParamsEnabled = true;
                     if (UberPostProcess.Instance != null) {
-                        m_doMotionBlur = UberPostProcess.Instance.DoMotionBlur;
+                        doMotionBlur = UberPostProcess.Instance.DoMotionBlur;
                         UberPostProcess.Instance.DoMotionBlur = false;
                     }
                 }
 
                 var vector = MoonMath.Vector.ApplyRectangleDeadzone(Input.Axis, 0.15f, 0.15f);
-                m_noClipGhost.transform.position += (Vector3)vector.normalized * AxisToSpeedCurve.Evaluate(vector.magnitude) * Time.deltaTime;
+                noClipGhost.transform.position += (Vector3)vector.normalized * AxisToSpeedCurve.Evaluate(vector.magnitude) * Time.deltaTime;
             }
 
-            if (m_noClipParamsEnabled && !Input.RightShoulder.IsPressed) {
-                Characters.Current.Position = m_noClipGhost.transform.position;
+            if (noClipParamsEnabled && !Input.RightShoulder.IsPressed) {
+                Characters.Current.Position = noClipGhost.transform.position;
                 Characters.Current.Speed = Vector2.zero;
                 if (Characters.Ori) {
                     Characters.Ori.MoveOriBackToPlayer();
                 }
 
                 UI.Cameras.Current.ChangeTargetToCurrentCharacter();
-                InstantiateUtility.Destroy(m_noClipGhost);
+                InstantiateUtility.Destroy(noClipGhost);
                 ResumeGameplay();
-                m_noClipParamsEnabled = false;
+                noClipParamsEnabled = false;
                 if (UberPostProcess.Instance != null) {
-                    UberPostProcess.Instance.DoMotionBlur = m_doMotionBlur;
+                    UberPostProcess.Instance.DoMotionBlur = doMotionBlur;
                 }
             }
         }
@@ -64,11 +64,11 @@ public class DebugMenu : MonoBehaviour {
 
     public AnimationCurve AxisToSpeedCurve;
 
-    private GameObject m_noClipGhost;
+    private GameObject noClipGhost;
 
-    private bool m_noClipParamsEnabled;
+    private bool noClipParamsEnabled;
 
     private static readonly HashSet<ISuspendable> SuspendablesToIgnoreForGameplay = new HashSet<ISuspendable>();
 
-    private bool m_doMotionBlur;
+    private bool doMotionBlur;
 }

@@ -22,17 +22,17 @@ public class CollectablePlaceholder : SaveSerialize, ISuspendable, IDynamicGraph
     }
 
     public void Spawn() {
-        if (!InstantiateUtility.IsDestroyed(m_instance)) {
-            InstantiateUtility.Destroy(m_instance);
-            m_instance = null;
+        if (!InstantiateUtility.IsDestroyed(instance)) {
+            InstantiateUtility.Destroy(instance);
+            instance = null;
         }
 
         Instantiate();
     }
 
     public void OnCollect() {
-        m_collected = true;
-        m_remainingRespawnTime = RespawnTime;
+        collected = true;
+        remainingRespawnTime = RespawnTime;
     }
 
     public void FixedUpdate() {
@@ -40,50 +40,50 @@ public class CollectablePlaceholder : SaveSerialize, ISuspendable, IDynamicGraph
             return;
         }
 
-        if (!m_collected && RandomizerLocationManager.IsPickupCollected(MoonGuid))
+        if (!collected && RandomizerLocationManager.IsPickupCollected(MoonGuid))
             // only do anything if the pickup isn't spawned; if it's spawned, PickupBase will mark itself collected
         {
-            if (m_instance == null) {
+            if (instance == null) {
                 OnCollect();
             }
         }
 
-        if (m_remainingRespawnTime > 0f) {
-            m_remainingRespawnTime -= Time.deltaTime;
-            m_collected = false;
+        if (remainingRespawnTime > 0f) {
+            remainingRespawnTime -= Time.deltaTime;
+            collected = false;
         }
 
-        if (m_instance == null && !m_collected && UI.Cameras.Current.IsOnScreenPadded(transform.position, 5f)) {
+        if (instance == null && !collected && UI.Cameras.Current.IsOnScreenPadded(transform.position, 5f)) {
             Instantiate();
         }
     }
 
     public void Instantiate() {
-        m_instance = InstantiateUtility.Instantiate(Prefab, transform.position, transform.rotation) as GameObject;
-        UberPoolManager.Instance.AddOnDestroyed(m_instance, delegate { m_instance = null; });
+        instance = InstantiateUtility.Instantiate(Prefab, transform.position, transform.rotation) as GameObject;
+        UberPoolManager.Instance.AddOnDestroyed(instance, delegate { instance = null; });
 
-        var pickupBase = m_instance.GetComponentInChildren<PickupBase>();
+        var pickupBase = instance.GetComponentInChildren<PickupBase>();
         pickupBase.MoonGuid = MoonGuid;
         pickupBase.OnCollectedEvent = (Action)Delegate.Combine(pickupBase.OnCollectedEvent, new Action(OnCollect));
 
-        if (m_instance.GetComponent<DestroyOnRestoreCheckpoint>() == null) {
-            m_instance.AddComponent<DestroyOnRestoreCheckpoint>();
+        if (instance.GetComponent<DestroyOnRestoreCheckpoint>() == null) {
+            instance.AddComponent<DestroyOnRestoreCheckpoint>();
         }
 
-        if (GetComponent<VisibleOnWorldMap>() && m_instance.GetComponent<VisibleOnWorldMap>()) {
-            m_instance.GetComponent<VisibleOnWorldMap>().MoonGuid = GetComponent<VisibleOnWorldMap>().MoonGuid;
+        if (GetComponent<VisibleOnWorldMap>() && instance.GetComponent<VisibleOnWorldMap>()) {
+            instance.GetComponent<VisibleOnWorldMap>().MoonGuid = GetComponent<VisibleOnWorldMap>().MoonGuid;
         }
 
-        m_instance.transform.parent = transform.parent;
-        m_instance.name = Prefab.name;
+        instance.transform.parent = transform.parent;
+        instance.name = Prefab.name;
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref m_collected);
-        ar.Serialize(ref m_remainingRespawnTime);
+        ar.Serialize(ref collected);
+        ar.Serialize(ref remainingRespawnTime);
     }
 
-    public bool Collected => m_collected;
+    public bool Collected => collected;
 
     public bool IsSuspended { get; set; }
 
@@ -93,11 +93,9 @@ public class CollectablePlaceholder : SaveSerialize, ISuspendable, IDynamicGraph
 
     public static AllContainer<CollectablePlaceholder> All = new AllContainer<CollectablePlaceholder>();
 
-    public bool UseDebug;
+    private float remainingRespawnTime;
 
-    private float m_remainingRespawnTime;
+    private GameObject instance;
 
-    private GameObject m_instance;
-
-    private bool m_collected;
+    private bool collected;
 }

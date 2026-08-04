@@ -9,23 +9,23 @@ public class Archive {
     }
 
     public MemoryStream MemoryStream {
-        get => m_memoryStream;
+        get => memoryStream;
         set {
-            if (m_memoryStream != null) {
-                ((IDisposable)m_memoryStream).Dispose();
+            if (memoryStream != null) {
+                ((IDisposable)memoryStream).Dispose();
             }
 
-            if (m_binaryReader != null) {
-                ((IDisposable)m_binaryReader).Dispose();
+            if (binaryReader != null) {
+                ((IDisposable)binaryReader).Dispose();
             }
 
-            if (m_binaryWriter != null) {
-                ((IDisposable)m_binaryWriter).Dispose();
+            if (binaryWriter != null) {
+                ((IDisposable)binaryWriter).Dispose();
             }
 
-            m_memoryStream = value;
-            m_binaryReader = new BinaryReader(m_memoryStream);
-            m_binaryWriter = new BinaryWriter(m_memoryStream);
+            memoryStream = value;
+            binaryReader = new BinaryReader(memoryStream);
+            binaryWriter = new BinaryWriter(memoryStream);
         }
     }
 
@@ -40,9 +40,9 @@ public class Archive {
         binaryReader.Read(MemoryStream.GetBuffer(), 0, num);
     }
 
-    public bool Reading => !m_write;
+    public bool Reading => !write;
 
-    public bool Writing => m_write;
+    public bool Writing => write;
 
     public void ResetStream() {
         MemoryStream.Position = 0L;
@@ -50,12 +50,12 @@ public class Archive {
 
     public void WriteMode() {
         ResetStream();
-        m_write = true;
+        write = true;
     }
 
     public void ReadMode() {
-        m_memoryStream.Position = 0L;
-        m_write = false;
+        memoryStream.Position = 0L;
+        write = false;
     }
 
     public void Serialize(ref float value) {
@@ -91,39 +91,39 @@ public class Archive {
     }
 
     public float Serialize(float value) {
-        if (m_write) {
-            m_binaryWriter.Write(value);
+        if (write) {
+            binaryWriter.Write(value);
             return value;
         }
 
-        return m_binaryReader.ReadSingle();
+        return binaryReader.ReadSingle();
     }
 
     public int Serialize(int value) {
-        if (m_write) {
-            m_binaryWriter.Write(value);
+        if (write) {
+            binaryWriter.Write(value);
             return value;
         }
 
-        return m_binaryReader.ReadInt32();
+        return binaryReader.ReadInt32();
     }
 
     public bool Serialize(bool value) {
-        if (m_write) {
-            m_binaryWriter.Write(value);
+        if (write) {
+            binaryWriter.Write(value);
             return value;
         }
 
-        return m_binaryReader.ReadBoolean();
+        return binaryReader.ReadBoolean();
     }
 
     public string Serialize(string value) {
-        if (m_write) {
-            m_binaryWriter.Write(value);
+        if (write) {
+            binaryWriter.Write(value);
             return value;
         }
 
-        return m_binaryReader.ReadString();
+        return binaryReader.ReadString();
     }
 
     public Vector2 Serialize(Vector2 value) {
@@ -149,19 +149,19 @@ public class Archive {
 
     public Dictionary<int, int> Serialize(Dictionary<int, int> value) {
         var pairs = "";
-        if (m_write) {
+        if (write) {
             foreach (var key in value.Keys) {
                 pairs += key + ":" + value[key] + ",";
             }
 
             pairs = pairs.TrimEnd(',');
 
-            m_binaryWriter.Write(pairs);
+            binaryWriter.Write(pairs);
             return value;
         }
 
         value.Clear();
-        pairs = m_binaryReader.ReadString();
+        pairs = binaryReader.ReadString();
         foreach (var pair in pairs.Split(',')) {
             var kandv = pair.Split(':');
             value[int.Parse(kandv[0])] = int.Parse(kandv[1]);
@@ -173,11 +173,11 @@ public class Archive {
     public void SerializeVersion(ref int version) {
     }
 
-    private MemoryStream m_memoryStream = new MemoryStream();
+    private MemoryStream memoryStream = new MemoryStream();
 
-    private BinaryReader m_binaryReader;
+    private BinaryReader binaryReader;
 
-    private BinaryWriter m_binaryWriter;
+    private BinaryWriter binaryWriter;
 
-    private bool m_write;
+    private bool write;
 }

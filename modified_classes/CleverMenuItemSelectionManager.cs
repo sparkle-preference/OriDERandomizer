@@ -8,13 +8,13 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     public void SetVisible(bool visible) {
         if (visible) {
             gameObject.SetActive(true);
-            m_isVisible = true;
+            isVisible = true;
             if (FadeAnimator) {
                 FadeAnimator.Initialize();
                 FadeAnimator.AnimatorDriver.ContinueForward();
             }
         } else {
-            m_isVisible = false;
+            isVisible = false;
             if (FadeAnimator) {
                 FadeAnimator.Initialize();
                 FadeAnimator.AnimatorDriver.ContinueBackwards();
@@ -28,14 +28,14 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     public void SetVisibleImmediate(bool visible) {
         if (visible) {
             gameObject.SetActive(true);
-            m_isVisible = true;
+            isVisible = true;
             if (FadeAnimator) {
                 FadeAnimator.Initialize();
                 FadeAnimator.AnimatorDriver.GoToEnd();
                 FadeAnimator.AnimatorDriver.Pause();
             }
         } else {
-            m_isVisible = false;
+            isVisible = false;
             if (FadeAnimator) {
                 FadeAnimator.Initialize();
                 FadeAnimator.AnimatorDriver.GoToStart();
@@ -46,13 +46,13 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         }
     }
 
-    public bool IsVisible => m_isVisible;
+    public bool IsVisible => isVisible;
 
     public bool IsHighlightVisible {
-        get => m_isHighlightVisible;
+        get => isHighlightVisible;
         set {
-            m_isHighlightVisible = value;
-            if (m_isHighlightVisible) {
+            isHighlightVisible = value;
+            if (isHighlightVisible) {
                 if (CurrentMenuItem) {
                     CurrentMenuItem.OnHighlight();
                 }
@@ -69,7 +69,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void OnEnable() {
-        m_isVisible = true;
+        isVisible = true;
         if (FadeAnimator) {
             FadeAnimator.Initialize();
             FadeAnimator.AnimatorDriver.ContinueForward();
@@ -79,12 +79,12 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void OnDisable() {
-        m_isVisible = false;
+        isVisible = false;
     }
 
     public bool IsActive {
-        get => m_isActive;
-        set => m_isActive = value;
+        get => isActive;
+        set => isActive = value;
     }
 
     public bool IsLocked { get; set; }
@@ -165,14 +165,14 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void Start() {
-        m_holdRemainingTime = 0.4f;
-        m_delayNavigation = Input.MenuDown.IsPressed || Input.MenuUp.IsPressed;
+        holdRemainingTime = 0.4f;
+        delayNavigation = Input.MenuDown.IsPressed || Input.MenuUp.IsPressed;
         if (IsHighlightVisible && CurrentMenuItem) {
             CurrentMenuItem.OnHighlight();
         }
 
         if (name == "inventoryScreen") {
-            m_isPauseScreen = true;
+            isPauseScreen = true;
             var cleverMenuItem = MenuItems[0];
             var cleverMenuItem2 = MenuItems[9];
             Navigation.Add(
@@ -256,17 +256,17 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
             case Direction.LeftToRight:
                 if (Input.MenuLeft.OnPressed) {
                     MoveSelection(false);
-                    m_holdRemainingTime = 0.4f;
+                    holdRemainingTime = 0.4f;
                 }
 
                 if (Input.MenuRight.OnPressed) {
                     MoveSelection(true);
-                    m_holdRemainingTime = 0.4f;
+                    holdRemainingTime = 0.4f;
                 }
 
                 if (Input.MenuLeft.Pressed || Input.MenuRight.Pressed) {
-                    m_holdRemainingTime -= Time.deltaTime;
-                    if (m_holdRemainingTime < 0f) {
+                    holdRemainingTime -= Time.deltaTime;
+                    if (holdRemainingTime < 0f) {
                         if (Input.MenuLeft.Pressed) {
                             MoveSelection(false);
                         }
@@ -279,34 +279,34 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
 
                 break;
             case Direction.TopToBottom:
-                if (m_delayNavigation) {
+                if (delayNavigation) {
                     if (Input.MenuDown.IsPressed || Input.MenuUp.IsPressed) {
                         break;
                     }
 
-                    m_delayNavigation = false;
+                    delayNavigation = false;
                 }
 
                 if (Input.MenuUp.OnPressed) {
                     MoveSelection(false);
-                    m_holdRemainingTime = 0.4f;
+                    holdRemainingTime = 0.4f;
                 }
 
                 if (Input.MenuDown.OnPressed) {
                     MoveSelection(true);
-                    m_holdRemainingTime = 0.4f;
+                    holdRemainingTime = 0.4f;
                 }
 
                 if (Input.MenuUp.Pressed || Input.MenuDown.Pressed) {
-                    m_holdRemainingTime -= Time.deltaTime;
-                    if (m_holdRemainingTime < 0f) {
+                    holdRemainingTime -= Time.deltaTime;
+                    if (holdRemainingTime < 0f) {
                         if (Input.MenuUp.Pressed) {
-                            m_holdRemainingTime = 0.04f;
+                            holdRemainingTime = 0.04f;
                             MoveSelection(false);
                         }
 
                         if (Input.MenuDown.Pressed) {
-                            m_holdRemainingTime = 0.04f;
+                            holdRemainingTime = 0.04f;
                             MoveSelection(true);
                         }
                     }
@@ -319,8 +319,8 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         }
 
         if (Input.ActionButtonA.OnPressed && !Input.ActionButtonA.Used) {
-            if (m_buttonPressDelay <= 0f) {
-                m_buttonPressDelay = ButtonPressDelay;
+            if (buttonPressDelay <= 0f) {
+                buttonPressDelay = ButtonPressDelay;
                 Input.ActionButtonA.Used = true;
                 Input.Jump.Used = true;
                 PressCurrentItem();
@@ -329,7 +329,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
             return;
         }
 
-        m_buttonPressDelay = Mathf.Max(0f, m_buttonPressDelay - Time.deltaTime);
+        buttonPressDelay = Mathf.Max(0f, buttonPressDelay - Time.deltaTime);
         if (Input.Cancel.OnPressed && !Input.Cancel.Used) {
             Input.Cancel.Used = true;
             Input.SoulFlame.Used = true;
@@ -352,21 +352,21 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
 
     public void HandleNavigationCage() {
         if (Input.Axis.magnitude > 0.5f) {
-            if (m_nextPressDelay == 0f) {
+            if (nextPressDelay == 0f) {
                 if (ChangeMenuItem()) {
-                    m_nextPressDelay = 0.4f;
+                    nextPressDelay = 0.4f;
                     return;
                 }
 
-                m_nextPressDelay = 0f;
-            } else if (m_nextPressDelay > 0f) {
-                m_nextPressDelay -= Time.deltaTime;
-                if (m_nextPressDelay < 0f) {
-                    m_nextPressDelay = 0f;
+                nextPressDelay = 0f;
+            } else if (nextPressDelay > 0f) {
+                nextPressDelay -= Time.deltaTime;
+                if (nextPressDelay < 0f) {
+                    nextPressDelay = 0f;
                 }
             }
         } else {
-            m_nextPressDelay = 0f;
+            nextPressDelay = 0f;
         }
     }
 
@@ -382,7 +382,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         foreach (var navigationData in Navigation) {
             if ((navigationData.Condition == null || navigationData.Condition(navigationData)) && navigationData.From == CurrentMenuItem && navigationData.To.IsVisible) {
                 Vector2 a = navigationData.To.Transform.position;
-                if (m_isPauseScreen) {
+                if (isPauseScreen) {
                     if (cleverMenuItem == MenuItems[0] && navigationData.To == MenuItems[9]) {
                         a = new Vector2(0f, 2f);
                     } else if (cleverMenuItem == MenuItems[9] && navigationData.To == MenuItems[0]) {
@@ -542,8 +542,6 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
 
     public int Index;
 
-    private int m_defaultIndex;
-
     public CleverMenuItem BackItem;
 
     public ActionMethod BackAction;
@@ -552,23 +550,21 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
 
     public float AngleTolerance = 60f;
 
-    private bool m_isVisible = true;
+    private bool isVisible = true;
 
-    private bool m_isActive = true;
+    private bool isActive = true;
 
-    private float m_buttonPressDelay;
+    private float buttonPressDelay;
 
-    private float m_nextPressDelay;
+    private float nextPressDelay;
 
-    private float m_holdDelayDuration;
+    private float holdRemainingTime;
 
-    private float m_holdRemainingTime;
+    private bool isHighlightVisible = true;
 
-    private bool m_isHighlightVisible = true;
+    private bool delayNavigation;
 
-    private bool m_delayNavigation;
-
-    private bool m_isPauseScreen;
+    private bool isPauseScreen;
 
     [Serializable]
     public class NavigationData {
@@ -577,12 +573,6 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         public CleverMenuItem To;
 
         public Func<NavigationData, bool> Condition;
-    }
-
-    public enum FocusState {
-        None,
-        InFocus,
-        ChildInFocus,
     }
 
     public enum Direction {

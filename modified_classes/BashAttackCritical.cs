@@ -3,13 +3,13 @@ using UnityEngine;
 public class BashAttackCritical : Suspendable, IPooled {
     public void OnPoolSpawned() {
         CurrentState = State.Charging;
-        m_stateCurrentTime = 0f;
-        m_suspended = false;
+        stateCurrentTime = 0f;
+        suspended = false;
     }
 
     public void ChangeState(State state) {
         CurrentState = state;
-        m_stateCurrentTime = 0f;
+        stateCurrentTime = 0f;
     }
 
     public void UpdateState() {
@@ -25,47 +25,47 @@ public class BashAttackCritical : Suspendable, IPooled {
                 break;
         }
 
-        m_stateCurrentTime += Time.deltaTime;
+        stateCurrentTime += Time.deltaTime;
     }
 
     private void UpdateFailedState() {
-        transform.localScale = m_localScale;
+        transform.localScale = localScale;
         GetComponent<Renderer>().sharedMaterial.SetTextureOffset("_MaskTexture", new Vector2(0.5f, 0f));
-        if (m_stateCurrentTime > FailedDuration) {
+        if (stateCurrentTime > FailedDuration) {
             ChangeState(State.Finished);
         }
     }
 
     private void UpdateCriticalState() {
-        transform.localScale = m_localScale + Vector3.one * Mathf.Sin(m_stateCurrentTime * 6.2831855f / ShakePeriod) * ShakeAmount;
-        GetComponent<Renderer>().sharedMaterial.SetTextureOffset("_MaskTexture", new Vector2(0.5f * (Mathf.RoundToInt(m_stateCurrentTime * 15f) % 2), 0f));
+        transform.localScale = localScale + Vector3.one * Mathf.Sin(stateCurrentTime * 6.2831855f / ShakePeriod) * ShakeAmount;
+        GetComponent<Renderer>().sharedMaterial.SetTextureOffset("_MaskTexture", new Vector2(0.5f * (Mathf.RoundToInt(stateCurrentTime * 15f) % 2), 0f));
         var criticalDuration = CriticalDuration;
         if (RandomizerSettings.Controls.LongerBashAimTime) {
             criticalDuration += 3.3f;
         }
 
-        if (m_stateCurrentTime > criticalDuration) {
+        if (stateCurrentTime > criticalDuration) {
             ChangeState(State.Failed);
         }
     }
 
     private void UpdateChargingState() {
-        transform.localScale = m_localScale;
-        var num = m_stateCurrentTime / ChargingDuration;
+        transform.localScale = localScale;
+        var num = stateCurrentTime / ChargingDuration;
         GetComponent<Renderer>().sharedMaterial.SetTextureOffset("_MaskTexture", new Vector2(0.5f - num * 0.5f, 0f));
-        if (m_stateCurrentTime > ChargingDuration) {
+        if (stateCurrentTime > ChargingDuration) {
             ChangeState(State.Critical);
         }
     }
 
     public new void Awake() {
         base.Awake();
-        m_localScale = transform.localScale;
+        localScale = transform.localScale;
     }
 
     public override bool IsSuspended {
-        get => m_suspended;
-        set => m_suspended = value;
+        get => suspended;
+        set => suspended = value;
     }
 
     public void FixedUpdate() {
@@ -86,17 +86,13 @@ public class BashAttackCritical : Suspendable, IPooled {
 
     public float ShakeAmount = 0.5f;
 
-    private Vector3 m_localScale;
+    private Vector3 localScale;
 
     public State CurrentState;
 
-    private bool m_suspended;
+    private bool suspended;
 
-    private float m_stateCurrentTime;
-
-    public Texture2D BashAttackArrow;
-
-    public Texture2D RedirectArrow;
+    private float stateCurrentTime;
 
     public enum State {
         Charging,

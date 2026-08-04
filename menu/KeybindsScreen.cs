@@ -16,9 +16,9 @@ public class KeybindsScreen : CustomSettingsScreen {
         AddKeybind("Movement Right", () => PlayerInputRebinding.KeyRebindings.HorizontalDigiPadRight, k => PlayerInputRebinding.KeyRebindings.HorizontalDigiPadRight = k);
 
         // Lower tooltip so it fits under the options
-        var pos = tooltipController.transform.position;
+        var pos = TooltipController.transform.position;
         pos.y = -3.38f;
-        tooltipController.transform.position = pos;
+        TooltipController.transform.position = pos;
         HideLegend();
     }
 }

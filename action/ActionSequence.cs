@@ -1,22 +1,21 @@
 using System;
 using System.Collections.Generic;
 using Game;
-using UnityEngine;
 
 public class ActionSequence : PerformingAction, IPooled, ISuspendable {
     public bool IsRunning {
-        get => m_isRunning;
-        set => m_isRunning = value;
+        get => isRunning;
+        set => isRunning = value;
     }
 
     public int Index {
-        get => m_index;
-        set => m_index = value;
+        get => index;
+        set => index = value;
     }
 
     public void OnPoolSpawned() {
         Stop();
-        m_isSuspended = false;
+        isSuspended = false;
     }
 
     public override void Awake() {
@@ -33,7 +32,7 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable {
     }
 
     private void OnGameReset() {
-        if (m_isRunning) {
+        if (isRunning) {
             Stop();
         }
     }
@@ -80,26 +79,26 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable {
             return;
         }
 
-        m_isRunning = true;
-        m_isInstant = instant;
-        m_index = 0;
-        m_context = context;
-        RunAction(Actions[m_index]);
+        isRunning = true;
+        isInstant = instant;
+        index = 0;
+        this.context = context;
+        RunAction(Actions[index]);
         UpdateActions();
     }
 
     public void RunAction(ActionMethod action) {
         if (action) {
-            if (m_isInstant) {
-                action.PerformInstantly(m_context);
+            if (isInstant) {
+                action.PerformInstantly(context);
             } else {
-                action.Perform(m_context);
+                action.Perform(context);
             }
         }
     }
 
     public void FixedUpdate() {
-        if (m_isSuspended) {
+        if (isSuspended) {
             return;
         }
 
@@ -107,13 +106,13 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable {
     }
 
     public void UpdateActions() {
-        if (!m_isRunning) {
+        if (!isRunning) {
             return;
         }
 
         var count = Actions.Count;
-        while (m_index < count) {
-            var actionMethod = Actions[m_index];
+        while (index < count) {
+            var actionMethod = Actions[index];
             if (actionMethod != null && actionMethod is WaitAction) {
                 var waitAction = actionMethod as WaitAction;
                 if (waitAction.IsPerforming) {
@@ -121,13 +120,13 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable {
                 }
             }
 
-            m_index++;
-            if (m_index == count) {
-                m_isRunning = false;
+            index++;
+            if (index == count) {
+                isRunning = false;
                 return;
             }
 
-            RunAction(Actions[m_index]);
+            RunAction(Actions[index]);
         }
     }
 
@@ -159,18 +158,18 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable {
     }
 
     public bool IsSuspended {
-        get => m_isSuspended;
-        set => m_isSuspended = value;
+        get => isSuspended;
+        set => isSuspended = value;
     }
 
     public override void Stop() {
-        m_isRunning = false;
-        m_isInstant = false;
-        m_index = 0;
-        m_context = null;
+        isRunning = false;
+        isInstant = false;
+        index = 0;
+        context = null;
     }
 
-    public override bool IsPerforming => m_isRunning;
+    public override bool IsPerforming => isRunning;
 
     public override void Serialize(Archive ar) {
         var component = GetComponent<ActionSequenceSerializer>();
@@ -185,15 +184,15 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable {
         base.Serialize(ar);
     }
 
-    private bool m_isRunning;
+    private bool isRunning;
 
-    private int m_index;
+    private int index;
 
-    private IContext m_context;
+    private IContext context;
 
-    private bool m_isSuspended;
+    private bool isSuspended;
 
     public List<ActionMethod> Actions = new List<ActionMethod>();
 
-    private bool m_isInstant;
+    private bool isInstant;
 }

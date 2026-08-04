@@ -16,30 +16,8 @@ public class AreaMapNavigation : MonoBehaviour {
         }
     }
 
-    public bool BoxIsInsideVisibleCanvas(Rect bound) {
-        foreach (RuntimeGameWorldArea runtimeGameWorldArea in GameWorld.Instance.RuntimeAreas) {
-            var cageStructureTool = runtimeGameWorldArea.Area.CageStructureTool;
-            var facesAsRectangles = cageStructureTool.FacesAsRectangles;
-            for (var i = 0; i < facesAsRectangles.Length; i++) {
-                if (facesAsRectangles[i].Overlaps(bound)) {
-                    var id = cageStructureTool.Faces[i].ID;
-                    if (runtimeGameWorldArea.FaceIsDiscoveredOrVisited(id)) {
-                        return true;
-                    }
-
-                    if (m_areaMapUi.DebugNavigation.UndiscoveredMapVisible) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
     public void Awake() {
-        m_areaMapUi = GetComponent<AreaMapUI>();
-        m_scrollLimits = GetComponentsInChildren<AreaMapScrollLimit>();
+        areaMapUi = GetComponent<AreaMapUI>();
         AreaMapZoomLevel = 0.65f;
     }
 
@@ -73,22 +51,22 @@ public class AreaMapNavigation : MonoBehaviour {
 
     public void HandleObjectiveFocus() {
         var isTransitioning = GameMapTransitionManager.Instance.IsTransitioning;
-        m_focusTime = Mathf.Clamp01(m_focusTime - 2f * Time.deltaTime);
-        if (m_focusTime > 0f) {
-            ScrollPosition = Vector2.Lerp(m_fromPosition, m_toPosition, Mathf.SmoothStep(1f, 0f, m_focusTime));
-            m_scrollTime = 0f;
+        focusTime = Mathf.Clamp01(focusTime - 2f * Time.deltaTime);
+        if (focusTime > 0f) {
+            ScrollPosition = Vector2.Lerp(fromPosition, toPosition, Mathf.SmoothStep(1f, 0f, focusTime));
+            scrollTime = 0f;
         }
 
-        if (!isTransitioning && m_focusTime == 0f && Input.Focus.OnPressed && !Input.Focus.Used) {
+        if (!isTransitioning && focusTime == 0f && Input.Focus.OnPressed && !Input.Focus.Used) {
             Input.Focus.Used = true;
-            m_focusTime = 1f;
-            m_fromPosition = ScrollPosition;
+            focusTime = 1f;
+            fromPosition = ScrollPosition;
             if (Objectives.All.Count == 0) {
-                m_toggleToPlayer = true;
+                toggleToPlayer = true;
             }
 
-            m_toPosition = !m_toggleToPlayer ? Objectives.All[0].Position : (Vector2)Characters.Current.Position;
-            m_toggleToPlayer = !m_toggleToPlayer;
+            toPosition = !toggleToPlayer ? Objectives.All[0].Position : (Vector2)Characters.Current.Position;
+            toggleToPlayer = !toggleToPlayer;
             if (FocusSound) {
                 FocusSound.Play();
             }
@@ -96,7 +74,7 @@ public class AreaMapNavigation : MonoBehaviour {
     }
 
     public void Init() {
-        m_toggleToPlayer = false;
+        toggleToPlayer = false;
     }
 
     public void UpdatePlane() {
@@ -105,7 +83,7 @@ public class AreaMapNavigation : MonoBehaviour {
     }
 
     public void CenterMapOnWorldPosition(Vector3 position) {
-        m_scrollTime = 0f;
+        scrollTime = 0f;
         ScrollPosition = position;
     }
 
@@ -134,36 +112,36 @@ public class AreaMapNavigation : MonoBehaviour {
         cursorPositionUI.x /= MapPlaneSize.x;
         cursorPositionUI.y /= MapPlaneSize.y;
         if (Input.LeftClick.OnPressed) {
-            m_lastDragPosition = cursorPositionUI;
+            lastDragPosition = cursorPositionUI;
         }
 
         if (Input.LeftClick.Pressed && Input.CursorMoved) {
-            vector += m_lastDragPosition - cursorPositionUI;
-            m_lastDragPosition = cursorPositionUI;
+            vector += lastDragPosition - cursorPositionUI;
+            lastDragPosition = cursorPositionUI;
         }
 
         if (Input.Axis.magnitude < 0.02) {
-            m_scrollTime = 0f;
+            scrollTime = 0f;
         } else {
-            m_scrollTime = Mathf.Clamp01(m_scrollTime + Time.deltaTime * 4f);
-            vector = Input.Axis.normalized * ScrollingSensitivityCurve.Evaluate(Input.Axis.magnitude) * m_scrollTime;
+            scrollTime = Mathf.Clamp01(scrollTime + Time.deltaTime * 4f);
+            vector = Input.Axis.normalized * ScrollingSensitivityCurve.Evaluate(Input.Axis.magnitude) * scrollTime;
             vector *= Time.deltaTime * 150f / Zoom;
         }
 
         if (vector.magnitude > 0f) {
-            if (vector.x < 0f && ScrollPosition.x <= m_scrollAreaLimit.xMin) {
+            if (vector.x < 0f && ScrollPosition.x <= scrollAreaLimit.xMin) {
                 vector.x = 0f;
             }
 
-            if (vector.x > 0f && ScrollPosition.x >= m_scrollAreaLimit.xMax) {
+            if (vector.x > 0f && ScrollPosition.x >= scrollAreaLimit.xMax) {
                 vector.x = 0f;
             }
 
-            if (vector.y < 0f && ScrollPosition.y <= m_scrollAreaLimit.yMin) {
+            if (vector.y < 0f && ScrollPosition.y <= scrollAreaLimit.yMin) {
                 vector.y = 0f;
             }
 
-            if (vector.y > 0f && ScrollPosition.y >= m_scrollAreaLimit.yMax) {
+            if (vector.y > 0f && ScrollPosition.y >= scrollAreaLimit.yMax) {
                 vector.y = 0f;
             }
 
@@ -181,13 +159,6 @@ public class AreaMapNavigation : MonoBehaviour {
         }
     }
 
-    public Vector3 ConstrainWorldPositionByBounds(Vector3 worldPosition) {
-        var bounds = Bounds;
-        worldPosition.x = Mathf.Clamp(worldPosition.x, bounds.min.x, bounds.max.x);
-        worldPosition.y = Mathf.Clamp(worldPosition.y, bounds.min.y, bounds.max.y);
-        return worldPosition;
-    }
-
     public void UpdateScrollLimits() {
         var flag = false;
         var num = 0f;
@@ -199,7 +170,6 @@ public class AreaMapNavigation : MonoBehaviour {
             var facesAsRectangles = area.CageStructureTool.FacesAsRectangles;
             for (var i = 0; i < area.CageStructureTool.Faces.Count; i++) {
                 var rect = facesAsRectangles[i];
-                var id = area.CageStructureTool.Faces[i].ID;
                 if (flag) {
                     num = Mathf.Min(num, rect.xMin);
                     num2 = Mathf.Min(num2, rect.yMin);
@@ -231,17 +201,16 @@ public class AreaMapNavigation : MonoBehaviour {
             num4 = Mathf.Max(num4, vector.y);
         }
 
-        m_scrollAreaLimit.xMin = num;
-        m_scrollAreaLimit.yMin = num2;
-        m_scrollAreaLimit.xMax = num3;
-        m_scrollAreaLimit.yMax = num4;
+        scrollAreaLimit.xMin = num;
+        scrollAreaLimit.yMin = num2;
+        scrollAreaLimit.xMax = num3;
+        scrollAreaLimit.yMax = num4;
     }
 
     public void HandleRandomizerTooltip() {
         try {
             Vector2 cursorPositionWorld = MapToWorldPosition(Input.CursorPositionUI);
             RuntimeWorldMapIcon candidate = null;
-            string candidateArea = null;
             var candidateDistance = Mathf.Infinity;
             var doorCount = 0;
             var zoomScaleFactor = (float)Math.Pow(Zoom / 0.04f, .45f); // please don't ask me how i got these numbers
@@ -250,7 +219,7 @@ public class AreaMapNavigation : MonoBehaviour {
 
             foreach (RuntimeGameWorldArea runtimeArea in GameWorld.Instance.RuntimeAreas)
             foreach (var runtimeIcon in runtimeArea.Icons) {
-                if (!runtimeIcon.IsVisible(m_areaMapUi) || runtimeIcon.Icon == WorldMapIconType.Invisible) {
+                if (!runtimeIcon.IsVisible(areaMapUi) || runtimeIcon.Icon == WorldMapIconType.Invisible) {
                     continue;
                 }
 
@@ -281,7 +250,6 @@ public class AreaMapNavigation : MonoBehaviour {
                 }
 
                 candidateDistance = distance;
-                candidateArea = runtimeArea.Area.AreaIdentifier;
                 candidate = runtimeIcon;
             }
 
@@ -319,11 +287,11 @@ public class AreaMapNavigation : MonoBehaviour {
 
     public float AreaMapCloseZoomLevel = 3f;
 
-    private float m_scrollTime;
+    private float scrollTime;
 
     public AnimationCurve ScrollingSensitivityCurve;
 
-    private Vector2 m_lastDragPosition;
+    private Vector2 lastDragPosition;
 
     public SoundSource ScrollSound;
 
@@ -331,17 +299,15 @@ public class AreaMapNavigation : MonoBehaviour {
 
     public Vector2 ScrollPosition;
 
-    private AreaMapUI m_areaMapUi;
+    private AreaMapUI areaMapUi;
 
-    private AreaMapScrollLimit[] m_scrollLimits;
+    private Vector2 fromPosition;
 
-    private Vector2 m_fromPosition;
+    private Vector2 toPosition;
 
-    private Vector2 m_toPosition;
+    private float focusTime;
 
-    private float m_focusTime;
+    private bool toggleToPlayer;
 
-    private bool m_toggleToPlayer;
-
-    private Rect m_scrollAreaLimit;
+    private Rect scrollAreaLimit;
 }

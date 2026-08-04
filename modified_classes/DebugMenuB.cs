@@ -50,9 +50,6 @@ public class DebugMenuB : SaveSerialize {
         ResumeGameplay();
     }
 
-    public void Start() {
-    }
-
     private static void SuspendGameplay() {
         SuspensionManager.GetSuspendables(SuspendablesToIgnoreForGameplay, UI.Cameras.Current.GameObject);
         SuspensionManager.SuspendExcluding(SuspendablesToIgnoreForGameplay);
@@ -86,9 +83,9 @@ public class DebugMenuB : SaveSerialize {
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref m_cursorIndex);
-        ar.Serialize(ref m_showGumoSequences);
-        ar.Serialize(ref m_gumoSequencesCursorIndex);
+        ar.Serialize(ref cursorIndex);
+        ar.Serialize(ref showGumoSequences);
+        ar.Serialize(ref gumoSequencesCursorIndex);
         ar.Serialize(ref DebugControlsEnabled);
         ar.Serialize(ref MuteMusic);
         ar.Serialize(ref MuteAmbience);
@@ -139,23 +136,23 @@ public class DebugMenuB : SaveSerialize {
     }
 
     public bool DisableArt() {
-        if (m_art == null) {
-            m_art = (from a in FindObjectsOfType<GameObject>()
+        if (art == null) {
+            art = (from a in FindObjectsOfType<GameObject>()
                 where a.name == "art"
                 select a).ToArray();
-            foreach (var gameObject in m_art) {
+            foreach (var gameObject in art) {
                 if (gameObject) {
                     gameObject.SetActive(false);
                 }
             }
         } else {
-            foreach (var gameObject2 in m_art) {
+            foreach (var gameObject2 in art) {
                 if (gameObject2) {
                     gameObject2.SetActive(true);
                 }
             }
 
-            m_art = null;
+            art = null;
         }
 
         return true;
@@ -176,36 +173,36 @@ public class DebugMenuB : SaveSerialize {
     }
 
     public bool DisableEnemies() {
-        if (m_enemies == null) {
-            m_enemies = (from a in FindObjectsOfType<GameObject>()
+        if (enemies == null) {
+            enemies = (from a in FindObjectsOfType<GameObject>()
                 where a.name == "enemies"
                 select a).ToArray();
-            foreach (var gameObject in m_enemies) {
+            foreach (var gameObject in enemies) {
                 if (gameObject) {
                     gameObject.SetActive(false);
                 }
             }
         } else {
-            foreach (var gameObject2 in m_enemies) {
+            foreach (var gameObject2 in enemies) {
                 if (gameObject2) {
                     gameObject2.SetActive(true);
                 }
             }
 
-            m_enemies = null;
+            enemies = null;
         }
 
         return true;
     }
 
     public bool DisableAllParticles() {
-        if (m_particleSystems == null) {
-            m_particleSystems = new List<GameObject>();
+        if (particleSystems == null) {
+            particleSystems = new List<GameObject>();
             var array = FindObjectsOfType<ParticleSystem>();
             foreach (var particleSystem in array) {
                 if (particleSystem) {
                     particleSystem.gameObject.SetActive(false);
-                    m_particleSystems.Add(particleSystem.gameObject);
+                    particleSystems.Add(particleSystem.gameObject);
                 }
             }
 
@@ -213,7 +210,7 @@ public class DebugMenuB : SaveSerialize {
             foreach (var particleEmitter in array3) {
                 if (particleEmitter) {
                     particleEmitter.gameObject.SetActive(false);
-                    m_particleSystems.Add(particleEmitter.gameObject);
+                    particleSystems.Add(particleEmitter.gameObject);
                 }
             }
 
@@ -223,7 +220,7 @@ public class DebugMenuB : SaveSerialize {
             foreach (var particleSystem2 in array5) {
                 if (particleSystem2) {
                     particleSystem2.gameObject.SetActive(true);
-                    m_particleSystems.Add(particleSystem2.gameObject);
+                    particleSystems.Add(particleSystem2.gameObject);
                 }
             }
 
@@ -231,11 +228,11 @@ public class DebugMenuB : SaveSerialize {
             foreach (var particleEmitter2 in array7) {
                 if (particleEmitter2) {
                     particleEmitter2.gameObject.SetActive(true);
-                    m_particleSystems.Add(particleEmitter2.gameObject);
+                    particleSystems.Add(particleEmitter2.gameObject);
                 }
             }
 
-            m_particleSystems = null;
+            particleSystems = null;
             InstantiateUtility.DisableParticles = false;
         }
 
@@ -305,9 +302,9 @@ public class DebugMenuB : SaveSerialize {
         list2.Add(
             new BoolDebugMenuItem(
                 "Super Slow Motion",
-                () => m_superSlowMotion,
+                () => superSlowMotion,
                 delegate(bool val) {
-                    m_superSlowMotion = val;
+                    superSlowMotion = val;
                     Time.timeScale = !val ? 1f : 0.25f;
                 }
             )
@@ -493,7 +490,7 @@ public class DebugMenuB : SaveSerialize {
             m_menuList.Add(list8);
         }
 
-        m_showGumoSequences = false;
+        showGumoSequences = false;
         var num = 8;
         m_gumoSequencesMenuList.Clear();
         var list9 = new List<IDebugMenuItem>();
@@ -578,11 +575,11 @@ public class DebugMenuB : SaveSerialize {
     }
 
     private bool HighFPSPhysicsGetter() {
-        return m_highFPSPhysics;
+        return highFPSPhysics;
     }
 
     private void HighFPSPhysicsSetter(bool value) {
-        m_highFPSPhysics = value;
+        highFPSPhysics = value;
         if (value) {
             Time.fixedDeltaTime = 0.008333334f;
         } else {
@@ -684,9 +681,7 @@ public class DebugMenuB : SaveSerialize {
     }
 
     private bool LoadGame() {
-        if (!GameController.Instance.SaveGameController.PerformLoad()) {
-        }
-
+        GameController.Instance.SaveGameController.PerformLoad();
         return true;
     }
 
@@ -803,7 +798,7 @@ public class DebugMenuB : SaveSerialize {
     }
 
     private bool GumoSequencesAction() {
-        m_showGumoSequences = true;
+        showGumoSequences = true;
         return false;
     }
 
@@ -851,11 +846,11 @@ public class DebugMenuB : SaveSerialize {
     }
 
     private void DebugSceneFrameworkSetter(bool arg) {
-        m_showSceneFrameworkDebug = arg;
+        showSceneFrameworkDebug = arg;
     }
 
     private bool DebugSceneFrameworkGetter() {
-        return m_showSceneFrameworkDebug;
+        return showSceneFrameworkDebug;
     }
 
     private bool VisualLogGetter() {
@@ -894,14 +889,6 @@ public class DebugMenuB : SaveSerialize {
 
     private bool DebugXboxControllerGetter() {
         return XboxLiveController.Instance && XboxLiveController.Instance.IsDebugEnabled;
-    }
-
-    private void UnloadUnusedSetter(bool arg) {
-        Resources.UnloadUnusedAssets();
-    }
-
-    private bool UnloadUnusedGetter() {
-        return true;
     }
 
     private bool ShowSoundLogGetter() {
@@ -969,17 +956,17 @@ public class DebugMenuB : SaveSerialize {
 
         HandleQuickQuit();
         if (Active) {
-            if (!m_lastDebugMenuActiveState) {
+            if (!lastDebugMenuActiveState) {
                 Initialize();
             }
 
-            m_menuList[(int)m_cursorIndex.x][(int)m_cursorIndex.y].OnSelectedUpdate();
+            m_menuList[(int)cursorIndex.x][(int)cursorIndex.y].OnSelectedUpdate();
         }
     }
 
     private void ResetHold() {
-        m_holdRemainingTime = 0.4f;
-        m_holdDelayDuration = 0.04f;
+        holdRemainingTime = 0.4f;
+        holdDelayDuration = 0.04f;
     }
 
     public void FixedUpdate() {
@@ -1004,127 +991,127 @@ public class DebugMenuB : SaveSerialize {
         }
 
         if (Active) {
-            if (m_showGumoSequences) {
+            if (showGumoSequences) {
                 if (Input.SoulFlame.OnPressed) {
-                    m_showGumoSequences = false;
+                    showGumoSequences = false;
                 }
 
                 if (Input.Down.OnPressed) {
-                    m_gumoSequencesCursorIndex.y = m_gumoSequencesCursorIndex.y + 1f;
+                    gumoSequencesCursorIndex.y += 1f;
                 }
 
                 if (Input.Up.OnPressed) {
-                    m_gumoSequencesCursorIndex.y = m_gumoSequencesCursorIndex.y - 1f;
+                    gumoSequencesCursorIndex.y -= 1f;
                 }
 
                 if (Input.Left.OnPressed) {
-                    m_gumoSequencesCursorIndex.x = m_gumoSequencesCursorIndex.x - 1f;
+                    gumoSequencesCursorIndex.x -= 1f;
                 }
 
                 if (Input.Right.OnPressed) {
-                    m_gumoSequencesCursorIndex.x = m_gumoSequencesCursorIndex.x + 1f;
+                    gumoSequencesCursorIndex.x += 1f;
                 }
 
-                if (m_gumoSequencesCursorIndex.x == -1f) {
-                    m_gumoSequencesCursorIndex.x = m_gumoSequencesMenuList.Count - 1;
+                if (gumoSequencesCursorIndex.x == -1f) {
+                    gumoSequencesCursorIndex.x = m_gumoSequencesMenuList.Count - 1;
                 }
 
-                if (m_gumoSequencesCursorIndex.y == -1f) {
-                    m_gumoSequencesCursorIndex.y = m_gumoSequencesMenuList[(int)m_gumoSequencesCursorIndex.x].Count - 1;
+                if (gumoSequencesCursorIndex.y == -1f) {
+                    gumoSequencesCursorIndex.y = m_gumoSequencesMenuList[(int)gumoSequencesCursorIndex.x].Count - 1;
                 }
 
-                if (m_gumoSequencesCursorIndex.x == m_gumoSequencesMenuList.Count) {
-                    m_gumoSequencesCursorIndex.x = 0f;
+                if (gumoSequencesCursorIndex.x == m_gumoSequencesMenuList.Count) {
+                    gumoSequencesCursorIndex.x = 0f;
                 }
 
-                if (m_gumoSequencesCursorIndex.y == m_gumoSequencesMenuList[(int)m_gumoSequencesCursorIndex.x].Count) {
-                    m_gumoSequencesCursorIndex.y = 0f;
+                if (gumoSequencesCursorIndex.y == m_gumoSequencesMenuList[(int)gumoSequencesCursorIndex.x].Count) {
+                    gumoSequencesCursorIndex.y = 0f;
                 }
 
-                if (m_gumoSequencesCursorIndex != m_lastGumoSequencesIndex) {
-                    m_gumoSequencesMenuList[(int)m_gumoSequencesCursorIndex.x][(int)m_gumoSequencesCursorIndex.y].OnSelected();
-                    m_lastGumoSequencesIndex = m_gumoSequencesCursorIndex;
+                if (gumoSequencesCursorIndex != lastGumoSequencesIndex) {
+                    m_gumoSequencesMenuList[(int)gumoSequencesCursorIndex.x][(int)gumoSequencesCursorIndex.y].OnSelected();
+                    lastGumoSequencesIndex = gumoSequencesCursorIndex;
                 }
 
-                m_gumoSequencesMenuList[(int)m_gumoSequencesCursorIndex.x][(int)m_gumoSequencesCursorIndex.y].OnSelectedFixedUpdate();
+                m_gumoSequencesMenuList[(int)gumoSequencesCursorIndex.x][(int)gumoSequencesCursorIndex.y].OnSelectedFixedUpdate();
             } else {
-                if (!m_lastDebugMenuActiveState) {
+                if (!lastDebugMenuActiveState) {
                     Initialize();
                 }
 
                 if (Input.Down.OnPressed) {
                     ResetHold();
-                    m_cursorIndex.y = m_cursorIndex.y + 1f;
+                    cursorIndex.y += 1f;
                 }
 
                 if (Input.Up.OnPressed) {
                     ResetHold();
-                    m_cursorIndex.y = m_cursorIndex.y - 1f;
+                    cursorIndex.y = cursorIndex.y - 1f;
                 }
 
                 if (Input.Left.OnPressed) {
                     ResetHold();
-                    m_cursorIndex.x = m_cursorIndex.x - 1f;
+                    cursorIndex.x = cursorIndex.x - 1f;
                 }
 
                 if (Input.Right.OnPressed) {
                     ResetHold();
-                    m_cursorIndex.x = m_cursorIndex.x + 1f;
+                    cursorIndex.x = cursorIndex.x + 1f;
                 }
 
                 if (Input.Left.Pressed || Input.Right.Pressed || Input.Up.Pressed || Input.Down.Pressed) {
-                    m_holdRemainingTime -= Time.deltaTime;
-                    if (m_holdRemainingTime < 0f) {
-                        m_holdRemainingTime = m_holdDelayDuration;
+                    holdRemainingTime -= Time.deltaTime;
+                    if (holdRemainingTime < 0f) {
+                        holdRemainingTime = holdDelayDuration;
                         if (Input.Left.Pressed) {
-                            m_cursorIndex.x = m_cursorIndex.x - 1f;
+                            cursorIndex.x = cursorIndex.x - 1f;
                         }
 
                         if (Input.Right.Pressed) {
-                            m_cursorIndex.x = m_cursorIndex.x + 1f;
+                            cursorIndex.x = cursorIndex.x + 1f;
                         }
 
                         if (Input.Down.Pressed) {
-                            m_cursorIndex.y = m_cursorIndex.y + 1f;
+                            cursorIndex.y = cursorIndex.y + 1f;
                         }
 
                         if (Input.Up.Pressed) {
-                            m_cursorIndex.y = m_cursorIndex.y - 1f;
+                            cursorIndex.y = cursorIndex.y - 1f;
                         }
                     }
                 }
 
-                if (m_cursorIndex.x < 0f) {
-                    m_cursorIndex.x = m_menuList.Count - 1;
+                if (cursorIndex.x < 0f) {
+                    cursorIndex.x = m_menuList.Count - 1;
                 }
 
-                if (m_cursorIndex.x > m_menuList.Count - 1) {
-                    m_cursorIndex.x = 0f;
+                if (cursorIndex.x > m_menuList.Count - 1) {
+                    cursorIndex.x = 0f;
                 }
 
-                if (m_cursorIndex.y < 0f) {
-                    m_cursorIndex.y = m_menuList[(int)m_cursorIndex.x].Count - 1;
+                if (cursorIndex.y < 0f) {
+                    cursorIndex.y = m_menuList[(int)cursorIndex.x].Count - 1;
                 }
 
                 if (Input.Left.OnPressed || Input.Right.OnPressed) {
-                    if (m_cursorIndex.y > m_menuList[(int)m_cursorIndex.x].Count - 1) {
-                        m_cursorIndex.y = m_menuList[(int)m_cursorIndex.x].Count - 1;
+                    if (cursorIndex.y > m_menuList[(int)cursorIndex.x].Count - 1) {
+                        cursorIndex.y = m_menuList[(int)cursorIndex.x].Count - 1;
                     }
-                } else if (m_cursorIndex.y > m_menuList[(int)m_cursorIndex.x].Count - 1) {
-                    m_cursorIndex.y = 0f;
+                } else if (cursorIndex.y > m_menuList[(int)cursorIndex.x].Count - 1) {
+                    cursorIndex.y = 0f;
                 }
 
-                if (m_cursorIndex != m_lastIndex) {
-                    m_menuList[(int)m_cursorIndex.x][(int)m_cursorIndex.y].OnSelected();
-                    m_lastIndex = m_cursorIndex;
+                if (cursorIndex != lastIndex) {
+                    m_menuList[(int)cursorIndex.x][(int)cursorIndex.y].OnSelected();
+                    lastIndex = cursorIndex;
                     ShouldShowOnlySelectedItem = false;
                 }
 
-                m_menuList[(int)m_cursorIndex.x][(int)m_cursorIndex.y].OnSelectedFixedUpdate();
+                m_menuList[(int)cursorIndex.x][(int)cursorIndex.y].OnSelectedFixedUpdate();
             }
         }
 
-        m_lastDebugMenuActiveState = Active;
+        lastDebugMenuActiveState = Active;
     }
 
     public void OnGUI() {
@@ -1132,14 +1119,14 @@ public class DebugMenuB : SaveSerialize {
             GUILayout.BeginArea(new Rect(Screen.width - 150, Screen.height - 50, 150f, 50f));
             GUILayout.Label("BuildID: " + BuildID);
             GUILayout.EndArea();
-            if (m_showGumoSequences) {
+            if (showGumoSequences) {
                 GUILayout.BeginArea(new Rect(MenuTopLeftX, MenuTopLeftY, MenuWidth, MenuHeight), GUIContent.none, DebugMenuStyle);
                 var num = 0;
                 foreach (var list in m_gumoSequencesMenuList) {
                     var num2 = 0;
                     foreach (var debugMenuItem in list) {
                         var vector = new Vector2(HorizontalSpace * num, VerticalSpace * num2);
-                        var b = new Vector2(num, num2) == m_gumoSequencesCursorIndex;
+                        var b = new Vector2(num, num2) == gumoSequencesCursorIndex;
                         debugMenuItem.Draw(new Rect(vector.x, vector.y, HorizontalSpace, VerticalSpace), b);
                         num2++;
                     }
@@ -1148,7 +1135,7 @@ public class DebugMenuB : SaveSerialize {
                 }
 
                 GUILayout.EndArea();
-                GUI.Label(new Rect(MenuTopLeftX, MenuTopLeftY + MenuHeight, MenuWidth, 30f), m_gumoSequencesMenuList[(int)m_gumoSequencesCursorIndex.x][(int)m_gumoSequencesCursorIndex.y].HelpText, DebugMenuStyle);
+                GUI.Label(new Rect(MenuTopLeftX, MenuTopLeftY + MenuHeight, MenuWidth, 30f), m_gumoSequencesMenuList[(int)gumoSequencesCursorIndex.x][(int)gumoSequencesCursorIndex.y].HelpText, DebugMenuStyle);
             } else {
                 if (m_menuList.Count == 0) {
                     return;
@@ -1165,7 +1152,7 @@ public class DebugMenuB : SaveSerialize {
                     var num4 = 0;
                     foreach (var debugMenuItem2 in list2) {
                         var vector2 = new Vector2(GetColPosition(num3), VerticalSpace * num4);
-                        var flag = new Vector2(num3, num4) == m_cursorIndex;
+                        var flag = new Vector2(num3, num4) == cursorIndex;
                         if (!ShouldShowOnlySelectedItem || flag) {
                             debugMenuItem2.Draw(new Rect(vector2.x, vector2.y, ColumnsWidth[num3], VerticalSpace), flag);
                         }
@@ -1178,10 +1165,10 @@ public class DebugMenuB : SaveSerialize {
 
                 GUILayout.EndArea();
                 if (!ShouldShowOnlySelectedItem) {
-                    GUI.Label(new Rect(MenuTopLeftX, MenuTopLeftY + MenuHeight, MenuWidth, 30f), m_menuList[(int)m_cursorIndex.x][(int)m_cursorIndex.y].HelpText, DebugMenuStyle);
+                    GUI.Label(new Rect(MenuTopLeftX, MenuTopLeftY + MenuHeight, MenuWidth, 30f), m_menuList[(int)cursorIndex.x][(int)cursorIndex.y].HelpText, DebugMenuStyle);
                 }
             }
-        } else if (m_showSceneFrameworkDebug) {
+        } else if (showSceneFrameworkDebug) {
             Scenes.Manager.DrawScenesManagerDebugData();
         }
     }
@@ -1195,24 +1182,13 @@ public class DebugMenuB : SaveSerialize {
         return num;
     }
 
-    private bool CreateCheckpoint() {
-        HideDebugMenu();
-        GameController.Instance.CreateCheckpoint();
-        return true;
-    }
-
     private bool RestoreCheckpoint() {
         GameController.Instance.RestoreCheckpoint();
         return true;
     }
 
     private bool GoToScene() {
-        StartCoroutine(GoToScene(m_menuList[(int)m_cursorIndex.x][(int)m_cursorIndex.y].Text));
-        return true;
-    }
-
-    private bool FaderBAction() {
-        UI.Fader.Fade(0.5f, 0.5f, 0.5f, null, null);
+        StartCoroutine(GoToScene(m_menuList[(int)cursorIndex.x][(int)cursorIndex.y].Text));
         return true;
     }
 
@@ -1230,7 +1206,6 @@ public class DebugMenuB : SaveSerialize {
         GameController.Instance.ResetStateForDebugMenuGoToScene();
         GoToSceneController.Instance.GoToScene(sceneInformation, null, true);
         ToggleDebugMenu();
-        yield break;
     }
 
     private bool ResetNightBerryPosition() {
@@ -1291,9 +1266,9 @@ public class DebugMenuB : SaveSerialize {
 
     public float HorizontalSpace = 150f;
 
-    private Vector2 m_cursorIndex;
+    private Vector2 cursorIndex;
 
-    private Vector2 m_gumoSequencesCursorIndex;
+    private Vector2 gumoSequencesCursorIndex;
 
     public MessageProvider ReplayGotResetMessageProvider;
 
@@ -1307,13 +1282,13 @@ public class DebugMenuB : SaveSerialize {
 
     public float MenuHeight = 600f;
 
-    private bool m_showSceneFrameworkDebug;
+    private bool showSceneFrameworkDebug;
 
     public static bool ShowAchievementHint;
 
-    private bool m_showGumoSequences;
+    private bool showGumoSequences;
 
-    private bool m_superSlowMotion;
+    private bool superSlowMotion;
 
     public List<int> ColumnsWidth = new List<int>();
 
@@ -1323,21 +1298,21 @@ public class DebugMenuB : SaveSerialize {
 
     private static readonly HashSet<ISuspendable> SuspendablesToIgnoreForGameplay = new HashSet<ISuspendable>();
 
-    private List<GameObject> m_particleSystems;
+    private List<GameObject> particleSystems;
 
-    private GameObject[] m_art;
+    private GameObject[] art;
 
-    private GameObject[] m_enemies;
+    private GameObject[] enemies;
 
-    private bool m_highFPSPhysics;
+    private bool highFPSPhysics;
 
     public GameObject NightberryPlaceholder;
 
-    private bool m_lastDebugMenuActiveState;
+    private bool lastDebugMenuActiveState;
 
-    private Vector2 m_lastIndex;
+    private Vector2 lastIndex;
 
-    private Vector2 m_lastGumoSequencesIndex;
+    private Vector2 lastGumoSequencesIndex;
 
     public static bool Active;
 
@@ -1345,9 +1320,9 @@ public class DebugMenuB : SaveSerialize {
 
     public float FastForwardTimeScale = 3f;
 
-    private float m_holdDelayDuration;
+    private float holdDelayDuration;
 
-    private float m_holdRemainingTime;
+    private float holdRemainingTime;
 
     public static bool ShouldShowOnlySelectedItem;
 }
