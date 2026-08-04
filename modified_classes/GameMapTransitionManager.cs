@@ -89,7 +89,7 @@ public class GameMapTransitionManager : MonoBehaviour
 			m_zoomSpeed = Mathf.Lerp(m_zoomSpeed, num, 0.5f);
 			if (flag || flag2)
 			{
-				m_zoomSpeed = ((!flag2) ? 0 : 1) - ((!flag) ? 0 : 1);
+				m_zoomSpeed = (!flag2 ? 0 : 1) - (!flag ? 0 : 1);
 				m_zeroZoom = true;
 			}
 			else if (m_zeroZoom)

@@ -171,7 +171,7 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver
 		float adjustedDrag = HorizontalDrag-HorizontalDrag* 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
 		PlatformMovement.LocalSpeedX = PlatformMovement.LocalSpeedX * (1f - adjustedDrag);
 		PlatformMovement.LocalSpeedY = PlatformMovement.LocalSpeedY * (1f - adjustedDrag);
-		if (m_stateCurrentTime > (AntiGravityDuration+AntiGravityDuration* 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades())))
+		if (m_stateCurrentTime > AntiGravityDuration+AntiGravityDuration* 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades()))
 		{
 			ChangeState(State.Normal);
 			return;
@@ -257,7 +257,7 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver
 			UpdateAimElevation();
 			bool hasWallLeft = PlatformMovement.HasWallLeft;
 			m_angularElevation = Mathf.Clamp(m_angularElevation + m_angularElevationSpeed * Time.deltaTime, -45f, 45f);
-			Arrow.transform.eulerAngles = new Vector3(0f, 0f, (!hasWallLeft) ? (180f - m_angularElevation) : m_angularElevation);
+			Arrow.transform.eulerAngles = new Vector3(0f, 0f, !hasWallLeft ? 180f - m_angularElevation : m_angularElevation);
 		}
 	}
 
@@ -317,11 +317,11 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver
 		PlatformMovement.LocalSpeedX = chargedJumpStrength * Arrow.transform.right.x;
 		PlatformMovement.LocalSpeedY = chargedJumpStrength * Arrow.transform.right.y;
 		Vector2 normalized = m_sein.PlatformBehaviour.PlatformMovement.LocalSpeed.normalized;
-		m_angleDirection = Mathf.Atan2(normalized.y, Mathf.Abs(normalized.x)) * 57.29578f * ((normalized.x >= 0f) ? 1 : -1);
+		m_angleDirection = Mathf.Atan2(normalized.y, Mathf.Abs(normalized.x)) * 57.29578f * (normalized.x >= 0f ? 1 : -1);
 		Sound.Play(JumpSound.GetSound(null), m_sein.PlatformBehaviour.PlatformMovement.Position, null);
 		m_sein.Mortality.DamageReciever.MakeInvincibleToEnemies(AntiGravityDuration);
 		ChangeState(State.Jumping);
-		m_sein.FaceLeft = (PlatformMovement.LocalSpeedX < 0f);
+		m_sein.FaceLeft = PlatformMovement.LocalSpeedX < 0f;
 		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = m_sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation, 10, ShouldChargeJumpAnimationKeepPlaying);
 		characterAnimationState.OnStartPlaying = OnAnimationStart;
 		characterAnimationState.OnStopPlaying = OnAnimationEnd;

@@ -40,7 +40,7 @@ public class RandomizerLocationManager
             KeystoneDoorMapGuidToMoonGuid[ksDoor.MapGuid] = ksDoor.MoonGuid;
         }
 
-        if (!HaveDownloadedAreas && (DLThread == null)) {
+        if (!HaveDownloadedAreas && DLThread == null) {
             DLThread = new Thread(DownloadAreas);
             DLThread.Start();
         }
@@ -178,7 +178,7 @@ public class RandomizerLocationManager
             return null;
         }
 
-        GameObject obj = new GameObject((actionName != null) ? actionName : "pickupAction");
+        GameObject obj = new GameObject(actionName != null ? actionName : "pickupAction");
         obj.transform.parent = parentObj.transform;
 
         RandomizerPickupAction pickupAction = obj.AddComponent<RandomizerPickupAction>();
@@ -559,7 +559,7 @@ public class RandomizerLocationManager
 
         public int Key => (int)(Mathf.Floor((int)Position.x / 4f) * 4f) * 10000 + (int)(Mathf.Floor((int)Position.y / 4f) * 4f);
 
-        public bool Collected => Repeatable ? false : (Type == LocationType.Map ? RandomizerTrackedDataManager.GetMapstone(SpecialIndex) : Randomizer.HaveCoord(Key));
+        public bool Collected => Repeatable ? false : Type == LocationType.Map ? RandomizerTrackedDataManager.GetMapstone(SpecialIndex) : Randomizer.HaveCoord(Key);
 
         public bool Touched => Collected || Repeatable && Randomizer.HaveCoord(Key);
 

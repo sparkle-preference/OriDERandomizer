@@ -128,7 +128,7 @@ public class RandomizerUI : MonoBehaviour
 				displayingMessage.MessageBox.transform.position = new Vector3(-5.7f, nextY, 0f);
 				float scaledHeight = displayingMessage.MessageBox.TextBox.boundsTop - displayingMessage.MessageBox.TextBox.boundsBottom;
 				scaledHeight *= displayingMessage.MessageBox.TextBox.transform.lossyScale.y;
-				nextY -= (scaledHeight + 0.35f);
+				nextY -= scaledHeight + 0.35f;
 			}
 		}
 	}
@@ -180,7 +180,7 @@ public class RandomizerUI : MonoBehaviour
 					displayingMessage.MessageBox.transform.position = new Vector3(-5.7f, nextY, 0f);
 					float scaledHeight = displayingMessage.MessageBox.TextBox.boundsTop - displayingMessage.MessageBox.TextBox.boundsBottom;
 					scaledHeight *= displayingMessage.MessageBox.TextBox.transform.lossyScale.y;
-					nextY -= (scaledHeight + 0.35f);
+					nextY -= scaledHeight + 0.35f;
 				}
 			}
 		}

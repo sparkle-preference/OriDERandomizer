@@ -49,7 +49,7 @@ public class TransparencyAnimator : BaseAnimator
 
 	public new void Awake()
 	{
-		m_forceUseRendererMaterial = (GetComponentInChildren<TextBox>() != null);
+		m_forceUseRendererMaterial = GetComponentInChildren<TextBox>() != null;
 		base.Awake();
 	}
 
@@ -309,10 +309,10 @@ public class TransparencyAnimator : BaseAnimator
 			}
 			if (s_disableRenderer[mode])
 			{
-				Renderer.enabled = (value > 0.01f);
+				Renderer.enabled = value > 0.01f;
 			}
 			float a = value * OriginalAlpha;
-			Material material = (!useSharedMaterial) ? Renderer.material : Renderer.sharedMaterial;
+			Material material = !useSharedMaterial ? Renderer.material : Renderer.sharedMaterial;
 			Color color = material.GetColor(propertyID);
 			color.a = a;
 			material.SetColor(propertyID, color);

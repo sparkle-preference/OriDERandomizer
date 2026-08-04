@@ -72,7 +72,7 @@ public class ControllerBindControl : MonoBehaviour
 		bool flag = true;
 		foreach (PlayerInputRebinding.ControllerButton controllerButton in codes)
 		{
-			text += ((!flag) ? ", " : string.Empty);
+			text += !flag ? ", " : string.Empty;
 			text += controllerButton;
 			flag = false;
 		}

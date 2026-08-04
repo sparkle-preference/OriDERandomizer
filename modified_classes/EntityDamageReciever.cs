@@ -50,7 +50,7 @@ public class EntityDamageReciever : DamageReciever, IDynamicGraphicHierarchy, IP
 
 	public override void OnRecieveDamage(Damage damage)
 	{
-		bool terrain = (damage.Type == DamageType.Crush || damage.Type == DamageType.Spikes || damage.Type == DamageType.Lava || damage.Type == DamageType.Laser);
+		bool terrain = damage.Type == DamageType.Crush || damage.Type == DamageType.Spikes || damage.Type == DamageType.Lava || damage.Type == DamageType.Laser;
 		if (Entity is Enemy && !(terrain || damage.Type == DamageType.Projectile || damage.Type == DamageType.Enemy))
 		{
 			RandomizerBonus.DamageDealt(damage.Amount);

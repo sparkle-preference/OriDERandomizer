@@ -118,7 +118,7 @@ public class AnimatorAction : ActionMethod
 	{
 		get
 		{
-			return (AnimatorsMode != FindAnimatorsMode.SpecifyAnimators) ? ((!Target) ? "unkown" : Target.name) : ((Animators.Length <= 0 || !Animators[0]) ? "unkown" : Animators[0].name);
+			return AnimatorsMode != FindAnimatorsMode.SpecifyAnimators ? !Target ? "unkown" : Target.name : Animators.Length <= 0 || !Animators[0] ? "unkown" : Animators[0].name;
 		}
 	}
 

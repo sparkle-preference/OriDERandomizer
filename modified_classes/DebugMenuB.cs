@@ -371,7 +371,7 @@ public class DebugMenuB : SaveSerialize
 		list2.Add(new BoolDebugMenuItem("Super Slow Motion", () => m_superSlowMotion, delegate(bool val)
 		{
 			m_superSlowMotion = val;
-			Time.timeScale = ((!val) ? 1f : 0.25f);
+			Time.timeScale = !val ? 1f : 0.25f;
 		}));
 		list2.Add(new BoolDebugMenuItem("Sync fixed update", () => SyncFramesTest.EnableSync, delegate(bool val)
 		{
@@ -716,7 +716,7 @@ public class DebugMenuB : SaveSerialize
 
 	private void LimitPhysicsIterationSetter(bool obj)
 	{
-		Time.maximumDeltaTime = ((!obj) ? 0.033333335f : 0.016666668f);
+		Time.maximumDeltaTime = !obj ? 0.033333335f : 0.016666668f;
 	}
 
 	private bool StartFPSTest0()

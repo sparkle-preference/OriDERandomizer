@@ -55,7 +55,7 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver
 			if (pressed)
 			{
 				m_lastAutofire = Mathf.Round(Time.time * 120f);
-				m_isAutofiring = (m_isAutofiring || RandomizerRebinding.SuppressAutofire.Pressed) ? false : true;
+				m_isAutofiring = m_isAutofiring || RandomizerRebinding.SuppressAutofire.Pressed ? false : true;
 
 				if (m_isAutofiring)
 				{
@@ -179,7 +179,7 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver
 			Characters.Ori.ShootAnimation.Restart();
 			if (StandardSpiritFlameShotCombo.CanShoot && !LockShootingSpiritFlame)
 			{
-				StandardSpiritFlameShotCombo.NumberOfShotsPerCombo = ((!m_sein.PlayerAbilities.QuickFlame.HasAbility) ? 2 : 3);
+				StandardSpiritFlameShotCombo.NumberOfShotsPerCombo = !m_sein.PlayerAbilities.QuickFlame.HasAbility ? 2 : 3;
 				SpiritFlame currentSpiritFlame = CurrentSpiritFlame;
 				m_sein.Abilities.SpiritFlame.ThrowSpiritFlames(currentSpiritFlame);
 				StandardSpiritFlameShotCombo.Shoot();

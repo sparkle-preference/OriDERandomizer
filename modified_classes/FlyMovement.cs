@@ -34,7 +34,7 @@ public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable
 		}
 		set
 		{
-			Velocity = ((Time.deltaTime != 0f) ? (value / Time.deltaTime) : Vector2.zero);
+			Velocity = Time.deltaTime != 0f ? value / Time.deltaTime : Vector2.zero;
 		}
 	}
 
@@ -71,7 +71,7 @@ public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable
 			return;
 		}
 		Kickback.AdvanceTime();
-		m_rigidbody.velocity = RandomizerBonusSkill.TimeScale(Velocity + ((!HasKickback) ? Vector2.zero : Kickback.KickbackVector));
+		m_rigidbody.velocity = RandomizerBonusSkill.TimeScale(Velocity + (!HasKickback ? Vector2.zero : Kickback.KickbackVector));
 	}
 
 	public void OnRecieveDamage(Damage damage)

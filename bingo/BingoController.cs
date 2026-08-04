@@ -129,7 +129,7 @@ public static class BingoController
             {
                 case "ginsoTreeWaterRisingBtm":
                 case "ginsoTreeWaterRisingEnd":
-                    if((damage.Type == DamageType.Explosion) || 
+                    if(damage.Type == DamageType.Explosion ||
                        (owner != null && owner.MoonGuid == new MoonGuid(-1008478342, 1331842787, -1292489029, -195874113))) 
                         MultiBoolGoals["DieTo"]["Ginso Escape Fronkey"] = true;
                     break;
@@ -269,7 +269,7 @@ public static class BingoController
         if(!Active || Characters.Sein == null)
             return "";
         int last = get(LastTouchedId);
-        return (last > 0 && last <= Teleporters.Length) ? Teleporters[last - 1] : "";
+        return last > 0 && last <= Teleporters.Length ? Teleporters[last - 1] : "";
     }
 
     // Ori physically entered a well (SavePedestal.Highlight) -- deliberately not
@@ -623,7 +623,7 @@ public static class BingoController
     }
     public static void PostCallback(object sender, UploadValuesCompletedEventArgs e)
     {
-        if((e.Cancelled || e.Error != null) && (e.Error.GetType().Name == "WebException"))
+        if((e.Cancelled || e.Error != null) && e.Error.GetType().Name == "WebException")
             UpdateTimer = Math.Min(1, UpdateTimer);
     }
 

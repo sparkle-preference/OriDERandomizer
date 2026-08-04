@@ -48,7 +48,7 @@ public class SkillTreeLaneLogic : SaveSerialize
 			}
 		}
 		--firstUnlearnedIndex;
-		m_index = ((!instant) ? Mathf.MoveTowards(m_index, firstUnlearnedIndex, Time.deltaTime * 3f) : firstUnlearnedIndex);
+		m_index = !instant ? Mathf.MoveTowards(m_index, firstUnlearnedIndex, Time.deltaTime * 3f) : firstUnlearnedIndex;
 		SkillEarntAnimator.Initialize();
 		SkillEarntAnimator.SampleValue(m_index, true);
 		if (!m_laneAchievedAwarded && HasAllSkills)

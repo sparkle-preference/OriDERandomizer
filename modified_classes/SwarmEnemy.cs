@@ -59,7 +59,7 @@ public class SwarmEnemy : GroundEnemy
 		Controller.StateMachine.Configure(State.Idle).AddTransition<OnFixedUpdate>(State.Run, ShouldRun);
 		Controller.StateMachine.Configure(State.Run).AddTransition<OnFixedUpdate>(State.Idle, () => !ShouldRun());
 		Controller.StateMachine.Configure(State.Spawned).AddTransition<OnFixedUpdate>(State.Run, () => AfterTime(0.5f));
-		Controller.StateMachine.ChangeState((!m_wasSpawned) ? State.Idle : State.Spawned);
+		Controller.StateMachine.ChangeState(!m_wasSpawned ? State.Idle : State.Spawned);
 	}
 
 	public bool ShouldRun()
@@ -67,7 +67,7 @@ public class SwarmEnemy : GroundEnemy
 		float num = Math.Sign(PositionToPlayerPosition.x);
 		bool flag = Size != 0f && Physics.Linecast(transform.position + new Vector3(num * (Size - 1f), 0f), transform.position + new Vector3(num * Size, 0f));
 		bool flag2;
-		if (EnemyStopper.InsideEnemyStopper(Position, (!PlayerIsToLeft) ? Vector3.right : Vector3.left, out flag2))
+		if (EnemyStopper.InsideEnemyStopper(Position, !PlayerIsToLeft ? Vector3.right : Vector3.left, out flag2))
 		{
 			return false;
 		}
@@ -100,7 +100,7 @@ public class SwarmEnemy : GroundEnemy
 	public void UpdateRotation()
 	{
 		float num = SpeedXToRotation.Evaluate(PlatformMovement.LocalSpeedX) * SpeedYToRotation.Evaluate(PlatformMovement.LocalSpeedX) * AirTiltAngle;
-		float b = (!PlatformMovement.IsOnGround) ? num : PlatformMovement.GroundAngle;
+		float b = !PlatformMovement.IsOnGround ? num : PlatformMovement.GroundAngle;
 		FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.1f));
 	}
 
@@ -149,7 +149,7 @@ public class SwarmEnemy : GroundEnemy
 		}
 		else
 		{
-			PlayAnimationLoop((!CanFall) ? Animations.Idle : Animations.Fall);
+			PlayAnimationLoop(!CanFall ? Animations.Idle : Animations.Fall);
 		}
 		PlatformMovement.LocalSpeedX = MoonMath.Movement.DecelerateSpeed(PlatformMovement.LocalSpeedX, Settings.Decceleration);
 	}
@@ -158,13 +158,13 @@ public class SwarmEnemy : GroundEnemy
 	{
 		if (PlatformMovement.IsOnGround)
 		{
-			PlayAnimationLoop((!PlayerIsToLeft) ? Animations.RunRight : Animations.RunLeft);
+			PlayAnimationLoop(!PlayerIsToLeft ? Animations.RunRight : Animations.RunLeft);
 		}
 		else
 		{
-			PlayAnimationLoop(CanFall ? Animations.Fall : ((!PlayerIsToLeft) ? Animations.RunRight : Animations.RunLeft));
+			PlayAnimationLoop(CanFall ? Animations.Fall : !PlayerIsToLeft ? Animations.RunRight : Animations.RunLeft);
 		}
-		PlatformMovement.LocalSpeedX = RandomizerBonusSkill.TimeScale(Settings.Speed * Settings.MoveCurve.Evaluate(SpriteAnimator.CurrentAnimationTime) * ((!PlayerIsToLeft) ? 1 : (-1)));
+		PlatformMovement.LocalSpeedX = RandomizerBonusSkill.TimeScale(Settings.Speed * Settings.MoveCurve.Evaluate(SpriteAnimator.CurrentAnimationTime) * (!PlayerIsToLeft ? 1 : -1));
 		if (Settings.JumpDelay > 0f)
 		{
 			if (m_jumpDelay < 0f && PlatformMovement.IsOnGround)
@@ -187,7 +187,7 @@ public class SwarmEnemy : GroundEnemy
 		{
 			for (int i = 0; i < 2; i++)
 			{
-				Vector3 velocity = (((i != 0) ? Vector3.right : Vector3.left) + Vector3.up * 3f) * 7f;
+				Vector3 velocity = ((i != 0 ? Vector3.right : Vector3.left) + Vector3.up * 3f) * 7f;
 				SwarmEnemyManager.Instance.QueueSpawn(transform.position, velocity, (int)(Loot.LootAmount * Loot.LootMultiplier), OrbSpawner, DamageDealer.Damage, Settings.Child, SceneRootGUID, Owner);
 			}
 		}

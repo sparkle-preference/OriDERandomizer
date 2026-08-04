@@ -59,7 +59,7 @@ public class DebugWidget : MonoBehaviour
 			foreach (FieldInfo fieldInfo in fields)
 			{
 				object value = fieldInfo.GetValue(monoBehaviour);
-				string text = (value != null) ? value.ToString() : "(null)";
+				string text = value != null ? value.ToString() : "(null)";
 				if (value != null && typeof(MonoBehaviour).IsAssignableFrom(fieldInfo.FieldType))
 				{
 					list.Add("  - " + fieldInfo.Name + ": " + text + " (" + ((MonoBehaviour)value).GetInstanceID() + ")");
@@ -73,9 +73,9 @@ public class DebugWidget : MonoBehaviour
 					{
 						list.Add("    - Item " + num++);
 						CleverMenuItemGroupBase itemGroup = item.ItemGroup;
-						list.Add("      - ItemGroup: " + ((itemGroup != null) ? itemGroup.name : null));
+						list.Add("      - ItemGroup: " + (itemGroup != null ? itemGroup.name : null));
 						CleverMenuItem menuItem = item.MenuItem;
-						list.Add("      - MenuItem: " + ((menuItem != null) ? menuItem.name : null));
+						list.Add("      - MenuItem: " + (menuItem != null ? menuItem.name : null));
 					}
 				}
 				else if (value != null && typeof(IEnumerable).IsAssignableFrom(fieldInfo.FieldType))

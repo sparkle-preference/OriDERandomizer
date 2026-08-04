@@ -153,10 +153,10 @@ public class HierarchyDebugMenu : MonoBehaviour
 		}
 		if (num > -num2 && num < num3)
 		{
-			GUI.color = (!item.Target.activeInHierarchy) ? Color.gray : Color.white;
-			GUILayout.BeginHorizontal((m_selected != item) ? Style : SelectedStyle);
+			GUI.color = !item.Target.activeInHierarchy ? Color.gray : Color.white;
+			GUILayout.BeginHorizontal(m_selected != item ? Style : SelectedStyle);
 			GUILayout.Space(depth * 16);
-			GUILayout.Label((!item.HasChildren) ? string.Empty : ((!item.Expanded) ? "»" : "«"), Style,
+			GUILayout.Label(!item.HasChildren ? string.Empty : !item.Expanded ? "»" : "«", Style,
 			GUILayout.Width(16f)
 			);
 			GUILayout.Label(item.Label, Style);

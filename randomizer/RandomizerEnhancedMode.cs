@@ -406,7 +406,7 @@ public class RandomizerEnhancedMode
                 }
             }
 
-            string hintMapAsText = (hintMap == 0 || hintMap == 1) ? "one mapstone in a #Map Pedestal#" : $"{hintMap} mapstones in #Map Pedestals#";
+            string hintMapAsText = hintMap == 0 || hintMap == 1 ? "one mapstone in a #Map Pedestal#" : $"{hintMap} mapstones in #Map Pedestals#";
 
             AddEnhancedModeTextAction(sequence, 8, new MessageDescriptor[3] {
                 new MessageDescriptor("Ori, this is a #Map#. Or #Map Stone#? #Map Altar#? Honestly, I'm not even sure anymore."),
@@ -433,7 +433,7 @@ public class RandomizerEnhancedMode
         AddEnhancedModeTextAction(attackSequence, 0, new MessageDescriptor[1] {
             new MessageDescriptor("I'm sorry, Ori, but stepping on this #Spirit Well# triggers a lengthy cutscene.", EmotionType.Sad, null)
         }, true);
-        (attackSequence.Actions[3] as WaitAction).LastAction = (attackSequence.Actions[0] as ShowEnhancedSpiritFlameTextAction);
+        (attackSequence.Actions[3] as WaitAction).LastAction = attackSequence.Actions[0] as ShowEnhancedSpiritFlameTextAction;
 
         ActionSequence mapSequence = sceneRoot.transform.FindChild("*spiritTreeStorySetup/container/actionSequences/03. worldMapActionSequence").GetComponent<ActionSequence>();
         AddEnhancedModeTextAction(mapSequence, 15, new MessageDescriptor[1] {
@@ -766,7 +766,7 @@ public class RandomizerEnhancedMode
     {
         string pickupHint = GetItemHintForPickup("DoorWarpExp");
         int numTries = new Random(31 * Randomizer.SeedMeta.GetHashCode()).Next(20);
-        string tryText = (numTries == 1) ? "first" : ((numTries == 2) ? "second" : ((numTries == 3) ? "third" : $"{numTries}th"));
+        string tryText = numTries == 1 ? "first" : numTries == 2 ? "second" : numTries == 3 ? "third" : $"{numTries}th";
         ActionSequence sequence = sceneRoot.transform.FindChild("*enterScene/action").GetComponent<ActionSequence>();
         
         if (Randomizer.Inventory.GetRandomizerItem(801) > 0)

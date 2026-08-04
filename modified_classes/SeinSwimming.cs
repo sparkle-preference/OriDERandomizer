@@ -20,7 +20,7 @@ public class SeinSwimming : CharacterState, ISeinReceiver
 	{
 		get
 		{
-			return Vector3.Dot(MoonMath.Angle.VectorFromAngle(SwimAngle), (!m_sein.Controller.FaceLeft) ? Vector3.left : Vector3.right) > Mathf.Cos(0.87266463f);
+			return Vector3.Dot(MoonMath.Angle.VectorFromAngle(SwimAngle), !m_sein.Controller.FaceLeft ? Vector3.left : Vector3.right) > Mathf.Cos(0.87266463f);
 		}
 	}
 
@@ -80,7 +80,7 @@ public class SeinSwimming : CharacterState, ISeinReceiver
 		{
 			Rect result = new Rect(m_currentWater.Bounds);
 			result.yMin = result.yMax - 0.5f;
-			result.yMax += ((!m_sein.PlatformBehaviour.PlatformMovement.IsOnGround) ? 0.5f : 0f);
+			result.yMax += !m_sein.PlatformBehaviour.PlatformMovement.IsOnGround ? 0.5f : 0f;
 			return result;
 		}
 	}
@@ -363,7 +363,7 @@ public class SeinSwimming : CharacterState, ISeinReceiver
 			PlatformMovement.PositionY = WaterSurfacePositionY;
 			PlatformMovement.LocalSpeedY = 0f;
 
-			m_sein.PlatformBehaviour.Visuals.Animation.PlayLoop((m_sein.Input.NormalizedHorizontal != 0) ? Animations.SwimSurface.Moving : Animations.SwimSurface.Idle, 9, ShouldSwimSurfaceAnimationPlay);
+			m_sein.PlatformBehaviour.Visuals.Animation.PlayLoop(m_sein.Input.NormalizedHorizontal != 0 ? Animations.SwimSurface.Moving : Animations.SwimSurface.Idle, 9, ShouldSwimSurfaceAnimationPlay);
 			if (SurfaceSwimmingSoundProvider && !SurfaceSwimmingSoundProvider.IsPlaying && m_sein.Input.NormalizedHorizontal != 0)
 			{
 				SurfaceSwimmingSoundProvider.Play();
@@ -416,7 +416,7 @@ public class SeinSwimming : CharacterState, ISeinReceiver
 		{
 			angle += 90f;
 			SwimAngle = angle;
-			m_sein.Controller.FaceLeft = (MoonMath.Angle.VectorFromAngle(angle).x < 0f);
+			m_sein.Controller.FaceLeft = MoonMath.Angle.VectorFromAngle(angle).x < 0f;
 			m_swimAccelerationTime = -BashTime;
 			ChangeState(State.SwimIdleUnderwater);
 		}
@@ -541,14 +541,14 @@ public class SeinSwimming : CharacterState, ISeinReceiver
 					VerticalFlip();
 				}
 				bool faceLeft = m_sein.Controller.FaceLeft;
-				float target2 = (!faceLeft) ? 0 : 180;
+				float target2 = !faceLeft ? 0 : 180;
 				if (MoonMath.Angle.AngleSubtract(SwimAngle, target2) > 0f)
 				{
 					m_sein.PlatformBehaviour.Visuals.Animation.Play(faceLeft ? Animations.SwimMiddleToIdleClockwise : Animations.SwimMiddleToIdleAntiClockwise, 10, ShouldIdleUnderwaterAnimationPlay);
 				}
 				else
 				{
-					m_sein.PlatformBehaviour.Visuals.Animation.Play((!faceLeft) ? Animations.SwimMiddleToIdleClockwise : Animations.SwimMiddleToIdleAntiClockwise, 10, ShouldIdleUnderwaterAnimationPlay);
+					m_sein.PlatformBehaviour.Visuals.Animation.Play(!faceLeft ? Animations.SwimMiddleToIdleClockwise : Animations.SwimMiddleToIdleAntiClockwise, 10, ShouldIdleUnderwaterAnimationPlay);
 				}
 				ChangeState(State.SwimIdleUnderwater);
 			}
@@ -563,13 +563,13 @@ public class SeinSwimming : CharacterState, ISeinReceiver
 		if (m_boostAnimationRemainingTime > 0f)
 		{
 			m_boostAnimationRemainingTime -= Time.deltaTime;
-			int min = Mathf.RoundToInt(Animations.AnimationFromBend.Evaluate(SmoothAngleDelta * ((!m_sein.Controller.FaceLeft) ? -1 : 1)) * (Animations.SwimJumpLeft.Length - 1));
+			int min = Mathf.RoundToInt(Animations.AnimationFromBend.Evaluate(SmoothAngleDelta * (!m_sein.Controller.FaceLeft ? -1 : 1)) * (Animations.SwimJumpLeft.Length - 1));
 			int num = Mathf.Clamp(0, min, Animations.SwimJumpLeft.Length - 1);
 			m_sein.PlatformBehaviour.Visuals.Animation.PlayLoop(Animations.SwimJumpLeft[num], 9, ShouldSwimUnderwaterAnimationPlay, true);
 		}
 		else
 		{
-			int min2 = Mathf.RoundToInt(Animations.AnimationFromBend.Evaluate(SmoothAngleDelta * ((!m_sein.Controller.FaceLeft) ? -1 : 1)) * (Animations.SwimHorizontal.Length - 1));
+			int min2 = Mathf.RoundToInt(Animations.AnimationFromBend.Evaluate(SmoothAngleDelta * (!m_sein.Controller.FaceLeft ? -1 : 1)) * (Animations.SwimHorizontal.Length - 1));
 			int num2 = Mathf.Clamp(0, min2, Animations.SwimHorizontal.Length - 1);
 			m_sein.PlatformBehaviour.Visuals.Animation.PlayLoop(Animations.SwimHorizontal[num2], 9, ShouldSwimUnderwaterAnimationPlay, true);
 		}
@@ -592,7 +592,7 @@ public class SeinSwimming : CharacterState, ISeinReceiver
 		}
 		else
 		{
-			float target = (!m_sein.Controller.FaceLeft) ? 0 : 180;
+			float target = !m_sein.Controller.FaceLeft ? 0 : 180;
 			SwimAngle = Mathf.MoveTowardsAngle(SwimAngle, target, SwimAngleDeltaLimit * Time.deltaTime);
 			m_sein.PlatformBehaviour.Visuals.Animation.PlayLoop(Animations.SwimIdle, 9, ShouldIdleUnderwaterAnimationPlay, true);
 		}

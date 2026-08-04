@@ -51,13 +51,13 @@ public class ActivateAction : ActionMethod
 	{
 		get
 		{
-			return (!(Target != null)) ? "unkown" : Target.name;
+			return !(Target != null) ? "unkown" : Target.name;
 		}
 	}
 
 	public override string GetNiceName()
 	{
-		return ((!Activate) ? "Deactivate " : "Activate ") + TargetName;
+		return (!Activate ? "Deactivate " : "Activate ") + TargetName;
 	}
 
 	[NotNull]

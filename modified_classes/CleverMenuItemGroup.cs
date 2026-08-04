@@ -197,7 +197,7 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase
 	{
 		foreach (CleverMenuItemGroupItem cleverMenuItemGroupItem in Options)
 		{
-			cleverMenuItemGroupItem.ItemGroup.IsVisible = (SelectionManager.CurrentMenuItem == cleverMenuItemGroupItem.MenuItem);
+			cleverMenuItemGroupItem.ItemGroup.IsVisible = SelectionManager.CurrentMenuItem == cleverMenuItemGroupItem.MenuItem;
 		}
 		foreach (CleverMenuItemGroupItem cleverMenuItemGroupItem2 in Options)
 		{

@@ -26,7 +26,7 @@ namespace Protogen
             foreach (string rawLine in logicLines)
             {
                 int commStart = rawLine.IndexOf("--");
-                string line = ((commStart == -1) ? rawLine : rawLine.Substring(0, commStart)).Trim();
+                string line = (commStart == -1 ? rawLine : rawLine.Substring(0, commStart)).Trim();
                 if (line.StartsWith("--") || line == "")
                     continue;
                 var segments = line.Split(new[]{' '}, StringSplitOptions.RemoveEmptyEntries);
@@ -70,7 +70,7 @@ namespace Protogen
 
             for (var i = 1; i <= 9; i++)
             {
-                var adjustedCount = (i == 9) ? 11 : ((i == 8) ? 9 : i);
+                var adjustedCount = i == 9 ? 11 : i == 8 ? 9 : i;
                 var node = new Node("Map" + i, NodeType.Pickup);
                 nodeDictionary[node.Name] = node;
                 connections.Add(new Connection(nodeDictionary[Origin], node, new Inventory{Mapstones = adjustedCount}));
@@ -191,7 +191,7 @@ namespace Protogen
         // Returns null if invalid.
         public static HashSet<string> PathMaskToPathSet(int pathMask)
         {
-            if ((pathMask <= 0) || (pathMask >= invalidPathset))
+            if (pathMask <= 0 || pathMask >= invalidPathset)
             {
                 return null;
             }

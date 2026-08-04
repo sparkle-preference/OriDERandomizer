@@ -281,7 +281,7 @@ public class TeleporterController : SaveSerialize, ISuspendable
 		}
 		if (m_isBlooming)
 		{
-			m_bloomCurrentTime += ((!IsSuspended) ? Time.deltaTime : 0f);
+			m_bloomCurrentTime += !IsSuspended ? Time.deltaTime : 0f;
 			if (m_bloomCurrentTime > BloomFadeDuration)
 			{
 				OnFadedToBlack();

@@ -171,7 +171,7 @@ public class SkillTreeManager : MenuScreen
 			}
 			if (j != skillItem.RequiredItems.Count - 1)
 			{
-				stringBuilder.Append((!abilitiesRequirementMet) ? "@,@ " : "$,$ ");
+				stringBuilder.Append(!abilitiesRequirementMet ? "@,@ " : "$,$ ");
 			}
 		}
 		if (abilitiesRequirementMet)
@@ -223,7 +223,7 @@ public class SkillTreeManager : MenuScreen
 		}
 		int requiredPoints = skillItem.ActualRequiredSkillPoints;
 		int totalRequiredPoints = skillItem.ActualTotalRequiredSkillPoints;
-		string costMessage = (requiredPoints != 1) ? RandomizerText.CostsAbilityPoints : RandomizerText.CostsAbilityPoint;
+		string costMessage = requiredPoints != 1 ? RandomizerText.CostsAbilityPoints : RandomizerText.CostsAbilityPoint;
 		if (totalRequiredPoints <= Characters.Sein.Level.SkillPoints)
 		{
 			return "$" + costMessage.Replace("[Amount]", requiredPoints.ToString()).Replace("[Total]", totalRequiredPoints.ToString()) + "$";

@@ -269,7 +269,7 @@ public class PlayerInput : MonoBehaviour
 			return;
 		}
 		Vector2 vector = UI.Cameras.Current.Camera.ScreenToViewportPoint(UnityEngine.Input.mousePosition);
-		Input.CursorMoved = (Vector2.Distance(vector, Input.CursorPosition) > 0.0001f);
+		Input.CursorMoved = Vector2.Distance(vector, Input.CursorPosition) > 0.0001f;
 		Input.CursorPosition = vector;
 		Input.HorizontalAnalogLeft = SimplifyAxis(HorizontalAnalogLeft.AxisValue());
 		Input.VerticalAnalogLeft = SimplifyAxis(VerticalAnalogLeft.AxisValue());
@@ -304,7 +304,7 @@ public class PlayerInput : MonoBehaviour
 			}
 			if (flag != WasKeyboardUsedLast)
 			{
-				GameSettings.Instance.CurrentControlScheme = ((!flag) ? ControlScheme.Controller : GameSettings.Instance.KeyboardScheme);
+				GameSettings.Instance.CurrentControlScheme = !flag ? ControlScheme.Controller : GameSettings.Instance.KeyboardScheme;
 			}
 		}
 	}

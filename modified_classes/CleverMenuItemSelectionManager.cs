@@ -171,7 +171,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable
 		{
 			do
 			{
-				num = ((num - 1 >= 0) ? (num - 1) : (MenuItems.Count - 1));
+				num = num - 1 >= 0 ? num - 1 : MenuItems.Count - 1;
 				if (num2++ > MenuItems.Count)
 				{
 					goto IL_8C;
@@ -220,7 +220,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable
 	public void Start()
 	{
 		m_holdRemainingTime = 0.4f;
-		m_delayNavigation = (Input.MenuDown.IsPressed || Input.MenuUp.IsPressed);
+		m_delayNavigation = Input.MenuDown.IsPressed || Input.MenuUp.IsPressed;
 		if (IsHighlightVisible && CurrentMenuItem)
 		{
 			CurrentMenuItem.OnHighlight();

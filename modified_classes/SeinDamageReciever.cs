@@ -157,7 +157,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
 			damage.SetAmount(damage.Amount * 100f);
 		}
 		UI.Vignette.SeinHurt.Restart();
-		SoundDescriptor soundForDamage = ((damage.Amount >= BadlyHurtAmount) ? SeinBadlyHurtSound : SeinHurtSound).GetSoundForDamage(damage);
+		SoundDescriptor soundForDamage = (damage.Amount >= BadlyHurtAmount ? SeinBadlyHurtSound : SeinHurtSound).GetSoundForDamage(damage);
 		if (soundForDamage != null)
 		{
 			SoundPlayer soundPlayer = Sound.Play(soundForDamage, PlatformMovement.Position, null);
@@ -207,7 +207,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
 			{
 				Sein.Abilities.Dash.Exit();
 			}
-			PlatformMovement.LocalSpeed = ((damage.Force.x <= 0f) ? new Vector2(-HurtSpeed.x, HurtSpeed.y) : HurtSpeed);
+			PlatformMovement.LocalSpeed = damage.Force.x <= 0f ? new Vector2(-HurtSpeed.x, HurtSpeed.y) : HurtSpeed;
 			m_hurtTimeRemaining = HurtDuration;
 			Sein.PlatformBehaviour.Visuals.Animation.Play(HurtAnimation, 140, ShouldHurtAnimationKeepPlaying);
 			return;
@@ -387,7 +387,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
 	public IEnumerator OnKillRoutine()
 	{
 		float deathDuration = DeathDuration;
-		for (float t = 0f; t < deathDuration; t += ((!Sein.IsSuspended) ? Time.deltaTime : 0f))
+		for (float t = 0f; t < deathDuration; t += !Sein.IsSuspended ? Time.deltaTime : 0f)
 		{
 			if (Characters.Sein == null)
 			{

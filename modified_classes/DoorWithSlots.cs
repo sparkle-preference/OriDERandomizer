@@ -13,7 +13,7 @@ public class DoorWithSlots : SaveSerialize
 	public override void Awake()
 	{
 		base.Awake();
-		m_opensOnLeftSide = (m_transform.TransformPoint(Vector3.right).x < m_transform.position.x);
+		m_opensOnLeftSide = m_transform.TransformPoint(Vector3.right).x < m_transform.position.x;
 	}
 
 	public void Highlight()

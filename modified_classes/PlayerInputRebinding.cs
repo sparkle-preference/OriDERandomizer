@@ -151,7 +151,7 @@ public class PlayerInputRebinding
 		List<KeyCode> list = new List<KeyCode>();
 		foreach (string value in array)
 		{
-			list.Add((KeyCode)((int)Enum.Parse(typeof(KeyCode), value)));
+			list.Add((KeyCode)(int)Enum.Parse(typeof(KeyCode), value));
 		}
 		return list.ToArray();
 	}
@@ -219,7 +219,7 @@ public class PlayerInputRebinding
 		bool flag = true;
 		foreach (KeyCode keyCode in codes)
 		{
-			text += ((!flag) ? ", " : string.Empty);
+			text += !flag ? ", " : string.Empty;
 			text += keyCode;
 			flag = false;
 		}
@@ -239,7 +239,7 @@ public class PlayerInputRebinding
 		keyBindingSettings.IsRebinding = false;
 		keyBindingSettings.HorizontalDigiPadLeft = new[]
 		{
-			(!flag2) ? KeyCode.Q : KeyCode.A,
+			!flag2 ? KeyCode.Q : KeyCode.A,
 			KeyCode.LeftArrow
 		};
 		keyBindingSettings.HorizontalDigiPadRight = new[]
@@ -254,12 +254,12 @@ public class PlayerInputRebinding
 		};
 		keyBindingSettings.VerticalDigiPadUp = new[]
 		{
-			(!flag2) ? KeyCode.Z : KeyCode.W,
+			!flag2 ? KeyCode.Z : KeyCode.W,
 			KeyCode.UpArrow
 		};
 		keyBindingSettings.MenuLeft = new[]
 		{
-			(!flag2) ? KeyCode.Q : KeyCode.A,
+			!flag2 ? KeyCode.Q : KeyCode.A,
 			KeyCode.LeftArrow
 		};
 		keyBindingSettings.MenuRight = new[]
@@ -274,7 +274,7 @@ public class PlayerInputRebinding
 		};
 		keyBindingSettings.MenuUp = new[]
 		{
-			(!flag2) ? KeyCode.Z : KeyCode.W,
+			!flag2 ? KeyCode.Z : KeyCode.W,
 			KeyCode.UpArrow
 		};
 		keyBindingSettings.MenuPageLeft = new[]
@@ -299,7 +299,7 @@ public class PlayerInputRebinding
 		keyBindingSettings.Jump = new[]
 		{
 			KeyCode.Space,
-			(!flag2) ? KeyCode.W : KeyCode.Z,
+			!flag2 ? KeyCode.W : KeyCode.Z,
 			KeyCode.Y
 		};
 		keyBindingSettings.Grab = new[]
@@ -351,7 +351,7 @@ public class PlayerInputRebinding
 		if (flag)
 		{
 			KeyCode[] array5 = new KeyCode[2];
-			array5[0] = ((!flag2) ? KeyCode.Z : KeyCode.W);
+			array5[0] = !flag2 ? KeyCode.Z : KeyCode.W;
 			chargeJump = array5;
 			array5[1] = KeyCode.UpArrow;
 		}
@@ -360,7 +360,7 @@ public class PlayerInputRebinding
 			KeyCode[] array6 = new KeyCode[2];
 			array6[0] = KeyCode.UpArrow;
 			chargeJump = array6;
-			array6[1] = ((!flag2) ? KeyCode.Z : KeyCode.W);
+			array6[1] = !flag2 ? KeyCode.Z : KeyCode.W;
 		}
 		keyBindingSettings4.ChargeJump = chargeJump;
 		keyBindingSettings.Select = new[]
@@ -713,7 +713,7 @@ public class PlayerInputRebinding
 		List<ControllerButton> list = new List<ControllerButton>();
 		foreach (string value in array)
 		{
-			list.Add((ControllerButton)((int)Enum.Parse(typeof(ControllerButton), value)));
+			list.Add((ControllerButton)(int)Enum.Parse(typeof(ControllerButton), value));
 		}
 		return list.ToArray();
 	}
@@ -782,7 +782,7 @@ public class PlayerInputRebinding
 		bool flag = true;
 		foreach (ControllerButton controllerButton in codes)
 		{
-			text += ((!flag) ? ", " : string.Empty);
+			text += !flag ? ", " : string.Empty;
 			text += controllerButton;
 			flag = false;
 		}

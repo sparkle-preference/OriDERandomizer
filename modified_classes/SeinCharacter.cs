@@ -8,7 +8,7 @@ public class SeinCharacter : MonoBehaviour, ICharacter
 		get
 		{
 			PlatformMovement platformMovement = PlatformBehaviour.PlatformMovement;
-			return (!platformMovement.IsOnGround) ? platformMovement.WorldSpeed : (platformMovement.GroundNormal * platformMovement.LocalSpeedY + platformMovement.GroundBinormal * platformMovement.LocalSpeedX);
+			return !platformMovement.IsOnGround ? platformMovement.WorldSpeed : platformMovement.GroundNormal * platformMovement.LocalSpeedY + platformMovement.GroundBinormal * platformMovement.LocalSpeedX;
 		}
 	}
 
