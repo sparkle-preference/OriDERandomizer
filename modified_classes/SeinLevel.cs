@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Game;
 using UnityEngine;
 
@@ -30,8 +32,11 @@ public class SeinLevel : SaveSerialize, ISeinReceiver {
         ExperienceVisualMax = Experience;
     }
 
+    public void Update() {
+    }
+
     public void FixedUpdate() {
-        if (sein.IsSuspended) {
+        if (m_sein.IsSuspended) {
             return;
         }
 
@@ -74,7 +79,7 @@ public class SeinLevel : SaveSerialize, ISeinReceiver {
     }
 
     public float ApplyLevelingToDamage(float damage) {
-        return damage + damage * sein.PlayerAbilities.OriStrength * 0.5f;
+        return damage + damage * m_sein.PlayerAbilities.OriStrength * 0.5f;
     }
 
     public float CalculateLevelBasedMaxHealth(int level, float health) {
@@ -82,7 +87,7 @@ public class SeinLevel : SaveSerialize, ISeinReceiver {
     }
 
     public void SetReferenceToSein(SeinCharacter sein) {
-        this.sein = sein;
+        m_sein = sein;
     }
 
     public void GainSkillPoint() {
@@ -117,5 +122,15 @@ public class SeinLevel : SaveSerialize, ISeinReceiver {
 
     public float ExperienceGainPerSecond = 30f;
 
-    private SeinCharacter sein;
+    private static readonly HashSet<string> CollectablesToSerialize = new HashSet<string> {
+        "largeExpOrbPlaceholder",
+        "mediumExpOrbPlaceholder",
+        "smallExpOrbPlaceholder",
+    };
+
+    private static HashSet<Type> TypesToSerialize = new HashSet<Type> {
+        typeof(ExpOrbPickup),
+    };
+
+    private SeinCharacter m_sein;
 }

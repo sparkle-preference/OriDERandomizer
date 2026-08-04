@@ -5,13 +5,13 @@ using UnityEngine;
 
 public class SaveSlotsManager : MonoBehaviour {
     public static int CurrentSlotIndex {
-        get => Instance.currentSlotIndex;
-        set => Instance.currentSlotIndex = value;
+        get => Instance.m_currentSlotIndex;
+        set => Instance.m_currentSlotIndex = value;
     }
 
     public static int BackupIndex {
-        get => Instance.backupIndex;
-        set => Instance.backupIndex = value;
+        get => Instance.m_backupIndex;
+        set => Instance.m_backupIndex = value;
     }
 
     public static SaveSlotInfo CurrentSaveSlot => FindOrCreateSaveSlot(CurrentSlotIndex);
@@ -98,9 +98,9 @@ public class SaveSlotsManager : MonoBehaviour {
 
     public static SaveSlotsManager Instance;
 
-    private int currentSlotIndex;
+    private int m_currentSlotIndex;
 
-    private int backupIndex = -1;
+    private int m_backupIndex = -1;
 
     public List<SaveSlotInfo> SaveSlots = new List<SaveSlotInfo>();
 }

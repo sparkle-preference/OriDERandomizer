@@ -3,7 +3,7 @@ using Game;
 using UnityEngine;
 
 public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashAttackable, ISuspendable {
-    public bool IsInsideSpiritTorch => ignitableTorch != null;
+    public bool IsInsideSpiritTorch => m_ignitableTorch != null;
 
     public void Awake() {
         var damageDealer = DamageDealer;
@@ -12,11 +12,11 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
         damageDealer2.ShouldDealDamage = (Func<GameObject, bool>)Delegate.Combine(damageDealer2.ShouldDealDamage, new Func<GameObject, bool>(ShouldDealDamage));
         SuspensionManager.Register(this);
         Targets.Attackables.Add(this);
-        rigidbody = GetComponent<Rigidbody>();
+        m_rigidbody = GetComponent<Rigidbody>();
     }
 
     public void Start() {
-        time = 0f;
+        m_time = 0f;
     }
 
     public void OnDestroy() {
@@ -59,28 +59,28 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
             return;
         }
 
-        time += Time.deltaTime;
+        m_time += Time.deltaTime;
         if (IsInsideSpiritTorch) {
-            rigidbody.velocity = (ignitableTorch.Position - rigidbody.position + new Vector3(0.2f, 0.4f)) * 8f;
-            if (time > 0.8f) {
+            m_rigidbody.velocity = (m_ignitableTorch.Position - m_rigidbody.position + new Vector3(0.2f, 0.4f)) * 8f;
+            if (m_time > 0.8f) {
                 InstantiateUtility.Destroy(gameObject);
             }
         } else {
-            rigidbody.velocity += Vector3.down * Gravity * Time.deltaTime;
+            m_rigidbody.velocity += Vector3.down * Gravity * Time.deltaTime;
             var ignitableSpiritTorch = IgnitableSpiritTorch.IgniteAnyTorchesNearPosition(transform.position);
             if (ignitableSpiritTorch) {
-                ignitableTorch = ignitableSpiritTorch;
-                time = 0f;
+                m_ignitableTorch = ignitableSpiritTorch;
+                m_time = 0f;
                 return;
             }
 
-            if (time > Duration) {
+            if (m_time > Duration) {
                 Explode();
             }
         }
 
         if (WaterZone.PositionInWater(Position)) {
-            rigidbody.velocity *= 0.9f;
+            m_rigidbody.velocity *= 0.9f;
         }
     }
 
@@ -136,7 +136,7 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
     public bool IsSuspended { get; set; }
 
     public void OnSpring(float height, Vector2 direction) {
-        rigidbody.velocity = direction * MoonMath.Physics.SpeedFromHeightAndGravity(Gravity, height);
+        m_rigidbody.velocity = direction * MoonMath.Physics.SpeedFromHeightAndGravity(Gravity, height);
     }
 
     public void OnRecieveDamage(Damage damage) {
@@ -166,11 +166,11 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
 
     public float Duration = 4f;
 
-    private float time;
+    private float m_time;
 
-    private Rigidbody rigidbody;
+    private Rigidbody m_rigidbody;
 
-    private IgnitableSpiritTorch ignitableTorch;
+    private IgnitableSpiritTorch m_ignitableTorch;
 
     public bool Bashable = true;
 

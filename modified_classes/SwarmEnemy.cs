@@ -49,7 +49,7 @@ public class SwarmEnemy : GroundEnemy {
         Controller.StateMachine.Configure(State.Idle).AddTransition<OnFixedUpdate>(State.Run, ShouldRun);
         Controller.StateMachine.Configure(State.Run).AddTransition<OnFixedUpdate>(State.Idle, () => !ShouldRun());
         Controller.StateMachine.Configure(State.Spawned).AddTransition<OnFixedUpdate>(State.Run, () => AfterTime(0.5f));
-        Controller.StateMachine.ChangeState(!wasSpawned ? State.Idle : State.Spawned);
+        Controller.StateMachine.ChangeState(!m_wasSpawned ? State.Idle : State.Spawned);
     }
 
     public bool ShouldRun() {
@@ -63,7 +63,7 @@ public class SwarmEnemy : GroundEnemy {
     }
 
     public void SetModeToSpawned() {
-        wasSpawned = true;
+        m_wasSpawned = true;
     }
 
     public new void FixedUpdate() {
@@ -134,13 +134,13 @@ public class SwarmEnemy : GroundEnemy {
 
         PlatformMovement.LocalSpeedX = RandomizerBonusSkill.TimeScale(Settings.Speed * Settings.MoveCurve.Evaluate(SpriteAnimator.CurrentAnimationTime) * (!PlayerIsToLeft ? 1 : -1));
         if (Settings.JumpDelay > 0f) {
-            if (jumpDelay < 0f && PlatformMovement.IsOnGround) {
-                jumpDelay = Settings.JumpDelay;
+            if (m_jumpDelay < 0f && PlatformMovement.IsOnGround) {
+                m_jumpDelay = Settings.JumpDelay;
                 PlatformMovement.LocalSpeedY = Settings.JumpStrength;
                 PlayAnimationOnce(Animations.Jump, 1);
             }
 
-            jumpDelay -= Time.deltaTime;
+            m_jumpDelay -= Time.deltaTime;
         }
     }
 
@@ -179,7 +179,7 @@ public class SwarmEnemy : GroundEnemy {
 
     public States State = new States();
 
-    private bool wasSpawned;
+    private bool m_wasSpawned;
 
     public AnimationCurve SpeedXToRotation;
 
@@ -187,7 +187,7 @@ public class SwarmEnemy : GroundEnemy {
 
     public float AirTiltAngle;
 
-    private float jumpDelay;
+    private float m_jumpDelay;
 
     public SwarmEnemyPlaceholder Owner;
 

@@ -57,8 +57,8 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
         }
 
         damage.SetAmount(Mathf.Round(damage.Amount * Randomizer.DamageModifier));
-        var flag = invincibleTimeRemaining > 0f;
-        var flag2 = invincibleToEnemiesTimeRemaining > 0f || (RandomizerBonus.EnhancedChargeJump && Sein.Abilities.ChargeJumpCharging && Sein.Abilities.ChargeJumpCharging.IsCharged);
+        var flag = m_invincibleTimeRemaining > 0f;
+        var flag2 = m_invincibleToEnemiesTimeRemaining > 0f || (RandomizerBonus.EnhancedChargeJump && Sein.Abilities.ChargeJumpCharging && Sein.Abilities.ChargeJumpCharging.IsCharged);
         if (Sein.Abilities.Stomp && Sein.Abilities.Stomp.Logic.CurrentState == Sein.Abilities.Stomp.State.StompDown) {
             flag = true;
         }
@@ -158,7 +158,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
             }
 
             PlatformMovement.LocalSpeed = damage.Force.x <= 0f ? new Vector2(-HurtSpeed.x, HurtSpeed.y) : HurtSpeed;
-            hurtTimeRemaining = HurtDuration;
+            m_hurtTimeRemaining = HurtDuration;
             Sein.PlatformBehaviour.Visuals.Animation.Play(HurtAnimation, 140, ShouldHurtAnimationKeepPlaying);
             return;
         }
@@ -175,22 +175,22 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
             return;
         }
 
-        hurtTimeRemaining -= Time.deltaTime;
-        invincibleTimeRemaining -= Time.deltaTime;
-        invincibleToEnemiesTimeRemaining -= Time.deltaTime;
-        if (hurtTimeRemaining < 0f) {
-            hurtTimeRemaining = 0f;
+        m_hurtTimeRemaining -= Time.deltaTime;
+        m_invincibleTimeRemaining -= Time.deltaTime;
+        m_invincibleToEnemiesTimeRemaining -= Time.deltaTime;
+        if (m_hurtTimeRemaining < 0f) {
+            m_hurtTimeRemaining = 0f;
         }
 
-        if (invincibleTimeRemaining < 0f) {
-            invincibleTimeRemaining = 0f;
+        if (m_invincibleTimeRemaining < 0f) {
+            m_invincibleTimeRemaining = 0f;
         }
 
-        if (invincibleToEnemiesTimeRemaining < 0f) {
-            invincibleToEnemiesTimeRemaining = 0f;
+        if (m_invincibleToEnemiesTimeRemaining < 0f) {
+            m_invincibleToEnemiesTimeRemaining = 0f;
         }
 
-        if (Active && hurtTimeRemaining == 0f) {
+        if (Active && m_hurtTimeRemaining == 0f) {
             Active = false;
         }
     }
@@ -209,23 +209,23 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
     }
 
     public void MakeInvincible(float duration) {
-        invincibleTimeRemaining = Mathf.Max(invincibleTimeRemaining, duration);
+        m_invincibleTimeRemaining = Mathf.Max(m_invincibleTimeRemaining, duration);
     }
 
     public void MakeInvincibleToEnemies(float duration) {
-        invincibleToEnemiesTimeRemaining = Mathf.Max(invincibleToEnemiesTimeRemaining, duration);
+        m_invincibleToEnemiesTimeRemaining = Mathf.Max(m_invincibleToEnemiesTimeRemaining, duration);
     }
 
     public void ResetInviciblity() {
-        invincibleTimeRemaining = 0f;
-        invincibleToEnemiesTimeRemaining = 0f;
+        m_invincibleTimeRemaining = 0f;
+        m_invincibleToEnemiesTimeRemaining = 0f;
     }
 
     public void OnRestoreCheckpoint() {
         SpriteMaterialTintColor(new Color(0f, 0f, 0f, 0f));
         CameraFrustumOptimizer.ForceUpdate();
-        if (died) {
-            died = false;
+        if (m_died) {
+            m_died = false;
             Sein.Active = true;
             Sein.GetComponent<GoThroughPlatformHandler>().UpdateColliders();
             Sein.Mortality.Health.OnRespawn();
@@ -255,11 +255,11 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
 
     public void OnEnable() {
         SpriteMaterialTintColor(new Color(0f, 0f, 0f, 0f));
-        invincibleTimeRemaining = 0f;
-        invincibleToEnemiesTimeRemaining = 0f;
+        m_invincibleTimeRemaining = 0f;
+        m_invincibleToEnemiesTimeRemaining = 0f;
     }
 
-    public bool IsInvinsible => invincibleTimeRemaining > 0f;
+    public bool IsInvinsible => m_invincibleTimeRemaining > 0f;
 
     public bool ShouldHurtAnimationKeepPlaying() {
         return !PlatformMovement.IsOnGround;
@@ -271,7 +271,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
         }
 
         BingoController.OnDeath(damage);
-        died = true;
+        m_died = true;
         var soundForDamage = SeinDeathSound.GetSoundForDamage(damage);
         if (soundForDamage != null) {
             var soundPlayer = Sound.Play(soundForDamage, PlatformMovement.Position, null);
@@ -332,12 +332,12 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
     }
 
     public bool CanDetonateProjectiles() {
-        return invincibleToEnemiesTimeRemaining == 0f;
+        return m_invincibleToEnemiesTimeRemaining == 0f;
     }
 
     public override void Serialize(Archive ar) {
         base.Serialize(ar);
-        ar.Serialize(ref serializationFiller);
+        ar.Serialize(ref m_serializationFiller);
     }
 
     public SeinCharacter Sein;
@@ -356,11 +356,11 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
 
     public float HurtDropPickupSpeed = 20f;
 
-    private float invincibleTimeRemaining;
+    private float m_invincibleTimeRemaining;
 
-    private float invincibleToEnemiesTimeRemaining;
+    private float m_invincibleToEnemiesTimeRemaining;
 
-    private bool died;
+    private bool m_died;
 
     public GameObject GameOverScreen;
 
@@ -380,7 +380,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
 
     public GameObject HurtDropPickup;
 
-    private float hurtTimeRemaining;
+    private float m_hurtTimeRemaining;
 
     public GameObject KillFader;
 
@@ -396,5 +396,5 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
 
     public DamageBasedPrefabProvider DeathEffectProvider;
 
-    private int serializationFiller;
+    private int m_serializationFiller;
 }

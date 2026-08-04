@@ -28,7 +28,7 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver {
 
     public SeinJump Jump => Sein.Abilities.Jump;
 
-    public bool CanDoubleJump => enabled && !PlatformMovement.IsOnGround && numberOfJumpsAvailable != 0 && remainingLockTime <= 0f && !SeinAbilityRestrictZone.IsInside();
+    public bool CanDoubleJump => enabled && !PlatformMovement.IsOnGround && m_numberOfJumpsAvailable != 0 && m_remainingLockTime <= 0f && !SeinAbilityRestrictZone.IsInside();
 
     public void SetReferenceToSein(SeinCharacter sein) {
         Sein = sein;
@@ -36,9 +36,9 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver {
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref doubleJumpTime);
-        ar.Serialize(ref numberOfJumpsAvailable);
-        ar.Serialize(ref remainingLockTime);
+        ar.Serialize(ref m_doubleJumpTime);
+        ar.Serialize(ref m_numberOfJumpsAvailable);
+        ar.Serialize(ref m_remainingLockTime);
     }
 
     public void PerformDoubleJump() {
@@ -47,12 +47,12 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver {
         }
 
         PlatformMovement.LocalSpeedY = JumpStrength * RandomizerBonus.DoubleJumpscale;
-        numberOfJumpsAvailable--;
+        m_numberOfJumpsAvailable--;
         Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(DoubleJumpAnimation, 10, ShouldDoubleJumpAnimationKeepPlaying);
-        doubleJumpSound = Sound.Play(DoubleJumpSound.GetSound(null), Sein.PlatformBehaviour.PlatformMovement.Position, delegate { doubleJumpSound = null; });
+        m_doubleJumpSound = Sound.Play(DoubleJumpSound.GetSound(null), Sein.PlatformBehaviour.PlatformMovement.Position, delegate { m_doubleJumpSound = null; });
         OnDoubleJumpEvent(JumpStrength * RandomizerBonus.DoubleJumpscale);
         var original = DoubleJumpAfterShock;
-        if (numberOfJumpsAvailable == 0 && ExtraJumpsAvailable == 2) {
+        if (m_numberOfJumpsAvailable == 0 && ExtraJumpsAvailable == 2) {
             original = TrippleJumpAfterShock;
         }
 
@@ -71,39 +71,39 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver {
             return;
         }
 
-        if (PlatformMovement.IsOnGround && numberOfJumpsAvailable != ExtraJumpsAvailable) {
+        if (PlatformMovement.IsOnGround && m_numberOfJumpsAvailable != ExtraJumpsAvailable) {
             ResetDoubleJump();
         }
 
-        if (doubleJumpSound && (PlatformMovement.IsOnWall || PlatformMovement.IsOnCeiling)) {
-            doubleJumpSound.FadeOut(0.5f, true);
-            UberPoolManager.Instance.RemoveOnDestroyed(doubleJumpSound.gameObject);
-            doubleJumpSound = null;
+        if (m_doubleJumpSound && (PlatformMovement.IsOnWall || PlatformMovement.IsOnCeiling)) {
+            m_doubleJumpSound.FadeOut(0.5f, true);
+            UberPoolManager.Instance.RemoveOnDestroyed(m_doubleJumpSound.gameObject);
+            m_doubleJumpSound = null;
         }
 
-        if (remainingLockTime > 0f) {
-            remainingLockTime -= Time.deltaTime;
+        if (m_remainingLockTime > 0f) {
+            m_remainingLockTime -= Time.deltaTime;
         }
 
-        if (doubleJumpTime > 0f) {
+        if (m_doubleJumpTime > 0f) {
             if (PlatformMovement.LocalSpeedY <= 0f) {
-                doubleJumpTime = 0f;
+                m_doubleJumpTime = 0f;
             }
 
-            doubleJumpTime -= Time.deltaTime;
+            m_doubleJumpTime -= Time.deltaTime;
         }
     }
 
     public void ResetDoubleJump() {
-        numberOfJumpsAvailable = ExtraJumpsAvailable;
+        m_numberOfJumpsAvailable = ExtraJumpsAvailable;
     }
 
     public void LockForDuration(float duration) {
-        remainingLockTime = Mathf.Max(remainingLockTime, duration);
+        m_remainingLockTime = Mathf.Max(m_remainingLockTime, duration);
     }
 
     public void ResetLock() {
-        remainingLockTime = 0f;
+        m_remainingLockTime = 0f;
     }
 
     public TextureAnimationWithTransitions[] DoubleJumpAnimation;
@@ -118,11 +118,11 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver {
 
     public SeinCharacter Sein;
 
-    private SoundPlayer doubleJumpSound;
+    private SoundPlayer m_doubleJumpSound;
 
-    private float doubleJumpTime;
+    private float m_doubleJumpTime;
 
-    private int numberOfJumpsAvailable;
+    private int m_numberOfJumpsAvailable;
 
-    private float remainingLockTime;
+    private float m_remainingLockTime;
 }

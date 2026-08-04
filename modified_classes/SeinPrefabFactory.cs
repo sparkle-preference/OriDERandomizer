@@ -40,7 +40,7 @@ public class SeinPrefabFactory : SaveSerialize, ISeinReceiver {
         GrabPushPull.IsInstantiated = true;
         SpiritFlame.IsInstantiated = true;
         PickupProcessor.IsInstantiated = true;
-        prefabs = new[] {
+        m_prefabs = new[] {
             Bash,
             Carry,
             ChargeJump,
@@ -66,6 +66,9 @@ public class SeinPrefabFactory : SaveSerialize, ISeinReceiver {
         };
     }
 
+    public void Start() {
+    }
+
     public void EnsureRightPrefabsAreThereForAbilities() {
         WallJump.IsInstantiated = Sein.PlayerAbilities.WallJump.HasAbility;
         WallSlide.IsInstantiated = true;
@@ -87,7 +90,7 @@ public class SeinPrefabFactory : SaveSerialize, ISeinReceiver {
 
     public override void Serialize(Archive ar) {
         try {
-            foreach (var seinNestedPrefab in prefabs) {
+            foreach (var seinNestedPrefab in m_prefabs) {
                 seinNestedPrefab.IsInstantiated = ar.Serialize(seinNestedPrefab.IsInstantiated);
             }
         } catch (Exception exception) {
@@ -103,7 +106,7 @@ public class SeinPrefabFactory : SaveSerialize, ISeinReceiver {
 
     public SeinPrefabSet SeinPrefabSet;
 
-    private SeinNestedPrefab[] prefabs = new SeinNestedPrefab[0];
+    private SeinNestedPrefab[] m_prefabs = new SeinNestedPrefab[0];
 
     public SeinNestedPrefab Bash;
 

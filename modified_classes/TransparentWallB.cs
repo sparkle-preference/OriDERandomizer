@@ -16,7 +16,7 @@ public class TransparentWallB : SaveSerialize, ISuspendable {
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref hasBeenShown);
+        ar.Serialize(ref m_hasBeenShown);
     }
 
     public float SenseTime => Animator.Duration / 2f;
@@ -48,7 +48,7 @@ public class TransparentWallB : SaveSerialize, ISuspendable {
 
     private void OnEnterTrigger(Collider other) {
         if (other.gameObject.CompareTag("Player")) {
-            if (!hasBeenShown) {
+            if (!m_hasBeenShown) {
                 if (SeinTransparentWallHandler.Instance) {
                     Sound.Play(SeinTransparentWallHandler.Instance.EnterTransparentWallFirstTimeSoundProvider.GetSound(null), transform.position, null);
                 }
@@ -60,9 +60,9 @@ public class TransparentWallB : SaveSerialize, ISuspendable {
 
     public void OnTrigger(Collider other) {
         if (other.gameObject.CompareTag("Player")) {
-            beingTriggered = true;
-            if (!hasBeenShown) {
-                hasBeenShown = true;
+            m_beingTriggered = true;
+            if (!m_hasBeenShown) {
+                m_hasBeenShown = true;
                 AchievementsLogic.Instance.RevealTransparentWall();
             }
         }
@@ -79,7 +79,7 @@ public class TransparentWallB : SaveSerialize, ISuspendable {
                 animatorDriver.SetForward();
                 animatorDriver.Resume();
             }
-        } else if (lastVisible) {
+        } else if (m_lastVisiable) {
             animatorDriver.SetBackwards();
             animatorDriver.Resume();
             if (SeinTransparentWallHandler.Instance) {
@@ -87,27 +87,27 @@ public class TransparentWallB : SaveSerialize, ISuspendable {
             }
         }
 
-        lastVisible = WallVisible;
+        m_lastVisiable = WallVisible;
         if (animatorDriver.CurrentTime < SenseTime && HasSense) {
             animatorDriver.Pause();
             animatorDriver.CurrentTime = SenseTime;
             animatorDriver.Sample();
         }
 
-        beingTriggered = false;
+        m_beingTriggered = false;
     }
 
     public bool HasSense => !(Characters.Sein == null);
 
-    public bool WallVisible => beingTriggered;
+    public bool WallVisible => m_beingTriggered;
 
     public bool IsSuspended { get; set; }
 
-    private bool hasBeenShown;
+    private bool m_hasBeenShown;
 
-    private bool lastVisible;
+    private bool m_lastVisiable;
 
-    private bool beingTriggered;
+    private bool m_beingTriggered;
 
     public BaseAnimator Animator;
 }

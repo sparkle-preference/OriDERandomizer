@@ -5,36 +5,36 @@ namespace Game {
         public static MessageControllerB MessageController {
             get {
                 LoadMessageController();
-                return messageController;
+                return m_messageController;
             }
         }
 
         public static void LoadMessageController() {
-            if (messageController == null) {
-                messageController = (Resources.Load("MessageControllerB") as GameObject).GetComponent<MessageControllerB>();
+            if (m_messageController == null) {
+                m_messageController = (Resources.Load("MessageControllerB") as GameObject).GetComponent<MessageControllerB>();
             }
         }
 
         public static MenuScreenManager Menu {
-            get => menu;
-            set => menu = value;
+            get => m_sMenu;
+            set => m_sMenu = value;
         }
 
-        public static bool MainMenuVisible => menu != null && (menu.MainMenuVisible || menu.ResumeScreenVisible);
+        public static bool MainMenuVisible => m_sMenu != null && (m_sMenu.MainMenuVisible || m_sMenu.ResumeScreenVisible);
 
-        public static bool MainMenuExists => menu != null;
+        public static bool MainMenuExists => m_sMenu != null;
 
         public static bool IsInventoryVisible() {
-            return MainMenuVisible && menu.IsInventoryVisible();
+            return MainMenuVisible && m_sMenu.IsInventoryVisible();
         }
 
-        private static MessageControllerB messageController;
+        private static MessageControllerB m_messageController;
 
         public static FaderB Fader;
 
         public static SeinUI SeinUI;
 
-        private static MenuScreenManager menu;
+        private static MenuScreenManager m_sMenu;
 
         public static Vignette Vignette;
 
@@ -54,7 +54,7 @@ namespace Game {
             }
 
             private static bool LayerShouldShow(HintLayer layer) {
-                return !currentHint || layer >= currentLayer;
+                return !m_currentHint || layer >= m_currentLayer;
             }
 
             public static MessageBox Show(MessageProvider messageProvider, HintLayer layer, float duration = 3f) {
@@ -68,39 +68,41 @@ namespace Game {
 
                 if (LayerShouldShow(layer)) {
                     HideExistingHint(true);
-                    currentLayer = layer;
+                    m_currentLayer = layer;
                     if (ShorterHintZone.IsInside) {
                         duration = 1f;
                     }
 
                     if (layer == HintLayer.Randomizer) {
-                        currentHint = MessageController.ShowHintMessage(messageProvider, new Vector3(HintPosition.x, HintPosition.y, -7f), duration);
+                        m_currentHint = MessageController.ShowHintMessage(messageProvider, new Vector3(HintPosition.x, HintPosition.y, -7f), duration);
                     } else {
-                        currentHint = MessageController.ShowHintMessage(messageProvider, HintPosition, duration);
+                        m_currentHint = MessageController.ShowHintMessage(messageProvider, HintPosition, duration);
                     }
 
-                    return currentHint;
+                    return m_currentHint;
                 }
 
                 return null;
             }
 
-            public static bool IsShowingHint => currentHint;
+            public static bool IsShowingHint => m_currentHint;
 
             public static void HideExistingHint(bool force) {
-                if (currentLayer == HintLayer.Randomizer && !force) {
+                if (m_currentLayer == HintLayer.Randomizer && !force) {
                     return;
                 }
 
-                if (currentHint) {
-                    currentHint.Visibility.HideMessageScreenImmediately();
-                    currentHint = null;
+                if (m_currentHint) {
+                    m_currentHint.Visibility.HideMessageScreenImmediately();
+                    m_currentHint = null;
                 }
             }
 
-            private static MessageBox currentHint;
+            private static MessageBox m_currentHint;
 
-            private static HintLayer currentLayer;
+            private static HintLayer m_currentLayer;
+
+            private static bool m_showHints;
         }
     }
 }

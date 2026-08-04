@@ -2,7 +2,6 @@ using System;
 using Core;
 using Game;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Input = Core.Input;
 
 public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISuspendable, ICanActivateStompers {
@@ -17,7 +16,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
         set => Sein.PlatformBehaviour.LeftRightMovement.SpriteMirror.FaceLeft = value;
     }
 
-    public Transform Transform => transform;
+    public Transform Transform => m_transform;
 
     public bool IsCrouching => Sein.Abilities.Crouch && Sein.Abilities.Crouch.IsCrouching;
 
@@ -49,6 +48,8 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 
     public bool IsSuspended { get; set; }
 
+    public Component[] Suspendables => m_suspendables;
+
     public bool AnimationHasMetaData => IsPlayingAnimation && Sein.Animation.Animator.CurrentAnimation.AnimationMetaData != null;
 
     public bool IsDashing => Sein.Abilities.Dash && Sein.Abilities.Dash.IsDashingOrChangeDashing;
@@ -68,6 +69,10 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
         }
     }
 
+    public bool CanActivateSwitch(GameObject theSwitch) {
+        return true;
+    }
+
     public void SetReferenceToSein(SeinCharacter sein) {
         Sein = sein;
     }
@@ -84,15 +89,15 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
                     var num = Sein.Controller.InputCurve.Evaluate(Mathf.Abs(Sein.Input.Horizontal)) * Mathf.Sign(Sein.Input.Horizontal);
                     Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = 0f;
                     if (num == 0f) {
-                        horizontalInputDelay = 0.06666667f;
+                        m_horizontalInputDelay = 0.06666667f;
                     }
 
                     if (Mathf.Abs(num) > Sein.Controller.InputSettings.JogThreshold) {
                         Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = num;
                     }
 
-                    horizontalInputDelay = Mathf.Max(0f, horizontalInputDelay - Time.deltaTime);
-                    if (horizontalInputDelay == 0f) {
+                    m_horizontalInputDelay = Mathf.Max(0f, m_horizontalInputDelay - Time.deltaTime);
+                    if (m_horizontalInputDelay == 0f) {
                         Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = num;
                     }
                 } else {
@@ -108,11 +113,11 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 
     [UberBuildMethod]
     private void ProvideComponents() {
-        Suspendables = gameObject.FindComponentsInChildren<ISuspendable>();
+        m_suspendables = gameObject.FindComponentsInChildren<ISuspendable>();
     }
 
     public override void Awake() {
-        transform = base.transform;
+        m_transform = transform;
         ProvideComponents();
         SuspensionManager.Register(this);
         UI.Cameras.Current.ChangeTargetToCurrentCharacter();
@@ -199,7 +204,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
     }
 
     public bool RayTest(GameObject target, Vector2 startOffset, Vector2 endOffset) {
-        var vector = transform.position + (Vector3)startOffset;
+        var vector = m_transform.position + (Vector3)startOffset;
         var a = target.transform.position + (Vector3)endOffset;
         var vector2 = a - vector;
         var component = target.GetComponent<Rigidbody>();
@@ -283,7 +288,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref horizontalInputDelay);
+        ar.Serialize(ref m_horizontalInputDelay);
         if (ar.Reading) {
             IsPlayingAnimation = false;
             LockMovementInput = false;
@@ -312,11 +317,11 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 
     public Action OnHorizontalInputPostCalculate = delegate { };
 
-    private new Transform transform;
+    private Transform m_transform;
 
     public Transform GetItemTransform;
 
-    [FormerlySerializedAs("m_suspendables")] [SerializeField] [HideInInspector] public Component[] Suspendables;
+    [SerializeField] [HideInInspector] private Component[] m_suspendables;
 
-    private float horizontalInputDelay;
+    private float m_horizontalInputDelay;
 }

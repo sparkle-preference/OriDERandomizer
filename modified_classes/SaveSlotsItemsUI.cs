@@ -3,10 +3,10 @@ using UnityEngine;
 
 public class SaveSlotsItemsUI : MonoBehaviour {
     public float TargetScroll {
-        get => targetScroll;
+        get => m_targetScroll;
         set {
-            targetScroll = value;
-            targetScroll = Mathf.Clamp(targetScroll, 0f, Items.Count - 2);
+            m_targetScroll = value;
+            m_targetScroll = Mathf.Clamp(m_targetScroll, 0f, Items.Count - 2);
         }
     }
 
@@ -52,8 +52,8 @@ public class SaveSlotsItemsUI : MonoBehaviour {
     }
 
     public void UpdateScroll() {
-        scroll = Mathf.Lerp(scroll, targetScroll, 0.3f);
-        Scroll.localPosition = Vector3.left * scroll * Spacing;
+        m_scroll = Mathf.Lerp(m_scroll, m_targetScroll, 0.3f);
+        Scroll.localPosition = Vector3.left * m_scroll * Spacing;
     }
 
     public void SetScrollFromIndex(int index) {
@@ -70,7 +70,7 @@ public class SaveSlotsItemsUI : MonoBehaviour {
 
     public List<SaveSlotUI> Items = new List<SaveSlotUI>();
 
-    private float scroll;
+    private float m_scroll;
 
-    private float targetScroll;
+    private float m_targetScroll;
 }

@@ -8,15 +8,15 @@ using Input = Core.Input;
 public class SeinJump : CharacterState, ISeinReceiver {
     public event Action<float> OnJumpEvent = delegate { };
 
-    public bool CanJump => enabled && Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY <= 0.0001f && timeWeCanJumpRemaining > 0f && !Sein.PlatformBehaviour.PlatformMovement.Ceiling.IsOn && !SeinAbilityRestrictZone.IsInside();
+    public bool CanJump => enabled && Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY <= 0.0001f && m_timeWeCanJumpRemaining > 0f && !Sein.PlatformBehaviour.PlatformMovement.Ceiling.IsOn && !SeinAbilityRestrictZone.IsInside();
 
     public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
     public bool SpriteMirrorLock {
-        get => spriteMirrorLock;
+        get => m_spriteMirrorLock;
         set {
-            if (spriteMirrorLock != value) {
-                spriteMirrorLock = value;
+            if (m_spriteMirrorLock != value) {
+                m_spriteMirrorLock = value;
                 if (value) {
                     CharacterSpriteMirror.Lock++;
                 } else {
@@ -28,7 +28,7 @@ public class SeinJump : CharacterState, ISeinReceiver {
 
     public CharacterSpriteMirror CharacterSpriteMirror => Sein.PlatformBehaviour.Visuals.SpriteMirror;
 
-    public bool HasSharplyTurnedAround => (timeSinceMovingRight > 0f && timeSinceMovingRight < 0.2f && PlatformMovement.LocalSpeedX < 0f) || (timeSinceMovingLeft > 0f && timeSinceMovingLeft < 0.2f && PlatformMovement.LocalSpeedX > 0f);
+    public bool HasSharplyTurnedAround => (m_timeSinceMovingRight > 0f && m_timeSinceMovingRight < 0.2f && PlatformMovement.LocalSpeedX < 0f) || (m_timeSinceMovingLeft > 0f && m_timeSinceMovingLeft < 0.2f && PlatformMovement.LocalSpeedX > 0f);
 
     public void SetReferenceToSein(SeinCharacter sein) {
         Sein = sein;
@@ -36,19 +36,19 @@ public class SeinJump : CharacterState, ISeinReceiver {
     }
 
     public override void UpdateCharacterState() {
-        if (timeWeCanJumpRemaining > 0f) {
-            timeWeCanJumpRemaining -= Time.deltaTime;
+        if (m_timeWeCanJumpRemaining > 0f) {
+            m_timeWeCanJumpRemaining -= Time.deltaTime;
         }
 
         if (Sein.PlatformBehaviour.PlatformMovement.Ground.IsOn) {
-            timeWeCanJumpRemaining = DurationSinceLastOnGroundThatWeCanStillJump;
+            m_timeWeCanJumpRemaining = DurationSinceLastOnGroundThatWeCanStillJump;
         } else {
-            bunnyHopTimeRemaining = 0.2f;
+            m_bunnyHopTimeRemaining = 0.2f;
         }
 
-        if (bunnyHopTimeRemaining > 0f) {
-            bunnyHopTimeRemaining -= Time.deltaTime;
-            if (bunnyHopTimeRemaining < 0f) {
+        if (m_bunnyHopTimeRemaining > 0f) {
+            m_bunnyHopTimeRemaining -= Time.deltaTime;
+            if (m_bunnyHopTimeRemaining < 0f) {
                 ResetRunningJumpCount();
             }
         }
@@ -65,11 +65,11 @@ public class SeinJump : CharacterState, ISeinReceiver {
     }
 
     public void ResetRunningJumpCount() {
-        runningJumpNumber = 0;
+        m_runningJumpNumber = 0;
     }
 
     public void ResetJumpIdleCount() {
-        jumpIdleNumber = 0;
+        m_jumpIdleNumber = 0;
     }
 
     public float CalculateSpeedFromHeight(float height) {
@@ -89,17 +89,17 @@ public class SeinJump : CharacterState, ISeinReceiver {
     }
 
     public void PerformJump() {
-        currentJumpingMaterial = SurfaceToSoundProviderMap.ColliderMaterialToSurfaceMaterialType(Sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundCollider);
+        m_currentJumpingMaterial = SurfaceToSoundProviderMap.ColliderMaterialToSurfaceMaterialType(Sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundCollider);
         if (Sein.Controller.IsCrouching) {
             PerformCrouchJump();
-            Sound.Play(JumpSoundProvider.GetSoundForMaterial(currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+            Sound.Play(JumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
         } else if (HasSharplyTurnedAround) {
             PerformTurnAroundBackFlipJump();
-            Sound.Play(FlipJumpSoundProvider.GetSoundForMaterial(currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+            Sound.Play(FlipJumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
         } else if (Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput == 0f || PlatformMovement.IsOnWall) {
             if (PlatformMovement.IsOnWall && Sein.PlayerAbilities.WallJump.HasAbility && Sein.Abilities.WallSlide.IsOnWall) {
                 PerformWallSlideJump();
-                Sound.Play(JumpSoundProvider.GetSoundForMaterial(currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+                Sound.Play(JumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
             } else {
                 PerformIdleJump();
             }
@@ -112,11 +112,11 @@ public class SeinJump : CharacterState, ISeinReceiver {
         Sein.PlatformBehaviour.Force.ApplyGroundForce(Vector3.down * JumpImpulse, ForceMode.Impulse);
         OnJumpEvent(PlatformMovement.LocalSpeedY);
         JumpFlipPlatform.OnSeinJumpEvent();
-        timeWeCanJumpRemaining = 0f;
+        m_timeWeCanJumpRemaining = 0f;
     }
 
     public void PerformRunningJump() {
-        switch (runningJumpNumber) {
+        switch (m_runningJumpNumber) {
             case 0:
                 PerformFirstRunningJump();
                 break;
@@ -130,8 +130,8 @@ public class SeinJump : CharacterState, ISeinReceiver {
     }
 
     private void CacheDelegates() {
-        if (shouldJumpMoving == null) {
-            shouldJumpMoving = ShouldJumpMovingAnimationKeepPlaying;
+        if (m_shouldJumpMoving == null) {
+            m_shouldJumpMoving = ShouldJumpMovingAnimationKeepPlaying;
         }
 
         if (onAnimationEnd == null) {
@@ -144,31 +144,31 @@ public class SeinJump : CharacterState, ISeinReceiver {
         localSpeed.y = CalculateSpeedFromHeight(FirstJumpHeight);
         PlatformMovement.LocalSpeed = localSpeed;
         CacheDelegates();
-        var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[0], 10, shouldJumpMoving);
+        var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[0], 10, m_shouldJumpMoving);
         characterAnimationState.OnStopPlaying = onAnimationEnd;
         characterAnimationState.OnStartPlaying = null;
         if (Sein.PlatformBehaviour.JumpSustain) {
             Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY, 1f);
         }
 
-        Sound.Play(JumpSoundProvider.GetSoundForMaterial(currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
-        runningJumpNumber++;
+        Sound.Play(JumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+        m_runningJumpNumber++;
     }
 
     public void PerformSecondRunningJump() {
         var localSpeed = PlatformMovement.LocalSpeed;
-        localSpeed.y = CalculateSpeedFromHeight(runningJumpNumber != 0 ? SecondJumpHeight : FirstJumpHeight);
+        localSpeed.y = CalculateSpeedFromHeight(m_runningJumpNumber != 0 ? SecondJumpHeight : FirstJumpHeight);
         PlatformMovement.LocalSpeed = localSpeed;
         CacheDelegates();
-        var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[1], 10, shouldJumpMoving);
+        var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[1], 10, m_shouldJumpMoving);
         characterAnimationState.OnStopPlaying = onAnimationEnd;
         characterAnimationState.OnStartPlaying = null;
         if (Sein.PlatformBehaviour.JumpSustain) {
             Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY, 1f);
         }
 
-        Sound.Play(JumpSoundProvider.GetSoundForMaterial(currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
-        runningJumpNumber++;
+        Sound.Play(JumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+        m_runningJumpNumber++;
     }
 
     public void PerformThirdRunningJump() {
@@ -176,19 +176,19 @@ public class SeinJump : CharacterState, ISeinReceiver {
         localSpeed.y = CalculateSpeedFromHeight(ThirdJumpHeight);
         PlatformMovement.LocalSpeed = localSpeed;
         CacheDelegates();
-        var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[2], 10, shouldJumpMoving);
+        var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation[2], 10, m_shouldJumpMoving);
         characterAnimationState.OnStartPlaying = null;
         characterAnimationState.OnStopPlaying = onAnimationEnd;
         if (Sein.PlatformBehaviour.JumpSustain) {
             Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY * 0.5f, 1f);
         }
 
-        Sound.Play(SpinJumpSoundProvider.GetSoundForMaterial(currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
-        runningJumpNumber = 0;
+        Sound.Play(SpinJumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+        m_runningJumpNumber = 0;
     }
 
     private void PerformIdleJump() {
-        switch (jumpIdleNumber) {
+        switch (m_jumpIdleNumber) {
             case 0:
                 PerformFirstIdleJump();
                 break;
@@ -196,7 +196,7 @@ public class SeinJump : CharacterState, ISeinReceiver {
                 PerformSecondIdleJump();
                 break;
             case 2:
-                PerformThirdIdleJump();
+                PerformThirdIldleJump();
                 break;
         }
     }
@@ -210,8 +210,8 @@ public class SeinJump : CharacterState, ISeinReceiver {
             Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY, 1f);
         }
 
-        Sound.Play(JumpSoundProvider.GetSoundForMaterial(currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
-        jumpIdleNumber++;
+        Sound.Play(JumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+        m_jumpIdleNumber++;
     }
 
     public void PerformSecondIdleJump() {
@@ -223,11 +223,11 @@ public class SeinJump : CharacterState, ISeinReceiver {
             Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY, 1f);
         }
 
-        Sound.Play(JumpSoundProvider.GetSoundForMaterial(currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
-        jumpIdleNumber++;
+        Sound.Play(JumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+        m_jumpIdleNumber++;
     }
 
-    private void PerformThirdIdleJump() {
+    private void PerformThirdIldleJump() {
         var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(JumpIdleAnimation[2], 10, ShouldJumpIdleAnimationKeepPlaying);
         characterAnimationState.OnStartPlaying = null;
         characterAnimationState.OnStopPlaying = OnAnimationEnd;
@@ -236,8 +236,8 @@ public class SeinJump : CharacterState, ISeinReceiver {
             Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY, 1f);
         }
 
-        Sound.Play(SpinJumpSoundProvider.GetSoundForMaterial(currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
-        jumpIdleNumber = 0;
+        Sound.Play(SpinJumpSoundProvider.GetSoundForMaterial(m_currentJumpingMaterial, null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+        m_jumpIdleNumber = 0;
     }
 
     private void PerformWallSlideJump() {
@@ -296,14 +296,14 @@ public class SeinJump : CharacterState, ISeinReceiver {
     }
 
     public void UpdateTimeSinceFacing() {
-        timeSinceMovingLeft += Time.deltaTime;
-        timeSinceMovingRight += Time.deltaTime;
+        m_timeSinceMovingLeft += Time.deltaTime;
+        m_timeSinceMovingRight += Time.deltaTime;
         if (PlatformMovement.LocalSpeedX < 0f) {
-            timeSinceMovingLeft = 0f;
+            m_timeSinceMovingLeft = 0f;
         }
 
         if (PlatformMovement.LocalSpeedX > 0f) {
-            timeSinceMovingRight = 0f;
+            m_timeSinceMovingRight = 0f;
         }
     }
 
@@ -316,13 +316,13 @@ public class SeinJump : CharacterState, ISeinReceiver {
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref bunnyHopTimeRemaining);
-        ar.Serialize(ref jumpIdleNumber);
-        ar.Serialize(ref runningJumpNumber);
-        ar.Serialize(ref spriteMirrorLock);
-        ar.Serialize(ref timeSinceMovingLeft);
-        ar.Serialize(ref timeSinceMovingRight);
-        ar.Serialize(ref timeWeCanJumpRemaining);
+        ar.Serialize(ref m_bunnyHopTimeRemaining);
+        ar.Serialize(ref m_jumpIdleNumber);
+        ar.Serialize(ref m_runningJumpNumber);
+        ar.Serialize(ref m_spriteMirrorLock);
+        ar.Serialize(ref m_timeSinceMovingLeft);
+        ar.Serialize(ref m_timeSinceMovingRight);
+        ar.Serialize(ref m_timeWeCanJumpRemaining);
     }
 
     public override void Awake() {
@@ -336,7 +336,7 @@ public class SeinJump : CharacterState, ISeinReceiver {
     }
 
     public void OnRestoreCheckpoint() {
-        spriteMirrorLock = false;
+        m_spriteMirrorLock = false;
     }
 
     public TextureAnimationWithTransitions BackflipAnimation;
@@ -367,7 +367,7 @@ public class SeinJump : CharacterState, ISeinReceiver {
 
     public SurfaceToSoundProviderMap SpinJumpSoundProvider;
 
-    private SurfaceMaterialType currentJumpingMaterial;
+    private SurfaceMaterialType m_currentJumpingMaterial;
 
     public float SecondJumpHeight = 3.75f;
 
@@ -377,21 +377,21 @@ public class SeinJump : CharacterState, ISeinReceiver {
 
     public TextureAnimationWithTransitions WallSlideJumpAnimation;
 
-    private float bunnyHopTimeRemaining;
+    private float m_bunnyHopTimeRemaining;
 
-    private int jumpIdleNumber;
+    private int m_jumpIdleNumber;
 
-    private int runningJumpNumber;
+    private int m_runningJumpNumber;
 
-    private bool spriteMirrorLock;
+    private bool m_spriteMirrorLock;
 
-    private float timeSinceMovingLeft;
+    private float m_timeSinceMovingLeft;
 
-    private float timeSinceMovingRight;
+    private float m_timeSinceMovingRight;
 
-    private float timeWeCanJumpRemaining;
+    private float m_timeWeCanJumpRemaining;
 
-    private Func<bool> shouldJumpMoving;
+    private Func<bool> m_shouldJumpMoving;
 
     private Action onAnimationEnd;
 }

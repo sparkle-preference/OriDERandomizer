@@ -16,9 +16,9 @@ public class SeinEdgeClamber : CharacterState, ISeinReceiver {
             return;
         }
 
-        if (isEdgeClambering) {
+        if (m_isEdgeClambering) {
             if (!PlatformMovement.IsOnWall) {
-                isEdgeClambering = false;
+                m_isEdgeClambering = false;
             }
         } else if (PlatformMovement.IsOnWall && !PlatformMovement.HeadAgainstWall && PlatformMovement.FeetAgainstWall && ((PlatformMovement.HasWallLeft && Sein.Input.NormalizedHorizontal < 0) || (PlatformMovement.HasWallRight && Sein.Input.NormalizedHorizontal > 0)) && PlatformMovement.LocalSpeedY > 0f) {
             if (PlatformMovement.HasWallLeft && Sein.PlatformBehaviour.PlatformMovementListOfColliders.WallLeftCollider && Sein.PlatformBehaviour.PlatformMovementListOfColliders.WallLeftCollider.GetComponent<NonEdgeClamberble>()) {
@@ -41,7 +41,7 @@ public class SeinEdgeClamber : CharacterState, ISeinReceiver {
 
     public void PerformEdgeClamber(float minSpeedFactor) {
         Sein.PlatformBehaviour.Visuals.Animation.Play(EdgeClamberAnimation, 10, ShouldAnimationKeepPlaying);
-        isEdgeClambering = true;
+        m_isEdgeClambering = true;
         if (PlatformMovement.LocalSpeedY < 9f) {
             PlatformMovement.LocalSpeedY = 9f;
         }
@@ -69,5 +69,5 @@ public class SeinEdgeClamber : CharacterState, ISeinReceiver {
 
     public SeinCharacter Sein;
 
-    private bool isEdgeClambering;
+    private bool m_isEdgeClambering;
 }

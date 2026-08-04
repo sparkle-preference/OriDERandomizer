@@ -19,8 +19,8 @@ public class SeinHealthController : SaveSerialize, ISeinReceiver {
     public int HealthUpgradesCollected => MaxHealth / 4 - 3;
 
     public void OnRespawn() {
-        InstantiateUtility.Instantiate(RespawnEffect, sein.Transform.position, Quaternion.identity);
-        sein.Mortality.DamageReciever.MakeInvincible(1f);
+        InstantiateUtility.Instantiate(RespawnEffect, m_sein.Transform.position, Quaternion.identity);
+        m_sein.Mortality.DamageReciever.MakeInvincible(1f);
     }
 
     public void LoseHealth(int amount) {
@@ -71,7 +71,7 @@ public class SeinHealthController : SaveSerialize, ISeinReceiver {
     public bool IsFull => Amount == MaxHealth;
 
     public void SetReferenceToSein(SeinCharacter sein) {
-        this.sein = sein;
+        m_sein = sein;
     }
 
     public void GainHealth(float amount) {
@@ -103,5 +103,5 @@ public class SeinHealthController : SaveSerialize, ISeinReceiver {
 
     public GameObject RespawnEffect;
 
-    private SeinCharacter sein;
+    private SeinCharacter m_sein;
 }

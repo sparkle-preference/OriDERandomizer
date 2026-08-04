@@ -11,38 +11,38 @@ public class SeinDoorHandler : SaveSerialize, ISeinReceiver {
     }
 
     public void OnDoorOverlap(Door door) {
-        if (enterDoorHint == null) {
+        if (m_enterDoorHint == null) {
             if (Characters.Sein.Controller.CanMove) {
-                enterDoorHint = UI.Hints.Show(!door.OverrideEnterDoorMessage ? EnterDoorMessage : door.OverrideEnterDoorMessage, HintLayer.Gameplay, 1f);
+                m_enterDoorHint = UI.Hints.Show(!door.OverrideEnterDoorMessage ? EnterDoorMessage : door.OverrideEnterDoorMessage, HintLayer.Gameplay, 1f);
             }
         } else {
-            enterDoorHint.Visibility.ResetWaitDuration();
+            m_enterDoorHint.Visibility.ResetWaitDuration();
         }
 
-        isOverlappingDoor = true;
+        m_isOverlappingDoor = true;
         if (Sein.Controller.CanMove && Input.Up.OnPressed && Sein.PlatformBehaviour.PlatformMovement.IsOnGround && !Sein.Controller.IsBashing && !UI.MainMenuVisible) {
             EnterIntoDoor(door);
         }
     }
 
     public void EnterIntoDoor(Door door) {
-        if (enterDoorHint) {
-            enterDoorHint.HideMessageScreen();
+        if (m_enterDoorHint) {
+            m_enterDoorHint.HideMessageScreen();
         }
 
-        createCheckpoint = door.CreateCheckpoint;
-        targetDoor = null;
+        m_createCheckpoint = door.CreateCheckpoint;
+        m_targetDoor = null;
         foreach (var sceneManagerScene in Scenes.Manager.ActiveScenes) {
             if (sceneManagerScene.SceneRoot) {
                 foreach (var door2 in sceneManagerScene.SceneRoot.SceneRootData.Doors) {
                     if (door2 != null && door2.name == door.OtherDoorName && door2 != door) {
-                        targetDoor = door2;
+                        m_targetDoor = door2;
                     }
                 }
             }
         }
 
-        if (targetDoor == null) {
+        if (m_targetDoor == null) {
             return;
         }
 
@@ -62,8 +62,8 @@ public class SeinDoorHandler : SaveSerialize, ISeinReceiver {
 
     public void OnFadedToBlack() {
         var position = Sein.Position;
-        if (targetDoor) {
-            position = targetDoor.transform.position;
+        if (m_targetDoor) {
+            position = m_targetDoor.transform.position;
         }
 
         if (Randomizer.Entrance) {
@@ -84,7 +84,7 @@ public class SeinDoorHandler : SaveSerialize, ISeinReceiver {
             Characters.Ori.MoveOriBackToPlayer();
         }
 
-        if (createCheckpoint) {
+        if (m_createCheckpoint) {
             GameController.Instance.CreateCheckpoint();
             GameController.Instance.PerformSaveGameSequence();
         }
@@ -93,17 +93,18 @@ public class SeinDoorHandler : SaveSerialize, ISeinReceiver {
     }
 
     public void OnGoneThroughDoor() {
-        if (targetDoor != null && targetDoor.ComeOutOfDoorAction) {
-            targetDoor.ComeOutOfDoorAction.Perform(null);
+        if (m_targetDoor != null && m_targetDoor.ComeOutOfDoorAction) {
+            m_targetDoor.ComeOutOfDoorAction.Perform(null);
         }
 
-        targetDoor = null;
+        m_targetDoor = null;
         CameraFrustumOptimizer.ForceUpdate();
     }
 
     public void FixedUpdate() {
-        IsOverlappingDoor = isOverlappingDoor;
-        isOverlappingDoor = false;
+        IsOverlappingDoor = m_isOverlappingDoor;
+        m_isOverlappingDoor = false;
+        var isSuspended = Sein.IsSuspended;
     }
 
     public override void Serialize(Archive ar) {
@@ -115,11 +116,11 @@ public class SeinDoorHandler : SaveSerialize, ISeinReceiver {
 
     public MessageProvider EnterDoorMessage;
 
-    private MessageBox enterDoorHint;
+    private MessageBox m_enterDoorHint;
 
-    private bool createCheckpoint;
+    private bool m_createCheckpoint;
 
-    private bool isOverlappingDoor;
+    private bool m_isOverlappingDoor;
 
-    private Door targetDoor;
+    private Door m_targetDoor;
 }

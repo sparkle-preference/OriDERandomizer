@@ -7,43 +7,43 @@ using Input = Core.Input;
 public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
     public SpiritFlame CurrentSpiritFlame => GetStandardSpiritFlame(OriLevel);
 
-    public int OriLevel => sein.PlayerAbilities.OriStrength;
+    public int OriLevel => m_sein.PlayerAbilities.OriStrength;
 
-    public bool LockShootingSpiritFlame => sein.Abilities.SpiritFlame.LockShootingSpiritFlame;
+    public bool LockShootingSpiritFlame => m_sein.Abilities.SpiritFlame.LockShootingSpiritFlame;
 
-    public int MaxTargets => sein.PlayerAbilities.SplitFlameTargets;
+    public int MaxTargets => m_sein.PlayerAbilities.SplitFlameTargets;
 
     private bool ProcessAutofire(bool pressed, bool held, bool released) {
         switch (RandomizerSettings.Controls.Autofire.Value) {
             case RandomizerSettings.AutofireMode.Hold:
                 if (pressed) {
-                    lastAutofire = Mathf.Round(Time.time * 120f);
-                    autofireSuppressed = RandomizerRebinding.SuppressAutofire.Pressed;
+                    m_lastAutofire = Mathf.Round(Time.time * 120f);
+                    m_autofireSuppressed = RandomizerRebinding.SuppressAutofire.Pressed;
                 }
 
-                isAutofiring = held && !autofireSuppressed;
+                m_isAutofiring = held && !m_autofireSuppressed;
                 break;
             case RandomizerSettings.AutofireMode.Toggle:
                 if (pressed) {
-                    lastAutofire = Mathf.Round(Time.time * 120f);
-                    isAutofiring = isAutofiring || RandomizerRebinding.SuppressAutofire.Pressed ? false : true;
+                    m_lastAutofire = Mathf.Round(Time.time * 120f);
+                    m_isAutofiring = m_isAutofiring || RandomizerRebinding.SuppressAutofire.Pressed ? false : true;
 
-                    if (isAutofiring) {
-                        autofireBegan = lastAutofire;
+                    if (m_isAutofiring) {
+                        m_autofireBegan = m_lastAutofire;
                     }
                 }
 
-                if (held && Mathf.Round(Time.time * 120f) - autofireBegan >= 24f) {
-                    isAutofiring = false;
+                if (held && Mathf.Round(Time.time * 120f) - m_autofireBegan >= 24f) {
+                    m_isAutofiring = false;
                 }
 
                 break;
         }
 
-        if (isAutofiring) {
+        if (m_isAutofiring) {
             var scaledTime = Mathf.Round(Time.time * 120f);
-            if (scaledTime - lastAutofire >= 6f) {
-                lastAutofire = scaledTime;
+            if (scaledTime - m_lastAutofire >= 6f) {
+                m_lastAutofire = scaledTime;
                 return true;
             }
 
@@ -54,7 +54,7 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
     }
 
     public override void UpdateCharacterState() {
-        if (sein.Controller.InputLocked) {
+        if (m_sein.Controller.InputLocked) {
             return;
         }
 
@@ -75,15 +75,15 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
                 return;
             }
 
-            timeOfBeforeLastShot = timeOfLastShot;
-            timeOfLastShot = Mathf.Round(Time.time * 120f);
+            m_timeOfBeforeLastShot = m_timeOfLastShot;
+            m_timeOfLastShot = Mathf.Round(Time.time * 120f);
         }
 
         if (released) {
             UpdateTargetting();
         }
 
-        if (sein.PlayerAbilities.RapidFire.HasAbility) {
+        if (m_sein.PlayerAbilities.RapidFire.HasAbility) {
             ProcessRapidFire(pressed);
         } else {
             ProcessBaseSpiritFlame(pressed);
@@ -93,27 +93,27 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
     private void ProcessRapidFire(bool pressed) {
         var scaledTime = Mathf.Round(Time.time * 120f);
 
-        if (isSpamming) {
-            if (scaledTime - timeOfLastSpam >= 18f) {
-                timeOfLastSpam = scaledTime;
+        if (m_isSpamming) {
+            if (scaledTime - m_timeOfLastSpam >= 18f) {
+                m_timeOfLastSpam = scaledTime;
                 pressed = true;
             } else {
                 pressed = false;
             }
 
-            if (scaledTime - timeOfLastShot > 24f) {
-                isSpamming = false;
+            if (scaledTime - m_timeOfLastShot > 24f) {
+                m_isSpamming = false;
             }
-        } else if (pressed && scaledTime - timeOfBeforeLastShot <= 24f) {
-            timeOfLastSpam = scaledTime;
-            isSpamming = true;
+        } else if (pressed && scaledTime - m_timeOfBeforeLastShot <= 24f) {
+            m_timeOfLastSpam = scaledTime;
+            m_isSpamming = true;
         }
 
         if (pressed) {
             Characters.Ori.ShootAnimation.Restart();
             if (!LockShootingSpiritFlame) {
                 var currentSpiritFlame = CurrentSpiritFlame;
-                sein.Abilities.SpiritFlame.ThrowSpiritFlames(currentSpiritFlame);
+                m_sein.Abilities.SpiritFlame.ThrowSpiritFlames(currentSpiritFlame);
                 Input.SpiritFlame.Used = true;
             }
         }
@@ -126,9 +126,9 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
         if (pressed) {
             Characters.Ori.ShootAnimation.Restart();
             if (StandardSpiritFlameShotCombo.CanShoot && !LockShootingSpiritFlame) {
-                StandardSpiritFlameShotCombo.NumberOfShotsPerCombo = !sein.PlayerAbilities.QuickFlame.HasAbility ? 2 : 3;
+                StandardSpiritFlameShotCombo.NumberOfShotsPerCombo = !m_sein.PlayerAbilities.QuickFlame.HasAbility ? 2 : 3;
                 var currentSpiritFlame = CurrentSpiritFlame;
-                sein.Abilities.SpiritFlame.ThrowSpiritFlames(currentSpiritFlame);
+                m_sein.Abilities.SpiritFlame.ThrowSpiritFlames(currentSpiritFlame);
                 StandardSpiritFlameShotCombo.Shoot();
                 Input.SpiritFlame.Used = true;
             }
@@ -147,16 +147,16 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
         return StandardSpiritFlames[index];
     }
 
-    public List<ISpiritFlameAttackable> ClosestAttackables => sein.Abilities.SpiritFlameTargetting.ClosestAttackables;
+    public List<ISpiritFlameAttackable> ClosestAttackables => m_sein.Abilities.SpiritFlameTargetting.ClosestAttackables;
 
     public void SetReferenceToSein(SeinCharacter sein) {
-        this.sein = sein;
-        this.sein.Abilities.StandardSpiritFlame = this;
+        m_sein = sein;
+        m_sein.Abilities.StandardSpiritFlame = this;
     }
 
     public void UpdateTargetting() {
-        sein.Abilities.SpiritFlameTargetting.MaxNumberOfTargets = MaxTargets;
-        sein.Abilities.SpiritFlameTargetting.Range = SpiritFlameRange;
+        m_sein.Abilities.SpiritFlameTargetting.MaxNumberOfTargets = MaxTargets;
+        m_sein.Abilities.SpiritFlameTargetting.Range = SpiritFlameRange;
     }
 
     public ShotCombo StandardSpiritFlameShotCombo = new ShotCombo();
@@ -169,25 +169,25 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
 
     public bool CanDamageOverTime;
 
-    private SeinCharacter sein;
+    private SeinCharacter m_sein;
 
-    private float timeOfLastShot;
+    private float m_timeOfLastShot;
 
-    private float timeOfBeforeLastShot;
+    private float m_timeOfBeforeLastShot;
 
-    private bool isSpamming;
+    private bool m_isSpamming;
 
-    private float timeOfLastSpam;
+    private float m_timeOfLastSpam;
 
     public float SpamShotSpeed = 10f;
 
-    private float lastAutofire;
+    private float m_lastAutofire;
 
-    private bool isAutofiring;
+    private bool m_isAutofiring;
 
-    private float autofireBegan;
+    private float m_autofireBegan;
 
-    private bool autofireSuppressed;
+    private bool m_autofireSuppressed;
 
     [Serializable]
     public class PoisonSettings {

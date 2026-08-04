@@ -6,16 +6,16 @@ using UnityEngine;
 using Input = Core.Input;
 
 public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
-    private bool IsGrabbingWall => sein.Controller.IsGrabbingWall;
+    private bool IsGrabbingWall => m_sein.Controller.IsGrabbingWall;
 
-    private bool IsInAir => !isAiming;
+    private bool IsInAir => !m_isAiming;
 
     private void ResetAimToDefault() {
         SetAimVelocity(new Vector2(14f, 16f));
     }
 
     private int PickAnimationIndex(int length) {
-        return Mathf.Clamp(Mathf.FloorToInt((!IsGrabbingWall ? Mathf.InverseLerp(MinAimGroundAnimationAngle, MaxAimGroundAnimationAngle, animationAimAngle) : Mathf.InverseLerp(MinAimWallAnimationAngle, MaxAimWallAnimationAngle, animationAimAngle)) * length), 0, length - 1);
+        return Mathf.Clamp(Mathf.FloorToInt((!IsGrabbingWall ? Mathf.InverseLerp(MinAimGroundAnimationAngle, MaxAimGroundAnimationAngle, m_animationAimAngle) : Mathf.InverseLerp(MinAimWallAnimationAngle, MaxAimWallAnimationAngle, m_animationAimAngle)) * length), 0, length - 1);
     }
 
     private float IndexToAnimationAngle(int index, int length) {
@@ -35,17 +35,17 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     private float EnergyCostFinal => 0f;
 
     private bool HasGrenadeEfficiencySkill() {
-        return sein.PlayerAbilities.GrenadeEfficiency.HasAbility;
+        return m_sein.PlayerAbilities.GrenadeEfficiency.HasAbility;
     }
 
-    private bool HasEnoughEnergy => sein.Energy.CanAfford(EnergyCostFinal);
+    private bool HasEnoughEnergy => m_sein.Energy.CanAfford(EnergyCostFinal);
 
     private void SpendEnergy() {
-        sein.Energy.Spend(EnergyCostFinal);
+        m_sein.Energy.Spend(EnergyCostFinal);
     }
 
     private void RestoreEnergy() {
-        sein.Energy.Gain(EnergyCostFinal);
+        m_sein.Energy.Gain(EnergyCostFinal);
     }
 
     public void Start() {
@@ -63,28 +63,28 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
         CancelAiming();
     }
 
-    public CharacterLeftRightMovement CharacterLeftRightMovement => sein.PlatformBehaviour.LeftRightMovement;
+    public CharacterLeftRightMovement CharacterLeftRightMovement => m_sein.PlatformBehaviour.LeftRightMovement;
 
-    public CharacterGravity CharacterGravity => sein.PlatformBehaviour.Gravity;
+    public CharacterGravity CharacterGravity => m_sein.PlatformBehaviour.Gravity;
 
     private void ModifyHorizontalPlatformMovementSettings(HorizontalPlatformMovementSettings settings) {
-        if (isAiming) {
+        if (m_isAiming) {
             settings.Ground.Acceleration = 0f;
             settings.Ground.MaxSpeed = 0f;
         }
     }
 
     public void SetReferenceToSein(SeinCharacter sein) {
-        this.sein = sein;
+        m_sein = sein;
         sein.Abilities.Grenade = this;
     }
 
     public override void UpdateCharacterState() {
-        if (sein.IsSuspended) {
+        if (m_sein.IsSuspended) {
             return;
         }
 
-        if (sein.Controller.InputLocked) {
+        if (m_sein.Controller.InputLocked) {
             return;
         }
 
@@ -93,7 +93,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
         }
 
         base.UpdateCharacterState();
-        if (isAiming) {
+        if (m_isAiming) {
             UpdateAiming();
             return;
         }
@@ -102,48 +102,48 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     }
 
     private bool HasGrenadeUpgrade() {
-        return sein.PlayerAbilities.GrenadeUpgrade.HasAbility;
+        return m_sein.PlayerAbilities.GrenadeUpgrade.HasAbility;
     }
 
-    private Vector3 GrenadeSpawnPosition => sein.Position;
+    private Vector3 GrenadeSpawnPosition => m_sein.Position;
 
     private SpiritGrenade SpawnGrenade(Vector2 velocity) {
         RefreshListOfQuickSpiritGrenades();
-        if (spiritGrenades.Count >= MaxSpamGrenades) {
-            spiritGrenades[0].Explode();
-            spiritGrenades.RemoveAt(0);
+        if (m_spiritGrenades.Count >= MaxSpamGrenades) {
+            m_spiritGrenades[0].Explode();
+            m_spiritGrenades.RemoveAt(0);
         }
 
         var component = ((GameObject)InstantiateUtility.Instantiate(!HasGrenadeUpgrade() ? Grenade : GrenadeUpgraded, GrenadeSpawnPosition, Quaternion.identity)).GetComponent<SpiritGrenade>();
         component.SetTrajectory(velocity);
-        spiritGrenades.Add(component);
-        if (autoTarget as Component != null) {
-            component.Duration = TimeToTarget(velocity, autoTarget) + 0.2f;
-            autoTarget = null;
+        m_spiritGrenades.Add(component);
+        if (m_autoTarget as Component != null) {
+            component.Duration = TimeToTarget(velocity, m_autoTarget) + 0.2f;
+            m_autoTarget = null;
         }
 
         return component;
     }
 
     private void RefreshListOfQuickSpiritGrenades() {
-        spiritGrenades.RemoveAll(a => a == null);
+        m_spiritGrenades.RemoveAll(a => a == null);
     }
 
-    public bool IsAiming => isAiming;
+    public bool IsAiming => m_isAiming;
 
-    public bool CanAim => !sein.PlatformBehaviour.PlatformMovement.MovingHorizontally && (sein.IsOnGround || IsGrabbingWall);
+    public bool CanAim => !m_sein.PlatformBehaviour.PlatformMovement.MovingHorizontally && (m_sein.IsOnGround || IsGrabbingWall);
 
     public void PlayAimAnimation() {
-        sein.Animation.PlayLoop(PickAnimation(!IsGrabbingWall ? AimingAnimations : WallAimingAnimations), 154, KeepPlayingAimAnimation, true);
+        m_sein.Animation.PlayLoop(PickAnimation(!IsGrabbingWall ? AimingAnimations : WallAimingAnimations), 154, KeepPlayingAimAnimation, true);
     }
 
     public void PlayThrowAnimation() {
-        if (Mathf.Approximately(Mathf.Abs(rawAimOffset.x), QuickThrowSpeed.x) && Mathf.Approximately(rawAimOffset.y, QuickThrowSpeed.y)) {
-            sein.Animation.Play(!IsGrabbingWall ? QuickThrow.IdleThrowAnimation : QuickThrow.WallThrowAnimation, 154, KeepPlayingThrowAnimation);
+        if (Mathf.Approximately(Mathf.Abs(m_rawAimOffset.x), QuickThrowSpeed.x) && Mathf.Approximately(m_rawAimOffset.y, QuickThrowSpeed.y)) {
+            m_sein.Animation.Play(!IsGrabbingWall ? QuickThrow.IdleThrowAnimation : QuickThrow.WallThrowAnimation, 154, KeepPlayingThrowAnimation);
             return;
         }
 
-        sein.Animation.Play(PickAnimation(!IsGrabbingWall ? ThrowAnimations : WallThrowAnimations), 154, KeepPlayingThrowAnimation);
+        m_sein.Animation.Play(PickAnimation(!IsGrabbingWall ? ThrowAnimations : WallThrowAnimations), 154, KeepPlayingThrowAnimation);
     }
 
     public void PlayThrowSound() {
@@ -154,8 +154,8 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
 
     public void UpdateAiming() {
         if (Input.LeftShoulder.Released) {
-            lockPressingInputTime = 0.64f;
-            SpawnGrenade(rawAimOffset);
+            m_lockPressingInputTime = 0.64f;
+            SpawnGrenade(m_rawAimOffset);
             PlayThrowAnimation();
             EndAiming();
             PlayThrowSound();
@@ -167,7 +167,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
             return;
         }
 
-        sein.Speed = Vector2.zero;
+        m_sein.Speed = Vector2.zero;
         if (RandomizerRebinding.ResetGrenadeAim.OnPressed) {
             ResetAimToDefault();
         }
@@ -176,72 +176,72 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
         if (!RandomizerSettings.Controls.FastGrenadeAim) {
             var b = AimSpeed.Evaluate(axis.magnitude) * axis.normalized * RandomizerSettings.Controls.GrenadeAimSpeed;
             if (b.magnitude > 0f) {
-                autoAim = false;
+                m_autoAim = false;
             }
 
-            rawAimOffset += b;
+            m_rawAimOffset += b;
         } else {
             var greater = Math.Max(Math.Abs(axis.x), Math.Abs(axis.y));
             if (greater > 0f) {
-                rawAimOffset = axis * axis.sqrMagnitude * Math.Min(Math.Abs(UI.Cameras.Current.OffsetController.Offset.z), MaxAimDistance) / greater + Vector2.up * CursorSpeedYOffset;
+                m_rawAimOffset = axis * axis.sqrMagnitude * Math.Min(Math.Abs(UI.Cameras.Current.OffsetController.Offset.z), MaxAimDistance) / greater + Vector2.up * CursorSpeedYOffset;
             } else {
-                rawAimOffset = Vector2.up * CursorSpeedYOffset;
+                m_rawAimOffset = Vector2.up * CursorSpeedYOffset;
             }
 
-            autoAim = false;
+            m_autoAim = false;
         }
 
-        if (autoAim) {
+        if (m_autoAim) {
             AutoTarget();
         } else {
-            autoTarget = null;
+            m_autoTarget = null;
         }
 
         ClampAim();
         if (Input.CursorMoved) {
             Vector2 v = UI.Cameras.Current.Camera.WorldToScreenPoint(transform.position);
             Vector2 b2 = UI.Cameras.System.GUICamera.ScreenToWorldPoint(v);
-            rawAimOffset = (Input.CursorPositionUI - b2) * CursorSpeedMultiplier + Vector2.up * CursorSpeedYOffset;
-            autoAim = false;
+            m_rawAimOffset = (Input.CursorPositionUI - b2) * CursorSpeedMultiplier + Vector2.up * CursorSpeedYOffset;
+            m_autoAim = false;
             ClampAim();
         }
 
-        aimOffset = Vector2.Lerp(rawAimOffset, aimOffset, 0.5f);
-        if (!sein.Controller.IsGrabbingWall) {
-            if (lockAimAnimationRemainingTime <= 0f) {
-                var faceLeft = this.faceLeft;
-                this.faceLeft = aimOffset.x < 0f;
-                if (faceLeft != this.faceLeft) {
-                    lockAimAnimationRemainingTime = 0.17f;
-                    animationAimAngle = 90f;
+        m_aimOffset = Vector2.Lerp(m_rawAimOffset, m_aimOffset, 0.5f);
+        if (!m_sein.Controller.IsGrabbingWall) {
+            if (m_lockAimAnimationRemainingTime <= 0f) {
+                var faceLeft = m_faceLeft;
+                m_faceLeft = m_aimOffset.x < 0f;
+                if (faceLeft != m_faceLeft) {
+                    m_lockAimAnimationRemainingTime = 0.17f;
+                    m_animationAimAngle = 90f;
                     Sound.Play(TurnAroundAimingSound.GetSound(null), transform.position, null);
                 }
             }
 
-            sein.FaceLeft = faceLeft;
+            m_sein.FaceLeft = m_faceLeft;
         }
 
         UpdateTrajectory();
-        if (lockAimAnimationRemainingTime > 0f) {
-            lockAimAnimationRemainingTime -= Time.deltaTime;
+        if (m_lockAimAnimationRemainingTime > 0f) {
+            m_lockAimAnimationRemainingTime -= Time.deltaTime;
         }
 
-        if (lockAimAnimationRemainingTime <= 0f) {
-            Vector3 v2 = aimOffset.normalized;
-            if (aimOffset.y > 0f) {
-                var num = aimOffset.y / GrenadeGravity;
-                var d = aimOffset.y * num + 0.5f * GrenadeGravity * num * num;
-                v2 = (aimOffset.x * num * Vector3.right + d * Vector3.up).normalized;
+        if (m_lockAimAnimationRemainingTime <= 0f) {
+            Vector3 v2 = m_aimOffset.normalized;
+            if (m_aimOffset.y > 0f) {
+                var num = m_aimOffset.y / GrenadeGravity;
+                var d = m_aimOffset.y * num + 0.5f * GrenadeGravity * num * num;
+                v2 = (m_aimOffset.x * num * Vector3.right + d * Vector3.up).normalized;
             }
 
             v2.x = Mathf.Abs(v2.x);
             var target = MoonMath.Angle.AngleFromVector(v2);
-            animationAimAngle = Mathf.MoveTowardsAngle(animationAimAngle, target, 90f * Time.deltaTime * 2f);
+            m_animationAimAngle = Mathf.MoveTowardsAngle(m_animationAimAngle, target, 90f * Time.deltaTime * 2f);
             PlayAimAnimation();
         }
 
-        if (grenadeAiming) {
-            var animator = sein.Animation.Animator;
+        if (m_grenadeAiming) {
+            var animator = m_sein.Animation.Animator;
             var currentAnimation = animator.CurrentAnimation;
             if (currentAnimation.AnimationMetaData) {
                 PositionGrenadeAiming(currentAnimation.AnimationMetaData, (int)animator.TextureAnimator.Frame);
@@ -261,19 +261,19 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
         var animationData = metaData.FindData("#grenade");
         if (animationData != null) {
             var positionAtFrame = animationData.GetPositionAtFrame(frame);
-            grenadeAiming.transform.position = sein.PlatformBehaviour.Visuals.Sprite.transform.TransformPoint(positionAtFrame);
+            m_grenadeAiming.transform.position = m_sein.PlatformBehaviour.Visuals.Sprite.transform.TransformPoint(positionAtFrame);
         }
     }
 
     public void EndAiming() {
-        lockAimAnimationRemainingTime = 0f;
-        isAiming = false;
-        if (sein.Abilities.GrabWall) {
-            sein.Abilities.GrabWall.LockVerticalMovement = false;
+        m_lockAimAnimationRemainingTime = 0f;
+        m_isAiming = false;
+        if (m_sein.Abilities.GrabWall) {
+            m_sein.Abilities.GrabWall.LockVerticalMovement = false;
         }
 
-        if (grenadeAiming) {
-            grenadeAiming.GetComponent<TransparencyAnimator>().AnimatorDriver.ContinueBackwards();
+        if (m_grenadeAiming) {
+            m_grenadeAiming.GetComponent<TransparencyAnimator>().AnimatorDriver.ContinueBackwards();
         }
 
         Trajectory.HideTrajectory();
@@ -283,25 +283,25 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     }
 
     private void ClampAim() {
-        rawAimOffset.x = Mathf.Clamp(rawAimOffset.x, -MaxAimDistance, MaxAimDistance);
+        m_rawAimOffset.x = Mathf.Clamp(m_rawAimOffset.x, -MaxAimDistance, MaxAimDistance);
         if (IsGrabbingWall) {
-            rawAimOffset.x = !faceLeft ? Mathf.Min(0f, rawAimOffset.x) : Mathf.Max(0f, rawAimOffset.x);
+            m_rawAimOffset.x = !m_faceLeft ? Mathf.Min(0f, m_rawAimOffset.x) : Mathf.Max(0f, m_rawAimOffset.x);
         }
 
-        var num = rawAimOffset.y <= 0f ? MinAimDistanceDown : MinAimDistanceUp;
+        var num = m_rawAimOffset.y <= 0f ? MinAimDistanceDown : MinAimDistanceUp;
         var num2 = MinAimDistanceHorizontal / num;
-        rawAimOffset.y *= num2;
-        if (rawAimOffset.magnitude < MinAimDistanceHorizontal) {
-            rawAimOffset = rawAimOffset.normalized * MinAimDistanceHorizontal;
+        m_rawAimOffset.y *= num2;
+        if (m_rawAimOffset.magnitude < MinAimDistanceHorizontal) {
+            m_rawAimOffset = m_rawAimOffset.normalized * MinAimDistanceHorizontal;
         }
 
-        rawAimOffset.y /= num2;
-        rawAimOffset.y = Mathf.Clamp(rawAimOffset.y, !IsGrabbingWall ? MinAimVertical : MinAimVerticalWall, MaxAimVertical);
+        m_rawAimOffset.y /= num2;
+        m_rawAimOffset.y = Mathf.Clamp(m_rawAimOffset.y, !IsGrabbingWall ? MinAimVertical : MinAimVerticalWall, MaxAimVertical);
     }
 
     public void UpdateTrajectory() {
         Trajectory.StartPosition = GrenadeSpawnPosition;
-        Trajectory.InitialVelocity = aimOffset;
+        Trajectory.InitialVelocity = m_aimOffset;
     }
 
     public float TimeToTarget(Vector2 velocity, IAttackable target) {
@@ -323,7 +323,8 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
             }
 
             var vector3 = vector - vector2;
-            if (Physics.SphereCast(vector2, 0.5f, vector3.normalized, out _, vector3.magnitude)) {
+            RaycastHit raycastHit;
+            if (Physics.SphereCast(vector2, 0.5f, vector3.normalized, out raycastHit, vector3.magnitude)) {
                 break;
             }
 
@@ -356,29 +357,29 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     }
 
     public void PlayFastThrowAnimation() {
-        var currentAnimation = sein.PlatformBehaviour.Visuals.Animation.Animator.CurrentAnimation;
-        var currentTextureAnimationTransitions = sein.PlatformBehaviour.Visuals.Animation.Animator.CurrentTextureAnimationTransitions;
+        var currentAnimation = m_sein.PlatformBehaviour.Visuals.Animation.Animator.CurrentAnimation;
+        var currentTextureAnimationTransitions = m_sein.PlatformBehaviour.Visuals.Animation.Animator.CurrentTextureAnimationTransitions;
         foreach (var fastThrowAnimationRule in FastThrowAnimations) {
             if (fastThrowAnimationRule.Animations.Contains(currentAnimation)) {
-                sein.Animation.Play(fastThrowAnimationRule.ThrowAnimation, 10, AnimationRule(fastThrowAnimationRule.PlayRule));
+                m_sein.Animation.Play(fastThrowAnimationRule.ThrowAnimation, 10, AnimationRule(fastThrowAnimationRule.PlayRule));
                 return;
             }
         }
 
         foreach (var fastThrowAnimationRule2 in FastThrowAnimations) {
             if (fastThrowAnimationRule2.AnimationsWithTransitions.Contains(currentTextureAnimationTransitions)) {
-                sein.Animation.Play(fastThrowAnimationRule2.ThrowAnimation, 10, AnimationRule(fastThrowAnimationRule2.PlayRule));
+                m_sein.Animation.Play(fastThrowAnimationRule2.ThrowAnimation, 10, AnimationRule(fastThrowAnimationRule2.PlayRule));
                 break;
             }
         }
     }
 
     public bool KeepPlayingAirThrowAnimation() {
-        return sein.PlatformBehaviour.PlatformMovement.IsInAir;
+        return m_sein.PlatformBehaviour.PlatformMovement.IsInAir;
     }
 
     public bool KeepPlayingGroundThrowAnimation() {
-        return sein.PlatformBehaviour.PlatformMovement.IsOnGround;
+        return m_sein.PlatformBehaviour.PlatformMovement.IsOnGround;
     }
 
     public void UpdateNormal() {
@@ -386,62 +387,62 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
             ResetAimToDefault();
         }
 
-        lockPressingInputTime -= Time.deltaTime;
-        autoTarget = null;
-        if (Input.LeftShoulder.OnPressed && lockPressingInputTime <= 0f) {
-            inputPressed = true;
+        m_lockPressingInputTime -= Time.deltaTime;
+        m_autoTarget = null;
+        if (Input.LeftShoulder.OnPressed && m_lockPressingInputTime <= 0f) {
+            m_inputPressed = true;
         }
 
         if (Input.LeftShoulder.Released) {
-            inputPressed = false;
+            m_inputPressed = false;
         }
 
         RefreshListOfQuickSpiritGrenades();
-        if (Input.LeftShoulder.Pressed && lockPressingInputTime <= 0f && HasEnoughEnergy && CanAim) {
-            inputPressed = false;
+        if (Input.LeftShoulder.Pressed && m_lockPressingInputTime <= 0f && HasEnoughEnergy && CanAim) {
+            m_inputPressed = false;
             SpendEnergy();
             BeginAiming();
             UpdateTrajectory();
             Trajectory.ShowTrajectory();
         }
 
-        if (inputPressed) {
+        if (m_inputPressed) {
             if (!HasEnoughEnergy) {
-                inputPressed = false;
+                m_inputPressed = false;
                 UI.SeinUI.ShakeEnergyOrbBar();
                 if (NotEnoughEnergySound) {
                     Sound.Play(NotEnoughEnergySound.GetSound(null), transform.position, null);
                 }
 
-                sein.Animation.Play(PickAnimation(!IsGrabbingWall ? NotEnoughEnergyThrowAnimations : NotEnoughEnergyWallThrowAnimations), 154, KeepPlayingNotEnoughEnergyAnimation);
+                m_sein.Animation.Play(PickAnimation(!IsGrabbingWall ? NotEnoughEnergyThrowAnimations : NotEnoughEnergyWallThrowAnimations), 154, KeepPlayingNotEnoughEnergyAnimation);
                 if (CanAim) {
                     Vector3 b = !IsGrabbingWall ? new Vector2(-0.5f, 0.1f) : new Vector2(-0.8f, -0.13f);
-                    if (sein.FaceLeft) {
+                    if (m_sein.FaceLeft) {
                         b.x *= -1f;
                     }
 
-                    InstantiateUtility.Instantiate(GrenadeFailEffect, sein.Position + b, Quaternion.identity);
+                    InstantiateUtility.Instantiate(GrenadeFailEffect, m_sein.Position + b, Quaternion.identity);
                 }
 
-                lockPressingInputTime = 0.2f;
+                m_lockPressingInputTime = 0.2f;
                 return;
             }
 
             if (!CanAim) {
-                autoTarget = FindAutoAttackable;
-                if (autoTarget != null) {
-                    inputPressed = false;
-                    lockPressingInputTime = 0.2f;
-                    SpawnGrenade(VelocityToAimAtTarget(autoTarget)).Bashable = false;
+                m_autoTarget = FindAutoAttackable;
+                if (m_autoTarget != null) {
+                    m_inputPressed = false;
+                    m_lockPressingInputTime = 0.2f;
+                    SpawnGrenade(VelocityToAimAtTarget(m_autoTarget)).Bashable = false;
                     SpendEnergy();
                     PlayFastThrowAnimation();
                     PlayThrowSound();
                     ResetAimToDefault();
                 } else {
-                    inputPressed = false;
-                    lockPressingInputTime = 0.2f;
+                    m_inputPressed = false;
+                    m_lockPressingInputTime = 0.2f;
                     var quickThrowSpeed = QuickThrowSpeed;
-                    if (sein.FaceLeft) {
+                    if (m_sein.FaceLeft) {
                         quickThrowSpeed.x *= -1f;
                     }
 
@@ -452,62 +453,62 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
                     ResetAimToDefault();
                 }
 
-                if (sein.Abilities.Glide) {
-                    sein.Abilities.Glide.LockGliding(0.2f);
-                    sein.Abilities.Glide.IsGliding = false;
+                if (m_sein.Abilities.Glide) {
+                    m_sein.Abilities.Glide.LockGliding(0.2f);
+                    m_sein.Abilities.Glide.IsGliding = false;
                 }
             }
         }
     }
 
     public bool KeepPlayingAimAnimation() {
-        return isAiming;
+        return m_isAiming;
     }
 
     public bool KeepPlayingThrowAnimation() {
-        return !sein.PlatformBehaviour.PlatformMovement.MovingHorizontally;
+        return !m_sein.PlatformBehaviour.PlatformMovement.MovingHorizontally;
     }
 
     public bool KeepPlayingNotEnoughEnergyAnimation() {
-        return sein.PlatformBehaviour.PlatformMovement.LocalSpeed == Vector2.zero;
+        return m_sein.PlatformBehaviour.PlatformMovement.LocalSpeed == Vector2.zero;
     }
 
     public void BeginAiming() {
-        sein.PlatformBehaviour.PlatformMovement.LocalSpeed = Vector2.zero;
+        m_sein.PlatformBehaviour.PlatformMovement.LocalSpeed = Vector2.zero;
         if (IsGrabbingWall) {
-            if (!lastAimWasOnWall) {
+            if (!m_lastAimWasOnWall) {
                 ResetAimToDefault();
             }
 
-            lastAimWasOnWall = true;
-            animationAimAngle = IndexToAnimationAngle(8, WallAimingAnimations.Length);
-            lockAimAnimationRemainingTime = 0.3667f;
+            m_lastAimWasOnWall = true;
+            m_animationAimAngle = IndexToAnimationAngle(8, WallAimingAnimations.Length);
+            m_lockAimAnimationRemainingTime = 0.3667f;
         } else {
-            if (lastAimWasOnWall) {
+            if (m_lastAimWasOnWall) {
                 ResetAimToDefault();
             }
 
-            lastAimWasOnWall = false;
-            animationAimAngle = IndexToAnimationAngle(8, AimingAnimations.Length);
-            lockAimAnimationRemainingTime = 0.1f;
+            m_lastAimWasOnWall = false;
+            m_animationAimAngle = IndexToAnimationAngle(8, AimingAnimations.Length);
+            m_lockAimAnimationRemainingTime = 0.1f;
         }
 
-        isAiming = true;
-        faceLeft = sein.FaceLeft;
-        rawAimOffset.x = Mathf.Abs(rawAimOffset.x) * (!sein.FaceLeft ? 1 : -1);
+        m_isAiming = true;
+        m_faceLeft = m_sein.FaceLeft;
+        m_rawAimOffset.x = Mathf.Abs(m_rawAimOffset.x) * (!m_sein.FaceLeft ? 1 : -1);
         if (IsGrabbingWall) {
-            rawAimOffset.x *= -1f;
+            m_rawAimOffset.x *= -1f;
         }
 
         ClampAim();
-        aimOffset = rawAimOffset;
-        autoAim = true;
+        m_aimOffset = m_rawAimOffset;
+        m_autoAim = true;
         AutoTarget();
-        if (sein.Abilities.GrabWall) {
-            sein.Abilities.GrabWall.LockVerticalMovement = true;
+        if (m_sein.Abilities.GrabWall) {
+            m_sein.Abilities.GrabWall.LockVerticalMovement = true;
         }
 
-        grenadeAiming = (GameObject)InstantiateUtility.Instantiate(GrenadeAiming);
+        m_grenadeAiming = (GameObject)InstantiateUtility.Instantiate(GrenadeAiming);
         Sound.Play(StartAimingSound.GetSound(null), transform.position, null);
         if (AimingSound) {
             AimingSound.Play();
@@ -523,9 +524,9 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
             var num2 = float.MaxValue;
             foreach (var attackable in Targets.Attackables) {
                 if (attackable as Component && attackable.CanBeGrenaded() && attackable is EntityTargetting && UI.Cameras.Current.IsOnScreen(attackable.Position)) {
-                    Vector2 vector = attackable.Position - sein.Position;
+                    Vector2 vector = attackable.Position - m_sein.Position;
                     var magnitude = vector.magnitude;
-                    var num3 = !sein.FaceLeft ? 1 : -1;
+                    var num3 = !m_sein.FaceLeft ? 1 : -1;
                     if (IsGrabbingWall) {
                         num3 *= -1;
                     }
@@ -547,19 +548,19 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     }
 
     public void AutoTarget() {
-        autoTarget = FindAutoAttackable;
-        if (autoTarget as Component != null) {
-            SetAimVelocity(VelocityToAimAtTarget(autoTarget));
+        m_autoTarget = FindAutoAttackable;
+        if (m_autoTarget as Component != null) {
+            SetAimVelocity(VelocityToAimAtTarget(m_autoTarget));
         }
     }
 
     private void SetAimVelocity(Vector2 aim) {
-        aimOffset = aim;
-        rawAimOffset = aim;
+        m_aimOffset = aim;
+        m_rawAimOffset = aim;
     }
 
     public Vector2 VelocityToAimAtTarget(IAttackable attackable) {
-        Vector2 vector = attackable.Position - sein.Position;
+        Vector2 vector = attackable.Position - m_sein.Position;
         var num = !IsInAir ? AutoAim.Speed + Mathf.Abs(vector.x) * AutoAim.SpeedPerXDistance + Mathf.Max(0f, vector.y) * AutoAim.SpeedPerYDistance : AutoAim.InAirSpeed;
         var num2 = vector.magnitude / num;
         return new Vector2(vector.x / num2, vector.y / num2 + GrenadeGravity * num2 * 0.5f);
@@ -571,7 +572,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     }
 
     public void CancelAiming() {
-        if (isAiming) {
+        if (m_isAiming) {
             RestoreEnergy();
             EndAiming();
             Sound.Play(StopAimingSound.GetSound(null), transform.position, null);
@@ -584,7 +585,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
 
     public GameObject GrenadeAiming;
 
-    private GameObject grenadeAiming;
+    private GameObject m_grenadeAiming;
 
     public SeinGrenadeTrajectory Trajectory;
 
@@ -605,6 +606,8 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     public float MinAimVerticalWall = -30f;
 
     public int MaxSpamGrenades = 3;
+
+    public float EnergyCost = 1f;
 
     public SoundProvider NotEnoughEnergySound;
 
@@ -628,21 +631,21 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
 
     public float CursorSpeedYOffset = 12f;
 
-    private float lockPressingInputTime;
+    private float m_lockPressingInputTime;
 
-    private Vector2 rawAimOffset = new Vector2(14f, 16f);
+    private Vector2 m_rawAimOffset = new Vector2(14f, 16f);
 
-    private SeinCharacter sein;
+    private SeinCharacter m_sein;
 
-    private bool isAiming;
+    private bool m_isAiming;
 
-    private Vector2 aimOffset;
+    private Vector2 m_aimOffset;
 
-    private List<SpiritGrenade> spiritGrenades = new List<SpiritGrenade>();
+    private List<SpiritGrenade> m_spiritGrenades = new List<SpiritGrenade>();
 
-    private float animationAimAngle;
+    private float m_animationAimAngle;
 
-    private bool lastAimWasOnWall;
+    private bool m_lastAimWasOnWall;
 
     public TextureAnimationWithTransitions[] AimingAnimations;
 
@@ -662,9 +665,9 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
 
     public AnimationMetaData AimingMetaData;
 
-    private float lockAimAnimationRemainingTime;
+    private float m_lockAimAnimationRemainingTime;
 
-    private bool faceLeft;
+    private bool m_faceLeft;
 
     public float MaxAimWallAnimationAngle = 85f;
 
@@ -674,13 +677,13 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
 
     public float MinAimGroundAnimationAngle = -30f;
 
-    private bool inputPressed;
+    private bool m_inputPressed;
 
     public List<FastThrowAnimationRule> FastThrowAnimations;
 
-    private bool autoAim;
+    private bool m_autoAim;
 
-    private IAttackable autoTarget;
+    private IAttackable m_autoTarget;
 
     public AutoAimSettings AutoAim;
 

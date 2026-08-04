@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class SkillTreeLaneLogic : SaveSerialize {
-    public float Index => index;
+    public float Index => m_index;
 
     public void OnEnable() {
         UpdateItems(true);
@@ -35,12 +35,12 @@ public class SkillTreeLaneLogic : SaveSerialize {
         }
 
         --firstUnlearnedIndex;
-        index = !instant ? Mathf.MoveTowards(index, firstUnlearnedIndex, Time.deltaTime * 3f) : firstUnlearnedIndex;
+        m_index = !instant ? Mathf.MoveTowards(m_index, firstUnlearnedIndex, Time.deltaTime * 3f) : firstUnlearnedIndex;
         SkillEarntAnimator.Initialize();
-        SkillEarntAnimator.SampleValue(index, true);
-        if (!laneAchievedAwarded && HasAllSkills) {
+        SkillEarntAnimator.SampleValue(m_index, true);
+        if (!m_laneAchievedAwarded && HasAllSkills) {
             OnSkillTreeDoneEvent(Type);
-            laneAchievedAwarded = true;
+            m_laneAchievedAwarded = true;
         }
     }
 
@@ -59,20 +59,20 @@ public class SkillTreeLaneLogic : SaveSerialize {
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref laneAchievedAwarded);
+        ar.Serialize(ref m_laneAchievedAwarded);
     }
 
     public BaseAnimator SkillEarntAnimator;
 
     public List<SkillItem> Skills = new List<SkillItem>();
 
-    private float index;
+    private float m_index;
 
     public Color LargeIconColor;
 
     public SkillTreeType Type;
 
-    private bool laneAchievedAwarded;
+    private bool m_laneAchievedAwarded;
 
     public static Action<SkillTreeType> OnSkillTreeDoneEvent = delegate { };
 
