@@ -84,11 +84,11 @@ public class GetAbilityPedestal : SaveSerialize {
     public IEnumerator MoveSeinToCenterSmoothly() {
         var seinPlatformMovement = Characters.Sein.PlatformBehaviour.PlatformMovement;
         for (var i = 0; i < 10; i++) {
-            seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, base.transform.position.x, 0.2f);
+            seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, ((Component)this).transform.position.x, 0.2f);
             yield return new WaitForFixedUpdate();
         }
 
-        seinPlatformMovement.PositionX = base.transform.position.x;
+        seinPlatformMovement.PositionX = ((Component)this).transform.position.x;
     }
 
     public override void Serialize(Archive ar) {

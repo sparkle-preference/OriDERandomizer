@@ -173,8 +173,8 @@ public class DoorWithSlots : SaveSerialize {
             case State.Opened:
                 if (checkItOpened) {
                     checkItOpened = false;
-                    MakeSureItsAtEnd(transform.FindChild("doorPieces/doorLeft"));
-                    MakeSureItsAtEnd(transform.FindChild("doorPieces/doorRight"));
+                    MakeSureItsAtEnd(((Component)this).transform.FindChild("doorPieces/doorLeft"));
+                    MakeSureItsAtEnd(((Component)this).transform.FindChild("doorPieces/doorRight"));
                 }
 
                 break;
