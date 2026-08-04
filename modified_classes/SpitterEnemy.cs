@@ -86,8 +86,7 @@ public class SpitterEnemy : GroundEnemy {
             return;
         }
 
-        bool flag;
-        if (PlatformMovement.MovingHorizontally && EnemyStopper.InsideEnemyStopper(Position, !FaceLeft ? Vector3.right : Vector3.left, out flag)) {
+        if (PlatformMovement.MovingHorizontally && EnemyStopper.InsideEnemyStopper(Position, !FaceLeft ? Vector3.right : Vector3.left, out _)) {
             FaceLeft = !FaceLeft;
             if (Controller.StateMachine.CurrentState == State.RunBack) {
                 Controller.StateMachine.ChangeState(State.SpitterEnemyCharging);

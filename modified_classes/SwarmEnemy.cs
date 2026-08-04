@@ -55,8 +55,7 @@ public class SwarmEnemy : GroundEnemy {
     public bool ShouldRun() {
         float num = Math.Sign(PositionToPlayerPosition.x);
         var flag = Size != 0f && Physics.Linecast(transform.position + new Vector3(num * (Size - 1f), 0f), transform.position + new Vector3(num * Size, 0f));
-        bool flag2;
-        if (EnemyStopper.InsideEnemyStopper(Position, !PlayerIsToLeft ? Vector3.right : Vector3.left, out flag2)) {
+        if (EnemyStopper.InsideEnemyStopper(Position, !PlayerIsToLeft ? Vector3.right : Vector3.left, out _)) {
             return false;
         }
 

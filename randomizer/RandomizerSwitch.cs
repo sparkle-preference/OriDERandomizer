@@ -368,10 +368,8 @@ public static class RandomizerSwitch {
                 case "TW":
                     // TW entries are coord|TW|name,x,y
                     var pieces2 = ((string)action.Value).Split(',');
-                    int warpX;
-                    int.TryParse(pieces2[1], out warpX);
-                    int warpY;
-                    int.TryParse(pieces2[2], out warpY);
+                    int.TryParse(pieces2[1], out var warpX);
+                    int.TryParse(pieces2[2], out var warpY);
                     TeleporterController.AddCustomTeleporter(pieces2[0], warpX, warpY);
                     TeleporterController.Activate(pieces2[0]);
                     PickupMessage(pieces2[0]);
@@ -379,10 +377,8 @@ public static class RandomizerSwitch {
                 case "NB":
                     // NB entries are coord|NB|x,y
                     var pieces3 = ((string)action.Value).Split(',');
-                    int positionX;
-                    int.TryParse(pieces3[0], out positionX);
-                    int positionY;
-                    int.TryParse(pieces3[1], out positionY);
+                    int.TryParse(pieces3[0], out var positionX);
+                    int.TryParse(pieces3[1], out var positionY);
                     Randomizer.NightBerryWarpPosition = new Vector3(positionX, positionY);
                     Characters.Sein.Inventory.SetRandomizerItem(82, 1);
                     break;

@@ -66,8 +66,7 @@ public static class RandomizerMW {
         try {
             foreach (var pair in field.Split(';')) {
                 var dot = pair.IndexOf('.');
-                int pid;
-                if (dot > 0 && int.TryParse(pair.Substring(0, dot), out pid) && pair.Length > dot + 1) {
+                if (dot > 0 && int.TryParse(pair.Substring(0, dot), out var pid) && pair.Length > dot + 1) {
                     PlayerNames[pid] = pair.Substring(dot + 1);
                 }
             }
@@ -107,8 +106,7 @@ public static class RandomizerMW {
             // our dungeon keys living in someone else's world still get
             // clues: the manifest knows whose world and which zone
             if (Randomizer.CluesMode && entry.Code == "EV") {
-                int evId;
-                if (int.TryParse(entry.Id, out evId) && evId % 2 == 0) {
+                if (int.TryParse(entry.Id, out var evId) && evId % 2 == 0) {
                     RandomizerClues.AddClue($"P{entry.Finder} {zone}", evId / 2);
                 }
             }
@@ -116,8 +114,7 @@ public static class RandomizerMW {
             // same for keysanity door keys; the clue's coords are the manifest
             // pseudo-location, resolved as found via the granted-slot bits
             if (Randomizer.Keysanity.IsActive && entry.Code == "RB") {
-                int rbId;
-                if (int.TryParse(entry.Id, out rbId)) {
+                if (int.TryParse(entry.Id, out var rbId)) {
                     Randomizer.Keysanity.AddClue(rbId, coords, $"P{entry.Finder} {zone}");
                 }
             }
@@ -288,8 +285,7 @@ public static class RandomizerMW {
                     case "KS": ks++; break;
                     case "MS": ms++; break;
                     case "EX":
-                        int val;
-                        if (int.TryParse(entry.Id, out val)) {
+                        if (int.TryParse(entry.Id, out var val)) {
                             exp += val;
                         }
 

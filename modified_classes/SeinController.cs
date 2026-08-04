@@ -203,8 +203,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
         var a = target.transform.position + (Vector3)endOffset;
         var vector2 = a - vector;
         var component = target.GetComponent<Rigidbody>();
-        RaycastHit raycastHit;
-        return !Physics.Raycast(vector, vector2.normalized, out raycastHit, vector2.magnitude, RayTestLayerMask) || !(raycastHit.collider.gameObject != target) || (component && !(component != raycastHit.collider.attachedRigidbody)) || raycastHit.collider.isTrigger;
+        return !Physics.Raycast(vector, vector2.normalized, out var raycastHit, vector2.magnitude, RayTestLayerMask) || !(raycastHit.collider.gameObject != target) || (component && !(component != raycastHit.collider.attachedRigidbody)) || raycastHit.collider.isTrigger;
     }
 
     public bool RayTest(Vector3 position, Vector3 delta, out RaycastHit hitInfo) {

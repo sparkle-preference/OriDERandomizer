@@ -62,8 +62,7 @@ public class TraceGroundMovement : SaveSerialize, IDamageReciever, ISuspendable 
             lastPosition = vector;
             vector -= Down * 0.05f;
             transform.position = vector;
-            RaycastHit raycastHit;
-            if (rigidbody.SweepTest(Down, out raycastHit, 1f)) {
+            if (rigidbody.SweepTest(Down, out var raycastHit, 1f)) {
                 vector += RandomizerBonusSkill.TimeScale(Down * raycastHit.distance);
             }
         }

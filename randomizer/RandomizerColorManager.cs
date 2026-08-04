@@ -40,16 +40,11 @@ public static class RandomizerColorManager {
                         ','
                     );
                     if (components.Length >= 5) {
-                        float red2;
-                        float.TryParse(components[0], out red2);
-                        float green2;
-                        float.TryParse(components[1], out green2);
-                        float blue2;
-                        float.TryParse(components[2], out blue2);
-                        float alpha2;
-                        float.TryParse(components[3], out alpha2);
-                        int frames;
-                        int.TryParse(components[4], out frames);
+                        float.TryParse(components[0], out var red2);
+                        float.TryParse(components[1], out var green2);
+                        float.TryParse(components[2], out var blue2);
+                        float.TryParse(components[3], out var alpha2);
+                        int.TryParse(components[4], out var frames);
                         frames = Math.Min(frames, 36000);
                         red2 /= 511f;
                         green2 /= 511f;
@@ -74,13 +69,10 @@ public static class RandomizerColorManager {
                 ','
             );
             if ((components2.Length == 3 || components2.Length == 4)) {
-                var red3 = 0f;
-                var green3 = 0f;
-                var blue3 = 0f;
-                var alpha3 = 0f;
-                float.TryParse(components2[0], out red3);
-                float.TryParse(components2[1], out green3);
-                float.TryParse(components2[2], out blue3);
+                float.TryParse(components2[0], out var red3);
+                float.TryParse(components2[1], out var green3);
+                float.TryParse(components2[2], out var blue3);
+                float alpha3;
                 if (components2.Length == 4) {
                     float.TryParse(components2[3], out alpha3);
                 } else {

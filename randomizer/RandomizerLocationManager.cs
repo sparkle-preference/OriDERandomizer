@@ -144,8 +144,7 @@ public class RandomizerLocationManager {
                 break;
             default:
                 if (preset.StartsWith("Custom")) {
-                    var pathMask = 0;
-                    if (int.TryParse(preset.Remove(0, "Custom".Length), out pathMask)) {
+                    if (int.TryParse(preset.Remove(0, "Custom".Length), out var pathMask)) {
                         var newPaths = OriParse.PathMaskToPathSet(pathMask);
                         if (newPaths != null)
                             //Randomizer.log("Got custom pathset: " + OriParse.PathMaskToString(pathMask));

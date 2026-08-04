@@ -96,8 +96,7 @@ public class MixerManager : MonoBehaviour {
     }
 
     public static AudioMixerGroup GetMixerGroup(MixerGroupType group) {
-        AudioMixerGroup audioMixerGroup;
-        if (!typeToGroup.TryGetValue(group, out audioMixerGroup)) {
+        if (!typeToGroup.TryGetValue(group, out var audioMixerGroup)) {
             switch (group) {
                 case MixerGroupType.Foley:
                     audioMixerGroup = GetMasterMixer().FindMatchingGroups("foley")[0];
