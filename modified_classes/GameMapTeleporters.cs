@@ -87,9 +87,9 @@ public class GameMapTeleporters : MonoBehaviour {
     }
 
     private void AdvanceWorldMap() {
-        m_flyBackTime = 0f;
+        flyBackTime = 0f;
         if (Input.Axis.magnitude < 0.5f) {
-            m_released = true;
+            released = true;
         }
 
         if (Input.CursorMoved) {
@@ -99,7 +99,7 @@ public class GameMapTeleporters : MonoBehaviour {
             }
         }
 
-        if (Input.Axis.magnitude > 0.5f && m_released) {
+        if (Input.Axis.magnitude > 0.5f && released) {
             var normalized = Input.Axis.normalized;
             var worldMapIconPosition = SelectedTeleporter.WorldMapIconPosition;
             var num2 = -1;
@@ -116,7 +116,7 @@ public class GameMapTeleporters : MonoBehaviour {
             }
 
             if (num2 != -1) {
-                m_released = false;
+                released = false;
                 ChangeSelection(num2);
             }
         }
@@ -131,8 +131,8 @@ public class GameMapTeleporters : MonoBehaviour {
         }
 
         if (AreaMapUI.Instance.Navigation.ScrollingSensitivityCurve.Evaluate(Input.Axis.magnitude) > 0f) {
-            m_flyBackTime = 1.1f;
-            m_previousScrollPosition = AreaMapUI.Instance.Navigation.ScrollPosition;
+            flyBackTime = 1.1f;
+            previousScrollPosition = AreaMapUI.Instance.Navigation.ScrollPosition;
             var num2 = 9f;
             var index = SelectedIndex;
             for (var i = 0; i < Teleporters.Count; i++) {
@@ -148,9 +148,9 @@ public class GameMapTeleporters : MonoBehaviour {
 
             ChangeSelection(index);
         } else {
-            m_flyBackTime -= Time.deltaTime;
-            if (m_flyBackTime < 1f && m_flyBackTime > 0f) {
-                AreaMapUI.Instance.Navigation.ScrollPosition = Vector2.Lerp(m_previousScrollPosition, Teleporters[SelectedIndex].WorldPosition, 1f - Mathf.SmoothStep(0f, 1f, m_flyBackTime));
+            flyBackTime -= Time.deltaTime;
+            if (flyBackTime < 1f && flyBackTime > 0f) {
+                AreaMapUI.Instance.Navigation.ScrollPosition = Vector2.Lerp(previousScrollPosition, Teleporters[SelectedIndex].WorldPosition, 1f - Mathf.SmoothStep(0f, 1f, flyBackTime));
             }
         }
     }
@@ -173,10 +173,10 @@ public class GameMapTeleporters : MonoBehaviour {
         }
 
         if (Input.LeftClick.OnPressed) {
-            m_clickedPosition = Input.CursorPositionUI;
+            clickedPosition = Input.CursorPositionUI;
         }
 
-        var flag = Input.LeftClick.OnReleased && Vector2.Distance(Input.CursorPositionUI, m_clickedPosition) < 0.01f && TeleporterUnderMouse() != -1;
+        var flag = Input.LeftClick.OnReleased && Vector2.Distance(Input.CursorPositionUI, clickedPosition) < 0.01f && TeleporterUnderMouse() != -1;
         if (Input.ActionButtonA.OnPressed || flag) {
             UI.Menu.HideMenuScreen();
             if (SelectTeleporterSound) {
@@ -225,11 +225,11 @@ public class GameMapTeleporters : MonoBehaviour {
 
     public int SelectedIndex;
 
-    private bool m_released = true;
+    private bool released = true;
 
-    private Vector2 m_previousScrollPosition;
+    private Vector2 previousScrollPosition;
 
-    private float m_flyBackTime;
+    private float flyBackTime;
 
-    private Vector2 m_clickedPosition;
+    private Vector2 clickedPosition;
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class DebugWidget : MonoBehaviour {
     public static DebugWidget Instance {
@@ -17,29 +18,29 @@ public class DebugWidget : MonoBehaviour {
     }
 
     public void OnGUI() {
-        if (hidden) {
+        if (Hidden) {
             return;
         }
 
-        if (output != null) {
-            widgetFrame = GUI.Window(0, widgetFrame, WindowFunc, "Debug Widget");
+        if (Output != null) {
+            WidgetFrame = GUI.Window(0, WidgetFrame, WindowFunc, "Debug Widget");
         }
 
-        logsRect = GUI.Window(1, logsRect, LogsWindowFunc, "Logs");
+        LogsRect = GUI.Window(1, LogsRect, LogsWindowFunc, "Logs");
     }
 
     public void WindowFunc(int id) {
         GUI.DragWindow();
-        scrollPosition = GUILayout.BeginScrollView(scrollPosition);
-        for (var i = 0; i < output.Length; i++) {
-            GUILayout.Label(output[i]);
+        ScrollPosition = GUILayout.BeginScrollView(ScrollPosition);
+        for (var i = 0; i < Output.Length; i++) {
+            GUILayout.Label(Output[i]);
         }
 
         GUILayout.EndScrollView();
     }
 
     public void TargetObject(GameObject obj, bool verbose) {
-        hidden = false;
+        Hidden = false;
         var components = obj.GetComponents<MonoBehaviour>();
         var list = new List<string> { obj.name };
         foreach (var monoBehaviour in components) {
@@ -73,13 +74,13 @@ public class DebugWidget : MonoBehaviour {
             }
         }
 
-        output = list.ToArray();
+        Output = list.ToArray();
         LogCallback("Targetted " + obj.name + (verbose ? " (verbose)" : ""), "", LogType.Log);
     }
 
     public void Update() {
         if (Input.GetKeyDown(KeyCode.KeypadEnter)) {
-            hidden = true;
+            Hidden = true;
         }
     }
 
@@ -89,51 +90,51 @@ public class DebugWidget : MonoBehaviour {
 
     public void LogCallback(string condition, string stackTrace, LogType type) {
         if (type == LogType.Exception) {
-            logItems.Add(
+            LogItems.Add(
                 new LogItem {
-                    text = stackTrace,
-                    type = type,
+                    Text = stackTrace,
+                    Type = type,
                 }
             );
         }
 
-        logItems.Add(
+        LogItems.Add(
             new LogItem {
-                text = condition,
-                type = type,
+                Text = condition,
+                Type = type,
             }
         );
     }
 
     public void LogsWindowFunc(int id) {
         GUI.DragWindow();
-        logsScrollPosition = GUILayout.BeginScrollView(logsScrollPosition);
-        for (var i = logItems.Count - 1; i >= 0; i--) {
-            GUILayout.Label(logItems[i].text);
+        LogsScrollPosition = GUILayout.BeginScrollView(LogsScrollPosition);
+        for (var i = LogItems.Count - 1; i >= 0; i--) {
+            GUILayout.Label(LogItems[i].Text);
         }
 
         GUILayout.EndScrollView();
     }
 
-    public Rect widgetFrame = new Rect(10f, 10f, 600f, 1000f);
+    [FormerlySerializedAs("widgetFrame")] public Rect WidgetFrame = new Rect(10f, 10f, 600f, 1000f);
 
-    public string[] output;
+    [FormerlySerializedAs("output")] public string[] Output;
 
     public static DebugWidget instance;
 
-    public Vector2 scrollPosition;
+    [FormerlySerializedAs("scrollPosition")] public Vector2 ScrollPosition;
 
-    public bool hidden = true;
+    [FormerlySerializedAs("hidden")] public bool Hidden = true;
 
-    public List<LogItem> logItems = new List<LogItem>();
+    public List<LogItem> LogItems = new List<LogItem>();
 
-    public Rect logsRect = new Rect(10f, 1000f, 1000f, 400f);
+    [FormerlySerializedAs("logsRect")] public Rect LogsRect = new Rect(10f, 1000f, 1000f, 400f);
 
-    public Vector2 logsScrollPosition;
+    [FormerlySerializedAs("logsScrollPosition")] public Vector2 LogsScrollPosition;
 
     public struct LogItem {
-        public string text;
+        public string Text;
 
-        public LogType type;
+        public LogType Type;
     }
 }

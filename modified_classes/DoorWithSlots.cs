@@ -1,23 +1,24 @@
 using Core;
 using Game;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Input = Core.Input;
 
 public class DoorWithSlots : SaveSerialize {
     public void OnValidate() {
-        m_transform = transform;
+        Transform = transform;
     }
 
     public override void Awake() {
         base.Awake();
-        m_opensOnLeftSide = m_transform.TransformPoint(Vector3.right).x < m_transform.position.x;
+        opensOnLeftSide = Transform.TransformPoint(Vector3.right).x < Transform.position.x;
     }
 
     public void Highlight() {
         if (OriTarget) {
             Characters.Ori.MoveOriToPosition(OriTarget.position, OriDuration);
         } else {
-            Characters.Ori.MoveOriToPosition(m_transform.position, OriDuration);
+            Characters.Ori.MoveOriToPosition(Transform.position, OriDuration);
         }
 
         if (Characters.Sein.Abilities.SpiritFlame) {
@@ -27,12 +28,12 @@ public class DoorWithSlots : SaveSerialize {
         Characters.Ori.GetComponent<Rigidbody>().velocity = Vector3.zero;
         Characters.Ori.EnableHoverWobbling = false;
         Characters.Ori.InsideDoor = true;
-        if (m_hint == null) {
-            m_hint = UI.Hints.Show(HintMessage, HintLayer.HintZone, 600f);
+        if (hint == null) {
+            hint = UI.Hints.Show(HintMessage, HintLayer.HintZone, 600f);
         }
 
         if (OnOriEnterSoundProvider) {
-            Sound.Play(OnOriEnterSoundProvider.GetSound(null), m_transform.position, null);
+            Sound.Play(OnOriEnterSoundProvider.GetSound(null), Transform.position, null);
         }
 
         Randomizer.Keysanity.ApplyKeystoneCount(MoonGuid, NumberOfOrbsUsed);
@@ -46,12 +47,12 @@ public class DoorWithSlots : SaveSerialize {
             Characters.Sein.Abilities.SpiritFlame.RemoveLock("doorWithSlots");
         }
 
-        if (m_hint) {
-            m_hint.HideMessageScreen();
+        if (hint) {
+            hint.HideMessageScreen();
         }
 
         if (OnOriExitSoundProvider) {
-            Sound.Play(OnOriExitSoundProvider.GetSound(null), m_transform.position, null);
+            Sound.Play(OnOriExitSoundProvider.GetSound(null), Transform.position, null);
         }
 
         Randomizer.Keysanity.ResetKeystoneCount();
@@ -59,7 +60,7 @@ public class DoorWithSlots : SaveSerialize {
 
     public void RestoreOrbs() {
         if (NumberOfOrbsUsed > 0 && RestoreLeafsSoundProvider) {
-            Sound.Play(RestoreLeafsSoundProvider.GetSound(null), m_transform.position, null);
+            Sound.Play(RestoreLeafsSoundProvider.GetSound(null), Transform.position, null);
         }
 
         Characters.Sein.Inventory.CollectKeystones(NumberOfOrbsUsed);
@@ -79,9 +80,9 @@ public class DoorWithSlots : SaveSerialize {
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref m_slotsPending);
+        ar.Serialize(ref slotsPending);
         ar.Serialize(ref NumberOfOrbsUsed);
-        ar.Serialize(ref m_slotsFilled);
+        ar.Serialize(ref slotsFilled);
         if (ar.Reading && CurrentState == State.Highlighted) {
             Unhighlight();
             CurrentState = State.Normal;
@@ -93,18 +94,18 @@ public class DoorWithSlots : SaveSerialize {
             CurrentState = State.Normal;
         }
 
-        if (m_openDoorSound) {
-            m_openDoorSound.FadeOut(0.5f, true);
-            UberPoolManager.Instance.RemoveOnDestroyed(m_openDoorSound.gameObject);
-            m_openDoorSound = null;
+        if (openDoorSound) {
+            openDoorSound.FadeOut(0.5f, true);
+            UberPoolManager.Instance.RemoveOnDestroyed(openDoorSound.gameObject);
+            openDoorSound = null;
         }
 
         if (ar.Reading && CurrentState == State.Opened) {
-            m_checkItOpened = true;
+            checkItOpened = true;
         }
     }
 
-    public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
+    public float DistanceToSein => Vector3.Distance(Transform.position, Characters.Sein.Position);
 
     public bool OriHasTargets {
         get {
@@ -113,7 +114,7 @@ public class DoorWithSlots : SaveSerialize {
         }
     }
 
-    public bool SeinInRange => !OriHasTargets && DistanceToSein <= Radius && (Randomizer.OpenMode || ((!m_opensOnLeftSide || m_transform.position.x >= Characters.Sein.Position.x) && (m_opensOnLeftSide || m_transform.position.x <= Characters.Sein.Position.x)));
+    public bool SeinInRange => !OriHasTargets && DistanceToSein <= Radius && (Randomizer.OpenMode || ((!opensOnLeftSide || Transform.position.x >= Characters.Sein.Position.x) && (opensOnLeftSide || Transform.position.x <= Characters.Sein.Position.x)));
 
     public void FixedUpdate() {
         switch (CurrentState) {
@@ -143,7 +144,7 @@ public class DoorWithSlots : SaveSerialize {
                         OnFailAction.Perform(null);
                         UI.SeinUI.ShakeKeystones();
                         if (NotEnoughLeafsSoundProvider) {
-                            Sound.Play(NotEnoughLeafsSoundProvider.GetSound(null), m_transform.position, null);
+                            Sound.Play(NotEnoughLeafsSoundProvider.GetSound(null), Transform.position, null);
                         }
                     }
 
@@ -151,7 +152,7 @@ public class DoorWithSlots : SaveSerialize {
                         NumberOfOrbsUsed++;
                         Characters.Sein.Inventory.SpendKeystones(1);
                         if (PlaceLeafSoundSoundProvider) {
-                            Sound.Play(PlaceLeafSoundSoundProvider.GetSound(null), m_transform.position, null);
+                            Sound.Play(PlaceLeafSoundSoundProvider.GetSound(null), Transform.position, null);
                         }
                     }
 
@@ -162,18 +163,18 @@ public class DoorWithSlots : SaveSerialize {
                         RandomizerLocationManager.OpenDoorByGuid(MoonGuid);
                         CurrentState = State.Opened;
                         if (OpenDoorSoundProvider) {
-                            m_openDoorSound = Sound.Play(OpenDoorSoundProvider.GetSound(null), m_transform.position, delegate { m_openDoorSound = null; });
-                            m_openDoorSound.PauseOnSuspend = true;
+                            openDoorSound = Sound.Play(OpenDoorSoundProvider.GetSound(null), Transform.position, delegate { openDoorSound = null; });
+                            openDoorSound.PauseOnSuspend = true;
                         }
                     }
                 }
 
                 break;
             case State.Opened:
-                if (m_checkItOpened) {
-                    m_checkItOpened = false;
-                    MakeSureItsAtEnd(transform.FindChild("doorPieces/doorLeft"));
-                    MakeSureItsAtEnd(transform.FindChild("doorPieces/doorRight"));
+                if (checkItOpened) {
+                    checkItOpened = false;
+                    MakeSureItsAtEnd(((Component)this).transform.FindChild("doorPieces/doorLeft"));
+                    MakeSureItsAtEnd(((Component)this).transform.FindChild("doorPieces/doorRight"));
                 }
 
                 break;
@@ -195,13 +196,11 @@ public class DoorWithSlots : SaveSerialize {
 
     public Transform OriTarget;
 
-    public Color OriHoverColor;
+    [FormerlySerializedAs("m_transform")] [SerializeField] [HideInInspector] private Transform Transform;
 
-    [SerializeField] [HideInInspector] private Transform m_transform;
+    private int slotsPending;
 
-    private int m_slotsPending;
-
-    private int m_slotsFilled;
+    private int slotsFilled;
 
     public ActionMethod OnOpenedAction;
 
@@ -229,19 +228,15 @@ public class DoorWithSlots : SaveSerialize {
 
     public MessageProvider HintMessage;
 
-    public CameraShakeAsset DoorKeyInsertShake;
+    private MessageBox hint;
 
-    public ControllerShakeAsset DoorKeyInsertControllerShake;
-
-    private MessageBox m_hint;
-
-    private bool m_opensOnLeftSide;
+    private bool opensOnLeftSide;
 
     public State CurrentState;
 
-    private bool m_checkItOpened;
+    private bool checkItOpened;
 
-    private SoundPlayer m_openDoorSound;
+    private SoundPlayer openDoorSound;
 
     public enum State {
         Normal,

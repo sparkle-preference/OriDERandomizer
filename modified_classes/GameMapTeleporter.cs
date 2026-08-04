@@ -11,18 +11,18 @@ public class GameMapTeleporter {
 
     public void Show() {
         var instance = AreaMapUI.Instance;
-        if (m_worldMapIconGameObject) {
-            m_worldMapIconGameObject.SetActive(true);
+        if (worldMapIconGameObject) {
+            worldMapIconGameObject.SetActive(true);
         } else {
             var gameObject = Object.Instantiate(instance.TeleportPrefab);
-            m_worldMapIconTransform = gameObject.transform;
-            m_worldMapIconGameObject = m_worldMapIconTransform.gameObject;
-            m_worldMapIconHighlightAnimator = m_worldMapIconGameObject.transform.FindChild("highlight").GetComponentInChildren<TransparencyAnimator>();
-            m_worldMapIconTransform.position = WorldMapUI.Instance.WorldToUIPosition(WorldPosition);
-            m_worldMapIconTransform.parent = WorldMapUI.Instance.FadeOutGroup;
-            TransparencyAnimator.Register(m_worldMapIconTransform);
+            worldMapIconTransform = gameObject.transform;
+            worldMapIconGameObject = worldMapIconTransform.gameObject;
+            worldMapIconHighlightAnimator = worldMapIconGameObject.transform.FindChild("highlight").GetComponentInChildren<TransparencyAnimator>();
+            worldMapIconTransform.position = WorldMapUI.Instance.WorldToUIPosition(WorldPosition);
+            worldMapIconTransform.parent = WorldMapUI.Instance.FadeOutGroup;
+            TransparencyAnimator.Register(worldMapIconTransform);
             if (Name.GetType() == typeof(RandomizerMessageProvider)) {
-                var componentsInChildren = m_worldMapIconGameObject.GetComponentsInChildren<Renderer>();
+                var componentsInChildren = worldMapIconGameObject.GetComponentsInChildren<Renderer>();
                 int[] multiplicative = { 0, 10, 11, 12 };
                 int[] others = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
                 foreach (var index in multiplicative) {
@@ -49,18 +49,18 @@ public class GameMapTeleporter {
             }
         }
 
-        if (m_areaMapIconGameObject) {
-            m_areaMapIconGameObject.SetActive(true);
+        if (areaMapIconGameObject) {
+            areaMapIconGameObject.SetActive(true);
         } else {
             var gameObject2 = Object.Instantiate(instance.TeleportPrefab);
-            m_areaMapIconTransform = gameObject2.transform;
-            m_areaMapIconGameObject = m_areaMapIconTransform.gameObject;
-            m_areaMapIconHighlightAnimator = m_areaMapIconGameObject.transform.FindChild("highlight").GetComponentInChildren<TransparencyAnimator>();
-            m_areaMapIconTransform.position = AreaMapUI.Instance.Navigation.WorldToMapPosition(WorldPosition + Vector3.up * 4f);
-            m_areaMapIconTransform.parent = AreaMapUI.Instance.FadeOutGroup;
-            TransparencyAnimator.Register(m_areaMapIconTransform);
+            areaMapIconTransform = gameObject2.transform;
+            areaMapIconGameObject = areaMapIconTransform.gameObject;
+            areaMapIconHighlightAnimator = areaMapIconGameObject.transform.FindChild("highlight").GetComponentInChildren<TransparencyAnimator>();
+            areaMapIconTransform.position = AreaMapUI.Instance.Navigation.WorldToMapPosition(WorldPosition + Vector3.up * 4f);
+            areaMapIconTransform.parent = AreaMapUI.Instance.FadeOutGroup;
+            TransparencyAnimator.Register(areaMapIconTransform);
             if (Name.GetType() == typeof(RandomizerMessageProvider)) {
-                var componentsInChildren2 = m_areaMapIconGameObject.GetComponentsInChildren<Renderer>();
+                var componentsInChildren2 = areaMapIconGameObject.GetComponentsInChildren<Renderer>();
                 int[] multiplicative2 = { 0, 10, 11, 12 };
                 int[] others2 = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
                 foreach (var index3 in multiplicative2) {
@@ -89,50 +89,50 @@ public class GameMapTeleporter {
     }
 
     public void Update() {
-        if (m_worldMapIconTransform) {
-            m_worldMapIconTransform.position = WorldMapUI.Instance.WorldToUIPosition(WorldPosition);
+        if (worldMapIconTransform) {
+            worldMapIconTransform.position = WorldMapUI.Instance.WorldToUIPosition(WorldPosition);
         }
 
-        if (m_areaMapIconTransform) {
-            m_areaMapIconTransform.position = AreaMapUI.Instance.Navigation.WorldToMapPosition(WorldPosition + Vector3.up * 4f);
+        if (areaMapIconTransform) {
+            areaMapIconTransform.position = AreaMapUI.Instance.Navigation.WorldToMapPosition(WorldPosition + Vector3.up * 4f);
         }
     }
 
-    public Vector2 WorldMapIconPosition => m_worldMapIconTransform.position;
+    public Vector2 WorldMapIconPosition => worldMapIconTransform.position;
 
-    public Vector2 AreaMapIconPosition => m_areaMapIconTransform.position;
+    public Vector2 AreaMapIconPosition => areaMapIconTransform.position;
 
     public Vector2 WorldProjectedPositon => WorldMapUI.Instance.WorldToProjectedPosition(WorldPosition);
 
     public RuntimeGameWorldArea Area => GameWorld.Instance.FindRuntimeArea(GameWorld.Instance.FindAreaFromPosition(WorldPosition));
 
     public void Hide() {
-        if (m_worldMapIconGameObject) {
-            m_worldMapIconGameObject.SetActive(false);
+        if (worldMapIconGameObject) {
+            worldMapIconGameObject.SetActive(false);
         }
 
-        if (m_areaMapIconGameObject) {
-            m_areaMapIconGameObject.SetActive(false);
+        if (areaMapIconGameObject) {
+            areaMapIconGameObject.SetActive(false);
         }
     }
 
     public void Highlight() {
-        if (m_worldMapIconHighlightAnimator) {
-            m_worldMapIconHighlightAnimator.AnimatorDriver.ContinueForward();
+        if (worldMapIconHighlightAnimator) {
+            worldMapIconHighlightAnimator.AnimatorDriver.ContinueForward();
         }
 
-        if (m_areaMapIconHighlightAnimator) {
-            m_areaMapIconHighlightAnimator.AnimatorDriver.ContinueForward();
+        if (areaMapIconHighlightAnimator) {
+            areaMapIconHighlightAnimator.AnimatorDriver.ContinueForward();
         }
     }
 
     public void Dehighlight() {
-        if (m_worldMapIconHighlightAnimator) {
-            m_worldMapIconHighlightAnimator.AnimatorDriver.ContinueBackwards();
+        if (worldMapIconHighlightAnimator) {
+            worldMapIconHighlightAnimator.AnimatorDriver.ContinueBackwards();
         }
 
-        if (m_areaMapIconHighlightAnimator) {
-            m_areaMapIconHighlightAnimator.AnimatorDriver.ContinueBackwards();
+        if (areaMapIconHighlightAnimator) {
+            areaMapIconHighlightAnimator.AnimatorDriver.ContinueBackwards();
         }
     }
 
@@ -174,15 +174,15 @@ public class GameMapTeleporter {
 
     public MessageProvider Name;
 
-    private TransparencyAnimator m_worldMapIconHighlightAnimator;
+    private TransparencyAnimator worldMapIconHighlightAnimator;
 
-    private Transform m_worldMapIconTransform;
+    private Transform worldMapIconTransform;
 
-    private GameObject m_worldMapIconGameObject;
+    private GameObject worldMapIconGameObject;
 
-    private TransparencyAnimator m_areaMapIconHighlightAnimator;
+    private TransparencyAnimator areaMapIconHighlightAnimator;
 
-    private Transform m_areaMapIconTransform;
+    private Transform areaMapIconTransform;
 
-    private GameObject m_areaMapIconGameObject;
+    private GameObject areaMapIconGameObject;
 }
