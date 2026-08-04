@@ -20,6 +20,4 @@ public class LowestDifficultyToggler : MonoBehaviour, IDebugMenuToggleable {
         get => (int)DifficultyController.Instance.LowestDifficulty;
         set => DifficultyController.Instance.LowestDifficulty = (DifficultyMode)((value % ToggleOptions.Length + ToggleOptions.Length) % ToggleOptions.Length);
     }
-
-    private int m_currentOption;
 }

@@ -215,6 +215,4 @@ public class SaveGameController {
     }
 
     public const int MAX_SAVES = 10;
-
-    private float m_startTime;
 }

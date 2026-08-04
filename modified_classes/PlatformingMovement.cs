@@ -5,8 +5,8 @@ public class PlatformingMovement : PlatformMovement {
 
     public new void Awake() {
         base.Awake();
-        m_rigidbody = GetComponent<Rigidbody>();
-        m_rigidbody.sleepThreshold = 0f;
+        rigidbody = GetComponent<Rigidbody>();
+        rigidbody.sleepThreshold = 0f;
     }
 
     public void OnCollisionEnter(Collision collision) {
@@ -30,7 +30,7 @@ public class PlatformingMovement : PlatformMovement {
             }
 
             if (IsGround(vector, contactPoint.otherCollider, 60f)) {
-                m_groundContactNormal += vector;
+                groundContactNormal += vector;
                 OnCollisionGround(vector, contactPoint.otherCollider);
             }
 
@@ -42,23 +42,23 @@ public class PlatformingMovement : PlatformMovement {
 
     public void FixedUpdate() {
         if (IsSuspended) {
-            m_rigidbody.velocity = Vector3.zero;
-            if (m_rigidbody.detectCollisions) {
-                m_rigidbody.detectCollisions = false;
+            rigidbody.velocity = Vector3.zero;
+            if (rigidbody.detectCollisions) {
+                rigidbody.detectCollisions = false;
             }
         } else {
-            if (!m_rigidbody.detectCollisions) {
-                m_rigidbody.detectCollisions = true;
+            if (!rigidbody.detectCollisions) {
+                rigidbody.detectCollisions = true;
             }
 
             PreFixedUpdate();
-            if (m_groundContactNormal.magnitude == 0f) {
+            if (groundContactNormal.magnitude == 0f) {
                 GroundNormal = Vector3.up;
             } else {
-                GroundNormal = m_groundContactNormal.normalized;
+                GroundNormal = groundContactNormal.normalized;
             }
 
-            m_groundContactNormal = Vector3.zero;
+            groundContactNormal = Vector3.zero;
             if (IsOnGround && !Physics.Raycast(new Ray(Position + WorldOffsetToBottomSphereOfCapsuleCollider, GravityDirection), CapsuleCollider.radius * transform.lossyScale.y + 0.5f)) {
                 Ground.IsOn = false;
             }
@@ -70,21 +70,21 @@ public class PlatformingMovement : PlatformMovement {
                 transform.position += GroundNormal * 0.02f;
                 var vector = (0.04f + Mathf.Abs(LocalSpeedX) * Time.deltaTime) * -GroundNormal;
                 RaycastHit raycastHit;
-                if (m_rigidbody.SweepTest(vector.normalized, out raycastHit, vector.magnitude)) {
+                if (rigidbody.SweepTest(vector.normalized, out raycastHit, vector.magnitude)) {
                     transform.position += vector.normalized * (raycastHit.distance + 0.02f);
                 } else {
                     transform.position -= GroundNormal * 0.02f;
                 }
 
                 if (Time.deltaTime == 0f) {
-                    m_rigidbody.velocity = Vector3.zero;
+                    rigidbody.velocity = Vector3.zero;
                 } else {
-                    m_rigidbody.velocity = (transform.position - position) / Time.deltaTime;
+                    rigidbody.velocity = (transform.position - position) / Time.deltaTime;
                 }
 
-                m_rigidbody.position = position;
+                rigidbody.position = position;
             } else {
-                m_rigidbody.velocity = RandomizerBonusSkill.TimeScale(WorldSpeed);
+                rigidbody.velocity = RandomizerBonusSkill.TimeScale(WorldSpeed);
             }
 
             PostFixedUpdate();
@@ -101,14 +101,14 @@ public class PlatformingMovement : PlatformMovement {
 
         Vector3 vector = LocalToWorld(Vector3.down * distance);
         RaycastHit raycastHit;
-        if (m_rigidbody.SweepTest(vector.normalized, out raycastHit, vector.magnitude)) {
+        if (rigidbody.SweepTest(vector.normalized, out raycastHit, vector.magnitude)) {
             Position += raycastHit.distance * vector.normalized;
         } else {
             Position += (Vector3)LocalToWorld(Vector3.down * 0.5f);
         }
     }
 
-    private Rigidbody m_rigidbody;
+    private Rigidbody rigidbody;
 
-    private Vector2 m_groundContactNormal;
+    private Vector2 groundContactNormal;
 }

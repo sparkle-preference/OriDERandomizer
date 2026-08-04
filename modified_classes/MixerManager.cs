@@ -7,28 +7,28 @@ using UnityEngine.Audio;
 
 public class MixerManager : MonoBehaviour {
     public void RegisterSnapshotZone(MixerSnapshotZone mixerSnapshotZone) {
-        m_snapshotZones.Add(mixerSnapshotZone);
+        snapshotZones.Add(mixerSnapshotZone);
     }
 
     public void DeregisterSnapshotZone(MixerSnapshotZone mixerSnapshotZone) {
-        m_snapshotZones.Remove(mixerSnapshotZone);
+        snapshotZones.Remove(mixerSnapshotZone);
     }
 
     public void Awake() {
-        s_manager = this;
+        manager = this;
     }
 
-    public static MixerManager Instance => s_manager;
+    public static MixerManager Instance => manager;
 
     public void RegisterActiveSnapshot(MixerSnapshot snapshot) {
-        if (!m_currentlyActiveSnapshots.Contains(snapshot)) {
-            m_currentlyActiveSnapshots.Add(snapshot);
+        if (!currentlyActiveSnapshots.Contains(snapshot)) {
+            currentlyActiveSnapshots.Add(snapshot);
         }
     }
 
     public void FixedUpdate() {
         var flag = UI.MainMenuVisible || ResumeGameController.IsGameSuspended;
-        if (flag != m_wasInUI) {
+        if (flag != wasInUI) {
             if (flag) {
                 UISnapshot.FadeIn();
             } else {
@@ -36,26 +36,26 @@ public class MixerManager : MonoBehaviour {
             }
         }
 
-        m_wasInUI = flag;
+        wasInUI = flag;
         UpdateMixerSnapshotZones();
         UpdateMixerSettingsBasedOnActiveSnapshots();
     }
 
     private void UpdateMixerSettingsBasedOnActiveSnapshots() {
-        m_settings.Reset();
-        for (var i = 0; i < m_currentlyActiveSnapshots.Count; i++) {
-            var mixerSnapshot = m_currentlyActiveSnapshots[i];
+        settings.Reset();
+        for (var i = 0; i < currentlyActiveSnapshots.Count; i++) {
+            var mixerSnapshot = currentlyActiveSnapshots[i];
             mixerSnapshot.UpdateMixerSnapshotState(Time.fixedDeltaTime);
-            m_settings.MultiplyBlendWith(mixerSnapshot.SnapshotSettings, mixerSnapshot.Weight);
+            settings.MultiplyBlendWith(mixerSnapshot.SnapshotSettings, mixerSnapshot.Weight);
         }
 
-        m_settings.MultiplyBlendWith(ModulatingSnapshot.SnapshotSettings, 1f);
-        m_currentlyActiveSnapshots.RemoveAll(CachedIsSnapshotInactivePredicate);
-        m_settings.Music *= Mathf.Log10(GameSettings.Instance.MusicVolume * 9f + 1f);
-        m_settings.SoundEffects *= Mathf.Log10(GameSettings.Instance.SoundEffectsVolume * 9f + 1f);
+        settings.MultiplyBlendWith(ModulatingSnapshot.SnapshotSettings, 1f);
+        currentlyActiveSnapshots.RemoveAll(CachedIsSnapshotInactivePredicate);
+        settings.Music *= Mathf.Log10(GameSettings.Instance.MusicVolume * 9f + 1f);
+        settings.SoundEffects *= Mathf.Log10(GameSettings.Instance.SoundEffectsVolume * 9f + 1f);
         ApplySoundCompression();
         var masterMixer = GetMasterMixer();
-        m_settings.ApplyGroupSettingsToMixer(masterMixer);
+        settings.ApplyGroupSettingsToMixer(masterMixer);
     }
 
     private void UpdateMixerSnapshotZones() {
@@ -70,9 +70,9 @@ public class MixerManager : MonoBehaviour {
             mixerSnapshot = DefaultSceneSnapshot;
         }
 
-        if (mixerSnapshot != m_currentSceneMixerSnapshot) {
-            if (m_currentSceneMixerSnapshot != null) {
-                m_currentSceneMixerSnapshot.FadeOut();
+        if (mixerSnapshot != currentSceneMixerSnapshot) {
+            if (currentSceneMixerSnapshot != null) {
+                currentSceneMixerSnapshot.FadeOut();
             }
 
             if (mixerSnapshot != null) {
@@ -80,24 +80,24 @@ public class MixerManager : MonoBehaviour {
             }
         }
 
-        m_currentSceneMixerSnapshot = mixerSnapshot;
-        for (var i = 0; i < m_snapshotZones.Count; i++) {
-            var mixerSnapshotZone = m_snapshotZones[i];
+        currentSceneMixerSnapshot = mixerSnapshot;
+        for (var i = 0; i < snapshotZones.Count; i++) {
+            var mixerSnapshotZone = snapshotZones[i];
             mixerSnapshotZone.UpdateSnapshotZoneState(mixerSnapshotZone.Bounds.Contains(cameraPositionForSampling));
         }
     }
 
     public static AudioMixer GetMasterMixer() {
-        if (s_cachedMasterMixer == null) {
-            s_cachedMasterMixer = (AudioMixer)Resources.Load("masterMixer", typeof(AudioMixer));
+        if (cachedMasterMixer == null) {
+            cachedMasterMixer = (AudioMixer)Resources.Load("masterMixer", typeof(AudioMixer));
         }
 
-        return s_cachedMasterMixer;
+        return cachedMasterMixer;
     }
 
     public static AudioMixerGroup GetMixerGroup(MixerGroupType group) {
         AudioMixerGroup audioMixerGroup;
-        if (!s_typeToGroup.TryGetValue(group, out audioMixerGroup)) {
+        if (!typeToGroup.TryGetValue(group, out audioMixerGroup)) {
             switch (group) {
                 case MixerGroupType.Foley:
                     audioMixerGroup = GetMasterMixer().FindMatchingGroups("foley")[0];
@@ -155,7 +155,7 @@ public class MixerManager : MonoBehaviour {
                     break;
             }
 
-            s_typeToGroup.Add(group, audioMixerGroup);
+            typeToGroup.Add(group, audioMixerGroup);
         }
 
         return audioMixerGroup;
@@ -168,23 +168,23 @@ public class MixerManager : MonoBehaviour {
     public void ApplySoundCompression() {
         if (RandomizerSettings.Accessibility.ApplySoundCompression) {
             var multiplier = 1f - RandomizerSettings.Accessibility.SoundCompressionFactor;
-            m_settings.MusicLoops = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.MusicLoops));
-            m_settings.MusicStingers = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.MusicStingers));
-            m_settings.AmbienceQuad = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.AmbienceQuad));
-            m_settings.AmbiencePoint = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.AmbiencePoint));
-            m_settings.EnemiesAttack = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.EnemiesAttack));
-            m_settings.EnemiesFoley = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.EnemiesFoley));
-            m_settings.Foley = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.Foley));
-            m_settings.Footsteps = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.Footsteps));
-            m_settings.Attacks = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.Attacks));
-            m_settings.Destruction = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.Destruction));
-            m_settings.UI = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.UI));
-            m_settings.SpiritTree = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.SpiritTree));
-            m_settings.Sein = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.Sein));
-            m_settings.Doors = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.Doors));
-            m_settings.Cutscenes = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.Cutscenes));
-            m_settings.Props = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.Props));
-            m_settings.Collectibles = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.Collectibles));
+            settings.MusicLoops = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.MusicLoops));
+            settings.MusicStingers = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.MusicStingers));
+            settings.AmbienceQuad = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.AmbienceQuad));
+            settings.AmbiencePoint = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.AmbiencePoint));
+            settings.EnemiesAttack = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.EnemiesAttack));
+            settings.EnemiesFoley = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.EnemiesFoley));
+            settings.Foley = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.Foley));
+            settings.Footsteps = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.Footsteps));
+            settings.Attacks = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.Attacks));
+            settings.Destruction = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.Destruction));
+            settings.UI = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.UI));
+            settings.SpiritTree = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.SpiritTree));
+            settings.Sein = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.Sein));
+            settings.Doors = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.Doors));
+            settings.Cutscenes = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.Cutscenes));
+            settings.Props = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.Props));
+            settings.Collectibles = Mathf.Pow(10f, multiplier * Mathf.Log10(settings.Collectibles));
         }
     }
 
@@ -194,23 +194,23 @@ public class MixerManager : MonoBehaviour {
 
     public MixerSnapshot ModulatingSnapshot;
 
-    private MixerGroupSettings m_currentMixerGroupSettings;
+    private MixerGroupSettings currentMixerGroupSettings;
 
-    private bool m_wasInUI;
+    private bool wasInUI;
 
     private static readonly Predicate<MixerSnapshot> CachedIsSnapshotInactivePredicate = snapshot => snapshot.State == MixerSnapshot.MixerSnapshotState.Inactive;
 
-    private static Dictionary<MixerGroupType, AudioMixerGroup> s_typeToGroup = new Dictionary<MixerGroupType, AudioMixerGroup>();
+    private static Dictionary<MixerGroupType, AudioMixerGroup> typeToGroup = new Dictionary<MixerGroupType, AudioMixerGroup>();
 
-    private List<MixerSnapshot> m_currentlyActiveSnapshots = new List<MixerSnapshot>(10);
+    private List<MixerSnapshot> currentlyActiveSnapshots = new List<MixerSnapshot>(10);
 
-    private static AudioMixer s_cachedMasterMixer;
+    private static AudioMixer cachedMasterMixer;
 
-    private static MixerManager s_manager;
+    private static MixerManager manager;
 
-    private MixerGroupSettings m_settings = default;
+    private MixerGroupSettings settings;
 
-    private List<MixerSnapshotZone> m_snapshotZones = new List<MixerSnapshotZone>(5);
+    private List<MixerSnapshotZone> snapshotZones = new List<MixerSnapshotZone>(5);
 
-    private MixerSnapshot m_currentSceneMixerSnapshot;
+    private MixerSnapshot currentSceneMixerSnapshot;
 }

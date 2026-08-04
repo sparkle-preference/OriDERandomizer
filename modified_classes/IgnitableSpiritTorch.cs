@@ -12,13 +12,13 @@ public class IgnitableSpiritTorch : SaveSerialize {
 
     public override void Awake() {
         base.Awake();
-        m_transform = transform;
+        transform = base.transform;
         UpdateLightSettings();
-        m_all.Add(this);
+        all.Add(this);
     }
 
     public void UpdateLightSettings() {
-        if (m_isLit) {
+        if (isLit) {
             LightSource.GetComponent<SpiritLightRadialVisualAffector>().Radius = LitRadius;
         } else {
             LightSource.GetComponent<SpiritLightRadialVisualAffector>().Radius = UnlitRadius;
@@ -27,12 +27,12 @@ public class IgnitableSpiritTorch : SaveSerialize {
 
     public override void OnDestroy() {
         base.OnDestroy();
-        m_all.Remove(this);
+        all.Remove(this);
     }
 
     public static IgnitableSpiritTorch IgniteAnyTorchesNearPosition(Vector3 position) {
-        foreach (var ignitableSpiritTorch in m_all) {
-            if (!ignitableSpiritTorch.m_isLit && Vector3.Distance(ignitableSpiritTorch.Position, position) < 2f) {
+        foreach (var ignitableSpiritTorch in all) {
+            if (!ignitableSpiritTorch.isLit && Vector3.Distance(ignitableSpiritTorch.Position, position) < 2f) {
                 ignitableSpiritTorch.Light(true);
                 return ignitableSpiritTorch;
             }
@@ -43,7 +43,7 @@ public class IgnitableSpiritTorch : SaveSerialize {
 
     public void Light(bool byGrenade) {
         BingoController.OnLanternLit(MoonGuid, byGrenade);
-        m_isLit = true;
+        isLit = true;
         if (OnLitAction) {
             OnLitAction.Perform(null);
         }
@@ -54,24 +54,24 @@ public class IgnitableSpiritTorch : SaveSerialize {
         }
     }
 
-    public Vector3 Position => m_transform.position;
+    public Vector3 Position => transform.position;
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref m_isLit);
+        ar.Serialize(ref isLit);
         if (ar.Reading) {
             UpdateLightSettings();
         }
     }
 
     public void FixedUpdate() {
-        if (!m_isLit && Items.LightTorch && Vector3.Distance(Items.LightTorch.Position, Position) < TouchRadius) {
+        if (!isLit && Items.LightTorch && Vector3.Distance(Items.LightTorch.Position, Position) < TouchRadius) {
             Light(false);
         }
     }
 
     private const int GRENADE_IGNITE_RADIUS = 2;
 
-    private static List<IgnitableSpiritTorch> m_all = new List<IgnitableSpiritTorch>();
+    private static List<IgnitableSpiritTorch> all = new List<IgnitableSpiritTorch>();
 
     public ActionSequence OnLitAction;
 
@@ -79,9 +79,9 @@ public class IgnitableSpiritTorch : SaveSerialize {
 
     public float TouchRadius = 2f;
 
-    private Transform m_transform;
+    private new Transform transform;
 
-    private bool m_isLit;
+    private bool isLit;
 
     public float LitRadius = 5f;
 

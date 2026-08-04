@@ -8,11 +8,11 @@ public class RuntimeWorldMapIcon {
         Icon = icon.Icon;
         Guid = icon.Guid;
         Position = icon.Position;
-        Area = area;
+        this.area = area;
         IsSecret = icon.IsSecret;
     }
 
-    public bool IsVisible(AreaMapUI areaMap) {
+    public bool IsVisible() {
         // Sein.
         if (Guid == new MoonGuid(-550456551, 1312223365, -251340902, -293109681)) {
             var fronkeyFight = new MoonGuid(686741138, 1236491904, -1735338082, 532353037);
@@ -46,12 +46,12 @@ public class RuntimeWorldMapIcon {
             return;
         }
 
-        if (!IsVisible(instance)) {
+        if (!IsVisible()) {
             return;
         }
 
-        if (m_iconGameObject) {
-            m_iconGameObject.SetActive(true);
+        if (iconGameObject) {
+            iconGameObject.SetActive(true);
             return;
         }
 
@@ -64,8 +64,8 @@ public class RuntimeWorldMapIcon {
 
     private void InitStandardIcon(WorldMapIconType iconType) {
         var icon = AreaMapUI.Instance.IconManager.GetIcon(iconType);
-        m_iconGameObject = (GameObject)InstantiateUtility.Instantiate(icon);
-        var transform = m_iconGameObject.transform;
+        iconGameObject = (GameObject)InstantiateUtility.Instantiate(icon);
+        var transform = iconGameObject.transform;
         transform.parent = AreaMapUI.Instance.Navigation.MapPivot.transform;
         transform.localPosition = Position;
         transform.localRotation = Quaternion.identity;
@@ -80,8 +80,8 @@ public class RuntimeWorldMapIcon {
                 break;
             case RandomizerWorldMapIconType.CleanWater:
                 CreateIconFromInventory("waterPurifiedIcon/waterPurifiedGraphics", 20);
-                var offset = m_iconGameObject.transform.Find("waterPurifiedGraphic").localPosition;
-                foreach (var child in m_iconGameObject.transform) {
+                var offset = iconGameObject.transform.Find("waterPurifiedGraphic").localPosition;
+                foreach (var child in iconGameObject.transform) {
                     ((Transform)child).localPosition -= offset;
                 }
 
@@ -97,13 +97,13 @@ public class RuntimeWorldMapIcon {
                 break;
             case RandomizerWorldMapIconType.Plant:
                 InitStandardIcon(WorldMapIconType.HealthUpgrade);
-                m_iconGameObject.name = "plantMapIcon(Clone)";
-                var componentsInChildren = m_iconGameObject.GetComponentsInChildren<Renderer>();
+                iconGameObject.name = "plantMapIcon(Clone)";
+                var componentsInChildren = iconGameObject.GetComponentsInChildren<Renderer>();
                 for (var i = 0; i < componentsInChildren.Length; i++) {
                     componentsInChildren[i].material.color = new Color(0.1792157f, 0.2364706f, 0.8656863f);
                 }
 
-                m_iconGameObject.transform.rotation = Quaternion.Euler(0f, 0f, 180f);
+                iconGameObject.transform.rotation = Quaternion.Euler(0f, 0f, 180f);
                 break;
             case RandomizerWorldMapIconType.SkillTree:
                 InitStandardIcon(WorldMapIconType.AbilityPedestal);
@@ -135,18 +135,18 @@ public class RuntimeWorldMapIcon {
         clone.transform.localScale = new Vector3(scale, scale, 1);
         clone.transform.localPosition = Position;
         TransparencyAnimator.Register(clone.transform);
-        m_iconGameObject = clone;
+        iconGameObject = clone;
     }
 
     public void Hide() {
-        if (m_iconGameObject) {
-            m_iconGameObject.SetActive(false);
+        if (iconGameObject) {
+            iconGameObject.SetActive(false);
         }
     }
 
     public void SetIcon(WorldMapIconType icon) {
-        if (m_iconGameObject) {
-            InstantiateUtility.Destroy(m_iconGameObject);
+        if (iconGameObject) {
+            InstantiateUtility.Destroy(iconGameObject);
         }
 
         Icon = icon;
@@ -158,11 +158,11 @@ public class RuntimeWorldMapIcon {
 
     public Vector2 Position;
 
-    private RuntimeGameWorldArea Area;
+    private RuntimeGameWorldArea area;
 
     public bool IsSecret;
 
-    private GameObject m_iconGameObject;
+    private GameObject iconGameObject;
 
     public RandomizerWorldMapIconType RandomizerIconType;
 

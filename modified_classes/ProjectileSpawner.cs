@@ -3,7 +3,7 @@ using Core;
 using UnityEngine;
 
 public class ProjectileSpawner : SaveSerialize, ISuspendable {
-    public Vector3 Position => m_transform.position;
+    public Vector3 Position => transform.position;
 
     public float TimeSinceLastShot { get; set; }
 
@@ -19,19 +19,19 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable {
     }
 
     public void Start() {
-        m_timedTrigger = GetComponent<TimedTrigger>();
-        if (m_timedTrigger != null) {
-            trueTimedDuration = m_timedTrigger.Duration;
+        TimedTrigger = GetComponent<TimedTrigger>();
+        if (TimedTrigger != null) {
+            trueTimedDuration = TimedTrigger.Duration;
         }
 
-        m_transform = transform;
+        transform = base.transform;
     }
 
     private bool TimerPaused {
-        get => m_timedTrigger && m_timedTrigger.Paused;
+        get => TimedTrigger && TimedTrigger.Paused;
         set {
-            if (m_timedTrigger) {
-                m_timedTrigger.Paused = value;
+            if (TimedTrigger) {
+                TimedTrigger.Paused = value;
             }
         }
     }
@@ -47,14 +47,14 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable {
     public Projectile SpawnProjectile() {
         TimeSinceLastShot = 0f;
         var gameObject = InstantiateUtility.Instantiate(Projectile) as GameObject;
-        gameObject.transform.SetParentMaintainingLocalTransform(transform.root);
-        m_lastProjectile = gameObject;
-        gameObject.transform.position = transform.position;
+        gameObject.transform.SetParentMaintainingLocalTransform(((Component)this).transform.root);
+        lastProjectile = gameObject;
+        gameObject.transform.position = ((Component)this).transform.position;
         var component = gameObject.GetComponent<Projectile>();
         component.Speed = Speed;
         component.Direction = Direction;
         if (Direction == Vector3.zero) {
-            component.Direction = transform.up;
+            component.Direction = ((Component)this).transform.up;
         }
 
         component.Gravity = Gravity;
@@ -63,14 +63,14 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable {
         }
 
         if (SpawnSound) {
-            Sound.Play(SpawnSound, transform.position, null, SpawnSoundVolume, null);
+            Sound.Play(SpawnSound, ((Component)this).transform.position, null, SpawnSoundVolume, null);
         }
 
         return component;
     }
 
     public void AimAt(Transform target) {
-        Direction = (target.position - m_transform.position).normalized;
+        Direction = (target.position - transform.position).normalized;
     }
 
     public override void Serialize(Archive ar) {
@@ -82,18 +82,18 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable {
         }
 
         if (trueTimedDuration != null) {
-            m_timedTrigger.Duration = trueTimedDuration.Value / RandomizerBonusSkill.TimeScale(1f);
+            TimedTrigger.Duration = trueTimedDuration.Value / RandomizerBonusSkill.TimeScale(1f);
         }
 
-        if (InstantiateUtility.IsDestroyed(m_lastProjectile)) {
-            m_lastProjectile = null;
+        if (InstantiateUtility.IsDestroyed(lastProjectile)) {
+            lastProjectile = null;
         }
 
-        if (WaitForProjectileToBeDestroyed && !TimerPaused && m_lastProjectile != null) {
+        if (WaitForProjectileToBeDestroyed && !TimerPaused && lastProjectile != null) {
             TimerPaused = true;
         }
 
-        if (WaitForProjectileToBeDestroyed && TimerPaused && m_lastProjectile == null) {
+        if (WaitForProjectileToBeDestroyed && TimerPaused && lastProjectile == null) {
             TimerPaused = false;
         }
 
@@ -120,11 +120,11 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable {
 
     public float SpawnSoundVolume = 0.3f;
 
-    protected TimedTrigger m_timedTrigger;
+    protected TimedTrigger TimedTrigger;
 
-    private GameObject m_lastProjectile;
+    private GameObject lastProjectile;
 
-    private Transform m_transform;
+    private new Transform transform;
 
     private float? trueTimedDuration;
 }

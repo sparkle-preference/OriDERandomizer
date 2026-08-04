@@ -21,27 +21,27 @@ public class MessageBox : MonoBehaviour {
     }
 
     public void OverrideLanuage(Language language) {
-        m_language = language;
-        m_forceLanguage = true;
+        this.language = language;
+        forceLanguage = true;
     }
 
     public void SetAvatar(GameObject avatarPrefab) {
-        if (m_avatar) {
-            InstantiateUtility.Destroy(m_avatar);
-            m_avatar = null;
+        if (avatar) {
+            InstantiateUtility.Destroy(avatar);
+            avatar = null;
         }
 
         if (avatarPrefab) {
-            m_avatar = Instantiate(avatarPrefab);
-            m_avatar.transform.parent = Avatar;
-            m_avatar.transform.localPosition = Vector3.zero;
-            m_avatar.transform.localRotation = avatarPrefab.transform.localRotation;
-            m_avatar.transform.localScale = avatarPrefab.transform.localScale;
+            avatar = Instantiate(avatarPrefab);
+            avatar.transform.parent = Avatar;
+            avatar.transform.localPosition = Vector3.zero;
+            avatar.transform.localRotation = avatarPrefab.transform.localRotation;
+            avatar.transform.localScale = avatarPrefab.transform.localScale;
         }
     }
 
     public void SetAvatarArray(GameObject[] avatarPrefabs) {
-        m_avatarPrefabs = avatarPrefabs;
+        this.avatarPrefabs = avatarPrefabs;
     }
 
     public void HideMessageScreen() {
@@ -71,8 +71,8 @@ public class MessageBox : MonoBehaviour {
     }
 
     public void Update() {
-        if (m_previousOverrideText != OverrideText) {
-            m_previousOverrideText = OverrideText;
+        if (previousOverrideText != OverrideText) {
+            previousOverrideText = OverrideText;
             RefreshText();
         }
     }
@@ -98,30 +98,30 @@ public class MessageBox : MonoBehaviour {
 
     public void SetMessage(MessageDescriptor messageDescriptor) {
         MessageProvider = null;
-        m_messageDescriptors = null;
-        m_currentMessage = messageDescriptor;
+        messageDescriptors = null;
+        currentMessage = messageDescriptor;
         if (FormatText) {
-            var text = MessageParserUtility.ProcessString(m_currentMessage.Message);
+            var text = MessageParserUtility.ProcessString(currentMessage.Message);
             TextBox.SetText(text);
         } else {
-            TextBox.SetText(m_currentMessage.Message);
+            TextBox.SetText(currentMessage.Message);
         }
 
         RefreshText();
     }
 
     public void RefreshText() {
-        if (m_forceLanguage) {
-            TextBox.SetStyleCollection(LanguageStyles.GetStyle(m_language));
+        if (forceLanguage) {
+            TextBox.SetStyleCollection(LanguageStyles.GetStyle(language));
         } else {
             TextBox.SetStyleCollection(LanguageStyles.Current);
         }
 
         if (MessageProvider) {
-            m_messageDescriptors = MessageProvider.GetMessages().ToArray();
-            MessageIndex = Mathf.Clamp(MessageIndex, 0, m_messageDescriptors.Length);
-            m_currentMessage = m_messageDescriptors[MessageIndex];
-            var text = m_currentMessage.Message;
+            messageDescriptors = MessageProvider.GetMessages().ToArray();
+            MessageIndex = Mathf.Clamp(MessageIndex, 0, messageDescriptors.Length);
+            currentMessage = messageDescriptors[MessageIndex];
+            var text = currentMessage.Message;
             if (text.StartsWith("ALIGNLEFT")) {
                 TextBox.alignment = AlignmentMode.Left;
                 text = text.Substring(9);
@@ -175,14 +175,14 @@ public class MessageBox : MonoBehaviour {
                 a = float.Parse(p.Dequeue());
                 text = string.Join("_", p.ToArray());
                 SetBackgroundColor(new Color(r / 510f, g / 510f, b / 510f, a / 510f));
-                m_hasBackgroundColor = true;
+                hasBackgroundColor = true;
             }
 
             if (text.StartsWith("SHOWINFO")) {
                 text = $"{text.Substring(8)}\nHeight: {TextBox.maxHeight},\nWidth: {TextBox.width}\n";
                 text += $"Anchors: {TextBox.horizontalAnchor} {TextBox.verticalAnchor}\n";
                 text += $"Padding: {TextBox.paddingBottom}/{TextBox.paddingLeft}/{TextBox.paddingRight}/{TextBox.paddingTop}\n";
-                if (m_hasBackgroundColor) {
+                if (hasBackgroundColor) {
                     text += $"Color: {r},{g},{b},{a}";
                 }
             }
@@ -218,8 +218,8 @@ public class MessageBox : MonoBehaviour {
             RemoveMessageFade();
         }
 
-        if (m_avatarPrefabs != null) {
-            SetAvatar(m_avatarPrefabs[MessageIndex]);
+        if (avatarPrefabs != null) {
+            SetAvatar(avatarPrefabs[MessageIndex]);
         }
 
         if (!Application.isPlaying) {
@@ -238,23 +238,13 @@ public class MessageBox : MonoBehaviour {
         RefreshText();
     }
 
-    public int MessageCount {
-        get {
-            if (m_messageDescriptors == null) {
-                return 1;
-            }
-
-            return m_messageDescriptors.Length;
-        }
-    }
-
     public void SetWaitDuration(float duration) {
         Visibility.WaitDuration = duration;
     }
 
-    public EmotionType CurrentEmotion => m_currentMessage.Emotion;
+    public EmotionType CurrentEmotion => currentMessage.Emotion;
 
-    public SoundProvider CurrentMessageSound => m_currentMessage.Sound;
+    public SoundProvider CurrentMessageSound => currentMessage.Sound;
 
     public void FinishWriting() {
         if (WriteOutTextBox) {
@@ -262,7 +252,7 @@ public class MessageBox : MonoBehaviour {
         }
     }
 
-    public bool IsLastMessage => m_messageDescriptors == null || MessageIndex == m_messageDescriptors.Length - 1;
+    public bool IsLastMessage => messageDescriptors == null || MessageIndex == messageDescriptors.Length - 1;
 
     public bool FinishedWriting => WriteOutTextBox == null || WriteOutTextBox.AtEnd;
 
@@ -280,7 +270,7 @@ public class MessageBox : MonoBehaviour {
     }
 
     public void SetBackgroundColor(Color bgColor) {
-        if (m_hasBackgroundColor) {
+        if (hasBackgroundColor) {
             return;
         }
 
@@ -289,22 +279,22 @@ public class MessageBox : MonoBehaviour {
         UberShaderAPI.SetColor(backgroundRenderer, bgColor, true);
     }
 
-    private static Texture2D _hintMessageBackgroundWhite;
+    private static Texture2D hintMessageBackgroundWhite;
 
     private static Texture2D WhiteBackground {
         get {
-            if (_hintMessageBackgroundWhite == null) {
-                _hintMessageBackgroundWhite = new Texture2D(0, 0);
-                _hintMessageBackgroundWhite.LoadImage(
+            if (hintMessageBackgroundWhite == null) {
+                hintMessageBackgroundWhite = new Texture2D(0, 0);
+                hintMessageBackgroundWhite.LoadImage(
                     RandomizerResources.ReadResource("hintMessageBackgroundWhite.png")
                 );
             }
 
-            return _hintMessageBackgroundWhite;
+            return hintMessageBackgroundWhite;
         }
     }
 
-    public const float WaitTimeBetweenMessages = 0.3f;
+    public const float WAIT_TIME_BETWEEN_MESSAGES = 0.3f;
 
     public MessageBoxLanguageStyles LanguageStyles;
 
@@ -322,29 +312,27 @@ public class MessageBox : MonoBehaviour {
 
     public AnimationCurve ScaleOverLetterCount = AnimationCurve.Linear(0f, 1f, 150f, 1f);
 
-    private float m_remainingWaitTime;
+    private GameObject avatar;
 
-    private GameObject m_avatar;
-
-    private GameObject[] m_avatarPrefabs;
+    private GameObject[] avatarPrefabs;
 
     public BaseAnimator NextMessageAnimator;
 
     public bool FormatText = true;
 
-    private bool m_forceLanguage;
+    private bool forceLanguage;
 
-    private Language m_language;
+    private Language language;
 
     public float FadeSpread = 5f;
 
     public string OverrideText;
 
-    private string m_previousOverrideText = string.Empty;
+    private string previousOverrideText = string.Empty;
 
-    private MessageDescriptor[] m_messageDescriptors;
+    private MessageDescriptor[] messageDescriptors;
 
-    private MessageDescriptor m_currentMessage;
+    private MessageDescriptor currentMessage;
 
-    private bool m_hasBackgroundColor;
+    private bool hasBackgroundColor;
 }

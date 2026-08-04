@@ -1,17 +1,17 @@
 public class ControllerMenuBindsScreen : CustomSettingsScreen {
     public override void InitScreen() {
-        AddControllerBind("Pause", () => PlayerInputRebinding.ControllerRebindings.Start, k => PlayerInputRebinding.ControllerRebindings.Start = k);
-        AddControllerBind("Cancel", () => PlayerInputRebinding.ControllerRebindings.Cancel, k => PlayerInputRebinding.ControllerRebindings.Cancel = k);
-        AddControllerBind("Proceed", () => PlayerInputRebinding.ControllerRebindings.ActionButtonA, k => PlayerInputRebinding.ControllerRebindings.ActionButtonA = k);
-        AddControllerBind("Menu Up", () => PlayerInputRebinding.ControllerRebindings.MenuUp, k => PlayerInputRebinding.ControllerRebindings.MenuUp = k);
-        AddControllerBind("Menu Down", () => PlayerInputRebinding.ControllerRebindings.MenuDown, k => PlayerInputRebinding.ControllerRebindings.MenuDown = k);
-        AddControllerBind("Menu Left", () => PlayerInputRebinding.ControllerRebindings.MenuLeft, k => PlayerInputRebinding.ControllerRebindings.MenuLeft = k);
-        AddControllerBind("Menu Right", () => PlayerInputRebinding.ControllerRebindings.MenuRight, k => PlayerInputRebinding.ControllerRebindings.MenuRight = k);
-        AddControllerBind("Menu Next", () => PlayerInputRebinding.ControllerRebindings.MenuPageRight, k => PlayerInputRebinding.ControllerRebindings.MenuPageRight = k);
-        AddControllerBind("Menu Previous", () => PlayerInputRebinding.ControllerRebindings.MenuPageLeft, k => PlayerInputRebinding.ControllerRebindings.MenuPageLeft = k);
-        AddControllerBind("Map", () => PlayerInputRebinding.ControllerRebindings.Select, k => PlayerInputRebinding.ControllerRebindings.Select = k);
-        AddControllerBind("Zoom In (Map)", () => PlayerInputRebinding.ControllerRebindings.ZoomIn, k => PlayerInputRebinding.ControllerRebindings.ZoomIn = k);
-        AddControllerBind("Zoom Out (Map)", () => PlayerInputRebinding.ControllerRebindings.ZoomOut, k => PlayerInputRebinding.ControllerRebindings.ZoomOut = k);
+        AddControllerBind("Pause", () => PlayerInputRebinding.ControllerRebindingSettings.Start, k => PlayerInputRebinding.ControllerRebindingSettings.Start = k);
+        AddControllerBind("Cancel", () => PlayerInputRebinding.ControllerRebindingSettings.Cancel, k => PlayerInputRebinding.ControllerRebindingSettings.Cancel = k);
+        AddControllerBind("Proceed", () => PlayerInputRebinding.ControllerRebindingSettings.ActionButtonA, k => PlayerInputRebinding.ControllerRebindingSettings.ActionButtonA = k);
+        AddControllerBind("Menu Up", () => PlayerInputRebinding.ControllerRebindingSettings.MenuUp, k => PlayerInputRebinding.ControllerRebindingSettings.MenuUp = k);
+        AddControllerBind("Menu Down", () => PlayerInputRebinding.ControllerRebindingSettings.MenuDown, k => PlayerInputRebinding.ControllerRebindingSettings.MenuDown = k);
+        AddControllerBind("Menu Left", () => PlayerInputRebinding.ControllerRebindingSettings.MenuLeft, k => PlayerInputRebinding.ControllerRebindingSettings.MenuLeft = k);
+        AddControllerBind("Menu Right", () => PlayerInputRebinding.ControllerRebindingSettings.MenuRight, k => PlayerInputRebinding.ControllerRebindingSettings.MenuRight = k);
+        AddControllerBind("Menu Next", () => PlayerInputRebinding.ControllerRebindingSettings.MenuPageRight, k => PlayerInputRebinding.ControllerRebindingSettings.MenuPageRight = k);
+        AddControllerBind("Menu Previous", () => PlayerInputRebinding.ControllerRebindingSettings.MenuPageLeft, k => PlayerInputRebinding.ControllerRebindingSettings.MenuPageLeft = k);
+        AddControllerBind("Map", () => PlayerInputRebinding.ControllerRebindingSettings.Select, k => PlayerInputRebinding.ControllerRebindingSettings.Select = k);
+        AddControllerBind("Zoom In (Map)", () => PlayerInputRebinding.ControllerRebindingSettings.ZoomIn, k => PlayerInputRebinding.ControllerRebindingSettings.ZoomIn = k);
+        AddControllerBind("Zoom Out (Map)", () => PlayerInputRebinding.ControllerRebindingSettings.ZoomOut, k => PlayerInputRebinding.ControllerRebindingSettings.ZoomOut = k);
         AddButton("Reset Keybinds", ResetKeybinds);
 
         // Lower tooltip so it fits under the options

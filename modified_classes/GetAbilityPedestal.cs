@@ -4,7 +4,7 @@ using UnityEngine;
 using Input = Core.Input;
 
 public class GetAbilityPedestal : SaveSerialize {
-    public bool SeinInRange => !(Characters.Sein == null) && Vector3.Distance(m_transform.position, Characters.Sein.Position) < Radius;
+    public bool SeinInRange => !(Characters.Sein == null) && Vector3.Distance(transform.position, Characters.Sein.Position) < Radius;
 
     private void ChangeState(States state) {
         if (CurrentState == States.InRange) {
@@ -39,15 +39,15 @@ public class GetAbilityPedestal : SaveSerialize {
     }
 
     private void ExitInRangeState() {
-        if (m_message != null) {
-            m_message.HideMessageScreen();
+        if (message != null) {
+            message.HideMessageScreen();
         }
     }
 
     public void UpdateInRangeState() {
         if (Characters.Sein.PlatformBehaviour.PlatformMovement.IsOnGround) {
-            if (m_message == null && !SeinUI.DebugHideUI) {
-                m_message = UI.Hints.Show(PressUpToActivatePedestalMessage, HintLayer.Gameplay, float.PositiveInfinity);
+            if (message == null && !SeinUI.DebugHideUI) {
+                message = UI.Hints.Show(PressUpToActivatePedestalMessage, HintLayer.Gameplay, float.PositiveInfinity);
             }
 
             if (!Characters.Sein.IsSuspended && Characters.Sein.Controller.CanMove && Input.SpiritFlame.OnPressed) {
@@ -84,12 +84,11 @@ public class GetAbilityPedestal : SaveSerialize {
     public IEnumerator MoveSeinToCenterSmoothly() {
         var seinPlatformMovement = Characters.Sein.PlatformBehaviour.PlatformMovement;
         for (var i = 0; i < 10; i++) {
-            seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, transform.position.x, 0.2f);
+            seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, ((Component)this).transform.position.x, 0.2f);
             yield return new WaitForFixedUpdate();
         }
 
-        seinPlatformMovement.PositionX = transform.position.x;
-        yield break;
+        seinPlatformMovement.PositionX = ((Component)this).transform.position.x;
     }
 
     public override void Serialize(Archive ar) {
@@ -103,11 +102,7 @@ public class GetAbilityPedestal : SaveSerialize {
 
     public override void Awake() {
         base.Awake();
-        m_transform = transform;
-    }
-
-    public override void OnDestroy() {
-        base.OnDestroy();
+        transform = base.transform;
     }
 
     public States CurrentState;
@@ -124,11 +119,11 @@ public class GetAbilityPedestal : SaveSerialize {
 
     public MessageProvider PressUpToActivatePedestalMessage;
 
-    private MessageBox m_message;
+    private MessageBox message;
 
     public float Radius = 1.5f;
 
-    private Transform m_transform;
+    private new Transform transform;
 
     public enum States {
         OutOfRange,

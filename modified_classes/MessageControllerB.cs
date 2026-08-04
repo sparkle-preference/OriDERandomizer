@@ -2,7 +2,7 @@ using Game;
 using UnityEngine;
 
 public class MessageControllerB : MonoBehaviour {
-    public bool AnyAbilityPickupStoryMessagesVisible => m_currentMessageBox;
+    public bool AnyAbilityPickupStoryMessagesVisible => currentMessageBox;
 
     public GameObject ShowMessageBox(GameObject messageBoxPrefab, MessageProvider messageProvider, Vector3 position, float duration = 3f) {
         if (messageProvider == null) {
@@ -13,14 +13,14 @@ public class MessageControllerB : MonoBehaviour {
             return null;
         }
 
-        var expr_25 = InstantiateUtility.Instantiate(messageBoxPrefab, position, Quaternion.identity) as GameObject;
-        var componentInChildren = expr_25.GetComponentInChildren<MessageBox>();
+        var expr25 = InstantiateUtility.Instantiate(messageBoxPrefab, position, Quaternion.identity) as GameObject;
+        var componentInChildren = expr25.GetComponentInChildren<MessageBox>();
         if (componentInChildren.Visibility) {
             componentInChildren.SetWaitDuration(duration);
         }
 
         componentInChildren.SetMessageProvider(messageProvider);
-        return expr_25;
+        return expr25;
     }
 
     public MessageBox ShowHintMessage(MessageProvider messageProvider, Vector3 position, float duration = 3f) {
@@ -42,8 +42,8 @@ public class MessageControllerB : MonoBehaviour {
     }
 
     public MessageBox ShowAreaMessage(MessageProvider messageProvider) {
-        m_currentMessageBox = ShowMessageBoxB(AreaMessage, messageProvider, Vector3.zero);
-        return m_currentMessageBox;
+        currentMessageBox = ShowMessageBoxB(AreaMessage, messageProvider, Vector3.zero);
+        return currentMessageBox;
     }
 
     public MessageBox ShowAbilityMessage(MessageProvider messageProvider, GameObject avatar) {
@@ -53,7 +53,7 @@ public class MessageControllerB : MonoBehaviour {
             messageBox.SetAvatar(avatar);
         }
 
-        m_currentMessageBox = messageBox;
+        currentMessageBox = messageBox;
         return messageBox;
     }
 
@@ -64,14 +64,14 @@ public class MessageControllerB : MonoBehaviour {
             messageBox.SetAvatar(avatar);
         }
 
-        m_currentMessageBox = messageBox;
+        currentMessageBox = messageBox;
         return messageBox;
     }
 
     public MessageBox ShowStoryMessage(MessageProvider messageProvider) {
         UI.Hints.HideExistingHint();
         var messageBox = ShowMessageBoxB(StoryMessage, messageProvider, Vector3.zero, float.PositiveInfinity);
-        m_currentMessageBox = messageBox;
+        currentMessageBox = messageBox;
         return messageBox;
     }
 
@@ -93,13 +93,13 @@ public class MessageControllerB : MonoBehaviour {
         UI.Hints.HideExistingHint();
 
         if (!RandomizerBonus.EnhancedSpiritFlame || RandomizerBonus.SuppressEnhancedSpiritFlame) {
-            m_currentMessageBox = null;
+            currentMessageBox = null;
         } else {
             var gameObject = ShowMessageBox(StoryMessage, messageProvider, Vector3.zero, float.PositiveInfinity);
-            m_currentMessageBox = !gameObject ? null : gameObject.GetComponentInChildren<MessageBox>();
+            currentMessageBox = !gameObject ? null : gameObject.GetComponentInChildren<MessageBox>();
         }
 
-        return m_currentMessageBox;
+        return currentMessageBox;
     }
 
     public float DefaultDuration;
@@ -118,5 +118,5 @@ public class MessageControllerB : MonoBehaviour {
 
     public GameObject SpiritTreeText;
 
-    private MessageBox m_currentMessageBox;
+    private MessageBox currentMessageBox;
 }

@@ -10,8 +10,8 @@ public class SavePedestal : SaveSerialize {
 
     public override void Awake() {
         base.Awake();
-        m_transform = transform;
-        m_sceneTeleporter = GetComponent<SceneTeleporter>();
+        transform = base.transform;
+        sceneTeleporter = GetComponent<SceneTeleporter>();
         All.Add(this);
     }
 
@@ -21,10 +21,10 @@ public class SavePedestal : SaveSerialize {
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref m_hasBeenUsedBefore);
+        ar.Serialize(ref hasBeenUsedBefore);
     }
 
-    private bool CanTeleport => m_sceneTeleporter && TeleporterController.CanTeleport(m_sceneTeleporter.Identifier);
+    private bool CanTeleport => sceneTeleporter && TeleporterController.CanTeleport(sceneTeleporter.Identifier);
 
     public void Highlight() {
         if (OriTarget) {
@@ -41,22 +41,22 @@ public class SavePedestal : SaveSerialize {
             OriEnterAction.Perform(null);
         }
 
-        if (m_hint == null) {
-            m_hint = UI.Hints.Show(SaveAndTeleportHintMessage, HintLayer.HintZone);
+        if (hint == null) {
+            hint = UI.Hints.Show(SaveAndTeleportHintMessage, HintLayer.HintZone);
         }
 
         if (OnOriEnter) {
-            Sound.Play(OnOriEnter.GetSound(null), transform.position, null);
+            Sound.Play(OnOriEnter.GetSound(null), ((Component)this).transform.position, null);
         }
 
-        if (m_sceneTeleporter) {
-            TeleporterController.Activate(m_sceneTeleporter.Identifier);
-            BingoController.OnPedestalTouch(m_sceneTeleporter.Identifier);
+        if (sceneTeleporter) {
+            TeleporterController.Activate(sceneTeleporter.Identifier);
+            BingoController.OnPedestalTouch(sceneTeleporter.Identifier);
         }
     }
 
     public void Unhighlight() {
-        m_used = false;
+        used = false;
         Characters.Ori.ChangeState(Ori.State.Hovering);
         Characters.Ori.EnableHoverWobbling = true;
         if (Characters.Sein.Abilities.SpiritFlame) {
@@ -67,12 +67,12 @@ public class SavePedestal : SaveSerialize {
             OriExitAction.Perform(null);
         }
 
-        if (m_hint) {
-            m_hint.HideMessageScreen();
+        if (hint) {
+            hint.HideMessageScreen();
         }
 
         if (OnOriExit) {
-            Sound.Play(OnOriExit.GetSound(null), transform.position, null);
+            Sound.Play(OnOriExit.GetSound(null), ((Component)this).transform.position, null);
         }
     }
 
@@ -83,7 +83,7 @@ public class SavePedestal : SaveSerialize {
         }
     }
 
-    public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
+    public float DistanceToSein => Vector3.Distance(transform.position, Characters.Sein.Position);
 
     public void FixedUpdate() {
         if (Characters.Sein == null) {
@@ -103,14 +103,14 @@ public class SavePedestal : SaveSerialize {
                 }
 
                 if (Characters.Sein.Controller.CanMove && Characters.Sein.PlatformBehaviour.PlatformMovement.IsOnGround) {
-                    if (Input.SpiritFlame.OnPressed && !m_used) {
+                    if (Input.SpiritFlame.OnPressed && !used) {
                         SaveOnPedestal();
                         return;
                     }
 
                     if (Input.SoulFlame.OnPressedNotUsed && !Input.Cancel.Used) {
-                        if (m_hint) {
-                            m_hint.HideMessageScreen();
+                        if (hint) {
+                            hint.HideMessageScreen();
                         }
 
                         Input.SoulFlame.Used = true;
@@ -118,9 +118,9 @@ public class SavePedestal : SaveSerialize {
                         return;
                     }
 
-                    if (Input.SpiritFlame.OnPressed && m_used) {
+                    if (Input.SpiritFlame.OnPressed && used) {
                         if (OnSaveSecondTime) {
-                            Sound.Play(OnSaveSecondTime.GetSound(null), transform.position, null);
+                            Sound.Play(OnSaveSecondTime.GetSound(null), ((Component)this).transform.position, null);
                         }
                     } else if (Input.Bash.OnPressed && WorldMapUI.IsReady) {
                         if (CanTeleport) {
@@ -139,13 +139,13 @@ public class SavePedestal : SaveSerialize {
     }
 
     private void TeleportOnPedestal() {
-        if (m_hint) {
-            m_hint.HideMessageScreen();
+        if (hint) {
+            hint.HideMessageScreen();
         }
 
         MarkAsUsed();
-        Characters.Sein.PlatformBehaviour.PlatformMovement.PositionX = transform.position.x;
-        TeleporterController.Show(m_sceneTeleporter.Identifier);
+        Characters.Sein.PlatformBehaviour.PlatformMovement.PositionX = ((Component)this).transform.position.x;
+        TeleporterController.Show(sceneTeleporter.Identifier);
     }
 
     public void OnBeginTeleporting() {
@@ -163,18 +163,18 @@ public class SavePedestal : SaveSerialize {
     }
 
     public void MarkAsUsed() {
-        if (!m_hasBeenUsedBefore) {
-            m_hasBeenUsedBefore = true;
+        if (!hasBeenUsedBefore) {
+            hasBeenUsedBefore = true;
             AchievementsLogic.Instance.OnSavePedestalUsedFirstTime();
         }
     }
 
     private void SaveOnPedestal() {
-        if (m_hint) {
-            m_hint.HideMessageScreen();
+        if (hint) {
+            hint.HideMessageScreen();
         }
 
-        m_used = true;
+        used = true;
         MarkAsUsed();
         RandomizerStatsManager.OnSave();
         if (Characters.Sein.Abilities.Carry && Characters.Sein.Abilities.Carry.CurrentCarryable != null) {
@@ -192,12 +192,12 @@ public class SavePedestal : SaveSerialize {
         var seinPlatformMovement = Characters.Sein.PlatformBehaviour.PlatformMovement;
         int num;
         for (var i = 0; i < 10; i = num + 1) {
-            seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, transform.position.x, 0.2f);
+            seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, ((Component)this).transform.position.x, 0.2f);
             yield return new WaitForFixedUpdate();
             num = i;
         }
 
-        seinPlatformMovement.PositionX = transform.position.x;
+        seinPlatformMovement.PositionX = ((Component)this).transform.position.x;
         yield break;
     }
 
@@ -209,9 +209,9 @@ public class SavePedestal : SaveSerialize {
 
     public float OriDuration = 1f;
 
-    private Transform m_transform;
+    private new Transform transform;
 
-    private MessageBox m_hint;
+    private MessageBox hint;
 
     public MessageProvider CantTeleportMessage;
 
@@ -223,9 +223,9 @@ public class SavePedestal : SaveSerialize {
 
     public SoundProvider OnSaveSecondTime;
 
-    private bool m_hasBeenUsedBefore;
+    private bool hasBeenUsedBefore;
 
-    private SceneTeleporter m_sceneTeleporter;
+    private SceneTeleporter sceneTeleporter;
 
     public TimelineSequence TeleportEffect;
 
@@ -235,7 +235,7 @@ public class SavePedestal : SaveSerialize {
 
     public ActionMethod OnOpenedAction;
 
-    private bool m_used;
+    private bool used;
 
     public State CurrentState;
 
