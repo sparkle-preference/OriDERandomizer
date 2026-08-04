@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class LevelUpDamageAction : ActionMethod, ISuspendable {
     public override void Perform(IContext context) {
-        active = true;
+        m_active = true;
     }
 
     public override void Awake() {
@@ -18,23 +18,23 @@ public class LevelUpDamageAction : ActionMethod, ISuspendable {
     }
 
     public void FixedUpdate() {
-        if (!active) {
+        if (!m_active) {
             return;
         }
 
-        time += Time.deltaTime;
-        delayTime -= Time.deltaTime;
-        if (delayTime < 0f) {
-            delayTime = 0.1f;
-            var num = DistanceOverTime.Evaluate(time);
+        m_time += Time.deltaTime;
+        m_delayTime -= Time.deltaTime;
+        if (m_delayTime < 0f) {
+            m_delayTime = 0.1f;
+            var num = DistanceOverTime.Evaluate(m_time);
             var attackables = Targets.Attackables;
             for (var i = 0; i < attackables.Count; i++) {
                 var attackable = attackables[i];
                 if (!InstantiateUtility.IsDestroyed(attackable as Component) && !TeleporterController.IsTeleporting) {
                     if (attackable.CanBeLevelUpBlasted()) {
-                        if (!this.attackables.Contains(attackable)) {
+                        if (!m_attackables.Contains(attackable)) {
                             if (Vector3.Distance(transform.position, attackable.Position) <= num) {
-                                this.attackables.Add(attackable);
+                                m_attackables.Add(attackable);
                                 var damage = new Damage(Damage, (attackable.Position - transform.position).normalized, attackable.Position, DamageType.LevelUp, gameObject);
                                 damage.DealToComponents((attackable as Component).gameObject);
                             }
@@ -44,20 +44,20 @@ public class LevelUpDamageAction : ActionMethod, ISuspendable {
             }
         }
 
-        if (time > Duration) {
-            active = false;
-            time = 0f;
-            attackables.Clear();
+        if (m_time > Duration) {
+            m_active = false;
+            m_time = 0f;
+            m_attackables.Clear();
         }
     }
 
     public bool IsSuspended { get; set; }
 
-    private readonly HashSet<IAttackable> attackables = new HashSet<IAttackable>();
+    private readonly HashSet<IAttackable> m_attackables = new HashSet<IAttackable>();
 
-    private bool active;
+    private bool m_active;
 
-    private float time;
+    private float m_time;
 
     public AnimationCurve DistanceOverTime;
 
@@ -65,5 +65,5 @@ public class LevelUpDamageAction : ActionMethod, ISuspendable {
 
     public int Damage;
 
-    private float delayTime;
+    private float m_delayTime;
 }

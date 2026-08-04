@@ -15,6 +15,10 @@ public class AreaMapCanvas : MonoBehaviour {
         }
 
         UpdateAreaMaskTextureA();
+        if (m_addToMap) {
+            InstantiateUtility.Destroy(m_addToMap);
+        }
+
         SetFade(0f);
     }
 
@@ -23,6 +27,38 @@ public class AreaMapCanvas : MonoBehaviour {
     public Bounds Bounds => Area.Bounds;
 
     public CageStructureTool CageStructureTool => Area.CageStructureTool;
+
+    public Vector2 WorldMapTextureSize => new Vector2(WorldMapTexture.width, WorldMapTexture.height);
+
+    public RenderTexture GenerateAreaMaskMaskTexture() {
+        var width = (int)Mathf.Min(1024f, Bounds.size.x * PixelsPerUnit);
+        var height = (int)Mathf.Min(1024f, Bounds.size.y * PixelsPerUnit);
+        var temporary = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
+        temporary.name = "worldMapCanvas";
+        Graphics.SetRenderTarget(temporary);
+        GL.Clear(false, true, Color.clear);
+        GL.PushMatrix();
+        GL.LoadIdentity();
+        GL.LoadPixelMatrix(Bounds.min.x + 0.5f, Bounds.max.x + 0.5f, Bounds.min.y + 0.5f, Bounds.max.y + 0.5f);
+        var localToWorldMatrix = CageStructureTool.transform.localToWorldMatrix;
+        GL.MultMatrix(localToWorldMatrix);
+        var material = new Material(SetRGBAShader);
+        material.SetColor(ShaderProperties.Color, Color.white / 2f);
+        material.SetPass(0);
+        GL.Begin(4);
+        GL.Color(Color.white);
+        for (var i = 0; i < CageStructureTool.Faces.Count; i++) {
+            var face = CageStructureTool.Faces[i];
+            for (var j = 0; j < face.Triangles.Count; j++) {
+                var index = face.Triangles[j];
+                GL.Vertex(CageStructureTool.VertexByIndex(face.Vertices[index]).Position);
+            }
+        }
+
+        GL.End();
+        GL.PopMatrix();
+        return temporary;
+    }
 
     public Color GetColor(WorldMapAreaState worldState) {
         switch (worldState) {
@@ -72,31 +108,31 @@ public class AreaMapCanvas : MonoBehaviour {
     }
 
     public void Update() {
-        if (areaMaskTextureA && !areaMaskTextureA.IsCreated()) {
+        if (m_areaMaskTextureA && !m_areaMaskTextureA.IsCreated()) {
             UpdateAreaMaskTextureA();
         }
 
-        if (areaMaskTextureB && !areaMaskTextureB.IsCreated()) {
+        if (m_areaMaskTextureB && !m_areaMaskTextureB.IsCreated()) {
             UpdateAreaMaskTextureB();
         }
     }
 
     public void UpdateAreaMaskTextureA() {
-        if (areaMaskTextureA) {
-            DestroyObject(areaMaskTextureA);
+        if (m_areaMaskTextureA) {
+            DestroyObject(m_areaMaskTextureA);
         }
 
-        areaMaskTextureA = GenerateAreaMaskTexture();
-        MapPlaneTexture.GetComponent<Renderer>().material.SetTexture(ShaderProperties.MapMaskTextureA, areaMaskTextureA);
+        m_areaMaskTextureA = GenerateAreaMaskTexture();
+        MapPlaneTexture.GetComponent<Renderer>().material.SetTexture(ShaderProperties.MapMaskTextureA, m_areaMaskTextureA);
     }
 
     public void UpdateAreaMaskTextureB() {
-        if (areaMaskTextureB) {
-            DestroyObject(areaMaskTextureB);
+        if (m_areaMaskTextureB) {
+            DestroyObject(m_areaMaskTextureB);
         }
 
-        areaMaskTextureB = GenerateAreaMaskTexture();
-        MapPlaneTexture.GetComponent<Renderer>().material.SetTexture(ShaderProperties.MapMaskTextureB, areaMaskTextureB);
+        m_areaMaskTextureB = GenerateAreaMaskTexture();
+        MapPlaneTexture.GetComponent<Renderer>().material.SetTexture(ShaderProperties.MapMaskTextureB, m_areaMaskTextureB);
     }
 
     public void SetFade(float fade) {
@@ -108,14 +144,14 @@ public class AreaMapCanvas : MonoBehaviour {
     }
 
     public void Release() {
-        if (areaMaskTextureA) {
-            DestroyObject(areaMaskTextureA);
-            areaMaskTextureA = null;
+        if (m_areaMaskTextureA) {
+            DestroyObject(m_areaMaskTextureA);
+            m_areaMaskTextureA = null;
         }
 
-        if (areaMaskTextureB) {
-            DestroyObject(areaMaskTextureB);
-            areaMaskTextureB = null;
+        if (m_areaMaskTextureB) {
+            DestroyObject(m_areaMaskTextureB);
+            m_areaMaskTextureB = null;
         }
     }
 
@@ -156,9 +192,9 @@ public class AreaMapCanvas : MonoBehaviour {
     }
 
     public void ReleaseAreaMaskTextureB() {
-        if (areaMaskTextureB) {
-            DestroyObject(areaMaskTextureB);
-            areaMaskTextureB = null;
+        if (m_areaMaskTextureB) {
+            DestroyObject(m_areaMaskTextureB);
+            m_areaMaskTextureB = null;
         }
     }
 
@@ -174,9 +210,11 @@ public class AreaMapCanvas : MonoBehaviour {
 
     public int PixelsPerUnit = 5;
 
-    private RenderTexture areaMaskTextureA;
+    private GameObject m_addToMap;
 
-    private RenderTexture areaMaskTextureB;
+    private RenderTexture m_areaMaskTextureA;
+
+    private RenderTexture m_areaMaskTextureB;
 
     public Shader SetRGBAShader;
 }

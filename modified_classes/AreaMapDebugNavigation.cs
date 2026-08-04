@@ -4,7 +4,7 @@ using Input = Core.Input;
 
 public class AreaMapDebugNavigation : MonoBehaviour {
     public void Awake() {
-        areaMapUi = GetComponent<AreaMapUI>();
+        m_areaMapUi = GetComponent<AreaMapUI>();
     }
 
     public void Advance() {
@@ -27,7 +27,7 @@ public class AreaMapDebugNavigation : MonoBehaviour {
 
         if (!(MoonInput.GetKey(KeyCode.LeftShift) || MoonInput.GetKey(KeyCode.RightShift)) && Input.RightClick.OnPressed) {
             var cursorPosition = Input.CursorPositionUI;
-            Vector2 worldPosition = areaMapUi.Navigation.MapToWorldPosition(cursorPosition);
+            Vector2 worldPosition = m_areaMapUi.Navigation.MapToWorldPosition(cursorPosition);
             if (Characters.Sein != null) {
                 Characters.Sein.Position = worldPosition + new Vector2(0f, 0.5f);
                 UI.Cameras.Current.MoveCameraToTargetInstantly();
@@ -38,11 +38,17 @@ public class AreaMapDebugNavigation : MonoBehaviour {
 
     public void ToggleUndiscoveredMap(bool show) {
         UndiscoveredMapVisible = show;
-        areaMapUi.ResetMaps();
-        areaMapUi.Navigation.UpdateScrollLimits();
+        m_areaMapUi.ResetMaps();
+        m_areaMapUi.Navigation.UpdateScrollLimits();
     }
 
-    private AreaMapUI areaMapUi;
+    public GameObject DebugSceneBoundsMarkerPrefab;
+
+    public float HiddenColorAlpha;
+
+    public float UndiscoveredColorAlpha = 0.2f;
+
+    private AreaMapUI m_areaMapUi;
 
     public bool UndiscoveredMapVisible;
 }

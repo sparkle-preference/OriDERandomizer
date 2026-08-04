@@ -13,9 +13,9 @@ public class ShowEnhancedSpiritFlameTextAction : PerformingAction {
 
         var messageProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
         messageProvider.Messages = Messages;
-        messageBox = UI.MessageController.ShowEnhancedSpiritFlameMessage(messageProvider);
-        if (messageBox) {
-            messageBox.OnMessageScreenHide += OnMessageScreenHide;
+        m_messageBox = UI.MessageController.ShowEnhancedSpiritFlameMessage(messageProvider);
+        if (m_messageBox) {
+            m_messageBox.OnMessageScreenHide += OnMessageScreenHide;
             Characters.Ori.StartTwinkle();
         } else if (FreezeGame) {
             SuspensionManager.ResumeAll();
@@ -27,8 +27,8 @@ public class ShowEnhancedSpiritFlameTextAction : PerformingAction {
             SuspensionManager.ResumeAll();
         }
 
-        if (messageBox) {
-            messageBox.OnMessageScreenHide -= OnMessageScreenHide;
+        if (m_messageBox) {
+            m_messageBox.OnMessageScreenHide -= OnMessageScreenHide;
         }
 
         Characters.Ori.StopTwinkle();
@@ -37,11 +37,11 @@ public class ShowEnhancedSpiritFlameTextAction : PerformingAction {
     public override void Stop() {
     }
 
-    public override bool IsPerforming => messageBox;
+    public override bool IsPerforming => m_messageBox;
 
     public MessageDescriptor[] Messages;
 
-    private MessageBox messageBox;
+    private MessageBox m_messageBox;
 
     public bool FreezeGame;
 }

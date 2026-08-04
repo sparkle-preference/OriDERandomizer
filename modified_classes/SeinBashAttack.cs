@@ -226,7 +226,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
         var gameObject = (GameObject)InstantiateUtility.Instantiate(BashAttackGamePrefab);
         m_bashAttackGame = gameObject.GetComponent<BashAttackGame>();
         m_bashAttackGame.SendDirection(vectorToTarget);
-        m_bashAttackGame.OnBashGameComplete += BashGameComplete;
+        m_bashAttackGame.BashGameComplete += BashGameComplete;
         m_bashAttackGame.transform.position = target;
         vectorToTarget = Vector3.ClampMagnitude(vectorToTarget, 2f);
         m_playerTargetPosition = target - vectorToTarget;

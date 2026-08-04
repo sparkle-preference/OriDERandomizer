@@ -1,6 +1,23 @@
 using Game;
 
 public static class AbilityDebugMenuItems {
+    public static void SetAllAbilities(bool enabled) {
+        Characters.Sein.PlayerAbilities.SetAllAbilitys(enabled);
+        Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
+    }
+
+    public static void ToggleAbilities() {
+        SetAllAbilities(!AllAbilitiesGetter());
+    }
+
+    public static void AllAbilitiesSetter(bool newValue) {
+        ToggleAbilities();
+    }
+
+    public static bool AllAbilitiesGetter() {
+        return Characters.Sein.PlayerAbilities.Bash.HasAbility;
+    }
+
     public static void SpiritFlameSetter(bool newValue) {
         Characters.Sein.PlayerAbilities.SpiritFlame.HasAbility = newValue;
         Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
@@ -137,6 +154,10 @@ public static class AbilityDebugMenuItems {
         Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
     }
 
+    public static void SpiritFlameRapidFireUpgradeSetter(bool newValue) {
+        Characters.Sein.PlayerAbilities.RapidFire.HasAbility = newValue;
+    }
+
     public static bool SoulEfficiencyGetter() {
         return Characters.Sein.PlayerAbilities.SoulEfficiency.HasAbility;
     }
@@ -162,6 +183,10 @@ public static class AbilityDebugMenuItems {
     public static void DoubleJumpUpgradeSetter(bool newValue) {
         Characters.Sein.PlayerAbilities.DoubleJumpUpgrade.HasAbility = newValue;
         Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
+    }
+
+    public static bool BashUpgradeGetter() {
+        return Characters.Sein.PlayerAbilities.BashBuff.HasAbility;
     }
 
     public static void BashUpgradeSetter(bool newValue) {
@@ -272,6 +297,10 @@ public static class AbilityDebugMenuItems {
 
     public static void AirDashSetter(bool newValue) {
         Characters.Sein.PlayerAbilities.AirDash.HasAbility = newValue;
+    }
+
+    public static bool GrenadeEfficiencyGetter() {
+        return Characters.Sein.PlayerAbilities.GrenadeEfficiency.HasAbility;
     }
 
     public static void GrenadeEfficiencySetter(bool newValue) {

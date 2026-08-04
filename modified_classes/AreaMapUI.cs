@@ -191,6 +191,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
     public List<AreaMapCanvas> Canvases = new List<AreaMapCanvas>();
 
+
     public GameObject PlayerPositionMarkerPrefab;
 
     public GameObject SoulFlamePositionMarkerPrefab;
@@ -198,6 +199,8 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
     public GameObject TeleportPrefab;
 
     public GameObject ObjectivePrefab;
+
+    public GameObject IconPrefab;
 
     public SoundProvider OpenSound;
 
@@ -212,6 +215,8 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
     public AreaMapLegend AreaMapLegend;
 
     public MessageProvider ObjectiveMessageProvider;
+
+    public MessageProvider CompletedMessageProvider;
 
     public Vector3 PlayerPositionOffset;
 

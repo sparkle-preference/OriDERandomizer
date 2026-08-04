@@ -4,15 +4,15 @@ using UnityEngine;
 
 public class ChargeFlameBurst : MonoBehaviour, IPooled, ISuspendable {
     public void OnPoolSpawned() {
-        suspended = false;
-        simultaneousEnemies = 0;
-        time = 0f;
-        waitDelay = 0f;
+        m_suspended = false;
+        m_simultaneousEnemies = 0;
+        m_time = 0f;
+        m_waitDelay = 0f;
     }
 
     public static void IgnoreOnLastInstance(IAttackable attackable) {
-        if (lastInstance) {
-            lastInstance.damageAttackables.Add(attackable);
+        if (m_lastInstance) {
+            m_lastInstance.m_damageAttackables.Add(attackable);
         }
     }
 
@@ -25,21 +25,21 @@ public class ChargeFlameBurst : MonoBehaviour, IPooled, ISuspendable {
     }
 
     public void OnEnable() {
-        lastInstance = this;
+        m_lastInstance = this;
     }
 
     public void OnDisable() {
-        damageAttackables.Clear();
-        if (lastInstance == this) {
-            lastInstance = null;
+        m_damageAttackables.Clear();
+        if (m_lastInstance == this) {
+            m_lastInstance = null;
         }
     }
 
     public void Start() {
         DealDamage();
-        time = 0f;
-        simultaneousEnemies = 0;
-        waitDelay = 0f;
+        m_time = 0f;
+        m_simultaneousEnemies = 0;
+        m_waitDelay = 0f;
     }
 
     public void DealDamage() {
@@ -47,7 +47,7 @@ public class ChargeFlameBurst : MonoBehaviour, IPooled, ISuspendable {
         var array = Targets.Attackables.ToArray();
         for (var i = 0; i < array.Length; i++) {
             var attackable = array[i];
-            if (!InstantiateUtility.IsDestroyed(attackable as Component) && !damageAttackables.Contains(attackable) && attackable.CanBeChargeFlamed()) {
+            if (!InstantiateUtility.IsDestroyed(attackable as Component) && !m_damageAttackables.Contains(attackable) && attackable.CanBeChargeFlamed()) {
                 var position2 = attackable.Position;
                 var vector = position2 - position;
                 if (Characters.Sein.Abilities.ChargeFlame.CapturedProjectiles.ContainsKey(attackable)) {
@@ -58,45 +58,45 @@ public class ChargeFlameBurst : MonoBehaviour, IPooled, ISuspendable {
                 }
 
                 if (vector.magnitude <= BurstRadius) {
-                    damageAttackables.Add(attackable);
+                    m_damageAttackables.Add(attackable);
                     var gameObject = ((Component)attackable).gameObject;
                     new Damage(DamageAmount + 6 * RandomizerBonus.SpiritFlameLevel(), vector.normalized * 3f, position, DamageType.ChargeFlame, this.gameObject).DealToComponents(gameObject);
-                    var exprD8 = attackable.IsDead();
-                    if (!exprD8) {
-                        var exprF2 = (GameObject)InstantiateUtility.Instantiate(BurstImpactEffectPrefab, position2, Quaternion.identity);
-                        exprF2.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(vector.normalized));
-                        exprF2.GetComponent<FollowPositionRotation>().SetTarget(gameObject.transform);
+                    var expr_D8 = attackable.IsDead();
+                    if (!expr_D8) {
+                        var expr_F2 = (GameObject)InstantiateUtility.Instantiate(BurstImpactEffectPrefab, position2, Quaternion.identity);
+                        expr_F2.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(vector.normalized));
+                        expr_F2.GetComponent<FollowPositionRotation>().SetTarget(gameObject.transform);
                     }
 
-                    if (exprD8 && attackable is IChargeFlameAttackable && ((IChargeFlameAttackable)attackable).CountsTowardsPowerOfLightAchievement()) {
-                        simultaneousEnemies++;
+                    if (expr_D8 && attackable is IChargeFlameAttackable && ((IChargeFlameAttackable)attackable).CountsTowardsPowerOfLightAchievement()) {
+                        m_simultaneousEnemies++;
                     }
                 }
             }
         }
 
-        if (simultaneousEnemies >= 4) {
+        if (m_simultaneousEnemies >= 4) {
             AchievementsController.AwardAchievement(Characters.Sein.Abilities.ChargeFlame.KillEnemiesSimultaneouslyAchievement);
         }
 
-        waitDelay = 0.1f;
+        m_waitDelay = 0.1f;
     }
 
     public void FixedUpdate() {
-        if (suspended) {
+        if (m_suspended) {
             return;
         }
 
-        time += Time.deltaTime;
-        waitDelay -= Time.deltaTime;
-        if (time < DealDamageDuration && waitDelay <= 0f) {
+        m_time += Time.deltaTime;
+        m_waitDelay -= Time.deltaTime;
+        if (m_time < DealDamageDuration && m_waitDelay <= 0f) {
             DealDamage();
         }
     }
 
     public bool IsSuspended {
-        get => suspended;
-        set => suspended = value;
+        get => m_suspended;
+        set => m_suspended = value;
     }
 
     public float BurstRadius = 5f;
@@ -107,15 +107,15 @@ public class ChargeFlameBurst : MonoBehaviour, IPooled, ISuspendable {
 
     public float DealDamageDuration = 0.5f;
 
-    private float time;
+    private float m_time;
 
-    private float waitDelay;
+    private float m_waitDelay;
 
-    private readonly HashSet<IAttackable> damageAttackables = new HashSet<IAttackable>();
+    private readonly HashSet<IAttackable> m_damageAttackables = new HashSet<IAttackable>();
 
-    private int simultaneousEnemies;
+    private int m_simultaneousEnemies;
 
-    private static ChargeFlameBurst lastInstance;
+    private static ChargeFlameBurst m_lastInstance;
 
-    private bool suspended;
+    private bool m_suspended;
 }

@@ -23,26 +23,26 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase {
             UpdateHighlight();
             if (SuspendOnActivated) {
                 if (value) {
-                    if (!isFrozen) {
-                        isFrozen = true;
-                        suspendablesIgnore.Clear();
-                        SuspensionManager.GetSuspendables(suspendablesIgnore, gameObject);
-                        SuspensionManager.SuspendExcluding(suspendablesIgnore);
+                    if (!m_isFrozen) {
+                        m_isFrozen = true;
+                        m_suspendablesIgnore.Clear();
+                        SuspensionManager.GetSuspendables(m_suspendablesIgnore, gameObject);
+                        SuspensionManager.SuspendExcluding(m_suspendablesIgnore);
                     }
-                } else if (isFrozen) {
-                    isFrozen = false;
-                    SuspensionManager.ResumeExcluding(suspendablesIgnore);
-                    suspendablesIgnore.Clear();
+                } else if (m_isFrozen) {
+                    m_isFrozen = false;
+                    SuspensionManager.ResumeExcluding(m_suspendablesIgnore);
+                    m_suspendablesIgnore.Clear();
                 }
             }
         }
     }
 
     public void OnDisable() {
-        if (SuspendOnActivated && isFrozen) {
-            isFrozen = false;
-            SuspensionManager.ResumeExcluding(suspendablesIgnore);
-            suspendablesIgnore.Clear();
+        if (SuspendOnActivated && m_isFrozen) {
+            m_isFrozen = false;
+            SuspensionManager.ResumeExcluding(m_suspendablesIgnore);
+            m_suspendablesIgnore.Clear();
         }
     }
 
@@ -117,7 +117,7 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase {
             }
         }
 
-        if (OnChangeSelectionSound && IsActive && playChangeSound) {
+        if (OnChangeSelectionSound && IsActive && m_playChangeSound) {
             Sound.Play(OnChangeSelectionSound.GetSound(null), transform.position, null);
         }
 
@@ -178,9 +178,9 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase {
     }
 
     public override void EnterInGroup() {
-        playChangeSound = false;
+        m_playChangeSound = false;
         SelectionManager.SetIndexToFirst();
-        playChangeSound = true;
+        m_playChangeSound = true;
         IsActive = true;
         IsHighlightVisible = true;
         if (!ExpandOnHighlight) {
@@ -220,11 +220,11 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase {
 
     public bool SuspendOnActivated;
 
-    private bool playChangeSound = true;
+    private bool m_playChangeSound = true;
 
-    private bool isFrozen;
+    private bool m_isFrozen;
 
-    private HashSet<ISuspendable> suspendablesIgnore = new HashSet<ISuspendable>();
+    private HashSet<ISuspendable> m_suspendablesIgnore = new HashSet<ISuspendable>();
 
     [Serializable]
     public class CleverMenuItemGroupItem {
