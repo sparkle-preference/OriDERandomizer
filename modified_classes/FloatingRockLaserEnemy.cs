@@ -217,11 +217,19 @@ public class FloatingRockLaserEnemy : Enemy {
 
     public SoundSource ShootingSound;
 
+    public SoundSource LaserSound;
+
     public SoundSource IdleSound;
+
+    public SoundSource LaserHitSound;
+
+    public AnimationCurve LaserThicknessCurve;
 
     public AnimationCurve LaserAngleOverTimeCurve;
 
     public BlockableLaser Laser;
+
+    public LayerMask LaserLayerMask;
 
     private Vector3 laserDirection;
 

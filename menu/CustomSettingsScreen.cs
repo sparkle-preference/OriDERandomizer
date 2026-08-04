@@ -165,6 +165,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     [FormerlySerializedAs("group")] public CleverMenuItemGroup Group;
 
+    [FormerlySerializedAs("fakeTooltip")] public CleverMenuItem FakeTooltip;
+
     [FormerlySerializedAs("tooltipController")] public CleverMenuItemTooltipController TooltipController;
 
     public string DefaultTooltip = "Click on an action to add or remove binds";
