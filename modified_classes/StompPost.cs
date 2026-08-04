@@ -16,11 +16,11 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
 
     public void Start() {
         distanceStompedIntoGround = 0f;
-        startLocalPosition = base.transform.localPosition;
+        startLocalPosition = transform.localPosition;
     }
 
     public void OnRecieveDamage(Damage damage) {
-        if (damage.Type == DamageType.Stomp && Vector3.Dot(base.transform.rotation * Vector3.down, Characters.Sein.PlatformBehaviour.PlatformMovement.GravityDirection) > Mathf.Cos(0.17453292f) && !activated) {
+        if (damage.Type == DamageType.Stomp && Vector3.Dot(transform.rotation * Vector3.down, Characters.Sein.PlatformBehaviour.PlatformMovement.GravityDirection) > Mathf.Cos(0.17453292f) && !activated) {
             distanceStompedIntoGround = Mathf.Min(StompIntoGroundAmount, distanceStompedIntoGround + StompIntoGroundAmount / NumberOfStomps);
             remainingRiseDelayTime = RisingDelay;
             if (Mathf.Approximately(distanceStompedIntoGround, StompIntoGroundAmount)) {
@@ -58,7 +58,7 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
             }
         }
 
-        base.transform.localPosition = Vector3.Lerp(base.transform.localPosition, startLocalPosition + Vector3.down * distanceStompedIntoGround, 0.3f);
+        transform.localPosition = Vector3.Lerp(base.transform.localPosition, startLocalPosition + Vector3.down * distanceStompedIntoGround, 0.3f);
     }
 
     public override void Serialize(Archive ar) {
@@ -113,7 +113,7 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
 
     public void ForceActivate() {
         activated = true;
-        base.transform.localPosition += Vector3.down * StompIntoGroundAmount;
+        transform.localPosition += Vector3.down * StompIntoGroundAmount;
     }
 
     public int NumberOfStomps = 3;

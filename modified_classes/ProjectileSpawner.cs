@@ -47,14 +47,14 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable {
     public Projectile SpawnProjectile() {
         TimeSinceLastShot = 0f;
         var gameObject = InstantiateUtility.Instantiate(Projectile) as GameObject;
-        gameObject.transform.SetParentMaintainingLocalTransform(base.transform.root);
+        gameObject.transform.SetParentMaintainingLocalTransform(transform.root);
         lastProjectile = gameObject;
-        gameObject.transform.position = base.transform.position;
+        gameObject.transform.position = transform.position;
         var component = gameObject.GetComponent<Projectile>();
         component.Speed = Speed;
         component.Direction = Direction;
         if (Direction == Vector3.zero) {
-            component.Direction = base.transform.up;
+            component.Direction = transform.up;
         }
 
         component.Gravity = Gravity;
@@ -63,7 +63,7 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable {
         }
 
         if (SpawnSound) {
-            Sound.Play(SpawnSound, base.transform.position, null, SpawnSoundVolume, null);
+            Sound.Play(SpawnSound, transform.position, null, SpawnSoundVolume, null);
         }
 
         return component;

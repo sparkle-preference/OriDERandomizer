@@ -46,7 +46,7 @@ public class SavePedestal : SaveSerialize {
         }
 
         if (OnOriEnter) {
-            Sound.Play(OnOriEnter.GetSound(null), base.transform.position, null);
+            Sound.Play(OnOriEnter.GetSound(null), transform.position, null);
         }
 
         if (sceneTeleporter) {
@@ -72,7 +72,7 @@ public class SavePedestal : SaveSerialize {
         }
 
         if (OnOriExit) {
-            Sound.Play(OnOriExit.GetSound(null), base.transform.position, null);
+            Sound.Play(OnOriExit.GetSound(null), transform.position, null);
         }
     }
 
@@ -120,7 +120,7 @@ public class SavePedestal : SaveSerialize {
 
                     if (Input.SpiritFlame.OnPressed && used) {
                         if (OnSaveSecondTime) {
-                            Sound.Play(OnSaveSecondTime.GetSound(null), base.transform.position, null);
+                            Sound.Play(OnSaveSecondTime.GetSound(null), transform.position, null);
                         }
                     } else if (Input.Bash.OnPressed && WorldMapUI.IsReady) {
                         if (CanTeleport) {
@@ -144,7 +144,7 @@ public class SavePedestal : SaveSerialize {
         }
 
         MarkAsUsed();
-        Characters.Sein.PlatformBehaviour.PlatformMovement.PositionX = base.transform.position.x;
+        Characters.Sein.PlatformBehaviour.PlatformMovement.PositionX = transform.position.x;
         TeleporterController.Show(sceneTeleporter.Identifier);
     }
 
@@ -192,12 +192,12 @@ public class SavePedestal : SaveSerialize {
         var seinPlatformMovement = Characters.Sein.PlatformBehaviour.PlatformMovement;
         int num;
         for (var i = 0; i < 10; i = num + 1) {
-            seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, base.transform.position.x, 0.2f);
+            seinPlatformMovement.PositionX = Mathf.Lerp(seinPlatformMovement.PositionX, transform.position.x, 0.2f);
             yield return new WaitForFixedUpdate();
             num = i;
         }
 
-        seinPlatformMovement.PositionX = base.transform.position.x;
+        seinPlatformMovement.PositionX = transform.position.x;
     }
 
     public static List<SavePedestal> All = new List<SavePedestal>();
