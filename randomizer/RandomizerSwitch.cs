@@ -363,17 +363,17 @@ public static class RandomizerSwitch
                         // own shadow player, so field 5 is the only thing that
                         // knows who is actually getting this
                         if (!RandomizerMW.IsSelf(apItem[0]))
-                            SentMwPickupMessage($"Found {RandomizerMW.ApName(apItem[0])}'s {RandomizerMW.ColorWrap(apItem[1])}!");
+                            SentMwPickupMessage($"{RandomizerMW.ApName(apItem[0])}'s {RandomizerMW.ColorWrap(apItem[1])}");
                         // ours: the room hands it straight back, and the grant
                         // message a few seconds from now is the honest one
                     }
                     else if (mwPieces.Length == 3)
                     {
                         string playerName = int.TryParse(mwPieces[0], out int pid) ? RandomizerMW.PlayerName(pid) : $"Player {mwPieces[0]}";
-                        SentMwPickupMessage($"Found {playerName}'s {RandomizerMW.ColorWrap(mwPieces[2])}!");
+                        SentMwPickupMessage($"{playerName}'s {RandomizerMW.ColorWrap(mwPieces[2])}");
                     }
                     else
-                        SentMwPickupMessage("Found another player's item!");
+                        SentMwPickupMessage("Unknown Foreign Item");
                     break;
             }
             BingoController.OnItem(action, coords);

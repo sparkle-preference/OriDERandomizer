@@ -139,7 +139,7 @@ public static class RandomizerMW
     {
         try
         {
-            return NameRef.Replace(text, m => int.TryParse(m.Groups[1].Value, out var pid) ? PlayerName(pid, true) : m.Value);
+            return NameRef.Replace(text, m => int.TryParse(m.Groups[1].Value, out var pid) ? PlayerName(pid, true) + "'s" : m.Value);
         }
         catch (Exception e)
         {
