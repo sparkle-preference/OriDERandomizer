@@ -178,9 +178,11 @@ public class SeinChargeJump : CharacterState, ISeinReceiver
 
 	public SeinChargeJump.State CurrentState;
 
-	public float m_stateCurrentTime;
+	// private, like vanilla: public would add these to Unity's serialized set
+	// and shift ChargedJumpStrength/Deceleration off the scene's authored data
+	private float m_stateCurrentTime;
 
-	public HashSet<IAttackable> m_attackablesIgnore = new HashSet<IAttackable>();
+	private HashSet<IAttackable> m_attackablesIgnore = new HashSet<IAttackable>();
 
 	public GameObject ExplosionEffect;
 
@@ -192,7 +194,7 @@ public class SeinChargeJump : CharacterState, ISeinReceiver
 
 	public float Deceleration = 20f;
 
-	public int m_superJumpedEnemies;
+	private int m_superJumpedEnemies;
 
 	public enum State
 	{
