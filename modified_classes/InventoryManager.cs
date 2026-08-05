@@ -217,7 +217,7 @@ public class InventoryManager : MenuScreen
 		}
 		if (RandomizerBonus.SkillTreeProgression() >= RandomizerClues.RevealOrder[keyIndex] * 3)
 		{
-			return RandomizerClues.Clues[RandomizerClues.RevealOrder[keyIndex] - 1];
+			return RandomizerClues.ClueFor(keyIndex);
 		}
 		return "";
 	}
