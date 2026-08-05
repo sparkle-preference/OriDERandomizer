@@ -12,7 +12,7 @@ using UnityEngine;
 
 public static class Randomizer
 {
-    public static string VERSION = "4.2.6";
+    public static string VERSION = "4.2.7";
     public static void initialize()
     {
         try {
@@ -140,14 +140,20 @@ public static class Randomizer
                         int coords;
                         int.TryParse(lineParts[0], out coords);
 
+                        // field 5 is the Archipelago annotation; absent on
+                        // every non-AP seed and on AP seeds downloaded before
+                        // the room was connected
+                        string apField = lineParts.Length > 4 ? lineParts[4] : null;
+
                         if (RandomizerMW.IsManifestLine(coords, lineParts[1]))
                         {
                             // multiworld slot manifest: what our slots hold,
                             // not a map location
-                            RandomizerMW.AddManifestEntry(coords, lineParts[2], lineParts[3]);
+                            RandomizerMW.AddManifestEntry(coords, lineParts[2], lineParts[3], apField);
                             continue;
                         }
 
+                        RandomizerMW.AddApLine(coords, apField);
                         GetDataFromSeedLine(coords, lineParts[1], lineParts[2], lineParts[3]);
 
                         if (coords == 2)

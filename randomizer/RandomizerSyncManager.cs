@@ -552,6 +552,12 @@ public static class RandomizerSyncManager
 							RandomizerSwitch.GivePickup(action, 0, false);
 							mustRefreshLogic = true;
 						}
+						else if (text.StartsWith("apfrom:"))
+						{
+							// who found the slots this tick is about to grant;
+							// the slot field is read further down, after this
+							RandomizerMW.OnApFromSignal(text.Substring(7));
+						}
 						else if (text == "spawnChaos")
 						{
 							Randomizer.ChaosVerbose = true;

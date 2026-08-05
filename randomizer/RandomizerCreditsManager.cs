@@ -20,13 +20,14 @@ $d265f27$  #Kirefel#" +
 		Credits.Add(new KeyValuePair<string, int>(
 @"ANCHORTOPPARAMS_20_7.5_2_Major contributions by:
 DevilSquirrel
+AsmPrgmC3
 Xemsys
 jeflefou
 Melody
 
 
 Community Contributions by:
-GreeZ  Hydra  Jitaenow  LusTher  AsmPrgmC3 
+GreeZ  Hydra  Jitaenow  LusTher  
 Kiara_TV  Skulblaka  Terra  2Kil", 16));
 		Credits.Add(new KeyValuePair<string, int>(
 @"ANCHORTOPPARAMS_20_12_2_Additional community contributions by:

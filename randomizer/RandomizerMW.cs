@@ -23,6 +23,7 @@ public static class RandomizerMW
 
     public class ManifestEntry
     {
+        public int Slot;
         public int Finder;
         public string Code;
         public string Id;
@@ -37,11 +38,27 @@ public static class RandomizerMW
     // players is just "Player N")
     public static Dictionary<int, string> PlayerNames = new Dictionary<int, string>();
 
+    // --- Archipelago ---
+    // coord -> {recipient token, bare item name}, from a reserved line's 5th
+    // field. Empty until the seed is re-downloaded with the room connected.
+    public static Dictionary<int, string[]> ApItems = new Dictionary<int, string[]>();
+
+    // slot -> who found it, from the apfrom tick signal. "" means you did.
+    public static Dictionary<int, string> SlotSenders = new Dictionary<int, string>();
+
+    // only AP grants straddle ticks; native multiworld grants immediately
+    public static bool ApGrants = false;
+
     public static void Reset()
     {
         Manifest.Clear();
         warnedSlots.Clear();
         PlayerNames.Clear();
+        ApItems.Clear();
+        SlotSenders.Clear();
+        ApGrants = false;
+        pendingSlots.Clear();
+        windowTicks = 0;
     }
 
     public static string PlayerName(int pid, bool shortName = false)
@@ -54,6 +71,67 @@ public static class RandomizerMW
     }
 
     private static readonly Regex NameRef = new Regex(@"(?<![A-Za-z0-9])P(\d+)");
+    private static readonly Regex PidToken = new Regex(@"^P(\d+)$");
+
+    // an AP token is either "P<pid>" -- a world of this same game, whose
+    // real name arrives on the tick -- or a room name to print verbatim
+    public static string ApName(string token)
+    {
+        Match m = PidToken.Match(token ?? "");
+        return m.Success ? PlayerName(int.Parse(m.Groups[1].Value)) : token;
+    }
+
+    public static int OwnPid()
+    {
+        string[] parts = (Randomizer.SyncId ?? "").Split('.');
+        int pid;
+        return parts.Length > 1 && int.TryParse(parts[1], out pid) ? pid : 0;
+    }
+
+    public static bool IsSelf(string token)
+    {
+        return token == "P" + OwnPid();
+    }
+
+    // reserved AP line: <coord>|MW|<shadow>,<slot>,<label>|<zone>|<to>;<item>
+    public static void AddApLine(int coords, string apField)
+    {
+        if (string.IsNullOrEmpty(apField))
+            return;
+        string[] parts = apField.Split(new char[] { ';' }, 2);
+        if (parts.Length == 2)
+            ApItems[coords] = parts;
+    }
+
+    // signal payload: "<slot>=<sender>;<slot>=<sender>", sender "" = you
+    public static void OnApFromSignal(string payload)
+    {
+        try
+        {
+            ApGrants = true;
+            foreach (string pair in payload.Split(';'))
+            {
+                int eq = pair.IndexOf('=');
+                int slot;
+                if (eq > 0 && int.TryParse(pair.Substring(0, eq), out slot))
+                    SlotSenders[slot] = pair.Substring(eq + 1);
+            }
+        }
+        catch (Exception e)
+        {
+            Randomizer.LogError("MW.OnApFromSignal: " + e.Message);
+        }
+    }
+
+    // who to name on a grant: the apfrom signal when Archipelago sent it,
+    // the manifest's finder otherwise (plain multiworld). "" = yourself.
+    private static string SenderFor(ManifestEntry entry)
+    {
+        string token;
+        if (SlotSenders.TryGetValue(entry.Slot, out token))
+            return token == "" ? "" : ApName(token);
+        return PlayerName(entry.Finder);
+    }
 
     // display-time substitution for clue/hint strings baked as "P<n>" at seed
     // parse (names arrive later, via the tick).
@@ -103,20 +181,27 @@ public static class RandomizerMW
         return (local & (1u << (slot % 32))) != 0;
     }
 
-    // manifest line: <-(slot+2)>|MW|<finder>,<code>,<id>|<zone>
+    // manifest line: <-(slot+2)>|MW|<finder>,<code>,<id>|<zone>[|<holder>]
     // (id may itself contain commas, e.g. TW warps, so split at most twice)
-    public static void AddManifestEntry(int coords, string value, string zone)
+    public static void AddManifestEntry(int coords, string value, string zone, string holder = null)
     {
         try
         {
             int slot = -coords - 2;
             string[] parts = value.Split(new char[] { ',' }, 3);
             ManifestEntry entry = new ManifestEntry();
+            entry.Slot = slot;
             entry.Finder = int.Parse(parts[0]);
             entry.Code = parts[1];
             entry.Id = parts[2];
             entry.Zone = zone;
             Manifest[slot] = entry;
+
+            // whose world holds this. Archipelago works it out at download
+            // time and puts it in field 5, because its shadow finder names
+            // nobody; plain multiworld's finder is the answer already.
+            string who = string.IsNullOrEmpty(holder) ? $"P{entry.Finder}" : holder;
+            string clue = string.IsNullOrEmpty(zone) ? who : $"{who} {zone}";
 
             // our dungeon keys living in someone else's world still get
             // clues: the manifest knows whose world and which zone
@@ -124,7 +209,7 @@ public static class RandomizerMW
             {
                 int evId;
                 if (int.TryParse(entry.Id, out evId) && evId % 2 == 0)
-                    RandomizerClues.AddClue($"P{entry.Finder} {zone}", evId / 2);
+                    RandomizerClues.AddClue(clue, evId / 2);
             }
 
             // same for keysanity door keys; the clue's coords are the manifest
@@ -133,7 +218,7 @@ public static class RandomizerMW
             {
                 int rbId;
                 if (int.TryParse(entry.Id, out rbId))
-                    Randomizer.Keysanity.AddClue(rbId, coords, $"P{entry.Finder} {zone}");
+                    Randomizer.Keysanity.AddClue(rbId, coords, clue);
             }
         }
         catch (Exception e)
@@ -146,11 +231,21 @@ public static class RandomizerMW
     // message per item (a release can dump dozens of slots at once)
     public const int BatchMessageThreshold = 3;
 
+    // Archipelago hands one batch over as several ReceivedItems (a room's
+    // collect runs once per source world), and the bridge only coalesces
+    // what arrives inside its own window -- the rest straddles the tick
+    // boundary. One quiet tick catches those; anything above one item then
+    // summarises instead of printing a message each.
+    public const int ApGrantWindowTicks = 1;
+    public const int ApBatchMessageThreshold = 1;
+
+    private static List<int> pendingSlots = new List<int>();
+    private static int windowTicks = 0;
+
     // tick field 6: 8 ";"-joined 32-bit uints. Returns true if anything was
     // granted, so the caller can refresh logic.
     public static bool OnSlotsField(string field)
     {
-        bool granted = false;
         try
         {
             if (string.IsNullOrEmpty(field) || !Characters.Sein || Characters.Sein.Inventory == null)
@@ -170,29 +265,55 @@ public static class RandomizerMW
                     if ((diff & (1u << bit)) != 0)
                         pending.Add(i * 32 + bit);
             }
-            if (pending.Count == 0)
-                return false;
 
-            bool batch = pending.Count > BatchMessageThreshold;
-            // grants during the credits roll happen silently
-            bool silent = Randomizer.CreditsActive;
-            List<ManifestEntry> batched = new List<ManifestEntry>();
+            if (!ApGrants)
+                return pending.Count > 0 && Grant(pending, BatchMessageThreshold);
+
+            // pending is a level, not an edge: it stays set until we grant, so
+            // only a NEW slot may re-arm the window
+            bool grew = false;
             foreach (int slot in pending)
+                if (!pendingSlots.Contains(slot))
+                {
+                    pendingSlots.Add(slot);
+                    grew = true;
+                }
+            if (grew)
             {
-                if (!GrantSlot(slot, batch || silent, batched))
-                    continue;
-                int i = slot / 32;
-                uint local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i);
-                Characters.Sein.Inventory.SetRandomizerItem(GrantedSlotsBase + i, (int)(local | (1u << (slot % 32))));
-                granted = true;
+                windowTicks = ApGrantWindowTicks;   // more may still be coming
+                return false;
             }
-            if (batched.Count > 0 && !silent)
-                ShowBatchMessage(batched);
+            if (pendingSlots.Count == 0 || --windowTicks > 0)
+                return false;
+            List<int> ready = pendingSlots;
+            pendingSlots = new List<int>();
+            return Grant(ready, ApBatchMessageThreshold);
         }
         catch (Exception e)
         {
             Randomizer.LogError("MW.OnSlotsField: " + e.Message);
         }
+        return false;
+    }
+
+    private static bool Grant(List<int> slots, int threshold)
+    {
+        bool granted = false;
+        bool batch = slots.Count > threshold;
+        // grants during the credits roll happen silently
+        bool silent = Randomizer.CreditsActive;
+        List<ManifestEntry> batched = new List<ManifestEntry>();
+        foreach (int slot in slots)
+        {
+            if (!GrantSlot(slot, batch || silent, batched))
+                continue;
+            int i = slot / 32;
+            uint local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i);
+            Characters.Sein.Inventory.SetRandomizerItem(GrantedSlotsBase + i, (int)(local | (1u << (slot % 32))));
+            granted = true;
+        }
+        if (batched.Count > 0 && !silent)
+            ShowBatchMessage(batched);
         return granted;
     }
 
@@ -225,8 +346,10 @@ public static class RandomizerMW
         }
         else
         {
-            // one combined line: "[pickup] from [player]"
-            RandomizerSwitch.MessageSuffix = $" from {PlayerName(entry.Finder)}";
+            // one combined line: "[pickup] from [player]", or just the
+            // pickup when Archipelago handed back something we found
+            string sender = SenderFor(entry);
+            RandomizerSwitch.MessageSuffix = sender == "" ? null : $" from {sender}";
             try
             {
                 RandomizerSwitch.GivePickup(new RandomizerAction(entry.Code, entry.Id), coords, false);
@@ -273,10 +396,12 @@ public static class RandomizerMW
             List<string> events = new List<string>();
             List<string> travel = new List<string>();
             int hc = 0, ec = 0, ac = 0, ks = 0, ms = 0, exp = 0, rb = 0, wvs = 0, gss = 0, sss = 0, wfg = 0, other = 0;
-            HashSet<int> finders = new HashSet<int>();
+            HashSet<string> finders = new HashSet<string>();
             foreach (ManifestEntry entry in entries)
             {
-                finders.Add(entry.Finder);
+                string sender = SenderFor(entry);
+                if (sender != "")
+                    finders.Add(sender);
                 switch (entry.Code)
                 {
                     case "SK":
@@ -341,11 +466,14 @@ public static class RandomizerMW
                 lines.Add(string.Join(", ", counts.ToArray()));
             if (lines.Count > 0)
             {
-                List<string> finderNames = new List<string>();
-                foreach (int f in finders)
-                    finderNames.Add(PlayerName(f));
+                List<string> finderNames = new List<string>(finders);
                 finderNames.Sort();
-                RandomizerSwitch.PickupMessage($"Received from {string.Join(", ", finderNames.ToArray())}:\n" + string.Join("\n", lines.ToArray()), 480);
+                // no names at all means Archipelago handed back only things
+                // we found ourselves
+                string header = finderNames.Count > 0
+                    ? $"Received from {string.Join(", ", finderNames.ToArray())}:\n"
+                    : "Received:\n";
+                RandomizerSwitch.PickupMessage(header + string.Join("\n", lines.ToArray()), 480);
             }
         }
         catch (Exception e)
