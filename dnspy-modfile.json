@@ -315,6 +315,7 @@
 		"randomizer/RandomizerClues.cs",
 		"randomizer/RandomizerColorManager.cs",
 		"randomizer/RandomizerCreditsManager.cs",
+		"randomizer/RandomizerDeathLink.cs",
 		"randomizer/RandomizerEnhancedCleanWaterCondition.cs",
 		"randomizer/RandomizerEnhancedMode.cs",
 		"randomizer/RandomizerExpNames.cs",
