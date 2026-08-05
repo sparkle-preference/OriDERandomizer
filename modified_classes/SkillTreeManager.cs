@@ -4,325 +4,288 @@ using System.Text;
 using Game;
 using UnityEngine;
 
-public class SkillTreeManager : MenuScreen
-{
-	public bool AllLanesFull
-	{
-		get
-		{
-			return this.EnergyLane.HasAllSkills && this.UtilityLane.HasAllSkills && this.CombatLane.HasAllSkills;
-		}
-	}
+public class SkillTreeManager : MenuScreen {
+    public bool AllLanesFull => EnergyLane.HasAllSkills && UtilityLane.HasAllSkills && CombatLane.HasAllSkills;
 
-	public void Awake()
-	{
-		SkillTreeManager.Instance = this;
-		CleverMenuItemSelectionManager navigationManager = this.NavigationManager;
-		navigationManager.OptionChangeCallback = (Action)Delegate.Combine(navigationManager.OptionChangeCallback, new Action(this.OnMenuItemChange));
-		navigationManager.OptionPressedCallback = (Action)Delegate.Combine(navigationManager.OptionPressedCallback, new Action(this.OnMenuItemPressed));
-		navigationManager.OnBackPressedCallback = (Action)Delegate.Combine(navigationManager.OnBackPressedCallback, new Action(this.OnBackPressed));
-		this.OnMenuItemChange();
-		foreach (CleverMenuItemSelectionManager.NavigationData navigationData in this.NavigationManager.Navigation)
-		{
-			navigationData.Condition = new Func<CleverMenuItemSelectionManager.NavigationData, bool>(SkillTreeManager.Condition);
-		}
-		this.UpdateRequirementsText();
-	}
+    public void Awake() {
+        Instance = this;
+        var navigationManager = NavigationManager;
+        navigationManager.OptionChangeCallback = (Action)Delegate.Combine(navigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
+        navigationManager.OptionPressedCallback = (Action)Delegate.Combine(navigationManager.OptionPressedCallback, new Action(OnMenuItemPressed));
+        navigationManager.OnBackPressedCallback = (Action)Delegate.Combine(navigationManager.OnBackPressedCallback, new Action(OnBackPressed));
+        OnMenuItemChange();
+        foreach (var navigationData in NavigationManager.Navigation) {
+            navigationData.Condition = Condition;
+        }
 
-	public void OnBackPressed()
-	{
-		UI.Menu.HideMenuScreen(false);
-	}
+        UpdateRequirementsText();
+    }
 
-	public override void Hide()
-	{
-		this.NavigationManager.SetVisible(false);
-	}
+    public void OnBackPressed() {
+        UI.Menu.HideMenuScreen();
+    }
 
-	public override void ShowImmediate()
-	{
-		this.NavigationManager.SetVisibleImmediate(true);
-		this.OnMenuItemChange();
-	}
+    public override void Hide() {
+        NavigationManager.SetVisible(false);
+    }
 
-	public override void HideImmediate()
-	{
-		this.NavigationManager.SetVisibleImmediate(false);
-	}
+    public override void ShowImmediate() {
+        NavigationManager.SetVisibleImmediate(true);
+        OnMenuItemChange();
+    }
 
-	public override void Show()
-	{
-		this.NavigationManager.SetVisible(true);
-		this.OnMenuItemChange();
-	}
+    public override void HideImmediate() {
+        NavigationManager.SetVisibleImmediate(false);
+    }
 
-	public static bool Condition(CleverMenuItemSelectionManager.NavigationData navigationData)
-	{
-		SkillItem component = navigationData.To.GetComponent<SkillItem>();
-		return !component || component.Visible;
-	}
+    public override void Show() {
+        NavigationManager.SetVisible(true);
+        OnMenuItemChange();
+    }
 
-	public void OnDestroy()
-	{
-		CleverMenuItemSelectionManager navigationManager = this.NavigationManager;
-		navigationManager.OptionChangeCallback = (Action)Delegate.Remove(navigationManager.OptionChangeCallback, new Action(this.OnMenuItemChange));
-		navigationManager.OptionPressedCallback = (Action)Delegate.Remove(navigationManager.OptionPressedCallback, new Action(this.OnMenuItemPressed));
-		navigationManager.OnBackPressedCallback = (Action)Delegate.Remove(navigationManager.OnBackPressedCallback, new Action(this.OnBackPressed));
-		SkillTreeManager.Instance = null;
-	}
+    public static bool Condition(CleverMenuItemSelectionManager.NavigationData navigationData) {
+        var component = navigationData.To.GetComponent<SkillItem>();
+        return !component || component.Visible;
+    }
 
-	public void OnMenuItemPressed()
-	{
-		if (this.CurrentSkillItem == null)
-		{
-			if (Characters.Sein && !Characters.Sein.IsSuspended)
-			{
-				this.NavigationManager.Index = -1;
-			}
-			return;
-		}
-		if (this.CurrentSkillItem.HasSkillItem)
-		{
-			if (this.OnAlreadyEarnedAbility)
-			{
-				this.RequirementsLineAShake.Restart();
-				this.OnAlreadyEarnedAbility.Perform(null);
-			}
-			return;
-		}
-		if (this.CurrentSkillItem.CanEarnSkill)
-		{
-			this.CurrentSkillItem.HasSkillItem = true;
-			Characters.Sein.PlayerAbilities.SetAbility(this.CurrentSkillItem.Ability, true);
-			Characters.Sein.PlayerAbilities.GainAbilityAction = this.CurrentSkillItem.GainSkillSequence;
-			InstantiateUtility.Instantiate(this.GainSkillEffect, this.CurrentSkillItem.transform.position, Quaternion.identity);
-			RandomizerBonus.SpentAP(this.CurrentSkillItem.ActualRequiredSkillPoints);
-			BingoController.OnGainAbility(this.CurrentSkillItem.Ability);			
-			if (this.CurrentSkillItem.Ability == AbilityType.Sense) RandomizerHints.TryShowSenseHint();
-			Characters.Sein.Level.SkillPoints -= this.CurrentSkillItem.ActualRequiredSkillPoints;
-			if (this.OnGainAbility)
-			{
-				this.OnGainAbility.Perform(null);
-			}
-			SeinLevel.HasSpentSkillPoint = true;
-			AchievementsController.AwardAchievement(this.SpentFirstSkillPointAchievement);
-			GameController.Instance.CreateCheckpoint();
-			RandomizerStatsManager.OnSave(false);
-			GameController.Instance.SaveGameController.PerformSave();
-			this.UpdateRequirementsText();
-			return;
-		}
-		if (!this.CurrentSkillItem.SoulRequirementMet)
-		{
-			if (this.CurrentSkillItem.RequiresAbilitiesOrItems)
-			{
-				this.RequirementsLineAShake.Restart();
-			}
-			else
-			{
-				this.RequirementsLineAShake.Restart();
-			}
-		}
-		if (!this.CurrentSkillItem.AbilitiesRequirementMet)
-		{
-			this.RequirementsLineAShake.Restart();
-		}
-		if (this.OnCantEarnSkill)
-		{
-			this.OnCantEarnSkill.Perform(null);
-		}
-	}
+    public void OnDestroy() {
+        var navigationManager = NavigationManager;
+        navigationManager.OptionChangeCallback = (Action)Delegate.Remove(navigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
+        navigationManager.OptionPressedCallback = (Action)Delegate.Remove(navigationManager.OptionPressedCallback, new Action(OnMenuItemPressed));
+        navigationManager.OnBackPressedCallback = (Action)Delegate.Remove(navigationManager.OnBackPressedCallback, new Action(OnBackPressed));
+        Instance = null;
+    }
 
-	public MessageDescriptor AbilityMastered
-	{
-		get
-		{
-			return new MessageDescriptor("$" + this.AbilityMasteredMessageProvider + "$");
-		}
-	}
+    public void OnMenuItemPressed() {
+        if (CurrentSkillItem == null) {
+            if (Characters.Sein && !Characters.Sein.IsSuspended) {
+                NavigationManager.Index = -1;
+            }
 
-	public MessageProvider AbilityName(AbilityType ability)
-	{
-		foreach (SkillTreeManager.AbilityMessageProvider abilityMessageProvider in this.AbilityMessages)
-		{
-			if (abilityMessageProvider.AbilityType == ability)
-			{
-				return abilityMessageProvider.MessageProvider;
-			}
-		}
-		return null;
-	}
+            return;
+        }
 
-	public string RequiredAbilitiesText(SkillItem skillItem)
-	{
-		bool abilitiesRequirementMet = skillItem.AbilitiesRequirementMet;
-		StringBuilder stringBuilder = new StringBuilder(30);
-		stringBuilder.Append(" ");
-		for (int j = 0; j < skillItem.RequiredItems.Count; j++)
-		{
-			SkillItem skillItem2 = skillItem.RequiredItems[j];
-			if (abilitiesRequirementMet)
-			{
-				stringBuilder.Append("$" + skillItem2.Name + "$");
-			}
-			else
-			{
-				stringBuilder.Append("#" + skillItem2.Name + "#");
-			}
-			if (j != skillItem.RequiredItems.Count - 1)
-			{
-				stringBuilder.Append((!abilitiesRequirementMet) ? "@,@ " : "$,$ ");
-			}
-		}
-		if (abilitiesRequirementMet)
-		{
-			return "$" + this.RequiresMessageProvider.ToString().Replace("[Requirements]", "$" + stringBuilder + "$") + "$";
-		}
-		return "@" + this.RequiresMessageProvider.ToString().Replace("[Requirements]", "@" + stringBuilder + "@") + "@";
-	}
+        if (CurrentSkillItem.HasSkillItem) {
+            if (OnAlreadyEarnedAbility) {
+                RequirementsLineAShake.Restart();
+                OnAlreadyEarnedAbility.Perform(null);
+            }
 
-	public void UpdateRequirementsText()
-	{
-		this.CurrentSkillItem = this.NavigationManager.CurrentMenuItem.GetComponent<SkillItem>();
-		if (this.CurrentSkillItem)
-		{
-			this.AbilityTitle.SetMessageProvider(this.CurrentSkillItem.Name);
-			this.AbilityDescription.SetMessageProvider(this.CurrentSkillItem.Description);
-			if (this.CurrentSkillItem.HasSkillItem)
-			{
-				this.RequirementsLineA.SetMessage(this.AbilityMastered);
-				return;
-			}
-			if (this.CurrentSkillItem.RequiresAbilitiesOrItems)
-			{
-				this.RequirementsLineA.SetMessage(new MessageDescriptor(this.RequiredAbilitiesText(this.CurrentSkillItem) + "\n" + this.RequiredSoulsText(this.CurrentSkillItem)));
-				return;
-			}
-			this.RequirementsLineA.SetMessage(new MessageDescriptor(this.RequiredSoulsText(this.CurrentSkillItem)));
-		}
-	}
+            return;
+        }
 
-	public string NameText(SkillItem skillItem)
-	{
-		if (skillItem.HasSkillItem)
-		{
-			return "$" + skillItem.Name + "$";
-		}
-		if (skillItem.CanEarnSkill)
-		{
-			return "#" + skillItem.Name + "#";
-		}
-		return "@" + skillItem.Name + "@";
-	}
+        if (CurrentSkillItem.CanEarnSkill) {
+            CurrentSkillItem.HasSkillItem = true;
+            Characters.Sein.PlayerAbilities.SetAbility(CurrentSkillItem.Ability, true);
+            Characters.Sein.PlayerAbilities.GainAbilityAction = CurrentSkillItem.GainSkillSequence;
+            InstantiateUtility.Instantiate(GainSkillEffect, CurrentSkillItem.transform.position, Quaternion.identity);
+            RandomizerBonus.SpentAP(CurrentSkillItem.ActualRequiredSkillPoints);
+            BingoController.OnGainAbility(CurrentSkillItem.Ability);
+            if (CurrentSkillItem.Ability == AbilityType.Sense) {
+                RandomizerHints.TryShowSenseHint();
+            }
 
-	public string RequiredSoulsText(SkillItem skillItem)
-	{
-		if (skillItem.HasSkillItem)
-		{
-			return string.Empty;
-		}
-		int requiredPoints = skillItem.ActualRequiredSkillPoints;
-		int totalRequiredPoints = skillItem.ActualTotalRequiredSkillPoints;
-		string costMessage = (requiredPoints != 1) ? RandomizerText.CostsAbilityPoints : RandomizerText.CostsAbilityPoint;
-		if (totalRequiredPoints <= Characters.Sein.Level.SkillPoints)
-		{
-			return "$" + costMessage.Replace("[Amount]", requiredPoints.ToString()).Replace("[Total]", totalRequiredPoints.ToString()) + "$";
-		}
-		return "@" + costMessage.Replace("[Amount]", requiredPoints.ToString()).Replace("[Total]", totalRequiredPoints.ToString()) + "@";
-	}
+            Characters.Sein.Level.SkillPoints -= CurrentSkillItem.ActualRequiredSkillPoints;
+            if (OnGainAbility) {
+                OnGainAbility.Perform(null);
+            }
 
-	public void OnMenuItemChange()
-	{
-		this.CurrentSkillItem = this.NavigationManager.CurrentMenuItem.GetComponent<SkillItem>();
-		if (this.CurrentSkillItem == null)
-		{
-			this.Cursor.gameObject.SetActive(false);
-			this.InfoPanel.SetActive(false);
-			this.AbilityDiskInfoPanel.SetActive(true);
-			this.AbilityDiskInfoPanelDescription.RefreshText();
-			return;
-		}
-		this.Cursor.gameObject.SetActive(true);
-		this.Cursor.position = this.CurrentSkillItem.transform.position;
-		foreach (object obj in this.LargeIcon.transform)
-		{
-			Transform transform = (Transform)obj;
-			transform.gameObject.SetActive(transform.name == this.CurrentSkillItem.LargeIcon.name);
-		}
-		this.InfoPanel.SetActive(true);
-		this.AbilityDiskInfoPanel.SetActive(false);
-		this.UpdateRequirementsText();
-	}
+            SeinLevel.HasSpentSkillPoint = true;
+            AchievementsController.AwardAchievement(SpentFirstSkillPointAchievement);
+            GameController.Instance.CreateCheckpoint();
+            RandomizerStatsManager.OnSave(false);
+            GameController.Instance.SaveGameController.PerformSave();
+            UpdateRequirementsText();
+            return;
+        }
 
-	public void FixedUpdate()
-	{
-		if (this.NavigationManager.Index == -1)
-		{
-			this.NavigationManager.Index = 0;
-		}
-	}
+        if (!CurrentSkillItem.SoulRequirementMet) {
+            if (CurrentSkillItem.RequiresAbilitiesOrItems) {
+                RequirementsLineAShake.Restart();
+            } else {
+                RequirementsLineAShake.Restart();
+            }
+        }
 
-	public static SkillTreeManager Instance;
+        if (!CurrentSkillItem.AbilitiesRequirementMet) {
+            RequirementsLineAShake.Restart();
+        }
 
-	public CleverMenuItemSelectionManager NavigationManager;
+        if (OnCantEarnSkill) {
+            OnCantEarnSkill.Perform(null);
+        }
+    }
 
-	public SkillItem CurrentSkillItem;
+    public MessageDescriptor AbilityMastered => new MessageDescriptor("$" + AbilityMasteredMessageProvider + "$");
 
-	public Transform Cursor;
+    public MessageProvider AbilityName(AbilityType ability) {
+        foreach (var abilityMessageProvider in AbilityMessages) {
+            if (abilityMessageProvider.AbilityType == ability) {
+                return abilityMessageProvider.MessageProvider;
+            }
+        }
 
-	public SoundProvider OpenSound;
+        return null;
+    }
 
-	public SoundProvider CloseSound;
+    public string RequiredAbilitiesText(SkillItem skillItem) {
+        var abilitiesRequirementMet = skillItem.AbilitiesRequirementMet;
+        var stringBuilder = new StringBuilder(30);
+        stringBuilder.Append(" ");
+        for (var j = 0; j < skillItem.RequiredItems.Count; j++) {
+            var skillItem2 = skillItem.RequiredItems[j];
+            if (abilitiesRequirementMet) {
+                stringBuilder.Append("$" + skillItem2.Name + "$");
+            } else {
+                stringBuilder.Append("#" + skillItem2.Name + "#");
+            }
 
-	public GameObject LargeIcon;
+            if (j != skillItem.RequiredItems.Count - 1) {
+                stringBuilder.Append(!abilitiesRequirementMet ? "@,@ " : "$,$ ");
+            }
+        }
 
-	public Renderer LargeIconGlow;
+        if (abilitiesRequirementMet) {
+            return "$" + RequiresMessageProvider.ToString().Replace("[Requirements]", "$" + stringBuilder + "$") + "$";
+        }
 
-	public MessageBox RequirementsLineA;
+        return "@" + RequiresMessageProvider.ToString().Replace("[Requirements]", "@" + stringBuilder + "@") + "@";
+    }
 
-	public MessageBox AbilityTitle;
+    public void UpdateRequirementsText() {
+        CurrentSkillItem = NavigationManager.CurrentMenuItem.GetComponent<SkillItem>();
+        if (CurrentSkillItem) {
+            AbilityTitle.SetMessageProvider(CurrentSkillItem.Name);
+            AbilityDescription.SetMessageProvider(CurrentSkillItem.Description);
+            if (CurrentSkillItem.HasSkillItem) {
+                RequirementsLineA.SetMessage(AbilityMastered);
+                return;
+            }
 
-	public MessageBox AbilityDescription;
+            if (CurrentSkillItem.RequiresAbilitiesOrItems) {
+                RequirementsLineA.SetMessage(new MessageDescriptor(RequiredAbilitiesText(CurrentSkillItem) + "\n" + RequiredSoulsText(CurrentSkillItem)));
+                return;
+            }
 
-	public GameObject InfoPanel;
+            RequirementsLineA.SetMessage(new MessageDescriptor(RequiredSoulsText(CurrentSkillItem)));
+        }
+    }
 
-	public MessageBox AbilityDiskInfoPanelDescription;
+    public string NameText(SkillItem skillItem) {
+        if (skillItem.HasSkillItem) {
+            return "$" + skillItem.Name + "$";
+        }
 
-	public GameObject AbilityDiskInfoPanel;
+        if (skillItem.CanEarnSkill) {
+            return "#" + skillItem.Name + "#";
+        }
 
-	public SkillTreeLaneLogic EnergyLane;
+        return "@" + skillItem.Name + "@";
+    }
 
-	public SkillTreeLaneLogic UtilityLane;
+    public string RequiredSoulsText(SkillItem skillItem) {
+        if (skillItem.HasSkillItem) {
+            return string.Empty;
+        }
 
-	public SkillTreeLaneLogic CombatLane;
+        var requiredPoints = skillItem.ActualRequiredSkillPoints;
+        var totalRequiredPoints = skillItem.ActualTotalRequiredSkillPoints;
+        var costMessage = requiredPoints != 1 ? RandomizerText.CostsAbilityPoints : RandomizerText.CostsAbilityPoint;
+        if (totalRequiredPoints <= Characters.Sein.Level.SkillPoints) {
+            return "$" + costMessage.Replace("[Amount]", requiredPoints.ToString()).Replace("[Total]", totalRequiredPoints.ToString()) + "$";
+        }
 
-	public GameObject GainSkillEffect;
+        return "@" + costMessage.Replace("[Amount]", requiredPoints.ToString()).Replace("[Total]", totalRequiredPoints.ToString()) + "@";
+    }
 
-	public LegacyAnimator RequirementsLineAShake;
+    public void OnMenuItemChange() {
+        CurrentSkillItem = NavigationManager.CurrentMenuItem.GetComponent<SkillItem>();
+        if (CurrentSkillItem == null) {
+            Cursor.gameObject.SetActive(false);
+            InfoPanel.SetActive(false);
+            AbilityDiskInfoPanel.SetActive(true);
+            AbilityDiskInfoPanelDescription.RefreshText();
+            return;
+        }
 
-	public ActionMethod OnGainAbility;
+        Cursor.gameObject.SetActive(true);
+        Cursor.position = CurrentSkillItem.transform.position;
+        foreach (var obj in LargeIcon.transform) {
+            var transform = (Transform)obj;
+            transform.gameObject.SetActive(transform.name == CurrentSkillItem.LargeIcon.name);
+        }
 
-	public ActionMethod OnAlreadyEarnedAbility;
+        InfoPanel.SetActive(true);
+        AbilityDiskInfoPanel.SetActive(false);
+        UpdateRequirementsText();
+    }
 
-	public ActionMethod OnCantEarnSkill;
+    public void FixedUpdate() {
+        if (NavigationManager.Index == -1) {
+            NavigationManager.Index = 0;
+        }
+    }
 
-	public MessageProvider AbilityPointMessageProvider;
+    public static SkillTreeManager Instance;
 
-	public MessageProvider AbilityPointsMessageProvider;
+    public CleverMenuItemSelectionManager NavigationManager;
 
-	public MessageProvider RequiresMessageProvider;
+    public SkillItem CurrentSkillItem;
 
-	public MessageProvider AbilityMasteredMessageProvider;
+    public Transform Cursor;
 
-	public AchievementAsset SpentFirstSkillPointAchievement;
+    public SoundProvider OpenSound;
 
-	public List<SkillTreeManager.AbilityMessageProvider> AbilityMessages;
+    public SoundProvider CloseSound;
 
-	[Serializable]
-	public class AbilityMessageProvider
-	{
-		public AbilityType AbilityType;
+    public GameObject LargeIcon;
 
-		public MessageProvider MessageProvider;
-	}
+    public Renderer LargeIconGlow;
+
+    public MessageBox RequirementsLineA;
+
+    public MessageBox AbilityTitle;
+
+    public MessageBox AbilityDescription;
+
+    public GameObject InfoPanel;
+
+    public MessageBox AbilityDiskInfoPanelDescription;
+
+    public GameObject AbilityDiskInfoPanel;
+
+    public SkillTreeLaneLogic EnergyLane;
+
+    public SkillTreeLaneLogic UtilityLane;
+
+    public SkillTreeLaneLogic CombatLane;
+
+    public GameObject GainSkillEffect;
+
+    public LegacyAnimator RequirementsLineAShake;
+
+    public ActionMethod OnGainAbility;
+
+    public ActionMethod OnAlreadyEarnedAbility;
+
+    public ActionMethod OnCantEarnSkill;
+
+    public MessageProvider AbilityPointMessageProvider;
+
+    public MessageProvider AbilityPointsMessageProvider;
+
+    public MessageProvider RequiresMessageProvider;
+
+    public MessageProvider AbilityMasteredMessageProvider;
+
+    public AchievementAsset SpentFirstSkillPointAchievement;
+
+    public List<AbilityMessageProvider> AbilityMessages;
+
+    [Serializable]
+    public class AbilityMessageProvider {
+        public AbilityType AbilityType;
+
+        public MessageProvider MessageProvider;
+    }
 }

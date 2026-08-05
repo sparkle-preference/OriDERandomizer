@@ -1,193 +1,121 @@
-using System;
 using Game;
 using UnityEngine;
 
-public class SeinCharacter : MonoBehaviour, ICharacter
-{
-	public Vector2 PhysicsSpeed
-	{
-		get
-		{
-			PlatformMovement platformMovement = this.PlatformBehaviour.PlatformMovement;
-			return (!platformMovement.IsOnGround) ? platformMovement.WorldSpeed : (platformMovement.GroundNormal * platformMovement.LocalSpeedY + platformMovement.GroundBinormal * platformMovement.LocalSpeedX);
-		}
-	}
+public class SeinCharacter : MonoBehaviour, ICharacter {
+    public Vector2 PhysicsSpeed {
+        get {
+            var platformMovement = PlatformBehaviour.PlatformMovement;
+            return !platformMovement.IsOnGround ? platformMovement.WorldSpeed : platformMovement.GroundNormal * platformMovement.LocalSpeedY + platformMovement.GroundBinormal * platformMovement.LocalSpeedX;
+        }
+    }
 
-	public CharacterAnimationSystem Animation
-	{
-		get
-		{
-			return this.PlatformBehaviour.Visuals.Animation;
-		}
-	}
+    public CharacterAnimationSystem Animation => PlatformBehaviour.Visuals.Animation;
 
-	public bool IsSuspended
-	{
-		get
-		{
-			return this.PlatformBehaviour.PlatformMovement.IsSuspended;
-		}
-	}
+    public bool IsSuspended => PlatformBehaviour.PlatformMovement.IsSuspended;
 
-	public Vector3 Position
-	{
-		get
-		{
-			return this.PlatformBehaviour.PlatformMovement.Position;
-		}
-		set
-		{
-			this.PlatformBehaviour.PlatformMovement.Position = value;
-		}
-	}
+    public Vector3 Position {
+        get => PlatformBehaviour.PlatformMovement.Position;
+        set => PlatformBehaviour.PlatformMovement.Position = value;
+    }
 
-	public bool Active
-	{
-		get
-		{
-			return base.gameObject.activeSelf;
-		}
-		set
-		{
-			base.gameObject.SetActive(value);
-		}
-	}
+    public bool Active {
+        get => gameObject.activeSelf;
+        set => gameObject.SetActive(value);
+    }
 
-	public void Awake()
-	{
-		Characters.Sein = this;
-		Characters.Current = this;
-		this.Input = new SeinInput(this);
-		this.MakeBelongToSein(base.gameObject);
-	}
+    public void Awake() {
+        Characters.Sein = this;
+        Characters.Current = this;
+        Input = new SeinInput(this);
+        MakeBelongToSein(gameObject);
+    }
 
-	public void OnDestroy()
-	{
-		if (Characters.Sein == this)
-		{
-			Characters.Sein = null;
-		}
-		if (object.ReferenceEquals(Characters.Current, this))
-		{
-			Characters.Current = null;
-		}
-	}
+    public void OnDestroy() {
+        if (Characters.Sein == this) {
+            Characters.Sein = null;
+        }
 
-	public void MakeBelongToSein(GameObject go)
-	{
-		go.BroadcastMessage("SetReferenceToSein", this, SendMessageOptions.DontRequireReceiver);
-	}
+        if (ReferenceEquals(Characters.Current, this)) {
+            Characters.Current = null;
+        }
+    }
 
-	public void FixedUpdate()
-	{
-		this.Input.Update();
-	}
+    public void MakeBelongToSein(GameObject go) {
+        go.BroadcastMessage("SetReferenceToSein", this, SendMessageOptions.DontRequireReceiver);
+    }
 
-	public void Activate(bool active)
-	{
-		base.gameObject.SetActive(active);
-		if (active)
-		{
-			base.gameObject.BroadcastMessage("SetReferenceToSein", this, SendMessageOptions.DontRequireReceiver);
-		}
-	}
+    public void FixedUpdate() {
+        Input.Update();
+    }
 
-	public GameObject GameObject
-	{
-		get
-		{
-			return base.gameObject;
-		}
-	}
+    public void Activate(bool active) {
+        gameObject.SetActive(active);
+        if (active) {
+            gameObject.BroadcastMessage("SetReferenceToSein", this, SendMessageOptions.DontRequireReceiver);
+        }
+    }
 
-	public bool FaceLeft
-	{
-		get
-		{
-			return this.Animation.SpriteMirror.FaceLeft;
-		}
-		set
-		{
-			this.Animation.SpriteMirror.FaceLeft = value;
-		}
-	}
+    public GameObject GameObject => gameObject;
 
-	public Vector3 Speed
-	{
-		get
-		{
-			return this.PlatformBehaviour.PlatformMovement.LocalSpeed;
-		}
-		set
-		{
-			this.PlatformBehaviour.PlatformMovement.LocalSpeed = value;
-		}
-	}
+    public bool FaceLeft {
+        get => Animation.SpriteMirror.FaceLeft;
+        set => Animation.SpriteMirror.FaceLeft = value;
+    }
 
-	public Transform Transform
-	{
-		get
-		{
-			return base.transform;
-		}
-	}
+    public Vector3 Speed {
+        get => PlatformBehaviour.PlatformMovement.LocalSpeed;
+        set => PlatformBehaviour.PlatformMovement.LocalSpeed = value;
+    }
 
-	public bool IsOnGround
-	{
-		get
-		{
-			return this.PlatformBehaviour.PlatformMovement.IsOnGround;
-		}
-	}
+    public Transform Transform => transform;
 
-	public void PlaceOnGround()
-	{
-		this.PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
-	}
+    public bool IsOnGround => PlatformBehaviour.PlatformMovement.IsOnGround;
 
-	public void ResetAirLimits()
-	{
-		if (this.Abilities.DoubleJump)
-		{
-			this.Abilities.DoubleJump.ResetDoubleJump();
-		}
-		if (this.Abilities.Dash)
-		{
-			this.Abilities.Dash.ResetDashLimit();
-		}
-	}
+    public void PlaceOnGround() {
+        PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
+    }
 
-	public SeinAbilities Abilities;
+    public void ResetAirLimits() {
+        if (Abilities.DoubleJump) {
+            Abilities.DoubleJump.ResetDoubleJump();
+        }
 
-	public CloneOfSeinForPortals CloneOfSeinForPortals;
+        if (Abilities.Dash) {
+            Abilities.Dash.ResetDashLimit();
+        }
+    }
 
-	public SeinController Controller;
+    public SeinAbilities Abilities;
 
-	public SeinCutsceneBlocked CutsceneBlocked;
+    public CloneOfSeinForPortals CloneOfSeinForPortals;
 
-	public SeinCutsceneMovement CutsceneMovement;
+    public SeinController Controller;
 
-	public SeinDoorHandler DoorHandler;
+    public SeinCutsceneBlocked CutsceneBlocked;
 
-	public SeinSoulFlame SoulFlame;
+    public SeinCutsceneMovement CutsceneMovement;
 
-	public SeinInventory Inventory;
+    public SeinDoorHandler DoorHandler;
 
-	public SeinEnvironmentForceController ForceController;
+    public SeinSoulFlame SoulFlame;
 
-	public SeinInput Input;
+    public SeinInventory Inventory;
 
-	public SeinLevel Level;
+    public SeinEnvironmentForceController ForceController;
 
-	public SeinEnergy Energy;
+    public SeinInput Input;
 
-	public SeinMortality Mortality;
+    public SeinLevel Level;
 
-	public SeinPickupProcessor PickupHandler;
+    public SeinEnergy Energy;
 
-	public PlatformBehaviour PlatformBehaviour;
+    public SeinMortality Mortality;
 
-	public PlayerAbilities PlayerAbilities;
+    public SeinPickupProcessor PickupHandler;
 
-	public SeinPrefabFactory Prefabs;
+    public PlatformBehaviour PlatformBehaviour;
+
+    public PlayerAbilities PlayerAbilities;
+
+    public SeinPrefabFactory Prefabs;
 }

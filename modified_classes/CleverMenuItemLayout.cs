@@ -1,62 +1,51 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
-public class CleverMenuItemLayout : MonoBehaviour
-{
-	public void OnEnable()
-	{
-		this.Sort();
-	}
+public class CleverMenuItemLayout : MonoBehaviour {
+    public void OnEnable() {
+        Sort();
+    }
 
-	[ContextMenu("Apply")]
-	public void Sort()
-	{
-		float num = 0f;
-		foreach (CleverMenuItem cleverMenuItem in this.MenuItems)
-		{
-			if (cleverMenuItem.IsVisible)
-			{
-				cleverMenuItem.transform.localPosition = Vector3.down * num;
-				num += cleverMenuItem.Space;
-			}
-		}
-		foreach (CleverMenuItem cleverMenuItem2 in this.MenuItems)
-		{
-			if (cleverMenuItem2.IsVisible)
-			{
-				if (this.VerticalAlignment == CleverMenuItemLayout.Alignment.Center)
-				{
-					cleverMenuItem2.transform.localPosition += Vector3.up * num * 0.5f;
-				}
-				if (this.VerticalAlignment == CleverMenuItemLayout.Alignment.Bottom)
-				{
-					cleverMenuItem2.transform.localPosition += Vector3.up * num;
-				}
-			}
-		}
-	}
+    [ContextMenu("Apply")]
+    public void Sort() {
+        var num = 0f;
+        foreach (var cleverMenuItem in MenuItems) {
+            if (cleverMenuItem.IsVisible) {
+                cleverMenuItem.transform.localPosition = Vector3.down * num;
+                num += cleverMenuItem.Space;
+            }
+        }
 
-	public void AddItem(CleverMenuItem item)
-	{
-		this.MenuItems.Add(item);
-		this.Sort();
-	}
+        foreach (var cleverMenuItem2 in MenuItems) {
+            if (cleverMenuItem2.IsVisible) {
+                if (VerticalAlignment == Alignment.Center) {
+                    cleverMenuItem2.transform.localPosition += Vector3.up * num * 0.5f;
+                }
 
-	public void AddItem(CleverMenuItem item, int index)
-	{
-		this.MenuItems.Insert(index, item);
-		this.Sort();
-	}
+                if (VerticalAlignment == Alignment.Bottom) {
+                    cleverMenuItem2.transform.localPosition += Vector3.up * num;
+                }
+            }
+        }
+    }
 
-	public List<CleverMenuItem> MenuItems = new List<CleverMenuItem>();
+    public void AddItem(CleverMenuItem item) {
+        MenuItems.Add(item);
+        Sort();
+    }
 
-	public CleverMenuItemLayout.Alignment VerticalAlignment;
+    public void AddItem(CleverMenuItem item, int index) {
+        MenuItems.Insert(index, item);
+        Sort();
+    }
 
-	public enum Alignment
-	{
-		Top,
-		Center,
-		Bottom
-	}
+    public List<CleverMenuItem> MenuItems = new List<CleverMenuItem>();
+
+    public Alignment VerticalAlignment;
+
+    public enum Alignment {
+        Top,
+        Center,
+        Bottom,
+    }
 }

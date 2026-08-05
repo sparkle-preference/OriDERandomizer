@@ -1,245 +1,205 @@
 using System;
-using UnityEngine;
 using fsm;
 using fsm.triggers;
+using UnityEngine;
 
-public class SwarmEnemy : GroundEnemy
-{
-	public override bool CanBeOptimized()
-	{
-		return this.Controller.StateMachine.CurrentState == this.State.Idle;
-	}
+public class SwarmEnemy : GroundEnemy {
+    public override bool CanBeOptimized() {
+        return Controller.StateMachine.CurrentState == State.Idle;
+    }
 
-	public override void Awake()
-	{
-		base.Awake();
-		this.DamageReciever.OnDeathEvent.Add(new Action<Damage>(this.OnDeath));
-		EntityDamageReciever damageReciever = this.DamageReciever;
-		damageReciever.OnModifyDamage = (EntityDamageReciever.ModifyDamageDelegate)Delegate.Combine(damageReciever.OnModifyDamage, new EntityDamageReciever.ModifyDamageDelegate(this.OnPreProcessDamage));
-	}
+    public override void Awake() {
+        base.Awake();
+        DamageReciever.OnDeathEvent.Add(new Action<Damage>(OnDeath));
+        EntityDamageReciever damageReciever = DamageReciever;
+        damageReciever.OnModifyDamage = (EntityDamageReciever.ModifyDamageDelegate)Delegate.Combine(damageReciever.OnModifyDamage, new EntityDamageReciever.ModifyDamageDelegate(OnPreProcessDamage));
+    }
 
-	public void OnPreProcessDamage(Damage damage)
-	{
-		EntityDamageDealer component = damage.Sender.GetComponent<EntityDamageDealer>();
-		if (component != null)
-		{
-			Entity entity = component.Entity;
-			if (entity is SwarmEnemy && this.GetInstanceID() > entity.GetInstanceID())
-			{
-				this.PlatformMovement.LocalSpeedX *= 0.7f;
-			}
-		}
-	}
+    public void OnPreProcessDamage(Damage damage) {
+        var component = damage.Sender.GetComponent<EntityDamageDealer>();
+        if (component != null) {
+            Entity entity = component.Entity;
+            if (entity is SwarmEnemy && GetInstanceID() > entity.GetInstanceID()) {
+                PlatformMovement.LocalSpeedX *= 0.7f;
+            }
+        }
+    }
 
-	public new void Start()
-	{
-		base.Start();
-		this.State.Idle = new State
-		{
-			OnEnterEvent = new Action(this.OnEnterIdle),
-			UpdateStateEvent = new Action(this.UpdateIdle),
-			OnExitEvent = new Action(this.OnExitIdle)
-		};
-		this.State.Run = new State
-		{
-			OnEnterEvent = new Action(this.OnEnterRun),
-			UpdateStateEvent = new Action(this.UpdateRun),
-			OnExitEvent = new Action(this.OnExitRun)
-		};
-		this.State.Spawned = new State
-		{
-			OnEnterEvent = new Action(this.OnEnterSpawned),
-			UpdateStateEvent = new Action(this.UpdateSpawned)
-		};
-		this.Controller.StateMachine.RegisterStates(new IState[]
-		{
-			this.State.Idle,
-			this.State.Run,
-			this.State.Spawned
-		});
-		this.Controller.StateMachine.Configure(this.State.Idle).AddTransition<OnFixedUpdate>(this.State.Run, new Func<bool>(this.ShouldRun), null);
-		this.Controller.StateMachine.Configure(this.State.Run).AddTransition<OnFixedUpdate>(this.State.Idle, () => !this.ShouldRun(), null);
-		this.Controller.StateMachine.Configure(this.State.Spawned).AddTransition<OnFixedUpdate>(this.State.Run, () => base.AfterTime(0.5f), null);
-		this.Controller.StateMachine.ChangeState((!this.m_wasSpawned) ? this.State.Idle : this.State.Spawned);
-	}
+    public new void Start() {
+        base.Start();
+        State.Idle = new State {
+            OnEnterEvent = OnEnterIdle,
+            UpdateStateEvent = UpdateIdle,
+            OnExitEvent = OnExitIdle,
+        };
+        State.Run = new State {
+            OnEnterEvent = OnEnterRun,
+            UpdateStateEvent = UpdateRun,
+            OnExitEvent = OnExitRun,
+        };
+        State.Spawned = new State {
+            OnEnterEvent = OnEnterSpawned,
+            UpdateStateEvent = UpdateSpawned,
+        };
+        Controller.StateMachine.RegisterStates(
+            State.Idle,
+            State.Run,
+            State.Spawned
+        );
+        Controller.StateMachine.Configure(State.Idle).AddTransition<OnFixedUpdate>(State.Run, ShouldRun);
+        Controller.StateMachine.Configure(State.Run).AddTransition<OnFixedUpdate>(State.Idle, () => !ShouldRun());
+        Controller.StateMachine.Configure(State.Spawned).AddTransition<OnFixedUpdate>(State.Run, () => AfterTime(0.5f));
+        Controller.StateMachine.ChangeState(!m_wasSpawned ? State.Idle : State.Spawned);
+    }
 
-	public bool ShouldRun()
-	{
-		float num = (float)Math.Sign(base.PositionToPlayerPosition.x);
-		bool flag = this.Size != 0f && Physics.Linecast(base.transform.position + new Vector3(num * (this.Size - 1f), 0f), base.transform.position + new Vector3(num * this.Size, 0f));
-		bool flag2;
-		if (EnemyStopper.InsideEnemyStopper(base.Position, (!base.PlayerIsToLeft) ? Vector3.right : Vector3.left, out flag2))
-		{
-			return false;
-		}
-		return this.Controller.IsNearSein() && Mathf.Abs(base.PositionToPlayerPosition.x) > 0.5f && !flag;
-	}
+    public bool ShouldRun() {
+        float num = Math.Sign(PositionToPlayerPosition.x);
+        var flag = Size != 0f && Physics.Linecast(transform.position + new Vector3(num * (Size - 1f), 0f), transform.position + new Vector3(num * Size, 0f));
+        if (EnemyStopper.InsideEnemyStopper(Position, !PlayerIsToLeft ? Vector3.right : Vector3.left, out _)) {
+            return false;
+        }
 
-	public void SetModeToSpawned()
-	{
-		this.m_wasSpawned = true;
-	}
+        return Controller.IsNearSein() && Mathf.Abs(PositionToPlayerPosition.x) > 0.5f && !flag;
+    }
 
-	public new void FixedUpdate()
-	{
-		base.FixedUpdate();
-		if (!this.IsSuspended)
-		{
-			this.PlatformMovement.LocalSpeedY -= this.Settings.Gravity * Time.deltaTime;
-			if (this.PlatformMovement.LocalSpeedY < -this.Settings.MaxFallSpeed)
-			{
-				this.PlatformMovement.LocalSpeedY = -this.Settings.MaxFallSpeed;
-			}
-			this.UpdateRotation();
-			if (base.IsInWater)
-			{
-				this.Drown();
-			}
-		}
-	}
+    public void SetModeToSpawned() {
+        m_wasSpawned = true;
+    }
 
-	public void UpdateRotation()
-	{
-		float num = this.SpeedXToRotation.Evaluate(this.PlatformMovement.LocalSpeedX) * this.SpeedYToRotation.Evaluate(this.PlatformMovement.LocalSpeedX) * this.AirTiltAngle;
-		float b = (!this.PlatformMovement.IsOnGround) ? num : this.PlatformMovement.GroundAngle;
-		this.FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(this.FeetTransform.eulerAngles.z, b, 0.1f));
-	}
+    public new void FixedUpdate() {
+        base.FixedUpdate();
+        if (!IsSuspended) {
+            PlatformMovement.LocalSpeedY -= Settings.Gravity * Time.deltaTime;
+            if (PlatformMovement.LocalSpeedY < -Settings.MaxFallSpeed) {
+                PlatformMovement.LocalSpeedY = -Settings.MaxFallSpeed;
+            }
 
-	public void OnEnterIdle()
-	{
-		if (this.Idle)
-		{
-			this.Idle.Play();
-		}
-	}
+            UpdateRotation();
+            if (IsInWater) {
+                Drown();
+            }
+        }
+    }
 
-	public void OnEnterRun()
-	{
-		if (this.Walking)
-		{
-			this.Walking.Play();
-		}
-	}
+    public void UpdateRotation() {
+        var num = SpeedXToRotation.Evaluate(PlatformMovement.LocalSpeedX) * SpeedYToRotation.Evaluate(PlatformMovement.LocalSpeedX) * AirTiltAngle;
+        var b = !PlatformMovement.IsOnGround ? num : PlatformMovement.GroundAngle;
+        FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.1f));
+    }
 
-	public void OnExitIdle()
-	{
-		if (this.Idle)
-		{
-			this.Idle.Stop();
-		}
-	}
+    public void OnEnterIdle() {
+        if (Idle) {
+            Idle.Play();
+        }
+    }
 
-	public void OnExitRun()
-	{
-		if (this.Walking)
-		{
-			this.Walking.Stop();
-		}
-	}
+    public void OnEnterRun() {
+        if (Walking) {
+            Walking.Play();
+        }
+    }
 
-	public void OnEnterSpawned()
-	{
-		this.RestartAnimationLoop(this.Animations.Spawned);
-	}
+    public void OnExitIdle() {
+        if (Idle) {
+            Idle.Stop();
+        }
+    }
 
-	public void UpdateIdle()
-	{
-		if (this.PlatformMovement.IsOnGround)
-		{
-			this.PlayAnimationLoop(this.Animations.Idle);
-		}
-		else
-		{
-			this.PlayAnimationLoop((!this.CanFall) ? this.Animations.Idle : this.Animations.Fall);
-		}
-		this.PlatformMovement.LocalSpeedX = MoonMath.Movement.DecelerateSpeed(this.PlatformMovement.LocalSpeedX, this.Settings.Decceleration);
-	}
+    public void OnExitRun() {
+        if (Walking) {
+            Walking.Stop();
+        }
+    }
 
-	public void UpdateRun()
-	{
-		if (this.PlatformMovement.IsOnGround)
-		{
-			this.PlayAnimationLoop((!base.PlayerIsToLeft) ? this.Animations.RunRight : this.Animations.RunLeft);
-		}
-		else
-		{
-			this.PlayAnimationLoop(this.CanFall ? this.Animations.Fall : ((!base.PlayerIsToLeft) ? this.Animations.RunRight : this.Animations.RunLeft));
-		}
-		this.PlatformMovement.LocalSpeedX = RandomizerBonusSkill.TimeScale(this.Settings.Speed * this.Settings.MoveCurve.Evaluate(base.SpriteAnimator.CurrentAnimationTime) * (float)((!base.PlayerIsToLeft) ? 1 : (-1)));
-		if (this.Settings.JumpDelay > 0f)
-		{
-			if (this.m_jumpDelay < 0f && this.PlatformMovement.IsOnGround)
-			{
-				this.m_jumpDelay = this.Settings.JumpDelay;
-				this.PlatformMovement.LocalSpeedY = this.Settings.JumpStrength;
-				this.PlayAnimationOnce(this.Animations.Jump, 1);
-			}
-			this.m_jumpDelay -= Time.deltaTime;
-		}
-	}
+    public void OnEnterSpawned() {
+        RestartAnimationLoop(Animations.Spawned);
+    }
 
-	public void UpdateSpawned()
-	{
-	}
+    public void UpdateIdle() {
+        if (PlatformMovement.IsOnGround) {
+            PlayAnimationLoop(Animations.Idle);
+        } else {
+            PlayAnimationLoop(!CanFall ? Animations.Idle : Animations.Fall);
+        }
 
-	public void OnDeath(Damage damage)
-	{
-		if (this.Settings.Child)
-		{
-			for (int i = 0; i < 2; i++)
-			{
-				Vector3 velocity = (((i != 0) ? Vector3.right : Vector3.left) + Vector3.up * 3f) * 7f;
-				SwarmEnemyManager.Instance.QueueSpawn(base.transform.position, velocity, (int)(this.Loot.LootAmount * this.Loot.LootMultiplier), this.OrbSpawner, this.DamageDealer.Damage, this.Settings.Child, this.SceneRootGUID, this.Owner);
-			}
-		}
-	}
+        PlatformMovement.LocalSpeedX = MoonMath.Movement.DecelerateSpeed(PlatformMovement.LocalSpeedX, Settings.Decceleration);
+    }
 
-	public override void OnDestroy()
-	{
-		base.OnDestroy();
-		this.Owner.OnChildComponentDestroy(this);
-	}
+    public void UpdateRun() {
+        if (PlatformMovement.IsOnGround) {
+            PlayAnimationLoop(!PlayerIsToLeft ? Animations.RunRight : Animations.RunLeft);
+        } else {
+            PlayAnimationLoop(CanFall ? Animations.Fall : !PlayerIsToLeft ? Animations.RunRight : Animations.RunLeft);
+        }
 
-	public SwarmEnemyAnimations Animations;
+        PlatformMovement.LocalSpeedX = RandomizerBonusSkill.TimeScale(Settings.Speed * Settings.MoveCurve.Evaluate(SpriteAnimator.CurrentAnimationTime) * (!PlayerIsToLeft ? 1 : -1));
+        if (Settings.JumpDelay > 0f) {
+            if (m_jumpDelay < 0f && PlatformMovement.IsOnGround) {
+                m_jumpDelay = Settings.JumpDelay;
+                PlatformMovement.LocalSpeedY = Settings.JumpStrength;
+                PlayAnimationOnce(Animations.Jump, 1);
+            }
 
-	public SwarmEnemySettings Settings;
+            m_jumpDelay -= Time.deltaTime;
+        }
+    }
 
-	public SwarmEnemyLootSettings Loot;
+    public void UpdateSpawned() {
+    }
 
-	public OrbSpawner OrbSpawner;
+    public void OnDeath(Damage damage) {
+        if (Settings.Child) {
+            for (var i = 0; i < 2; i++) {
+                var velocity = ((i != 0 ? Vector3.right : Vector3.left) + Vector3.up * 3f) * 7f;
+                SwarmEnemyManager.Instance.QueueSpawn(transform.position, velocity, (int)(Loot.LootAmount * Loot.LootMultiplier), OrbSpawner, DamageDealer.Damage, Settings.Child, SceneRootGUID, Owner);
+            }
+        }
+    }
 
-	public SoundSource Idle;
+    public override void OnDestroy() {
+        base.OnDestroy();
+        Owner.OnChildComponentDestroy(this);
+    }
 
-	public SoundSource Walking;
+    public SwarmEnemyAnimations Animations;
 
-	public bool CanFall = true;
+    public SwarmEnemySettings Settings;
 
-	public float Size;
+    public SwarmEnemyLootSettings Loot;
 
-	public SwarmEnemy.States State = new SwarmEnemy.States();
+    public OrbSpawner OrbSpawner;
 
-	private bool m_wasSpawned;
+    public SoundSource Idle;
 
-	public AnimationCurve SpeedXToRotation;
+    public SoundSource Walking;
 
-	public AnimationCurve SpeedYToRotation;
+    public bool CanFall = true;
 
-	public float AirTiltAngle;
+    public float Size;
 
-	private float m_jumpDelay;
+    public States State = new States();
 
-	public SwarmEnemyPlaceholder Owner;
+    private bool m_wasSpawned;
 
-	public class States
-	{
-		public State Idle;
+    public AnimationCurve SpeedXToRotation;
 
-		public State Run;
+    public AnimationCurve SpeedYToRotation;
 
-		public State Spawned;
+    public float AirTiltAngle;
 
-		public State Thrown;
+    private float m_jumpDelay;
 
-		public State Frozen;
-	}
+    public SwarmEnemyPlaceholder Owner;
+
+    public class States {
+        public State Idle;
+
+        public State Run;
+
+        public State Spawned;
+
+        public State Thrown;
+
+        public State Frozen;
+    }
 }

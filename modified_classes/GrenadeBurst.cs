@@ -1,140 +1,112 @@
-using System;
 using System.Collections.Generic;
 using Game;
 using UnityEngine;
 
-public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable
-{
-	public void OnPoolSpawned()
-	{
-		this.m_suspended = false;
-		this.m_time = 0f;
-		this.m_waitDelay = 0f;
-	}
+public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
+    public void OnPoolSpawned() {
+        m_suspended = false;
+        m_time = 0f;
+        m_waitDelay = 0f;
+    }
 
-	public static void IgnoreOnLastInstance(IAttackable attackable)
-	{
-		if (GrenadeBurst.m_lastInstance)
-		{
-			GrenadeBurst.m_lastInstance.m_damageAttackables.Add(attackable);
-		}
-	}
+    public static void IgnoreOnLastInstance(IAttackable attackable) {
+        if (m_lastInstance) {
+            m_lastInstance.m_damageAttackables.Add(attackable);
+        }
+    }
 
-	public void Awake()
-	{
-		SuspensionManager.Register(this);
-	}
+    public void Awake() {
+        SuspensionManager.Register(this);
+    }
 
-	public void OnDestroy()
-	{
-		SuspensionManager.Unregister(this);
-	}
+    public void OnDestroy() {
+        SuspensionManager.Unregister(this);
+    }
 
-	public void OnEnable()
-	{
-		GrenadeBurst.m_lastInstance = this;
-	}
+    public void OnEnable() {
+        m_lastInstance = this;
+    }
 
-	public void OnDisable()
-	{
-		this.m_damageAttackables.Clear();
-		if (GrenadeBurst.m_lastInstance == this)
-		{
-			GrenadeBurst.m_lastInstance = null;
-		}
-	}
+    public void OnDisable() {
+        m_damageAttackables.Clear();
+        if (m_lastInstance == this) {
+            m_lastInstance = null;
+        }
+    }
 
-	public void Start()
-	{
-		this.DealDamage();
-		this.m_time = 0f;
-		this.m_waitDelay = 0f;
-	}
+    public void Start() {
+        DealDamage();
+        m_time = 0f;
+        m_waitDelay = 0f;
+    }
 
-	public void DealDamage()
-	{
-		Vector3 position = base.transform.position;
-		foreach (IAttackable attackable in Targets.Attackables.ToArray())
-		{
-			if (!InstantiateUtility.IsDestroyed(attackable as Component) && !this.m_damageAttackables.Contains(attackable) && attackable.CanBeGrenaded())
-			{
-				Vector3 position2 = attackable.Position;
-				Vector3 vector = position2 - position;
-				if (vector.magnitude <= this.BurstRadius + (float)RandomizerBonus.SpiritFlameLevel())
-				{
-					this.m_damageAttackables.Add(attackable);
-					GameObject gameObject = ((Component)attackable).gameObject;
-					new Damage(this.DamageAmount + (float)(3 * RandomizerBonus.SpiritFlameLevel()), vector.normalized * 3f, position, DamageType.Grenade, base.gameObject).DealToComponents(gameObject);
-					if (!attackable.IsDead())
-					{
-						GameObject gameObject2 = (GameObject)InstantiateUtility.Instantiate(this.BurstImpactEffectPrefab, position2, Quaternion.identity);
-						gameObject2.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(vector.normalized));
-						gameObject2.GetComponent<FollowPositionRotation>().SetTarget(gameObject.transform);
-					}
-				}
-			}
-			else if (RandomizerBonus.EnhancedGrenade && !InstantiateUtility.IsDestroyed(attackable as Component) && !this.m_damageAttackables.Contains(attackable) && attackable.CanBeStomped())
-			{
-				Vector3 position2 = attackable.Position;
-				Vector3 vector = position2 - position;
-				if (vector.magnitude <= this.BurstRadius + 1f + (float)RandomizerBonus.SpiritFlameLevel())
-				{
-					this.m_damageAttackables.Add(attackable);
-					GameObject gameObject = ((Component)attackable).gameObject;
-					new Damage(this.DamageAmount + (float)(3 * RandomizerBonus.SpiritFlameLevel()), vector.normalized * 3f, position, DamageType.Stomp, base.gameObject).DealToComponents(gameObject);
-					if (!attackable.IsDead())
-					{
-						GameObject gameObject2 = (GameObject)InstantiateUtility.Instantiate(this.BurstImpactEffectPrefab, position2, Quaternion.identity);
-						gameObject2.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(vector.normalized));
-						gameObject2.GetComponent<FollowPositionRotation>().SetTarget(gameObject.transform);
-					}
-				}
-			}
-		}
-		this.m_waitDelay = 0.1f;
-	}
+    public void DealDamage() {
+        var position = transform.position;
+        foreach (var attackable in Targets.Attackables.ToArray()) {
+            if (!InstantiateUtility.IsDestroyed(attackable as Component) && !m_damageAttackables.Contains(attackable) && attackable.CanBeGrenaded()) {
+                var position2 = attackable.Position;
+                var vector = position2 - position;
+                if (vector.magnitude <= BurstRadius + RandomizerBonus.SpiritFlameLevel()) {
+                    m_damageAttackables.Add(attackable);
+                    var gameObject = ((Component)attackable).gameObject;
+                    new Damage(DamageAmount + 3 * RandomizerBonus.SpiritFlameLevel(), vector.normalized * 3f, position, DamageType.Grenade, this.gameObject).DealToComponents(gameObject);
+                    if (!attackable.IsDead()) {
+                        var gameObject2 = (GameObject)InstantiateUtility.Instantiate(BurstImpactEffectPrefab, position2, Quaternion.identity);
+                        gameObject2.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(vector.normalized));
+                        gameObject2.GetComponent<FollowPositionRotation>().SetTarget(gameObject.transform);
+                    }
+                }
+            } else if (RandomizerBonus.EnhancedGrenade && !InstantiateUtility.IsDestroyed(attackable as Component) && !m_damageAttackables.Contains(attackable) && attackable.CanBeStomped()) {
+                var position2 = attackable.Position;
+                var vector = position2 - position;
+                if (vector.magnitude <= BurstRadius + 1f + RandomizerBonus.SpiritFlameLevel()) {
+                    m_damageAttackables.Add(attackable);
+                    var gameObject = ((Component)attackable).gameObject;
+                    new Damage(DamageAmount + 3 * RandomizerBonus.SpiritFlameLevel(), vector.normalized * 3f, position, DamageType.Stomp, this.gameObject).DealToComponents(gameObject);
+                    if (!attackable.IsDead()) {
+                        var gameObject2 = (GameObject)InstantiateUtility.Instantiate(BurstImpactEffectPrefab, position2, Quaternion.identity);
+                        gameObject2.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(vector.normalized));
+                        gameObject2.GetComponent<FollowPositionRotation>().SetTarget(gameObject.transform);
+                    }
+                }
+            }
+        }
 
-	public void FixedUpdate()
-	{
-		if (this.m_suspended)
-		{
-			return;
-		}
-		this.m_time += Time.deltaTime;
-		this.m_waitDelay -= Time.deltaTime;
-		if (this.m_time < this.DealDamageDuration && this.m_waitDelay <= 0f)
-		{
-			this.DealDamage();
-		}
-	}
+        m_waitDelay = 0.1f;
+    }
 
-	public bool IsSuspended
-	{
-		get
-		{
-			return this.m_suspended;
-		}
-		set
-		{
-			this.m_suspended = value;
-		}
-	}
+    public void FixedUpdate() {
+        if (m_suspended) {
+            return;
+        }
 
-	public float BurstRadius = 5f;
+        m_time += Time.deltaTime;
+        m_waitDelay -= Time.deltaTime;
+        if (m_time < DealDamageDuration && m_waitDelay <= 0f) {
+            DealDamage();
+        }
+    }
 
-	public float DamageAmount = 10f;
+    public bool IsSuspended {
+        get => m_suspended;
+        set => m_suspended = value;
+    }
 
-	public GameObject BurstImpactEffectPrefab;
+    public float BurstRadius = 5f;
 
-	public float DealDamageDuration = 0.5f;
+    public float DamageAmount = 10f;
 
-	private float m_time;
+    public GameObject BurstImpactEffectPrefab;
 
-	private float m_waitDelay;
+    public float DealDamageDuration = 0.5f;
 
-	private readonly HashSet<IAttackable> m_damageAttackables = new HashSet<IAttackable>();
+    private float m_time;
 
-	private static GrenadeBurst m_lastInstance;
+    private float m_waitDelay;
 
-	private bool m_suspended;
+    private readonly HashSet<IAttackable> m_damageAttackables = new HashSet<IAttackable>();
+
+    private static GrenadeBurst m_lastInstance;
+
+    private bool m_suspended;
 }

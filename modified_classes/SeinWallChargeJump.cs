@@ -1,386 +1,292 @@
-using System;
 using System.Collections.Generic;
 using Core;
 using Game;
 using UnityEngine;
+using Input = Core.Input;
 
-public class SeinWallChargeJump : CharacterState, ISeinReceiver
-{
-	public PlayerAbilities PlayerAbilities
-	{
-		get
-		{
-			return this.m_sein.PlayerAbilities;
-		}
-	}
+public class SeinWallChargeJump : CharacterState, ISeinReceiver {
+    public PlayerAbilities PlayerAbilities => m_sein.PlayerAbilities;
 
-	public PlatformMovement PlatformMovement
-	{
-		get
-		{
-			return this.m_sein.PlatformBehaviour.PlatformMovement;
-		}
-	}
+    public PlatformMovement PlatformMovement => m_sein.PlatformBehaviour.PlatformMovement;
 
-	public void OnDoubleJump()
-	{
-		this.ChangeState(SeinWallChargeJump.State.Normal);
-	}
+    public void OnDoubleJump() {
+        ChangeState(State.Normal);
+    }
 
-	public override void UpdateCharacterState()
-	{
-		if (this.m_sein.IsSuspended)
-		{
-			return;
-		}
-		this.UpdateState();
-	}
+    public override void UpdateCharacterState() {
+        if (m_sein.IsSuspended) {
+            return;
+        }
 
-	public float AngularElevation
-	{
-		get
-		{
-			return this.m_angularElevation;
-		}
-	}
+        UpdateState();
+    }
 
-	public override void OnExit()
-	{
-		base.OnExit();
-		this.ChangeState(SeinWallChargeJump.State.Normal);
-	}
+    public float AngularElevation => m_angularElevation;
 
-	public void Start()
-	{
-		this.m_sein.PlatformBehaviour.Gravity.ModifyGravityPlatformMovementSettingsEvent += this.ModifyGravityPlatformMovementSettings;
-	}
+    public override void OnExit() {
+        base.OnExit();
+        ChangeState(State.Normal);
+    }
 
-	public override void OnDestroy()
-	{
-		base.OnDestroy();
-		this.m_sein.PlatformBehaviour.Gravity.ModifyGravityPlatformMovementSettingsEvent -= this.ModifyGravityPlatformMovementSettings;
-		Game.Checkpoint.Events.OnPostRestore.Remove(new Action(this.OnRestoreCheckpoint));
-	}
+    public void Start() {
+        m_sein.PlatformBehaviour.Gravity.ModifyGravityPlatformMovementSettingsEvent += ModifyGravityPlatformMovementSettings;
+    }
 
-	public void OnAnimationEnd()
-	{
-		this.SpriteMirrorLock = false;
-	}
+    public override void OnDestroy() {
+        base.OnDestroy();
+        m_sein.PlatformBehaviour.Gravity.ModifyGravityPlatformMovementSettingsEvent -= ModifyGravityPlatformMovementSettings;
+        Game.Checkpoint.Events.OnPostRestore.Remove(OnRestoreCheckpoint);
+    }
 
-	public void OnAnimationStart()
-	{
-		this.SpriteMirrorLock = true;
-	}
+    public void OnAnimationEnd() {
+        SpriteMirrorLock = false;
+    }
 
-	public void ModifyGravityPlatformMovementSettings(GravityPlatformMovementSettings settings)
-	{
-		if (this.m_currentState == SeinWallChargeJump.State.Jumping)
-		{
-			settings.GravityStrength = 0f;
-		}
-	}
+    public void OnAnimationStart() {
+        SpriteMirrorLock = true;
+    }
 
-	public void ChangeState(SeinWallChargeJump.State state)
-	{
-		this.m_attackablesIgnore.Clear();
-		SeinWallChargeJump.State currentState = this.m_currentState;
-		if (currentState == SeinWallChargeJump.State.Aiming)
-		{
-			if (this.Arrow)
-			{
-				this.Arrow.AnimatorDriver.ContinueBackwards();
-			}
-		}
-		this.m_currentState = state;
-		this.m_stateCurrentTime = 0f;
-		currentState = this.m_currentState;
-		if (currentState != SeinWallChargeJump.State.Normal)
-		{
-			if (currentState == SeinWallChargeJump.State.Aiming)
-			{
-				if (this.m_sein.Abilities.GrabWall)
-				{
-					this.m_sein.Abilities.GrabWall.LockVerticalMovement = true;
-				}
-				if (this.Arrow)
-				{
-					this.Arrow.AnimatorDriver.ContinueForward();
-				}
-			}
-		}
-		else if (this.m_sein.Abilities.GrabWall)
-		{
-			this.m_sein.Abilities.GrabWall.LockVerticalMovement = false;
-		}
-	}
+    public void ModifyGravityPlatformMovementSettings(GravityPlatformMovementSettings settings) {
+        if (m_currentState == State.Jumping) {
+            settings.GravityStrength = 0f;
+        }
+    }
 
-	public bool IsCharged
-	{
-		get
-		{
-			return this.m_sein.Controller.IsGrabbingWall && this.m_sein.Abilities.GrabWall.IsGrabbingAway && Characters.Sein.Controller.CanMove && this.m_sein.Abilities.ChargeJumpCharging.IsCharged;
-		}
-	}
+    public void ChangeState(State state) {
+        m_attackablesIgnore.Clear();
+        var currentState = m_currentState;
+        if (currentState == State.Aiming) {
+            if (Arrow) {
+                Arrow.AnimatorDriver.ContinueBackwards();
+            }
+        }
 
-	public bool IsCharging
-	{
-		get
-		{
-			return this.m_sein.Controller.IsGrabbingWall && this.m_sein.Abilities.GrabWall.IsGrabbingAway && Characters.Sein.Controller.CanMove && this.m_sein.Abilities.ChargeJumpCharging.IsCharging;
-		}
-	}
+        m_currentState = state;
+        m_stateCurrentTime = 0f;
+        currentState = m_currentState;
+        if (currentState != State.Normal) {
+            if (currentState == State.Aiming) {
+                if (m_sein.Abilities.GrabWall) {
+                    m_sein.Abilities.GrabWall.LockVerticalMovement = true;
+                }
 
-	public void UpdateState()
-	{
-		switch (this.m_currentState)
-		{
-		case SeinWallChargeJump.State.Normal:
-			this.UpdateNormalState();
-			break;
-		case SeinWallChargeJump.State.Aiming:
-			this.UpdateAimingState();
-			break;
-		case SeinWallChargeJump.State.Jumping:
-			this.UpdateJumpingState();
-			break;
-		}
-		this.m_stateCurrentTime += Time.deltaTime;
-	}
+                if (Arrow) {
+                    Arrow.AnimatorDriver.ContinueForward();
+                }
+            }
+        } else if (m_sein.Abilities.GrabWall) {
+            m_sein.Abilities.GrabWall.LockVerticalMovement = false;
+        }
+    }
 
-	public void UpdateNormalState()
-	{
-		if (this.PlayerAbilities.ChargeJump.HasAbility)
-		{
-			if (this.IsCharged)
-			{
-				this.ChangeState(SeinWallChargeJump.State.Aiming);
-			}
-			else if (this.IsCharging)
-			{
-				this.UpdateAimElevation();
-			}
-			else
-			{
-				this.m_angularElevation = 0f;
-			}
-		}
-	}
+    public bool IsCharged => m_sein.Controller.IsGrabbingWall && m_sein.Abilities.GrabWall.IsGrabbingAway && Characters.Sein.Controller.CanMove && m_sein.Abilities.ChargeJumpCharging.IsCharged;
 
-	public void UpdateJumpingState()
-	{
-		float adjustedDrag = this.HorizontalDrag-this.HorizontalDrag* 0.08f * (float)(RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
-		this.PlatformMovement.LocalSpeedX = this.PlatformMovement.LocalSpeedX * (1f - adjustedDrag);
-		this.PlatformMovement.LocalSpeedY = this.PlatformMovement.LocalSpeedY * (1f - adjustedDrag);
-		if (this.m_stateCurrentTime > (this.AntiGravityDuration+this.AntiGravityDuration* 0.08f * (float)(RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades())))
-		{
-			this.ChangeState(SeinWallChargeJump.State.Normal);
-			return;
-		}
-		this.m_sein.PlatformBehaviour.Visuals.SpriteRotater.CenterAngle = this.m_angleDirection;
-		this.m_sein.PlatformBehaviour.Visuals.SpriteRotater.UpdateRotation();
-		for (int i = 0; i < Targets.Attackables.Count; i++)
-		{
-			IAttackable attackable = Targets.Attackables[i];
-			if (!this.m_attackablesIgnore.Contains(attackable))
-			{
-				if (attackable.CanBeStomped())
-				{
-					Vector3 vector = attackable.Position - this.m_sein.PlatformBehaviour.PlatformMovement.Position;
-					float magnitude = vector.magnitude;
-					if (magnitude < 4f && Vector2.Dot(vector.normalized, this.PlatformMovement.LocalSpeed.normalized) > 0f)
-					{
-						this.m_attackablesIgnore.Add(attackable);
-						Damage damage = new Damage((float)this.Damage, this.PlatformMovement.WorldSpeed.normalized * 3f, this.m_sein.Position, DamageType.Stomp, base.gameObject);
-						damage.DealToComponents(((Component)attackable).gameObject);
-						if (this.ExplosionEffect)
-						{
-							InstantiateUtility.Instantiate(this.ExplosionEffect, Vector3.Lerp(base.transform.position, attackable.Position, 0.5f), Quaternion.identity);
-						}
-						break;
-					}
-				}
-			}
-		}
-	}
+    public bool IsCharging => m_sein.Controller.IsGrabbingWall && m_sein.Abilities.GrabWall.IsGrabbingAway && Characters.Sein.Controller.CanMove && m_sein.Abilities.ChargeJumpCharging.IsCharging;
 
-	public void UpdateAimElevation()
-	{
-		float normalizedFacing = this.PlatformMovement.HasWallLeft ? 1 : -1;
-		Vector2 analogAxisLeft = Core.Input.AnalogAxisLeft;
+    public void UpdateState() {
+        switch (m_currentState) {
+            case State.Normal:
+                UpdateNormalState();
+                break;
+            case State.Aiming:
+                UpdateAimingState();
+                break;
+            case State.Jumping:
+                UpdateJumpingState();
+                break;
+        }
 
-		if (analogAxisLeft.magnitude > 0.2f)
-		{
-			this.m_angularElevationSpeed = 0f;
-			this.m_angularElevation = Mathf.Atan2(analogAxisLeft.y, analogAxisLeft.x * normalizedFacing) * 57.29578f;
-			return;
-		}
-		else if (Core.Input.Up.Pressed && !Core.Input.Down.Pressed)
-		{
-			this.m_angularElevationSpeed = Mathf.Clamp(this.m_angularElevationSpeed + Time.deltaTime * 500f, 0f, 200f);
-			return;
-		}
-		else if (Core.Input.Down.Pressed)
-		{
-			this.m_angularElevationSpeed = Mathf.Clamp(this.m_angularElevationSpeed - Time.deltaTime * 500f, -200f, 0f);
-			return;
-		}
+        m_stateCurrentTime += Time.deltaTime;
+    }
 
-		this.m_angularElevationSpeed = 0f;
+    public void UpdateNormalState() {
+        if (PlayerAbilities.ChargeJump.HasAbility) {
+            if (IsCharged) {
+                ChangeState(State.Aiming);
+            } else if (IsCharging) {
+                UpdateAimElevation();
+            } else {
+                m_angularElevation = 0f;
+            }
+        }
+    }
 
-		if (RandomizerSettings.Controls.WallChargeMouseAim)
-		{
-			Vector2 arrowScreenPos = UI.Cameras.Current.Camera.WorldToScreenPoint(this.Arrow.transform.position);
-			Vector2 arrowWorldPos = UI.Cameras.System.GUICamera.Camera.ScreenToWorldPoint(arrowScreenPos);
-			Vector2 cursorAxis = Core.Input.CursorPositionUI - arrowWorldPos;
+    public void UpdateJumpingState() {
+        var adjustedDrag = HorizontalDrag - HorizontalDrag * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
+        PlatformMovement.LocalSpeedX *= (1f - adjustedDrag);
+        PlatformMovement.LocalSpeedY *= (1f - adjustedDrag);
+        if (m_stateCurrentTime > AntiGravityDuration + AntiGravityDuration * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades())) {
+            ChangeState(State.Normal);
+            return;
+        }
 
-			if (Core.Input.CursorMoved && cursorAxis.magnitude > 1f && MoonMath.Float.Normalize(cursorAxis.x) == normalizedFacing)
-			{
-				float axisElevation = Mathf.Atan2(cursorAxis.y, cursorAxis.x * normalizedFacing) * 57.29578f;
-				if (Mathf.Abs(axisElevation) <= 60f)
-				{
-					this.m_angularElevation = axisElevation;
-				}
-			}
-		}
-	}
+        m_sein.PlatformBehaviour.Visuals.SpriteRotater.CenterAngle = m_angleDirection;
+        m_sein.PlatformBehaviour.Visuals.SpriteRotater.UpdateRotation();
+        for (var i = 0; i < Targets.Attackables.Count; i++) {
+            var attackable = Targets.Attackables[i];
+            if (!m_attackablesIgnore.Contains(attackable)) {
+                if (attackable.CanBeStomped()) {
+                    var vector = attackable.Position - m_sein.PlatformBehaviour.PlatformMovement.Position;
+                    var magnitude = vector.magnitude;
+                    if (magnitude < 4f && Vector2.Dot(vector.normalized, PlatformMovement.LocalSpeed.normalized) > 0f) {
+                        m_attackablesIgnore.Add(attackable);
+                        var damage = new Damage(Damage, PlatformMovement.WorldSpeed.normalized * 3f, m_sein.Position, DamageType.Stomp, gameObject);
+                        damage.DealToComponents(((Component)attackable).gameObject);
+                        if (ExplosionEffect) {
+                            InstantiateUtility.Instantiate(ExplosionEffect, Vector3.Lerp(transform.position, attackable.Position, 0.5f), Quaternion.identity);
+                        }
 
-	public void UpdateAimingState()
-	{
-		if (!this.IsCharged)
-		{
-			this.ChangeState(SeinWallChargeJump.State.Normal);
-		}
-		if (this.Arrow)
-		{
-			this.UpdateAimElevation();
-			bool hasWallLeft = this.PlatformMovement.HasWallLeft;
-			this.m_angularElevation = Mathf.Clamp(this.m_angularElevation + this.m_angularElevationSpeed * Time.deltaTime, -45f, 45f);
-			this.Arrow.transform.eulerAngles = new Vector3(0f, 0f, (!hasWallLeft) ? (180f - this.m_angularElevation) : this.m_angularElevation);
-		}
-	}
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
-	public bool CanChargeJump
-	{
-		get
-		{
-			return this.m_sein.Abilities.GrabWall.IsGrabbing && this.m_sein.Abilities.ChargeJumpCharging.IsCharged && this.m_currentState == SeinWallChargeJump.State.Aiming;
-		}
-	}
+    public void UpdateAimElevation() {
+        float normalizedFacing = PlatformMovement.HasWallLeft ? 1 : -1;
+        var analogAxisLeft = Input.AnalogAxisLeft;
 
-	public void OnRestoreCheckpoint()
-	{
-		this.m_spriteMirrorLock = false;
-	}
+        if (analogAxisLeft.magnitude > 0.2f) {
+            m_angularElevationSpeed = 0f;
+            m_angularElevation = Mathf.Atan2(analogAxisLeft.y, analogAxisLeft.x * normalizedFacing) * 57.29578f;
+            return;
+        }
 
-	public override void Awake()
-	{
-		base.Awake();
-		Game.Checkpoint.Events.OnPostRestore.Add(new Action(this.OnRestoreCheckpoint));
-	}
+        if (Input.Up.Pressed && !Input.Down.Pressed) {
+            m_angularElevationSpeed = Mathf.Clamp(m_angularElevationSpeed + Time.deltaTime * 500f, 0f, 200f);
+            return;
+        }
 
-	public CharacterSpriteMirror CharacterSpriteMirror
-	{
-		get
-		{
-			return this.m_sein.PlatformBehaviour.Visuals.SpriteMirror;
-		}
-	}
+        if (Input.Down.Pressed) {
+            m_angularElevationSpeed = Mathf.Clamp(m_angularElevationSpeed - Time.deltaTime * 500f, -200f, 0f);
+            return;
+        }
 
-	public bool SpriteMirrorLock
-	{
-		get
-		{
-			return this.m_spriteMirrorLock;
-		}
-		set
-		{
-			if (this.m_spriteMirrorLock != value)
-			{
-				this.m_spriteMirrorLock = value;
-				if (value)
-				{
-					this.CharacterSpriteMirror.Lock++;
-				}
-				else
-				{
-					this.CharacterSpriteMirror.Lock--;
-				}
-			}
-		}
-	}
+        m_angularElevationSpeed = 0f;
 
-	public void PerformChargeJump()
-	{
-		float chargedJumpStrength = this.ChargedJumpStrength +  this.ChargedJumpStrength* 0.08f * (float)(RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
-		this.PlatformMovement.LocalSpeedX = chargedJumpStrength * this.Arrow.transform.right.x;
-		this.PlatformMovement.LocalSpeedY = chargedJumpStrength * this.Arrow.transform.right.y;
-		Vector2 normalized = this.m_sein.PlatformBehaviour.PlatformMovement.LocalSpeed.normalized;
-		this.m_angleDirection = Mathf.Atan2(normalized.y, Mathf.Abs(normalized.x)) * 57.29578f * (float)((normalized.x >= 0f) ? 1 : -1);
-		Sound.Play(this.JumpSound.GetSound(null), this.m_sein.PlatformBehaviour.PlatformMovement.Position, null);
-		this.m_sein.Mortality.DamageReciever.MakeInvincibleToEnemies(this.AntiGravityDuration);
-		this.ChangeState(SeinWallChargeJump.State.Jumping);
-		this.m_sein.FaceLeft = (this.PlatformMovement.LocalSpeedX < 0f);
-		CharacterAnimationSystem.CharacterAnimationState characterAnimationState = this.m_sein.PlatformBehaviour.Visuals.Animation.Play(this.JumpAnimation, 10, new Func<bool>(this.ShouldChargeJumpAnimationKeepPlaying));
-		characterAnimationState.OnStartPlaying = new Action(this.OnAnimationStart);
-		characterAnimationState.OnStopPlaying = new Action(this.OnAnimationEnd);
-		this.m_sein.PlatformBehaviour.Visuals.SpriteRotater.BeginTiltUpDownInAir(1.5f);
-		if (this.m_sein.Abilities.Glide)
-		{
-			this.m_sein.Abilities.Glide.NeedsRightTriggerReleased = true;
-		}
-		JumpFlipPlatform.OnSeinChargeJumpEvent();
-		this.m_sein.Abilities.ChargeJumpCharging.EndCharge();
-	}
+        if (RandomizerSettings.Controls.WallChargeMouseAim) {
+            Vector2 arrowScreenPos = UI.Cameras.Current.Camera.WorldToScreenPoint(Arrow.transform.position);
+            Vector2 arrowWorldPos = UI.Cameras.System.GUICamera.Camera.ScreenToWorldPoint(arrowScreenPos);
+            var cursorAxis = Input.CursorPositionUI - arrowWorldPos;
 
-	public bool ShouldChargeJumpAnimationKeepPlaying()
-	{
-		return this.PlatformMovement.IsInAir && !this.PlatformMovement.IsOnWall && !this.PlatformMovement.IsOnCeiling;
-	}
+            if (Input.CursorMoved && cursorAxis.magnitude > 1f && MoonMath.Float.Normalize(cursorAxis.x) == normalizedFacing) {
+                var axisElevation = Mathf.Atan2(cursorAxis.y, cursorAxis.x * normalizedFacing) * 57.29578f;
+                if (Mathf.Abs(axisElevation) <= 60f) {
+                    m_angularElevation = axisElevation;
+                }
+            }
+        }
+    }
 
-	public void SetReferenceToSein(SeinCharacter sein)
-	{
-		this.m_sein = sein;
-		this.m_sein.Abilities.WallChargeJump = this;
-	}
+    public void UpdateAimingState() {
+        if (!IsCharged) {
+            ChangeState(State.Normal);
+        }
 
-	public TextureAnimationWithTransitions ChargeAnimation;
+        if (Arrow) {
+            UpdateAimElevation();
+            var hasWallLeft = PlatformMovement.HasWallLeft;
+            m_angularElevation = Mathf.Clamp(m_angularElevation + m_angularElevationSpeed * Time.deltaTime, -45f, 45f);
+            Arrow.transform.eulerAngles = new Vector3(0f, 0f, !hasWallLeft ? 180f - m_angularElevation : m_angularElevation);
+        }
+    }
 
-	public TextureAnimationWithTransitions JumpAnimation;
+    public bool CanChargeJump => m_sein.Abilities.GrabWall.IsGrabbing && m_sein.Abilities.ChargeJumpCharging.IsCharged && m_currentState == State.Aiming;
 
-	public SoundProvider JumpSound;
+    public void OnRestoreCheckpoint() {
+        m_spriteMirrorLock = false;
+    }
 
-	public float AntiGravityDuration = 0.2f;
+    public override void Awake() {
+        base.Awake();
+        Game.Checkpoint.Events.OnPostRestore.Add(OnRestoreCheckpoint);
+    }
 
-	public float HorizontalDrag = 30f;
+    public CharacterSpriteMirror CharacterSpriteMirror => m_sein.PlatformBehaviour.Visuals.SpriteMirror;
 
-	public BaseAnimator Arrow;
+    public bool SpriteMirrorLock {
+        get => m_spriteMirrorLock;
+        set {
+            if (m_spriteMirrorLock != value) {
+                m_spriteMirrorLock = value;
+                if (value) {
+                    CharacterSpriteMirror.Lock++;
+                } else {
+                    CharacterSpriteMirror.Lock--;
+                }
+            }
+        }
+    }
 
-	public int Damage = 50;
+    public void PerformChargeJump() {
+        var chargedJumpStrength = ChargedJumpStrength + ChargedJumpStrength * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
+        PlatformMovement.LocalSpeedX = chargedJumpStrength * Arrow.transform.right.x;
+        PlatformMovement.LocalSpeedY = chargedJumpStrength * Arrow.transform.right.y;
+        var normalized = m_sein.PlatformBehaviour.PlatformMovement.LocalSpeed.normalized;
+        m_angleDirection = Mathf.Atan2(normalized.y, Mathf.Abs(normalized.x)) * 57.29578f * (normalized.x >= 0f ? 1 : -1);
+        Sound.Play(JumpSound.GetSound(null), m_sein.PlatformBehaviour.PlatformMovement.Position, null);
+        m_sein.Mortality.DamageReciever.MakeInvincibleToEnemies(AntiGravityDuration);
+        ChangeState(State.Jumping);
+        m_sein.FaceLeft = PlatformMovement.LocalSpeedX < 0f;
+        var characterAnimationState = m_sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation, 10, ShouldChargeJumpAnimationKeepPlaying);
+        characterAnimationState.OnStartPlaying = OnAnimationStart;
+        characterAnimationState.OnStopPlaying = OnAnimationEnd;
+        m_sein.PlatformBehaviour.Visuals.SpriteRotater.BeginTiltUpDownInAir(1.5f);
+        if (m_sein.Abilities.Glide) {
+            m_sein.Abilities.Glide.NeedsRightTriggerReleased = true;
+        }
 
-	public float ChargedJumpStrength;
+        JumpFlipPlatform.OnSeinChargeJumpEvent();
+        m_sein.Abilities.ChargeJumpCharging.EndCharge();
+    }
 
-	public SeinWallChargeJump.State m_currentState;
+    public bool ShouldChargeJumpAnimationKeepPlaying() {
+        return PlatformMovement.IsInAir && !PlatformMovement.IsOnWall && !PlatformMovement.IsOnCeiling;
+    }
 
-	public float m_angularElevation;
+    public void SetReferenceToSein(SeinCharacter sein) {
+        m_sein = sein;
+        m_sein.Abilities.WallChargeJump = this;
+    }
 
-	public float m_angularElevationSpeed;
+    public TextureAnimationWithTransitions ChargeAnimation;
 
-	public float m_stateCurrentTime;
+    public TextureAnimationWithTransitions JumpAnimation;
 
-	public float m_angleDirection;
+    public SoundProvider JumpSound;
 
-	public bool m_spriteMirrorLock;
+    public float AntiGravityDuration = 0.2f;
 
-	public SeinCharacter m_sein;
+    public float HorizontalDrag = 30f;
 
-	public HashSet<IAttackable> m_attackablesIgnore = new HashSet<IAttackable>();
+    public BaseAnimator Arrow;
 
-	public GameObject ExplosionEffect;
+    public int Damage = 50;
 
-	public enum State
-	{
-		Normal,
-		Aiming,
-		Jumping
-	}
+    public float ChargedJumpStrength;
+
+    public State m_currentState;
+
+    public float m_angularElevation;
+
+    public float m_angularElevationSpeed;
+
+    public float m_stateCurrentTime;
+
+    public float m_angleDirection;
+
+    public bool m_spriteMirrorLock;
+
+    public SeinCharacter m_sein;
+
+    public HashSet<IAttackable> m_attackablesIgnore = new HashSet<IAttackable>();
+
+    public GameObject ExplosionEffect;
+
+    public enum State {
+        Normal,
+        Aiming,
+        Jumping,
+    }
 }

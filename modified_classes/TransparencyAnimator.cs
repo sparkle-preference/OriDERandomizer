@@ -1,327 +1,259 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using CatlikeCoding.TextBox;
 using UnityEngine;
 
-public class TransparencyAnimator : BaseAnimator
-{
-	static TransparencyAnimator()
-	{
-		bool[] array = new bool[3];
-		array[0] = true;
-		array[1] = true;
-		TransparencyAnimator.s_disableRenderer = array;
-	}
+public class TransparencyAnimator : BaseAnimator {
+    static TransparencyAnimator() {
+        var array = new bool[3];
+        array[0] = true;
+        array[1] = true;
+        s_disableRenderer = array;
+    }
 
-	[ContextMenu("Print out renderer data")]
-	public void PrintOutRendererData()
-	{
-		foreach (TransparencyAnimator.RendererData rendererData in this.m_rendererData)
-		{
-			if (rendererData.Renderer != null)
-			{
-			}
-		}
-	}
+    [ContextMenu("Print out renderer data")]
+    public void PrintOutRendererData() {
+        foreach (var rendererData in m_rendererData) {
+            if (rendererData.Renderer != null) {
+            }
+        }
+    }
 
-	private int PropertyId
-	{
-		get
-		{
-			if (TransparencyAnimator.s_propIds == null)
-			{
-				TransparencyAnimator.s_propIds = new int[TransparencyAnimator.s_propNames.Length];
-				for (int i = 0; i < TransparencyAnimator.s_propNames.Length; i++)
-				{
-					TransparencyAnimator.s_propIds[i] = Shader.PropertyToID(TransparencyAnimator.s_propNames[i]);
-				}
-			}
-			return TransparencyAnimator.s_propIds[(int)this.Mode];
-		}
-	}
+    private int PropertyId {
+        get {
+            if (s_propIds == null) {
+                s_propIds = new int[s_propNames.Length];
+                for (var i = 0; i < s_propNames.Length; i++) {
+                    s_propIds[i] = Shader.PropertyToID(s_propNames[i]);
+                }
+            }
 
-	private bool UseSharedMaterial
-	{
-		get
-		{
-			return (this.IsInScene && !this.m_forceUseRendererMaterial) || !Application.isPlaying;
-		}
-	}
+            return s_propIds[(int)Mode];
+        }
+    }
 
-	public new void Awake()
-	{
-		this.m_forceUseRendererMaterial = (base.GetComponentInChildren<TextBox>() != null);
-		base.Awake();
-	}
+    private bool UseSharedMaterial => (IsInScene && !m_forceUseRendererMaterial) || !Application.isPlaying;
 
-	private bool CanBeAnimated(Renderer r)
-	{
-		return !(r.sharedMaterial == null) && r.sharedMaterial.HasProperty("_Color") && r.GetComponent<UberGhostTrail>() == null;
-	}
+    public new void Awake() {
+        m_forceUseRendererMaterial = GetComponentInChildren<TextBox>() != null;
+        base.Awake();
+    }
 
-	public override void CacheOriginals()
-	{
-		this.m_rendererData.Clear();
-		this.m_renderers.Clear();
-		this.AddChild(base.transform);
-		if (this.AnimateChildren)
-		{
-			this.AddChildren(base.transform);
-		}
-	}
+    private bool CanBeAnimated(Renderer r) {
+        return !(r.sharedMaterial == null) && r.sharedMaterial.HasProperty("_Color") && r.GetComponent<UberGhostTrail>() == null;
+    }
 
-	private void AddChild(Transform child)
-	{
-		Renderer component = child.GetComponent<Renderer>();
-		if (component && this.CanBeAnimated(component) && !this.m_renderers.Contains(component))
-		{
-			this.m_rendererData.Add(new TransparencyAnimator.RendererData(component, this.PropertyId));
-			this.m_renderers.Add(component);
-		}
-	}
+    public override void CacheOriginals() {
+        m_rendererData.Clear();
+        m_renderers.Clear();
+        AddChild(transform);
+        if (AnimateChildren) {
+            AddChildren(transform);
+        }
+    }
 
-	private void AddChildren(Transform childTransform)
-	{
-		int childCount = childTransform.childCount;
-		for (int i = 0; i < childCount; i++)
-		{
-			Transform child = childTransform.GetChild(i);
-			TransparencyAnimator component = child.GetComponent<TransparencyAnimator>();
-			if (component != null)
-			{
-				this.m_childTransparencyAnimators.Add(component);
-			}
-			else
-			{
-				CleverMenuItem component2 = child.GetComponent<CleverMenuItem>();
-				if (component2 != null && component2.AnimateColors)
-				{
-					if (this.m_cleverMenuItems == null)
-					{
-						this.m_cleverMenuItems = new List<CleverMenuItem>();
-					}
-					this.m_cleverMenuItems.Add(component2);
-				}
-				this.AddChild(child);
-				this.AddChildren(child);
-			}
-		}
-	}
+    private void AddChild(Transform child) {
+        var component = child.GetComponent<Renderer>();
+        if (component && CanBeAnimated(component) && !m_renderers.Contains(component)) {
+            m_rendererData.Add(new RendererData(component, PropertyId));
+            m_renderers.Add(component);
+        }
+    }
 
-	public static void Register(Transform child)
-	{
-		Transform parent = child.parent;
-		while (parent)
-		{
-			TransparencyAnimator component = parent.GetComponent<TransparencyAnimator>();
-			if (component && component.AnimateChildren)
-			{
-				component.ManuallyRegister(child);
-				break;
-			}
-			parent = parent.parent;
-		}
-	}
+    private void AddChildren(Transform childTransform) {
+        var childCount = childTransform.childCount;
+        for (var i = 0; i < childCount; i++) {
+            var child = childTransform.GetChild(i);
+            var component = child.GetComponent<TransparencyAnimator>();
+            if (component != null) {
+                m_childTransparencyAnimators.Add(component);
+            } else {
+                var component2 = child.GetComponent<CleverMenuItem>();
+                if (component2 != null && component2.AnimateColors) {
+                    if (m_cleverMenuItems == null) {
+                        m_cleverMenuItems = new List<CleverMenuItem>();
+                    }
 
-	private void ManuallyRegister(Transform child)
-	{
-		if (!base.IsInitialized)
-		{
-			return;
-		}
-		TransparencyAnimator component = child.GetComponent<TransparencyAnimator>();
-		if (component)
-		{
-			this.m_childTransparencyAnimators.Add(component);
-			return;
-		}
-		CleverMenuItem component2 = child.GetComponent<CleverMenuItem>();
-		if (component2 != null && component2.AnimateColors)
-		{
-			if (this.m_cleverMenuItems == null)
-			{
-				this.m_cleverMenuItems = new List<CleverMenuItem>();
-			}
-			this.m_cleverMenuItems.Add(component2);
-			return;
-		}
-		this.AddChild(child);
-		this.AddChildren(child);
-		this.ApplyTransparency(true);
-	}
+                    m_cleverMenuItems.Add(component2);
+                }
 
-	public override void SampleValue(float value, bool forceSample)
-	{
-		value = base.TimeToAnimationCurveTime(value);
-		this.m_opacity = this.AnimationCurve.Evaluate(value);
-		this.ApplyTransparency(false);
-	}
+                AddChild(child);
+                AddChildren(child);
+            }
+        }
+    }
 
-	public void ApplyTransparency(bool force = true)
-	{
-		float finalOpacity = this.FinalOpacity;
-		if (!Mathf.Approximately(this.m_lastFinalOpacity, finalOpacity) || force)
-		{
-			this.m_lastFinalOpacity = finalOpacity;
-			for (int i = 0; i < this.m_rendererData.Count; i++)
-			{
-				this.m_rendererData[i].SetRendererAlpha((int)this.Mode, this.PropertyId, this.UseSharedMaterial, finalOpacity);
-			}
-			for (int j = 0; j < this.m_childTransparencyAnimators.Count; j++)
-			{
-				this.m_childTransparencyAnimators[j].SetParentOpacity(finalOpacity);
-			}
-			if (this.m_cleverMenuItems != null)
-			{
-				for (int k = 0; k < this.m_cleverMenuItems.Count; k++)
-				{
-					this.m_cleverMenuItems[k].SetParentOpacity(finalOpacity);
-				}
-			}
-		}
-	}
+    public static void Register(Transform child) {
+        var parent = child.parent;
+        while (parent) {
+            var component = parent.GetComponent<TransparencyAnimator>();
+            if (component && component.AnimateChildren) {
+                component.ManuallyRegister(child);
+                break;
+            }
 
-	public void SetParentOpacity(float opacity)
-	{
-		if (!Mathf.Approximately(opacity, this.m_parentOpacity))
-		{
-			this.m_parentOpacity = opacity;
-			if (base.IsInitialized)
-			{
-				this.ApplyTransparency(true);
-			}
-		}
-	}
+            parent = parent.parent;
+        }
+    }
 
-	public float FinalOpacity
-	{
-		get
-		{
-			return this.m_opacity * this.m_parentOpacity;
-		}
-	}
+    private void ManuallyRegister(Transform child) {
+        if (!IsInitialized) {
+            return;
+        }
 
-	public override float Duration
-	{
-		get
-		{
-			return base.AnimationCurveTimeToTime(this.AnimationCurve.CurveDuration());
-		}
-	}
+        var component = child.GetComponent<TransparencyAnimator>();
+        if (component) {
+            m_childTransparencyAnimators.Add(component);
+            return;
+        }
 
-	public override void RestoreToOriginalState()
-	{
-		this.m_parentOpacity = 1f;
-		this.m_opacity = 1f;
-		for (int i = 0; i < this.m_childTransparencyAnimators.Count; i++)
-		{
-			this.m_childTransparencyAnimators[i].RestoreToOriginalState();
-		}
-		for (int j = 0; j < this.m_rendererData.Count; j++)
-		{
-			this.m_rendererData[j].SetRendererAlpha((int)this.Mode, this.PropertyId, this.UseSharedMaterial, 1f);
-		}
-	}
+        var component2 = child.GetComponent<CleverMenuItem>();
+        if (component2 != null && component2.AnimateColors) {
+            if (m_cleverMenuItems == null) {
+                m_cleverMenuItems = new List<CleverMenuItem>();
+            }
 
-	public override bool IsLooping
-	{
-		get
-		{
-			return this.AnimationCurve.postWrapMode != WrapMode.ClampForever;
-		}
-	}
+            m_cleverMenuItems.Add(component2);
+            return;
+        }
 
-	public void Reset()
-	{
-		if (this.m_childTransparencyAnimators != null)
-		{
-			this.m_childTransparencyAnimators.Clear();
-		}
-		if (this.m_cleverMenuItems != null)
-		{
-			this.m_cleverMenuItems.Clear();
-		}
-		if (this.m_rendererData != null)
-		{
-			this.m_rendererData.Clear();
-		}
-		if (this.m_renderers != null)
-		{
-			this.m_renderers.Clear();
-		}
-	}
+        AddChild(child);
+        AddChildren(child);
+        ApplyTransparency();
+    }
 
-	private static string[] s_propNames = new string[]
-	{
-		"_Color",
-		"_MaskDissolveColor",
-		"_AdditiveLayerColor"
-	};
+    public override void SampleValue(float value, bool forceSample) {
+        value = TimeToAnimationCurveTime(value);
+        m_opacity = AnimationCurve.Evaluate(value);
+        ApplyTransparency(false);
+    }
 
-	private static bool[] s_disableRenderer;
+    public void ApplyTransparency(bool force = true) {
+        var finalOpacity = FinalOpacity;
+        if (!Mathf.Approximately(m_lastFinalOpacity, finalOpacity) || force) {
+            m_lastFinalOpacity = finalOpacity;
+            for (var i = 0; i < m_rendererData.Count; i++) {
+                m_rendererData[i].SetRendererAlpha((int)Mode, PropertyId, UseSharedMaterial, finalOpacity);
+            }
 
-	private static int[] s_propIds;
+            for (var j = 0; j < m_childTransparencyAnimators.Count; j++) {
+                m_childTransparencyAnimators[j].SetParentOpacity(finalOpacity);
+            }
 
-	public AnimationCurve AnimationCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+            if (m_cleverMenuItems != null) {
+                for (var k = 0; k < m_cleverMenuItems.Count; k++) {
+                    m_cleverMenuItems[k].SetParentOpacity(finalOpacity);
+                }
+            }
+        }
+    }
 
-	public bool AnimateChildren;
+    public void SetParentOpacity(float opacity) {
+        if (!Mathf.Approximately(opacity, m_parentOpacity)) {
+            m_parentOpacity = opacity;
+            if (IsInitialized) {
+                ApplyTransparency();
+            }
+        }
+    }
 
-	public TransparencyAnimator.AnimateMode Mode;
+    public float FinalOpacity => m_opacity * m_parentOpacity;
 
-	[PooledSafe]
-	private readonly List<TransparencyAnimator.RendererData> m_rendererData = new List<TransparencyAnimator.RendererData>(4);
+    public override float Duration => AnimationCurveTimeToTime(AnimationCurve.CurveDuration());
 
-	[PooledSafe]
-	private readonly List<TransparencyAnimator> m_childTransparencyAnimators = new List<TransparencyAnimator>(4);
+    public override void RestoreToOriginalState() {
+        m_parentOpacity = 1f;
+        m_opacity = 1f;
+        for (var i = 0; i < m_childTransparencyAnimators.Count; i++) {
+            m_childTransparencyAnimators[i].RestoreToOriginalState();
+        }
 
-	[PooledSafe]
-	private List<CleverMenuItem> m_cleverMenuItems;
+        for (var j = 0; j < m_rendererData.Count; j++) {
+            m_rendererData[j].SetRendererAlpha((int)Mode, PropertyId, UseSharedMaterial, 1f);
+        }
+    }
 
-	private bool m_forceUseRendererMaterial;
+    public override bool IsLooping => AnimationCurve.postWrapMode != WrapMode.ClampForever;
 
-	private float m_parentOpacity = 1f;
+    public void Reset() {
+        if (m_childTransparencyAnimators != null) {
+            m_childTransparencyAnimators.Clear();
+        }
 
-	private float m_opacity = 1f;
+        if (m_cleverMenuItems != null) {
+            m_cleverMenuItems.Clear();
+        }
 
-	[PooledSafe]
-	private readonly HashSet<Renderer> m_renderers = new HashSet<Renderer>();
+        if (m_rendererData != null) {
+            m_rendererData.Clear();
+        }
 
-	private float m_lastFinalOpacity = 123456792f;
+        if (m_renderers != null) {
+            m_renderers.Clear();
+        }
+    }
 
-	public enum AnimateMode
-	{
-		Color,
-		Dissolve,
-		Additive
-	}
+    private static string[] s_propNames = {
+        "_Color",
+        "_MaskDissolveColor",
+        "_AdditiveLayerColor",
+    };
 
-	private struct RendererData
-	{
-		public RendererData(Renderer renderer, int id)
-		{
-			this.Renderer = renderer;
-			this.OriginalAlpha = renderer.sharedMaterial.GetColor(id).a;
-		}
+    private static bool[] s_disableRenderer;
 
-		public void SetRendererAlpha(int mode, int propertyID, bool useSharedMaterial, float value)
-		{
-			if (this.Renderer == null || this.Renderer.sharedMaterial == null)
-			{
-				return;
-			}
-			if (TransparencyAnimator.s_disableRenderer[mode])
-			{
-				this.Renderer.enabled = (value > 0.01f);
-			}
-			float a = value * this.OriginalAlpha;
-			Material material = (!useSharedMaterial) ? this.Renderer.material : this.Renderer.sharedMaterial;
-			Color color = material.GetColor(propertyID);
-			color.a = a;
-			material.SetColor(propertyID, color);
-		}
+    private static int[] s_propIds;
 
-		public readonly float OriginalAlpha;
+    public AnimationCurve AnimationCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
-		public readonly Renderer Renderer;
-	}
+    public bool AnimateChildren;
+
+    public AnimateMode Mode;
+
+    [PooledSafe] private readonly List<RendererData> m_rendererData = new List<RendererData>(4);
+
+    [PooledSafe] private readonly List<TransparencyAnimator> m_childTransparencyAnimators = new List<TransparencyAnimator>(4);
+
+    [PooledSafe] private List<CleverMenuItem> m_cleverMenuItems;
+
+    private bool m_forceUseRendererMaterial;
+
+    private float m_parentOpacity = 1f;
+
+    private float m_opacity = 1f;
+
+    [PooledSafe] private readonly HashSet<Renderer> m_renderers = new HashSet<Renderer>();
+
+    private float m_lastFinalOpacity = 123456792f;
+
+    public enum AnimateMode {
+        Color,
+        Dissolve,
+        Additive,
+    }
+
+    private struct RendererData {
+        public RendererData(Renderer renderer, int id) {
+            Renderer = renderer;
+            OriginalAlpha = renderer.sharedMaterial.GetColor(id).a;
+        }
+
+        public void SetRendererAlpha(int mode, int propertyID, bool useSharedMaterial, float value) {
+            if (Renderer == null || Renderer.sharedMaterial == null) {
+                return;
+            }
+
+            if (s_disableRenderer[mode]) {
+                Renderer.enabled = value > 0.01f;
+            }
+
+            var a = value * OriginalAlpha;
+            var material = !useSharedMaterial ? Renderer.material : Renderer.sharedMaterial;
+            var color = material.GetColor(propertyID);
+            color.a = a;
+            material.SetColor(propertyID, color);
+        }
+
+        public readonly float OriginalAlpha;
+
+        public readonly Renderer Renderer;
+    }
 }

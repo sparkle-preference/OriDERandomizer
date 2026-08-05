@@ -1,61 +1,47 @@
-using System;
 using Game;
 using UnityEngine;
 
-public class ShowEnhancedSpiritFlameTextAction : PerformingAction
-{
-	public override void Perform(IContext context)
-	{
-		if (this.FreezeGame)
-		{
-			SuspensionManager.SuspendAll();
-		}
-		if (this.Messages == null)
-		{
-			return;
-		}
-		RandomizerMessageProvider messageProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
-		messageProvider.messages = this.Messages;
-		this.m_messageBox = UI.MessageController.ShowEnhancedSpiritFlameMessage(messageProvider);
-		if (this.m_messageBox)
-		{
-			this.m_messageBox.OnMessageScreenHide += this.OnMessageScreenHide;
-			Characters.Ori.StartTwinkle();
-		}
-		else if (this.FreezeGame)
-		{
-			SuspensionManager.ResumeAll();
-		}
-	}
+public class ShowEnhancedSpiritFlameTextAction : PerformingAction {
+    public override void Perform(IContext context) {
+        if (FreezeGame) {
+            SuspensionManager.SuspendAll();
+        }
 
-	public void OnMessageScreenHide()
-	{
-		if (this.FreezeGame)
-		{
-			SuspensionManager.ResumeAll();
-		}
-		if (this.m_messageBox)
-		{
-			this.m_messageBox.OnMessageScreenHide -= this.OnMessageScreenHide;
-		}
-		Characters.Ori.StopTwinkle();
-	}
+        if (Messages == null) {
+            return;
+        }
 
-	public override void Stop()
-	{
-	}
+        var messageProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
+        messageProvider.Messages = Messages;
+        m_messageBox = UI.MessageController.ShowEnhancedSpiritFlameMessage(messageProvider);
+        if (m_messageBox) {
+            m_messageBox.OnMessageScreenHide += OnMessageScreenHide;
+            Characters.Ori.StartTwinkle();
+        } else if (FreezeGame) {
+            SuspensionManager.ResumeAll();
+        }
+    }
 
-	public override bool IsPerforming
-	{
-		get
-		{
-			return this.m_messageBox;
-		}
-	}
+    public void OnMessageScreenHide() {
+        if (FreezeGame) {
+            SuspensionManager.ResumeAll();
+        }
 
-	public MessageDescriptor[] Messages;
+        if (m_messageBox) {
+            m_messageBox.OnMessageScreenHide -= OnMessageScreenHide;
+        }
 
-	private MessageBox m_messageBox;
+        Characters.Ori.StopTwinkle();
+    }
 
-	public bool FreezeGame;
+    public override void Stop() {
+    }
+
+    public override bool IsPerforming => m_messageBox;
+
+    public MessageDescriptor[] Messages;
+
+    private MessageBox m_messageBox;
+
+    public bool FreezeGame;
 }

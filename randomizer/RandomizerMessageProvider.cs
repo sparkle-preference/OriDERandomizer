@@ -1,30 +1,24 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-public class RandomizerMessageProvider : MessageProvider
-{
-	public RandomizerMessageProvider()
-	{
-		this.messages = new MessageDescriptor[1];
-	}
+public class RandomizerMessageProvider : MessageProvider {
+    public RandomizerMessageProvider() {
+        Messages = new MessageDescriptor[1];
+    }
 
-	public RandomizerMessageProvider(string message)
-	{
-		this.messages = new MessageDescriptor[1];
-		this.messages[0] = new MessageDescriptor(message);
-	}
+    public RandomizerMessageProvider(string message) {
+        Messages = new MessageDescriptor[1];
+        Messages[0] = new MessageDescriptor(message);
+    }
 
-	[DebuggerHidden]
-	public override IEnumerable<MessageDescriptor> GetMessages()
-	{
-		return this.messages;
-	}
+    [DebuggerHidden]
+    public override IEnumerable<MessageDescriptor> GetMessages() {
+        return Messages;
+    }
 
-	public void SetMessage(string message)
-	{
-		this.messages[0] = new MessageDescriptor(message);
-	}
+    public void SetMessage(string message) {
+        Messages[0] = new MessageDescriptor(message);
+    }
 
-	public MessageDescriptor[] messages;
+    public MessageDescriptor[] Messages;
 }

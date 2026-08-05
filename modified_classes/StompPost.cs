@@ -1,175 +1,142 @@
-using System;
 using Core;
 using Game;
 using UnityEngine;
 
-public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAttackable, ISuspendable, IDynamicGraphicHierarchy
-{
-	public new void Awake()
-	{
-		base.Awake();
-		SuspensionManager.Register(this);
-		this.m_transform = base.transform;
-	}
+public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAttackable, ISuspendable, IDynamicGraphicHierarchy {
+    public new void Awake() {
+        base.Awake();
+        SuspensionManager.Register(this);
+        m_transform = transform;
+    }
 
-	public override void OnDestroy()
-	{
-		base.OnDestroy();
-		SuspensionManager.Unregister(this);
-	}
+    public override void OnDestroy() {
+        base.OnDestroy();
+        SuspensionManager.Unregister(this);
+    }
 
-	public void Start()
-	{
-		this.m_distanceStompedIntoGround = 0f;
-		this.m_startLocalPosition = base.transform.localPosition;
-	}
+    public void Start() {
+        m_distanceStompedIntoGround = 0f;
+        m_startLocalPosition = transform.localPosition;
+    }
 
-	public void OnRecieveDamage(Damage damage)
-	{
-		if (damage.Type == DamageType.Stomp && Vector3.Dot(base.transform.rotation * Vector3.down, Characters.Sein.PlatformBehaviour.PlatformMovement.GravityDirection) > Mathf.Cos(0.17453292f) && !this.m_activated)
-		{
-			this.m_distanceStompedIntoGround = Mathf.Min(this.StompIntoGroundAmount, this.m_distanceStompedIntoGround + this.StompIntoGroundAmount / (float)this.NumberOfStomps);
-			this.m_remainingRiseDelayTime = this.RisingDelay;
-			if (Mathf.Approximately(this.m_distanceStompedIntoGround, this.StompIntoGroundAmount))
-			{
-				BingoController.OnStompPost(this.MoonGuid);
-				this.m_activated = true;
-				if (this.AllTheWayInAction)
-				{
-					this.AllTheWayInAction.Perform(null);
-				}
-				if (this.AllTheWayInSound)
-				{
-					Sound.Play(this.AllTheWayInSound.GetSound(null), this.m_transform.position, null);
-					return;
-				}
-			}
-			else if (this.StompSound)
-			{
-				Sound.Play(this.StompSound.GetSound(null), this.m_transform.position, null);
-			}
-		}
-	}
+    public void OnRecieveDamage(Damage damage) {
+        if (damage.Type == DamageType.Stomp && Vector3.Dot(transform.rotation * Vector3.down, Characters.Sein.PlatformBehaviour.PlatformMovement.GravityDirection) > Mathf.Cos(0.17453292f) && !m_activated) {
+            m_distanceStompedIntoGround = Mathf.Min(StompIntoGroundAmount, m_distanceStompedIntoGround + StompIntoGroundAmount / NumberOfStomps);
+            m_remainingRiseDelayTime = RisingDelay;
+            if (Mathf.Approximately(m_distanceStompedIntoGround, StompIntoGroundAmount)) {
+                BingoController.OnStompPost(MoonGuid);
+                m_activated = true;
+                if (AllTheWayInAction) {
+                    AllTheWayInAction.Perform(null);
+                }
 
-	public void FixedUpdate()
-	{
-		if (this.IsSuspended)
-		{
-			return;
-		}
-		if (this.m_remainingRiseDelayTime > 0f)
-		{
-			this.m_remainingRiseDelayTime -= Time.deltaTime;
-			if (this.m_remainingRiseDelayTime < 0f)
-			{
-				this.m_remainingRiseDelayTime = 0f;
-			}
-		}
-		if (!this.m_activated && this.m_remainingRiseDelayTime < 0f)
-		{
-			this.m_distanceStompedIntoGround -= Time.deltaTime * this.RiseSpeed;
-			if (this.m_distanceStompedIntoGround < 0f)
-			{
-				this.m_distanceStompedIntoGround = 0f;
-			}
-		}
-		base.transform.localPosition = Vector3.Lerp(base.transform.localPosition, this.m_startLocalPosition + Vector3.down * this.m_distanceStompedIntoGround, 0.3f);
-	}
+                if (AllTheWayInSound) {
+                    Sound.Play(AllTheWayInSound.GetSound(null), m_transform.position, null);
+                }
+            } else if (StompSound) {
+                Sound.Play(StompSound.GetSound(null), m_transform.position, null);
+            }
+        }
+    }
 
-	public override void Serialize(Archive ar)
-	{
-		ar.Serialize(ref this.m_activated);
-		ar.Serialize(ref this.m_distanceStompedIntoGround);
-		ar.Serialize(ref this.m_remainingRiseDelayTime);
-	}
+    public void FixedUpdate() {
+        if (IsSuspended) {
+            return;
+        }
 
-	public bool IsSuspended { get; set; }
+        if (m_remainingRiseDelayTime > 0f) {
+            m_remainingRiseDelayTime -= Time.deltaTime;
+            if (m_remainingRiseDelayTime < 0f) {
+                m_remainingRiseDelayTime = 0f;
+            }
+        }
 
-	public Vector3 Position
-	{
-		get
-		{
-			return this.m_transform.position;
-		}
-	}
+        if (!m_activated && m_remainingRiseDelayTime < 0f) {
+            m_distanceStompedIntoGround -= Time.deltaTime * RiseSpeed;
+            if (m_distanceStompedIntoGround < 0f) {
+                m_distanceStompedIntoGround = 0f;
+            }
+        }
 
-	public bool CanBeChargeFlamed()
-	{
-		return false;
-	}
+        transform.localPosition = Vector3.Lerp(transform.localPosition, m_startLocalPosition + Vector3.down * m_distanceStompedIntoGround, 0.3f);
+    }
 
-	public bool CanBeChargeDashed()
-	{
-		return false;
-	}
+    public override void Serialize(Archive ar) {
+        ar.Serialize(ref m_activated);
+        ar.Serialize(ref m_distanceStompedIntoGround);
+        ar.Serialize(ref m_remainingRiseDelayTime);
+    }
 
-	public bool CanBeGrenaded()
-	{
-		return false;
-	}
+    public bool IsSuspended { get; set; }
 
-	public bool CanBeStomped()
-	{
-		return true;
-	}
+    public Vector3 Position => m_transform.position;
 
-	public bool CanBeBashed()
-	{
-		return false;
-	}
+    public bool CanBeChargeFlamed() {
+        return false;
+    }
 
-	public bool CanBeSpiritFlamed()
-	{
-		return false;
-	}
+    public bool CanBeChargeDashed() {
+        return false;
+    }
 
-	public bool IsStompBouncable()
-	{
-		return false;
-	}
+    public bool CanBeGrenaded() {
+        return false;
+    }
 
-	public bool CanBeLevelUpBlasted()
-	{
-		return false;
-	}
+    public bool CanBeStomped() {
+        return true;
+    }
 
-	public bool CountsTowardsSuperJumpAchievement()
-	{
-		return false;
-	}
+    public bool CanBeBashed() {
+        return false;
+    }
 
-	public bool IsDead()
-	{
-		return false;
-	}
+    public bool CanBeSpiritFlamed() {
+        return false;
+    }
 
-	public void ForceActivate()
-	{
-		this.m_activated = true;
-		base.transform.localPosition = base.transform.localPosition + Vector3.down * this.StompIntoGroundAmount;
-	}
+    public bool IsStompBouncable() {
+        return false;
+    }
 
-	public int NumberOfStomps = 3;
+    public bool CanBeLevelUpBlasted() {
+        return false;
+    }
 
-	public float StompIntoGroundAmount = 0.1f;
+    public bool CountsTowardsSuperJumpAchievement() {
+        return false;
+    }
 
-	public float RisingDelay = 8f;
+    public bool IsDead() {
+        return false;
+    }
 
-	public float RiseSpeed = 1f;
+    public void ForceActivate() {
+        m_activated = true;
+        transform.localPosition += Vector3.down * StompIntoGroundAmount;
+    }
 
-	public SoundProvider StompSound;
+    public int NumberOfStomps = 3;
 
-	public SoundProvider AllTheWayInSound;
+    public float StompIntoGroundAmount = 0.1f;
 
-	public ActionMethod AllTheWayInAction;
+    public float RisingDelay = 8f;
 
-	private Vector3 m_startLocalPosition;
+    public float RiseSpeed = 1f;
 
-	private Transform m_transform;
+    public SoundProvider StompSound;
 
-	private float m_distanceStompedIntoGround;
+    public SoundProvider AllTheWayInSound;
 
-	private float m_remainingRiseDelayTime;
+    public ActionMethod AllTheWayInAction;
 
-	private bool m_activated;
+    private Vector3 m_startLocalPosition;
+
+    private Transform m_transform;
+
+    private float m_distanceStompedIntoGround;
+
+    private float m_remainingRiseDelayTime;
+
+    private bool m_activated;
 }

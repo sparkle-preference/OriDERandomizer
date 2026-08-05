@@ -3,334 +3,229 @@ using Core;
 using Game;
 using UnityEngine;
 
-public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISuspendable
-{
-	public Entity()
-	{
-		this.IsSuspended = false;
-	}
+public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISuspendable {
+    public Entity() {
+        IsSuspended = false;
+    }
 
-	public void OnSceneUnloaded(SceneRoot sceneRoot)
-	{
-		if (!Scenes.Manager.IsInsideActiveSceneBoundary(base.transform.position))
-		{
-			InstantiateUtility.Destroy(base.gameObject);
-		}
-	}
+    public void OnSceneUnloaded(SceneRoot sceneRoot) {
+        if (!Scenes.Manager.IsInsideActiveSceneBoundary(transform.position)) {
+            InstantiateUtility.Destroy(gameObject);
+        }
+    }
 
-	public void ReclaimOwernship(RespawningPlaceholder placeholder)
-	{
-		base.transform.parent = placeholder.transform.parent;
-		Events.Scheduler.OnSceneRootDisabled.Remove(new Action<SceneRoot>(this.OnSceneUnloaded));
-		this.m_registeredToSceneRootDisabled = false;
-	}
+    public void ReclaimOwernship(RespawningPlaceholder placeholder) {
+        transform.parent = placeholder.transform.parent;
+        Events.Scheduler.OnSceneRootDisabled.Remove(OnSceneUnloaded);
+        m_registeredToSceneRootDisabled = false;
+    }
 
-	public void FreeOwnership(RespawningPlaceholder placeholder)
-	{
-		base.transform.parent = null;
-		Events.Scheduler.OnSceneRootDisabled.Add(new Action<SceneRoot>(this.OnSceneUnloaded));
-		this.m_registeredToSceneRootDisabled = true;
-	}
+    public void FreeOwnership(RespawningPlaceholder placeholder) {
+        transform.parent = null;
+        Events.Scheduler.OnSceneRootDisabled.Add(OnSceneUnloaded);
+        m_registeredToSceneRootDisabled = true;
+    }
 
-	public virtual bool CanBeOptimized()
-	{
-		return true;
-	}
+    public virtual bool CanBeOptimized() {
+        return true;
+    }
 
-	public bool IsInWater
-	{
-		get
-		{
-			return WaterZone.PositionInWater(this.Position);
-		}
-	}
+    public bool IsInWater => WaterZone.PositionInWater(Position);
 
-	public void Drown()
-	{
-		Damage damage = new Damage(1000f, Vector3.zero, this.Position, DamageType.Water, base.gameObject);
-		this.DamageReciever.OnRecieveDamage(damage);
-	}
+    public void Drown() {
+        var damage = new Damage(1000f, Vector3.zero, Position, DamageType.Water, gameObject);
+        DamageReciever.OnRecieveDamage(damage);
+    }
 
-	public bool IsOnScreen()
-	{
-		return UI.Cameras.Current == null || UI.Cameras.Current.IsOnScreen(base.transform.position);
-	}
+    public bool IsOnScreen() {
+        return UI.Cameras.Current == null || UI.Cameras.Current.IsOnScreen(transform.position);
+    }
 
-	public override void Awake()
-	{
-		SuspensionManager.Register(this);
-		if (this.FrustrumOptimized)
-		{
-			CameraFrustumOptimizer.Register(this);
-		}
-		SceneRoot sceneRoot = SceneRoot.FindFromTransform(base.transform);
-		if (sceneRoot != null)
-		{
-			this.SceneRootGUID = sceneRoot.MetaData.SceneMoonGuid;
-		}
-		base.Awake();
-	}
+    public override void Awake() {
+        SuspensionManager.Register(this);
+        if (FrustrumOptimized) {
+            CameraFrustumOptimizer.Register(this);
+        }
 
-	public void SetSceneRoot(MoonGuid sceneRoot)
-	{
-		this.SceneRootGUID = sceneRoot;
-	}
+        var sceneRoot = SceneRoot.FindFromTransform(transform);
+        if (sceneRoot != null) {
+            SceneRootGUID = sceneRoot.MetaData.SceneMoonGuid;
+        }
 
-	public override void OnDestroy()
-	{
-		SuspensionManager.Unregister(this);
-		if (this.FrustrumOptimized)
-		{
-			CameraFrustumOptimizer.Unregister(this);
-		}
-		if (this.m_registeredToSceneRootDisabled)
-		{
-			Events.Scheduler.OnSceneRootDisabled.Remove(new Action<SceneRoot>(this.OnSceneUnloaded));
-		}
-		base.OnDestroy();
-	}
+        base.Awake();
+    }
 
-	public override void Serialize(Archive ar)
-	{
-		this.Position = ar.Serialize(this.Position);
-		this.Rotation = ar.Serialize(this.Rotation);
-	}
+    public void SetSceneRoot(MoonGuid sceneRoot) {
+        SceneRootGUID = sceneRoot;
+    }
 
-	public void Start()
-	{
-		this.StartPosition = base.transform.position;
-	}
+    public override void OnDestroy() {
+        SuspensionManager.Unregister(this);
+        if (FrustrumOptimized) {
+            CameraFrustumOptimizer.Unregister(this);
+        }
 
-	public void FixedUpdate()
-	{
-		if (this is Enemy)
-			(this as Enemy).Animation.Animator.TextureAnimator.SpeedMultiplier = RandomizerBonusSkill.TimeScale(1f);
-		if (this.FrustrumOptimized && !this.m_insideFrustum && this.CanBeOptimized())
-		{
-			base.gameObject.SetActive(false);
-		}
-	}
+        if (m_registeredToSceneRootDisabled) {
+            Events.Scheduler.OnSceneRootDisabled.Remove(OnSceneUnloaded);
+        }
 
-	public bool PlayerIsToLeft
-	{
-		get
-		{
-			return this.PositionToPlayerPosition.x < 0f;
-		}
-	}
+        base.OnDestroy();
+    }
 
-	public Vector3 PlayerPosition
-	{
-		get
-		{
-			return Characters.Sein.PlatformBehaviour.PlatformMovement.Position;
-		}
-	}
+    public override void Serialize(Archive ar) {
+        Position = ar.Serialize(Position);
+        Rotation = ar.Serialize(Rotation);
+    }
 
-	public Vector3 Position
-	{
-		get
-		{
-			return base.transform.position;
-		}
-		set
-		{
-			base.transform.position = value;
-		}
-	}
+    public void Start() {
+        StartPosition = transform.position;
+    }
 
-	public Quaternion Rotation
-	{
-		get
-		{
-			return base.transform.rotation;
-		}
-		set
-		{
-			base.transform.rotation = value;
-		}
-	}
+    public void FixedUpdate() {
+        if (this is Enemy) {
+            (this as Enemy).Animation.Animator.TextureAnimator.SpeedMultiplier = RandomizerBonusSkill.TimeScale(1f);
+        }
 
-	public Vector3 PositionToPlayerPosition
-	{
-		get
-		{
-			return base.transform.InverseTransformDirection(this.PlayerPosition - this.Position);
-		}
-	}
+        if (FrustrumOptimized && !m_insideFrustum && CanBeOptimized()) {
+            gameObject.SetActive(false);
+        }
+    }
 
-	public Vector3 StartPositionToPlayerPosition
-	{
-		get
-		{
-			return this.PlayerPosition - this.StartPosition;
-		}
-	}
+    public bool PlayerIsToLeft => PositionToPlayerPosition.x < 0f;
 
-	public bool LeftOfStartPosition
-	{
-		get
-		{
-			return this.StartPositionToPlayerPosition.x < 0f;
-		}
-	}
+    public Vector3 PlayerPosition => Characters.Sein.PlatformBehaviour.PlatformMovement.Position;
 
-	public Vector3 PositionToStartPosition
-	{
-		get
-		{
-			return this.StartPosition - this.Position;
-		}
-	}
+    public Vector3 Position {
+        get => transform.position;
+        set => transform.position = value;
+    }
 
-	public Vector3 StartPosition { get; set; }
+    public Quaternion Rotation {
+        get => transform.rotation;
+        set => transform.rotation = value;
+    }
 
-	public bool AfterTime(float duration)
-	{
-		return this.Controller.StateMachine.CurrentStateTime > duration;
-	}
+    public Vector3 PositionToPlayerPosition => transform.InverseTransformDirection(PlayerPosition - Position);
 
-	public bool IsSuspended { get; set; }
+    public Vector3 StartPositionToPlayerPosition => PlayerPosition - StartPosition;
 
-	public void OnTimedRespawn()
-	{
-	}
+    public bool LeftOfStartPosition => StartPositionToPlayerPosition.x < 0f;
 
-	public void RegisterRespawnDelegate(Action onRespawn)
-	{
-		this.DamageReciever.OnDeathEvent.Add(delegate(Damage a)
-		{
-			onRespawn();
-		});
-	}
+    public Vector3 PositionToStartPosition => StartPosition - Position;
 
-	public void PlaySound(SoundSource sound)
-	{
-		if (sound != null)
-		{
-			sound.Play();
-		}
-	}
+    public Vector3 StartPosition { get; set; }
 
-	public void StopSound(SoundSource sound)
-	{
-		if (sound != null)
-		{
-			sound.Stop();
-		}
-	}
+    public bool AfterTime(float duration) {
+        return Controller.StateMachine.CurrentStateTime > duration;
+    }
 
-	public void PlaySound(SoundProvider sound)
-	{
-		if (sound != null)
-		{
-			Sound.Play(sound.GetSound(null), this.Position, null);
-		}
-	}
+    public bool IsSuspended { get; set; }
 
-	public void SpawnPrefab(PrefabSpawner prefabSpawner)
-	{
-		if (prefabSpawner != null)
-		{
-			prefabSpawner.Spawn(null);
-		}
-	}
+    public void OnTimedRespawn() {
+    }
 
-	public void SpawnPrefab(GameObject prefab)
-	{
-		if (prefab != null)
-		{
-			InstantiateUtility.Instantiate(prefab, this.Position, base.transform.rotation);
-		}
-	}
+    public void RegisterRespawnDelegate(Action onRespawn) {
+        DamageReciever.OnDeathEvent.Add(delegate(Damage a) { onRespawn(); });
+    }
 
-	public void DestroyPrefab(PrefabSpawner prefabSpawner)
-	{
-		if (prefabSpawner != null)
-		{
-			prefabSpawner.DestroyInstance();
-		}
-	}
+    public void PlaySound(SoundSource sound) {
+        if (sound != null) {
+            sound.Play();
+        }
+    }
 
-	public void ActivateDamageDealer()
-	{
-		this.DamageDealer.Activated = true;
-	}
+    public void StopSound(SoundSource sound) {
+        if (sound != null) {
+            sound.Stop();
+        }
+    }
 
-	public void DeactivateDamageDealer()
-	{
-		this.DamageDealer.Activated = false;
-	}
+    public void PlaySound(SoundProvider sound) {
+        if (sound != null) {
+            Sound.Play(sound.GetSound(null), Position, null);
+        }
+    }
 
-	public void ActivateTargetting()
-	{
-		this.Targetting.Activated = true;
-	}
+    public void SpawnPrefab(PrefabSpawner prefabSpawner) {
+        if (prefabSpawner != null) {
+            prefabSpawner.Spawn(null);
+        }
+    }
 
-	public void DeactivateTargetting()
-	{
-		this.Targetting.Activated = false;
-	}
+    public void SpawnPrefab(GameObject prefab) {
+        if (prefab != null) {
+            InstantiateUtility.Instantiate(prefab, Position, transform.rotation);
+        }
+    }
 
-	public void OnFrustumEnter()
-	{
-		this.m_insideFrustum = true;
-		if (!this.DamageReciever || !this.DamageReciever.NoHealthLeft)
-		{
-			base.gameObject.SetActive(true);
-		}
-	}
+    public void DestroyPrefab(PrefabSpawner prefabSpawner) {
+        if (prefabSpawner != null) {
+            prefabSpawner.DestroyInstance();
+        }
+    }
 
-	public void OnFrustumExit()
-	{
-		this.m_insideFrustum = false;
-	}
+    public void ActivateDamageDealer() {
+        DamageDealer.Activated = true;
+    }
 
-	public bool InsideFrustum
-	{
-		get
-		{
-			return this.m_insideFrustum;
-		}
-	}
+    public void DeactivateDamageDealer() {
+        DamageDealer.Activated = false;
+    }
 
-	public Bounds Bounds
-	{
-		get
-		{
-			Vector3 size = new Vector3(this.BoundingBox.width, this.BoundingBox.height, 0f);
-			Vector3 vector = base.transform.position;
-			vector += new Vector3(this.BoundingBox.center.x, this.BoundingBox.center.y, 0f);
-			return new Bounds(vector, size);
-		}
-	}
+    public void ActivateTargetting() {
+        Targetting.Activated = true;
+    }
 
-	public bool PlayerInsideSameScene()
-	{
-		RuntimeSceneMetaData currentScene = Scenes.Manager.CurrentScene;
-		return currentScene != null && currentScene.SceneMoonGuid == this.SceneRootGUID;
-	}
+    public void DeactivateTargetting() {
+        Targetting.Activated = false;
+    }
 
-	public EntityController Controller;
+    public void OnFrustumEnter() {
+        m_insideFrustum = true;
+        if (!DamageReciever || !DamageReciever.NoHealthLeft) {
+            gameObject.SetActive(true);
+        }
+    }
 
-	public EntityDamageReciever DamageReciever;
+    public void OnFrustumExit() {
+        m_insideFrustum = false;
+    }
 
-	public EntityDamageDealer DamageDealer;
+    public bool InsideFrustum => m_insideFrustum;
 
-	public EntityTargetting Targetting;
+    public Bounds Bounds {
+        get {
+            var size = new Vector3(BoundingBox.width, BoundingBox.height, 0f);
+            var vector = transform.position;
+            vector += new Vector3(BoundingBox.center.x, BoundingBox.center.y, 0f);
+            return new Bounds(vector, size);
+        }
+    }
 
-	protected MoonGuid SceneRootGUID;
+    public bool PlayerInsideSameScene() {
+        var currentScene = Scenes.Manager.CurrentScene;
+        return currentScene != null && currentScene.SceneMoonGuid == SceneRootGUID;
+    }
 
-	public Rect BoundingBox = new Rect
-	{
-		width = 4f,
-		height = 4f,
-		center = Vector2.zero
-	};
+    public EntityController Controller;
 
-	public bool FrustrumOptimized;
+    public EntityDamageReciever DamageReciever;
 
-	private bool m_registeredToSceneRootDisabled;
+    public EntityDamageDealer DamageDealer;
 
-	private bool m_insideFrustum = true;
+    public EntityTargetting Targetting;
+
+    protected MoonGuid SceneRootGUID;
+
+    public Rect BoundingBox = new Rect {
+        width = 4f,
+        height = 4f,
+        center = Vector2.zero,
+    };
+
+    public bool FrustrumOptimized;
+
+    private bool m_registeredToSceneRootDisabled;
+
+    private bool m_insideFrustum = true;
 }

@@ -1,169 +1,156 @@
 using System;
 using UnityEngine;
 
-public class SeinPrefabFactory : SaveSerialize, ISeinReceiver
-{
-	public new void Awake()
-	{
-		base.Awake();
-		this.Bash = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.Bash);
-		this.Carry = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.Carry);
-		this.ChargeJump = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.ChargeJump);
-		this.Crouch = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.Crouch);
-		this.DoubleJump = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.DoubleJump);
-		this.Fall = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.Fall);
-		this.Glide = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.Glide);
-		this.GrabPushPull = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.GrabPushPull);
-		this.GrabWall = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.GrabWall);
-		this.Jump = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.Jump);
-		this.PushAgainstWall = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.PushAgainstWall);
-		this.Run = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.Run);
-		this.Idle = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.Idle);
-		this.SpiritFlame = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.SpiritFlame);
-		this.StandingOnEdge = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.StandingOnEdge);
-		this.Stomp = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.Stomp);
-		this.WallJump = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.WallJump);
-		this.WallSlide = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.WallSlide);
-		this.Swimming = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.Swimming);
-		this.SoulFlame = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.SoulFlame);
-		this.PickupProcessor = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.PickupProcessor);
-		this.Dash = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.Dash);
-		this.Grenade = new SeinNestedPrefab(this.Sein, this.SeinPrefabSet.Grenade);
-		this.Carry.IsInstantiated = true;
-		this.Crouch.IsInstantiated = true;
-		this.Fall.IsInstantiated = true;
-		this.Jump.IsInstantiated = true;
-		this.PushAgainstWall.IsInstantiated = true;
-		this.Run.IsInstantiated = true;
-		this.Idle.IsInstantiated = true;
-		this.StandingOnEdge.IsInstantiated = true;
-		this.Swimming.IsInstantiated = true;
-		this.SoulFlame.IsInstantiated = true;
-		this.GrabPushPull.IsInstantiated = true;
-		this.SpiritFlame.IsInstantiated = true;
-		this.PickupProcessor.IsInstantiated = true;
-		this.m_prefabs = new SeinNestedPrefab[]
-		{
-			this.Bash,
-			this.Carry,
-			this.ChargeJump,
-			this.Crouch,
-			this.DoubleJump,
-			this.Fall,
-			this.Glide,
-			this.GrabPushPull,
-			this.GrabWall,
-			this.Jump,
-			this.PushAgainstWall,
-			this.Run,
-			this.SpiritFlame,
-			this.StandingOnEdge,
-			this.Stomp,
-			this.WallJump,
-			this.WallSlide,
-			this.Swimming,
-			this.SoulFlame,
-			this.PickupProcessor,
-			this.Dash,
-			this.Grenade
-		};
-	}
+public class SeinPrefabFactory : SaveSerialize, ISeinReceiver {
+    public new void Awake() {
+        base.Awake();
+        Bash = new SeinNestedPrefab(Sein, SeinPrefabSet.Bash);
+        Carry = new SeinNestedPrefab(Sein, SeinPrefabSet.Carry);
+        ChargeJump = new SeinNestedPrefab(Sein, SeinPrefabSet.ChargeJump);
+        Crouch = new SeinNestedPrefab(Sein, SeinPrefabSet.Crouch);
+        DoubleJump = new SeinNestedPrefab(Sein, SeinPrefabSet.DoubleJump);
+        Fall = new SeinNestedPrefab(Sein, SeinPrefabSet.Fall);
+        Glide = new SeinNestedPrefab(Sein, SeinPrefabSet.Glide);
+        GrabPushPull = new SeinNestedPrefab(Sein, SeinPrefabSet.GrabPushPull);
+        GrabWall = new SeinNestedPrefab(Sein, SeinPrefabSet.GrabWall);
+        Jump = new SeinNestedPrefab(Sein, SeinPrefabSet.Jump);
+        PushAgainstWall = new SeinNestedPrefab(Sein, SeinPrefabSet.PushAgainstWall);
+        Run = new SeinNestedPrefab(Sein, SeinPrefabSet.Run);
+        Idle = new SeinNestedPrefab(Sein, SeinPrefabSet.Idle);
+        SpiritFlame = new SeinNestedPrefab(Sein, SeinPrefabSet.SpiritFlame);
+        StandingOnEdge = new SeinNestedPrefab(Sein, SeinPrefabSet.StandingOnEdge);
+        Stomp = new SeinNestedPrefab(Sein, SeinPrefabSet.Stomp);
+        WallJump = new SeinNestedPrefab(Sein, SeinPrefabSet.WallJump);
+        WallSlide = new SeinNestedPrefab(Sein, SeinPrefabSet.WallSlide);
+        Swimming = new SeinNestedPrefab(Sein, SeinPrefabSet.Swimming);
+        SoulFlame = new SeinNestedPrefab(Sein, SeinPrefabSet.SoulFlame);
+        PickupProcessor = new SeinNestedPrefab(Sein, SeinPrefabSet.PickupProcessor);
+        Dash = new SeinNestedPrefab(Sein, SeinPrefabSet.Dash);
+        Grenade = new SeinNestedPrefab(Sein, SeinPrefabSet.Grenade);
+        Carry.IsInstantiated = true;
+        Crouch.IsInstantiated = true;
+        Fall.IsInstantiated = true;
+        Jump.IsInstantiated = true;
+        PushAgainstWall.IsInstantiated = true;
+        Run.IsInstantiated = true;
+        Idle.IsInstantiated = true;
+        StandingOnEdge.IsInstantiated = true;
+        Swimming.IsInstantiated = true;
+        SoulFlame.IsInstantiated = true;
+        GrabPushPull.IsInstantiated = true;
+        SpiritFlame.IsInstantiated = true;
+        PickupProcessor.IsInstantiated = true;
+        m_prefabs = new[] {
+            Bash,
+            Carry,
+            ChargeJump,
+            Crouch,
+            DoubleJump,
+            Fall,
+            Glide,
+            GrabPushPull,
+            GrabWall,
+            Jump,
+            PushAgainstWall,
+            Run,
+            SpiritFlame,
+            StandingOnEdge,
+            Stomp,
+            WallJump,
+            WallSlide,
+            Swimming,
+            SoulFlame,
+            PickupProcessor,
+            Dash,
+            Grenade,
+        };
+    }
 
-	public void Start()
-	{
-	}
+    public void Start() {
+    }
 
-	public void EnsureRightPrefabsAreThereForAbilities()
-	{
-		this.WallJump.IsInstantiated = this.Sein.PlayerAbilities.WallJump.HasAbility;
-		this.WallSlide.IsInstantiated = true;
-		this.Stomp.IsInstantiated = this.Sein.PlayerAbilities.Stomp.HasAbility;
-		this.DoubleJump.IsInstantiated = this.Sein.PlayerAbilities.DoubleJump.HasAbility;
-		this.ChargeJump.IsInstantiated = this.Sein.PlayerAbilities.ChargeJump.HasAbility;
-		this.GrabWall.IsInstantiated = this.Sein.PlayerAbilities.Climb.HasAbility || (RandomizerBonus.EnhancedWallJump && this.Sein.PlayerAbilities.WallJump.HasAbility);
-		this.Bash.IsInstantiated = this.Sein.PlayerAbilities.Bash.HasAbility;
-		this.Glide.IsInstantiated = this.Sein.PlayerAbilities.Glide.HasAbility;
-		this.Dash.IsInstantiated = this.Sein.PlayerAbilities.Dash.HasAbility;
-		this.Grenade.IsInstantiated = this.Sein.PlayerAbilities.Grenade.HasAbility;
-	}
+    public void EnsureRightPrefabsAreThereForAbilities() {
+        WallJump.IsInstantiated = Sein.PlayerAbilities.WallJump.HasAbility;
+        WallSlide.IsInstantiated = true;
+        Stomp.IsInstantiated = Sein.PlayerAbilities.Stomp.HasAbility;
+        DoubleJump.IsInstantiated = Sein.PlayerAbilities.DoubleJump.HasAbility;
+        ChargeJump.IsInstantiated = Sein.PlayerAbilities.ChargeJump.HasAbility;
+        GrabWall.IsInstantiated = Sein.PlayerAbilities.Climb.HasAbility || (RandomizerBonus.EnhancedWallJump && Sein.PlayerAbilities.WallJump.HasAbility);
+        Bash.IsInstantiated = Sein.PlayerAbilities.Bash.HasAbility;
+        Glide.IsInstantiated = Sein.PlayerAbilities.Glide.HasAbility;
+        Dash.IsInstantiated = Sein.PlayerAbilities.Dash.HasAbility;
+        Grenade.IsInstantiated = Sein.PlayerAbilities.Grenade.HasAbility;
+    }
 
-	public void PushState()
-	{
-	}
+    public void PushState() {
+    }
 
-	public void PopState()
-	{
-	}
+    public void PopState() {
+    }
 
-	public override void Serialize(Archive ar)
-	{
-		try
-		{
-			foreach (SeinNestedPrefab seinNestedPrefab in this.m_prefabs)
-			{
-				seinNestedPrefab.IsInstantiated = ar.Serialize(seinNestedPrefab.IsInstantiated);
-			}
-		}
-		catch (Exception exception)
-		{
-			Debug.LogException(exception);
-		}
-	}
+    public override void Serialize(Archive ar) {
+        try {
+            foreach (var seinNestedPrefab in m_prefabs) {
+                seinNestedPrefab.IsInstantiated = ar.Serialize(seinNestedPrefab.IsInstantiated);
+            }
+        } catch (Exception exception) {
+            Debug.LogException(exception);
+        }
+    }
 
-	public void SetReferenceToSein(SeinCharacter sein)
-	{
-		this.Sein = sein;
-	}
+    public void SetReferenceToSein(SeinCharacter sein) {
+        Sein = sein;
+    }
 
-	public SeinCharacter Sein;
+    public SeinCharacter Sein;
 
-	public SeinPrefabSet SeinPrefabSet;
+    public SeinPrefabSet SeinPrefabSet;
 
-	private SeinNestedPrefab[] m_prefabs = new SeinNestedPrefab[0];
+    private SeinNestedPrefab[] m_prefabs = new SeinNestedPrefab[0];
 
-	public SeinNestedPrefab Bash;
+    public SeinNestedPrefab Bash;
 
-	public SeinNestedPrefab Carry;
+    public SeinNestedPrefab Carry;
 
-	public SeinNestedPrefab ChargeJump;
+    public SeinNestedPrefab ChargeJump;
 
-	public SeinNestedPrefab Crouch;
+    public SeinNestedPrefab Crouch;
 
-	public SeinNestedPrefab DoubleJump;
+    public SeinNestedPrefab DoubleJump;
 
-	public SeinNestedPrefab Fall;
+    public SeinNestedPrefab Fall;
 
-	public SeinNestedPrefab Glide;
+    public SeinNestedPrefab Glide;
 
-	public SeinNestedPrefab GrabPushPull;
+    public SeinNestedPrefab GrabPushPull;
 
-	public SeinNestedPrefab GrabWall;
+    public SeinNestedPrefab GrabWall;
 
-	public SeinNestedPrefab Jump;
+    public SeinNestedPrefab Jump;
 
-	public SeinNestedPrefab PushAgainstWall;
+    public SeinNestedPrefab PushAgainstWall;
 
-	public SeinNestedPrefab Run;
+    public SeinNestedPrefab Run;
 
-	public SeinNestedPrefab Idle;
+    public SeinNestedPrefab Idle;
 
-	public SeinNestedPrefab SpiritFlame;
+    public SeinNestedPrefab SpiritFlame;
 
-	public SeinNestedPrefab StandingOnEdge;
+    public SeinNestedPrefab StandingOnEdge;
 
-	public SeinNestedPrefab Stomp;
+    public SeinNestedPrefab Stomp;
 
-	public SeinNestedPrefab WallJump;
+    public SeinNestedPrefab WallJump;
 
-	public SeinNestedPrefab WallSlide;
+    public SeinNestedPrefab WallSlide;
 
-	public SeinNestedPrefab Swimming;
+    public SeinNestedPrefab Swimming;
 
-	public SeinNestedPrefab SoulFlame;
+    public SeinNestedPrefab SoulFlame;
 
-	public SeinNestedPrefab Dash;
+    public SeinNestedPrefab Dash;
 
-	public SeinNestedPrefab Grenade;
+    public SeinNestedPrefab Grenade;
 
-	public SeinNestedPrefab PickupProcessor;
+    public SeinNestedPrefab PickupProcessor;
 }
