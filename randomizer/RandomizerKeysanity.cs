@@ -124,13 +124,29 @@ public class RandomizerKeysanity {
     // in another world, so "found" means the server granted us that slot
     private bool clueResolved(int coords) => (coords <= -2 && coords >= -257) ? RandomizerMW.ManifestLocGranted(coords) : Randomizer.HaveCoord(coords);
 
+    private static int apSlot(int coords) => (coords <= -2 && coords >= -257) ? -coords - 2 : -1;
+
     // Me when I'm using LINQ responsibly (<- me when I lie)
     private string hintsForDoor(int id, int skipCoords = -1) => RandomizerMW.ResolveNames(String.Join(", ", keyClueMap[id]
         .Where(rkhi => !(rkhi.Coords == skipCoords || clueResolved(rkhi.Coords)))         // only look at hints we still need
-        .GroupBy(rkhi => rkhi.Area)                                                       // group them by their areas
+        .GroupBy(rkhi => RandomizerMW.ApHintOr(apSlot(rkhi.Coords), rkhi.Area))           // group them by their areas
         .OrderBy(grp=>$"{4-grp.Count()}{grp.Key}")                                        // sort by count and then area alphabetically
         .Select(grp => grp.Count() == 1 ? grp.Key : $"{grp.Key} x{grp.Count()}")          // format for display (with x[NUM] for multiples)
         .ToArray()));  // ^^^ me when I at least comment and format my LINQ bullshit reasonably?
+
+    // doors Ori has already given up their hint for: that is the moment an
+    // Archipelago hint is worth buying for the keys we still need
+    public void WantHints(List<int> needed) {
+        if (!IsActive || keyClueMap == null)
+            return;
+        for (var id = 300; id < 312; id++) {
+            if (!GetDoorHint(id))
+                continue;
+            foreach (var rkhi in keyClueMap[id])
+                if (!clueResolved(rkhi.Coords))
+                    RandomizerMW.WantHint(needed, apSlot(rkhi.Coords));
+        }
+    }
 
 
     private int countForDoor(int id) => id < 304 ? 2 : 4;

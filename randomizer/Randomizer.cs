@@ -87,6 +87,8 @@ public static class Randomizer
             Randomizer.RelicCount = 0;
             Randomizer.GrenadeZone = "MIA";
             Randomizer.StompZone = "MIA";
+            Randomizer.GrenadeSlot = -1;
+            Randomizer.StompSlot = -1;
             Randomizer.StompTriggers = false;
             Randomizer.GoalModeFinish = false;
             Randomizer.SpawnWith = "";
@@ -715,6 +717,18 @@ public static class Randomizer
         Randomizer.printInfo(message);
     }
 
+    // where the escape says Stomp and Grenade are: the Archipelago hint when
+    // one was bought, otherwise whatever the seed baked (often "MIA")
+    public static string StompHint()
+    {
+        return RandomizerMW.ApHintOr(StompSlot, StompZone);
+    }
+
+    public static string GrenadeHint()
+    {
+        return RandomizerMW.ApHintOr(GrenadeSlot, GrenadeZone);
+    }
+
     public static void showProgress()
     {
         try {
@@ -769,7 +783,7 @@ public static class Randomizer
                     s = Characters.Sein.PlayerAbilities.HasAbility(AbilityType.Stomp)   ? "$" : "";
                     g = Characters.Sein && Characters.Sein.PlayerAbilities.HasAbility(AbilityType.Grenade) ? "$" : "";
                 }
-                text += $"\n{s}Stomp: {StompZone}{s}{g}    Grenade: {GrenadeZone}{g}";
+                text += $"\n{s}Stomp: {StompHint()}{s}{g}    Grenade: {GrenadeHint()}{g}";
             }
             Randomizer.printInfo(text);
         }
@@ -1645,6 +1659,11 @@ public static class Randomizer
     public static string GrenadeZone;
     // welcome to the...
     public static string StompZone;
+
+    // the manifest slots holding them when they left our world, -1 otherwise
+    public static int GrenadeSlot;
+
+    public static int StompSlot;
 
     public static bool CreditsActive;
 

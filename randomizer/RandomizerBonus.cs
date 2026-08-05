@@ -409,7 +409,7 @@ public static class RandomizerBonus
                 s_color = "$";
             if(Characters.Sein.PlayerAbilities.HasAbility(AbilityType.Grenade))
                 g_color = "$";
-            RandomizerSwitch.PickupMessage(s_color + "Stomp: " + Randomizer.StompZone + s_color + g_color+ "    Grenade: "+ Randomizer.GrenadeZone + g_color, 480);
+            RandomizerSwitch.PickupMessage(s_color + "Stomp: " + Randomizer.StompHint() + s_color + g_color+ "    Grenade: "+ Randomizer.GrenadeHint() + g_color, 480);
             break;
         case 410:
             if (!flag)

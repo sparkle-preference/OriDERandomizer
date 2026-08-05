@@ -210,6 +210,9 @@ public static class RandomizerSyncManager
 					nvc["seen_" + i.ToString()] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(1560+i));
 					nvc["have_" + i.ToString()] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(930+i));
 				}
+				string apHints = RandomizerMW.HintRequestField();
+				if (apHints != null)
+					nvc["aph"] = apHints;
 				Uri uri = new Uri(RootUrl + "/tick/");
 				getClient.UploadValuesAsync(uri, nvc);
 			}
@@ -591,6 +594,13 @@ public static class RandomizerSyncManager
 					if (RandomizerMW.OnSlotsField(array[6]))
 						mustRefreshLogic = true;
 				}
+				if (Randomizer.SyncMode == 5 && array.Length > 8 && array[8] != "")
+				{
+					// archipelago: hints bought for the slots we asked about.
+					// Present only once something has been bought, so every
+					// other multiworld tick still ends at field 7.
+					RandomizerMW.OnApHintsField(array[8]);
+				}
 				if (mustRefreshLogic) {
 					RandomizerLocationManager.UpdateReachable();
 				}
@@ -783,6 +793,11 @@ public static class RandomizerSyncManager
 			sb.Append("&seen_").Append(i).Append('=').Append(fixInt(Characters.Sein.Inventory.GetRandomizerItem(1560+i)));
 			sb.Append("&have_").Append(i).Append('=').Append(fixInt(Characters.Sein.Inventory.GetRandomizerItem(930+i)));
 		}
+		// archipelago: the manifest slots our own reveals want a hint for.
+		// Absent on every other seed, and older servers ignore the key.
+		string apHints = RandomizerMW.HintRequestField();
+		if (apHints != null)
+			sb.Append("&aph=").Append(apHints);
 		return sb.ToString();
 	}
 

@@ -46,6 +46,10 @@ public static class RandomizerMW
     // slot -> who found it, from the apfrom tick signal. "" means you did.
     public static Dictionary<int, string> SlotSenders = new Dictionary<int, string>();
 
+    // slot -> the hint Archipelago sold us for it, from tick field 8. Only
+    // ever answers to our own requests, so it is empty on every other seed.
+    public static Dictionary<int, string> ApHints = new Dictionary<int, string>();
+
     // only AP grants straddle ticks; native multiworld grants immediately
     public static bool ApGrants = false;
 
@@ -56,9 +60,12 @@ public static class RandomizerMW
         PlayerNames.Clear();
         ApItems.Clear();
         SlotSenders.Clear();
+        ApHints.Clear();
         ApGrants = false;
         pendingSlots.Clear();
         windowTicks = 0;
+        hintsAsked.Clear();
+        hintResendTicks = 0;
     }
 
     public static string PlayerName(int pid, bool shortName = false)
@@ -148,6 +155,104 @@ public static class RandomizerMW
         }
     }
 
+    // --- progressive Archipelago hints ---
+    //
+    // Ori reveals its clues as you play: dungeon keys at 3/6/9 trees, a
+    // keysanity door hint when you touch the door, Stomp and Grenade when the
+    // Forlorn escape ends. All three are save state only we can see, so we
+    // name the slots we need (tick field aph) and the server buys the hint;
+    // the answer arrives on field 8 and stands in for the baked clue.
+
+    // manifest slots we have told the server about, and the countdown to
+    // repeating that for the ones it has not answered
+    private static HashSet<int> hintsAsked = new HashSet<int>();
+    private static int hintResendTicks = 0;
+    public const int HintResendPeriod = 30;
+    public const int MaxHintRequests = 8;
+
+    // tick field 8: ";"-joined "<slot>=<text>"
+    public static void OnApHintsField(string field)
+    {
+        try
+        {
+            foreach (string pair in field.Split(';'))
+            {
+                int eq = pair.IndexOf('=');
+                int slot;
+                if (eq > 0 && int.TryParse(pair.Substring(0, eq), out slot))
+                    ApHints[slot] = pair.Substring(eq + 1);
+            }
+        }
+        catch (Exception e)
+        {
+            Randomizer.LogError("MW.OnApHintsField: " + e.Message);
+        }
+    }
+
+    // the bought hint for a manifest slot, or the clue baked at seed parse.
+    // Every display site reads through here, so a seed with no AP hints shows
+    // exactly what it always showed.
+    public static string ApHintOr(int slot, string baked)
+    {
+        string text;
+        if (slot >= 0 && ApHints.TryGetValue(slot, out text) && text != "")
+            return text;
+        return baked;
+    }
+
+    public static void WantHint(List<int> needed, int slot)
+    {
+        if (slot >= 0 && needed.Count < MaxHintRequests && !ApHints.ContainsKey(slot)
+                && Manifest.ContainsKey(slot) && !needed.Contains(slot))
+            needed.Add(slot);
+    }
+
+    // "<slot>.<slot>" for the tick, or null when there is nothing to ask.
+    // The needed set is a level (it survives death and Alt+L, because it is
+    // derived from the save), so a newly revealed slot goes out at once and
+    // an unanswered one is only repeated every HintResendPeriod ticks.
+    public static string HintRequestField()
+    {
+        try
+        {
+            if (Randomizer.SyncMode != 5 || Manifest.Count == 0 || !Characters.Sein)
+                return null;
+            List<int> needed = new List<int>();
+            // the two bounded sets go first: keysanity alone can offer 40 rows
+            // and would otherwise fill the budget before these are ever asked
+            if (Randomizer.CluesMode)
+                RandomizerClues.WantHints(needed);
+            if (RandomizerBonus.ForlornEscapeHint())
+            {
+                WantHint(needed, Randomizer.StompSlot);
+                WantHint(needed, Randomizer.GrenadeSlot);
+            }
+            if (Randomizer.Keysanity.IsActive)
+                Randomizer.Keysanity.WantHints(needed);
+            if (needed.Count == 0)
+            {
+                hintsAsked.Clear();
+                return null;
+            }
+            bool grew = false;
+            foreach (int slot in needed)
+                if (!hintsAsked.Contains(slot))
+                    grew = true;
+            if (!grew && --hintResendTicks > 0)
+                return null;
+            hintsAsked.Clear();
+            hintsAsked.UnionWith(needed);
+            hintResendTicks = HintResendPeriod;
+            needed.Sort();
+            return string.Join(".", needed.ConvertAll(slot => slot.ToString()).ToArray());
+        }
+        catch (Exception e)
+        {
+            Randomizer.LogError("MW.HintRequestField: " + e.Message);
+            return null;
+        }
+    }
+
     public static void OnNamesField(string field)
     {
         try
@@ -209,7 +314,27 @@ public static class RandomizerMW
             {
                 int evId;
                 if (int.TryParse(entry.Id, out evId) && evId % 2 == 0)
-                    RandomizerClues.AddClue(clue, evId / 2);
+                    RandomizerClues.AddClue(clue, evId / 2, slot);
+            }
+
+            // the Forlorn escape names where Stomp and Grenade went, and an
+            // exported one has no local SK line to read that from. The zone
+            // only moves when field 5 answered it: plain multiworld keeps the
+            // "MIA" it has always printed.
+            if (entry.Code == "SK" && (entry.Id == "4" || entry.Id == "51"))
+            {
+                bool stomp = entry.Id == "4";
+                if (stomp)
+                    Randomizer.StompSlot = slot;
+                else
+                    Randomizer.GrenadeSlot = slot;
+                if (!string.IsNullOrEmpty(holder))
+                {
+                    if (stomp)
+                        Randomizer.StompZone = clue;
+                    else
+                        Randomizer.GrenadeZone = clue;
+                }
             }
 
             // same for keysanity door keys; the clue's coords are the manifest

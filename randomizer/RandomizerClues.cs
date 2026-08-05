@@ -8,12 +8,51 @@ public static class RandomizerClues
 	{
 		RandomizerClues.RevealOrder = new int[3];
 		RandomizerClues.Clues = new List<string>();
+		RandomizerClues.ClueSlots = new List<int>();
 	}
 
-	public static void AddClue(string clue, int order)
+	// slot is the multiworld manifest slot this clue's key sits in, or -1 for
+	// a key that stayed in our own world (nothing to buy a hint for)
+	public static void AddClue(string clue, int order, int slot = -1)
 	{
 		RandomizerClues.Clues.Add(clue);
+		RandomizerClues.ClueSlots.Add(slot);
 		RandomizerClues.RevealOrder[order] = RandomizerClues.Clues.Count;
+	}
+
+	// index 0: WV, 1: GS, 2: SS. Ori reveals a clue once you hold the key or
+	// have lit enough trees; that moment is also when an AP hint is worth
+	// buying, so the predicate has exactly one home.
+	public static bool Revealed(int i)
+	{
+		if (i == 0 && Keys.GinsoTree)
+			return true;
+		if (i == 1 && Keys.ForlornRuins)
+			return true;
+		if (i == 2 && Keys.MountHoru)
+			return true;
+		return RandomizerBonus.SkillTreeProgression() >= RandomizerClues.RevealOrder[i] * 3;
+	}
+
+	public static int SlotFor(int i)
+	{
+		int index = RandomizerClues.RevealOrder[i] - 1;
+		return (RandomizerClues.ClueSlots != null && index >= 0 && index < RandomizerClues.ClueSlots.Count)
+			? RandomizerClues.ClueSlots[index] : -1;
+	}
+
+	public static string ClueFor(int i)
+	{
+		return RandomizerMW.ApHintOr(SlotFor(i), RandomizerClues.Clues[RandomizerClues.RevealOrder[i] - 1]);
+	}
+
+	public static void WantHints(List<int> needed)
+	{
+		if (RandomizerClues.Clues == null || RandomizerClues.RevealOrder == null)
+			return;
+		for (int i = 0; i < 3; i++)
+			if (Revealed(i))
+				RandomizerMW.WantHint(needed, SlotFor(i));
 	}
 
 	public static string GetClues()
@@ -29,24 +68,21 @@ public static class RandomizerClues
 		};
 		if (Keys.GinsoTree)
 		{
-			array[0] = RandomizerClues.Clues[RandomizerClues.RevealOrder[0] - 1];
 			text = "*";
 		}
 		if (Keys.ForlornRuins)
 		{
-			array[1] = RandomizerClues.Clues[RandomizerClues.RevealOrder[1] - 1];
 			text2 = "#";
 		}
 		if (Keys.MountHoru)
 		{
-			array[2] = RandomizerClues.Clues[RandomizerClues.RevealOrder[2] - 1];
 			text3 = "@";
 		}
 		for (int i = 0; i < 3; i++)
 		{
-			if (RandomizerBonus.SkillTreeProgression() >= RandomizerClues.RevealOrder[i] * 3)
+			if (Revealed(i))
 			{
-				array[i] = RandomizerClues.Clues[RandomizerClues.RevealOrder[i] - 1];
+				array[i] = ClueFor(i);
 			}
 		}
 		return RandomizerMW.ResolveNames(string.Concat(new string[]
@@ -74,6 +110,7 @@ public static class RandomizerClues
 			if (RandomizerClues.RevealOrder[i] == 0)
 			{
 				RandomizerClues.Clues.Add("Unknown");
+				RandomizerClues.ClueSlots.Add(-1);
 				RandomizerClues.RevealOrder[i] = RandomizerClues.Clues.Count;
 			}
 		}
@@ -85,4 +122,8 @@ public static class RandomizerClues
 	public static int[] RevealOrder;
 
 	public static List<string> Clues;
+
+	// parallel to Clues: the manifest slot each clue's key sits in, -1 if it
+	// never left our world
+	public static List<int> ClueSlots;
 }
