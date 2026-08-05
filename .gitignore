@@ -33,3 +33,6 @@ seed_gen/*.csv
 
 /.vscode/
 /Managed
+
+# local build script (dnSpy path is machine-specific)
+/build.bat
