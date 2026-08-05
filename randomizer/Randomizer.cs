@@ -101,6 +101,7 @@ public static class Randomizer
             Randomizer.WarpLogicLocations = new Hashtable();
             Keysanity.Initialize();
             RandomizerMW.Reset();
+            RandomizerDeathLink.Reset();
             Randomizer.EnhancedMode = false;
             Randomizer.EnhancedSeinInSeed = false;
 
@@ -436,6 +437,7 @@ public static class Randomizer
     {
         Randomizer.UpdateMessages();
         Randomizer.UpdatePendingWin();
+        RandomizerDeathLink.Update();
         Randomizer.Tick();
 
         if (GameStateMachine.Instance?.CurrentState == GameStateMachine.State.Prologue)
@@ -858,6 +860,7 @@ public static class Randomizer
     {
         RandomizerBonusSkill.OnDeath();
         RandomizerStatsManager.OnDeath();
+        RandomizerDeathLink.OnDeath();
 
         if (Randomizer.IsUsingRandomizerTeleportAnywhere)
         {
@@ -1325,6 +1328,9 @@ public static class Randomizer
             else if (flag == "cluelockedtps")
                 Randomizer.TeleportersLockedByClues = true;
             
+            else if (flag == "deathlink")
+                RandomizerDeathLink.Enabled = true;
+
             else if (flag == "keysanity")
                 Keysanity.IsActive = true;
 

@@ -213,6 +213,9 @@ public static class RandomizerSyncManager
 				string apHints = RandomizerMW.HintRequestField();
 				if (apHints != null)
 					nvc["aph"] = apHints;
+				string deaths = RandomizerDeathLink.Field();
+				if (deaths != null)
+					nvc["dl"] = deaths;
 				Uri uri = new Uri(RootUrl + "/tick/");
 				getClient.UploadValuesAsync(uri, nvc);
 			}
@@ -555,6 +558,11 @@ public static class RandomizerSyncManager
 							RandomizerSwitch.GivePickup(action, 0, false);
 							mustRefreshLogic = true;
 						}
+						else if (text.StartsWith("dl:"))
+						{
+							// archipelago death link: "<token>;<source>"
+							RandomizerDeathLink.OnSignal(text.Substring(3));
+						}
 						else if (text.StartsWith("apfrom:"))
 						{
 							// who found the slots this tick is about to grant;
@@ -798,6 +806,11 @@ public static class RandomizerSyncManager
 		string apHints = RandomizerMW.HintRequestField();
 		if (apHints != null)
 			sb.Append("&aph=").Append(apHints);
+		// archipelago death link: this run's death counters, which the
+		// server diffs. Absent on every seed without the option.
+		string deaths = RandomizerDeathLink.Field();
+		if (deaths != null)
+			sb.Append("&dl=").Append(deaths);
 		return sb.ToString();
 	}
 

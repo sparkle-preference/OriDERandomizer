@@ -308,6 +308,15 @@ public static class RandomizerMW
             string who = string.IsNullOrEmpty(holder) ? $"P{entry.Finder}" : holder;
             string clue = string.IsNullOrEmpty(zone) ? who : $"{who} {zone}";
 
+            // an exported warp still needs its logic node registered: the
+            // seed-parse path that does that only sees plain TW lines
+            if (entry.Code == "TW")
+            {
+                string[] warp = entry.Id.Split(',');
+                if (warp.Length > 3 && !Randomizer.WarpLogicLocations.ContainsKey(warp[0]))
+                    Randomizer.WarpLogicLocations.Add(warp[0], warp[3]);
+            }
+
             // our dungeon keys living in someone else's world still get
             // clues: the manifest knows whose world and which zone
             if (Randomizer.CluesMode && entry.Code == "EV")
