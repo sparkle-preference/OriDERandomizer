@@ -1293,9 +1293,7 @@ public static class Randomizer {
 
         if (code == "TW") {
             //6399872|TW|Warp to Spirit Cavern AC,-219,-176,SpiritCavernsACWarp|Swamp
-            var pieces = id.Split(
-                ','
-            );
+            var pieces = id.Split(',');
             if (pieces.Length > 3) {
                 WarpLogicLocations.Add(pieces[0], pieces[3]);
             }

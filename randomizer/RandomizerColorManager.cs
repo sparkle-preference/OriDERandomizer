@@ -10,9 +10,7 @@ public static class RandomizerColorManager {
         var found = false;
         if (File.Exists("Color.txt")) {
             var text = File.ReadAllText("Color.txt").ToLower();
-            var lines = text.Split(
-                '\n'
-            );
+            var lines = text.Split('\n');
             if (lines.Length >= 1 && lines[0].Trim().Equals("customrotation")) {
                 colors.Clear();
                 var red = 0f;
@@ -21,9 +19,7 @@ public static class RandomizerColorManager {
                 var alpha = 0f;
                 var i = 1;
                 while (i < lines.Length - 1 && !string.IsNullOrEmpty(lines[i]) && lines[i].Length >= 6) {
-                    var components = lines[i].Split(
-                        ','
-                    );
+                    var components = lines[i].Split(',');
                     if (components.Length >= 4) {
                         float.TryParse(components[0], out red);
                         float.TryParse(components[1], out green);
@@ -36,9 +32,7 @@ public static class RandomizerColorManager {
                         colors.Add(new Color(red, green, blue, alpha));
                     }
 
-                    components = lines[i + 1].Split(
-                        ','
-                    );
+                    components = lines[i + 1].Split(',');
                     if (components.Length >= 5) {
                         float.TryParse(components[0], out var red2);
                         float.TryParse(components[1], out var green2);
@@ -65,9 +59,7 @@ public static class RandomizerColorManager {
 
             colors.Clear();
             customRotation = false;
-            var components2 = text.Split(
-                ','
-            );
+            var components2 = text.Split(',');
             if ((components2.Length == 3 || components2.Length == 4)) {
                 float.TryParse(components2[0], out var red3);
                 float.TryParse(components2[1], out var green3);
