@@ -178,8 +178,7 @@ public class SeinChargeJump : CharacterState, ISeinReceiver
 
 	public SeinChargeJump.State CurrentState;
 
-	// private, like vanilla: public would add these to Unity's serialized set
-	// and shift ChargedJumpStrength/Deceleration off the scene's authored data
+	// private, like vanilla: public would put these in Unity's serialized set
 	private float m_stateCurrentTime;
 
 	private HashSet<IAttackable> m_attackablesIgnore = new HashSet<IAttackable>();
