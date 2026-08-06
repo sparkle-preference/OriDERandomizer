@@ -156,7 +156,7 @@ public static class Randomizer
                             continue;
                         }
 
-                        RandomizerMW.AddApLine(coords, apField);
+                        RandomizerMW.AddApLine(coords, apField, lineParts.Length > 5 ? lineParts[5] : null);
                         GetDataFromSeedLine(coords, lineParts[1], lineParts[2], lineParts[3]);
 
                         if (coords == 2)

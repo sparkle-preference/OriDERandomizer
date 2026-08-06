@@ -364,8 +364,11 @@ public static class RandomizerSwitch
                         // knows who is actually getting this
                         if (!RandomizerMW.IsSelf(apItem[0]))
                             SentMwPickupMessage($"{RandomizerMW.ApName(apItem[0])}'s {RandomizerMW.ColorWrap(apItem[1])}");
-                        // ours: the room hands it straight back, and the grant
-                        // message a few seconds from now is the honest one
+                        // ours: grant it here so it reads like an in-seed find.
+                        // The room still hands it back; that arrives to find the
+                        // slot already granted and does nothing.
+                        else
+                            RandomizerMW.GrantSelfItem(coords);
                     }
                     else if (mwPieces.Length == 3)
                     {

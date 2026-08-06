@@ -59,6 +59,7 @@ public static class RandomizerMW
         warnedSlots.Clear();
         PlayerNames.Clear();
         ApItems.Clear();
+        ApSelfSlots.Clear();
         SlotSenders.Clear();
         ApHints.Clear();
         ApGrants = false;
@@ -100,14 +101,71 @@ public static class RandomizerMW
         return token == "P" + OwnPid();
     }
 
-    // reserved AP line: <coord>|MW|<shadow>,<slot>,<label>|<zone>|<to>;<item>
-    public static void AddApLine(int coords, string apField)
+    // reserved AP line:
+    //   <coord>|MW|<shadow>,<slot>,<label>|<zone>|<to>;<item>[|<own slot>]
+    // field 6 is present only when the item is ours, and names the manifest
+    // slot it lands in, so contact can grant it without the room round trip
+    public static void AddApLine(int coords, string apField, string ownSlot = null)
     {
         if (string.IsNullOrEmpty(apField))
             return;
         string[] parts = apField.Split(new char[] { ';' }, 2);
-        if (parts.Length == 2)
-            ApItems[coords] = parts;
+        if (parts.Length != 2)
+            return;
+        ApItems[coords] = parts;
+        int slot;
+        if (!string.IsNullOrEmpty(ownSlot) && int.TryParse(ownSlot, out slot))
+            ApSelfSlots[coords] = slot;
+    }
+
+    // coord -> our own manifest slot, for reserved locations holding our item
+    public static Dictionary<int, int> ApSelfSlots = new Dictionary<int, int>();
+
+    /// <summary>
+    /// Contact with a reserved location holding our own item. Grants it now
+    /// rather than waiting for the room to hand it back; the slot bit the
+    /// server sets a few seconds later then finds it already granted.
+    /// Returns false when there is nothing to grant here.
+    /// </summary>
+    public static bool GrantSelfItem(int coords)
+    {
+        int slot;
+        if (!ApSelfSlots.TryGetValue(coords, out slot) || !Manifest.ContainsKey(slot))
+            return false;
+        if (SlotGranted(slot))
+        {
+            // died and came back to it: the item is already ours
+            string[] ap;
+            string name = ApItems.TryGetValue(coords, out ap) ? ap[1] : "That";
+            RandomizerSwitch.PickupMessage(ColorWrap(name) + " (already collected)");
+            return true;
+        }
+        // "" is the apfrom token for "you found this yourself", so the grant
+        // message carries no "from" suffix -- it reads as an ordinary pickup
+        SlotSenders[slot] = "";
+        Grant(new List<int> { slot }, ApBatchMessageThreshold);
+        return true;
+    }
+
+    /// <summary>
+    /// True when this location holds our own Archipelago item and that item is
+    /// already in the save. Its coord bit rolls back on death, but the granted
+    /// slot does not stay lost -- the server re-sets it -- so the map should
+    /// treat the location as spent.
+    /// </summary>
+    public static bool SelfItemCollected(int coords)
+    {
+        int slot;
+        return ApSelfSlots.TryGetValue(coords, out slot) && SlotGranted(slot);
+    }
+
+    // has this manifest slot already been granted into the save?
+    public static bool SlotGranted(int slot)
+    {
+        if (slot < 0 || slot > 255 || !Characters.Sein)
+            return false;
+        uint local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + slot / 32);
+        return (local & (1u << (slot % 32))) != 0;
     }
 
     // signal payload: "<slot>=<sender>;<slot>=<sender>", sender "" = you
@@ -279,11 +337,7 @@ public static class RandomizerMW
     // has the item at this manifest pseudo-location already been granted to us?
     public static bool ManifestLocGranted(int coords)
     {
-        int slot = -coords - 2;
-        if (slot < 0 || slot > 255 || !Characters.Sein)
-            return false;
-        uint local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + slot / 32);
-        return (local & (1u << (slot % 32))) != 0;
+        return SlotGranted(-coords - 2);
     }
 
     // manifest line: <-(slot+2)>|MW|<finder>,<code>,<id>|<zone>[|<holder>]
@@ -531,11 +585,14 @@ public static class RandomizerMW
             List<string> travel = new List<string>();
             int hc = 0, ec = 0, ac = 0, ks = 0, ms = 0, exp = 0, rb = 0, wvs = 0, gss = 0, sss = 0, wfg = 0, other = 0;
             HashSet<string> finders = new HashSet<string>();
+            bool anySelf = false;
             foreach (ManifestEntry entry in entries)
             {
                 string sender = SenderFor(entry);
                 if (sender != "")
                     finders.Add(sender);
+                else
+                    anySelf = true;
                 switch (entry.Code)
                 {
                     case "SK":
@@ -603,10 +660,14 @@ public static class RandomizerMW
                 List<string> finderNames = new List<string>(finders);
                 finderNames.Sort();
                 // no names at all means Archipelago handed back only things
-                // we found ourselves
-                string header = finderNames.Count > 0
-                    ? $"Received from {string.Join(", ", finderNames.ToArray())}:\n"
-                    : "Received:\n";
+                // we found ourselves; a mix must not read as all theirs
+                string header;
+                if (finderNames.Count == 0)
+                    header = "Received:\n";
+                else if (anySelf)
+                    header = $"Received from {string.Join(", ", finderNames.ToArray())} and your own finds:\n";
+                else
+                    header = $"Received from {string.Join(", ", finderNames.ToArray())}:\n";
                 RandomizerSwitch.PickupMessage(header + string.Join("\n", lines.ToArray()), 480);
             }
         }

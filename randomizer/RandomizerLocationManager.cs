@@ -562,7 +562,11 @@ public class RandomizerLocationManager
 
         public bool Collected => this.Repeatable ? false : (this.Type == LocationType.Map ? RandomizerTrackedDataManager.GetMapstone(this.SpecialIndex) : Randomizer.HaveCoord(this.Key));
 
-        public bool Touched => Collected || this.Repeatable && Randomizer.HaveCoord(this.Key);
+        // a self-AP location whose slot is already granted has nothing left to
+        // give, so the in-logic filter should stop showing it even after a
+        // death rolled the coord bit back
+        public bool Touched => Collected || this.Repeatable && Randomizer.HaveCoord(this.Key)
+                               || RandomizerMW.SelfItemCollected(this.Key);
 
         public MoonGuid MoonGuid;
 
