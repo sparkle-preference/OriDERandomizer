@@ -659,15 +659,14 @@ public static class RandomizerMW
             {
                 List<string> finderNames = new List<string>(finders);
                 finderNames.Sort();
+                // sorted first, so "self" lands last in a mixed batch
+                if (anySelf && finderNames.Count > 0)
+                    finderNames.Add("self");
                 // no names at all means Archipelago handed back only things
-                // we found ourselves; a mix must not read as all theirs
-                string header;
-                if (finderNames.Count == 0)
-                    header = "Received:\n";
-                else if (anySelf)
-                    header = $"Received from {string.Join(", ", finderNames.ToArray())} and your own finds:\n";
-                else
-                    header = $"Received from {string.Join(", ", finderNames.ToArray())}:\n";
+                // we found ourselves
+                string header = finderNames.Count > 0
+                    ? $"Received from {string.Join(", ", finderNames.ToArray())}:\n"
+                    : "Received:\n";
                 RandomizerSwitch.PickupMessage(header + string.Join("\n", lines.ToArray()), 480);
             }
         }
