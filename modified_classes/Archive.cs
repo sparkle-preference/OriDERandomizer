@@ -35,7 +35,7 @@ public class Archive {
     }
 
     public void ReadMemoryStreamFromBinaryReader(BinaryReader binaryReader) {
-        int num = binaryReader.ReadInt32();
+        var num = binaryReader.ReadInt32();
         MemoryStream.SetLength(num);
         binaryReader.Read(MemoryStream.GetBuffer(), 0, num);
     }
@@ -148,9 +148,9 @@ public class Archive {
     }
 
     public Dictionary<int, int> Serialize(Dictionary<int, int> value) {
-        String pairs = "";
+        var pairs = "";
         if (m_write) {
-            foreach (int key in value.Keys) {
+            foreach (var key in value.Keys) {
                 pairs += key + ":" + value[key] + ",";
             }
 
@@ -162,8 +162,8 @@ public class Archive {
 
         value.Clear();
         pairs = m_binaryReader.ReadString();
-        foreach (string pair in pairs.Split(',')) {
-            string[] kandv = pair.Split(':');
+        foreach (var pair in pairs.Split(',')) {
+            var kandv = pair.Split(':');
             value[int.Parse(kandv[0])] = int.Parse(kandv[1]);
         }
 

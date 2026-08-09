@@ -15,17 +15,17 @@ public class RandomizerChaosZoom : RandomizerChaosEffect {
         }
 
         Countdown = Random.Range(360, 1200);
-        int num = Random.Range(0, 16);
+        var num = Random.Range(0, 16);
         if (num <= 5) {
             Randomizer.showChaosEffect("Zoom in");
-            float z = Random.Range(-20f, -1f);
+            var z = Random.Range(-20f, -1f);
             UI.Cameras.Current.OffsetController.AdditiveDefaultOffset = new Vector3(UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.x, UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.y, z);
             return;
         }
 
         if (num <= 11) {
             Randomizer.showChaosEffect("Zoom out");
-            float z2 = Random.Range(1f, 100f);
+            var z2 = Random.Range(1f, 100f);
             UI.Cameras.Current.OffsetController.AdditiveDefaultOffset = new Vector3(UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.x, UI.Cameras.Current.OffsetController.AdditiveDefaultOffset.y, z2);
             return;
         }

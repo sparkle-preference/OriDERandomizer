@@ -43,7 +43,7 @@ public class SkillItem : MonoBehaviour {
 
     public bool AbilitiesRequirementMet {
         get {
-            using (List<SkillItem>.Enumerator enumerator = RequiredItems.GetEnumerator()) {
+            using (var enumerator = RequiredItems.GetEnumerator()) {
                 while (enumerator.MoveNext()) {
                     if (!enumerator.Current.HasSkillItem) {
                         return false;

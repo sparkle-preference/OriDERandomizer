@@ -28,7 +28,7 @@ public class GameController : SaveSerialize, ISuspendable {
 
     public bool IsDemo {
         get {
-            WorldEventsRuntime worldEventsRuntime = World.Events.Find(DebugWorldEvents);
+            var worldEventsRuntime = World.Events.Find(DebugWorldEvents);
             return worldEventsRuntime.Value == DebugWorldEvents.GetIDFromName("Demo");
         }
     }
@@ -52,7 +52,7 @@ public class GameController : SaveSerialize, ISuspendable {
     public void GoToEndTrialScreen() {
         MainMenuCanBeOpened = false;
         GameStateMachine.Instance.SetToTrialEnd();
-        RuntimeSceneMetaData sceneInformation = Scenes.Manager.GetSceneInformation("trialEndScreen");
+        var sceneInformation = Scenes.Manager.GetSceneInformation("trialEndScreen");
         GoToSceneController.Instance.GoToScene(sceneInformation, OnFinishedLoadingTrialEndScene, false);
     }
 
@@ -110,7 +110,7 @@ public class GameController : SaveSerialize, ISuspendable {
             return;
         }
 
-        RuntimeSceneMetaData sceneInformation = Scenes.Manager.GetSceneInformation("titleScreenSwallowsNest");
+        var sceneInformation = Scenes.Manager.GetSceneInformation("titleScreenSwallowsNest");
         if (sceneInformation == null) {
             return;
         }
@@ -165,9 +165,9 @@ public class GameController : SaveSerialize, ISuspendable {
 
     [ContextMenu("Print out sizes of SaveSlot")]
     public void PrintOutSizesOfSaveSlot() {
-        int num = 0;
-        foreach (KeyValuePair<MoonGuid, SaveScene> keyValuePair in Game.Checkpoint.SaveGameData.Scenes) {
-            foreach (SaveObject saveObject in keyValuePair.Value.SaveObjects) {
+        var num = 0;
+        foreach (var keyValuePair in Game.Checkpoint.SaveGameData.Scenes) {
+            foreach (var saveObject in keyValuePair.Value.SaveObjects) {
                 num += saveObject.Data.MemoryStream.Capacity;
             }
 
@@ -197,10 +197,10 @@ public class GameController : SaveSerialize, ISuspendable {
         m_systemsGameObject = new GameObject("systems");
         Utility.DontAssociateWithAnyScene(m_systemsGameObject);
         transform.parent = m_systemsGameObject.transform;
-        foreach (GameObject gameObject in Systems) {
+        foreach (var gameObject in Systems) {
             try {
                 if (gameObject) {
-                    GameObject gameObject2 = Instantiate(gameObject);
+                    var gameObject2 = Instantiate(gameObject);
                     gameObject2.name = gameObject.name;
                     gameObject2.transform.SetParentMaintainingLocalTransform(m_systemsGameObject.transform);
                 }
@@ -228,7 +228,7 @@ public class GameController : SaveSerialize, ISuspendable {
     }
 
     public IEnumerator Start() {
-        GameplayCamera currentCamera = UI.Cameras.Current;
+        var currentCamera = UI.Cameras.Current;
         currentCamera.ChangeTargetToCurrentCharacter();
         Scenes.Manager.EnableDisabledScenesAtPosition();
         currentCamera.UpdateTargetHelperPosition();
@@ -273,8 +273,8 @@ public class GameController : SaveSerialize, ISuspendable {
     }
 
     private IEnumerator LoadAssets(List<string> assetsToLoad) {
-        foreach (string assetToLoad in assetsToLoad) {
-            WWW www = new WWW(assetToLoad);
+        foreach (var assetToLoad in assetsToLoad) {
+            var www = new WWW(assetToLoad);
             yield return www;
             Instantiate(www.assetBundle.mainAsset);
         }
@@ -313,7 +313,7 @@ public class GameController : SaveSerialize, ISuspendable {
     }
 
     public void WarmUpResources() {
-        Timer timer = new Timer();
+        var timer = new Timer();
         UI.LoadMessageController();
         Orbs.OrbDisplayText.LoadOrbText();
         Attacking.DamageDisplayText.LoadDamageText();
@@ -350,8 +350,8 @@ public class GameController : SaveSerialize, ISuspendable {
     public void Update() {
         Randomizer.Update();
 
-        bool shiftHeld = MoonInput.GetKey(KeyCode.LeftShift) || MoonInput.GetKey(KeyCode.RightShift);
-        bool altHeld = MoonInput.GetKey(KeyCode.LeftAlt) || MoonInput.GetKey(KeyCode.RightAlt);
+        var shiftHeld = MoonInput.GetKey(KeyCode.LeftShift) || MoonInput.GetKey(KeyCode.RightShift);
+        var altHeld = MoonInput.GetKey(KeyCode.LeftAlt) || MoonInput.GetKey(KeyCode.RightAlt);
         if (altHeld && !shiftHeld && MoonInput.GetKeyDown(KeyCode.U)) {
             UI.SeinUI.ShowUI = true;
             SeinUI.DebugHideUI = !SeinUI.DebugHideUI;
@@ -410,7 +410,7 @@ public class GameController : SaveSerialize, ISuspendable {
 
     public void SuspendGameplay() {
         if (!GameplaySuspended) {
-            Component[] suspendables = Characters.Sein.Controller.Suspendables;
+            var suspendables = Characters.Sein.Controller.Suspendables;
             m_suspendablesToIgnoreForGameplay = new HashSet<ISuspendable>(suspendables.Cast<ISuspendable>());
             SuspensionManager.SuspendExcluding(m_suspendablesToIgnoreForGameplay);
             GameplaySuspended = true;
@@ -444,7 +444,7 @@ public class GameController : SaveSerialize, ISuspendable {
         SaveSceneManager.Master.SaveWithoutClearing(saveGameData.Master);
         saveGameData.ApplyPendingScenes();
         if (Scenes.Manager) {
-            foreach (SceneManagerScene sceneManagerScene in Scenes.Manager.ActiveScenes) {
+            foreach (var sceneManagerScene in Scenes.Manager.ActiveScenes) {
                 if (sceneManagerScene.IsVisible && sceneManagerScene.HasStartBeenCalled && sceneManagerScene.SceneRoot.SaveSceneManager) {
                     sceneManagerScene.SceneRoot.SaveSceneManager.Save(saveGameData.InsertScene(sceneManagerScene.MetaData.SceneMoonGuid));
                 }
@@ -485,10 +485,10 @@ public class GameController : SaveSerialize, ISuspendable {
             return;
         }
 
-        string[] files = Directory.GetFiles(OutputFolder.PlayerTrialDataFolderPath);
-        for (int i = 0; i < files.Length; i++) {
-            string fileName = Path.GetFileName(files[i]);
-            string path = Path.Combine(OutputFolder.PlayerDataFolderPath, fileName);
+        var files = Directory.GetFiles(OutputFolder.PlayerTrialDataFolderPath);
+        for (var i = 0; i < files.Length; i++) {
+            var fileName = Path.GetFileName(files[i]);
+            var path = Path.Combine(OutputFolder.PlayerDataFolderPath, fileName);
             if (!File.Exists(path)) {
                 File.Move(files[i], Path.Combine(OutputFolder.PlayerDataFolderPath, fileName));
             }

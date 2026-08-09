@@ -79,9 +79,9 @@ public class SeinStomp : CharacterState, ISeinReceiver {
 
             LandStomp();
             if (!Sein.Controller.IsSwimming) {
-                IAttackable attackable = collider.gameObject.FindComponent<IAttackable>();
+                var attackable = collider.gameObject.FindComponent<IAttackable>();
                 if (attackable != null && attackable.CanBeStomped()) {
-                    Damage damage = new Damage(StompDamage, StompDirection * 3f, Characters.Sein.Position, DamageType.Stomp, gameObject);
+                    var damage = new Damage(StompDamage, StompDirection * 3f, Characters.Sein.Position, DamageType.Stomp, gameObject);
                     damage.DealToComponents(collider.gameObject);
                 }
 
@@ -103,18 +103,18 @@ public class SeinStomp : CharacterState, ISeinReceiver {
     public void DoBlastRadius(IAttackable landedStompAttackable) {
         m_stompBlastAttackables.Clear();
         m_stompBlastAttackables.AddRange(Targets.Attackables);
-        for (int i = 0; i < m_stompBlastAttackables.Count; i++) {
-            IAttackable attackable = m_stompBlastAttackables[i];
+        for (var i = 0; i < m_stompBlastAttackables.Count; i++) {
+            var attackable = m_stompBlastAttackables[i];
             if (!InstantiateUtility.IsDestroyed(attackable as Component)) {
                 if (attackable != landedStompAttackable) {
                     if (attackable.CanBeStomped()) {
-                        Vector3 vector = attackable.Position - Sein.Position;
-                        float magnitude = vector.magnitude;
+                        var vector = attackable.Position - Sein.Position;
+                        var magnitude = vector.magnitude;
                         if (magnitude < StompBlashRadius) {
-                            Vector3 normalized = (vector.normalized + StompDirection * -2f).normalized;
-                            GameObject gameObject = ((Component)attackable).gameObject;
-                            float stompDamage = StompDamage;
-                            Damage damage = new Damage(stompDamage, normalized * 3f, attackable.Position, DamageType.StompBlast, gameObject);
+                            var normalized = (vector.normalized + StompDirection * -2f).normalized;
+                            var gameObject = ((Component)attackable).gameObject;
+                            var stompDamage = StompDamage;
+                            var damage = new Damage(stompDamage, normalized * 3f, attackable.Position, DamageType.StompBlast, gameObject);
                             damage.DealToComponents(gameObject);
                         }
                     }
@@ -248,9 +248,9 @@ public class SeinStomp : CharacterState, ISeinReceiver {
             return;
         }
 
-        bool flag = Input.Stomp.OnPressed & Sein.Input.NormalizedHorizontal == 0;
-        bool flag2 = Input.Stomp.OnPressed && Input.DigiPadAxis.y < 0f;
-        bool flag3 = flag || flag2;
+        var flag = Input.Stomp.OnPressed & Sein.Input.NormalizedHorizontal == 0;
+        var flag2 = Input.Stomp.OnPressed && Input.DigiPadAxis.y < 0f;
+        var flag3 = flag || flag2;
         if (flag3 && !Input.Stomp.Used && CanStomp()) {
             Logic.ChangeState(State.StompIdle);
         }
@@ -266,7 +266,7 @@ public class SeinStomp : CharacterState, ISeinReceiver {
             return;
         }
 
-        bool inputProvided = RandomizerBonus.EnhancedStomp ? Input.Axis != Vector2.zero : Input.Stomp.Pressed;
+        var inputProvided = RandomizerBonus.EnhancedStomp ? Input.Axis != Vector2.zero : Input.Stomp.Pressed;
         if (Logic.CurrentStateTime > StompDownDuration && !inputProvided) {
             EndStomp();
             return;
@@ -280,7 +280,7 @@ public class SeinStomp : CharacterState, ISeinReceiver {
             SpriteRotation = 0f;
         }
 
-        float targetVelocity = StompSpeed + StompSpeed * 0.2f * RandomizerBonus.Velocity();
+        var targetVelocity = StompSpeed + StompSpeed * 0.2f * RandomizerBonus.Velocity();
         PlatformMovement.LocalSpeed = m_stompDirection * targetVelocity;
         Sein.Mortality.DamageReciever.MakeInvincibleToEnemies(0.2f);
 
@@ -288,15 +288,15 @@ public class SeinStomp : CharacterState, ISeinReceiver {
             EndStomp();
         }
 
-        for (int i = 0; i < Targets.Attackables.Count; i++) {
-            IAttackable attackable = Targets.Attackables[i];
+        for (var i = 0; i < Targets.Attackables.Count; i++) {
+            var attackable = Targets.Attackables[i];
             if (!attackable.IsDead()) {
                 if (!InstantiateUtility.IsDestroyed(attackable as Component)) {
                     if (attackable.IsStompBouncable()) {
-                        Vector3 a = Characters.Sein.Position + StompDirection;
+                        var a = Characters.Sein.Position + StompDirection;
                         if (Vector3.Distance(a, attackable.Position) < 1.5f && Logic.CurrentState == State.StompDown) {
-                            GameObject gameObject = ((Component)attackable).gameObject;
-                            Damage damage = new Damage(StompDamage, StompDirection * 3f, Characters.Sein.Position, DamageType.Stomp, this.gameObject);
+                            var gameObject = ((Component)attackable).gameObject;
+                            var damage = new Damage(StompDamage, StompDirection * 3f, Characters.Sein.Position, DamageType.Stomp, this.gameObject);
                             damage.DealToComponents(gameObject);
                             if (attackable.IsDead()) {
                                 return;

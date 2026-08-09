@@ -31,26 +31,26 @@ public class AreaMapCanvas : MonoBehaviour {
     public Vector2 WorldMapTextureSize => new Vector2(WorldMapTexture.width, WorldMapTexture.height);
 
     public RenderTexture GenerateAreaMaskMaskTexture() {
-        int width = (int)Mathf.Min(1024f, Bounds.size.x * PixelsPerUnit);
-        int height = (int)Mathf.Min(1024f, Bounds.size.y * PixelsPerUnit);
-        RenderTexture temporary = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
+        var width = (int)Mathf.Min(1024f, Bounds.size.x * PixelsPerUnit);
+        var height = (int)Mathf.Min(1024f, Bounds.size.y * PixelsPerUnit);
+        var temporary = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
         temporary.name = "worldMapCanvas";
         Graphics.SetRenderTarget(temporary);
         GL.Clear(false, true, Color.clear);
         GL.PushMatrix();
         GL.LoadIdentity();
         GL.LoadPixelMatrix(Bounds.min.x + 0.5f, Bounds.max.x + 0.5f, Bounds.min.y + 0.5f, Bounds.max.y + 0.5f);
-        Matrix4x4 localToWorldMatrix = CageStructureTool.transform.localToWorldMatrix;
+        var localToWorldMatrix = CageStructureTool.transform.localToWorldMatrix;
         GL.MultMatrix(localToWorldMatrix);
-        Material material = new Material(SetRGBAShader);
+        var material = new Material(SetRGBAShader);
         material.SetColor(ShaderProperties.Color, Color.white / 2f);
         material.SetPass(0);
         GL.Begin(4);
         GL.Color(Color.white);
-        for (int i = 0; i < CageStructureTool.Faces.Count; i++) {
-            CageStructureTool.Face face = CageStructureTool.Faces[i];
-            for (int j = 0; j < face.Triangles.Count; j++) {
-                int index = face.Triangles[j];
+        for (var i = 0; i < CageStructureTool.Faces.Count; i++) {
+            var face = CageStructureTool.Faces[i];
+            for (var j = 0; j < face.Triangles.Count; j++) {
+                var index = face.Triangles[j];
                 GL.Vertex(CageStructureTool.VertexByIndex(face.Vertices[index]).Position);
             }
         }
@@ -78,31 +78,31 @@ public class AreaMapCanvas : MonoBehaviour {
     }
 
     public RenderTexture GenerateAreaMaskTexture() {
-        int width = (int)Mathf.Min(1024f, Bounds.size.x * PixelsPerUnit);
-        int height = (int)Mathf.Min(1024f, Bounds.size.y * PixelsPerUnit);
-        RenderTexture temporary = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
+        var width = (int)Mathf.Min(1024f, Bounds.size.x * PixelsPerUnit);
+        var height = (int)Mathf.Min(1024f, Bounds.size.y * PixelsPerUnit);
+        var temporary = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
         temporary.name = "worldmapCanvas";
         Graphics.SetRenderTarget(temporary);
         GL.Clear(false, true, Color.clear);
         GL.PushMatrix();
         GL.LoadIdentity();
         GL.LoadPixelMatrix(Bounds.min.x + 0.5f, Bounds.max.x + 0.5f, Bounds.min.y + 0.5f, Bounds.max.y + 0.5f);
-        Material material = new Material(SetRGBAShader);
+        var material = new Material(SetRGBAShader);
         material.SetColor(ShaderProperties.Color, Color.white / 2f);
         material.SetPass(0);
         GL.Begin(4);
-        Matrix4x4 localToWorldMatrix = CageStructureTool.transform.localToWorldMatrix;
-        foreach (CageStructureTool.Face face in CageStructureTool.Faces) {
-            WorldMapAreaState faceState = RuntimeArea.GetFaceState(face.ID);
+        var localToWorldMatrix = CageStructureTool.transform.localToWorldMatrix;
+        foreach (var face in CageStructureTool.Faces) {
+            var faceState = RuntimeArea.GetFaceState(face.ID);
             GL.Color(GetColor(faceState));
-            foreach (int index in face.Triangles) {
+            foreach (var index in face.Triangles) {
                 GL.Vertex(localToWorldMatrix.MultiplyPoint(CageStructureTool.VertexByIndex(face.Vertices[index]).Position));
             }
         }
 
         GL.End();
         GL.PopMatrix();
-        RenderTexture result = BlurTextures(temporary);
+        var result = BlurTextures(temporary);
         RenderTexture.ReleaseTemporary(temporary);
         return result;
     }
@@ -156,23 +156,23 @@ public class AreaMapCanvas : MonoBehaviour {
     }
 
     public RenderTexture BlurTextures(Texture originalTexture) {
-        Texture mask = Mask;
-        Material material = new Material(WorldMapBlurShader);
+        var mask = Mask;
+        var material = new Material(WorldMapBlurShader);
         material.SetTexture(ShaderProperties.MaskTex, mask);
-        int width = originalTexture.width;
-        int height = originalTexture.height;
-        Vector2 vector = new Vector2(1.5f / MapPlaneTexture.localScale.x, 1.5f / MapPlaneTexture.localScale.y);
-        RenderTexture temporary = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
-        RenderTexture temporary2 = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
+        var width = originalTexture.width;
+        var height = originalTexture.height;
+        var vector = new Vector2(1.5f / MapPlaneTexture.localScale.x, 1.5f / MapPlaneTexture.localScale.y);
+        var temporary = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
+        var temporary2 = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
         temporary.name = "worldMapCanvas";
         temporary2.name = "worldMapCanvasB";
-        Texture texture = originalTexture;
-        RenderTexture renderTexture = temporary;
-        RenderTexture renderTexture2 = temporary2;
+        var texture = originalTexture;
+        var renderTexture = temporary;
+        var renderTexture2 = temporary2;
         renderTexture.name = "current";
         renderTexture2.name = "next";
-        int num = 5;
-        for (int i = 0; i < num; i++) {
+        var num = 5;
+        for (var i = 0; i < num; i++) {
             material.SetVector(ShaderProperties.BlurSize, new Vector4(vector.x, vector.y, 0f, 0f) * (1f + i / 6f));
             material.SetVector(ShaderProperties.TextureScalingAndOffset, new Vector4(1f, 1f, 0f, 0f));
             RenderTexture.active = renderTexture;
@@ -182,7 +182,7 @@ public class AreaMapCanvas : MonoBehaviour {
             renderTexture2 = (RenderTexture)texture;
         }
 
-        RenderTexture renderTexture3 = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32);
+        var renderTexture3 = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32);
         renderTexture3.hideFlags = HideFlags.DontSave;
         Graphics.Blit(texture, renderTexture3);
         RenderTexture.active = null;

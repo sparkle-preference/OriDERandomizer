@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class ToggleCustomSettingsAction : MonoBehaviour {
     public void Awake() {
-        ToggleSettingsAction componentInChildren = GetComponentInChildren<ToggleSettingsAction>();
+        var componentInChildren = GetComponentInChildren<ToggleSettingsAction>();
         OnSound = componentInChildren.OnSound;
         OffSound = componentInChildren.OffSound;
         Destroy(componentInChildren);

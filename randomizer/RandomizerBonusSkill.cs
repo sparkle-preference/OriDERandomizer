@@ -6,9 +6,9 @@ using UnityEngine;
 
 public static class RandomizerBonusSkill {
     public static void SwitchBonusSkill() {
-        Dictionary<int, int> unlocked = new Dictionary<int, int>(UnlockedBonusSkills);
-        int slot_0 = unlocked.Keys.Min();
-        int slot_n = unlocked.Keys.Max();
+        var unlocked = new Dictionary<int, int>(UnlockedBonusSkills);
+        var slot_0 = unlocked.Keys.Min();
+        var slot_n = unlocked.Keys.Max();
         if (ActiveBonus == 0) {
             if (unlocked.Count == 0) {
                 Randomizer.Print("No bonus skills unlocked!", 3, false, false, false, true);
@@ -18,8 +18,8 @@ public static class RandomizerBonusSkill {
             ActiveBonus = unlocked[slot_0];
         }
 
-        int active_slot = get(ActiveBonus) >> 2;
-        int cur_slot = active_slot;
+        var active_slot = get(ActiveBonus) >> 2;
+        var cur_slot = active_slot;
         if (unlocked.Count == 1) {
             Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
             return;
@@ -47,7 +47,7 @@ public static class RandomizerBonusSkill {
     }
 
     public static void BonusSkillSlot(int slot) {
-        int bonus = -1;
+        var bonus = -1;
         UnlockedBonusSkills.TryGetValue(slot, out bonus);
         if (bonus < 0) {
             Randomizer.Print("No bonus skill in slot " + (1 + slot), 3, false, false, false, true);
@@ -58,7 +58,7 @@ public static class RandomizerBonusSkill {
     }
 
     public static void ActivateBonusSkill() {
-        int ab = ActiveBonus;
+        var ab = ActiveBonus;
         ActivateBonusSkill(ab);
     }
 
@@ -70,7 +70,7 @@ public static class RandomizerBonusSkill {
         switch (ab) {
             case 101:
                 if (Characters.Sein.Energy.Current > 0f) {
-                    float amount = Characters.Sein.Energy.Current * 4f;
+                    var amount = Characters.Sein.Energy.Current * 4f;
                     Characters.Sein.Energy.SetCurrent(Characters.Sein.Mortality.Health.Amount / 4f);
                     Characters.Sein.Mortality.Health.SetAmount(amount);
                     return;
@@ -136,15 +136,15 @@ public static class RandomizerBonusSkill {
                 }
 
             {
-                int apToGain = RandomizerBonus.ResetAP();
+                var apToGain = RandomizerBonus.ResetAP();
                 if (apToGain == 0) {
                     BonusSkillText("No AP to refund");
                     return;
                 }
 
                 BonusSkillText("Respec successful. " + apToGain + " AP refunded!");
-                CharacterAbility[] abilities = Characters.Sein.PlayerAbilities.Abilities;
-                List<CharacterAbility> actuallySkills = new List<CharacterAbility> {
+                var abilities = Characters.Sein.PlayerAbilities.Abilities;
+                var actuallySkills = new List<CharacterAbility> {
                     Characters.Sein.PlayerAbilities.WallJump,
                     Characters.Sein.PlayerAbilities.ChargeFlame,
                     Characters.Sein.PlayerAbilities.DoubleJump,
@@ -157,7 +157,7 @@ public static class RandomizerBonusSkill {
                     Characters.Sein.PlayerAbilities.Grenade,
                     Characters.Sein.PlayerAbilities.SpiritFlame
                 };
-                for (int i = 0; i < abilities.Length; i++) {
+                for (var i = 0; i < abilities.Length; i++) {
                     if (!actuallySkills.Contains(abilities[i]))
                         abilities[i].HasAbility = false;
                 }
@@ -220,8 +220,8 @@ public static class RandomizerBonusSkill {
                 if (CapturedEnemy == null) {
                     BonusSkillNames[112] = "Pokeball (empty)";
                     Characters.Sein.Abilities.SpiritFlameTargetting.UpdateClosestAttackables();
-                    foreach (ISpiritFlameAttackable target in Characters.Sein.Abilities.SpiritFlameTargetting.ClosestAttackables) {
-                        string logMessage = target.GetType().ToString();
+                    foreach (var target in Characters.Sein.Abilities.SpiritFlameTargetting.ClosestAttackables) {
+                        var logMessage = target.GetType().ToString();
                         if (target is EntityTargetting) {
                             var enemyTarget = target as EntityTargetting;
                             var entity = enemyTarget.Entity;
@@ -314,7 +314,7 @@ public static class RandomizerBonusSkill {
             if (DrainNextUpdate > 0)
                 UpdateDrain();
             if (EnergyDrainRate > Characters.Sein.Energy.Current) {
-                foreach (int ds in ActiveDrainSkills) {
+                foreach (var ds in ActiveDrainSkills) {
                     Deactivate(ds);
                     if (ds == 102) {
                         if (Characters.Sein.Abilities.Carry.IsCarrying)
@@ -359,7 +359,7 @@ public static class RandomizerBonusSkill {
     }
 
     public static void FoundBonusSkill(int ID) {
-        bool psuedo = ID == 108 || ID == 115 || ID == 1587;
+        var psuedo = ID == 108 || ID == 115 || ID == 1587;
         if (get(ID) > 0) {
             if (!psuedo)
                 RandomizerSwitch.PickupMessage(BonusSkillNames[ID] + " (duplicate)");
@@ -368,8 +368,8 @@ public static class RandomizerBonusSkill {
 
         if (!psuedo)
             RandomizerSwitch.PickupMessage("Unlocked Bonus Skill: " + BonusSkillNames[ID]);
-        int offset = 0;
-        Dictionary<int, int> ubs = new Dictionary<int, int>(UnlockedBonusSkills);
+        var offset = 0;
+        var ubs = new Dictionary<int, int>(UnlockedBonusSkills);
         if (ubs.Count > 0)
             offset = (1 + ubs.Keys.Max()) << 2;
         set(ID, offset + 1);
@@ -385,10 +385,10 @@ public static class RandomizerBonusSkill {
         try {
             if (!Characters.Sein || !Characters.Sein.Inventory || !Characters.Sein.PlatformBehaviour)
                 return;
-            HashSet<int> ads = new HashSet<int>(ActiveDrainSkills);
+            var ads = new HashSet<int>(ActiveDrainSkills);
 
             EnergyDrainRate = 0f;
-            foreach (int ds in ads) {
+            foreach (var ds in ads) {
                 EnergyDrainRate += DrainRates[ds];
             }
 
@@ -450,9 +450,9 @@ public static class RandomizerBonusSkill {
 
     public static Dictionary<int, int> UnlockedBonusSkills {
         get {
-            Dictionary<int, int> ubs = new Dictionary<int, int>();
-            foreach (int id in BonusSkillNames.Keys) {
-                int val = get(id);
+            var ubs = new Dictionary<int, int>();
+            foreach (var id in BonusSkillNames.Keys) {
+                var val = get(id);
                 if (val % 2 == 1) {
                     if (ubs.ContainsKey(val >> 2)) {
                         Randomizer.LogError("Duplicate keys: " + ubs[val >> 2] + " and " + id);
@@ -501,8 +501,8 @@ public static class RandomizerBonusSkill {
 
     public static HashSet<int> ActiveDrainSkills {
         get {
-            HashSet<int> ads = new HashSet<int>();
-            foreach (int id in DrainRates.Keys) {
+            var ads = new HashSet<int>();
+            foreach (var id in DrainRates.Keys) {
                 if (IsActive(id))
                     ads.Add(id);
             }

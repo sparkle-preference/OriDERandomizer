@@ -19,7 +19,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     }
 
     private float IndexToAnimationAngle(int index, int length) {
-        float t = index / (float)length;
+        var t = index / (float)length;
         if (IsGrabbingWall) {
             return Mathf.Lerp(MinAimWallAnimationAngle, MaxAimWallAnimationAngle, t);
         }
@@ -28,7 +28,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     }
 
     private TextureAnimationWithTransitions PickAnimation(TextureAnimationWithTransitions[] animations) {
-        int num = PickAnimationIndex(animations.Length);
+        var num = PickAnimationIndex(animations.Length);
         return animations[num];
     }
 
@@ -114,7 +114,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
             m_spiritGrenades.RemoveAt(0);
         }
 
-        SpiritGrenade component = ((GameObject)InstantiateUtility.Instantiate(!HasGrenadeUpgrade() ? Grenade : GrenadeUpgraded, GrenadeSpawnPosition, Quaternion.identity)).GetComponent<SpiritGrenade>();
+        var component = ((GameObject)InstantiateUtility.Instantiate(!HasGrenadeUpgrade() ? Grenade : GrenadeUpgraded, GrenadeSpawnPosition, Quaternion.identity)).GetComponent<SpiritGrenade>();
         component.SetTrajectory(velocity);
         m_spiritGrenades.Add(component);
         if (m_autoTarget as Component != null) {
@@ -172,16 +172,16 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
             ResetAimToDefault();
         }
 
-        Vector2 axis = Input.Axis;
+        var axis = Input.Axis;
         if (!RandomizerSettings.Controls.FastGrenadeAim) {
-            Vector2 b = AimSpeed.Evaluate(axis.magnitude) * axis.normalized * RandomizerSettings.Controls.GrenadeAimSpeed;
+            var b = AimSpeed.Evaluate(axis.magnitude) * axis.normalized * RandomizerSettings.Controls.GrenadeAimSpeed;
             if (b.magnitude > 0f) {
                 m_autoAim = false;
             }
 
             m_rawAimOffset += b;
         } else {
-            float greater = Math.Max(Math.Abs(axis.x), Math.Abs(axis.y));
+            var greater = Math.Max(Math.Abs(axis.x), Math.Abs(axis.y));
             if (greater > 0f) {
                 m_rawAimOffset = axis * axis.sqrMagnitude * Math.Min(Math.Abs(UI.Cameras.Current.OffsetController.Offset.z), MaxAimDistance) / greater + Vector2.up * CursorSpeedYOffset;
             } else {
@@ -209,7 +209,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
         m_aimOffset = Vector2.Lerp(m_rawAimOffset, m_aimOffset, 0.5f);
         if (!m_sein.Controller.IsGrabbingWall) {
             if (m_lockAimAnimationRemainingTime <= 0f) {
-                bool faceLeft = m_faceLeft;
+                var faceLeft = m_faceLeft;
                 m_faceLeft = m_aimOffset.x < 0f;
                 if (faceLeft != m_faceLeft) {
                     m_lockAimAnimationRemainingTime = 0.17f;
@@ -229,20 +229,20 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
         if (m_lockAimAnimationRemainingTime <= 0f) {
             Vector3 v2 = m_aimOffset.normalized;
             if (m_aimOffset.y > 0f) {
-                float num = m_aimOffset.y / GrenadeGravity;
-                float d = m_aimOffset.y * num + 0.5f * GrenadeGravity * num * num;
+                var num = m_aimOffset.y / GrenadeGravity;
+                var d = m_aimOffset.y * num + 0.5f * GrenadeGravity * num * num;
                 v2 = (m_aimOffset.x * num * Vector3.right + d * Vector3.up).normalized;
             }
 
             v2.x = Mathf.Abs(v2.x);
-            float target = MoonMath.Angle.AngleFromVector(v2);
+            var target = MoonMath.Angle.AngleFromVector(v2);
             m_animationAimAngle = Mathf.MoveTowardsAngle(m_animationAimAngle, target, 90f * Time.deltaTime * 2f);
             PlayAimAnimation();
         }
 
         if (m_grenadeAiming) {
-            SpriteAnimatorWithTransitions animator = m_sein.Animation.Animator;
-            TextureAnimation currentAnimation = animator.CurrentAnimation;
+            var animator = m_sein.Animation.Animator;
+            var currentAnimation = animator.CurrentAnimation;
             if (currentAnimation.AnimationMetaData) {
                 PositionGrenadeAiming(currentAnimation.AnimationMetaData, (int)animator.TextureAnimator.Frame);
                 return;
@@ -258,9 +258,9 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     }
 
     private void PositionGrenadeAiming(AnimationMetaData metaData, int frame) {
-        AnimationMetaData.AnimationData animationData = metaData.FindData("#grenade");
+        var animationData = metaData.FindData("#grenade");
         if (animationData != null) {
-            Vector3 positionAtFrame = animationData.GetPositionAtFrame(frame);
+            var positionAtFrame = animationData.GetPositionAtFrame(frame);
             m_grenadeAiming.transform.position = m_sein.PlatformBehaviour.Visuals.Sprite.transform.TransformPoint(positionAtFrame);
         }
     }
@@ -288,8 +288,8 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
             m_rawAimOffset.x = !m_faceLeft ? Mathf.Min(0f, m_rawAimOffset.x) : Mathf.Max(0f, m_rawAimOffset.x);
         }
 
-        float num = m_rawAimOffset.y <= 0f ? MinAimDistanceDown : MinAimDistanceUp;
-        float num2 = MinAimDistanceHorizontal / num;
+        var num = m_rawAimOffset.y <= 0f ? MinAimDistanceDown : MinAimDistanceUp;
+        var num2 = MinAimDistanceHorizontal / num;
         m_rawAimOffset.y = m_rawAimOffset.y * num2;
         if (m_rawAimOffset.magnitude < MinAimDistanceHorizontal) {
             m_rawAimOffset = m_rawAimOffset.normalized * MinAimDistanceHorizontal;
@@ -309,20 +309,20 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     }
 
     public bool WillRayHitEnemy(Vector2 initialVelocity, IAttackable target) {
-        Vector3 vector = GrenadeSpawnPosition;
+        var vector = GrenadeSpawnPosition;
         Vector3 a = initialVelocity;
-        Vector3 vector2 = vector;
-        float grenadeGravity = GrenadeGravity;
-        float num = 0f;
-        float num2 = TimeToTarget(initialVelocity, target);
+        var vector2 = vector;
+        var grenadeGravity = GrenadeGravity;
+        var num = 0f;
+        var num2 = TimeToTarget(initialVelocity, target);
         while (num < num2) {
-            for (int i = 0; i < 2; i++) {
+            for (var i = 0; i < 2; i++) {
                 vector += a * 0.01666667f;
                 a += Vector3.down * grenadeGravity * 0.01666667f;
                 num += 0.01666667f;
             }
 
-            Vector3 vector3 = vector - vector2;
+            var vector3 = vector - vector2;
             RaycastHit raycastHit;
             if (Physics.SphereCast(vector2, 0.5f, vector3.normalized, out raycastHit, vector3.magnitude)) {
                 break;
@@ -335,7 +335,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     }
 
     public bool CompareAnimations(TextureAnimationWithTransitions current, TextureAnimationWithTransitions[] array) {
-        for (int i = 0; i < array.Length; i++) {
+        for (var i = 0; i < array.Length; i++) {
             if (array[i] == current) {
                 return true;
             }
@@ -357,16 +357,16 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     }
 
     public void PlayFastThrowAnimation() {
-        TextureAnimation currentAnimation = m_sein.PlatformBehaviour.Visuals.Animation.Animator.CurrentAnimation;
-        TextureAnimationWithTransitions currentTextureAnimationTransitions = m_sein.PlatformBehaviour.Visuals.Animation.Animator.CurrentTextureAnimationTransitions;
-        foreach (FastThrowAnimationRule fastThrowAnimationRule in FastThrowAnimations) {
+        var currentAnimation = m_sein.PlatformBehaviour.Visuals.Animation.Animator.CurrentAnimation;
+        var currentTextureAnimationTransitions = m_sein.PlatformBehaviour.Visuals.Animation.Animator.CurrentTextureAnimationTransitions;
+        foreach (var fastThrowAnimationRule in FastThrowAnimations) {
             if (fastThrowAnimationRule.Animations.Contains(currentAnimation)) {
                 m_sein.Animation.Play(fastThrowAnimationRule.ThrowAnimation, 10, AnimationRule(fastThrowAnimationRule.PlayRule));
                 return;
             }
         }
 
-        foreach (FastThrowAnimationRule fastThrowAnimationRule2 in FastThrowAnimations) {
+        foreach (var fastThrowAnimationRule2 in FastThrowAnimations) {
             if (fastThrowAnimationRule2.AnimationsWithTransitions.Contains(currentTextureAnimationTransitions)) {
                 m_sein.Animation.Play(fastThrowAnimationRule2.ThrowAnimation, 10, AnimationRule(fastThrowAnimationRule2.PlayRule));
                 break;
@@ -441,7 +441,7 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
                 } else {
                     m_inputPressed = false;
                     m_lockPressingInputTime = 0.2f;
-                    Vector2 quickThrowSpeed = QuickThrowSpeed;
+                    var quickThrowSpeed = QuickThrowSpeed;
                     if (m_sein.FaceLeft) {
                         quickThrowSpeed.x *= -1f;
                     }
@@ -520,20 +520,20 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
     public IAttackable FindAutoAttackable {
         get {
             IAttackable result = null;
-            int num = 0;
-            float num2 = float.MaxValue;
-            foreach (IAttackable attackable in Targets.Attackables) {
+            var num = 0;
+            var num2 = float.MaxValue;
+            foreach (var attackable in Targets.Attackables) {
                 if (attackable as Component && attackable.CanBeGrenaded() && attackable is EntityTargetting && UI.Cameras.Current.IsOnScreen(attackable.Position)) {
                     Vector2 vector = attackable.Position - m_sein.Position;
-                    float magnitude = vector.magnitude;
-                    int num3 = !m_sein.FaceLeft ? 1 : -1;
+                    var magnitude = vector.magnitude;
+                    var num3 = !m_sein.FaceLeft ? 1 : -1;
                     if (IsGrabbingWall) {
                         num3 *= -1;
                     }
 
-                    int num4 = !(((EntityTargetting)attackable).Entity is Enemy) ? 0 : 1;
+                    var num4 = !(((EntityTargetting)attackable).Entity is Enemy) ? 0 : 1;
                     if (magnitude > AutoAim.MinDistance && magnitude < AutoAim.MaxDistance && num3 == (int)Mathf.Sign(vector.x) && (num < num4 || (num == num4 && magnitude < num2))) {
-                        Vector2 initialVelocity = VelocityToAimAtTarget(attackable);
+                        var initialVelocity = VelocityToAimAtTarget(attackable);
                         if (WillRayHitEnemy(initialVelocity, attackable)) {
                             result = attackable;
                             num2 = magnitude;
@@ -561,8 +561,8 @@ public class SeinGrenadeAttack : CharacterState, ISeinReceiver {
 
     public Vector2 VelocityToAimAtTarget(IAttackable attackable) {
         Vector2 vector = attackable.Position - m_sein.Position;
-        float num = !IsInAir ? AutoAim.Speed + Mathf.Abs(vector.x) * AutoAim.SpeedPerXDistance + Mathf.Max(0f, vector.y) * AutoAim.SpeedPerYDistance : AutoAim.InAirSpeed;
-        float num2 = vector.magnitude / num;
+        var num = !IsInAir ? AutoAim.Speed + Mathf.Abs(vector.x) * AutoAim.SpeedPerXDistance + Mathf.Max(0f, vector.y) * AutoAim.SpeedPerYDistance : AutoAim.InAirSpeed;
+        var num2 = vector.magnitude / num;
         return new Vector2(vector.x / num2, vector.y / num2 + GrenadeGravity * num2 * 0.5f);
     }
 

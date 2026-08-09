@@ -36,7 +36,7 @@ public class SaveSlotsManager : MonoBehaviour {
 
     public void Awake() {
         Instance = this;
-        for (int i = 0; i < 50; i++) {
+        for (var i = 0; i < 50; i++) {
             SaveSlots.Add(null);
         }
     }
@@ -52,8 +52,8 @@ public class SaveSlotsManager : MonoBehaviour {
     public static void CopySlot(int from, int to) {
         Instance.SaveSlots[to] = Instance.SaveSlots[from];
         SaveSlotBackupsManager.DeleteAllBackups(to);
-        string saveFilePath = GameController.Instance.SaveGameController.GetSaveFilePath(from);
-        string saveFilePath2 = GameController.Instance.SaveGameController.GetSaveFilePath(to);
+        var saveFilePath = GameController.Instance.SaveGameController.GetSaveFilePath(from);
+        var saveFilePath2 = GameController.Instance.SaveGameController.GetSaveFilePath(to);
         if (File.Exists(saveFilePath2)) {
             File.Delete(saveFilePath2);
         }
@@ -64,17 +64,17 @@ public class SaveSlotsManager : MonoBehaviour {
     public static void DeleteSlot(int index) {
         SaveSlotBackupsManager.DeleteAllBackups(index);
         Instance.SaveSlots[index] = null;
-        string saveFilePath = GameController.Instance.SaveGameController.GetSaveFilePath(index);
+        var saveFilePath = GameController.Instance.SaveGameController.GetSaveFilePath(index);
         File.Delete(saveFilePath);
     }
 
     public static void PrepareSlots() {
         Instance.SaveSlots.Clear();
-        for (int i = 0; i < 50; i++) {
+        for (var i = 0; i < 50; i++) {
             if (GameController.Instance.SaveGameController.SaveExists(i)) {
-                string saveFilePath = GameController.Instance.SaveGameController.GetSaveFilePath(i);
-                using (BinaryReader binaryReader = new BinaryReader(File.Open(saveFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))) {
-                    SaveSlotInfo saveSlotInfo = new SaveSlotInfo();
+                var saveFilePath = GameController.Instance.SaveGameController.GetSaveFilePath(i);
+                using (var binaryReader = new BinaryReader(File.Open(saveFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))) {
+                    var saveSlotInfo = new SaveSlotInfo();
                     if (saveSlotInfo.LoadFromReader(binaryReader)) {
                         if (GameController.Instance.IsTrial && !saveSlotInfo.IsTrialSave) {
                             Instance.SaveSlots.Add(null);
@@ -92,7 +92,7 @@ public class SaveSlotsManager : MonoBehaviour {
     }
 
     public bool SaveSlotCompleted(int i) {
-        SaveSlotInfo saveSlotInfo = SaveSlots[i];
+        var saveSlotInfo = SaveSlots[i];
         return saveSlotInfo != null && saveSlotInfo.Completed;
     }
 

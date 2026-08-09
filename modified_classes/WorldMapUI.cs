@@ -43,7 +43,7 @@ public class WorldMapUI : MonoBehaviour {
             return;
         }
 
-        WorldMapOverworldArea currentArea = CurrentArea;
+        var currentArea = CurrentArea;
         AreaMapUI.Instance.Navigation.ScrollPosition = currentArea.ScrollPosition;
         GameMapUI.Instance.CurrentHighlightedArea = GameWorld.Instance.FindRuntimeArea(currentArea.Area);
     }
@@ -63,7 +63,7 @@ public class WorldMapUI : MonoBehaviour {
         }
 
         m_ignoreNavigationMenuItemChange = true;
-        foreach (WorldMapOverworldArea worldMapOverworldArea in NavigationManager.GetComponentsInChildren<WorldMapOverworldArea>()) {
+        foreach (var worldMapOverworldArea in NavigationManager.GetComponentsInChildren<WorldMapOverworldArea>()) {
             if (worldMapOverworldArea.Area == GameMapUI.Instance.CurrentHighlightedArea.Area) {
                 NavigationManager.SetCurrentMenuItem(worldMapOverworldArea.GetComponent<CleverMenuItem>());
             }
@@ -105,9 +105,9 @@ public class WorldMapUI : MonoBehaviour {
                     b.y -= 3f;
                     CameraOffset = Vector3.Lerp(CameraOffset, b, 0.03f);
                 } else if (NavigationManager.gameObject.activeSelf) {
-                    Vector3 position = CurrentArea.transform.position;
+                    var position = CurrentArea.transform.position;
                     position.z = 0f;
-                    Vector3 b2 = position * 0.2f;
+                    var b2 = position * 0.2f;
                     CameraOffset = Vector3.Lerp(CameraOffset, b2, 0.03f);
                 }
             }
@@ -134,8 +134,8 @@ public class WorldMapUI : MonoBehaviour {
 
     public Vector3 WorldToScreenToUI(Vector3 position) {
         Vector2 v = Camera.WorldToScreenPoint(position);
-        Camera camera = UI.Cameras.System.GUICamera.Camera;
-        Vector3 result = camera.ScreenToWorldPoint(v);
+        var camera = UI.Cameras.System.GUICamera.Camera;
+        var result = camera.ScreenToWorldPoint(v);
         result.z = 0f;
         return result;
     }

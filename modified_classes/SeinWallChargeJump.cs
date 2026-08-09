@@ -54,7 +54,7 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver {
 
     public void ChangeState(State state) {
         m_attackablesIgnore.Clear();
-        State currentState = m_currentState;
+        var currentState = m_currentState;
         if (currentState == State.Aiming) {
             if (Arrow) {
                 Arrow.AnimatorDriver.ContinueBackwards();
@@ -112,7 +112,7 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver {
     }
 
     public void UpdateJumpingState() {
-        float adjustedDrag = HorizontalDrag - HorizontalDrag * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
+        var adjustedDrag = HorizontalDrag - HorizontalDrag * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
         PlatformMovement.LocalSpeedX = PlatformMovement.LocalSpeedX * (1f - adjustedDrag);
         PlatformMovement.LocalSpeedY = PlatformMovement.LocalSpeedY * (1f - adjustedDrag);
         if (m_stateCurrentTime > AntiGravityDuration + AntiGravityDuration * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades())) {
@@ -122,15 +122,15 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver {
 
         m_sein.PlatformBehaviour.Visuals.SpriteRotater.CenterAngle = m_angleDirection;
         m_sein.PlatformBehaviour.Visuals.SpriteRotater.UpdateRotation();
-        for (int i = 0; i < Targets.Attackables.Count; i++) {
-            IAttackable attackable = Targets.Attackables[i];
+        for (var i = 0; i < Targets.Attackables.Count; i++) {
+            var attackable = Targets.Attackables[i];
             if (!m_attackablesIgnore.Contains(attackable)) {
                 if (attackable.CanBeStomped()) {
-                    Vector3 vector = attackable.Position - m_sein.PlatformBehaviour.PlatformMovement.Position;
-                    float magnitude = vector.magnitude;
+                    var vector = attackable.Position - m_sein.PlatformBehaviour.PlatformMovement.Position;
+                    var magnitude = vector.magnitude;
                     if (magnitude < 4f && Vector2.Dot(vector.normalized, PlatformMovement.LocalSpeed.normalized) > 0f) {
                         m_attackablesIgnore.Add(attackable);
-                        Damage damage = new Damage(Damage, PlatformMovement.WorldSpeed.normalized * 3f, m_sein.Position, DamageType.Stomp, gameObject);
+                        var damage = new Damage(Damage, PlatformMovement.WorldSpeed.normalized * 3f, m_sein.Position, DamageType.Stomp, gameObject);
                         damage.DealToComponents(((Component)attackable).gameObject);
                         if (ExplosionEffect) {
                             InstantiateUtility.Instantiate(ExplosionEffect, Vector3.Lerp(transform.position, attackable.Position, 0.5f), Quaternion.identity);
@@ -145,7 +145,7 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver {
 
     public void UpdateAimElevation() {
         float normalizedFacing = PlatformMovement.HasWallLeft ? 1 : -1;
-        Vector2 analogAxisLeft = Input.AnalogAxisLeft;
+        var analogAxisLeft = Input.AnalogAxisLeft;
 
         if (analogAxisLeft.magnitude > 0.2f) {
             m_angularElevationSpeed = 0f;
@@ -168,10 +168,10 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver {
         if (RandomizerSettings.Controls.WallChargeMouseAim) {
             Vector2 arrowScreenPos = UI.Cameras.Current.Camera.WorldToScreenPoint(Arrow.transform.position);
             Vector2 arrowWorldPos = UI.Cameras.System.GUICamera.Camera.ScreenToWorldPoint(arrowScreenPos);
-            Vector2 cursorAxis = Input.CursorPositionUI - arrowWorldPos;
+            var cursorAxis = Input.CursorPositionUI - arrowWorldPos;
 
             if (Input.CursorMoved && cursorAxis.magnitude > 1f && MoonMath.Float.Normalize(cursorAxis.x) == normalizedFacing) {
-                float axisElevation = Mathf.Atan2(cursorAxis.y, cursorAxis.x * normalizedFacing) * 57.29578f;
+                var axisElevation = Mathf.Atan2(cursorAxis.y, cursorAxis.x * normalizedFacing) * 57.29578f;
                 if (Mathf.Abs(axisElevation) <= 60f) {
                     m_angularElevation = axisElevation;
                 }
@@ -186,7 +186,7 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver {
 
         if (Arrow) {
             UpdateAimElevation();
-            bool hasWallLeft = PlatformMovement.HasWallLeft;
+            var hasWallLeft = PlatformMovement.HasWallLeft;
             m_angularElevation = Mathf.Clamp(m_angularElevation + m_angularElevationSpeed * Time.deltaTime, -45f, 45f);
             Arrow.transform.eulerAngles = new Vector3(0f, 0f, !hasWallLeft ? 180f - m_angularElevation : m_angularElevation);
         }
@@ -220,16 +220,16 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver {
     }
 
     public void PerformChargeJump() {
-        float chargedJumpStrength = ChargedJumpStrength + ChargedJumpStrength * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
+        var chargedJumpStrength = ChargedJumpStrength + ChargedJumpStrength * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
         PlatformMovement.LocalSpeedX = chargedJumpStrength * Arrow.transform.right.x;
         PlatformMovement.LocalSpeedY = chargedJumpStrength * Arrow.transform.right.y;
-        Vector2 normalized = m_sein.PlatformBehaviour.PlatformMovement.LocalSpeed.normalized;
+        var normalized = m_sein.PlatformBehaviour.PlatformMovement.LocalSpeed.normalized;
         m_angleDirection = Mathf.Atan2(normalized.y, Mathf.Abs(normalized.x)) * 57.29578f * (normalized.x >= 0f ? 1 : -1);
         Sound.Play(JumpSound.GetSound(null), m_sein.PlatformBehaviour.PlatformMovement.Position, null);
         m_sein.Mortality.DamageReciever.MakeInvincibleToEnemies(AntiGravityDuration);
         ChangeState(State.Jumping);
         m_sein.FaceLeft = PlatformMovement.LocalSpeedX < 0f;
-        CharacterAnimationSystem.CharacterAnimationState characterAnimationState = m_sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation, 10, ShouldChargeJumpAnimationKeepPlaying);
+        var characterAnimationState = m_sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation, 10, ShouldChargeJumpAnimationKeepPlaying);
         characterAnimationState.OnStartPlaying = OnAnimationStart;
         characterAnimationState.OnStopPlaying = OnAnimationEnd;
         m_sein.PlatformBehaviour.Visuals.SpriteRotater.BeginTiltUpDownInAir(1.5f);

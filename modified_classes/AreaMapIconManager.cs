@@ -6,23 +6,23 @@ public class AreaMapIconManager : MonoBehaviour {
     }
 
     public void ShowAreaIcons() {
-        for (int i = 0; i < GameWorld.Instance.RuntimeAreas.Count; i++) {
+        for (var i = 0; i < GameWorld.Instance.RuntimeAreas.Count; i++) {
             RuntimeGameWorldArea runtimeGameWorldArea = GameWorld.Instance.RuntimeAreas[i];
             foreach (var icon in RandomizerWorldMapIconManager.Icons) {
                 if (!runtimeGameWorldArea.Area.InsideFace(icon.Position))
                     continue;
 
                 RuntimeWorldMapIcon runtimeWorldMapIcon = null;
-                for (int j = 0; j < runtimeGameWorldArea.Icons.Count; j++) {
+                for (var j = 0; j < runtimeGameWorldArea.Icons.Count; j++) {
                     if (runtimeGameWorldArea.Icons[j].Guid == icon.Guid) {
                         runtimeWorldMapIcon = runtimeGameWorldArea.Icons[j];
                         break;
                     }
                 }
 
-                bool collected = RandomizerLocationManager.IsPickupCollected(icon.Guid);
+                var collected = RandomizerLocationManager.IsPickupCollected(icon.Guid);
                 if (runtimeWorldMapIcon == null && !collected) {
-                    GameWorldArea.WorldMapIcon worldMapIcon = new GameWorldArea.WorldMapIcon {
+                    var worldMapIcon = new GameWorldArea.WorldMapIcon {
                         Guid = icon.Guid,
                         Icon = WorldMapIconType.HealthUpgrade,
                         IsSecret = false,
@@ -38,12 +38,12 @@ public class AreaMapIconManager : MonoBehaviour {
                 }
             }
 
-            for (int k = 0; k < runtimeGameWorldArea.Icons.Count; k++) {
+            for (var k = 0; k < runtimeGameWorldArea.Icons.Count; k++) {
                 runtimeGameWorldArea.Icons[k].Hide();
             }
 
-            for (int l = 0; l < runtimeGameWorldArea.Icons.Count; l++) {
-                RuntimeWorldMapIcon runtimeWorldMapIcon2 = runtimeGameWorldArea.Icons[l];
+            for (var l = 0; l < runtimeGameWorldArea.Icons.Count; l++) {
+                var runtimeWorldMapIcon2 = runtimeGameWorldArea.Icons[l];
                 if (!GameMapUI.Instance.ShowingTeleporters || runtimeWorldMapIcon2.Icon != WorldMapIconType.SavePedestal) {
                     runtimeWorldMapIcon2.Show();
                 }

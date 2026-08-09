@@ -6,13 +6,13 @@ namespace Protogen {
     public static class OriReachable {
         public static List<Node> ReachableCollecting(AreaGraph graph, Inventory inventory,
             Dictionary<string, Inventory> placements) {
-            List<Node> reachableOrder = new List<Node>();
-            HashSet<string> lastReachable = new HashSet<string>();
+            var reachableOrder = new List<Node>();
+            var lastReachable = new HashSet<string>();
             bool didUpdate;
             do {
                 var newReachable = Reachable(graph, inventory);
                 didUpdate = !newReachable.SetEquals(lastReachable);
-                foreach (string nodeName in newReachable.Except(lastReachable)) {
+                foreach (var nodeName in newReachable.Except(lastReachable)) {
                     if (placements.ContainsKey(nodeName)) {
                         inventory += placements[nodeName];
                     }
@@ -33,16 +33,16 @@ namespace Protogen {
             if (primedPaths == null)
                 primedPaths = new Dictionary<string, HashSet<string>>();
 
-            HashSet<string> reachable = new HashSet<string>();
-            Dictionary<string, int> reachedWithKeystones = new Dictionary<string, int>();
+            var reachable = new HashSet<string>();
+            var reachedWithKeystones = new Dictionary<string, int>();
             reachable.Add(startNode);
             reachedWithKeystones[startNode] = 0;
 
-            List<Node> accessibleMapstones = new List<Node>();
-            int accessedMapstones = 0;
+            var accessibleMapstones = new List<Node>();
+            var accessedMapstones = 0;
 
-            HashSet<string> newNodes = new HashSet<string>();
-            bool foundAny = true;
+            var newNodes = new HashSet<string>();
+            var foundAny = true;
 
             while (foundAny) {
                 foundAny = false;
@@ -50,13 +50,13 @@ namespace Protogen {
                 // First expand available primed paths until we exhaust those
                 do {
                     newNodes.Clear();
-                    foreach (string node in primedPaths.Keys) {
+                    foreach (var node in primedPaths.Keys) {
                         if (reachable.Contains(node)) {
-                            foreach (string target in primedPaths[node]) {
+                            foreach (var target in primedPaths[node]) {
                                 if (!reachable.Contains(target)) {
                                     foundAny = true;
                                     newNodes.Add(target);
-                                    int destinationKeystonesUsed = reachedWithKeystones.ContainsKey(target) ? reachedWithKeystones[target] : 9999;
+                                    var destinationKeystonesUsed = reachedWithKeystones.ContainsKey(target) ? reachedWithKeystones[target] : 9999;
                                     if (reachedWithKeystones[node] < destinationKeystonesUsed)
                                         reachedWithKeystones[target] = reachedWithKeystones[node];
                                 }
@@ -79,7 +79,7 @@ namespace Protogen {
                                     if (conn.Requirement.Unlocks.Contains("Mapstone"))
                                         accessibleMapstones.Add(conn.Destination);
 
-                                    int destinationKeystonesUsed = reachedWithKeystones.ContainsKey(conn.Destination.Name) ? reachedWithKeystones[conn.Destination.Name] : 9999;
+                                    var destinationKeystonesUsed = reachedWithKeystones.ContainsKey(conn.Destination.Name) ? reachedWithKeystones[conn.Destination.Name] : 9999;
 
                                     if (reachedWithKeystones[conn.Source.Name] < destinationKeystonesUsed)
                                         reachedWithKeystones[conn.Destination.Name] = reachedWithKeystones[conn.Source.Name];
@@ -94,7 +94,7 @@ namespace Protogen {
                 } while (newNodes.Count != 0);
 
                 // Accumulate progressive map locations
-                int mapstonesReachable = Math.Min(inventory.Mapstones, accessibleMapstones.Count);
+                var mapstonesReachable = Math.Min(inventory.Mapstones, accessibleMapstones.Count);
                 if (accessedMapstones < mapstonesReachable) {
                     foreach (var connection in graph.OutgoingConnections[startNode].Where(conn =>
                             conn.Requirement.Mapstones > accessedMapstones &&
@@ -118,13 +118,13 @@ namespace Protogen {
                             !reachable.Contains(conn.Destination.Name) && conn.Requirement.Keystones > 0
                         )
                     )) {
-                    int keystonesNeeded = reachedWithKeystones[conn.Source.Name] + conn.Requirement.Keystones;
+                    var keystonesNeeded = reachedWithKeystones[conn.Source.Name] + conn.Requirement.Keystones;
 
                     if (inventory.Keystones >= keystonesNeeded) {
                         foundAny = true;
                         newNodes.Add(conn.Destination.Name);
 
-                        int destinationKeystonesUsed = reachedWithKeystones.ContainsKey(conn.Destination.Name) ? reachedWithKeystones[conn.Destination.Name] : 9999;
+                        var destinationKeystonesUsed = reachedWithKeystones.ContainsKey(conn.Destination.Name) ? reachedWithKeystones[conn.Destination.Name] : 9999;
                         if (keystonesNeeded < destinationKeystonesUsed)
                             reachedWithKeystones[conn.Destination.Name] = keystonesNeeded;
                     }

@@ -9,10 +9,10 @@ public class SaveGameData {
         writer.Write("SaveGameData");
         writer.Write(1);
         writer.Write(Scenes.Count);
-        foreach (SaveScene saveScene in Scenes.Values) {
+        foreach (var saveScene in Scenes.Values) {
             writer.Write(saveScene.SceneGUID.ToByteArray());
             writer.Write(saveScene.SaveObjects.Count);
-            foreach (SaveObject saveObject in saveScene.SaveObjects) {
+            foreach (var saveObject in saveScene.SaveObjects) {
                 writer.Write(saveObject.Id.ToByteArray());
                 saveObject.Data.WriteMemoryStreamToBinaryWriter(writer);
             }
@@ -29,14 +29,14 @@ public class SaveGameData {
         }
 
         SaveGameData.CurrentSaveFileVersion = reader.ReadInt32();
-        int num = reader.ReadInt32();
-        for (int i = 0; i < num; i++) {
-            SaveScene saveScene = new SaveScene();
+        var num = reader.ReadInt32();
+        for (var i = 0; i < num; i++) {
+            var saveScene = new SaveScene();
             saveScene.SceneGUID = new MoonGuid(reader.ReadBytes(16));
             Scenes.Add(saveScene.SceneGUID, saveScene);
-            int num2 = reader.ReadInt32();
-            for (int j = 0; j < num2; j++) {
-                SaveObject item = new SaveObject(new MoonGuid(reader.ReadBytes(16)));
+            var num2 = reader.ReadInt32();
+            for (var j = 0; j < num2; j++) {
+                var item = new SaveObject(new MoonGuid(reader.ReadBytes(16)));
                 item.Data.ReadMemoryStreamFromBinaryReader(reader);
                 saveScene.SaveObjects.Add(item);
             }
@@ -87,7 +87,7 @@ public class SaveGameData {
     }
 
     public void ApplyPendingScenes() {
-        foreach (SaveScene saveScene in PendingScenes.Values) {
+        foreach (var saveScene in PendingScenes.Values) {
             if (SceneExists(saveScene.SceneGUID)) {
                 Scenes.Remove(saveScene.SceneGUID);
             }
@@ -108,14 +108,14 @@ public class SaveGameData {
     }
 
     public void LoadCustomData(ArrayList data) {
-        SaveScene saveScene = new SaveScene();
+        var saveScene = new SaveScene();
         saveScene.SceneGUID = (MoonGuid)data[0];
         Scenes.Add(saveScene.SceneGUID, saveScene);
-        for (int i = 1; i < data.Count; i++) {
-            SaveObject saveObject = new SaveObject((MoonGuid)((object[])data[i])[0]);
-            byte[] array = (byte[])((object[])data[i])[1];
-            BinaryReader binaryReader = new BinaryReader(new MemoryStream(array));
-            int num = array.Length;
+        for (var i = 1; i < data.Count; i++) {
+            var saveObject = new SaveObject((MoonGuid)((object[])data[i])[0]);
+            var array = (byte[])((object[])data[i])[1];
+            var binaryReader = new BinaryReader(new MemoryStream(array));
+            var num = array.Length;
             saveObject.Data.MemoryStream.SetLength(num);
             binaryReader.Read(saveObject.Data.MemoryStream.GetBuffer(), 0, num);
             saveScene.SaveObjects.Add(saveObject);

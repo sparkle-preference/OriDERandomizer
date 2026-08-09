@@ -54,8 +54,8 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
 
     public SoulFlamePlacementSafety IsSafeToCastSoulFlame {
         get {
-            Vector3 position = m_sein.Position;
-            for (int i = 0; i < NoSoulFlameZone.All.Count; i++) {
+            var position = m_sein.Position;
+            for (var i = 0; i < NoSoulFlameZone.All.Count; i++) {
                 if (NoSoulFlameZone.All[i].BoundingRect.Contains(position)) {
                     return SoulFlamePlacementSafety.UnsafeZone;
                 }
@@ -65,21 +65,21 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
                 return SoulFlamePlacementSafety.UnsafeZone;
             }
 
-            for (int j = 0; j < SavePedestal.All.Count; j++) {
+            for (var j = 0; j < SavePedestal.All.Count; j++) {
                 if (SavePedestal.All[j].IsInside) {
                     return SoulFlamePlacementSafety.SavePedestal;
                 }
             }
 
-            for (int k = 0; k < m_sein.Abilities.SpiritFlameTargetting.ClosestAttackables.Count; k++) {
-                EntityTargetting entityTargetting = m_sein.Abilities.SpiritFlameTargetting.ClosestAttackables[k] as EntityTargetting;
+            for (var k = 0; k < m_sein.Abilities.SpiritFlameTargetting.ClosestAttackables.Count; k++) {
+                var entityTargetting = m_sein.Abilities.SpiritFlameTargetting.ClosestAttackables[k] as EntityTargetting;
                 if (entityTargetting && entityTargetting.Entity is Enemy) {
                     return SoulFlamePlacementSafety.UnsafeEnemies;
                 }
             }
 
-            for (int l = 0; l < RespawningPlaceholder.All.Count; l++) {
-                RespawningPlaceholder respawningPlaceholder = RespawningPlaceholder.All[l];
+            for (var l = 0; l < RespawningPlaceholder.All.Count; l++) {
+                var respawningPlaceholder = RespawningPlaceholder.All[l];
                 if (!respawningPlaceholder.EntityIsDead && Vector3.Distance(position, respawningPlaceholder.Position) < 10f) {
                     return SoulFlamePlacementSafety.UnsafeEnemies;
                 }
@@ -89,7 +89,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
                 return SoulFlamePlacementSafety.UnsafeZone;
             }
 
-            Collider groundCollider = m_sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundCollider;
+            var groundCollider = m_sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundCollider;
             if (groundCollider) {
                 if (groundCollider.attachedRigidbody) {
                     return SoulFlamePlacementSafety.UnsafeGround;
@@ -135,7 +135,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
             m_readyForReadySequence = false;
             InstantiateUtility.Instantiate(SoulFlameReadyText, Characters.Ori.transform.position, Quaternion.identity);
             UI.SeinUI.OnSoulFlameReady();
-            GameObject gameObject = Instantiate(SoulFlameReadyEffect);
+            var gameObject = Instantiate(SoulFlameReadyEffect);
             gameObject.transform.parent = Characters.Ori.transform;
             gameObject.transform.localPosition = Vector3.zero;
             Sound.Play(SoulFlameReadySoundProvider.GetSound(null), Characters.Sein.Position, null);
@@ -221,7 +221,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
                 m_tapRemainingTime -= Time.deltaTime;
                 if (m_tapRemainingTime < 0f && InsideCheckpointMarker && Characters.Sein.PlayerAbilities.Rekindle.HasAbility && IsSafeToCastSoulFlame == SoulFlamePlacementSafety.Safe) {
                     OnSoulFlameCast();
-                    Vector3 position = Characters.Sein.Position;
+                    var position = Characters.Sein.Position;
                     Characters.Sein.Position = m_soulFlame.Position;
                     SaveSlotBackupsManager.CreateCurrentBackup();
                     GameController.Instance.CreateCheckpoint();
@@ -350,8 +350,8 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
 
     private void HandleCheckpointMarkerVisibility() {
         if (m_checkpointMarkerGameObject) {
-            bool flag = Scenes.Manager.SceneIsEnabled(m_sceneCheckpoint);
-            bool flag2 = UI.Cameras.Current.IsOnScreenPadded(m_soulFlame.Position, 5f);
+            var flag = Scenes.Manager.SceneIsEnabled(m_sceneCheckpoint);
+            var flag2 = UI.Cameras.Current.IsOnScreenPadded(m_soulFlame.Position, 5f);
             if (m_checkpointMarkerGameObject.activeSelf) {
                 if (!flag && !flag2) {
                     m_checkpointMarkerGameObject.SetActive(false);
@@ -366,7 +366,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
         if (AllowedToAccessSkillTree) {
             if (InsideCheckpointMarker && SkillTreeMessage && SkillTreeRekindleMessage && PlayerCouldSoulFlame) {
                 if (m_skillTreeHint == null) {
-                    MessageProvider messageProvider = !Characters.Sein.PlayerAbilities.Rekindle.HasAbility || IsSafeToCastSoulFlame != SoulFlamePlacementSafety.Safe ? SkillTreeMessage : SkillTreeRekindleMessage;
+                    var messageProvider = !Characters.Sein.PlayerAbilities.Rekindle.HasAbility || IsSafeToCastSoulFlame != SoulFlamePlacementSafety.Safe ? SkillTreeMessage : SkillTreeRekindleMessage;
                     m_skillTreeHint = UI.Hints.Show(messageProvider, HintLayer.SoulFlame, float.PositiveInfinity);
                 }
             } else if (m_skillTreeHint) {
@@ -403,10 +403,10 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
                 ar.Serialize(m_soulFlame.Position);
             }
         } else {
-            bool flag = false;
+            var flag = false;
             ar.Serialize(ref flag);
             if (flag) {
-                Vector3 zero = Vector3.zero;
+                var zero = Vector3.zero;
                 ar.Serialize(ref zero);
                 if (m_soulFlame) {
                     m_soulFlame.Position = zero;

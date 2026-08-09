@@ -12,9 +12,9 @@ public class RandomizerUI : MonoBehaviour {
     public void Awake() {
         // deactivating the existing prefab before cloning it prevents the clone from doing Awake/Start/etc.
         // this gives us a chance to do setup before things get locked in
-        bool wasActive = UI.MessageController.HintMessage.activeSelf;
+        var wasActive = UI.MessageController.HintMessage.activeSelf;
         UI.MessageController.HintMessage.SetActive(false);
-        GameObject obj = (GameObject)InstantiateUtility.Instantiate(UI.MessageController.HintMessage);
+        var obj = (GameObject)InstantiateUtility.Instantiate(UI.MessageController.HintMessage);
         UI.MessageController.HintMessage.SetActive(wasActive);
         Message.SideNotificationPrefab = obj;
 
@@ -25,7 +25,7 @@ public class RandomizerUI : MonoBehaviour {
         Destroy(obj.GetComponent<SoundSource>());
 
         // position adjustment on the textbox moves it forward (-Z) so that the text + bg render on top of the world map
-        MessageBox messageBox = obj.GetComponentInChildren<MessageBox>();
+        var messageBox = obj.GetComponentInChildren<MessageBox>();
         messageBox.transform.localScale *= 0.9f;
         messageBox.TextBox.transform.localPosition = new Vector3(0f, 0f, -1f);
         messageBox.TextBox.alignment = AlignmentMode.Left;
@@ -35,21 +35,21 @@ public class RandomizerUI : MonoBehaviour {
         messageBox.Visibility.TransitionInDuration = 0.2f;
         messageBox.Visibility.TransitionOutDuration = 0.15f;
 
-        ScaleToTextBox scaleToTextBox = messageBox.GetComponentInChildren<ScaleToTextBox>();
+        var scaleToTextBox = messageBox.GetComponentInChildren<ScaleToTextBox>();
         scaleToTextBox.TopLeftPadding = new Vector2(0.5f, 0.15f);
         scaleToTextBox.BottomRightPadding = new Vector2(0.5f, 0.15f);
     }
 
     public void OnGUI() {
         if (DebugMenuB.DebugControlsEnabled && Characters.Sein != null && Characters.Sein.Active) {
-            GUIStyle infoStyle = new GUIStyle();
+            var infoStyle = new GUIStyle();
             infoStyle.fontSize = 16;
             infoStyle.alignment = TextAnchor.LowerLeft;
             infoStyle.normal.textColor = Color.white;
-            Camera camera = UI.Cameras.Current.Camera;
-            Vector2 cursorPosition = Input.CursorPosition;
+            var camera = UI.Cameras.Current.Camera;
+            var cursorPosition = Input.CursorPosition;
             Vector2 cursorWorldPos = camera.ViewportToWorldPoint(new Vector3(cursorPosition.x, cursorPosition.y, -camera.transform.position.z));
-            string text = string.Format(
+            var text = string.Format(
                 "Ori (World) X: {0} / Y: {1}\nCursor (World) X {2} / Y: {3}",
                 Characters.Sein.Position.x,
                 Characters.Sein.Position.y,
@@ -65,10 +65,10 @@ public class RandomizerUI : MonoBehaviour {
             return;
         }
 
-        bool updateDisplay = false;
+        var updateDisplay = false;
 
         // message objects destroy themselves automatically when their time elapses, so we have to clean up after them
-        int i = 0;
+        var i = 0;
         while (i < m_sideNotificationsDisplaying.Count) {
             if (!m_sideNotificationsDisplaying[i].MessageBox) {
                 m_sideNotificationsDisplaying.RemoveAt(i);
@@ -79,14 +79,14 @@ public class RandomizerUI : MonoBehaviour {
         }
 
         while (m_sideNotificationsAwaiting.Count > 0 && (m_sideNotificationsDisplaying.Count < 5 || m_extendedAltTShown)) {
-            Message nextMessage = m_sideNotificationsAwaiting.Dequeue();
+            var nextMessage = m_sideNotificationsAwaiting.Dequeue();
             m_sideNotificationsDisplaying.Add(nextMessage);
             m_recentSideNotifications.Enqueue(nextMessage);
             updateDisplay = true;
         }
 
         if (m_sideNotificationsDisplaying.Count > 5) {
-            for (int j = 0; j < m_sideNotificationsDisplaying.Count - 5; j++) {
+            for (var j = 0; j < m_sideNotificationsDisplaying.Count - 5; j++) {
                 if (m_sideNotificationsDisplaying[j].MessageBox != null) {
                     m_sideNotificationsDisplaying[j].MessageBox.Visibility.HideMessageScreenImmediately();
                 }
@@ -100,14 +100,14 @@ public class RandomizerUI : MonoBehaviour {
         }
 
         if (updateDisplay) {
-            float nextY = 2.2f;
-            foreach (Message displayingMessage in m_sideNotificationsDisplaying) {
+            var nextY = 2.2f;
+            foreach (var displayingMessage in m_sideNotificationsDisplaying) {
                 if (!displayingMessage.MessageBox) {
                     displayingMessage.Instantiate();
                 }
 
                 displayingMessage.MessageBox.transform.position = new Vector3(-5.7f, nextY, 0f);
-                float scaledHeight = displayingMessage.MessageBox.TextBox.boundsTop - displayingMessage.MessageBox.TextBox.boundsBottom;
+                var scaledHeight = displayingMessage.MessageBox.TextBox.boundsTop - displayingMessage.MessageBox.TextBox.boundsBottom;
                 scaledHeight *= displayingMessage.MessageBox.TextBox.transform.lossyScale.y;
                 nextY -= scaledHeight + 0.35f;
             }
@@ -117,7 +117,7 @@ public class RandomizerUI : MonoBehaviour {
     public void FixedUpdate() {
         bool queueEnabled = RandomizerSettings.Customization.MultiplePickupMessages;
         // only meaningful with the side queue; without it the hold state would wedge open
-        bool alwaysShowLastFive = RandomizerSettings.Customization.AlwaysShowLastFivePickups && queueEnabled;
+        var alwaysShowLastFive = RandomizerSettings.Customization.AlwaysShowLastFivePickups && queueEnabled;
 
         // in any case where "hold alt+T" would show nothing, replay last message OnPressed to preserve snappy response
         // (recents fill even with the side queue disabled, so holding shows the last 5 either way)
@@ -133,7 +133,7 @@ public class RandomizerUI : MonoBehaviour {
             m_timeAltTHeld += Time.deltaTime;
 
             if (m_timeAltTHeld >= 0.2f && !m_extendedAltTShown) {
-                foreach (Message displayingMessage in m_sideNotificationsDisplaying) {
+                foreach (var displayingMessage in m_sideNotificationsDisplaying) {
                     if (!m_recentSideNotifications.Contains(displayingMessage)) {
                         displayingMessage.MessageBox.Visibility.HideMessageScreenImmediately();
                     }
@@ -143,14 +143,14 @@ public class RandomizerUI : MonoBehaviour {
                 m_sideNotificationsDisplaying.AddRange(m_recentSideNotifications.ToArray());
                 m_extendedAltTShown = true;
 
-                float nextY = 2.2f;
-                foreach (Message displayingMessage in m_sideNotificationsDisplaying) {
+                var nextY = 2.2f;
+                foreach (var displayingMessage in m_sideNotificationsDisplaying) {
                     if (!displayingMessage.MessageBox) {
                         displayingMessage.Instantiate();
                     }
 
                     displayingMessage.MessageBox.transform.position = new Vector3(-5.7f, nextY, 0f);
-                    float scaledHeight = displayingMessage.MessageBox.TextBox.boundsTop - displayingMessage.MessageBox.TextBox.boundsBottom;
+                    var scaledHeight = displayingMessage.MessageBox.TextBox.boundsTop - displayingMessage.MessageBox.TextBox.boundsBottom;
                     scaledHeight *= displayingMessage.MessageBox.TextBox.transform.lossyScale.y;
                     nextY -= scaledHeight + 0.35f;
                 }
@@ -158,7 +158,7 @@ public class RandomizerUI : MonoBehaviour {
         }
 
         if (m_extendedAltTShown) {
-            foreach (Message displayingMessage in m_sideNotificationsDisplaying) {
+            foreach (var displayingMessage in m_sideNotificationsDisplaying) {
                 displayingMessage.MessageBox.Visibility.ResetWaitDuration();
             }
         }
@@ -174,7 +174,7 @@ public class RandomizerUI : MonoBehaviour {
             if (m_extendedAltTShown && !alwaysShowLastFive) {
                 m_extendedAltTShown = false;
 
-                foreach (Message displayingMessage in m_sideNotificationsDisplaying) {
+                foreach (var displayingMessage in m_sideNotificationsDisplaying) {
                     displayingMessage.MessageBox.SetWaitDuration(3f);
                     displayingMessage.MessageBox.Visibility.ResetWaitDuration();
                 }
@@ -198,7 +198,7 @@ public class RandomizerUI : MonoBehaviour {
     public void ClearRecentNotifications() {
         m_recentSideNotifications.Clear();
 
-        foreach (Message displayingMessage in m_sideNotificationsDisplaying) {
+        foreach (var displayingMessage in m_sideNotificationsDisplaying) {
             if (displayingMessage.MessageBox) {
                 displayingMessage.MessageBox.SetWaitDuration(3f);
                 displayingMessage.MessageBox.Visibility.ResetWaitDuration();
@@ -238,12 +238,12 @@ public class RandomizerUI : MonoBehaviour {
         }
 
         public void Instantiate() {
-            GameObject obj = (GameObject)InstantiateUtility.Instantiate(SideNotificationPrefab);
+            var obj = (GameObject)InstantiateUtility.Instantiate(SideNotificationPrefab);
             obj.transform.parent = SideNotificationPrefab.transform.parent;
             obj.SetActive(true);
 
             MessageBox = obj.GetComponentInChildren<MessageBox>();
-            RandomizerMessageProvider messageProvider = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
+            var messageProvider = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
             messageProvider.SetMessage(MessageString);
             MessageBox.SetMessageProvider(messageProvider);
             MessageBox.SetBackgroundColor(BgColor);

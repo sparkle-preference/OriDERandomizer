@@ -36,7 +36,7 @@ public class EntityController : SaveSerialize, INearSeinReceiver, IDamageRecieve
             return;
         }
 
-        float deltaTime = Time.deltaTime;
+        var deltaTime = Time.deltaTime;
         if (Entity is Enemy) {
             deltaTime = RandomizerBonusSkill.TimeScale(deltaTime);
         }

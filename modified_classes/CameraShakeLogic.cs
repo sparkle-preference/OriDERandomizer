@@ -10,12 +10,12 @@ public class CameraShakeLogic : MonoBehaviour, ISuspendable {
     }
 
     public void UpdateOffset() {
-        Vector3 shakeOffset = Vector3.zero;
-        Vector3 shakeRotation = Vector3.zero;
+        var shakeOffset = Vector3.zero;
+        var shakeRotation = Vector3.zero;
 
-        for (int i = 0; i < CameraShake.All.Count; i++) {
-            CameraShake cameraShake = CameraShake.All[i];
-            float modifiedStrength = cameraShake.ModifiedStrength;
+        for (var i = 0; i < CameraShake.All.Count; i++) {
+            var cameraShake = CameraShake.All[i];
+            var modifiedStrength = cameraShake.ModifiedStrength;
             shakeOffset += cameraShake.CurrentOffset * modifiedStrength;
             shakeRotation += cameraShake.CurrentRotation * modifiedStrength;
         }

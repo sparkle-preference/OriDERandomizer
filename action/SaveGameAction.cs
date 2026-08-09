@@ -3,8 +3,8 @@ using Game;
 public class SaveGameAction : ActionMethod {
     public override void Perform(IContext context) {
         SaveSlotBackupsManager.CreateCurrentBackup();
-        float current = 0f;
-        float amount = 0f;
+        var current = 0f;
+        var amount = 0f;
         SeinCharacter sein = Characters.Sein;
         if (sein) {
             current = sein.Energy.Current;

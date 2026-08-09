@@ -15,9 +15,9 @@ public class SeinGrabWall : CharacterState, ISeinReceiver {
 
     public TextureAnimationWithTransitions PickAwayAnimation() {
         if (Sein.PlayerAbilities.ChargeJump.HasAbility) {
-            TextureAnimationWithTransitions[] away = GrabWallAnimation.Away;
-            float angularElevation = Sein.Abilities.WallChargeJump.AngularElevation;
-            int num = (int)Mathf.Clamp(Mathf.InverseLerp(-45f, 45f, angularElevation) * away.Length, 0f, away.Length - 1);
+            var away = GrabWallAnimation.Away;
+            var angularElevation = Sein.Abilities.WallChargeJump.AngularElevation;
+            var num = (int)Mathf.Clamp(Mathf.InverseLerp(-45f, 45f, angularElevation) * away.Length, 0f, away.Length - 1);
             return away[num];
         }
 
@@ -101,7 +101,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver {
                 Sein.Abilities.Glide.NeedsRightTriggerReleased = true;
             }
 
-            float climbClamberFactor = RandomizerSettings.Controls.SlowClimbVault ? 0.225f : 0.65f;
+            var climbClamberFactor = RandomizerSettings.Controls.SlowClimbVault ? 0.225f : 0.65f;
             Sein.Abilities.EdgeClamber.PerformEdgeClamber(climbClamberFactor);
         }
 
@@ -121,7 +121,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver {
             m_requiresRelease = true;
         }
 
-        Vector2 localSpeed = PlatformMovement.LocalSpeed;
+        var localSpeed = PlatformMovement.LocalSpeed;
         if (Characters.Sein.Controller.CanMove) {
             if (LockVerticalMovement || Sein.Controller.IsChargingJump) {
                 localSpeed.y = 0f;

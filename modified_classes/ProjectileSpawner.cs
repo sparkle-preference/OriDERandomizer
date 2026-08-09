@@ -46,11 +46,11 @@ public class ProjectileSpawner : SaveSerialize, ISuspendable {
 
     public Projectile SpawnProjectile() {
         TimeSinceLastShot = 0f;
-        GameObject gameObject = InstantiateUtility.Instantiate(Projectile) as GameObject;
+        var gameObject = InstantiateUtility.Instantiate(Projectile) as GameObject;
         gameObject.transform.SetParentMaintainingLocalTransform(transform.root);
         m_lastProjectile = gameObject;
         gameObject.transform.position = transform.position;
-        Projectile component = gameObject.GetComponent<Projectile>();
+        var component = gameObject.GetComponent<Projectile>();
         component.Speed = Speed;
         component.Direction = Direction;
         if (Direction == Vector3.zero) {

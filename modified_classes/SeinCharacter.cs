@@ -4,7 +4,7 @@ using UnityEngine;
 public class SeinCharacter : MonoBehaviour, ICharacter {
     public Vector2 PhysicsSpeed {
         get {
-            PlatformMovement platformMovement = PlatformBehaviour.PlatformMovement;
+            var platformMovement = PlatformBehaviour.PlatformMovement;
             return !platformMovement.IsOnGround ? platformMovement.WorldSpeed : platformMovement.GroundNormal * platformMovement.LocalSpeedY + platformMovement.GroundBinormal * platformMovement.LocalSpeedX;
         }
     }

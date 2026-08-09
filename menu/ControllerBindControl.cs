@@ -16,7 +16,7 @@ public class ControllerBindControl : MonoBehaviour {
         exit = 0;
         allButtons = (XboxControllerInput.Button[])Enum.GetValues(typeof(XboxControllerInput.Button));
         buttonsPressed = new bool[allButtons.Length];
-        for (int i = 0; i < buttonsPressed.Length; i++) {
+        for (var i = 0; i < buttonsPressed.Length; i++) {
             buttonsPressed[i] = true;
         }
 
@@ -45,13 +45,13 @@ public class ControllerBindControl : MonoBehaviour {
             return;
         }
 
-        PlayerInputRebinding.ControllerButton? pressedButtonAsBind = GetPressedButtonAsBind();
+        var pressedButtonAsBind = GetPressedButtonAsBind();
         if (pressedButtonAsBind != null && !currentKeys.Contains(pressedButtonAsBind.Value)) {
             currentKeys.Add(pressedButtonAsBind.Value);
             UpdateMessageBox();
         }
 
-        foreach (XboxControllerInput.Button button in allButtons) {
+        foreach (var button in allButtons) {
             buttonsPressed[(int)button] = XboxControllerInput.GetButton(button);
         }
     }
@@ -61,9 +61,9 @@ public class ControllerBindControl : MonoBehaviour {
     }
 
     public static string KeyBindingToString(PlayerInputRebinding.ControllerButton[] codes) {
-        string text = string.Empty;
-        bool flag = true;
-        foreach (PlayerInputRebinding.ControllerButton controllerButton in codes) {
+        var text = string.Empty;
+        var flag = true;
+        foreach (var controllerButton in codes) {
             text += !flag ? ", " : string.Empty;
             text += controllerButton;
             flag = false;
@@ -113,7 +113,7 @@ public class ControllerBindControl : MonoBehaviour {
     }
 
     public PlayerInputRebinding.ControllerButton? GetPressedButtonAsBind() {
-        foreach (XboxControllerInput.Button button in allButtons) {
+        foreach (var button in allButtons) {
             if (WasPressed(button)) {
                 return ToBind(button);
             }
@@ -175,7 +175,7 @@ public class ControllerBindControl : MonoBehaviour {
         GetKeys = getKeys;
         SetKeys = setKeys;
         messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
-        CleverMenuItemTooltip component = GetComponent<CleverMenuItemTooltip>();
+        var component = GetComponent<CleverMenuItemTooltip>();
         tooltipProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
         tooltipProvider.SetMessage(owner.DefaultTooltip);
         component.Tooltip = tooltipProvider;

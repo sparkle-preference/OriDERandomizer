@@ -50,7 +50,7 @@ public static class RandomizerDeathLink {
         try {
             if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null)
                 return;
-            string[] parts = payload.Split(new[] { ';' }, 2);
+            var parts = payload.Split(new[] { ';' }, 2);
             int token;
             if (!int.TryParse(parts[0], out token)
                 || token <= Characters.Sein.Inventory.GetRandomizerItem(LastToken))
@@ -90,7 +90,7 @@ public static class RandomizerDeathLink {
         try {
             if (!Enabled || !killPending)
                 return;
-            bool stable = Characters.Sein && Characters.Sein.Active
+            var stable = Characters.Sein && Characters.Sein.Active
                 && Characters.Sein.Controller.CanMove
                 && !Characters.Sein.IsSuspended && !UI.MainMenuVisible
                 && !Randomizer.CreditsActive

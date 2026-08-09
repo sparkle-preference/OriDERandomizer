@@ -11,8 +11,8 @@ public class WormMortarShootingState : WormState {
     }
 
     public override void OnEnter() {
-        MortarWormEnemy mortarWormEnemy = (MortarWormEnemy)Worm;
-        Vector3 direction = (m_projectileSpawner.Speed * m_projectileSpawner.Direction + 0.5f * m_projectileSpawner.Gravity * m_shootDelay * m_shootDelay * Vector3.down).normalized;
+        var mortarWormEnemy = (MortarWormEnemy)Worm;
+        var direction = (m_projectileSpawner.Speed * m_projectileSpawner.Direction + 0.5f * m_projectileSpawner.Gravity * m_shootDelay * m_shootDelay * Vector3.down).normalized;
         direction = mortarWormEnemy.transform.InverseTransformDirection(direction);
         if (mortarWormEnemy.FaceLeft) {
             direction.x *= -1f;
@@ -38,12 +38,12 @@ public class WormMortarShootingState : WormState {
                 m_shootSound.Play();
             }
 
-            Projectile projectile = m_projectileSpawner.SpawnProjectile();
-            Vector3 b = RandomizerBonusSkill.TimeScale(projectile.Direction * projectile.Speed * m_shootDelay + Vector3.down * projectile.Gravity * m_shootDelay * m_shootDelay * 0.5f);
+            var projectile = m_projectileSpawner.SpawnProjectile();
+            var b = RandomizerBonusSkill.TimeScale(projectile.Direction * projectile.Speed * m_shootDelay + Vector3.down * projectile.Gravity * m_shootDelay * m_shootDelay * 0.5f);
             projectile.Position += b;
             projectile.SpeedVector += Vector3.down * projectile.Gravity * m_shootDelay;
             projectile.GetComponent<DamageDealer>().Damage = m_projectileDamage;
-            Vector3 vector = m_projectileAnimationPosition - projectile.Position;
+            var vector = m_projectileAnimationPosition - projectile.Position;
             vector.z = 0f;
             projectile.Position += vector;
             projectile.Displacement = vector;

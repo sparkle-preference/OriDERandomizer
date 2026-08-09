@@ -44,18 +44,18 @@ public class TraceGroundMovement : SaveSerialize, IDamageReciever, ISuspendable 
             return;
         }
 
-        float num = Speed;
+        var num = Speed;
         num += Kickback.CurrentKickbackSpeed;
         m_rigidbody.velocity = RandomizerBonusSkill.TimeScale(Right * num);
-        Vector3 eulerAngles = transform.eulerAngles;
+        var eulerAngles = transform.eulerAngles;
         eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(eulerAngles.z, MoonMath.Angle.AngleFromVector(Right), 0.2f));
         transform.eulerAngles = eulerAngles;
-        Vector3 vector = transform.position;
-        Vector2 vector2 = m_movingGround.CalculateDelta(transform);
+        var vector = transform.position;
+        var vector2 = m_movingGround.CalculateDelta(transform);
         vector.x += RandomizerBonusSkill.TimeScale(vector2.x);
         vector.y += RandomizerBonusSkill.TimeScale(vector2.y);
-        float z = eulerAngles.z;
-        float b = Mathf.DeltaAngle(z, m_lastAngle) / Time.deltaTime;
+        var z = eulerAngles.z;
+        var b = Mathf.DeltaAngle(z, m_lastAngle) / Time.deltaTime;
         m_lastAngle = z;
         CurrentAngularVelocity = Mathf.Lerp(CurrentAngularVelocity, b, 0.5f);
         if (Vector3.Distance(m_lastPosition, vector) > 0.03f) {

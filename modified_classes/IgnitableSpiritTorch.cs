@@ -31,7 +31,7 @@ public class IgnitableSpiritTorch : SaveSerialize {
     }
 
     public static IgnitableSpiritTorch IgniteAnyTorchesNearPosition(Vector3 position) {
-        foreach (IgnitableSpiritTorch ignitableSpiritTorch in m_all) {
+        foreach (var ignitableSpiritTorch in m_all) {
             if (!ignitableSpiritTorch.m_isLit && Vector3.Distance(ignitableSpiritTorch.Position, position) < 2f) {
                 ignitableSpiritTorch.Light(true);
                 return ignitableSpiritTorch;

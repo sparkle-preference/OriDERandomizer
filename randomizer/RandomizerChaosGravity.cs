@@ -14,7 +14,7 @@ public class RandomizerChaosGravity : RandomizerChaosEffect {
     public override void Start() {
         Countdown = Random.Range(600, 1200);
         WellActive = false;
-        int num = Random.Range(0, 16);
+        var num = Random.Range(0, 16);
         if (num <= 2) {
             Randomizer.showChaosEffect("Gravity increase");
             ApplyGravityMultiplier(Random.Range(1.1f, 2f));
@@ -60,9 +60,9 @@ public class RandomizerChaosGravity : RandomizerChaosEffect {
 
         if (WellActive) {
             Characters.Ori.Position = new Vector3(WellPosition.x, WellPosition.y);
-            Vector2 vector = new Vector2(WellPosition.x - Characters.Sein.Position.x, WellPosition.y - Characters.Sein.Position.y);
-            float num = WellStrength / Math.Max(1f, vector.sqrMagnitude);
-            float friction = 1f;
+            var vector = new Vector2(WellPosition.x - Characters.Sein.Position.x, WellPosition.y - Characters.Sein.Position.y);
+            var num = WellStrength / Math.Max(1f, vector.sqrMagnitude);
+            var friction = 1f;
             vector.Normalize();
             if (Characters.Sein.PlatformBehaviour.PlatformMovement.IsOnGround) {
                 friction = 0.25f;
@@ -78,7 +78,7 @@ public class RandomizerChaosGravity : RandomizerChaosEffect {
     public void ApplyGravityMultiplier(float multiplier) {
         Characters.Sein.PlatformBehaviour.Gravity.BaseSettings.GravityStrength = 26f * multiplier;
         Characters.Sein.PlatformBehaviour.Gravity.BaseSettings.MaxFallSpeed = 32f * multiplier;
-        float jumpHeight = 3f / multiplier;
+        var jumpHeight = 3f / multiplier;
         Characters.Sein.Abilities.Jump.BackflipJumpHeight = jumpHeight;
         Characters.Sein.Abilities.Jump.CrouchJumpHeight = jumpHeight;
         Characters.Sein.Abilities.Jump.FirstJumpHeight = jumpHeight;

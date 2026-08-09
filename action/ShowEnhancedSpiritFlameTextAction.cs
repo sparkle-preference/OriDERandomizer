@@ -11,7 +11,7 @@ public class ShowEnhancedSpiritFlameTextAction : PerformingAction {
             return;
         }
 
-        RandomizerMessageProvider messageProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
+        var messageProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
         messageProvider.messages = Messages;
         m_messageBox = UI.MessageController.ShowEnhancedSpiritFlameMessage(messageProvider);
         if (m_messageBox) {

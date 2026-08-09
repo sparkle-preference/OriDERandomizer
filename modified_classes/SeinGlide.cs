@@ -122,13 +122,13 @@ public class SeinGlide : CharacterState, ISeinReceiver {
     }
 
     public void HandleFloatZones() {
-        for (int i = 0; i < FloatZone.All.Count; i++) {
-            FloatZone floatZone = FloatZone.All[i];
+        for (var i = 0; i < FloatZone.All.Count; i++) {
+            var floatZone = FloatZone.All[i];
             if (floatZone.BoundingRect.Contains(Sein.Position)) {
-                PlatformMovement platformMovement = Sein.PlatformBehaviour.PlatformMovement;
-                Vector2 b = Vector2.up * Sein.PlatformBehaviour.Gravity.CurrentSettings.GravityStrength * Time.deltaTime;
+                var platformMovement = Sein.PlatformBehaviour.PlatformMovement;
+                var b = Vector2.up * Sein.PlatformBehaviour.Gravity.CurrentSettings.GravityStrength * Time.deltaTime;
                 platformMovement.LocalSpeed += b;
-                Vector2 localSpeed = platformMovement.LocalSpeed;
+                var localSpeed = platformMovement.LocalSpeed;
                 if (localSpeed.y < 0f) {
                     localSpeed.y = MoonMath.Float.ClampedAdd(localSpeed.y, floatZone.Deceleration * Time.deltaTime, 0f, 0f);
                 }
@@ -145,10 +145,10 @@ public class SeinGlide : CharacterState, ISeinReceiver {
         }
 
         if (RandomizerBonus.EnhancedGlide) {
-            PlatformMovement platformMovement = Sein.PlatformBehaviour.PlatformMovement;
-            Vector2 b = Vector2.up * Sein.PlatformBehaviour.Gravity.CurrentSettings.GravityStrength * Time.deltaTime;
+            var platformMovement = Sein.PlatformBehaviour.PlatformMovement;
+            var b = Vector2.up * Sein.PlatformBehaviour.Gravity.CurrentSettings.GravityStrength * Time.deltaTime;
             platformMovement.LocalSpeed += b;
-            Vector2 localSpeed = platformMovement.LocalSpeed;
+            var localSpeed = platformMovement.LocalSpeed;
             if (localSpeed.y < 0f) {
                 localSpeed.y = MoonMath.Float.ClampedAdd(localSpeed.y, 1000f * Time.deltaTime, 0f, 0f);
             }
@@ -190,7 +190,7 @@ public class SeinGlide : CharacterState, ISeinReceiver {
 
     public bool CanEnter {
         get {
-            bool isGliding = IsGliding;
+            var isGliding = IsGliding;
             if (isGliding) {
             }
 

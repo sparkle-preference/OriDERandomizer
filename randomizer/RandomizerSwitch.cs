@@ -173,10 +173,10 @@ public static class RandomizerSwitch {
     }
 
     public static void TeleportPickup(string Value) {
-        int shardCount = -1;
-        char colorChar = ' ';
-        string shardPart = "";
-        string dungeonAbbr = "";
+        var shardCount = -1;
+        var colorChar = ' ';
+        var shardPart = "";
+        var dungeonAbbr = "";
         if (Value == "Ginso") {
             Characters.Sein.Inventory.SetRandomizerItem(1024, 1);
             shardCount = RandomizerBonus.WaterVeinShards();
@@ -226,7 +226,7 @@ public static class RandomizerSwitch {
             switch (action.Action) {
                 case "RP":
                 case "MU":
-                    foreach (RandomizerAction subpart in action.Decompose())
+                    foreach (var subpart in action.Decompose())
                         GivePickup(subpart, coords, false);
                     SilentMode = false;
                     break;
@@ -276,12 +276,12 @@ public static class RandomizerSwitch {
                     TeleportPickup((string)action.Value);
                     break;
                 case "SH":
-                    string message = ((string)action.Value).Replace("AltR", RandomizerRebinding.ReturnToStart.FirstBindName());
+                    var message = ((string)action.Value).Replace("AltR", RandomizerRebinding.ReturnToStart.FirstBindName());
                     if (message.Length > 1 && message[1] == '=') {
                         var parts = message.Split(',').ToList();
                         var flags = parts.FindAll(ele => ele.Length >= 2 && ele[1] == '=');
                         message = String.Join(",", parts.FindAll(ele => ele.Length < 2 || ele[1] != '=').ToArray());
-                        int duration = 120;
+                        var duration = 120;
                         foreach (var flag in flags) {
                             var p = flag.Split('=');
                             if (p.Length != 2)
@@ -299,8 +299,8 @@ public static class RandomizerSwitch {
                     break;
                 case "WT":
                     RandomizerTrackedDataManager.SetRelic(Randomizer.RelicZoneLookup[(string)action.Value]);
-                    int relics = Characters.Sein.Inventory.GetRandomizerItem(402);
-                    string relicStr = "\n(" + relics + "/" + Randomizer.RelicCount + ")";
+                    var relics = Characters.Sein.Inventory.GetRandomizerItem(402);
+                    var relicStr = "\n(" + relics + "/" + Randomizer.RelicCount + ")";
                     if (relics >= Randomizer.RelicCount) {
                         relicStr = "$" + relicStr + "$";
                     }
@@ -312,7 +312,7 @@ public static class RandomizerSwitch {
                     // Don't actually warp at spawn, let other code do that.
                     if (coords != 2) {
                         Randomizer.SaveAfterWarp = action.Action == "WS";
-                        string[] xy = ((string)action.Value).Split(',');
+                        var xy = ((string)action.Value).Split(',');
                         if (xy.Length > 2 && xy[2] == "force") {
                             Randomizer.WarpTo(new Vector3(float.Parse(xy[0]), float.Parse(xy[1])), 15);
                         } else {
@@ -327,7 +327,7 @@ public static class RandomizerSwitch {
                     break;
                 case "TW":
                     // TW entries are coord|TW|name,x,y
-                    string[] pieces2 = ((string)action.Value).Split(',');
+                    var pieces2 = ((string)action.Value).Split(',');
                     int warpX;
                     int.TryParse(pieces2[1], out warpX);
                     int warpY;
@@ -338,7 +338,7 @@ public static class RandomizerSwitch {
                     break;
                 case "NB":
                     // NB entries are coord|NB|x,y
-                    string[] pieces3 = ((string)action.Value).Split(',');
+                    var pieces3 = ((string)action.Value).Split(',');
                     int positionX;
                     int.TryParse(pieces3[0], out positionX);
                     int positionY;
@@ -351,7 +351,7 @@ public static class RandomizerSwitch {
                     // player's item. Nothing to grant locally: the
                     // found_locally send below tells the server, which flips
                     // the owner's slot bit and their client self-grants.
-                    string[] mwPieces = ((string)action.Value).Split(new[] { ',' }, 3);
+                    var mwPieces = ((string)action.Value).Split(new[] { ',' }, 3);
                     string[] apItem;
                     if (RandomizerMW.ApItems.TryGetValue(coords, out apItem)) {
                         // Archipelago reserved location: the owner here is our
@@ -365,7 +365,7 @@ public static class RandomizerSwitch {
                         else
                             RandomizerMW.GrantSelfItem(coords);
                     } else if (mwPieces.Length == 3) {
-                        string playerName = int.TryParse(mwPieces[0], out int pid) ? RandomizerMW.PlayerName(pid) : $"Player {mwPieces[0]}";
+                        var playerName = int.TryParse(mwPieces[0], out var pid) ? RandomizerMW.PlayerName(pid) : $"Player {mwPieces[0]}";
                         SentMwPickupMessage($"{playerName}'s {RandomizerMW.ColorWrap(mwPieces[2])}");
                     } else
                         SentMwPickupMessage("Unknown Foreign Item");

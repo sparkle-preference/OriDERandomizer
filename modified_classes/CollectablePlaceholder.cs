@@ -61,7 +61,7 @@ public class CollectablePlaceholder : SaveSerialize, ISuspendable, IDynamicGraph
         m_instance = InstantiateUtility.Instantiate(Prefab, transform.position, transform.rotation) as GameObject;
         UberPoolManager.Instance.AddOnDestroyed(m_instance, delegate { m_instance = null; });
 
-        PickupBase pickupBase = m_instance.GetComponentInChildren<PickupBase>();
+        var pickupBase = m_instance.GetComponentInChildren<PickupBase>();
         pickupBase.MoonGuid = MoonGuid;
         pickupBase.OnCollectedEvent = (Action)Delegate.Combine(pickupBase.OnCollectedEvent, new Action(OnCollect));
 

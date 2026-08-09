@@ -38,7 +38,7 @@ public class DebugMenu : MonoBehaviour {
                     }
                 }
 
-                Vector2 vector = MoonMath.Vector.ApplyRectangleDeadzone(Input.Axis, 0.15f, 0.15f);
+                var vector = MoonMath.Vector.ApplyRectangleDeadzone(Input.Axis, 0.15f, 0.15f);
                 m_noClipGhost.transform.position += (Vector3)vector.normalized * AxisToSpeedCurve.Evaluate(vector.magnitude) * Time.deltaTime;
             }
 

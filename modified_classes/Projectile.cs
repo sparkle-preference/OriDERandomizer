@@ -57,9 +57,9 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
         m_collider = GetComponent<Collider>();
         m_colliderEnabledAtStart = m_collider.enabled;
         Rigidbody = GetComponent<Rigidbody>();
-        DamageDealer component = GetComponent<DamageDealer>();
+        var component = GetComponent<DamageDealer>();
         if (component) {
-            DamageDealer damageDealer = component;
+            var damageDealer = component;
             damageDealer.OnDamageDealtEvent = (Action<GameObject, Damage>)Delegate.Combine(damageDealer.OnDamageDealtEvent, new Action<GameObject, Damage>(OnDamageDealt));
         }
 
@@ -120,7 +120,7 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
     public int BashPriority => 40;
 
     public void OnRecieveDamage(Damage damage) {
-        DamageType type = damage.Type;
+        var type = damage.Type;
         switch (type) {
             case DamageType.Bash:
                 HasBeenBashedByOri = true;
@@ -210,7 +210,7 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
             return;
         }
 
-        IProjectileDetonatable projectileDetonatable = go.FindComponent<IProjectileDetonatable>();
+        var projectileDetonatable = go.FindComponent<IProjectileDetonatable>();
         if (projectileDetonatable != null && projectileDetonatable.CanDetonateProjectiles()) {
             ExplodeProjectile();
         }
@@ -248,7 +248,7 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 
         UpdateVelocity();
         if (RotateSpriteToDirection) {
-            float num = transform.eulerAngles.z;
+            var num = transform.eulerAngles.z;
             num = Mathf.MoveTowardsAngle(num, MoonMath.Angle.AngleFromDirection(Direction), SpriteTurnSpeed * Time.deltaTime);
             transform.eulerAngles = new Vector3(0f, 0f, num);
         }
@@ -268,7 +268,7 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
             m_lastLoop.FadeOut(0.3f, true);
         }
 
-        for (int i = 0; i < m_onKillRecievers.Length; i++) {
+        for (var i = 0; i < m_onKillRecievers.Length; i++) {
             if (m_onKillRecievers[i]) {
                 ((IKillReciever)m_onKillRecievers[i]).OnKill();
             }
@@ -286,7 +286,7 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
     }
 
     public void UpdateVelocity() {
-        Vector3 vector = -Vector3.ClampMagnitude(Displacement / Time.deltaTime, 10f);
+        var vector = -Vector3.ClampMagnitude(Displacement / Time.deltaTime, 10f);
         Displacement += vector * Time.deltaTime;
         Rigidbody.velocity = RandomizerBonusSkill.TimeScale(Direction * Speed + vector);
     }

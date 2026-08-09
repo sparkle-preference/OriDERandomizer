@@ -44,8 +44,8 @@ public class RandomizerInventory : SaveSerialize {
             var preserve = randomizerItems.Where(item => item.Key >= 1500 && item.Key < 1600).ToList();
 
             randomizerItems.Clear();
-            int count = ar.Serialize(0);
-            for (int i = 0; i < count; i++)
+            var count = ar.Serialize(0);
+            for (var i = 0; i < count; i++)
                 randomizerItems[ar.Serialize(0)] = ar.Serialize(0);
 
             foreach (var kvp in preserve)

@@ -63,7 +63,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void RefreshVisible() {
-        foreach (CleverMenuItem cleverMenuItem in MenuItems) {
+        foreach (var cleverMenuItem in MenuItems) {
             cleverMenuItem.RefreshVisible();
         }
     }
@@ -108,8 +108,8 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void MoveSelection(bool forward) {
-        int num = Index;
-        int num2 = 0;
+        var num = Index;
+        var num2 = 0;
         if (forward) {
             do {
                 num = (num + 1) % MenuItems.Count;
@@ -145,7 +145,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void SetCurrentMenuItem(CleverMenuItem menuItem) {
-        int currentItem = MenuItems.FindIndex(a => a == menuItem);
+        var currentItem = MenuItems.FindIndex(a => a == menuItem);
         SetCurrentItem(currentItem);
     }
 
@@ -173,8 +173,8 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
 
         if (name == "inventoryScreen") {
             m_isPauseScreen = true;
-            CleverMenuItem cleverMenuItem = MenuItems[0];
-            CleverMenuItem cleverMenuItem2 = MenuItems[9];
+            var cleverMenuItem = MenuItems[0];
+            var cleverMenuItem2 = MenuItems[9];
             Navigation.Add(
                 new NavigationData {
                     From = cleverMenuItem,
@@ -191,7 +191,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void SetIndexToFirst() {
-        for (int i = 0; i < MenuItems.Count; i++) {
+        for (var i = 0; i < MenuItems.Count; i++) {
             if (MenuItems[i].IsActivated) {
                 SetCurrentItem(i);
                 return;
@@ -225,7 +225,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         }
 
         if (Input.LeftClick.OnPressed) {
-            CleverMenuItem cleverMenuItemUnderCursor = CleverMenuItemUnderCursor;
+            var cleverMenuItemUnderCursor = CleverMenuItemUnderCursor;
             if (cleverMenuItemUnderCursor) {
                 SetCurrentMenuItem(cleverMenuItemUnderCursor);
                 PressCurrentItem();
@@ -234,7 +234,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         }
 
         if (Input.CursorMoved && HighlightOnMouseOver) {
-            CleverMenuItem cleverMenuItemUnderCursor2 = CleverMenuItemUnderCursor;
+            var cleverMenuItemUnderCursor2 = CleverMenuItemUnderCursor;
             if (cleverMenuItemUnderCursor2 && cleverMenuItemUnderCursor2 != CurrentMenuItem) {
                 SetCurrentMenuItem(cleverMenuItemUnderCursor2);
             }
@@ -340,7 +340,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     public void OnDrawGizmosSelected() {
         if (ItemDirection == Direction.NavigationCage) {
             Gizmos.color = Color.yellow;
-            foreach (NavigationData navigationData in Navigation) {
+            foreach (var navigationData in Navigation) {
                 if (navigationData.From && navigationData.To) {
                     Gizmos.DrawLine(navigationData.From.transform.position, navigationData.To.transform.position);
                 }
@@ -371,15 +371,15 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public bool ChangeMenuItem() {
-        Vector2 normalized = Input.Axis.normalized;
+        var normalized = Input.Axis.normalized;
         if (!CurrentMenuItem) {
             return false;
         }
 
         Vector2 b = CurrentMenuItem.Transform.position;
-        CleverMenuItem cleverMenuItem = CurrentMenuItem;
-        float num = Mathf.Cos(AngleTolerance * 0.0174532924f);
-        foreach (NavigationData navigationData in Navigation) {
+        var cleverMenuItem = CurrentMenuItem;
+        var num = Mathf.Cos(AngleTolerance * 0.0174532924f);
+        foreach (var navigationData in Navigation) {
             if ((navigationData.Condition == null || navigationData.Condition(navigationData)) && navigationData.From == CurrentMenuItem && navigationData.To.IsVisible) {
                 Vector2 a = navigationData.To.Transform.position;
                 if (m_isPauseScreen) {
@@ -390,8 +390,8 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
                     }
                 }
 
-                Vector2 normalized2 = (a - b).normalized;
-                float num2 = Vector2.Dot(normalized, normalized2);
+                var normalized2 = (a - b).normalized;
+                var num2 = Vector2.Dot(normalized, normalized2);
                 if (num2 > num) {
                     num = num2;
                     cleverMenuItem = navigationData.To;
@@ -427,12 +427,12 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
 
     public CleverMenuItem CleverMenuItemUnderCursor {
         get {
-            Vector2 cursorPositionUI = Input.CursorPositionUI;
-            float num = float.PositiveInfinity;
+            var cursorPositionUI = Input.CursorPositionUI;
+            var num = float.PositiveInfinity;
             CleverMenuItem result = null;
-            foreach (CleverMenuItem cleverMenuItem in MenuItems) {
+            foreach (var cleverMenuItem in MenuItems) {
                 if (cleverMenuItem.IsVisible && cleverMenuItem.Bounds.Contains(cursorPositionUI)) {
-                    float num2 = Vector3.Distance(cleverMenuItem.Bounds.center, cursorPositionUI);
+                    var num2 = Vector3.Distance(cleverMenuItem.Bounds.center, cursorPositionUI);
                     if (num > num2) {
                         num = num2;
                         result = cleverMenuItem;
@@ -446,14 +446,14 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
 
     [ContextMenu("Create navigation from cage")]
     public void CreateNavigationStructureFromCageTool() {
-        List<CleverMenuItem> list = FindObjectsOfType(typeof(CleverMenuItem)).Cast<CleverMenuItem>().ToList();
-        Dictionary<CageStructureTool.Vertex, CleverMenuItem> dictionary = new Dictionary<CageStructureTool.Vertex, CleverMenuItem>();
-        foreach (CageStructureTool.Vertex vertex in CopyFromCage.Vertices) {
-            Vector3 a = CopyFromCage.transform.TransformPoint(vertex.Position);
-            float num = float.MaxValue;
+        var list = FindObjectsOfType(typeof(CleverMenuItem)).Cast<CleverMenuItem>().ToList();
+        var dictionary = new Dictionary<CageStructureTool.Vertex, CleverMenuItem>();
+        foreach (var vertex in CopyFromCage.Vertices) {
+            var a = CopyFromCage.transform.TransformPoint(vertex.Position);
+            var num = float.MaxValue;
             CleverMenuItem value = null;
-            foreach (CleverMenuItem cleverMenuItem in list) {
-                float num2 = Vector3.Distance(a, cleverMenuItem.transform.position);
+            foreach (var cleverMenuItem in list) {
+                var num2 = Vector3.Distance(a, cleverMenuItem.transform.position);
                 if (num2 < num) {
                     value = cleverMenuItem;
                     num = num2;
@@ -464,9 +464,9 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         }
 
         Navigation.Clear();
-        foreach (CageStructureTool.Edge edge in CopyFromCage.Edges) {
-            CageStructureTool.Vertex key = CopyFromCage.VertexByIndex(edge.VertexA);
-            CageStructureTool.Vertex key2 = CopyFromCage.VertexByIndex(edge.VertexB);
+        foreach (var edge in CopyFromCage.Edges) {
+            var key = CopyFromCage.VertexByIndex(edge.VertexA);
+            var key2 = CopyFromCage.VertexByIndex(edge.VertexB);
             Navigation.Add(
                 new NavigationData {
                     From = dictionary[key],
@@ -482,7 +482,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         }
 
         MenuItems.Clear();
-        foreach (NavigationData navigationData in Navigation) {
+        foreach (var navigationData in Navigation) {
             if (!MenuItems.Contains(navigationData.From)) {
                 MenuItems.Add(navigationData.From);
             }
@@ -496,14 +496,14 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void AddMenuItem(string label, int index, Action onPress) {
-        CleverMenuItemLayout component = gameObject.GetComponent<CleverMenuItemLayout>();
+        var component = gameObject.GetComponent<CleverMenuItemLayout>();
         if (component != null) {
             AddMenuItem(label, index, component, onPress);
         }
     }
 
     public void AddMenuItem(string label, int index, CleverMenuItemLayout layout, Action onPress) {
-        CleverMenuItem cleverMenuItem = Instantiate(MenuItems[0]);
+        var cleverMenuItem = Instantiate(MenuItems[0]);
         cleverMenuItem.gameObject.name = label;
         cleverMenuItem.transform.SetParent(MenuItems[1].transform.parent);
         TransparencyAnimator.Register(cleverMenuItem.transform);

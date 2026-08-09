@@ -11,7 +11,7 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver {
 
     public int ExtraJumpsAvailable {
         get {
-            int bonus = RandomizerBonus.DoubleJumpUpgrades();
+            var bonus = RandomizerBonus.DoubleJumpUpgrades();
             if (CheatsHandler.InfiniteDoubleJumps || RandomizerBonus.EnhancedDoubleJump) {
                 return 999999;
             }
@@ -51,13 +51,13 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver {
         Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(DoubleJumpAnimation, 10, ShouldDoubleJumpAnimationKeepPlaying);
         m_doubleJumpSound = Sound.Play(DoubleJumpSound.GetSound(null), Sein.PlatformBehaviour.PlatformMovement.Position, delegate { m_doubleJumpSound = null; });
         OnDoubleJumpEvent(JumpStrength * RandomizerBonus.DoubleJumpscale);
-        GameObject original = DoubleJumpAfterShock;
+        var original = DoubleJumpAfterShock;
         if (m_numberOfJumpsAvailable == 0 && ExtraJumpsAvailable == 2) {
             original = TrippleJumpAfterShock;
         }
 
-        Vector2 worldSpeed = PlatformMovement.WorldSpeed;
-        float num = Mathf.Atan2(worldSpeed.x, worldSpeed.y) * 57.29578f;
+        var worldSpeed = PlatformMovement.WorldSpeed;
+        var num = Mathf.Atan2(worldSpeed.x, worldSpeed.y) * 57.29578f;
         InstantiateUtility.Instantiate(original, Sein.Position, Quaternion.Euler(0f, 0f, -num));
         JumpFlipPlatform.OnSeinDoubleJumpEvent();
     }

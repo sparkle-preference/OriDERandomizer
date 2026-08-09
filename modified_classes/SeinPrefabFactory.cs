@@ -90,7 +90,7 @@ public class SeinPrefabFactory : SaveSerialize, ISeinReceiver {
 
     public override void Serialize(Archive ar) {
         try {
-            foreach (SeinNestedPrefab seinNestedPrefab in m_prefabs) {
+            foreach (var seinNestedPrefab in m_prefabs) {
                 seinNestedPrefab.IsInstantiated = ar.Serialize(seinNestedPrefab.IsInstantiated);
             }
         } catch (Exception exception) {

@@ -29,7 +29,7 @@ namespace Protogen {
         }
 
         public override string ToString() {
-            List<string> parts = new List<string>();
+            var parts = new List<string>();
             parts.AddRange(Unlocks.ToList());
 
             if (Keystones > 0) {
@@ -64,7 +64,7 @@ namespace Protogen {
         }
 
         public static Inventory FromCharacter() {
-            Inventory currentInventory = new Inventory();
+            var currentInventory = new Inventory();
             currentInventory.Health = (int)(Characters.Sein.Mortality.Health.MaxHealth / 4f);
             currentInventory.Energy = (int)Characters.Sein.Energy.Max;
             currentInventory.Keystones = Characters.Sein.Inventory.Keystones;
@@ -171,7 +171,7 @@ namespace Protogen {
                 currentInventory.Unlocks.Add("HoruKey");
             }
 
-            foreach (GameMapTeleporter teleporter in TeleporterController.Instance.Teleporters) {
+            foreach (var teleporter in TeleporterController.Instance.Teleporters) {
                 if (teleporter.Activated) {
                     switch (teleporter.Identifier) {
                         case "spiritTree":

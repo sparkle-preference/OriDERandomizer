@@ -41,7 +41,7 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
         }
 
         if (m_isAutofiring) {
-            float scaledTime = Mathf.Round(Time.time * 120f);
+            var scaledTime = Mathf.Round(Time.time * 120f);
             if (scaledTime - m_lastAutofire >= 6f) {
                 m_lastAutofire = scaledTime;
                 return true;
@@ -62,9 +62,9 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
             return;
         }
 
-        bool pressed = Input.SpiritFlame.OnPressed && !Input.SpiritFlame.Used;
-        bool held = Input.SpiritFlame.Pressed && Input.SpiritFlame.WasPressed;
-        bool released = Input.SpiritFlame.Released;
+        var pressed = Input.SpiritFlame.OnPressed && !Input.SpiritFlame.Used;
+        var held = Input.SpiritFlame.Pressed && Input.SpiritFlame.WasPressed;
+        var released = Input.SpiritFlame.Released;
 
         if (ProcessAutofire(pressed, held, released)) {
             pressed = true;
@@ -91,7 +91,7 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
     }
 
     private void ProcessRapidFire(bool pressed) {
-        float scaledTime = Mathf.Round(Time.time * 120f);
+        var scaledTime = Mathf.Round(Time.time * 120f);
 
         if (m_isSpamming) {
             if (scaledTime - m_timeOfLastSpam >= 18f) {
@@ -112,7 +112,7 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
         if (pressed) {
             Characters.Ori.ShootAnimation.Restart();
             if (!LockShootingSpiritFlame) {
-                SpiritFlame currentSpiritFlame = CurrentSpiritFlame;
+                var currentSpiritFlame = CurrentSpiritFlame;
                 m_sein.Abilities.SpiritFlame.ThrowSpiritFlames(currentSpiritFlame);
                 Input.SpiritFlame.Used = true;
             }
@@ -127,7 +127,7 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
             Characters.Ori.ShootAnimation.Restart();
             if (StandardSpiritFlameShotCombo.CanShoot && !LockShootingSpiritFlame) {
                 StandardSpiritFlameShotCombo.NumberOfShotsPerCombo = !m_sein.PlayerAbilities.QuickFlame.HasAbility ? 2 : 3;
-                SpiritFlame currentSpiritFlame = CurrentSpiritFlame;
+                var currentSpiritFlame = CurrentSpiritFlame;
                 m_sein.Abilities.SpiritFlame.ThrowSpiritFlames(currentSpiritFlame);
                 StandardSpiritFlameShotCombo.Shoot();
                 Input.SpiritFlame.Used = true;

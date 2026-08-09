@@ -8,7 +8,7 @@ using Input = Core.Input;
 
 public static class RandomizerRebinding {
     public static void WriteBindsToFile() {
-        StreamWriter streamWriter = new StreamWriter("RandomizerRebinding.txt");
+        var streamWriter = new StreamWriter("RandomizerRebinding.txt");
         streamWriter.WriteLine("Bind syntax: Key1+Key2, Key1+Key3+Key4, ... Syntax errors will load default binds.");
         streamWriter.WriteLine("Functions are unbound if there is no binding specified.");
         streamWriter.WriteLine("Supported binds are Unity KeyCodes (https://docs.unity3d.com/ScriptReference/KeyCode.html) and the following actions:");
@@ -19,7 +19,7 @@ public static class RandomizerRebinding {
         streamWriter.WriteLine("_LUp, _LDown, _LLeft, _LRight, _RUp, _RDown, _RLeft, _RRight, _LS, _RS, _Start, _Back");
         streamWriter.WriteLine("--------");
         streamWriter.WriteLine("");
-        foreach (KeyValuePair<string, BindSet> bindparts in rebindMap) {
+        foreach (var bindparts in rebindMap) {
             if (bindparts.Value.HasBind())
                 streamWriter.WriteLine($"{bindparts.Key}: {bindparts.Value}{(bindparts.Key == "Double Bash" && Randomizer.BashTap ? ", Tap" : "")}");
             else
@@ -39,18 +39,18 @@ public static class RandomizerRebinding {
                 WriteBindsToFile();
             }
 
-            string[] lines = File.ReadAllLines("RandomizerRebinding.txt");
-            ArrayList unseenActions = new ArrayList(DefaultBinds.Keys);
-            List<string> writeList = new List<string>();
+            var lines = File.ReadAllLines("RandomizerRebinding.txt");
+            var unseenActions = new ArrayList(DefaultBinds.Keys);
+            var writeList = new List<string>();
 
             // parse step 1: read binds from file
-            foreach (string line in lines) {
+            foreach (var line in lines) {
                 if (!line.Contains(":")) {
                     continue;
                 }
 
-                string[] parts = line.Split(new[] { ':' }, 2);
-                string action = parts[0].Trim();
+                var parts = line.Split(new[] { ':' }, 2);
+                var action = parts[0].Trim();
                 if (action == "Free Grenade Jump") {
                     action = "Grenade Jump";
                     dirty = true;
@@ -62,7 +62,7 @@ public static class RandomizerRebinding {
                 if (!DefaultBinds.ContainsKey(action))
                     continue;
 
-                string bindingString = parts[1].Trim();
+                var bindingString = parts[1].Trim();
                 AssignBind(action, bindingString, writeList);
                 unseenActions.Remove(action);
             }
@@ -77,9 +77,9 @@ public static class RandomizerRebinding {
             }
 
             if (writeList.Count > 0) {
-                List<string> warnList = new List<string>();
+                var warnList = new List<string>();
 
-                foreach (string writeAction in writeList) {
+                foreach (var writeAction in writeList) {
                     if (DefaultBinds[writeAction] != "") {
                         warnList.Add(writeAction);
                     }
@@ -89,8 +89,8 @@ public static class RandomizerRebinding {
                     Randomizer.printInfo("Default Binds written for these missing binds: " + String.Join(", ", warnList.ToArray()) + ".", 480);
                 }
 
-                string writeText = "";
-                foreach (string writeAction in writeList) {
+                var writeText = "";
+                foreach (var writeAction in writeList) {
                     writeText += Environment.NewLine + writeAction + ": " + DefaultBinds[writeAction];
                 }
 
@@ -116,7 +116,7 @@ public static class RandomizerRebinding {
     }
 
     public static BindSet ParseOrDefault(string action, string bindingString, List<string> writeList) {
-        string defaultBinds = DefaultBinds[action];
+        var defaultBinds = DefaultBinds[action];
         if (bindingString == null) {
             bindingString = defaultBinds;
             writeList.Add(action);
@@ -141,11 +141,11 @@ public static class RandomizerRebinding {
     }
 
     public static BindSet ParseBinds(string action, string bindingString) {
-        List<SingleBind> binds = new List<SingleBind>();
+        var binds = new List<SingleBind>();
 
-        foreach (string bind in bindingString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)) {
-            List<SingleInput> singleBind = new List<SingleInput>();
-            foreach (string input in bind.Trim().Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries)) {
+        foreach (var bind in bindingString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)) {
+            var singleBind = new List<SingleInput>();
+            foreach (var input in bind.Trim().Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries)) {
                 if (action == "Double Bash" && input.Trim().ToLower() == "tap") {
                     Randomizer.BashTap = true;
                 } else {
@@ -162,7 +162,7 @@ public static class RandomizerRebinding {
     }
 
     public static void FixedUpdate() {
-        foreach (BindSet bindSet in rebindMap.Values) {
+        foreach (var bindSet in rebindMap.Values) {
             bindSet.FixedUpdate();
         }
     }
@@ -370,9 +370,9 @@ public static class RandomizerRebinding {
         }
 
         public void FixedUpdate() {
-            bool pressed = true;
+            var pressed = true;
 
-            foreach (SingleInput input in Inputs) {
+            foreach (var input in Inputs) {
                 input.FixedUpdate();
 
                 if (input.Released) {
@@ -407,7 +407,7 @@ public static class RandomizerRebinding {
         public bool HasBind() => Binds.Count > 0;
 
         public bool IsPressed() {
-            foreach (SingleBind bind in Binds) {
+            foreach (var bind in Binds) {
                 if (bind.Pressed) {
                     if (deprecated_wasPressed) {
                         return false;
@@ -423,9 +423,9 @@ public static class RandomizerRebinding {
         }
 
         public void FixedUpdate() {
-            bool pressed = false;
+            var pressed = false;
 
-            foreach (SingleBind bind in Binds) {
+            foreach (var bind in Binds) {
                 bind.FixedUpdate();
 
                 if (bind.Pressed) {

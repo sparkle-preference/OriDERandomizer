@@ -29,11 +29,11 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
     }
 
     public void ResetMaps() {
-        foreach (AreaMapCanvas areaMapCanvas in Canvases) {
+        foreach (var areaMapCanvas in Canvases) {
             areaMapCanvas.ResetMap();
         }
 
-        foreach (AreaMapCanvasOverlay areaMapCanvasOverlay in GetComponentsInChildren<AreaMapCanvasOverlay>(true)) {
+        foreach (var areaMapCanvasOverlay in GetComponentsInChildren<AreaMapCanvasOverlay>(true)) {
             areaMapCanvasOverlay.ApplyMasks();
         }
     }
@@ -58,7 +58,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
         }
 
         if (RandomizerTooltip == null) {
-            GameObject obj = Instantiate(transform.FindChild("legend/player").gameObject);
+            var obj = Instantiate(transform.FindChild("legend/player").gameObject);
             obj.transform.parent = transform.FindChild("legend");
             RandomizerTooltip = obj.GetComponent<MessageBox>();
             RandomizerTooltip.MessageProvider = null;
@@ -67,7 +67,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
         if (KeysanityDoorTooltips.Count == 0) {
             for (var i = 0; i < 12; i++) {
-                GameObject obj = Instantiate(transform.FindChild("legend/player").gameObject);
+                var obj = Instantiate(transform.FindChild("legend/player").gameObject);
                 obj.transform.parent = transform.FindChild("legend");
                 var doorTTip = obj.GetComponent<MessageBox>();
                 doorTTip.MessageProvider = null;
@@ -93,9 +93,9 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
         Navigation.UpdateScrollLimits();
         PlayerPositionOffset = Vector2.zero;
         Navigation.Init();
-        Transform fog = transform.FindChild("mapPivot/mistyWoodsFog");
+        var fog = transform.FindChild("mapPivot/mistyWoodsFog");
         fog.gameObject.SetActive(false);
-        foreach (AreaMapCanvas areaMapCanvas in Canvases) {
+        foreach (var areaMapCanvas in Canvases) {
             areaMapCanvas.RuntimeArea.DiscoverAllAreas();
         }
 
@@ -138,7 +138,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
     }
 
     public void UpdateCurrentArea() {
-        Vector2 scrollPosition = Navigation.ScrollPosition;
+        var scrollPosition = Navigation.ScrollPosition;
         foreach (RuntimeGameWorldArea runtimeGameWorldArea in GameWorld.Instance.RuntimeAreas) {
             if ((runtimeGameWorldArea.AreaDiscovered || DebugNavigation.UndiscoveredMapVisible) && runtimeGameWorldArea.Area.BoundaryCage.FindFaceAtPositionFaster(scrollPosition) != null) {
                 if (GameMapUI.Instance.CurrentHighlightedArea != runtimeGameWorldArea && ChangeSelectedAreaSound) {
@@ -153,7 +153,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
     public Vector3 PlayerMarkerWorldPosition {
         get {
-            Transform target = UI.Cameras.Current.Target;
+            var target = UI.Cameras.Current.Target;
             return target.position + PlayerPositionOffset + Vector3.up;
         }
     }

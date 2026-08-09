@@ -8,15 +8,15 @@ public class CleverMenuItemLayout : MonoBehaviour {
 
     [ContextMenu("Apply")]
     public void Sort() {
-        float num = 0f;
-        foreach (CleverMenuItem cleverMenuItem in MenuItems) {
+        var num = 0f;
+        foreach (var cleverMenuItem in MenuItems) {
             if (cleverMenuItem.IsVisible) {
                 cleverMenuItem.transform.localPosition = Vector3.down * num;
                 num += cleverMenuItem.Space;
             }
         }
 
-        foreach (CleverMenuItem cleverMenuItem2 in MenuItems) {
+        foreach (var cleverMenuItem2 in MenuItems) {
             if (cleverMenuItem2.IsVisible) {
                 if (VerticalAlignment == Alignment.Center) {
                     cleverMenuItem2.transform.localPosition += Vector3.up * num * 0.5f;

@@ -10,7 +10,7 @@ public class RandomizerChaosVelocityVector : RandomizerChaosEffect {
     public override void Start() {
         Countdown = Random.Range(1, 300);
         Pushing = false;
-        int num = Random.Range(0, 8);
+        var num = Random.Range(0, 8);
         if (num <= 5) {
             Randomizer.showChaosEffect("Throw");
             Characters.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedX = Random.Range(-100f, 100f);

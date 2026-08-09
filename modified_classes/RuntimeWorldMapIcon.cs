@@ -15,14 +15,14 @@ public class RuntimeWorldMapIcon {
     public bool IsVisible(AreaMapUI areaMap) {
         // Sein.
         if (Guid == new MoonGuid(-550456551, 1312223365, -251340902, -293109681)) {
-            MoonGuid fronkeyFight = new MoonGuid(686741138, 1236491904, -1735338082, 532353037);
-            RandomizerLocationManager.Location loc = RandomizerLocationManager.LocationsByGuid[fronkeyFight];
+            var fronkeyFight = new MoonGuid(686741138, 1236491904, -1735338082, 532353037);
+            var loc = RandomizerLocationManager.LocationsByGuid[fronkeyFight];
             return !(Characters.Sein.PlayerAbilities.SpiritFlame.HasAbility && loc.Collected);
         }
 
         // show randomizer pickup icons only if they're reachable and not yet collected
         if (RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.InLogic && RandomizerLocationManager.LocationsByWorldMapGuid.ContainsKey(Guid)) {
-            RandomizerLocationManager.Location loc = RandomizerLocationManager.LocationsByWorldMapGuid[Guid];
+            var loc = RandomizerLocationManager.LocationsByWorldMapGuid[Guid];
             return loc.Reachable && !loc.Collected;
         }
 
@@ -33,7 +33,7 @@ public class RuntimeWorldMapIcon {
 
         // This will remove already collected ones from the map.
         if (RandomizerLocationManager.LocationsByWorldMapGuid.ContainsKey(Guid)) {
-            RandomizerLocationManager.Location loc = RandomizerLocationManager.LocationsByWorldMapGuid[Guid];
+            var loc = RandomizerLocationManager.LocationsByWorldMapGuid[Guid];
             return !loc.Collected;
         }
 
@@ -41,7 +41,7 @@ public class RuntimeWorldMapIcon {
     }
 
     public void Show() {
-        AreaMapUI instance = AreaMapUI.Instance;
+        var instance = AreaMapUI.Instance;
         if (Icon == WorldMapIconType.Invisible) {
             return;
         }
@@ -63,9 +63,9 @@ public class RuntimeWorldMapIcon {
     }
 
     private void InitStandardIcon(WorldMapIconType iconType) {
-        GameObject icon = AreaMapUI.Instance.IconManager.GetIcon(iconType);
+        var icon = AreaMapUI.Instance.IconManager.GetIcon(iconType);
         m_iconGameObject = (GameObject)InstantiateUtility.Instantiate(icon);
-        Transform transform = m_iconGameObject.transform;
+        var transform = m_iconGameObject.transform;
         transform.parent = AreaMapUI.Instance.Navigation.MapPivot.transform;
         transform.localPosition = Position;
         transform.localRotation = Quaternion.identity;
@@ -96,8 +96,8 @@ public class RuntimeWorldMapIcon {
             case RandomizerWorldMapIconType.Plant:
                 InitStandardIcon(WorldMapIconType.HealthUpgrade);
                 m_iconGameObject.name = "plantMapIcon(Clone)";
-                Renderer[] componentsInChildren = m_iconGameObject.GetComponentsInChildren<Renderer>();
-                for (int i = 0; i < componentsInChildren.Length; i++)
+                var componentsInChildren = m_iconGameObject.GetComponentsInChildren<Renderer>();
+                for (var i = 0; i < componentsInChildren.Length; i++)
                     componentsInChildren[i].material.color = new Color(0.1792157f, 0.2364706f, 0.8656863f);
                 m_iconGameObject.transform.rotation = Quaternion.Euler(0f, 0f, 180f);
                 break;

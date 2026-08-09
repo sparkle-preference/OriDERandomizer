@@ -19,19 +19,19 @@ public class SaveGameData {
         }
 
         SaveGameData.CurrentSaveFileVersion = reader.ReadInt32();
-        int num = reader.ReadInt32();
-        bool logging = RandomizerSettings.Controls.BashDeadzone > 0.9f;
-        bool reading = RandomizerSettings.QOL.AbilityMenuOpacity > 0.9f;
-        Hashtable DifferentDataMap = new Hashtable();
+        var num = reader.ReadInt32();
+        var logging = RandomizerSettings.Controls.BashDeadzone > 0.9f;
+        var reading = RandomizerSettings.QOL.AbilityMenuOpacity > 0.9f;
+        var DifferentDataMap = new Hashtable();
         if (reading) {
-            string[] array = File.ReadAllLines("datamap.dat");
-            for (int i = 0; i < array.Length; i += 2) {
+            var array = File.ReadAllLines("datamap.dat");
+            for (var i = 0; i < array.Length; i += 2) {
                 DifferentDataMap[array[i]] = array[i + 1];
             }
         }
 
-        for (int j = 0; j < num; j++) {
-            SaveScene saveScene = new SaveScene();
+        for (var j = 0; j < num; j++) {
+            var saveScene = new SaveScene();
             saveScene.SceneGUID = new MoonGuid(reader.ReadBytes(16));
             if (logging) {
                 Randomizer.log("SCENE");
@@ -39,17 +39,17 @@ public class SaveGameData {
             }
 
             this.Scenes.Add(saveScene.SceneGUID, saveScene);
-            int num2 = reader.ReadInt32();
-            for (int k = 0; k < num2; k++) {
-                SaveObject saveObject = new SaveObject(new MoonGuid(reader.ReadBytes(16)));
+            var num2 = reader.ReadInt32();
+            for (var k = 0; k < num2; k++) {
+                var saveObject = new SaveObject(new MoonGuid(reader.ReadBytes(16)));
                 if (logging) {
                     Randomizer.log(saveObject.Id.ToString());
                 }
 
                 saveObject.Data.ReadMemoryStreamFromBinaryReader(reader);
                 if (logging) {
-                    string str = "";
-                    for (int l = 0; l < saveObject.Data.MemoryStream.GetBuffer().Length; l++) {
+                    var str = "";
+                    for (var l = 0; l < saveObject.Data.MemoryStream.GetBuffer().Length; l++) {
                         str = str + saveObject.Data.MemoryStream.GetBuffer()[l] + " ";
                     }
 
@@ -58,15 +58,15 @@ public class SaveGameData {
 
                 if (reading && DifferentDataMap.ContainsKey(saveObject.Id.ToString())) {
                     saveObject.Data = new Archive();
-                    string[] array2 = ((string)DifferentDataMap[saveObject.Id.ToString()]).Split(
+                    var array2 = ((string)DifferentDataMap[saveObject.Id.ToString()]).Split(
                         ' '
                     );
-                    byte[] bytes = new byte[array2.Length];
-                    for (int m = 0; m < array2.Length; m++) {
+                    var bytes = new byte[array2.Length];
+                    for (var m = 0; m < array2.Length; m++) {
                         bytes[m] = Convert.ToByte(array2[m]);
                     }
 
-                    BinaryReader binaryReader = new BinaryReader(new MemoryStream(bytes));
+                    var binaryReader = new BinaryReader(new MemoryStream(bytes));
                     saveObject.Data.MemoryStream.SetLength(bytes.Length);
                     binaryReader.Read(saveObject.Data.MemoryStream.GetBuffer(), 0, bytes.Length);
                 }

@@ -39,7 +39,7 @@ public class BashAttackCritical : Suspendable, IPooled {
     private void UpdateCriticalState() {
         transform.localScale = m_localScale + Vector3.one * Mathf.Sin(m_stateCurrentTime * 6.2831855f / ShakePeriod) * ShakeAmount;
         GetComponent<Renderer>().sharedMaterial.SetTextureOffset("_MaskTexture", new Vector2(0.5f * (Mathf.RoundToInt(m_stateCurrentTime * 15f) % 2), 0f));
-        float criticalDuration = CriticalDuration;
+        var criticalDuration = CriticalDuration;
         if (RandomizerSettings.Controls.LongerBashAimTime) {
             criticalDuration += 3.3f;
         }
@@ -51,7 +51,7 @@ public class BashAttackCritical : Suspendable, IPooled {
 
     private void UpdateChargingState() {
         transform.localScale = m_localScale;
-        float num = m_stateCurrentTime / ChargingDuration;
+        var num = m_stateCurrentTime / ChargingDuration;
         GetComponent<Renderer>().sharedMaterial.SetTextureOffset("_MaskTexture", new Vector2(0.5f - num * 0.5f, 0f));
         if (m_stateCurrentTime > ChargingDuration) {
             ChangeState(State.Critical);

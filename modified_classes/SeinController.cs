@@ -59,7 +59,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
     public void EnterPlayingAnimation() {
         IsPlayingAnimation = true;
         if (Sein.PlatformBehaviour.PlatformMovement) {
-            Vector2 localSpeed = Sein.PlatformBehaviour.PlatformMovement.LocalSpeed;
+            var localSpeed = Sein.PlatformBehaviour.PlatformMovement.LocalSpeed;
             localSpeed.x = 0f;
             if (localSpeed.y > 0f) {
                 localSpeed.y = 0f;
@@ -86,7 +86,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
             if (CanMove && !LockMovementInput) {
                 Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = Sein.Input.NormalizedHorizontal;
                 if (Sein.Abilities.Run.Active && Sein.PlatformBehaviour.PlatformMovement.IsOnGround) {
-                    float num = Sein.Controller.InputCurve.Evaluate(Mathf.Abs(Sein.Input.Horizontal)) * Mathf.Sign(Sein.Input.Horizontal);
+                    var num = Sein.Controller.InputCurve.Evaluate(Mathf.Abs(Sein.Input.Horizontal)) * Mathf.Sign(Sein.Input.Horizontal);
                     Sein.PlatformBehaviour.LeftRightMovement.HorizontalInput = 0f;
                     if (num == 0f) {
                         m_horizontalInputDelay = 0.06666667f;
@@ -127,9 +127,9 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
     public override void OnDestroy() {
         SuspensionManager.Unregister(this);
         base.OnDestroy();
-        PlatformMovementPortalVisitor component = Sein.GetComponent<PlatformMovementPortalVisitor>();
+        var component = Sein.GetComponent<PlatformMovementPortalVisitor>();
         if (component) {
-            PlatformMovementPortalVisitor platformMovementPortalVisitor = component;
+            var platformMovementPortalVisitor = component;
             platformMovementPortalVisitor.OnGoThroughPortalAction = (Action)Delegate.Remove(platformMovementPortalVisitor.OnGoThroughPortalAction, new Action(OnGoThroughPortal));
         }
     }
@@ -141,9 +141,9 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
     public void Start() {
         Sein.PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
         UI.Cameras.Current.MoveCameraToTargetInstantly();
-        PlatformMovementPortalVisitor component = Sein.GetComponent<PlatformMovementPortalVisitor>();
+        var component = Sein.GetComponent<PlatformMovementPortalVisitor>();
         if (component) {
-            PlatformMovementPortalVisitor platformMovementPortalVisitor = component;
+            var platformMovementPortalVisitor = component;
             platformMovementPortalVisitor.OnGoThroughPortalAction = (Action)Delegate.Combine(platformMovementPortalVisitor.OnGoThroughPortalAction, new Action(OnGoThroughPortal));
         }
     }
@@ -153,8 +153,8 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
             return;
         }
 
-        bool grenadeJumpPressed = false;
-        bool grenadeJumpHeld = false;
+        var grenadeJumpPressed = false;
+        var grenadeJumpHeld = false;
         if (RandomizerSettings.Controls.GrenadeJump == RandomizerSettings.GrenadeJumpMode.Auto) {
             grenadeJumpPressed = RandomizerRebinding.FreeGrenadeJump.OnPressed;
             grenadeJumpHeld = RandomizerRebinding.FreeGrenadeJump.Pressed;
@@ -204,16 +204,16 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
     }
 
     public bool RayTest(GameObject target, Vector2 startOffset, Vector2 endOffset) {
-        Vector3 vector = m_transform.position + (Vector3)startOffset;
-        Vector3 a = target.transform.position + (Vector3)endOffset;
-        Vector3 vector2 = a - vector;
-        Rigidbody component = target.GetComponent<Rigidbody>();
+        var vector = m_transform.position + (Vector3)startOffset;
+        var a = target.transform.position + (Vector3)endOffset;
+        var vector2 = a - vector;
+        var component = target.GetComponent<Rigidbody>();
         RaycastHit raycastHit;
         return !Physics.Raycast(vector, vector2.normalized, out raycastHit, vector2.magnitude, RayTestLayerMask) || !(raycastHit.collider.gameObject != target) || (component && !(component != raycastHit.collider.attachedRigidbody)) || raycastHit.collider.isTrigger;
     }
 
     public bool RayTest(Vector3 position, Vector3 delta, out RaycastHit hitInfo) {
-        float magnitude = delta.magnitude;
+        var magnitude = delta.magnitude;
         return Physics.Raycast(position, delta / magnitude, out hitInfo, magnitude);
     }
 
@@ -249,12 +249,12 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
         }
 
         if (IsPlayingAnimation) {
-            TextureAnimation currentAnimation = Sein.Animation.Animator.CurrentAnimation;
+            var currentAnimation = Sein.Animation.Animator.CurrentAnimation;
             if (currentAnimation) {
-                AnimationMetaData animationMetaData = currentAnimation.AnimationMetaData;
+                var animationMetaData = currentAnimation.AnimationMetaData;
                 if (animationMetaData) {
-                    Vector3 deltaPositionAtTime = animationMetaData.CameraData.GetDeltaPositionAtTime(Sein.Animation.Animator.CurrentAnimationTime);
-                    Vector3 a = Vector3.Scale(deltaPositionAtTime, Sein.PlatformBehaviour.Visuals.Sprite.transform.lossyScale);
+                    var deltaPositionAtTime = animationMetaData.CameraData.GetDeltaPositionAtTime(Sein.Animation.Animator.CurrentAnimationTime);
+                    var a = Vector3.Scale(deltaPositionAtTime, Sein.PlatformBehaviour.Visuals.Sprite.transform.lossyScale);
                     if (FaceLeft) {
                         a.x *= -1f;
                     }

@@ -108,7 +108,7 @@ public class DoorWithSlots : SaveSerialize {
 
     public bool OriHasTargets {
         get {
-            SeinSpiritFlameTargetting spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
+            var spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
             return spiritFlameTargetting && spiritFlameTargetting.ClosestAttackables.Count > 0;
         }
     }
@@ -187,7 +187,7 @@ public class DoorWithSlots : SaveSerialize {
             return;
         }
 
-        LegacyTranslateAnimator component = c.GetComponent<LegacyTranslateAnimator>();
+        var component = c.GetComponent<LegacyTranslateAnimator>();
         if (component.CurrentTime <= 0f && component.Stopped) {
             component.StopAndSampleAtEnd();
         }

@@ -17,7 +17,7 @@ public class SeinLogicCycle : MonoBehaviour {
             return;
         }
 
-        SeinAbilities abilities = Abilities;
+        var abilities = Abilities;
         PlatformBehaviour.Gravity.SetStateActive(AllowGravity);
         PlatformBehaviour.GravityToGround.SetStateActive(AllowGravityToGround);
         PlatformBehaviour.InstantStop.SetStateActive(AllowInstantStop);

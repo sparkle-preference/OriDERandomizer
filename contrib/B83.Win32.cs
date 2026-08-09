@@ -360,7 +360,7 @@ namespace B83.Win32 {
 
         public static string GetClassName(IntPtr hWnd) {
             var sb = new StringBuilder(256);
-            int count = GetClassName(hWnd, sb, 256);
+            var count = GetClassName(hWnd, sb, 256);
             return sb.ToString(0, count);
         }
 
@@ -371,9 +371,9 @@ namespace B83.Win32 {
         static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
 
         public static string GetWindowText(IntPtr hWnd) {
-            int length = GetWindowTextLength(hWnd) + 2;
+            var length = GetWindowTextLength(hWnd) + 2;
             var sb = new StringBuilder(length);
-            int count = GetWindowText(hWnd, sb, length);
+            var count = GetWindowText(hWnd, sb, length);
             return sb.ToString(0, count);
         }
     }
@@ -452,12 +452,12 @@ namespace B83.Win32 {
                 WinAPI.DragQueryPoint(lParam.wParam, out pos);
 
                 // 0xFFFFFFFF as index makes the method return the number of files
-                uint n = WinAPI.DragQueryFile(lParam.wParam, 0xFFFFFFFF, null, 0);
+                var n = WinAPI.DragQueryFile(lParam.wParam, 0xFFFFFFFF, null, 0);
                 var sb = new StringBuilder(1024);
 
-                List<string> result = new List<string>();
+                var result = new List<string>();
                 for (uint i = 0; i < n; i++) {
-                    int len = (int)WinAPI.DragQueryFile(lParam.wParam, i, sb, 1024);
+                    var len = (int)WinAPI.DragQueryFile(lParam.wParam, i, sb, 1024);
                     result.Add(sb.ToString(0, len));
                     sb.Length = 0;
                 }

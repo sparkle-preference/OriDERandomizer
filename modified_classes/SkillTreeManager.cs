@@ -9,12 +9,12 @@ public class SkillTreeManager : MenuScreen {
 
     public void Awake() {
         Instance = this;
-        CleverMenuItemSelectionManager navigationManager = NavigationManager;
+        var navigationManager = NavigationManager;
         navigationManager.OptionChangeCallback = (Action)Delegate.Combine(navigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
         navigationManager.OptionPressedCallback = (Action)Delegate.Combine(navigationManager.OptionPressedCallback, new Action(OnMenuItemPressed));
         navigationManager.OnBackPressedCallback = (Action)Delegate.Combine(navigationManager.OnBackPressedCallback, new Action(OnBackPressed));
         OnMenuItemChange();
-        foreach (CleverMenuItemSelectionManager.NavigationData navigationData in NavigationManager.Navigation) {
+        foreach (var navigationData in NavigationManager.Navigation) {
             navigationData.Condition = Condition;
         }
 
@@ -44,12 +44,12 @@ public class SkillTreeManager : MenuScreen {
     }
 
     public static bool Condition(CleverMenuItemSelectionManager.NavigationData navigationData) {
-        SkillItem component = navigationData.To.GetComponent<SkillItem>();
+        var component = navigationData.To.GetComponent<SkillItem>();
         return !component || component.Visible;
     }
 
     public void OnDestroy() {
-        CleverMenuItemSelectionManager navigationManager = NavigationManager;
+        var navigationManager = NavigationManager;
         navigationManager.OptionChangeCallback = (Action)Delegate.Remove(navigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
         navigationManager.OptionPressedCallback = (Action)Delegate.Remove(navigationManager.OptionPressedCallback, new Action(OnMenuItemPressed));
         navigationManager.OnBackPressedCallback = (Action)Delegate.Remove(navigationManager.OnBackPressedCallback, new Action(OnBackPressed));
@@ -116,7 +116,7 @@ public class SkillTreeManager : MenuScreen {
     public MessageDescriptor AbilityMastered => new MessageDescriptor("$" + AbilityMasteredMessageProvider + "$");
 
     public MessageProvider AbilityName(AbilityType ability) {
-        foreach (AbilityMessageProvider abilityMessageProvider in AbilityMessages) {
+        foreach (var abilityMessageProvider in AbilityMessages) {
             if (abilityMessageProvider.AbilityType == ability) {
                 return abilityMessageProvider.MessageProvider;
             }
@@ -126,11 +126,11 @@ public class SkillTreeManager : MenuScreen {
     }
 
     public string RequiredAbilitiesText(SkillItem skillItem) {
-        bool abilitiesRequirementMet = skillItem.AbilitiesRequirementMet;
-        StringBuilder stringBuilder = new StringBuilder(30);
+        var abilitiesRequirementMet = skillItem.AbilitiesRequirementMet;
+        var stringBuilder = new StringBuilder(30);
         stringBuilder.Append(" ");
-        for (int j = 0; j < skillItem.RequiredItems.Count; j++) {
-            SkillItem skillItem2 = skillItem.RequiredItems[j];
+        for (var j = 0; j < skillItem.RequiredItems.Count; j++) {
+            var skillItem2 = skillItem.RequiredItems[j];
             if (abilitiesRequirementMet) {
                 stringBuilder.Append("$" + skillItem2.Name + "$");
             } else {
@@ -185,9 +185,9 @@ public class SkillTreeManager : MenuScreen {
             return string.Empty;
         }
 
-        int requiredPoints = skillItem.ActualRequiredSkillPoints;
-        int totalRequiredPoints = skillItem.ActualTotalRequiredSkillPoints;
-        string costMessage = requiredPoints != 1 ? RandomizerText.CostsAbilityPoints : RandomizerText.CostsAbilityPoint;
+        var requiredPoints = skillItem.ActualRequiredSkillPoints;
+        var totalRequiredPoints = skillItem.ActualTotalRequiredSkillPoints;
+        var costMessage = requiredPoints != 1 ? RandomizerText.CostsAbilityPoints : RandomizerText.CostsAbilityPoint;
         if (totalRequiredPoints <= Characters.Sein.Level.SkillPoints) {
             return "$" + costMessage.Replace("[Amount]", requiredPoints.ToString()).Replace("[Total]", totalRequiredPoints.ToString()) + "$";
         }
@@ -207,8 +207,8 @@ public class SkillTreeManager : MenuScreen {
 
         Cursor.gameObject.SetActive(true);
         Cursor.position = CurrentSkillItem.transform.position;
-        foreach (object obj in LargeIcon.transform) {
-            Transform transform = (Transform)obj;
+        foreach (var obj in LargeIcon.transform) {
+            var transform = (Transform)obj;
             transform.gameObject.SetActive(transform.name == CurrentSkillItem.LargeIcon.name);
         }
 

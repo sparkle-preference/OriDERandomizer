@@ -22,7 +22,7 @@ public class TransparentWallB : SaveSerialize, ISuspendable {
     public float SenseTime => Animator.Duration / 2f;
 
     public void Start() {
-        AnimatorDriver animatorDriver = Animator.AnimatorDriver;
+        var animatorDriver = Animator.AnimatorDriver;
         if (WallVisible) {
             Animator.Initialize();
             animatorDriver.GoToEnd();
@@ -73,7 +73,7 @@ public class TransparentWallB : SaveSerialize, ISuspendable {
             return;
         }
 
-        AnimatorDriver animatorDriver = Animator.AnimatorDriver;
+        var animatorDriver = Animator.AnimatorDriver;
         if (WallVisible) {
             if (animatorDriver.IsReversed || !animatorDriver.IsPlaying) {
                 animatorDriver.SetForward();

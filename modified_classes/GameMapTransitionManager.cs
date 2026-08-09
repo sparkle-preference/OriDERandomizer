@@ -49,9 +49,9 @@ public class GameMapTransitionManager : MonoBehaviour {
 
     public void Advance() {
         if (!GameMapUI.Instance.ShowingObjective && !GameMapUI.Instance.RevealingMap) {
-            bool flag = Core.Input.ZoomOut.Pressed;
-            bool flag2 = Core.Input.ZoomIn.Pressed;
-            float num = m_mouseWheel * 50f;
+            var flag = Core.Input.ZoomOut.Pressed;
+            var flag2 = Core.Input.ZoomIn.Pressed;
+            var num = m_mouseWheel * 50f;
             m_mouseWheel = 0f;
             m_zoomSpeed = Mathf.Lerp(m_zoomSpeed, num, 0.5f);
             if (flag || flag2) {

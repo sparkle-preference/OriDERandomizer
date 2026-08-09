@@ -16,19 +16,19 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         // we serialize the number of extra teleporters, and then for each teleporter
         // serialise the name, location, and activation status.
         if (ar.Reading) {
-            long readLength = ar.MemoryStream.Length;
+            var readLength = ar.MemoryStream.Length;
             if (readLength < 12) {
                 return;
             }
 
             // Read default teleporters.
-            for (int i = 0; i < 12; i++) {
-                GameMapTeleporter gameMapTeleporter = Teleporters[i];
+            for (var i = 0; i < 12; i++) {
+                var gameMapTeleporter = Teleporters[i];
                 ar.Serialize(ref gameMapTeleporter.Activated);
             }
 
             // Determine extra teleporter count.
-            int requiredCustomTeleporterCount = 0;
+            var requiredCustomTeleporterCount = 0;
             if (readLength > 12) {
                 ar.Serialize(ref requiredCustomTeleporterCount);
             }
@@ -40,20 +40,20 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
             customWarps.Clear();
             // Create or modify teleporters.
-            for (int i = 0; i < requiredCustomTeleporterCount; i++) {
-                string name = "???";
-                Vector3 position = new Vector3(0, 0, 0);
-                bool activated = false;
+            for (var i = 0; i < requiredCustomTeleporterCount; i++) {
+                var name = "???";
+                var position = new Vector3(0, 0, 0);
+                var activated = false;
                 ar.Serialize(ref name);
                 ar.Serialize(ref position);
                 ar.Serialize(ref activated);
-                int currentTeleporterIndex = 12 + i;
+                var currentTeleporterIndex = 12 + i;
                 if (currentTeleporterIndex < Teleporters.Count) {
                     // Alter the existing teleporter.
                     Teleporters[currentTeleporterIndex].SetInfo(name, position, activated);
                 } else {
                     // Create a new teleporter.
-                    GameMapTeleporter gameMapTeleporter = new GameMapTeleporter(name, position, activated);
+                    var gameMapTeleporter = new GameMapTeleporter(name, position, activated);
                     Teleporters.Add(gameMapTeleporter);
                 }
 
@@ -66,19 +66,19 @@ public class TeleporterController : SaveSerialize, ISuspendable {
             }
 
             // Default teleporters.
-            for (int i = 0; i < 12; i++) {
-                GameMapTeleporter gameMapTeleporter = Teleporters[i];
+            for (var i = 0; i < 12; i++) {
+                var gameMapTeleporter = Teleporters[i];
                 ar.Serialize(ref gameMapTeleporter.Activated);
             }
 
             // Extra teleporters.
-            int customTeleporterCount = Teleporters.Count - 12;
+            var customTeleporterCount = Teleporters.Count - 12;
             if (customTeleporterCount > 0) {
                 ar.Serialize(ref customTeleporterCount);
             }
 
-            for (int i = 12; i < Teleporters.Count; i++) {
-                GameMapTeleporter gameMapTeleporter = Teleporters[i];
+            for (var i = 12; i < Teleporters.Count; i++) {
+                var gameMapTeleporter = Teleporters[i];
                 ar.Serialize(ref gameMapTeleporter.Identifier);
                 ar.Serialize(ref gameMapTeleporter.WorldPosition);
                 ar.Serialize(ref gameMapTeleporter.Activated);
@@ -88,8 +88,8 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
     public static bool CanTeleport(string ignoreIdentifier) {
         if (Instance) {
-            for (int i = 0; i < Instance.Teleporters.Count; i++) {
-                GameMapTeleporter gameMapTeleporter = Instance.Teleporters[i];
+            for (var i = 0; i < Instance.Teleporters.Count; i++) {
+                var gameMapTeleporter = Instance.Teleporters[i];
                 if (!(gameMapTeleporter.Identifier == ignoreIdentifier)) {
                     if (gameMapTeleporter.Activated) {
                         return true;
@@ -117,7 +117,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public void OnGameReset() {
-        for (int i = 0; i < Instance.Teleporters.Count; i++) {
+        for (var i = 0; i < Instance.Teleporters.Count; i++) {
             Instance.Teleporters[i].Activated = false;
         }
 
@@ -150,7 +150,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public static bool ActivateAll() {
-        foreach (GameMapTeleporter gameMapTeleporter in Instance.Teleporters) {
+        foreach (var gameMapTeleporter in Instance.Teleporters) {
             gameMapTeleporter.Activated = true;
         }
 
@@ -161,7 +161,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         if (natural)
             RandomizerSyncManager.FoundTP(identifier);
         BingoController.OnActivateTeleporter(identifier);
-        foreach (GameMapTeleporter gameMapTeleporter in Instance.Teleporters) {
+        foreach (var gameMapTeleporter in Instance.Teleporters) {
             if (gameMapTeleporter.Identifier == identifier) {
                 gameMapTeleporter.Activated = true;
             }
@@ -210,7 +210,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
         Characters.Sein.Controller.OnTriggeredAnimationFinished += OnFinishedTeleportingStartAnimation;
         Instance.m_startTime = Time.time;
-        foreach (SavePedestal savePedestal in SavePedestal.All) {
+        foreach (var savePedestal in SavePedestal.All) {
             savePedestal.OnBeginTeleporting();
         }
     }
@@ -225,8 +225,8 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
     public void FixedUpdate() {
         if (m_isTeleporting) {
-            float time = Time.time;
-            float num = 7f;
+            var time = Time.time;
+            var num = 7f;
             if (DontTeleportForAnimationTesting) {
                 if (time > m_startTime + NoTeleportAnimationTime) {
                     Characters.Sein.Controller.StopAnimation();
@@ -259,7 +259,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public void OnFadedToBlack() {
-        foreach (SavePedestal savePedestal in SavePedestal.All) {
+        foreach (var savePedestal in SavePedestal.All) {
             savePedestal.OnFinishedTeleporting();
         }
 
@@ -290,7 +290,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         RandomizerStatsManager.UsedTeleporter();
 
         if (Randomizer.IsUsingRandomizerTeleportAnywhere) {
-            int value = World.Events.Find(Randomizer.MistySim).Value;
+            var value = World.Events.Find(Randomizer.MistySim).Value;
             if (value != 1 && value != 8) {
                 World.Events.Find(Randomizer.MistySim).Value = 10;
             }
@@ -348,7 +348,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         if (Instance.customWarps.Contains(name))
             return;
         Instance.customWarps.Add(name);
-        GameMapTeleporter teleporter = new GameMapTeleporter(name, warpX, warpY);
+        var teleporter = new GameMapTeleporter(name, warpX, warpY);
         Instance.Teleporters.Add(teleporter);
     }
 

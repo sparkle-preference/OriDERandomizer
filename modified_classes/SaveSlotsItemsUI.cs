@@ -11,7 +11,7 @@ public class SaveSlotsItemsUI : MonoBehaviour {
     }
 
     public void Awake() {
-        for (int i = 0; i < 50; i++) {
+        for (var i = 0; i < 50; i++) {
             Items.Add(null);
         }
     }
@@ -25,20 +25,20 @@ public class SaveSlotsItemsUI : MonoBehaviour {
             return;
         }
 
-        for (int i = 0; i < 50; i++) {
+        for (var i = 0; i < 50; i++) {
             RefreshItem(i);
         }
     }
 
     public void RefreshItem(int index) {
-        SaveSlotUI saveSlotUI = SaveSlotsManager.Instance.SaveSlotCompleted(index) ? SaveSlotCompletedUI : SaveSlotUI;
+        var saveSlotUI = SaveSlotsManager.Instance.SaveSlotCompleted(index) ? SaveSlotCompletedUI : SaveSlotUI;
         if (Items[index] && Items[index].name != saveSlotUI.name) {
             Destroy(Items[index].gameObject);
             Items[index] = null;
         }
 
         if (Items[index] == null) {
-            SaveSlotUI saveSlotUI2 = Instantiate(saveSlotUI);
+            var saveSlotUI2 = Instantiate(saveSlotUI);
             saveSlotUI2.name = saveSlotUI.name;
             saveSlotUI2.transform.parent = transform;
             saveSlotUI2.transform.localScale = SaveSlotUI.transform.localScale;

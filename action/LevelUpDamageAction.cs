@@ -26,16 +26,16 @@ public class LevelUpDamageAction : ActionMethod, ISuspendable {
         m_delayTime -= Time.deltaTime;
         if (m_delayTime < 0f) {
             m_delayTime = 0.1f;
-            float num = DistanceOverTime.Evaluate(m_time);
-            List<IAttackable> attackables = Targets.Attackables;
-            for (int i = 0; i < attackables.Count; i++) {
-                IAttackable attackable = attackables[i];
+            var num = DistanceOverTime.Evaluate(m_time);
+            var attackables = Targets.Attackables;
+            for (var i = 0; i < attackables.Count; i++) {
+                var attackable = attackables[i];
                 if (!InstantiateUtility.IsDestroyed(attackable as Component) && !TeleporterController.IsTeleporting) {
                     if (attackable.CanBeLevelUpBlasted()) {
                         if (!m_attackables.Contains(attackable)) {
                             if (Vector3.Distance(transform.position, attackable.Position) <= num) {
                                 m_attackables.Add(attackable);
-                                Damage damage = new Damage(Damage, (attackable.Position - transform.position).normalized, attackable.Position, DamageType.LevelUp, gameObject);
+                                var damage = new Damage(Damage, (attackable.Position - transform.position).normalized, attackable.Position, DamageType.LevelUp, gameObject);
                                 damage.DealToComponents((attackable as Component).gameObject);
                             }
                         }

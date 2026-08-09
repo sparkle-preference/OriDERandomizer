@@ -55,8 +55,8 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
         }
 
         damage.SetAmount(Mathf.Round(damage.Amount * Randomizer.DamageModifier));
-        bool flag = m_invincibleTimeRemaining > 0f;
-        bool flag2 = m_invincibleToEnemiesTimeRemaining > 0f || (RandomizerBonus.EnhancedChargeJump && Sein.Abilities.ChargeJumpCharging && Sein.Abilities.ChargeJumpCharging.IsCharged);
+        var flag = m_invincibleTimeRemaining > 0f;
+        var flag2 = m_invincibleToEnemiesTimeRemaining > 0f || (RandomizerBonus.EnhancedChargeJump && Sein.Abilities.ChargeJumpCharging && Sein.Abilities.ChargeJumpCharging.IsCharged);
         if (Sein.Abilities.Stomp && Sein.Abilities.Stomp.Logic.CurrentState == Sein.Abilities.Stomp.State.StompDown) {
             flag = true;
         }
@@ -82,7 +82,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
         }
 
         if (damage.Amount < 100f) {
-            DifficultyMode difficulty = DifficultyController.Instance.Difficulty;
+            var difficulty = DifficultyController.Instance.Difficulty;
             if (difficulty != DifficultyMode.Easy) {
                 if (difficulty == DifficultyMode.Hard) {
                     damage.SetAmount(damage.Amount * 2f);
@@ -93,7 +93,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
             } else if (damage.Type != DamageType.Lava && damage.Type != DamageType.Spikes) {
                 damage.SetAmount(damage.Amount / 2f);
             } else {
-                int num = Mathf.RoundToInt(damage.Amount / 4f);
+                var num = Mathf.RoundToInt(damage.Amount / 4f);
                 if (num > 3) {
                     num = Mathf.FloorToInt((num - 3) * 0.5f) + 3;
                 }
@@ -107,15 +107,15 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
         }
 
         UI.Vignette.SeinHurt.Restart();
-        SoundDescriptor soundForDamage = (damage.Amount >= BadlyHurtAmount ? SeinBadlyHurtSound : SeinHurtSound).GetSoundForDamage(damage);
+        var soundForDamage = (damage.Amount >= BadlyHurtAmount ? SeinBadlyHurtSound : SeinHurtSound).GetSoundForDamage(damage);
         if (soundForDamage != null) {
-            SoundPlayer soundPlayer = Sound.Play(soundForDamage, PlatformMovement.Position, null);
+            var soundPlayer = Sound.Play(soundForDamage, PlatformMovement.Position, null);
             if (soundPlayer) {
                 soundPlayer.AttachTo = Sein.PlatformBehaviour.transform;
             }
         }
 
-        int num2 = Mathf.CeilToInt(damage.Amount / 4f);
+        var num2 = Mathf.CeilToInt(damage.Amount / 4f);
         damage.SetAmount(num2);
         if (damage.Amount < 1000f && Sein.PlayerAbilities.UltraDefense.HasAbility) {
             damage.SetAmount(Mathf.RoundToInt(num2 * 0.8f));
@@ -127,7 +127,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
             damage.SetAmount(Mathf.FloorToInt(num2 * 2 * 0.8f) * 2);
         }
 
-        int num3 = Mathf.RoundToInt(damage.Amount);
+        var num3 = Mathf.RoundToInt(damage.Amount);
         if (num3 >= HealthController.Amount) {
             Sein.Mortality.Health.TakeDamage(num3);
             OnKill(damage);
@@ -139,10 +139,10 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
             MakeInvincible(1f);
             StartCoroutine(FlashSprite());
             if (HurtEffect) {
-                GameObject expr_3BA = (GameObject)InstantiateUtility.Instantiate(HurtEffect);
+                var expr_3BA = (GameObject)InstantiateUtility.Instantiate(HurtEffect);
                 expr_3BA.transform.position = transform.position;
                 Vector3 vector = PlatformMovement.LocalSpeed.normalized + damage.Force.normalized;
-                float z = Mathf.Atan2(vector.y, vector.x) * 57.29578f;
+                var z = Mathf.Atan2(vector.y, vector.x) * 57.29578f;
                 expr_3BA.transform.rotation = Quaternion.Euler(0f, 0f, z);
             }
 
@@ -237,7 +237,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
 
     public IEnumerator FlashSprite() {
         yield return new WaitForFixedUpdate();
-        for (int i = 0; i < 8; i++) {
+        for (var i = 0; i < 8; i++) {
             SpriteMaterialTintColor(Color.red);
             yield return new WaitForSeconds(0.05f);
             SpriteMaterialTintColor(new Color(0f, 0f, 0f, 0f));
@@ -272,9 +272,9 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
 
         BingoController.OnDeath(damage);
         m_died = true;
-        SoundDescriptor soundForDamage = SeinDeathSound.GetSoundForDamage(damage);
+        var soundForDamage = SeinDeathSound.GetSoundForDamage(damage);
         if (soundForDamage != null) {
-            SoundPlayer soundPlayer = Sound.Play(soundForDamage, PlatformMovement.Position, null);
+            var soundPlayer = Sound.Play(soundForDamage, PlatformMovement.Position, null);
             if (soundPlayer) {
                 soundPlayer.AttachTo = Sein.PlatformBehaviour.transform;
             }
@@ -299,17 +299,17 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
     }
 
     private void InstantiateDeathEffect(Damage damage) {
-        GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(DeathEffectProvider.Prefab(new DamageContext(damage)));
+        var gameObject = (GameObject)InstantiateUtility.Instantiate(DeathEffectProvider.Prefab(new DamageContext(damage)));
         damage.DealToComponents(gameObject);
-        Transform transform = Sein.PlatformBehaviour.Visuals.SpriteMirror.transform;
+        var transform = Sein.PlatformBehaviour.Visuals.SpriteMirror.transform;
         gameObject.transform.localPosition = transform.position;
         gameObject.transform.localScale = transform.localScale;
         gameObject.transform.localRotation = transform.localRotation;
     }
 
     public IEnumerator OnKillRoutine() {
-        float deathDuration = DeathDuration;
-        for (float t = 0f; t < deathDuration; t += !Sein.IsSuspended ? Time.deltaTime : 0f) {
+        var deathDuration = DeathDuration;
+        for (var t = 0f; t < deathDuration; t += !Sein.IsSuspended ? Time.deltaTime : 0f) {
             if (Characters.Sein == null) {
                 yield break;
             }

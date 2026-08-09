@@ -43,13 +43,13 @@ public class ChargeFlameBurst : MonoBehaviour, IPooled, ISuspendable {
     }
 
     public void DealDamage() {
-        Vector3 position = transform.position;
-        IAttackable[] array = Targets.Attackables.ToArray();
-        for (int i = 0; i < array.Length; i++) {
-            IAttackable attackable = array[i];
+        var position = transform.position;
+        var array = Targets.Attackables.ToArray();
+        for (var i = 0; i < array.Length; i++) {
+            var attackable = array[i];
             if (!InstantiateUtility.IsDestroyed(attackable as Component) && !m_damageAttackables.Contains(attackable) && attackable.CanBeChargeFlamed()) {
-                Vector3 position2 = attackable.Position;
-                Vector3 vector = position2 - position;
+                var position2 = attackable.Position;
+                var vector = position2 - position;
                 if (Characters.Sein.Abilities.ChargeFlame.CapturedProjectiles.ContainsKey(attackable)) {
                     vector = Characters.Sein.Abilities.ChargeFlame.CapturedProjectiles[attackable].Direction;
                     (attackable as Projectile).Speed = Characters.Sein.Abilities.ChargeFlame.CapturedProjectiles[attackable].CapturedVelocity;
@@ -59,11 +59,11 @@ public class ChargeFlameBurst : MonoBehaviour, IPooled, ISuspendable {
 
                 if (vector.magnitude <= BurstRadius) {
                     m_damageAttackables.Add(attackable);
-                    GameObject gameObject = ((Component)attackable).gameObject;
+                    var gameObject = ((Component)attackable).gameObject;
                     new Damage(DamageAmount + 6 * RandomizerBonus.SpiritFlameLevel(), vector.normalized * 3f, position, DamageType.ChargeFlame, this.gameObject).DealToComponents(gameObject);
-                    bool expr_D8 = attackable.IsDead();
+                    var expr_D8 = attackable.IsDead();
                     if (!expr_D8) {
-                        GameObject expr_F2 = (GameObject)InstantiateUtility.Instantiate(BurstImpactEffectPrefab, position2, Quaternion.identity);
+                        var expr_F2 = (GameObject)InstantiateUtility.Instantiate(BurstImpactEffectPrefab, position2, Quaternion.identity);
                         expr_F2.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(vector.normalized));
                         expr_F2.GetComponent<FollowPositionRotation>().SetTarget(gameObject.transform);
                     }

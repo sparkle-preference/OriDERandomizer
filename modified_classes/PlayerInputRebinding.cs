@@ -60,7 +60,7 @@ public class PlayerInputRebinding {
 
     public static void GetKeyRebindSettingsFromFile() {
         try {
-            using (StreamReader streamReader = new StreamReader(new FileStream(KeyRebindingFile, FileMode.Open))) {
+            using (var streamReader = new StreamReader(new FileStream(KeyRebindingFile, FileMode.Open))) {
                 streamReader.ReadLine();
                 streamReader.ReadLine();
                 streamReader.ReadLine();
@@ -120,14 +120,14 @@ public class PlayerInputRebinding {
             },
             StringSplitOptions.None
         )[1];
-        string[] array = s.Split(
+        var array = s.Split(
             new[] {
                 ", "
             },
             StringSplitOptions.None
         );
-        List<KeyCode> list = new List<KeyCode>();
-        foreach (string value in array) {
+        var list = new List<KeyCode>();
+        foreach (var value in array) {
             list.Add((KeyCode)(int)Enum.Parse(typeof(KeyCode), value));
         }
 
@@ -135,8 +135,8 @@ public class PlayerInputRebinding {
     }
 
     public static void WriteKeyRebindSettings() {
-        using (StreamWriter streamWriter = new StreamWriter(new FileStream(KeyRebindingFile, FileMode.OpenOrCreate))) {
-            KeyBindingSettings keyRebindings = m_keyRebindings;
+        using (var streamWriter = new StreamWriter(new FileStream(KeyRebindingFile, FileMode.OpenOrCreate))) {
+            var keyRebindings = m_keyRebindings;
             streamWriter.WriteLine("Keyboard Rebindings");
             streamWriter.WriteLine("--------");
             streamWriter.WriteLine("Activate Key Rebinding: " + keyRebindings.IsRebinding);
@@ -190,9 +190,9 @@ public class PlayerInputRebinding {
     }
 
     private static string KeyBindingToString(KeyCode[] codes) {
-        string text = string.Empty;
-        bool flag = true;
-        foreach (KeyCode keyCode in codes) {
+        var text = string.Empty;
+        var flag = true;
+        foreach (var keyCode in codes) {
             text += !flag ? ", " : string.Empty;
             text += keyCode;
             flag = false;
@@ -206,9 +206,9 @@ public class PlayerInputRebinding {
     }
 
     private static KeyBindingSettings DefaultKeyBindingSettings() {
-        bool flag = GameSettings.Instance.CurrentControlScheme == ControlScheme.KeyboardAndMouse;
-        bool flag2 = GameSettings.Instance.KeyboardLayout == KeyboardLayout.QWERTY;
-        KeyBindingSettings keyBindingSettings = new KeyBindingSettings();
+        var flag = GameSettings.Instance.CurrentControlScheme == ControlScheme.KeyboardAndMouse;
+        var flag2 = GameSettings.Instance.KeyboardLayout == KeyboardLayout.QWERTY;
+        var keyBindingSettings = new KeyBindingSettings();
         keyBindingSettings.IsRebinding = false;
         keyBindingSettings.HorizontalDigiPadLeft = new[] {
             !flag2 ? KeyCode.Q : KeyCode.A,
@@ -266,30 +266,30 @@ public class PlayerInputRebinding {
             KeyCode.LeftShift,
             KeyCode.RightShift
         };
-        KeyBindingSettings keyBindingSettings2 = keyBindingSettings;
+        var keyBindingSettings2 = keyBindingSettings;
         KeyCode[] spiritFlame;
         if (flag) {
-            KeyCode[] array = new KeyCode[2];
+            var array = new KeyCode[2];
             array[0] = KeyCode.Mouse0;
             spiritFlame = array;
             array[1] = KeyCode.X;
         } else {
-            KeyCode[] array2 = new KeyCode[2];
+            var array2 = new KeyCode[2];
             array2[0] = KeyCode.X;
             spiritFlame = array2;
             array2[1] = KeyCode.Mouse0;
         }
 
         keyBindingSettings2.SpiritFlame = spiritFlame;
-        KeyBindingSettings keyBindingSettings3 = keyBindingSettings;
+        var keyBindingSettings3 = keyBindingSettings;
         KeyCode[] bash;
         if (flag) {
-            KeyCode[] array3 = new KeyCode[2];
+            var array3 = new KeyCode[2];
             array3[0] = KeyCode.Mouse1;
             bash = array3;
             array3[1] = KeyCode.C;
         } else {
-            KeyCode[] array4 = new KeyCode[2];
+            var array4 = new KeyCode[2];
             array4[0] = KeyCode.C;
             bash = array4;
             array4[1] = KeyCode.Mouse1;
@@ -300,15 +300,15 @@ public class PlayerInputRebinding {
             KeyCode.LeftShift,
             KeyCode.RightShift
         };
-        KeyBindingSettings keyBindingSettings4 = keyBindingSettings;
+        var keyBindingSettings4 = keyBindingSettings;
         KeyCode[] chargeJump;
         if (flag) {
-            KeyCode[] array5 = new KeyCode[2];
+            var array5 = new KeyCode[2];
             array5[0] = !flag2 ? KeyCode.Z : KeyCode.W;
             chargeJump = array5;
             array5[1] = KeyCode.UpArrow;
         } else {
-            KeyCode[] array6 = new KeyCode[2];
+            var array6 = new KeyCode[2];
             array6[0] = KeyCode.UpArrow;
             chargeJump = array6;
             array6[1] = !flag2 ? KeyCode.Z : KeyCode.W;
@@ -375,12 +375,12 @@ public class PlayerInputRebinding {
 
     public static void GetControllerButtonRemappingsFromFile() {
         try {
-            using (StreamReader streamReader = new StreamReader(new FileStream(ControllerRemappingFile, FileMode.Open))) {
+            using (var streamReader = new StreamReader(new FileStream(ControllerRemappingFile, FileMode.Open))) {
                 SetDefaultControllerButtonRemappings();
                 streamReader.ReadLine();
                 streamReader.ReadLine();
                 streamReader.ReadLine();
-                bool flag = bool.Parse(
+                var flag = bool.Parse(
                     streamReader.ReadLine().Split(
                         new[] {
                             ": "
@@ -487,13 +487,13 @@ public class PlayerInputRebinding {
                             StringSplitOptions.None
                         )[1]
                     ) - 1;
-                    for (int i = 0; i < 10; i++) {
+                    for (var i = 0; i < 10; i++) {
                         if (m_controllerButtonRemappings[i] < 0 || m_controllerButtonRemappings[i] > 11) {
                             SetDefaultControllerButtonRemappings();
                         }
                     }
 
-                    for (int j = 12; j < 14; j++) {
+                    for (var j = 12; j < 14; j++) {
                         if (m_controllerButtonRemappings[j] < 0 || m_controllerButtonRemappings[j] > 13) {
                             SetDefaultControllerButtonRemappings();
                         }
@@ -506,7 +506,7 @@ public class PlayerInputRebinding {
     }
 
     public static void WriteControllerButtonRemappings() {
-        using (StreamWriter streamWriter = new StreamWriter(new FileStream(ControllerRemappingFile, FileMode.OpenOrCreate))) {
+        using (var streamWriter = new StreamWriter(new FileStream(ControllerRemappingFile, FileMode.OpenOrCreate))) {
             streamWriter.WriteLine("Controller Button Remapping - remaps controller buttons to different DirectInput button IDs");
             streamWriter.WriteLine("Only for DirectInput controllers");
             streamWriter.WriteLine("--------");
@@ -613,7 +613,7 @@ public class PlayerInputRebinding {
 
     public static void GetControllerRebindSettingsFromFile() {
         try {
-            using (StreamReader streamReader = new StreamReader(new FileStream(ControllerRebindingFile, FileMode.Open))) {
+            using (var streamReader = new StreamReader(new FileStream(ControllerRebindingFile, FileMode.Open))) {
                 streamReader.ReadLine();
                 streamReader.ReadLine();
                 m_controllerRebindings = new ControllerBindingSettings {
@@ -664,14 +664,14 @@ public class PlayerInputRebinding {
             },
             StringSplitOptions.None
         )[1];
-        string[] array = s.Split(
+        var array = s.Split(
             new[] {
                 ", "
             },
             StringSplitOptions.RemoveEmptyEntries
         );
-        List<ControllerButton> list = new List<ControllerButton>();
-        foreach (string value in array) {
+        var list = new List<ControllerButton>();
+        foreach (var value in array) {
             list.Add((ControllerButton)(int)Enum.Parse(typeof(ControllerButton), value));
         }
 
@@ -679,8 +679,8 @@ public class PlayerInputRebinding {
     }
 
     public static void WriteControllerRebindSettings() {
-        using (StreamWriter streamWriter = new StreamWriter(new FileStream(ControllerRebindingFile, FileMode.OpenOrCreate))) {
-            ControllerBindingSettings controllerRebindings = m_controllerRebindings;
+        using (var streamWriter = new StreamWriter(new FileStream(ControllerRebindingFile, FileMode.OpenOrCreate))) {
+            var controllerRebindings = m_controllerRebindings;
             streamWriter.WriteLine("Controller Rebindings");
             streamWriter.WriteLine("--------");
             streamWriter.WriteLine("Movement Left: " + ControllerBindingToString(controllerRebindings.HorizontalDigiPadLeft));
@@ -735,9 +735,9 @@ public class PlayerInputRebinding {
     }
 
     public static string ControllerBindingToString(ControllerButton[] codes) {
-        string text = string.Empty;
-        bool flag = true;
-        foreach (ControllerButton controllerButton in codes) {
+        var text = string.Empty;
+        var flag = true;
+        foreach (var controllerButton in codes) {
             text += !flag ? ", " : string.Empty;
             text += controllerButton;
             flag = false;

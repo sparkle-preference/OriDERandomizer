@@ -23,13 +23,13 @@ public class MenuKeybindsScreen : CustomSettingsScreen {
 
     private void ResetKeybinds() {
         PlayerInputRebinding.SetDefaultKeyBindingSettings();
-        PlayerInput instance = PlayerInput.Instance;
+        var instance = PlayerInput.Instance;
         if (instance != null) {
             instance.RefreshControlScheme();
         }
 
-        KeybindControl[] componentsInChildren = OptionsScreen.Instance.transform.GetComponentsInChildren<KeybindControl>(true);
-        for (int i = 0; i < componentsInChildren.Length; i++) {
+        var componentsInChildren = OptionsScreen.Instance.transform.GetComponentsInChildren<KeybindControl>(true);
+        for (var i = 0; i < componentsInChildren.Length; i++) {
             componentsInChildren[i].Reset();
         }
 

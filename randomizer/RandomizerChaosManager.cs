@@ -31,21 +31,21 @@ public static class RandomizerChaosManager {
             Countdown = Random.Range(300, 900);
         }
 
-        for (int i = 0; i < Effects.Count; i++) {
+        for (var i = 0; i < Effects.Count; i++) {
             Effects[i].Update();
         }
     }
 
     public static void ClearEffects() {
-        for (int i = 0; i < Effects.Count; i++) {
+        for (var i = 0; i < Effects.Count; i++) {
             Effects[i].Clear();
         }
     }
 
     public static void SpawnEffect() {
-        int num = 0;
-        int num2 = Random.Range(0, 64);
-        for (int i = 0; i < Effects.Count; i++) {
+        var num = 0;
+        var num2 = Random.Range(0, 64);
+        for (var i = 0; i < Effects.Count; i++) {
             num += Frequencies[i];
             if (num > num2) {
                 Effects[i].Start();

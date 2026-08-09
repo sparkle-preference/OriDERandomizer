@@ -25,7 +25,7 @@ public class MapStone : SaveSerialize {
 
     public bool OriHasTargets {
         get {
-            SeinSpiritFlameTargetting spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
+            var spiritFlameTargetting = Characters.Sein.Abilities.SpiritFlameTargetting;
             return spiritFlameTargetting && spiritFlameTargetting.ClosestAttackables.Count > 0;
         }
     }
@@ -85,7 +85,7 @@ public class MapStone : SaveSerialize {
     public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
 
     public void FixedUpdate() {
-        State currentState = CurrentState;
+        var currentState = CurrentState;
         if (currentState != State.Activated && RandomizerLocationManager.IsPickupCollected(MoonGuid)) {
             if (currentState == State.Highlighted) {
                 Unhighlight();

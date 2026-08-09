@@ -101,7 +101,7 @@ public class PlayerAbilities : SaveSerialize, ISeinReceiver {
     }
 
     public void SetAllAbilitys(bool abilityEnabled) {
-        foreach (CharacterAbility characterAbility in Abilities) {
+        foreach (var characterAbility in Abilities) {
             characterAbility.HasAbility = abilityEnabled;
         }
 
@@ -110,7 +110,7 @@ public class PlayerAbilities : SaveSerialize, ISeinReceiver {
 
     public override void Serialize(Archive ar) {
         try {
-            foreach (CharacterAbility characterAbility in Abilities) {
+            foreach (var characterAbility in Abilities) {
                 ar.Serialize(ref characterAbility.HasAbility);
             }
         } catch (Exception exception) {

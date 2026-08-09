@@ -30,7 +30,7 @@ public static class RandomizerClues {
     }
 
     public static int SlotFor(int i) {
-        int index = RevealOrder[i] - 1;
+        var index = RevealOrder[i] - 1;
         return ClueSlots != null && index >= 0 && index < ClueSlots.Count
             ? ClueSlots[index]
             : -1;
@@ -43,15 +43,15 @@ public static class RandomizerClues {
     public static void WantHints(List<int> needed) {
         if (Clues == null || RevealOrder == null)
             return;
-        for (int i = 0; i < 3; i++)
+        for (var i = 0; i < 3; i++)
             if (Revealed(i))
                 RandomizerMW.WantHint(needed, SlotFor(i));
     }
 
     public static string GetClues() {
-        string text = "";
-        string text2 = "";
-        string text3 = "";
+        var text = "";
+        var text2 = "";
+        var text3 = "";
         string[] array = {
             "????",
             "????",
@@ -69,7 +69,7 @@ public static class RandomizerClues {
             text3 = "@";
         }
 
-        for (int i = 0; i < 3; i++) {
+        for (var i = 0; i < 3; i++) {
             if (Revealed(i)) {
                 array[i] = ClueFor(i);
             }
@@ -96,7 +96,7 @@ public static class RandomizerClues {
     }
 
     public static void FinishClues() {
-        for (int i = 0; i < 3; i++) {
+        for (var i = 0; i < 3; i++) {
             if (RevealOrder[i] == 0) {
                 Clues.Add("Unknown");
                 ClueSlots.Add(-1);

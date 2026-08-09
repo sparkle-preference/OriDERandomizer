@@ -6,7 +6,7 @@ public class SeinAbilityCondition : Condition {
         if (Characters.Sein != null) {
             if (Ability == AbilityType.Stomp) {
                 if (Randomizer.Inventory.FinishedGinsoEscape && Scenes.Manager.CurrentScene != null) {
-                    string scene = Scenes.Manager.CurrentScene.Scene;
+                    var scene = Scenes.Manager.CurrentScene.Scene;
                     if (scene == "ginsoTreeTurrets")
                         return true;
                     if (scene == "kuroMomentTreeDuplicate")

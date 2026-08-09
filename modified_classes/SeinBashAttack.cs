@@ -39,14 +39,14 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
     public TextureAnimationWithTransitions BashChargeAnimation {
         get {
             Vector2 vector = m_directionToTarget;
-            float num = Mathf.Cos(0.3926991f);
-            DirectionalAnimationSet directionalAnimationSet = !Sein.Controller.IsSwimming ? BashChargeAnimationSet : SwimBashChargeAnimationSet;
+            var num = Mathf.Cos(0.3926991f);
+            var directionalAnimationSet = !Sein.Controller.IsSwimming ? BashChargeAnimationSet : SwimBashChargeAnimationSet;
             vector.x = Mathf.Abs(vector.x);
             if (Vector3.Dot(Vector3.up, vector) > num) {
                 return directionalAnimationSet.Up;
             }
 
-            Vector3 vector2 = new Vector3(1f, 1f);
+            var vector2 = new Vector3(1f, 1f);
             if (Vector3.Dot(vector2.normalized, vector) > num) {
                 return directionalAnimationSet.UpDiagonal;
             }
@@ -55,7 +55,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
                 return directionalAnimationSet.Horizontal;
             }
 
-            Vector3 vector3 = new Vector3(1f, -1f);
+            var vector3 = new Vector3(1f, -1f);
             if (Vector3.Dot(vector3.normalized, vector) > num) {
                 return directionalAnimationSet.DownDiagonal;
             }
@@ -70,15 +70,15 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
 
     public TextureAnimationWithTransitions BashJumpAnimation {
         get {
-            Vector2 vector = MoonMath.Angle.VectorFromAngle(m_bashAngle + 90f);
-            float num = Mathf.Cos(0.3926991f);
-            DirectionalAnimationSet directionalAnimationSet = !Sein.Controller.IsSwimming ? BashJumpAnimationSet : SwimBashJumpAnimationSet;
+            var vector = MoonMath.Angle.VectorFromAngle(m_bashAngle + 90f);
+            var num = Mathf.Cos(0.3926991f);
+            var directionalAnimationSet = !Sein.Controller.IsSwimming ? BashJumpAnimationSet : SwimBashJumpAnimationSet;
             vector.x = Mathf.Abs(vector.x);
             if (Vector3.Dot(Vector3.up, vector) > num) {
                 return directionalAnimationSet.Up;
             }
 
-            Vector3 vector2 = new Vector3(1f, 1f);
+            var vector2 = new Vector3(1f, 1f);
             if (Vector3.Dot(vector2.normalized, vector) > num) {
                 return directionalAnimationSet.UpDiagonal;
             }
@@ -87,7 +87,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
                 return directionalAnimationSet.Horizontal;
             }
 
-            Vector3 vector3 = new Vector3(1f, -1f);
+            var vector3 = new Vector3(1f, -1f);
             if (Vector3.Dot(vector3.normalized, vector) > num) {
                 return directionalAnimationSet.DownDiagonal;
             }
@@ -107,13 +107,13 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
                 m_spriteMirrorLock = value;
                 int @lock;
                 if (value) {
-                    CharacterSpriteMirror spriteMirror = Sein.PlatformBehaviour.Visuals.SpriteMirror;
+                    var spriteMirror = Sein.PlatformBehaviour.Visuals.SpriteMirror;
                     @lock = spriteMirror.Lock;
                     spriteMirror.Lock = @lock + 1;
                     return;
                 }
 
-                CharacterSpriteMirror spriteMirror2 = Sein.PlatformBehaviour.Visuals.SpriteMirror;
+                var spriteMirror2 = Sein.PlatformBehaviour.Visuals.SpriteMirror;
                 @lock = spriteMirror2.Lock;
                 spriteMirror2.Lock = @lock - 1;
             }
@@ -182,15 +182,15 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
     }
 
     public void MovePlayerToTargetAndCreateEffect() {
-        Component component = Target as Component;
-        Vector3 vector = !InstantiateUtility.IsDestroyed(component) ? component.transform.position : PlatformMovement.Position;
+        var component = Target as Component;
+        var vector = !InstantiateUtility.IsDestroyed(component) ? component.transform.position : PlatformMovement.Position;
         if (m_isEnhancedBashing) {
             vector = m_enhancedBashTarget;
         }
 
-        GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(BashFromFx);
+        var gameObject = (GameObject)InstantiateUtility.Instantiate(BashFromFx);
         gameObject.transform.position = vector;
-        Vector3 localScale = gameObject.transform.localScale;
+        var localScale = gameObject.transform.localScale;
         localScale.x = (vector - PlatformMovement.Position).magnitude;
         gameObject.transform.localScale = localScale;
         gameObject.transform.localRotation = Quaternion.Euler(0f, 0f, MoonMath.Angle.AngleFromVector(PlatformMovement.Position - vector));
@@ -222,8 +222,8 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
         }
 
         PlatformMovement.LocalSpeed = Vector2.zero;
-        Vector3 vectorToTarget = target - PlatformMovement.Position;
-        GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(BashAttackGamePrefab);
+        var vectorToTarget = target - PlatformMovement.Position;
+        var gameObject = (GameObject)InstantiateUtility.Instantiate(BashAttackGamePrefab);
         m_bashAttackGame = gameObject.GetComponent<BashAttackGame>();
         m_bashAttackGame.SendDirection(vectorToTarget);
         m_bashAttackGame.BashGameComplete += BashGameComplete;
@@ -247,18 +247,18 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
         }
 
         Vector2 vector = Quaternion.Euler(0f, 0f, angle) * Vector2.up;
-        Vector2 vector2 = vector * (BashVelocity + BashVelocity * .10f * RandomizerBonus.Velocity());
+        var vector2 = vector * (BashVelocity + BashVelocity * .10f * RandomizerBonus.Velocity());
         PlatformMovement.WorldSpeed = vector2;
         AirNoDeceleration.NoDeceleration = true;
         Sein.ResetAirLimits();
         m_frictionTimeRemaining = FrictionDuration;
         ApplyFrictionToSpeed.SpeedToSlowDown = PlatformMovement.LocalSpeed;
         MovePlayerToTargetAndCreateEffect();
-        Component component = Target as Component;
-        Vector3 position = !InstantiateUtility.IsDestroyed(component) ? component.transform.position : Sein.Position;
-        GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(BashOffFx);
+        var component = Target as Component;
+        var position = !InstantiateUtility.IsDestroyed(component) ? component.transform.position : Sein.Position;
+        var gameObject = (GameObject)InstantiateUtility.Instantiate(BashOffFx);
         gameObject.transform.position = position;
-        Vector3 localScale = gameObject.transform.localScale;
+        var localScale = gameObject.transform.localScale;
         localScale.x = vector2.magnitude * 0.1f;
         gameObject.transform.localScale = localScale;
         gameObject.transform.localRotation = Quaternion.Euler(0f, 0f, MoonMath.Angle.AngleFromVector(vector));
@@ -268,7 +268,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
 
         OnBashAttackEvent(vector2);
         m_timeRemainingTillNextBash = DelayTillNextBash;
-        CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(BashJumpAnimation, 10, ShouldBashJumpAnimationKeepPlaying);
+        var characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(BashJumpAnimation, 10, ShouldBashJumpAnimationKeepPlaying);
         characterAnimationState.OnStartPlaying = OnAnimationStart;
         characterAnimationState.OnStopPlaying = OnAnimationEnd;
         Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft = vector2.x > 0f;
@@ -282,11 +282,11 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
     }
 
     public void AttackTarget() {
-        Component component = Target as Component;
+        var component = Target as Component;
         if (!InstantiateUtility.IsDestroyed(component)) {
-            Vector2 force = -MoonMath.Angle.VectorFromAngle(m_bashAngle + 90f) * (4f + RandomizerBonus.Velocity());
+            var force = -MoonMath.Angle.VectorFromAngle(m_bashAngle + 90f) * (4f + RandomizerBonus.Velocity());
             new Damage(RandomizerBonusSkill.AbilityDamage(!Sein.PlayerAbilities.BashBuff.HasAbility ? Damage : UpgradedDamage), force, Characters.Sein.Position, DamageType.Bash, gameObject).DealToComponents(component.gameObject);
-            EntityTargetting component2 = component.gameObject.GetComponent<EntityTargetting>();
+            var component2 = component.gameObject.GetComponent<EntityTargetting>();
             if (component2 && component2.Entity is Enemy) {
                 OnBashEnemy(component2);
             }
@@ -308,13 +308,13 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
     public void UpdateBashThroughEnemies() {
         if (m_bashThroughEnemiesRemainingTime > 0f) {
             m_bashThroughEnemiesRemainingTime -= Time.deltaTime;
-            for (int i = 0; i < Targets.Attackables.Count; i++) {
-                IAttackable attackable = Targets.Attackables[i];
+            for (var i = 0; i < Targets.Attackables.Count; i++) {
+                var attackable = Targets.Attackables[i];
                 if (attackable.CanBeSpiritFlamed() && !m_enemiesBashedThrough.Contains(attackable)) {
-                    Vector3 vector = attackable.Position - Sein.PlatformBehaviour.PlatformMovement.Position;
+                    var vector = attackable.Position - Sein.PlatformBehaviour.PlatformMovement.Position;
                     if (vector.magnitude < 3f && Vector2.Dot(vector.normalized, PlatformMovement.LocalSpeed.normalized) > 0f) {
-                        Damage damage = new Damage(UpgradedDamage, PlatformMovement.WorldSpeed.normalized, Sein.Position, DamageType.SpiritFlame, this.gameObject);
-                        GameObject gameObject = ((Component)attackable).gameObject;
+                        var damage = new Damage(UpgradedDamage, PlatformMovement.WorldSpeed.normalized, Sein.Position, DamageType.SpiritFlame, this.gameObject);
+                        var gameObject = ((Component)attackable).gameObject;
                         damage.DealToComponents(gameObject);
                         m_enemiesBashedThrough.Add(attackable);
                         break;
@@ -405,7 +405,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
         UpdateBashThroughEnemies();
         if (m_frictionTimeRemaining > 0f) {
             m_frictionTimeRemaining -= Time.deltaTime;
-            float time = FrictionDuration - m_frictionTimeRemaining;
+            var time = FrictionDuration - m_frictionTimeRemaining;
             ApplyFrictionToSpeed.SpeedFactor = FrictionCurve.Evaluate(time);
         }
 
@@ -422,7 +422,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
     }
 
     public void HandleMovingTowardsBashTarget() {
-        Vector3 a = m_playerTargetPosition - PlatformMovement.Position;
+        var a = m_playerTargetPosition - PlatformMovement.Position;
         PlatformMovement.WorldSpeed = a / Time.deltaTime * 0.1f;
     }
 
@@ -468,17 +468,17 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
 
     public IBashAttackable FindClosestAttackHandler() {
         IBashAttackable result = null;
-        float num = float.MaxValue;
-        int num2 = int.MinValue;
-        Vector3 position = Sein.Position;
-        for (int i = 0; i < Targets.Attackables.Count; i++) {
-            IAttackable attackable = Targets.Attackables[i];
+        var num = float.MaxValue;
+        var num2 = int.MinValue;
+        var position = Sein.Position;
+        for (var i = 0; i < Targets.Attackables.Count; i++) {
+            var attackable = Targets.Attackables[i];
             if (attackable.CanBeBashed()) {
-                float magnitude = (attackable.Position - position).magnitude;
+                var magnitude = (attackable.Position - position).magnitude;
                 if (magnitude <= Range) {
-                    IBashAttackable bashAttackable = attackable as IBashAttackable;
+                    var bashAttackable = attackable as IBashAttackable;
                     if (bashAttackable != null) {
-                        int bashPriority = bashAttackable.BashPriority;
+                        var bashPriority = bashAttackable.BashPriority;
                         if ((bashPriority > num2 || (magnitude <= num && bashPriority == num2)) && Sein.Controller.RayTest(((Component)bashAttackable).gameObject)) {
                             num = magnitude;
                             num2 = bashPriority;

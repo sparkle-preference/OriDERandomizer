@@ -27,7 +27,7 @@ public class SaveSlotBackupsManager : MonoBehaviour {
 
     public static void RequestReadBackups(int slotIndex, Action onFinishedReading) {
         m_instance.m_currentReadingSlot = slotIndex;
-        SaveSlotBackup saveSlotBackup = m_instance.FindByIndex(slotIndex);
+        var saveSlotBackup = m_instance.FindByIndex(slotIndex);
         if (saveSlotBackup.IsLoaded) {
             if (onFinishedReading != null) {
                 onFinishedReading();
@@ -42,13 +42,13 @@ public class SaveSlotBackupsManager : MonoBehaviour {
     }
 
     public static void DeleteAllBackups(int slotIndex) {
-        SaveSlotBackup saveSlotBackup = SaveSlotBackupAtIndex(slotIndex);
-        for (int i = 0; i < 5; i++) {
-            string path = m_instance.BackupName(slotIndex, i);
+        var saveSlotBackup = SaveSlotBackupAtIndex(slotIndex);
+        for (var i = 0; i < 5; i++) {
+            var path = m_instance.BackupName(slotIndex, i);
             File.Delete(path);
         }
 
-        for (int j = 0; j < saveSlotBackup.SaveSlotInfos.Length; j++) {
+        for (var j = 0; j < saveSlotBackup.SaveSlotInfos.Length; j++) {
             saveSlotBackup.SaveSlotInfos[j] = null;
         }
     }
@@ -71,18 +71,18 @@ public class SaveSlotBackupsManager : MonoBehaviour {
     }
 
     public void RestoreBackup(int slotIndex, int backupIndex) {
-        string filename = BackupName(slotIndex, backupIndex);
+        var filename = BackupName(slotIndex, backupIndex);
         GameController.Instance.SaveGameController.LoadFromFile(filename);
         GameController.Instance.SaveGameController.RestoreCheckpoint();
     }
 
     private void CreateBackup(int slotIndex) {
-        SaveGameController saveGameController = GameController.Instance.SaveGameController;
-        SaveSlotBackup saveSlotBackup = FindByIndex(slotIndex);
-        int num = saveSlotBackup.IndexOfOldestSaveSlotInfo();
-        string destFileName = BackupName(slotIndex, num);
+        var saveGameController = GameController.Instance.SaveGameController;
+        var saveSlotBackup = FindByIndex(slotIndex);
+        var num = saveSlotBackup.IndexOfOldestSaveSlotInfo();
+        var destFileName = BackupName(slotIndex, num);
         File.Copy(saveGameController.GetSaveFilePath(SaveSlotsManager.CurrentSlotIndex), destFileName, true);
-        SaveSlotInfo saveSlot = new SaveSlotInfo(SaveSlotsManager.CurrentSaveSlot);
+        var saveSlot = new SaveSlotInfo(SaveSlotsManager.CurrentSaveSlot);
         saveSlotBackup.SaveSlotInfos[num] = new SaveSlotBackupInfo(num, saveSlot);
         if (saveSlotBackup.Count < 5) {
             saveSlotBackup.Count++;
@@ -107,7 +107,7 @@ public class SaveSlotBackupsManager : MonoBehaviour {
         }
 
         if (m_buffersToDelete.Count > 0) {
-            int[] array = m_buffersToDelete.Pop();
+            var array = m_buffersToDelete.Pop();
             XboxOneSave.DeleteSaveGame(array[0], array[1]);
         }
 
@@ -115,7 +115,7 @@ public class SaveSlotBackupsManager : MonoBehaviour {
             return;
         }
 
-        SaveSlotBackup saveSlotBackup = FindByIndex(m_currentReadingSlot);
+        var saveSlotBackup = FindByIndex(m_currentReadingSlot);
         if (!saveSlotBackup.IsLoaded) {
             LookForBackup(m_currentReadingSlot, saveSlotBackup.Count);
         }
@@ -132,7 +132,7 @@ public class SaveSlotBackupsManager : MonoBehaviour {
 
     private void ClearCache() {
         m_saveSlotBackups.Clear();
-        for (int i = 0; i < 50; i++) {
+        for (var i = 0; i < 50; i++) {
             m_saveSlotBackups.Add(new SaveSlotBackup(i));
         }
     }
@@ -146,11 +146,11 @@ public class SaveSlotBackupsManager : MonoBehaviour {
     }
 
     private void LookForBackup(int slotIndex, int backupIndex) {
-        SaveSlotBackup saveSlotBackup = FindByIndex(m_currentReadingSlot);
-        string path = BackupName(slotIndex, backupIndex);
+        var saveSlotBackup = FindByIndex(m_currentReadingSlot);
+        var path = BackupName(slotIndex, backupIndex);
         if (File.Exists(path)) {
-            using (BinaryReader binaryReader = new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))) {
-                SaveSlotInfo saveSlotInfo = new SaveSlotInfo();
+            using (var binaryReader = new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))) {
+                var saveSlotInfo = new SaveSlotInfo();
                 if (saveSlotInfo.LoadFromReader(binaryReader)) {
                     saveSlotBackup.SaveSlotInfos[backupIndex] = new SaveSlotBackupInfo(backupIndex, saveSlotInfo);
                 } else {

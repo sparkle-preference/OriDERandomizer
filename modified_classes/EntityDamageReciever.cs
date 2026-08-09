@@ -26,13 +26,13 @@ public class EntityDamageReciever : DamageReciever, IDynamicGraphicHierarchy, IP
 
     public void OnTriggerEnter(Collider collider) {
         if (CanBeCrushed && collider.GetComponent<CrushPlayer>()) {
-            Damage damage = new Damage(10000f, Vector2.zero, Entity.Position, DamageType.Crush, gameObject);
+            var damage = new Damage(10000f, Vector2.zero, Entity.Position, DamageType.Crush, gameObject);
             damage.DealToComponents(gameObject);
         }
     }
 
     public override void OnRecieveDamage(Damage damage) {
-        bool terrain = damage.Type == DamageType.Crush || damage.Type == DamageType.Spikes || damage.Type == DamageType.Lava || damage.Type == DamageType.Laser;
+        var terrain = damage.Type == DamageType.Crush || damage.Type == DamageType.Spikes || damage.Type == DamageType.Lava || damage.Type == DamageType.Laser;
         if (Entity is Enemy && !(terrain || damage.Type == DamageType.Projectile || damage.Type == DamageType.Enemy)) {
             RandomizerBonus.DamageDealt(damage.Amount);
         }
@@ -58,7 +58,7 @@ public class EntityDamageReciever : DamageReciever, IDynamicGraphicHierarchy, IP
         if (NoHealthLeft) {
             OnEntityDeathEvent(Entity);
             if (damage.Type == DamageType.Projectile && Entity is Enemy) {
-                Projectile component = damage.Sender.GetComponent<Projectile>();
+                var component = damage.Sender.GetComponent<Projectile>();
                 if (component != null && component.HasBeenBashedByOri) {
                     AchievementsLogic.Instance.OnProjectileKilledEnemy();
                 }
@@ -69,7 +69,7 @@ public class EntityDamageReciever : DamageReciever, IDynamicGraphicHierarchy, IP
             }
 
             if (terrain) {
-                Type type = Entity.GetType();
+                var type = Entity.GetType();
                 if (type != typeof(DropSlugEnemy) && type != typeof(KamikazeSootEnemy) && !gameObject.name.ToLower().Contains("wall")) {
                     AchievementsLogic.Instance.OnEnemyKilledItself();
                 }

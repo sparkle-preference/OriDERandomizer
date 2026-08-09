@@ -31,7 +31,7 @@ public class DebugWidget : MonoBehaviour {
     public void WindowFunc(int id) {
         GUI.DragWindow();
         scrollPosition = GUILayout.BeginScrollView(scrollPosition);
-        for (int i = 0; i < output.Length; i++) {
+        for (var i = 0; i < output.Length; i++) {
             GUILayout.Label(output[i]);
         }
 
@@ -40,29 +40,29 @@ public class DebugWidget : MonoBehaviour {
 
     public void TargetObject(GameObject obj, bool verbose) {
         hidden = false;
-        MonoBehaviour[] components = obj.GetComponents<MonoBehaviour>();
-        List<string> list = new List<string> { obj.name };
-        foreach (MonoBehaviour monoBehaviour in components) {
+        var components = obj.GetComponents<MonoBehaviour>();
+        var list = new List<string> { obj.name };
+        foreach (var monoBehaviour in components) {
             list.Add("  " + monoBehaviour.GetType().Name + " (" + monoBehaviour.GetInstanceID() + ")");
             if (!verbose) {
                 continue;
             }
 
-            FieldInfo[] fields = monoBehaviour.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            foreach (FieldInfo fieldInfo in fields) {
-                object value = fieldInfo.GetValue(monoBehaviour);
-                string text = value != null ? value.ToString() : "(null)";
+            var fields = monoBehaviour.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            foreach (var fieldInfo in fields) {
+                var value = fieldInfo.GetValue(monoBehaviour);
+                var text = value != null ? value.ToString() : "(null)";
                 if (value != null && typeof(MonoBehaviour).IsAssignableFrom(fieldInfo.FieldType)) {
                     list.Add("  - " + fieldInfo.Name + ": " + text + " (" + ((MonoBehaviour)value).GetInstanceID() + ")");
                 } else if (value != null && typeof(List<CleverMenuItemGroup.CleverMenuItemGroupItem>).IsAssignableFrom(fieldInfo.FieldType)) {
-                    List<CleverMenuItemGroup.CleverMenuItemGroupItem> groupItems = (List<CleverMenuItemGroup.CleverMenuItemGroupItem>)value;
+                    var groupItems = (List<CleverMenuItemGroup.CleverMenuItemGroupItem>)value;
                     list.Add("  - " + fieldInfo.Name + ":");
-                    int num = 0;
-                    foreach (CleverMenuItemGroup.CleverMenuItemGroupItem item in groupItems) {
+                    var num = 0;
+                    foreach (var item in groupItems) {
                         list.Add("    - Item " + num++);
-                        CleverMenuItemGroupBase itemGroup = item.ItemGroup;
+                        var itemGroup = item.ItemGroup;
                         list.Add("      - ItemGroup: " + (itemGroup != null ? itemGroup.name : null));
-                        CleverMenuItem menuItem = item.MenuItem;
+                        var menuItem = item.MenuItem;
                         list.Add("      - MenuItem: " + (menuItem != null ? menuItem.name : null));
                     }
                 } else if (value != null && typeof(IEnumerable).IsAssignableFrom(fieldInfo.FieldType)) {
@@ -108,7 +108,7 @@ public class DebugWidget : MonoBehaviour {
     public void LogsWindowFunc(int id) {
         GUI.DragWindow();
         logsScrollPosition = GUILayout.BeginScrollView(logsScrollPosition);
-        for (int i = logItems.Count - 1; i >= 0; i--) {
+        for (var i = logItems.Count - 1; i >= 0; i--) {
             GUILayout.Label(logItems[i].text);
         }
 

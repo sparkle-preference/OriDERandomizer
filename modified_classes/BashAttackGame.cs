@@ -73,7 +73,7 @@ internal class BashAttackGame : Suspendable, IPooled {
                 case Modes.Mouse: {
                     Vector2 v = UI.Cameras.Current.Camera.WorldToScreenPoint(transform.position);
                     Vector2 b = UI.Cameras.System.GUICamera.ScreenToWorldPoint(v);
-                    Vector2 vector = Input.CursorPositionUI - b;
+                    var vector = Input.CursorPositionUI - b;
                     if (vector.magnitude > 0.001f) {
                         vector.Normalize();
                         Angle = Mathf.LerpAngle(Angle, Mathf.Atan2(-vector.x, vector.y) * 57.29578f, 0.5f);
@@ -82,10 +82,10 @@ internal class BashAttackGame : Suspendable, IPooled {
                     break;
                 }
                 case Modes.Keyboard: {
-                    Vector2 digiPadAxis = Input.DigiPadAxis;
+                    var digiPadAxis = Input.DigiPadAxis;
                     if (digiPadAxis.magnitude > 0.2) {
-                        float target = MoonMath.Angle.AngleFromVector(digiPadAxis) - 90f;
-                        float f = Mathf.DeltaAngle(m_keyboardAngle, target);
+                        var target = MoonMath.Angle.AngleFromVector(digiPadAxis) - 90f;
+                        var f = Mathf.DeltaAngle(m_keyboardAngle, target);
                         if (Mathf.Sign(f) != (!m_keyboardClockwise ? -1 : 1)) {
                             m_keyboardClockwise = Mathf.Sign(f) > 0f;
                             m_keyboardSpeed = 0f;
@@ -101,8 +101,8 @@ internal class BashAttackGame : Suspendable, IPooled {
                     break;
                 }
                 case Modes.Controller: {
-                    Vector2 vector2 = Input.AnalogAxisLeft;
-                    float sqrMagnitude = vector2.sqrMagnitude;
+                    var vector2 = Input.AnalogAxisLeft;
+                    var sqrMagnitude = vector2.sqrMagnitude;
                     if (sqrMagnitude > RandomizerSettings.Controls.BashDeadzone) {
                         vector2 /= Mathf.Sqrt(sqrMagnitude);
                         Angle = Mathf.LerpAngle(Angle, Mathf.Atan2(-vector2.x, vector2.y) * 57.29578f, 0.5f);
@@ -141,7 +141,7 @@ internal class BashAttackGame : Suspendable, IPooled {
     }
 
     private void UpdateDisappearingState() {
-        float time = Mathf.Clamp01(m_stateCurrentTime / DisappearTime);
+        var time = Mathf.Clamp01(m_stateCurrentTime / DisappearTime);
         ArrowSprite.localScale = m_originalArrowScale * ArrowDisappearScaleCurve.Evaluate(time);
         InstantiateUtility.Destroy(gameObject, 1f);
     }
@@ -164,7 +164,7 @@ internal class BashAttackGame : Suspendable, IPooled {
     }
 
     private void UpdateAppearingState() {
-        float num = Mathf.Clamp01(m_stateCurrentTime / AppearTime);
+        var num = Mathf.Clamp01(m_stateCurrentTime / AppearTime);
         ArrowSprite.localScale = m_originalArrowScale * ArrowAppearScaleCurve.Evaluate(num);
         if (num == 1f) {
             ChangeState(State.Playing);

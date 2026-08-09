@@ -56,20 +56,20 @@ public class PlayerInput : MonoBehaviour {
         VerticalAnalogLeft.Add(new ControllerAxisInput(XboxControllerInput.Axis.LeftStickY));
         HorizontalAnalogRight.Add(new ControllerAxisInput(XboxControllerInput.Axis.RightStickX));
         VerticalAnalogRight.Add(new ControllerAxisInput(XboxControllerInput.Axis.RightStickY));
-        PlayerInputRebinding.ControllerBindingSettings controllerRebindings = PlayerInputRebinding.ControllerRebindings;
-        foreach (PlayerInputRebinding.ControllerButton button in controllerRebindings.HorizontalDigiPadLeft) {
+        var controllerRebindings = PlayerInputRebinding.ControllerRebindings;
+        foreach (var button in controllerRebindings.HorizontalDigiPadLeft) {
             HorizontalDigiPad.Add(new ButtonAxisInput(ControllerButtonToButtonInput(button), ButtonAxisInput.Mode.Negative));
         }
 
-        foreach (PlayerInputRebinding.ControllerButton button2 in controllerRebindings.HorizontalDigiPadRight) {
+        foreach (var button2 in controllerRebindings.HorizontalDigiPadRight) {
             HorizontalDigiPad.Add(new ButtonAxisInput(ControllerButtonToButtonInput(button2), ButtonAxisInput.Mode.Positive));
         }
 
-        foreach (PlayerInputRebinding.ControllerButton button3 in controllerRebindings.VerticalDigiPadDown) {
+        foreach (var button3 in controllerRebindings.VerticalDigiPadDown) {
             VerticalDigiPad.Add(new ButtonAxisInput(ControllerButtonToButtonInput(button3), ButtonAxisInput.Mode.Negative));
         }
 
-        foreach (PlayerInputRebinding.ControllerButton button4 in controllerRebindings.VerticalDigiPadUp) {
+        foreach (var button4 in controllerRebindings.VerticalDigiPadUp) {
             VerticalDigiPad.Add(new ButtonAxisInput(ControllerButtonToButtonInput(button4), ButtonAxisInput.Mode.Positive));
         }
 
@@ -109,20 +109,20 @@ public class PlayerInput : MonoBehaviour {
     }
 
     public void AddKeyboardControls() {
-        PlayerInputRebinding.KeyBindingSettings keyRebindings = PlayerInputRebinding.KeyRebindings;
-        foreach (KeyCode keyCode in keyRebindings.HorizontalDigiPadLeft) {
+        var keyRebindings = PlayerInputRebinding.KeyRebindings;
+        foreach (var keyCode in keyRebindings.HorizontalDigiPadLeft) {
             HorizontalDigiPad.Add(new ButtonAxisInput(new KeyCodeButtonInput(keyCode), ButtonAxisInput.Mode.Negative));
         }
 
-        foreach (KeyCode keyCode2 in keyRebindings.HorizontalDigiPadRight) {
+        foreach (var keyCode2 in keyRebindings.HorizontalDigiPadRight) {
             HorizontalDigiPad.Add(new ButtonAxisInput(new KeyCodeButtonInput(keyCode2), ButtonAxisInput.Mode.Positive));
         }
 
-        foreach (KeyCode keyCode3 in keyRebindings.VerticalDigiPadDown) {
+        foreach (var keyCode3 in keyRebindings.VerticalDigiPadDown) {
             VerticalDigiPad.Add(new ButtonAxisInput(new KeyCodeButtonInput(keyCode3), ButtonAxisInput.Mode.Negative));
         }
 
-        foreach (KeyCode keyCode4 in keyRebindings.VerticalDigiPadUp) {
+        foreach (var keyCode4 in keyRebindings.VerticalDigiPadUp) {
             VerticalDigiPad.Add(new ButtonAxisInput(new KeyCodeButtonInput(keyCode4), ButtonAxisInput.Mode.Positive));
         }
 
@@ -158,7 +158,7 @@ public class PlayerInput : MonoBehaviour {
     }
 
     private void AddKeyCodesToButtonInput(KeyCode[] keyCodes, CompoundButtonInput buttonInput) {
-        foreach (KeyCode keyCode in keyCodes) {
+        foreach (var keyCode in keyCodes) {
             buttonInput.Add(new KeyCodeButtonInput(keyCode));
         }
     }
@@ -269,8 +269,8 @@ public class PlayerInput : MonoBehaviour {
         Input.LeftClick.Update(LeftClick.GetButton());
         Input.RightClick.Update(RightClick.GetButton());
         m_lastPressedButtonInput = -1;
-        for (int i = 0; i < m_allButtonInput.Count; i++) {
-            bool button = m_allButtonInput[i].GetButton();
+        for (var i = 0; i < m_allButtonInput.Count; i++) {
+            var button = m_allButtonInput[i].GetButton();
             if (button) {
                 m_lastPressedButtonInput = i;
             }
@@ -280,7 +280,7 @@ public class PlayerInput : MonoBehaviour {
 
         RefreshControls();
         if (!ControlsScreen.IsVisible && m_lastPressedButtonInput != -1) {
-            bool flag = WasKeyboardUsedLast;
+            var flag = WasKeyboardUsedLast;
             if (m_lastPressedButtonInput != -1) {
                 flag = KeyboardUsedLast(m_allButtonInput[m_lastPressedButtonInput]);
             }
@@ -298,7 +298,7 @@ public class PlayerInput : MonoBehaviour {
         Input.Up.Update(Input.NormalizedVertical == 1f);
         Input.Left.Update(Input.NormalizedHorizontal == -1);
         Input.Right.Update(Input.NormalizedHorizontal == 1);
-        for (int i = 0; i < Input.Buttons.Length; i++) {
+        for (var i = 0; i < Input.Buttons.Length; i++) {
             Input.Buttons[i].Used = false;
         }
 
@@ -316,7 +316,7 @@ public class PlayerInput : MonoBehaviour {
     private void RefreshLastPressedButton() {
         m_lastPressedButtonInput = -1;
         m_lastPressedAxisInput = -1;
-        for (int i = 0; i < m_allButtonInput.Count; i++) {
+        for (var i = 0; i < m_allButtonInput.Count; i++) {
             if (m_allButtonInput[i].GetButton()) {
                 m_lastPressedButtonInput = i;
                 return;
@@ -331,12 +331,12 @@ public class PlayerInput : MonoBehaviour {
             return true;
         }
 
-        AxisButtonInput axisButtonInput = iButtonInput as AxisButtonInput;
+        var axisButtonInput = iButtonInput as AxisButtonInput;
         if (axisButtonInput != null) {
             return KeyboardUsedLast(axisButtonInput.GetAxisInput());
         }
 
-        CompoundButtonInput compoundButtonInput = iButtonInput as CompoundButtonInput;
+        var compoundButtonInput = iButtonInput as CompoundButtonInput;
         if (compoundButtonInput != null) {
             return KeyboardUsedLast(compoundButtonInput.GetLastPressed());
         }
@@ -361,7 +361,7 @@ public class PlayerInput : MonoBehaviour {
     }
 
     public void AddControllerButtonsToButtonInput(PlayerInputRebinding.ControllerButton[] buttons, CompoundButtonInput buttonInput) {
-        for (int i = 0; i < buttons.Length; i++) {
+        for (var i = 0; i < buttons.Length; i++) {
             buttonInput.Add(ControllerButtonToButtonInput(buttons[i]));
         }
     }

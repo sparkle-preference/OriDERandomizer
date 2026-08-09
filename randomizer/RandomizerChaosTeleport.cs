@@ -8,7 +8,7 @@ public class RandomizerChaosTeleport : RandomizerChaosEffect {
 
     public override void Start() {
         Countdown = Random.Range(360, 3600);
-        int num = Random.Range(0, 16);
+        var num = Random.Range(0, 16);
         Randomizer.showChaosEffect("Teleportation");
         if (num <= 14) {
             TeleportCount = Random.Range(1, 10);

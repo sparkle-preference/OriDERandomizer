@@ -71,7 +71,7 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
             Sound.Play(CollectedSoundProvider.GetSound(null), m_transform.position, null);
         }
 
-        for (int i = 0; i < m_onKillRecievers.Length; i++) {
+        for (var i = 0; i < m_onKillRecievers.Length; i++) {
             if (m_onKillRecievers[i]) {
                 ((IKillReciever)m_onKillRecievers[i]).OnKill();
             }

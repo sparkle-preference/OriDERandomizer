@@ -27,7 +27,7 @@ public class MixerManager : MonoBehaviour {
     }
 
     public void FixedUpdate() {
-        bool flag = UI.MainMenuVisible || ResumeGameController.IsGameSuspended;
+        var flag = UI.MainMenuVisible || ResumeGameController.IsGameSuspended;
         if (flag != m_wasInUI) {
             if (flag) {
                 UISnapshot.FadeIn();
@@ -43,8 +43,8 @@ public class MixerManager : MonoBehaviour {
 
     private void UpdateMixerSettingsBasedOnActiveSnapshots() {
         m_settings.Reset();
-        for (int i = 0; i < m_currentlyActiveSnapshots.Count; i++) {
-            MixerSnapshot mixerSnapshot = m_currentlyActiveSnapshots[i];
+        for (var i = 0; i < m_currentlyActiveSnapshots.Count; i++) {
+            var mixerSnapshot = m_currentlyActiveSnapshots[i];
             mixerSnapshot.UpdateMixerSnapshotState(Time.fixedDeltaTime);
             m_settings.MultiplyBlendWith(mixerSnapshot.SnapshotSettings, mixerSnapshot.Weight);
         }
@@ -54,13 +54,13 @@ public class MixerManager : MonoBehaviour {
         m_settings.Music = m_settings.Music * Mathf.Log10(GameSettings.Instance.MusicVolume * 9f + 1f);
         m_settings.SoundEffects = m_settings.SoundEffects * Mathf.Log10(GameSettings.Instance.SoundEffectsVolume * 9f + 1f);
         ApplySoundCompression();
-        AudioMixer masterMixer = GetMasterMixer();
+        var masterMixer = GetMasterMixer();
         m_settings.ApplyGroupSettingsToMixer(masterMixer);
     }
 
     private void UpdateMixerSnapshotZones() {
-        Vector3 cameraPositionForSampling = UI.Cameras.Current.CameraPositionForSampling;
-        SceneRoot sceneRoot = Scenes.Manager.FindLoadedSceneRootFromPosition(cameraPositionForSampling);
+        var cameraPositionForSampling = UI.Cameras.Current.CameraPositionForSampling;
+        var sceneRoot = Scenes.Manager.FindLoadedSceneRootFromPosition(cameraPositionForSampling);
         MixerSnapshot mixerSnapshot = null;
         if (sceneRoot != null) {
             mixerSnapshot = sceneRoot.SceneSettings.DefaultMixerSnapshot;
@@ -81,8 +81,8 @@ public class MixerManager : MonoBehaviour {
         }
 
         m_currentSceneMixerSnapshot = mixerSnapshot;
-        for (int i = 0; i < m_snapshotZones.Count; i++) {
-            MixerSnapshotZone mixerSnapshotZone = m_snapshotZones[i];
+        for (var i = 0; i < m_snapshotZones.Count; i++) {
+            var mixerSnapshotZone = m_snapshotZones[i];
             mixerSnapshotZone.UpdateSnapshotZoneState(mixerSnapshotZone.Bounds.Contains(cameraPositionForSampling));
         }
     }
@@ -167,7 +167,7 @@ public class MixerManager : MonoBehaviour {
 
     public void ApplySoundCompression() {
         if (RandomizerSettings.Accessibility.ApplySoundCompression) {
-            float multiplier = 1f - RandomizerSettings.Accessibility.SoundCompressionFactor;
+            var multiplier = 1f - RandomizerSettings.Accessibility.SoundCompressionFactor;
             m_settings.MusicLoops = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.MusicLoops));
             m_settings.MusicStingers = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.MusicStingers));
             m_settings.AmbienceQuad = Mathf.Pow(10f, multiplier * Mathf.Log10(m_settings.AmbienceQuad));

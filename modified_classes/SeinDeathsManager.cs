@@ -29,10 +29,10 @@ public class SeinDeathsManager : SaveSerialize {
 
     public override void Serialize(Archive ar) {
         if (ar.Reading) {
-            int num = ar.Serialize(0);
+            var num = ar.Serialize(0);
             Deaths.Clear();
-            for (int i = 0; i < num; i++) {
-                DeathInformation deathInformation = new DeathInformation();
+            for (var i = 0; i < num; i++) {
+                var deathInformation = new DeathInformation();
                 deathInformation.Serialize(ar);
                 Deaths.Add(deathInformation);
             }
@@ -41,9 +41,9 @@ public class SeinDeathsManager : SaveSerialize {
             return;
         }
 
-        int count = Deaths.Count;
+        var count = Deaths.Count;
         ar.Serialize(count);
-        for (int j = 0; j < count; j++) {
+        for (var j = 0; j < count; j++) {
             Deaths[j].Serialize(ar);
         }
     }
@@ -57,10 +57,10 @@ public class SeinDeathsManager : SaveSerialize {
     }
 
     public void RecordDeath() {
-        Vector3 position = Characters.Sein.Position;
-        int gameTimeInSeconds = GameController.Instance.GameTimeInSeconds;
-        int completionPercentage = GameWorld.Instance.CompletionPercentage;
-        int count = Deaths.Count;
+        var position = Characters.Sein.Position;
+        var gameTimeInSeconds = GameController.Instance.GameTimeInSeconds;
+        var completionPercentage = GameWorld.Instance.CompletionPercentage;
+        var count = Deaths.Count;
         Deaths.Add(new DeathInformation(position, gameTimeInSeconds, completionPercentage, count));
         SaveSceneManager.Master.Save(Game.Checkpoint.SaveGameData.Master, Instance);
     }

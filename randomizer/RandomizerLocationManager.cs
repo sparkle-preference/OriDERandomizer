@@ -12,10 +12,10 @@ using UnityEngine;
 
 public class RandomizerLocationManager {
     public static void Initialize() {
-        StringReader reader = new StringReader(RandomizerLocationData.All);
-        string line = reader.ReadLine();
+        var reader = new StringReader(RandomizerLocationData.All);
+        var line = reader.ReadLine();
         while (line != null) {
-            Location newLocation = new Location(line.Trim());
+            var newLocation = new Location(line.Trim());
             LocationsByName[newLocation.Name] = newLocation;
             LocationsByKey[newLocation.Key] = newLocation;
 
@@ -70,21 +70,21 @@ public class RandomizerLocationManager {
             s_logicLastUpdated = File.GetLastWriteTime("areas.ori");
             s_lastLogicPaths = paths;
 
-            foreach (Location location in LocationsByName.Values) {
+            foreach (var location in LocationsByName.Values) {
                 location.Reachable = false;
             }
         }
     }
 
     private static HashSet<string> InitializePaths() {
-        HashSet<string> paths = new HashSet<string>();
+        var paths = new HashSet<string>();
 
-        string flagLine = Randomizer.SeedMeta.Split(new[] { '|' }, 1)[0];
-        int firstComma = flagLine.IndexOf(',');
+        var flagLine = Randomizer.SeedMeta.Split(new[] { '|' }, 1)[0];
+        var firstComma = flagLine.IndexOf(',');
         if (firstComma < 0)
             return paths;
 
-        string preset = flagLine.Substring(0, firstComma);
+        var preset = flagLine.Substring(0, firstComma);
 
         if (preset.StartsWith("Sync")) {
             var secondComma = flagLine.IndexOf(',', firstComma + 1);
@@ -140,9 +140,9 @@ public class RandomizerLocationManager {
                 break;
             default:
                 if (preset.StartsWith("Custom")) {
-                    int pathMask = 0;
+                    var pathMask = 0;
                     if (int.TryParse(preset.Remove(0, "Custom".Length), out pathMask)) {
-                        HashSet<string> newPaths = OriParse.PathMaskToPathSet(pathMask);
+                        var newPaths = OriParse.PathMaskToPathSet(pathMask);
                         if (newPaths != null) {
                             //Randomizer.log("Got custom pathset: " + OriParse.PathMaskToString(pathMask));
                             paths = newPaths;
@@ -162,10 +162,10 @@ public class RandomizerLocationManager {
             return null;
         }
 
-        GameObject obj = new GameObject(actionName != null ? actionName : "pickupAction");
+        var obj = new GameObject(actionName != null ? actionName : "pickupAction");
         obj.transform.parent = parentObj.transform;
 
-        RandomizerPickupAction pickupAction = obj.AddComponent<RandomizerPickupAction>();
+        var pickupAction = obj.AddComponent<RandomizerPickupAction>();
         pickupAction.MoonGuid = new MoonGuid(LocationsByName[pickupName].MoonGuid);
         pickupAction.LocationName = pickupName;
         return pickupAction;
@@ -177,7 +177,7 @@ public class RandomizerLocationManager {
             return;
         }
 
-        Location pickupLocation = LocationsByKey[key];
+        var pickupLocation = LocationsByKey[key];
         pickupLocation.Pickup = new RandomizerAction(action, value);
         pickupLocation.Repeatable = repeatable;
     }
@@ -220,7 +220,7 @@ public class RandomizerLocationManager {
 
     public static void OpenDoorByGuid(MoonGuid doorGuid) {
         var door = KeystoneDoors[doorGuid];
-        int current = Randomizer.Inventory.GetRandomizerItem(72);
+        var current = Randomizer.Inventory.GetRandomizerItem(72);
         Randomizer.Inventory.SetRandomizerItem(72, current | (1 << door.Index));
         UpdateReachable();
     }
@@ -257,9 +257,9 @@ public class RandomizerLocationManager {
             if (!File.Exists("areas.ori"))
                 return "none";
             using (var sha = SHA256.Create()) {
-                byte[] h = sha.ComputeHash(File.ReadAllBytes("areas.ori"));
+                var h = sha.ComputeHash(File.ReadAllBytes("areas.ori"));
                 var sb = new StringBuilder();
-                foreach (byte b in h)
+                foreach (var b in h)
                     sb.Append(b.ToString("x2"));
                 return sb.ToString();
             }
@@ -310,7 +310,7 @@ public class RandomizerLocationManager {
         if (Areas == null)
             return;
 
-        Inventory currentInventory = Inventory.FromCharacter();
+        var currentInventory = Inventory.FromCharacter();
         currentInventory.Unlocks.Add("Mapstone");
 
         if (Randomizer.Inventory.GetRandomizerItem(71) > currentInventory.Mapstones) {
@@ -325,8 +325,8 @@ public class RandomizerLocationManager {
             currentInventory.Unlocks.Add("OpenWorld");
         }
 
-        Dictionary<string, HashSet<string>> primedPaths = new Dictionary<string, HashSet<string>>();
-        int keystoneDoorsOpened = Randomizer.Inventory.GetRandomizerItem(72);
+        var primedPaths = new Dictionary<string, HashSet<string>>();
+        var keystoneDoorsOpened = Randomizer.Inventory.GetRandomizerItem(72);
 
         foreach (var ksDoor in KeystoneDoors.Values) {
             if ((keystoneDoorsOpened & (1 << ksDoor.Index)) == 0)
@@ -339,7 +339,7 @@ public class RandomizerLocationManager {
         }
 
         if (Randomizer.InLogicWarps) {
-            foreach (GameMapTeleporter teleporter in TeleporterController.Instance.Teleporters) {
+            foreach (var teleporter in TeleporterController.Instance.Teleporters) {
                 if (Randomizer.WarpLogicLocations.Contains(teleporter.Identifier)) {
                     if (!primedPaths.ContainsKey(spawnNodeName))
                         primedPaths[spawnNodeName] = new HashSet<string>();
@@ -349,7 +349,7 @@ public class RandomizerLocationManager {
             }
         }
 
-        HashSet<string> reachable = OriReachable.Reachable(Areas, currentInventory, spawnNodeName, primedPaths);
+        var reachable = OriReachable.Reachable(Areas, currentInventory, spawnNodeName, primedPaths);
 
         if (reachable.Contains("FronkeyFight")) {
             // hacky hack hack
@@ -420,7 +420,7 @@ public class RandomizerLocationManager {
 
     public class Location {
         public Location(string locationData) {
-            string[] parts = locationData.Split();
+            var parts = locationData.Split();
             Name = parts[0];
             FriendlyName = Regex.Replace(Name, "([A-Z0-9]+)", " $1") + "\n" + parts[5];
             Position = new Vector2(float.Parse(parts[1]), float.Parse(parts[2]));
@@ -558,7 +558,7 @@ public class RandomizerLocationManager {
 
     public class KeystoneDoor {
         public KeystoneDoor(int index, string doorData) {
-            string[] parts = doorData.Split();
+            var parts = doorData.Split();
             Index = index;
             Source = parts[0];
             Destination = parts[1];

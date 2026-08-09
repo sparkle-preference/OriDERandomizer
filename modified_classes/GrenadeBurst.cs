@@ -41,30 +41,30 @@ public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
     }
 
     public void DealDamage() {
-        Vector3 position = transform.position;
-        foreach (IAttackable attackable in Targets.Attackables.ToArray()) {
+        var position = transform.position;
+        foreach (var attackable in Targets.Attackables.ToArray()) {
             if (!InstantiateUtility.IsDestroyed(attackable as Component) && !m_damageAttackables.Contains(attackable) && attackable.CanBeGrenaded()) {
-                Vector3 position2 = attackable.Position;
-                Vector3 vector = position2 - position;
+                var position2 = attackable.Position;
+                var vector = position2 - position;
                 if (vector.magnitude <= BurstRadius + RandomizerBonus.SpiritFlameLevel()) {
                     m_damageAttackables.Add(attackable);
-                    GameObject gameObject = ((Component)attackable).gameObject;
+                    var gameObject = ((Component)attackable).gameObject;
                     new Damage(DamageAmount + 3 * RandomizerBonus.SpiritFlameLevel(), vector.normalized * 3f, position, DamageType.Grenade, this.gameObject).DealToComponents(gameObject);
                     if (!attackable.IsDead()) {
-                        GameObject gameObject2 = (GameObject)InstantiateUtility.Instantiate(BurstImpactEffectPrefab, position2, Quaternion.identity);
+                        var gameObject2 = (GameObject)InstantiateUtility.Instantiate(BurstImpactEffectPrefab, position2, Quaternion.identity);
                         gameObject2.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(vector.normalized));
                         gameObject2.GetComponent<FollowPositionRotation>().SetTarget(gameObject.transform);
                     }
                 }
             } else if (RandomizerBonus.EnhancedGrenade && !InstantiateUtility.IsDestroyed(attackable as Component) && !m_damageAttackables.Contains(attackable) && attackable.CanBeStomped()) {
-                Vector3 position2 = attackable.Position;
-                Vector3 vector = position2 - position;
+                var position2 = attackable.Position;
+                var vector = position2 - position;
                 if (vector.magnitude <= BurstRadius + 1f + RandomizerBonus.SpiritFlameLevel()) {
                     m_damageAttackables.Add(attackable);
-                    GameObject gameObject = ((Component)attackable).gameObject;
+                    var gameObject = ((Component)attackable).gameObject;
                     new Damage(DamageAmount + 3 * RandomizerBonus.SpiritFlameLevel(), vector.normalized * 3f, position, DamageType.Stomp, this.gameObject).DealToComponents(gameObject);
                     if (!attackable.IsDead()) {
-                        GameObject gameObject2 = (GameObject)InstantiateUtility.Instantiate(BurstImpactEffectPrefab, position2, Quaternion.identity);
+                        var gameObject2 = (GameObject)InstantiateUtility.Instantiate(BurstImpactEffectPrefab, position2, Quaternion.identity);
                         gameObject2.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(vector.normalized));
                         gameObject2.GetComponent<FollowPositionRotation>().SetTarget(gameObject.transform);
                     }

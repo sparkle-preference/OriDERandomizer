@@ -19,7 +19,7 @@ public class LegacyDiscoverWorldMapAreasAction : ActionMethod {
         RuntimeGameWorldArea currentArea = World.CurrentArea;
         if (currentArea != null) {
             currentArea.DiscoverAllAreas();
-            AreaMapCanvas canvas = AreaMapUI.Instance.FindCanvas(currentArea.Area);
+            var canvas = AreaMapUI.Instance.FindCanvas(currentArea.Area);
             canvas.UpdateAreaMaskTextureB();
             AreaMapUI.Instance.Navigation.UpdateScrollLimits();
             AreaMapUI.Instance.IconManager.ShowAreaIcons();

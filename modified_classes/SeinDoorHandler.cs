@@ -32,9 +32,9 @@ public class SeinDoorHandler : SaveSerialize, ISeinReceiver {
 
         m_createCheckpoint = door.CreateCheckpoint;
         m_targetDoor = null;
-        foreach (SceneManagerScene sceneManagerScene in Scenes.Manager.ActiveScenes) {
+        foreach (var sceneManagerScene in Scenes.Manager.ActiveScenes) {
             if (sceneManagerScene.SceneRoot) {
-                foreach (Door door2 in sceneManagerScene.SceneRoot.SceneRootData.Doors) {
+                foreach (var door2 in sceneManagerScene.SceneRoot.SceneRootData.Doors) {
                     if (door2 != null && door2.name == door.OtherDoorName && door2 != door) {
                         m_targetDoor = door2;
                     }
@@ -46,7 +46,7 @@ public class SeinDoorHandler : SaveSerialize, ISeinReceiver {
             return;
         }
 
-        GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(EnterDoorAnimationPrefab);
+        var gameObject = (GameObject)InstantiateUtility.Instantiate(EnterDoorAnimationPrefab);
         gameObject.transform.position = Sein.Position;
         if (Characters.Sein.Controller.FaceLeft) {
             gameObject.transform.localScale = Vector3.Scale(new Vector3(-1f, 1f, 1f), gameObject.transform.localScale);
@@ -61,7 +61,7 @@ public class SeinDoorHandler : SaveSerialize, ISeinReceiver {
     }
 
     public void OnFadedToBlack() {
-        Vector3 position = Sein.Position;
+        var position = Sein.Position;
         if (m_targetDoor) {
             position = m_targetDoor.transform.position;
         }
@@ -104,7 +104,7 @@ public class SeinDoorHandler : SaveSerialize, ISeinReceiver {
     public void FixedUpdate() {
         IsOverlappingDoor = m_isOverlappingDoor;
         m_isOverlappingDoor = false;
-        bool isSuspended = Sein.IsSuspended;
+        var isSuspended = Sein.IsSuspended;
     }
 
     public override void Serialize(Archive ar) {

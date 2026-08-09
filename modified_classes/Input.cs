@@ -82,15 +82,15 @@ namespace Core {
 
         public static Vector2 CursorPositionUI {
             get {
-                Camera camera = UI.Cameras.System.GUICamera.Camera;
-                Vector2 cursorPosition = CursorPosition;
+                var camera = UI.Cameras.System.GUICamera.Camera;
+                var cursorPosition = CursorPosition;
                 return camera.ViewportToWorldPoint(cursorPosition);
             }
         }
 
         public static bool OnAnyButtonPressed {
             get {
-                for (int i = 0; i < Buttons.Length; i++) {
+                for (var i = 0; i < Buttons.Length; i++) {
                     if (Buttons[i].OnPressed) {
                         return true;
                     }
@@ -102,7 +102,7 @@ namespace Core {
 
         public static bool AnyButtonPressed {
             get {
-                for (int i = 0; i < Buttons.Length; i++) {
+                for (var i = 0; i < Buttons.Length; i++) {
                     if (Buttons[i].IsPressed) {
                         return true;
                     }
@@ -114,7 +114,7 @@ namespace Core {
 
         public static bool AnyButtonReleased {
             get {
-                for (int i = 0; i < Buttons.Length; i++) {
+                for (var i = 0; i < Buttons.Length; i++) {
                     if (Buttons[i].Released) {
                         return true;
                     }
@@ -126,7 +126,7 @@ namespace Core {
 
         public static bool OnAnyButtonReleased {
             get {
-                for (int i = 0; i < Buttons.Length; i++) {
+                for (var i = 0; i < Buttons.Length; i++) {
                     if (Buttons[i].OnReleased) {
                         return true;
                     }

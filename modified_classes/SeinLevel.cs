@@ -18,8 +18,8 @@ public class SeinLevel : SaveSerialize, ISeinReceiver {
 
     public int ConsumedExperience {
         get {
-            int num = 0;
-            for (int i = Current - 1; i >= 0; i--) {
+            var num = 0;
+            for (var i = Current - 1; i >= 0; i--) {
                 num += Mathf.RoundToInt(ExperienceRequiredPerLevel.Evaluate(i));
             }
 
@@ -40,7 +40,7 @@ public class SeinLevel : SaveSerialize, ISeinReceiver {
             return;
         }
 
-        float maxDelta = Time.deltaTime * ExperienceGainPerSecond * ExperienceForNextLevel;
+        var maxDelta = Time.deltaTime * ExperienceGainPerSecond * ExperienceForNextLevel;
         ExperienceVisualMax = Mathf.MoveTowards(ExperienceVisualMax, Experience, maxDelta);
         ExperienceVisualMin = Mathf.MoveTowards(ExperienceVisualMin, Experience, maxDelta);
         if (ExperienceVisualMin >= ExperienceForNextLevel) {
@@ -96,8 +96,8 @@ public class SeinLevel : SaveSerialize, ISeinReceiver {
 
     public void AttemptInstantiateLevelUp() {
         if (OnLevelUpGameObject) {
-            GameObject obj = (GameObject)InstantiateUtility.Instantiate(OnLevelUpGameObject, Characters.Sein.Position, Quaternion.identity);
-            TargetPositionFollower target = obj.GetComponent<TargetPositionFollower>();
+            var obj = (GameObject)InstantiateUtility.Instantiate(OnLevelUpGameObject, Characters.Sein.Position, Quaternion.identity);
+            var target = obj.GetComponent<TargetPositionFollower>();
             target.Target = Characters.Sein.Transform;
         }
     }
