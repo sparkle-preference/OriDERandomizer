@@ -30,15 +30,14 @@
  * SOFTWARE.
  *
  * * * * */
-
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
-using AOT;
 
-namespace B83.Win32 {
-    public enum HookType {
+namespace B83.Win32
+{
+    public enum HookType : int
+    {
         WH_JOURNALRECORD = 0,
         WH_JOURNALPLAYBACK = 1,
         WH_KEYBOARD = 2,
@@ -57,7 +56,8 @@ namespace B83.Win32 {
     }
 
     // windows messages
-    public enum WM : uint {
+    public enum WM : uint
+    {
         NULL = 0x0000,
         CREATE = 0x0001,
         DESTROY = 0x0002,
@@ -109,10 +109,12 @@ namespace B83.Win32 {
         COMPAREITEM = 0x0039,
         GETOBJECT = 0x003D,
         COMPACTING = 0x0041,
-        [Obsolete] COMMNOTIFY = 0x0044,
+        [Obsolete]
+        COMMNOTIFY = 0x0044,
         WINDOWPOSCHANGING = 0x0046,
         WINDOWPOSCHANGED = 0x0047,
-        [Obsolete] POWER = 0x0048,
+        [Obsolete]
+        POWER = 0x0048,
         COPYDATA = 0x004A,
         CANCELJOURNAL = 0x004B,
         NOTIFY = 0x004E,
@@ -293,7 +295,8 @@ namespace B83.Win32 {
 
     // WH_CALLWNDPROC
     [StructLayout(LayoutKind.Sequential)]
-    public struct CWPSTRUCT {
+    public struct CWPSTRUCT
+    {
         public IntPtr lParam;
         public IntPtr wParam;
         public WM message;
@@ -301,22 +304,24 @@ namespace B83.Win32 {
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct POINT {
+    public struct POINT
+    {
         public int x, y;
-
-        public POINT(int aX, int aY) {
+        public POINT(int aX, int aY)
+        {
             x = aX;
             y = aY;
         }
-
-        public override string ToString() {
+        public override string ToString()
+        {
             return "(" + x + ", " + y + ")";
         }
     }
 
     //WH_GETMESSAGE
     [StructLayout(LayoutKind.Sequential)]
-    public struct MSG {
+    public struct MSG
+    {
         public IntPtr hwnd;
         public WM message;
         public IntPtr wParam;
@@ -326,26 +331,28 @@ namespace B83.Win32 {
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct RECT {
+    public struct RECT
+    {
         public int Left, Top, Right, Bottom;
 
-        public RECT(int left, int top, int right, int bottom) {
+        public RECT(int left, int top, int right, int bottom)
+        {
             Left = left;
             Top = top;
             Right = right;
             Bottom = bottom;
         }
-
-        public override string ToString() {
+        public override string ToString()
+        {
             return "(" + Left + ", " + Top + ", " + Right + ", " + Bottom + ")";
         }
     }
 
     public delegate IntPtr HookProc(int code, IntPtr wParam, ref MSG lParam);
-
     public delegate bool EnumThreadDelegate(IntPtr Hwnd, IntPtr lParam);
 
-    public static class Window {
+    public static class Window
+    {
         [DllImport("user32.dll")]
         public static extern bool EnumThreadWindows(uint dwThreadId, EnumThreadDelegate lpfn, IntPtr lParam);
 
@@ -356,50 +363,45 @@ namespace B83.Win32 {
         public static extern bool IsWindowVisible(IntPtr hWnd);
 
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
-
-        public static string GetClassName(IntPtr hWnd) {
-            var sb = new StringBuilder(256);
-            var count = GetClassName(hWnd, sb, 256);
+        static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
+        public static string GetClassName(IntPtr hWnd)
+        {
+            var sb = new System.Text.StringBuilder(256);
+            int count = GetClassName(hWnd, sb, 256);
             return sb.ToString(0, count);
         }
 
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         static extern int GetWindowTextLength(IntPtr hWnd);
-
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
-
-        public static string GetWindowText(IntPtr hWnd) {
-            var length = GetWindowTextLength(hWnd) + 2;
-            var sb = new StringBuilder(length);
-            var count = GetWindowText(hWnd, sb, length);
+        static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
+        public static string GetWindowText(IntPtr hWnd)
+        {
+            int length = GetWindowTextLength(hWnd) + 2;
+            var sb = new System.Text.StringBuilder(length);
+            int count = GetWindowText(hWnd, sb, length);
             return sb.ToString(0, count);
         }
     }
 
-    public static class WinAPI {
+    public static class WinAPI
+    {
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         public static extern IntPtr GetModuleHandle(string lpModuleName);
-
         [DllImport("kernel32.dll")]
         public static extern uint GetCurrentThreadId();
 
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr SetWindowsHookEx(HookType hookType, HookProc lpfn, IntPtr hMod, uint dwThreadId);
-
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool UnhookWindowsHookEx(IntPtr hhk);
-
         [DllImport("user32.dll")]
         public static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, ref MSG lParam);
 
         [DllImport("shell32.dll")]
         public static extern void DragAcceptFiles(IntPtr hwnd, bool fAccept);
-
         [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-        public static extern uint DragQueryFile(IntPtr hDrop, uint iFile, StringBuilder lpszFile, uint cch);
-
+        public static extern uint DragQueryFile(IntPtr hDrop, uint iFile, System.Text.StringBuilder lpszFile, uint cch);
         [DllImport("shell32.dll")]
         public static extern void DragFinish(IntPtr hDrop);
 
@@ -407,9 +409,9 @@ namespace B83.Win32 {
         public static extern void DragQueryPoint(IntPtr hDrop, out POINT pos);
     }
 
-    public static class UnityDragAndDropHook {
+    public static class UnityDragAndDropHook
+    {
         public delegate void DroppedFilesEvent(List<string> aPathNames, POINT aDropPoint);
-
         public static event DroppedFilesEvent OnDroppedFiles;
 
         private static uint threadId;
@@ -418,16 +420,18 @@ namespace B83.Win32 {
         private static string m_ClassName = "UnityWndClass";
 
         // attribute required for IL2CPP, also has to be a static method
-        [MonoPInvokeCallback(typeof(EnumThreadDelegate))]
-        private static bool EnumCallback(IntPtr W, IntPtr _) {
-            if (Window.IsWindowVisible(W) && (mainWindow == IntPtr.Zero || (m_ClassName != null && Window.GetClassName(W) == m_ClassName))) {
+        [AOT.MonoPInvokeCallback(typeof(EnumThreadDelegate))]
+        private static bool EnumCallback(IntPtr W, IntPtr _)
+        {
+            if (Window.IsWindowVisible(W) && (mainWindow == IntPtr.Zero || (m_ClassName != null && Window.GetClassName(W) == m_ClassName)))
+            {
                 mainWindow = W;
             }
-
             return true;
         }
 
-        public static void InstallHook() {
+        public static void InstallHook()
+        {
             threadId = WinAPI.GetCurrentThreadId();
             if (threadId > 0)
                 Window.EnumThreadWindows(threadId, EnumCallback, IntPtr.Zero);
@@ -437,36 +441,37 @@ namespace B83.Win32 {
             // Allow dragging of files onto the main window. generates the WM_DROPFILES message
             WinAPI.DragAcceptFiles(mainWindow, true);
         }
-
-        public static void UninstallHook() {
+        public static void UninstallHook()
+        {
             WinAPI.UnhookWindowsHookEx(m_Hook);
             WinAPI.DragAcceptFiles(mainWindow, false);
             m_Hook = IntPtr.Zero;
         }
 
         // attribute required for IL2CPP, also has to be a static method
-        [MonoPInvokeCallback(typeof(HookProc))]
-        private static IntPtr Callback(int code, IntPtr wParam, ref MSG lParam) {
-            if (code == 0 && lParam.message == WM.DROPFILES) {
+        [AOT.MonoPInvokeCallback(typeof(HookProc))]
+        private static IntPtr Callback(int code, IntPtr wParam, ref MSG lParam)
+        {
+            if (code == 0 && lParam.message == WM.DROPFILES)
+            {
                 POINT pos;
                 WinAPI.DragQueryPoint(lParam.wParam, out pos);
 
                 // 0xFFFFFFFF as index makes the method return the number of files
-                var n = WinAPI.DragQueryFile(lParam.wParam, 0xFFFFFFFF, null, 0);
-                var sb = new StringBuilder(1024);
+                uint n = WinAPI.DragQueryFile(lParam.wParam, 0xFFFFFFFF, null, 0);
+                var sb = new System.Text.StringBuilder(1024);
 
-                var result = new List<string>();
-                for (uint i = 0; i < n; i++) {
-                    var len = (int)WinAPI.DragQueryFile(lParam.wParam, i, sb, 1024);
+                List<string> result = new List<string>();
+                for (uint i = 0; i < n; i++)
+                {
+                    int len = (int)WinAPI.DragQueryFile(lParam.wParam, i, sb, 1024);
                     result.Add(sb.ToString(0, len));
                     sb.Length = 0;
                 }
-
                 WinAPI.DragFinish(lParam.wParam);
                 if (OnDroppedFiles != null)
                     OnDroppedFiles(result, pos);
             }
-
             return WinAPI.CallNextHookEx(m_Hook, code, wParam, ref lParam);
         }
     }
