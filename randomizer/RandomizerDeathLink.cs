@@ -18,8 +18,7 @@ using UnityEngine;
 // is a wedge -- and every kill we cause increments `linked` as well as
 // `total`, so the net count the server sees does not move and an incoming
 // death can never bounce back out as an outgoing one.
-public static class RandomizerDeathLink
-{
+public static class RandomizerDeathLink {
     // preserved-range save items (see RandomizerInventory.Serialize)
     public const int Deaths = 1590;
     public const int LinkedDeaths = 1591;
@@ -36,8 +35,7 @@ public static class RandomizerDeathLink
     // waits the same way (Randomizer.UpdatePendingWin)
     private const int StableFramesNeeded = 15;
 
-    public static void Reset()
-    {
+    public static void Reset() {
         Enabled = false;
         killPending = false;
         killSource = null;
@@ -49,23 +47,19 @@ public static class RandomizerDeathLink
     // grows, and the one we last acted on is saved in the preserved range, so
     // a signal still riding the tick -- after a respawn, or a seed reload
     // inside the confirm window -- is not a second death.
-    public static void OnSignal(string payload)
-    {
-        try
-        {
+    public static void OnSignal(string payload) {
+        try {
             if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null)
                 return;
             string[] parts = payload.Split(new char[] { ';' }, 2);
             int token;
             if (!int.TryParse(parts[0], out token)
-                    || token <= Characters.Sein.Inventory.GetRandomizerItem(LastToken))
+                || token <= Characters.Sein.Inventory.GetRandomizerItem(LastToken))
                 return;
             Characters.Sein.Inventory.SetRandomizerItem(LastToken, token);
             killPending = true;
             killSource = parts.Length > 1 ? parts[1] : "";
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             Randomizer.LogError("DeathLink.OnSignal: " + e.Message);
         }
     }
@@ -74,49 +68,41 @@ public static class RandomizerDeathLink
     // the queued kill actually landed: OnRecieveDamage calls OnKill inline, so
     // by the time Apply() returns the latch is either spent or the damage was
     // refused and the kill is still owed.
-    public static void OnDeath()
-    {
-        try
-        {
+    public static void OnDeath() {
+        try {
             if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null)
                 return;
             Characters.Sein.Inventory.IncRandomizerItem(Deaths, 1);
-            if (killInFlight)
-            {
+            if (killInFlight) {
                 killInFlight = false;
                 Characters.Sein.Inventory.IncRandomizerItem(LinkedDeaths, 1);
             }
+
             // dying of anything else while one is owed pays the debt: nobody
             // wants a second death waiting on the other side of the respawn
             killPending = false;
             stableFrames = 0;
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             Randomizer.LogError("DeathLink.OnDeath: " + e.Message);
         }
     }
 
-    public static void Update()
-    {
-        try
-        {
+    public static void Update() {
+        try {
             if (!Enabled || !killPending)
                 return;
             bool stable = Characters.Sein && Characters.Sein.Active
-                          && Characters.Sein.Controller.CanMove
-                          && !Characters.Sein.IsSuspended && !UI.MainMenuVisible
-                          && !Randomizer.CreditsActive
-                          && Characters.Sein.gameObject.activeInHierarchy
-                          && Randomizer.DamageModifier > 0f;
+                && Characters.Sein.Controller.CanMove
+                && !Characters.Sein.IsSuspended && !UI.MainMenuVisible
+                && !Randomizer.CreditsActive
+                && Characters.Sein.gameObject.activeInHierarchy
+                && Randomizer.DamageModifier > 0f;
             stableFrames = stable ? stableFrames + 1 : 0;
             if (stableFrames < StableFramesNeeded)
                 return;
             stableFrames = 0;
             Apply();
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             killPending = false;
             killInFlight = false;
             Randomizer.LogError("DeathLink.Update: " + e.Message);
@@ -127,36 +113,38 @@ public static class RandomizerDeathLink
     // Lava rather than Water keeps the immortality and CanMove guards in
     // SeinDamageReciever.OnRecieveDamage, so a refused kill stays owed
     // instead of landing somewhere it shouldn't.
-    private static void Apply()
-    {
+    private static void Apply() {
         killInFlight = true;
-        try
-        {
+        try {
             Characters.Sein.Mortality.DamageReciever.OnRecieveDamage(
-                new Damage(9000f, Vector2.zero, Characters.Sein.Position,
-                           DamageType.Lava, Characters.Sein.GameObject));
-        }
-        finally
-        {
-            if (killInFlight)
-            {
-                killInFlight = false;   // refused; try again on a later frame
-            }
-            else
-            {
+                new Damage(
+                    9000f,
+                    Vector2.zero,
+                    Characters.Sein.Position,
+                    DamageType.Lava,
+                    Characters.Sein.GameObject
+                )
+            );
+        } finally {
+            if (killInFlight) {
+                killInFlight = false; // refused; try again on a later frame
+            } else {
                 killPending = false;
-                Randomizer.printInfo(string.IsNullOrEmpty(killSource)
-                    ? "Killed by Archipelago" : "Killed by " + killSource, 180);
+                Randomizer.printInfo(
+                    string.IsNullOrEmpty(killSource)
+                        ? "Killed by Archipelago"
+                        : "Killed by " + killSource,
+                    180
+                );
             }
         }
     }
 
     // tick field: "<total>.<linked>", or null on every seed without the option
-    public static string Field()
-    {
+    public static string Field() {
         if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null)
             return null;
         return Characters.Sein.Inventory.GetRandomizerItem(Deaths).ToString() + "."
-             + Characters.Sein.Inventory.GetRandomizerItem(LinkedDeaths).ToString();
+            + Characters.Sein.Inventory.GetRandomizerItem(LinkedDeaths).ToString();
     }
 }

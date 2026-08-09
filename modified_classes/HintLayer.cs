@@ -1,10 +1,9 @@
 using System;
 
-public enum HintLayer
-{
-	SoulFlame,
-	HintZone,
-	Gameplay,
-	GameSaved,
-	Randomizer
+public enum HintLayer {
+    SoulFlame,
+    HintZone,
+    Gameplay,
+    GameSaved,
+    Randomizer
 }

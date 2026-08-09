@@ -1,11 +1,9 @@
 using System;
 using UnityEngine;
 
-public class MenuKeybindsScreen : CustomSettingsScreen
-{
-	public override void InitScreen()
-	{
-		this.AddKeybind("Pause", () => PlayerInputRebinding.KeyRebindings.Start, k => PlayerInputRebinding.KeyRebindings.Start = k);
+public class MenuKeybindsScreen : CustomSettingsScreen {
+    public override void InitScreen() {
+        this.AddKeybind("Pause", () => PlayerInputRebinding.KeyRebindings.Start, k => PlayerInputRebinding.KeyRebindings.Start = k);
         this.AddKeybind("Cancel", () => PlayerInputRebinding.KeyRebindings.Cancel, k => PlayerInputRebinding.KeyRebindings.Cancel = k);
         this.AddKeybind("Proceed", () => PlayerInputRebinding.KeyRebindings.ActionButtonA, k => PlayerInputRebinding.KeyRebindings.ActionButtonA = k);
         this.AddKeybind("Menu Up", () => PlayerInputRebinding.KeyRebindings.MenuUp, k => PlayerInputRebinding.KeyRebindings.MenuUp = k);
@@ -17,28 +15,27 @@ public class MenuKeybindsScreen : CustomSettingsScreen
         this.AddKeybind("Map", () => PlayerInputRebinding.KeyRebindings.Select, k => PlayerInputRebinding.KeyRebindings.Select = k);
         this.AddKeybind("Zoom In (Map)", () => PlayerInputRebinding.KeyRebindings.ZoomIn, k => PlayerInputRebinding.KeyRebindings.ZoomIn = k);
         this.AddKeybind("Zoom Out (Map)", () => PlayerInputRebinding.KeyRebindings.ZoomOut, k => PlayerInputRebinding.KeyRebindings.ZoomOut = k);
-		base.AddButton("Reset Keybinds", new Action(this.ResetKeybinds));
+        base.AddButton("Reset Keybinds", new Action(this.ResetKeybinds));
 
-		// Lower tooltip so it fits under the options
-		var pos = this.tooltipController.transform.position;
-		pos.y = -3.38f;
-		this.tooltipController.transform.position = pos;
-		HideLegend();
-	}
+        // Lower tooltip so it fits under the options
+        var pos = this.tooltipController.transform.position;
+        pos.y = -3.38f;
+        this.tooltipController.transform.position = pos;
+        HideLegend();
+    }
 
-    private void ResetKeybinds()
-	{
-		PlayerInputRebinding.SetDefaultKeyBindingSettings();
-		PlayerInput instance = PlayerInput.Instance;
-		if (instance != null)
-		{
-			instance.RefreshControlScheme();
-		}
-		KeybindControl[] componentsInChildren = OptionsScreen.Instance.transform.GetComponentsInChildren<KeybindControl>(true);
-		for (int i = 0; i < componentsInChildren.Length; i++)
-		{
-			componentsInChildren[i].Reset();
-		}
-		PlayerInputRebinding.WriteKeyRebindSettings();
-	}
+    private void ResetKeybinds() {
+        PlayerInputRebinding.SetDefaultKeyBindingSettings();
+        PlayerInput instance = PlayerInput.Instance;
+        if (instance != null) {
+            instance.RefreshControlScheme();
+        }
+
+        KeybindControl[] componentsInChildren = OptionsScreen.Instance.transform.GetComponentsInChildren<KeybindControl>(true);
+        for (int i = 0; i < componentsInChildren.Length; i++) {
+            componentsInChildren[i].Reset();
+        }
+
+        PlayerInputRebinding.WriteKeyRebindSettings();
+    }
 }

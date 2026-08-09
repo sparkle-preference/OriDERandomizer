@@ -2,56 +2,49 @@ using System;
 using Core;
 using UnityEngine;
 
-public class ToggleCustomSettingsAction : MonoBehaviour
-{
-	public void Awake()
-	{
-		ToggleSettingsAction componentInChildren = base.GetComponentInChildren<ToggleSettingsAction>();
-		this.OnSound = componentInChildren.OnSound;
-		this.OffSound = componentInChildren.OffSound;
-		UnityEngine.Object.Destroy(componentInChildren);
-	}
+public class ToggleCustomSettingsAction : MonoBehaviour {
+    public void Awake() {
+        ToggleSettingsAction componentInChildren = base.GetComponentInChildren<ToggleSettingsAction>();
+        this.OnSound = componentInChildren.OnSound;
+        this.OffSound = componentInChildren.OffSound;
+        UnityEngine.Object.Destroy(componentInChildren);
+    }
 
-	private void PlaySound(bool on)
-	{
-		if (on && this.OnSound)
-		{
-			Sound.Play(this.OnSound.GetSound(null), base.transform.position, null);
-			return;
-		}
-		if (this.OffSound && !on)
-		{
-			Sound.Play(this.OffSound.GetSound(null), base.transform.position, null);
-		}
-	}
+    private void PlaySound(bool on) {
+        if (on && this.OnSound) {
+            Sound.Play(this.OnSound.GetSound(null), base.transform.position, null);
+            return;
+        }
 
-	public void Toggle()
-	{
-		this.SetSetting(!this.IsEnabled);
-		this.PlaySound(this.IsEnabled);
-		this.Setting.Value = this.IsEnabled;
-		RandomizerSettings.SetDirty();
-	}
+        if (this.OffSound && !on) {
+            Sound.Play(this.OffSound.GetSound(null), base.transform.position, null);
+        }
+    }
 
-	public void SetSetting(bool enabled)
-	{
-		this.MessageBox.SetMessage(new MessageDescriptor(enabled ? "ON" : "OFF"));
-		this.IsEnabled = enabled;
-	}
+    public void Toggle() {
+        this.SetSetting(!this.IsEnabled);
+        this.PlaySound(this.IsEnabled);
+        this.Setting.Value = this.IsEnabled;
+        RandomizerSettings.SetDirty();
+    }
 
-	public void Init()
-	{
-		this.MessageBox = base.transform.FindChild("text/stateText").GetComponent<MessageBox>();
-		this.SetSetting(this.Setting.Value);
-	}
+    public void SetSetting(bool enabled) {
+        this.MessageBox.SetMessage(new MessageDescriptor(enabled ? "ON" : "OFF"));
+        this.IsEnabled = enabled;
+    }
 
-	public SoundProvider OnSound;
+    public void Init() {
+        this.MessageBox = base.transform.FindChild("text/stateText").GetComponent<MessageBox>();
+        this.SetSetting(this.Setting.Value);
+    }
 
-	public SoundProvider OffSound;
+    public SoundProvider OnSound;
 
-	public MessageBox MessageBox;
+    public SoundProvider OffSound;
 
-	public bool IsEnabled;
+    public MessageBox MessageBox;
 
-	public RandomizerSettings.BoolSetting Setting;
+    public bool IsEnabled;
+
+    public RandomizerSettings.BoolSetting Setting;
 }

@@ -3,187 +3,149 @@ using Core;
 using Game;
 using UnityEngine;
 
-public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, IDynamicGraphicHierarchy
-{
-	public void OnValidate()
-	{
-		this.m_onKillRecievers = base.GetComponentsInChildren(typeof(IKillReciever));
-		if (this.DestroyTarget == null)
-		{
-			this.DestroyTarget = base.gameObject;
-		}
-		this.m_transform = base.transform;
-	}
+public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, IDynamicGraphicHierarchy {
+    public void OnValidate() {
+        this.m_onKillRecievers = base.GetComponentsInChildren(typeof(IKillReciever));
+        if (this.DestroyTarget == null) {
+            this.DestroyTarget = base.gameObject;
+        }
 
-	public void OnPoolSpawned()
-	{
-		this.OnCollectedEvent = delegate()
-		{
-		};
-		this.IsCollected = false;
-		this.m_currentTime = 0f;
-	}
+        this.m_transform = base.transform;
+    }
 
-	public override void Awake()
-	{
-		base.Awake();
-		this.m_bounds = new Bounds(base.transform.position, Vector3.one * 4f);
-	}
+    public void OnPoolSpawned() {
+        this.OnCollectedEvent = delegate() { };
+        this.IsCollected = false;
+        this.m_currentTime = 0f;
+    }
 
-	public void FixedUpdate()
-	{
-		if (this.FrustrumOptimized && !this.m_insideFrustum)
-		{
-			base.gameObject.SetActive(false);
-			return;
-		}
+    public override void Awake() {
+        base.Awake();
+        this.m_bounds = new Bounds(base.transform.position, Vector3.one * 4f);
+    }
 
-		if (!this.IsCollected && RandomizerLocationManager.IsPickupCollected(this.MoonGuid))
-		{
-			this.IsCollected = true;
+    public void FixedUpdate() {
+        if (this.FrustrumOptimized && !this.m_insideFrustum) {
+            base.gameObject.SetActive(false);
+            return;
+        }
 
-			if (this.OnCollectedAction != null)
-			{
-				this.OnCollectedAction.PerformInstantly(null);
-			}
+        if (!this.IsCollected && RandomizerLocationManager.IsPickupCollected(this.MoonGuid)) {
+            this.IsCollected = true;
 
-			this.OnCollectedEvent();
+            if (this.OnCollectedAction != null) {
+                this.OnCollectedAction.PerformInstantly(null);
+            }
 
-			if (this.DestroyOnCollect)
-			{
-				InstantiateUtility.Destroy(this.DestroyTarget);
-			}
-			else
-			{
-				base.gameObject.SetActive(false);
-			}
-		}
+            this.OnCollectedEvent();
 
-		this.m_currentTime += Time.deltaTime;
-		if (this.m_currentTime < this.DelayBeforeCollectable)
-		{
-			return;
-		}
-		if (!this.IsCollected && Characters.Sein && Vector3.Distance(this.m_transform.position, Characters.Sein.Position) < this.Radius)
-		{
-			this.OnCollectorCandidateTouch(Characters.Sein.gameObject);
-		}
-	}
+            if (this.DestroyOnCollect) {
+                InstantiateUtility.Destroy(this.DestroyTarget);
+            } else {
+                base.gameObject.SetActive(false);
+            }
+        }
 
-	public abstract void OnCollectorCandidateTouch(GameObject collector);
+        this.m_currentTime += Time.deltaTime;
+        if (this.m_currentTime < this.DelayBeforeCollectable) {
+            return;
+        }
 
-	public void SpawnCollectedEffect()
-	{
-		if (this.CollectedEffect)
-		{
-			InstantiateUtility.Instantiate(this.CollectedEffect, this.m_transform.position, Quaternion.identity);
-		}
-	}
+        if (!this.IsCollected && Characters.Sein && Vector3.Distance(this.m_transform.position, Characters.Sein.Position) < this.Radius) {
+            this.OnCollectorCandidateTouch(Characters.Sein.gameObject);
+        }
+    }
 
-	public virtual void Collected()
-	{
-		this.IsCollected = true;
-		this.SpawnCollectedEffect();
-		if (this.CollectedSoundProvider != null)
-		{
-			Sound.Play(this.CollectedSoundProvider.GetSound(null), this.m_transform.position, null);
-		}
-		for (int i = 0; i < this.m_onKillRecievers.Length; i++)
-		{
-			if (this.m_onKillRecievers[i])
-			{
-				((IKillReciever)this.m_onKillRecievers[i]).OnKill();
-			}
-		}
-		if (this.OnCollectedAction != null)
-		{
-			this.OnCollectedAction.Perform(null);
-		}
-		this.OnCollectedEvent();
-		if (this.DestroyOnCollect)
-		{
-			InstantiateUtility.Destroy(this.DestroyTarget);
-		}
-		else
-		{
-			base.gameObject.SetActive(false);
-		}
-	}
+    public abstract void OnCollectorCandidateTouch(GameObject collector);
 
-	public override void Serialize(Archive ar)
-	{
-		ar.Serialize(ref this.m_currentTime);
-		ar.Serialize(ref this.IsCollected);
-		if (ar.Reading)
-		{
-			base.gameObject.SetActive(!this.IsCollected);
-		}
-	}
+    public void SpawnCollectedEffect() {
+        if (this.CollectedEffect) {
+            InstantiateUtility.Instantiate(this.CollectedEffect, this.m_transform.position, Quaternion.identity);
+        }
+    }
 
-	public Bounds Bounds
-	{
-		get
-		{
-			this.m_bounds.center = this.m_transform.position;
-			return this.m_bounds;
-		}
-	}
+    public virtual void Collected() {
+        this.IsCollected = true;
+        this.SpawnCollectedEffect();
+        if (this.CollectedSoundProvider != null) {
+            Sound.Play(this.CollectedSoundProvider.GetSound(null), this.m_transform.position, null);
+        }
 
-	public void OnFrustumEnter()
-	{
-		this.m_insideFrustum = true;
-		if (!this.IsCollected)
-		{
-			base.gameObject.SetActive(true);
-		}
-	}
+        for (int i = 0; i < this.m_onKillRecievers.Length; i++) {
+            if (this.m_onKillRecievers[i]) {
+                ((IKillReciever)this.m_onKillRecievers[i]).OnKill();
+            }
+        }
 
-	public void OnFrustumExit()
-	{
-		this.m_insideFrustum = false;
-	}
+        if (this.OnCollectedAction != null) {
+            this.OnCollectedAction.Perform(null);
+        }
 
-	public bool InsideFrustum
-	{
-		get
-		{
-			return this.m_insideFrustum;
-		}
-	}
+        this.OnCollectedEvent();
+        if (this.DestroyOnCollect) {
+            InstantiateUtility.Destroy(this.DestroyTarget);
+        } else {
+            base.gameObject.SetActive(false);
+        }
+    }
 
-	public bool IsCollected;
+    public override void Serialize(Archive ar) {
+        ar.Serialize(ref this.m_currentTime);
+        ar.Serialize(ref this.IsCollected);
+        if (ar.Reading) {
+            base.gameObject.SetActive(!this.IsCollected);
+        }
+    }
 
-	public SoundProvider CollectedSoundProvider;
+    public Bounds Bounds {
+        get {
+            this.m_bounds.center = this.m_transform.position;
+            return this.m_bounds;
+        }
+    }
 
-	public Action OnCollectedEvent = delegate()
-	{
-	};
+    public void OnFrustumEnter() {
+        this.m_insideFrustum = true;
+        if (!this.IsCollected) {
+            base.gameObject.SetActive(true);
+        }
+    }
 
-	public ActionMethod OnCollectedAction;
+    public void OnFrustumExit() {
+        this.m_insideFrustum = false;
+    }
 
-	public float DelayBeforeCollectable;
+    public bool InsideFrustum {
+        get { return this.m_insideFrustum; }
+    }
 
-	public bool DestroyOnCollect;
+    public bool IsCollected;
 
-	public GameObject DestroyTarget;
+    public SoundProvider CollectedSoundProvider;
 
-	public GameObject CollectedEffect;
+    public Action OnCollectedEvent = delegate() { };
 
-	public float Radius = 2f;
+    public ActionMethod OnCollectedAction;
 
-	public bool FrustrumOptimized;
+    public float DelayBeforeCollectable;
 
-	[HideInInspector]
-	[SerializeField]
-	private Component[] m_onKillRecievers;
+    public bool DestroyOnCollect;
 
-	[HideInInspector]
-	[SerializeField]
-	private Transform m_transform;
+    public GameObject DestroyTarget;
 
-	private float m_currentTime;
+    public GameObject CollectedEffect;
 
-	private Bounds m_bounds;
+    public float Radius = 2f;
 
-	private bool m_insideFrustum = true;
+    public bool FrustrumOptimized;
+
+    [HideInInspector] [SerializeField] private Component[] m_onKillRecievers;
+
+    [HideInInspector] [SerializeField] private Transform m_transform;
+
+    private float m_currentTime;
+
+    private Bounds m_bounds;
+
+    private bool m_insideFrustum = true;
 }

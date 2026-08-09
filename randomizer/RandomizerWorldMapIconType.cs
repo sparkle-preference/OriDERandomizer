@@ -1,5 +1,4 @@
-public enum RandomizerWorldMapIconType
-{
+public enum RandomizerWorldMapIconType {
     None,
     Plant,
     WaterVein,

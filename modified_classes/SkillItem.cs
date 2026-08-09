@@ -3,198 +3,136 @@ using System.Collections.Generic;
 using Game;
 using UnityEngine;
 
-public class SkillItem : MonoBehaviour
-{
-	public int ActualRequiredSkillPoints
-	{
-		get
-		{
-			if (DifficultyController.Instance.Difficulty == DifficultyMode.Hard)
-			{
-				return this.RequiredHardSkillPoints;
-			}
-			return this.RequiredSkillPoints;
-		}
-	}
+public class SkillItem : MonoBehaviour {
+    public int ActualRequiredSkillPoints {
+        get {
+            if (DifficultyController.Instance.Difficulty == DifficultyMode.Hard) {
+                return this.RequiredHardSkillPoints;
+            }
 
-	public int ActualTotalRequiredSkillPoints
-	{
-		get
-		{
-			if (DifficultyController.Instance.Difficulty == DifficultyMode.Hard)
-			{
-				return this.TotalRequiredHardSkillPoints;
-			}
-			return this.TotalRequiredSkillPoints;
-		}
-	}
+            return this.RequiredSkillPoints;
+        }
+    }
 
-	public int TotalRequiredHardSkillPoints
-	{
-		get
-		{
-			return this.m_totalRequiredHardPoints;
-		}
-		set
-		{
-			this.m_totalRequiredHardPoints = value;
-		}
-	}
+    public int ActualTotalRequiredSkillPoints {
+        get {
+            if (DifficultyController.Instance.Difficulty == DifficultyMode.Hard) {
+                return this.TotalRequiredHardSkillPoints;
+            }
 
-	public int TotalRequiredSkillPoints
-	{
-		get
-		{
-			return this.m_totalRequiredPoints;
-		}
-		set
-		{
-			this.m_totalRequiredPoints = value;
-		}
-	}
+            return this.TotalRequiredSkillPoints;
+        }
+    }
 
-	public Color LargeIconColor
-	{
-		get;
-		set;
-	}
+    public int TotalRequiredHardSkillPoints {
+        get { return this.m_totalRequiredHardPoints; }
+        set { this.m_totalRequiredHardPoints = value; }
+    }
 
-	public bool Visible
-	{
-		get
-		{
-			return true;
-		}
-	}
+    public int TotalRequiredSkillPoints {
+        get { return this.m_totalRequiredPoints; }
+        set { this.m_totalRequiredPoints = value; }
+    }
 
-	public bool RequiresAbilitiesOrItems
-	{
-		get
-		{
-			return this.RequiredAbilities.Count != 0 || this.RequiredItems.Count != 0;
-		}
-	}
+    public Color LargeIconColor { get; set; }
 
-	public bool SoulRequirementMet
-	{
-		get
-		{
-			return this.ActualRequiredSkillPoints <= Characters.Sein.Level.SkillPoints;
-		}
-	}
+    public bool Visible {
+        get { return true; }
+    }
 
-	public bool AbilitiesRequirementMet
-	{
-		get
-		{
-			using (List<SkillItem>.Enumerator enumerator = this.RequiredItems.GetEnumerator())
-			{
-				while (enumerator.MoveNext())
-				{
-					if (!enumerator.Current.HasSkillItem)
-					{
-						return false;
-					}
-				}
-			}
-			return true;
-		}
-	}
+    public bool RequiresAbilitiesOrItems {
+        get { return this.RequiredAbilities.Count != 0 || this.RequiredItems.Count != 0; }
+    }
 
-	public void Awake()
-	{
-		this.m_animator = this.Icon.GetComponent<TransparencyAnimator>();
-	}
+    public bool SoulRequirementMet {
+        get { return this.ActualRequiredSkillPoints <= Characters.Sein.Level.SkillPoints; }
+    }
 
-	public bool CanEarnSkill
-	{
-		get
-		{
-			return this.SoulRequirementMet && this.AbilitiesRequirementMet;
-		}
-	}
+    public bool AbilitiesRequirementMet {
+        get {
+            using (List<SkillItem>.Enumerator enumerator = this.RequiredItems.GetEnumerator()) {
+                while (enumerator.MoveNext()) {
+                    if (!enumerator.Current.HasSkillItem) {
+                        return false;
+                    }
+                }
+            }
 
-	public void FixedUpdate()
-	{
-		this.UpdateItem();
-	}
+            return true;
+        }
+    }
 
-	public void UpdateItem()
-	{
-		this.LearntSkillGlow.SetActive(this.HasSkillItem && this.Visible);
-		this.Icon.gameObject.SetActive(this.Visible);
-		if (this.HasSkillItem == this.m_animator.AnimatorDriver.IsReversed)
-		{
-			this.m_animator.Initialize();
-			if (this.HasSkillItem)
-			{
-				this.m_animator.AnimatorDriver.ContinueForward();
-			}
-			else
-			{
-				this.m_animator.AnimatorDriver.ContinueBackwards();
-			}
-		}
-	}
+    public void Awake() {
+        this.m_animator = this.Icon.GetComponent<TransparencyAnimator>();
+    }
 
-	public void OnEnable()
-	{
-		this.HasSkillItem = Characters.Sein.PlayerAbilities.HasAbility(this.Ability);
-		this.UpdateItem();
-		this.m_animator.Initialize();
-		if (this.HasSkillItem)
-		{
-			this.m_animator.AnimatorDriver.GoToEnd();
-		}
-		else
-		{
-			this.m_animator.AnimatorDriver.GoToStart();
-		}
-	}
+    public bool CanEarnSkill {
+        get { return this.SoulRequirementMet && this.AbilitiesRequirementMet; }
+    }
 
-	public MessageProvider Name
-	{
-		get
-		{
-			return RandomizerText.GetAbilityName(this.Ability) ?? NameMessageProvider;
-		}
-	}
+    public void FixedUpdate() {
+        this.UpdateItem();
+    }
 
-	public MessageProvider Description
-	{
-		get
-		{
-			return RandomizerText.GetAbilityDescription(this.Ability) ?? DescriptionMessageProvider;
-		}
-	}
+    public void UpdateItem() {
+        this.LearntSkillGlow.SetActive(this.HasSkillItem && this.Visible);
+        this.Icon.gameObject.SetActive(this.Visible);
+        if (this.HasSkillItem == this.m_animator.AnimatorDriver.IsReversed) {
+            this.m_animator.Initialize();
+            if (this.HasSkillItem) {
+                this.m_animator.AnimatorDriver.ContinueForward();
+            } else {
+                this.m_animator.AnimatorDriver.ContinueBackwards();
+            }
+        }
+    }
 
-	public int RequiredSkillPoints = 1;
+    public void OnEnable() {
+        this.HasSkillItem = Characters.Sein.PlayerAbilities.HasAbility(this.Ability);
+        this.UpdateItem();
+        this.m_animator.Initialize();
+        if (this.HasSkillItem) {
+            this.m_animator.AnimatorDriver.GoToEnd();
+        } else {
+            this.m_animator.AnimatorDriver.GoToStart();
+        }
+    }
 
-	public int RequiredHardSkillPoints = 1;
+    public MessageProvider Name {
+        get { return RandomizerText.GetAbilityName(this.Ability) ?? NameMessageProvider; }
+    }
 
-	public List<AbilityType> RequiredAbilities = new List<AbilityType>();
+    public MessageProvider Description {
+        get { return RandomizerText.GetAbilityDescription(this.Ability) ?? DescriptionMessageProvider; }
+    }
 
-	public List<SkillItem> RequiredItems = new List<SkillItem>();
+    public int RequiredSkillPoints = 1;
 
-	public AbilityType Ability;
+    public int RequiredHardSkillPoints = 1;
 
-	public Texture LargeIcon;
+    public List<AbilityType> RequiredAbilities = new List<AbilityType>();
 
-	public MessageProvider NameMessageProvider;
+    public List<SkillItem> RequiredItems = new List<SkillItem>();
 
-	public MessageProvider DescriptionMessageProvider;
+    public AbilityType Ability;
 
-	public Renderer Icon;
+    public Texture LargeIcon;
 
-	public ActionMethod GainSkillSequence;
+    public MessageProvider NameMessageProvider;
 
-	private TransparencyAnimator m_animator;
+    public MessageProvider DescriptionMessageProvider;
 
-	public GameObject LearntSkillGlow;
+    public Renderer Icon;
 
-	public bool HasSkillItem;
+    public ActionMethod GainSkillSequence;
 
-	private int m_totalRequiredPoints = 0;
+    private TransparencyAnimator m_animator;
 
-	private int m_totalRequiredHardPoints = 0;
+    public GameObject LearntSkillGlow;
+
+    public bool HasSkillItem;
+
+    private int m_totalRequiredPoints = 0;
+
+    private int m_totalRequiredHardPoints = 0;
 }

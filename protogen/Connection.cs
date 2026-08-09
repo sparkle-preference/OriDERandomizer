@@ -1,11 +1,8 @@
 using System;
 
-namespace Protogen
-{
-    public class Connection
-    {
-        public Connection(Node source, Node destination, Inventory req)
-        {
+namespace Protogen {
+    public class Connection {
+        public Connection(Node source, Node destination, Inventory req) {
             this.Source = source;
 
             this.Destination = destination;
