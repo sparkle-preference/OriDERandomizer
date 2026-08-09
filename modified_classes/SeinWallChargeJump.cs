@@ -113,8 +113,8 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver {
 
     public void UpdateJumpingState() {
         var adjustedDrag = HorizontalDrag - HorizontalDrag * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
-        PlatformMovement.LocalSpeedX = PlatformMovement.LocalSpeedX * (1f - adjustedDrag);
-        PlatformMovement.LocalSpeedY = PlatformMovement.LocalSpeedY * (1f - adjustedDrag);
+        PlatformMovement.LocalSpeedX *= (1f - adjustedDrag);
+        PlatformMovement.LocalSpeedY *= (1f - adjustedDrag);
         if (m_stateCurrentTime > AntiGravityDuration + AntiGravityDuration * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades())) {
             ChangeState(State.Normal);
             return;

@@ -1010,19 +1010,19 @@ public class DebugMenuB : SaveSerialize {
                 }
 
                 if (Input.Down.OnPressed) {
-                    m_gumoSequencesCursorIndex.y = m_gumoSequencesCursorIndex.y + 1f;
+                    m_gumoSequencesCursorIndex.y += 1f;
                 }
 
                 if (Input.Up.OnPressed) {
-                    m_gumoSequencesCursorIndex.y = m_gumoSequencesCursorIndex.y - 1f;
+                    m_gumoSequencesCursorIndex.y -= 1f;
                 }
 
                 if (Input.Left.OnPressed) {
-                    m_gumoSequencesCursorIndex.x = m_gumoSequencesCursorIndex.x - 1f;
+                    m_gumoSequencesCursorIndex.x -= 1f;
                 }
 
                 if (Input.Right.OnPressed) {
-                    m_gumoSequencesCursorIndex.x = m_gumoSequencesCursorIndex.x + 1f;
+                    m_gumoSequencesCursorIndex.x += 1f;
                 }
 
                 if (m_gumoSequencesCursorIndex.x == -1f) {
@@ -1054,22 +1054,22 @@ public class DebugMenuB : SaveSerialize {
 
                 if (Input.Down.OnPressed) {
                     ResetHold();
-                    m_cursorIndex.y = m_cursorIndex.y + 1f;
+                    m_cursorIndex.y += 1f;
                 }
 
                 if (Input.Up.OnPressed) {
                     ResetHold();
-                    m_cursorIndex.y = m_cursorIndex.y - 1f;
+                    m_cursorIndex.y -= 1f;
                 }
 
                 if (Input.Left.OnPressed) {
                     ResetHold();
-                    m_cursorIndex.x = m_cursorIndex.x - 1f;
+                    m_cursorIndex.x -= 1f;
                 }
 
                 if (Input.Right.OnPressed) {
                     ResetHold();
-                    m_cursorIndex.x = m_cursorIndex.x + 1f;
+                    m_cursorIndex.x += 1f;
                 }
 
                 if (Input.Left.Pressed || Input.Right.Pressed || Input.Up.Pressed || Input.Down.Pressed) {
@@ -1077,19 +1077,19 @@ public class DebugMenuB : SaveSerialize {
                     if (m_holdRemainingTime < 0f) {
                         m_holdRemainingTime = m_holdDelayDuration;
                         if (Input.Left.Pressed) {
-                            m_cursorIndex.x = m_cursorIndex.x - 1f;
+                            m_cursorIndex.x -= 1f;
                         }
 
                         if (Input.Right.Pressed) {
-                            m_cursorIndex.x = m_cursorIndex.x + 1f;
+                            m_cursorIndex.x += 1f;
                         }
 
                         if (Input.Down.Pressed) {
-                            m_cursorIndex.y = m_cursorIndex.y + 1f;
+                            m_cursorIndex.y += 1f;
                         }
 
                         if (Input.Up.Pressed) {
-                            m_cursorIndex.y = m_cursorIndex.y - 1f;
+                            m_cursorIndex.y -= 1f;
                         }
                     }
                 }
