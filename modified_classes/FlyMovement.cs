@@ -13,7 +13,7 @@ public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable {
 
     public Vector2 VelocityAsDelta {
         get { return Velocity * Time.deltaTime; }
-        set { Velocity = ((Time.deltaTime != 0f) ? (value / Time.deltaTime) : Vector2.zero); }
+        set { Velocity = Time.deltaTime != 0f ? value / Time.deltaTime : Vector2.zero; }
     }
 
     public Rigidbody Rigidbody {
@@ -41,7 +41,7 @@ public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable {
         }
 
         Kickback.AdvanceTime();
-        m_rigidbody.velocity = RandomizerBonusSkill.TimeScale(Velocity + ((!HasKickback) ? Vector2.zero : Kickback.KickbackVector));
+        m_rigidbody.velocity = RandomizerBonusSkill.TimeScale(Velocity + (!HasKickback ? Vector2.zero : Kickback.KickbackVector));
     }
 
     public void OnRecieveDamage(Damage damage) {

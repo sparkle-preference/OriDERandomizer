@@ -359,7 +359,7 @@ public static class RandomizerBonusSkill {
     }
 
     public static void FoundBonusSkill(int ID) {
-        bool psuedo = (ID == 108 || ID == 115 || ID == 1587);
+        bool psuedo = ID == 108 || ID == 115 || ID == 1587;
         if (get(ID) > 0) {
             if (!psuedo)
                 RandomizerSwitch.PickupMessage(BonusSkillNames[ID] + " (duplicate)");

@@ -113,7 +113,7 @@ public static class RandomizerSyncManager {
             NativeWebSocket.SetAutoReconnect(true);
             NativeWebSocket.Start();
             wsStartedUrl = url;
-            Randomizer.log($"ws diag: socket started for {url} (ca: {(NativeWebSocket.CaPath ?? "none")})");
+            Randomizer.log($"ws diag: socket started for {url} (ca: {NativeWebSocket.CaPath ?? "none"})");
         } catch (Exception e) {
             // file-only: LogError renders on-screen and itself NREs during
             // early seed parse (no UI yet) — that cascade broke seed loading

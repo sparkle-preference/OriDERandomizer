@@ -52,7 +52,7 @@ public class SeinEnergy : SaveSerialize {
         ar.Serialize(ref Current);
         ar.Serialize(ref Max);
         if (ar.Reading) {
-            MinVisual = (MaxVisual = Current);
+            MinVisual = MaxVisual = Current;
         }
     }
 

@@ -36,11 +36,11 @@ public class ActivateAction : ActionMethod {
     }
 
     private string TargetName {
-        get { return (!(Target != null)) ? "unkown" : Target.name; }
+        get { return !(Target != null) ? "unkown" : Target.name; }
     }
 
     public override string GetNiceName() {
-        return ((!Activate) ? "Deactivate " : "Activate ") + TargetName;
+        return (!Activate ? "Deactivate " : "Activate ") + TargetName;
     }
 
     [NotNull] public GameObject Target;

@@ -31,7 +31,7 @@ public static class RandomizerClues {
 
     public static int SlotFor(int i) {
         int index = RevealOrder[i] - 1;
-        return (ClueSlots != null && index >= 0 && index < ClueSlots.Count)
+        return ClueSlots != null && index >= 0 && index < ClueSlots.Count
             ? ClueSlots[index]
             : -1;
     }

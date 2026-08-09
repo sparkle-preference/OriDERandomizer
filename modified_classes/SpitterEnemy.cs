@@ -91,7 +91,7 @@ public class SpitterEnemy : GroundEnemy {
         }
 
         bool flag;
-        if (PlatformMovement.MovingHorizontally && EnemyStopper.InsideEnemyStopper(Position, (!FaceLeft) ? Vector3.right : Vector3.left, out flag)) {
+        if (PlatformMovement.MovingHorizontally && EnemyStopper.InsideEnemyStopper(Position, !FaceLeft ? Vector3.right : Vector3.left, out flag)) {
             FaceLeft = !FaceLeft;
             if (Controller.StateMachine.CurrentState == State.RunBack) {
                 Controller.StateMachine.ChangeState(State.SpitterEnemyCharging);
@@ -121,7 +121,7 @@ public class SpitterEnemy : GroundEnemy {
             float num = 1f - Mathf.InverseLerp(0.3f, 0.6f, currentStateTime);
             FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(ThrownDirection) - 90f) * num);
         } else {
-            float b = (!PlatformMovement.IsOnGround) ? 0f : PlatformMovement.GroundAngle;
+            float b = !PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle;
             FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.2f));
         }
     }

@@ -384,7 +384,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
         if (AllowedToAccessSkillTree) {
             if (InsideCheckpointMarker && SkillTreeMessage && SkillTreeRekindleMessage && PlayerCouldSoulFlame) {
                 if (m_skillTreeHint == null) {
-                    MessageProvider messageProvider = (!Characters.Sein.PlayerAbilities.Rekindle.HasAbility || IsSafeToCastSoulFlame != SoulFlamePlacementSafety.Safe) ? SkillTreeMessage : SkillTreeRekindleMessage;
+                    MessageProvider messageProvider = !Characters.Sein.PlayerAbilities.Rekindle.HasAbility || IsSafeToCastSoulFlame != SoulFlamePlacementSafety.Safe ? SkillTreeMessage : SkillTreeRekindleMessage;
                     m_skillTreeHint = UI.Hints.Show(messageProvider, HintLayer.SoulFlame, float.PositiveInfinity);
                 }
             } else if (m_skillTreeHint) {

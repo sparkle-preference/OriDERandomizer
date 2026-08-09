@@ -27,7 +27,7 @@ public class MessageControllerB : MonoBehaviour {
 
     public MessageBox ShowHintMessage(MessageProvider messageProvider, Vector3 position, float duration = 3f) {
         GameObject gameObject = ShowMessageBox(HintMessage, messageProvider, position, duration);
-        return (!gameObject) ? null : gameObject.GetComponentInChildren<MessageBox>();
+        return !gameObject ? null : gameObject.GetComponentInChildren<MessageBox>();
     }
 
     public MessageBox ShowMessageBoxB(GameObject messageBoxPrefab, MessageProvider messageProvider, Vector3 position, float duration = 3f) {
@@ -98,7 +98,7 @@ public class MessageControllerB : MonoBehaviour {
             m_currentMessageBox = null;
         } else {
             GameObject gameObject = ShowMessageBox(StoryMessage, messageProvider, Vector3.zero, float.PositiveInfinity);
-            m_currentMessageBox = (!gameObject) ? null : gameObject.GetComponentInChildren<MessageBox>();
+            m_currentMessageBox = !gameObject ? null : gameObject.GetComponentInChildren<MessageBox>();
         }
 
         return m_currentMessageBox;

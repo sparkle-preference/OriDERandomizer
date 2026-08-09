@@ -58,7 +58,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
         get {
             Vector2 vector = m_directionToTarget;
             float num = Mathf.Cos(0.3926991f);
-            DirectionalAnimationSet directionalAnimationSet = (!Sein.Controller.IsSwimming) ? BashChargeAnimationSet : SwimBashChargeAnimationSet;
+            DirectionalAnimationSet directionalAnimationSet = !Sein.Controller.IsSwimming ? BashChargeAnimationSet : SwimBashChargeAnimationSet;
             vector.x = Mathf.Abs(vector.x);
             if (Vector3.Dot(Vector3.up, vector) > num) {
                 return directionalAnimationSet.Up;
@@ -90,7 +90,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
         get {
             Vector2 vector = MoonMath.Angle.VectorFromAngle(m_bashAngle + 90f);
             float num = Mathf.Cos(0.3926991f);
-            DirectionalAnimationSet directionalAnimationSet = (!Sein.Controller.IsSwimming) ? BashJumpAnimationSet : SwimBashJumpAnimationSet;
+            DirectionalAnimationSet directionalAnimationSet = !Sein.Controller.IsSwimming ? BashJumpAnimationSet : SwimBashJumpAnimationSet;
             vector.x = Mathf.Abs(vector.x);
             if (Vector3.Dot(Vector3.up, vector) > num) {
                 return directionalAnimationSet.Up;
@@ -203,7 +203,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
 
     public void MovePlayerToTargetAndCreateEffect() {
         Component component = Target as Component;
-        Vector3 vector = (!InstantiateUtility.IsDestroyed(component)) ? component.transform.position : PlatformMovement.Position;
+        Vector3 vector = !InstantiateUtility.IsDestroyed(component) ? component.transform.position : PlatformMovement.Position;
         if (m_isEnhancedBashing) {
             vector = m_enhancedBashTarget;
         }
@@ -230,7 +230,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
             target = TargetAsComponent.transform.position;
         }
 
-        Sound.Play((!Sein.PlayerAbilities.BashBuff.HasAbility) ? BashStartSound.GetSound(null) : UpgradedBashStartSound.GetSound(null), m_seinTransform.position, null);
+        Sound.Play(!Sein.PlayerAbilities.BashBuff.HasAbility ? BashStartSound.GetSound(null) : UpgradedBashStartSound.GetSound(null), m_seinTransform.position, null);
         if (GameController.Instance) {
             GameController.Instance.SuspendGameplay();
         }
@@ -275,7 +275,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
         ApplyFrictionToSpeed.SpeedToSlowDown = PlatformMovement.LocalSpeed;
         MovePlayerToTargetAndCreateEffect();
         Component component = Target as Component;
-        Vector3 position = (!InstantiateUtility.IsDestroyed(component)) ? component.transform.position : Sein.Position;
+        Vector3 position = !InstantiateUtility.IsDestroyed(component) ? component.transform.position : Sein.Position;
         GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(BashOffFx);
         gameObject.transform.position = position;
         Vector3 localScale = gameObject.transform.localScale;
@@ -291,7 +291,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
         CharacterAnimationSystem.CharacterAnimationState characterAnimationState = Sein.PlatformBehaviour.Visuals.Animation.Play(BashJumpAnimation, 10, ShouldBashJumpAnimationKeepPlaying);
         characterAnimationState.OnStartPlaying = OnAnimationStart;
         characterAnimationState.OnStopPlaying = OnAnimationEnd;
-        Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft = (vector2.x > 0f);
+        Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft = vector2.x > 0f;
         if (Sein.Abilities.Swimming) {
             Sein.Abilities.Swimming.OnBash(angle);
         }
@@ -305,7 +305,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
         Component component = Target as Component;
         if (!InstantiateUtility.IsDestroyed(component)) {
             Vector2 force = -MoonMath.Angle.VectorFromAngle(m_bashAngle + 90f) * (4f + RandomizerBonus.Velocity());
-            new Damage(RandomizerBonusSkill.AbilityDamage((!Sein.PlayerAbilities.BashBuff.HasAbility) ? Damage : UpgradedDamage), force, Characters.Sein.Position, DamageType.Bash, gameObject).DealToComponents(component.gameObject);
+            new Damage(RandomizerBonusSkill.AbilityDamage(!Sein.PlayerAbilities.BashBuff.HasAbility ? Damage : UpgradedDamage), force, Characters.Sein.Position, DamageType.Bash, gameObject).DealToComponents(component.gameObject);
             EntityTargetting component2 = component.gameObject.GetComponent<EntityTargetting>();
             if (component2 && component2.Entity is Enemy) {
                 OnBashEnemy(component2);
@@ -357,7 +357,7 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
         HandleBashAngle();
         Sein.Mortality.DamageReciever.MakeInvincibleToEnemies(0.2f);
         HandleMovingTowardsBashTarget();
-        Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft = (m_directionToTarget.x < 0f);
+        Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft = m_directionToTarget.x < 0f;
     }
 
     public void BashFailed() {
@@ -374,8 +374,8 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
             if (Sein.IsOnGround && Sein.Speed.x == 0f && !SeinAbilityRestrictZone.IsInside() && !Sein.Abilities.Carry.IsCarrying) {
                 Sein.Animation.Play(BackFlipAnimation, 10);
                 Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY = BackFlipSpeed;
-                if ((!Sein.PlayerAbilities.BashBuff.HasAbility) ? StationaryBashSound : UpgradedStationaryBashSound) {
-                    Sound.Play((!Sein.PlayerAbilities.BashBuff.HasAbility) ? StationaryBashSound.GetSound(null) : UpgradedStationaryBashSound.GetSound(null), transform.position, null);
+                if (!Sein.PlayerAbilities.BashBuff.HasAbility ? StationaryBashSound : UpgradedStationaryBashSound) {
+                    Sound.Play(!Sein.PlayerAbilities.BashBuff.HasAbility ? StationaryBashSound.GetSound(null) : UpgradedStationaryBashSound.GetSound(null), transform.position, null);
                 }
             }
         }

@@ -36,7 +36,7 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
     private void UpdateUnderwaterRotation() {
         HeadAngle = 0f;
         FeetAngle = 0f;
-        CenterAngle = Sein.Abilities.Swimming.SwimAngle + ((!Sein.Controller.FaceLeft) ? 0 : 180);
+        CenterAngle = Sein.Abilities.Swimming.SwimAngle + (!Sein.Controller.FaceLeft ? 0 : 180);
     }
 
     private void UpdateCinematicRotation() {
@@ -65,7 +65,7 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
         FeetAngle = 0f;
         if (PlatformMovement.HasWallLeft) {
             if (!PlatformMovement.WallLeft.WasOn) {
-                m_wallLeftAngle = ((!PlatformMovement.WallLeftRayHit) ? PlatformMovement.GravityAngle : PlatformMovement.WallLeftAngle);
+                m_wallLeftAngle = !PlatformMovement.WallLeftRayHit ? PlatformMovement.GravityAngle : PlatformMovement.WallLeftAngle;
             } else if (PlatformMovement.WallLeftRayHit) {
                 m_wallLeftAngle = Mathf.LerpAngle(m_wallLeftAngle, PlatformMovement.WallLeftAngle, 0.2f);
             }
@@ -80,7 +80,7 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
             }
         } else if (PlatformMovement.HasWallRight) {
             if (!PlatformMovement.WallRight.WasOn) {
-                m_wallRightAngle = ((!PlatformMovement.WallRightRayHit) ? PlatformMovement.GravityAngle : PlatformMovement.WallRightAngle);
+                m_wallRightAngle = !PlatformMovement.WallRightRayHit ? PlatformMovement.GravityAngle : PlatformMovement.WallRightAngle;
             } else if (PlatformMovement.WallRightRayHit) {
                 m_wallRightAngle = Mathf.LerpAngle(m_wallRightAngle, PlatformMovement.WallRightAngle, 0.2f);
             }
@@ -97,7 +97,7 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
             if (Sein.Controller.IsAimingGrenade) {
                 m_groundAngle = PlatformMovement.GroundAngle;
             } else if (!PlatformMovement.Ground.WasOn) {
-                m_groundAngle = ((!PlatformMovement.GroundRayHit) ? PlatformMovement.GravityAngle : PlatformMovement.GroundAngle);
+                m_groundAngle = !PlatformMovement.GroundRayHit ? PlatformMovement.GravityAngle : PlatformMovement.GroundAngle;
             } else if (PlatformMovement.GroundRayHit) {
                 m_groundAngle = Mathf.LerpAngle(m_groundAngle, PlatformMovement.GroundAngle, 0.2f);
             }
@@ -116,7 +116,7 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
             }
 
             if (m_tiltUpDownTimer > 0f) {
-                CenterAngle += ((!Sein.FaceLeft) ? 1 : -1) * Mathf.Atan2(PlatformMovement.LocalSpeedY, 12f) * 57.29578f * 0.5f * Mathf.Clamp01(m_tiltUpDownTimer);
+                CenterAngle += (!Sein.FaceLeft ? 1 : -1) * Mathf.Atan2(PlatformMovement.LocalSpeedY, 12f) * 57.29578f * 0.5f * Mathf.Clamp01(m_tiltUpDownTimer);
             }
         }
 
@@ -142,7 +142,7 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
     }
 
     public void UpdateDashingRotation() {
-        FeetAngle = (HeadAngle = (CenterAngle = 0f));
+        FeetAngle = HeadAngle = CenterAngle = 0f;
         if (Sein.IsOnGround) {
             FeetAngle = Sein.Abilities.Dash.SpriteRotation;
         } else {
@@ -151,7 +151,7 @@ public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
     }
 
     public void UpdateStompingRotation() {
-        FeetAngle = (HeadAngle = (CenterAngle = 0f));
+        FeetAngle = HeadAngle = CenterAngle = 0f;
         CenterAngle = Sein.Abilities.Stomp.SpriteRotation;
     }
 

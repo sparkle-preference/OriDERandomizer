@@ -86,7 +86,7 @@ public class SeinLevel : SaveSerialize, ISeinReceiver {
         ar.Serialize(ref SkillPoints);
         ar.Serialize(ref HasSpentSkillPoint);
         if (ar.Reading) {
-            ExperienceVisualMax = (ExperienceVisualMin = Current);
+            ExperienceVisualMax = ExperienceVisualMin = Current;
         }
     }
 

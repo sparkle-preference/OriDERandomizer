@@ -30,7 +30,7 @@ public static class RandomizerTrackedDataManager {
     public static int GetRelicExistsBitfield() {
         int bf = 0;
         foreach (string zone in Randomizer.RelicZoneLookup.Values) {
-            bf += (1 << RelicExists[zone]);
+            bf += 1 << RelicExists[zone];
         }
 
         return bf;
@@ -229,7 +229,7 @@ public static class RandomizerTrackedDataManager {
 
     public static void SetMapstone(int mapNum) {
         if (!GetMapstone(mapNum)) {
-            MapstoneBitfield = Characters.Sein.Inventory.IncRandomizerItem(1003, (1 << mapNum));
+            MapstoneBitfield = Characters.Sein.Inventory.IncRandomizerItem(1003, 1 << mapNum);
         }
     }
 
@@ -250,7 +250,7 @@ public static class RandomizerTrackedDataManager {
         int bf = 0;
         foreach (KeyValuePair<int, AbilityType> kvp in Skills) {
             if (Characters.Sein.PlayerAbilities.HasAbility(kvp.Value))
-                bf += (1 << kvp.Key);
+                bf += 1 << kvp.Key;
         }
 
         return bf;

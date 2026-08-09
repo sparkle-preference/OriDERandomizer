@@ -84,7 +84,7 @@ public class JumperEnemy : GroundEnemy {
         }
 
         m_thrownDirection = onReceiveDamage.Damage.Force.normalized;
-        FaceLeft = (PlatformMovement.LocalSpeedX < 0f);
+        FaceLeft = PlatformMovement.LocalSpeedX < 0f;
     }
 
     public void OnStomped() {
@@ -95,7 +95,7 @@ public class JumperEnemy : GroundEnemy {
         }
 
         m_thrownDirection = onReceiveDamage.Damage.Force.normalized;
-        FaceLeft = (PlatformMovement.LocalSpeedX < 0f);
+        FaceLeft = PlatformMovement.LocalSpeedX < 0f;
     }
 
     public void DoJump() {
@@ -108,17 +108,17 @@ public class JumperEnemy : GroundEnemy {
             m_shouldStomp = false;
         } else {
             localSpeed.x = Mathf.Clamp(PositionToPlayerPosition.x / num, -localSpeed.x, localSpeed.x);
-            m_shouldStomp = (Mathf.Abs((PlayerPosition + m_playerSmoothSpeed - Position).x) < Settings.StompAttackDistance);
+            m_shouldStomp = Mathf.Abs((PlayerPosition + m_playerSmoothSpeed - Position).x) < Settings.StompAttackDistance;
         }
 
         Vector3 vector = new Vector3(localSpeed.x * num * 0.5f, Settings.JumpHeight);
         bool flag = Mathf.Sign(localSpeed.x) != FaceLeftSign;
         if (Physics.Raycast(new Ray(Position, vector.normalized), vector.magnitude, RaycastLayerMask) || !m_shouldStomp) {
             localSpeed.y = PhysicsHelper.CalculateSpeedFromHeight(Settings.ShortJumpHeight, Settings.Gravity);
-            Animation.Play((!flag) ? Animations.ShortJump : Animations.JumpFlip, 1, () => !PlatformMovement.IsOnGround);
+            Animation.Play(!flag ? Animations.ShortJump : Animations.JumpFlip, 1, () => !PlatformMovement.IsOnGround);
             m_shouldStomp = false;
         } else {
-            Animation.Play((!flag) ? Animations.Jump : Animations.JumpFlip, 1, () => !PlatformMovement.IsOnGround);
+            Animation.Play(!flag ? Animations.Jump : Animations.JumpFlip, 1, () => !PlatformMovement.IsOnGround);
         }
 
         PlaySound(Sounds.Jump);
@@ -165,7 +165,7 @@ public class JumperEnemy : GroundEnemy {
             float num = 1f - Mathf.InverseLerp(0.3f, 0.6f, currentStateTime);
             FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(m_thrownDirection) - 90f) * num);
         } else {
-            float b = (!PlatformMovement.IsOnGround) ? 0f : PlatformMovement.GroundAngle;
+            float b = !PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle;
             FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.2f));
         }
     }

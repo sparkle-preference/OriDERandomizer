@@ -86,8 +86,8 @@ internal class BashAttackGame : Suspendable, IPooled {
                     if (digiPadAxis.magnitude > 0.2) {
                         float target = MoonMath.Angle.AngleFromVector(digiPadAxis) - 90f;
                         float f = Mathf.DeltaAngle(m_keyboardAngle, target);
-                        if (Mathf.Sign(f) != ((!m_keyboardClockwise) ? -1 : 1)) {
-                            m_keyboardClockwise = (Mathf.Sign(f) > 0f);
+                        if (Mathf.Sign(f) != (!m_keyboardClockwise ? -1 : 1)) {
+                            m_keyboardClockwise = Mathf.Sign(f) > 0f;
                             m_keyboardSpeed = 0f;
                         }
 
@@ -148,7 +148,7 @@ internal class BashAttackGame : Suspendable, IPooled {
 
     private void UpdatePlayingState() {
         if (m_nextBashLoopPlayedTime <= m_stateCurrentTime) {
-            m_bashLoopingAudioSource = Sound.Play((!Characters.Sein.PlayerAbilities.BashBuff.HasAbility) ? Characters.Sein.Abilities.Bash.BashLoopSound.GetSound(null) : Characters.Sein.Abilities.Bash.UpgradedBashLoopSound.GetSound(null), transform.position, delegate { m_bashLoopingAudioSource = null; });
+            m_bashLoopingAudioSource = Sound.Play(!Characters.Sein.PlayerAbilities.BashBuff.HasAbility ? Characters.Sein.Abilities.Bash.BashLoopSound.GetSound(null) : Characters.Sein.Abilities.Bash.UpgradedBashLoopSound.GetSound(null), transform.position, delegate { m_bashLoopingAudioSource = null; });
             if (!InstantiateUtility.IsDestroyed(m_bashLoopingAudioSource)) {
                 m_nextBashLoopPlayedTime = m_stateCurrentTime + m_bashLoopingAudioSource.Length;
             }
@@ -182,7 +182,7 @@ internal class BashAttackGame : Suspendable, IPooled {
     }
 
     private void GameFinished() {
-        Sound.Play((!Characters.Sein.PlayerAbilities.BashBuff.HasAbility) ? Characters.Sein.Abilities.Bash.BashEndSound.GetSound(null) : Characters.Sein.Abilities.Bash.UpgradedBashEndSound.GetSound(null), transform.position, null);
+        Sound.Play(!Characters.Sein.PlayerAbilities.BashBuff.HasAbility ? Characters.Sein.Abilities.Bash.BashEndSound.GetSound(null) : Characters.Sein.Abilities.Bash.UpgradedBashEndSound.GetSound(null), transform.position, null);
         BashGameComplete(Angle);
         ChangeState(State.Disappearing);
         if (RandomizerRebinding.DoubleBash.Pressed && !Randomizer.BashWasQueued) {

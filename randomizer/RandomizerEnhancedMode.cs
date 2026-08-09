@@ -355,7 +355,7 @@ public class RandomizerEnhancedMode {
                 }
             }
 
-            string hintMapAsText = (hintMap == 0 || hintMap == 1) ? "one mapstone in a #Map Pedestal#" : $"{hintMap} mapstones in #Map Pedestals#";
+            string hintMapAsText = hintMap == 0 || hintMap == 1 ? "one mapstone in a #Map Pedestal#" : $"{hintMap} mapstones in #Map Pedestals#";
 
             AddEnhancedModeTextAction(
                 sequence,
@@ -393,7 +393,7 @@ public class RandomizerEnhancedMode {
             },
             true
         );
-        (attackSequence.Actions[3] as WaitAction).LastAction = (attackSequence.Actions[0] as ShowEnhancedSpiritFlameTextAction);
+        (attackSequence.Actions[3] as WaitAction).LastAction = attackSequence.Actions[0] as ShowEnhancedSpiritFlameTextAction;
 
         ActionSequence mapSequence = sceneRoot.transform.FindChild("*spiritTreeStorySetup/container/actionSequences/03. worldMapActionSequence").GetComponent<ActionSequence>();
         AddEnhancedModeTextAction(
@@ -838,7 +838,7 @@ public class RandomizerEnhancedMode {
     public static void BootstrapHoruEntranceText(SceneRoot sceneRoot) {
         string pickupHint = GetItemHintForPickup("DoorWarpExp");
         int numTries = new Random(31 * Randomizer.SeedMeta.GetHashCode()).Next(20);
-        string tryText = (numTries == 1) ? "first" : ((numTries == 2) ? "second" : ((numTries == 3) ? "third" : $"{numTries}th"));
+        string tryText = numTries == 1 ? "first" : numTries == 2 ? "second" : numTries == 3 ? "third" : $"{numTries}th";
         ActionSequence sequence = sceneRoot.transform.FindChild("*enterScene/action").GetComponent<ActionSequence>();
 
         if (Randomizer.Inventory.GetRandomizerItem(801) > 0) {

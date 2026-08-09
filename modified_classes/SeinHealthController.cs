@@ -70,7 +70,7 @@ public class SeinHealthController : SaveSerialize, ISeinReceiver {
         ar.Serialize(ref Amount);
         ar.Serialize(ref MaxHealth);
         if (ar.Reading) {
-            VisualMaxAmount = (VisualMinAmount = Amount);
+            VisualMaxAmount = VisualMinAmount = Amount;
         }
     }
 

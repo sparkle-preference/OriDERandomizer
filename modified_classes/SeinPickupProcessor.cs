@@ -115,7 +115,7 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
     }
 
     public void OnCollectRestoreHealthPickup(RestoreHealthPickup restoreHealthPickup) {
-        int amount = restoreHealthPickup.Amount * ((!Sein.PlayerAbilities.HealthEfficiency.HasAbility) ? 1 : 2);
+        int amount = restoreHealthPickup.Amount * (!Sein.PlayerAbilities.HealthEfficiency.HasAbility ? 1 : 2);
         Sein.Mortality.Health.GainHealth(amount);
         restoreHealthPickup.Collected();
         UI.SeinUI.ShakeHealthbar();

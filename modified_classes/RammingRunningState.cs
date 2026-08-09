@@ -19,6 +19,6 @@ public class RammingRunningState : RammingEnemyState {
         float accelerationDuration = RammingEnemy.Settings.AccelerationDuration;
         AnimationCurve runningSpeedMultipliedOverTime = RammingEnemy.Settings.RunningSpeedMultipliedOverTime;
         float runSpeed = RammingEnemy.Settings.RunSpeed;
-        GroundEnemy.PlatformMovement.LocalSpeedX = RandomizerBonusSkill.TimeScale(((!GroundEnemy.FaceLeft) ? 1 : -1) * runSpeed * runningSpeedMultipliedOverTime.Evaluate(CurrentStateTime / accelerationDuration));
+        GroundEnemy.PlatformMovement.LocalSpeedX = RandomizerBonusSkill.TimeScale((!GroundEnemy.FaceLeft ? 1 : -1) * runSpeed * runningSpeedMultipliedOverTime.Evaluate(CurrentStateTime / accelerationDuration));
     }
 }

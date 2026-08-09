@@ -84,11 +84,11 @@ public class RollingMovement : SaveSerialize, ISuspendable {
         Ground.Update();
         WallLeft.Update();
         WallRight.Update();
-        GroundNormal = ((m_groundNormal.magnitude != 0f) ? m_groundNormal.normalized : Vector3.up);
-        IsOnGround = (m_groundNormal.magnitude != 0f);
+        GroundNormal = m_groundNormal.magnitude != 0f ? m_groundNormal.normalized : Vector3.up;
+        IsOnGround = m_groundNormal.magnitude != 0f;
         m_groundNormal = Vector3.zero;
         Speed.z = 0f;
-        m_rigidbody.velocity = ((!IsSuspended) ? RandomizerBonusSkill.TimeScale(Speed) : Vector3.zero);
+        m_rigidbody.velocity = !IsSuspended ? RandomizerBonusSkill.TimeScale(Speed) : Vector3.zero;
         m_rigidbody.detectCollisions = true;
     }
 

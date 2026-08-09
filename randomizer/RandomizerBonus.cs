@@ -173,7 +173,7 @@ public static class RandomizerBonus {
                     RandomizerSwitch.PickupMessage("*Water Vein Shard (" + WaterVeinShards() + "/3)*", 300);
                 }
 
-                Keys.GinsoTree = (WaterVeinShards() >= 3);
+                Keys.GinsoTree = WaterVeinShards() >= 3;
                 if (Keys.GinsoTree)
                     RandomizerStatsManager.FoundEvent(0);
                 return;
@@ -188,7 +188,7 @@ public static class RandomizerBonus {
                     RandomizerSwitch.PickupMessage("#Gumon Seal Shard (" + GumonSealShards() + "/3)#", 300);
                 }
 
-                Keys.ForlornRuins = (GumonSealShards() >= 3);
+                Keys.ForlornRuins = GumonSealShards() >= 3;
                 if (Keys.ForlornRuins)
                     RandomizerStatsManager.FoundEvent(2);
                 return;
@@ -203,7 +203,7 @@ public static class RandomizerBonus {
                     RandomizerSwitch.PickupMessage("@Sunstone Shard (" + SunstoneShards() + "/3)@", 300);
                 }
 
-                Keys.MountHoru = (SunstoneShards() >= 3);
+                Keys.MountHoru = SunstoneShards() >= 3;
                 if (Keys.MountHoru)
                     RandomizerStatsManager.FoundEvent(4);
                 return;

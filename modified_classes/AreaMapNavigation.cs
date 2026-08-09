@@ -89,7 +89,7 @@ public class AreaMapNavigation : MonoBehaviour {
                 m_toggleToPlayer = true;
             }
 
-            m_toPosition = ((!m_toggleToPlayer) ? Objectives.All[0].Position : (Vector2)Characters.Current.Position);
+            m_toPosition = !m_toggleToPlayer ? Objectives.All[0].Position : (Vector2)Characters.Current.Position;
             m_toggleToPlayer = !m_toggleToPlayer;
             if (FocusSound) {
                 FocusSound.Play();
@@ -246,7 +246,7 @@ public class AreaMapNavigation : MonoBehaviour {
             string candidateArea = null;
             float candidateDistance = Mathf.Infinity;
             var doorCount = 0;
-            float zoomScaleFactor = (float)Math.Pow((Zoom / 0.04f), .45f); // please don't ask me how i got these numbers
+            float zoomScaleFactor = (float)Math.Pow(Zoom / 0.04f, .45f); // please don't ask me how i got these numbers
             float offset = .45f * (float)Math.Pow(zoomScaleFactor, 1.5f); // it's kind of a dumb story
             Vector3 textScale = new Vector3(0.3f * zoomScaleFactor, 0.3f * zoomScaleFactor, 0.3f); // but they work well i prommy
 
@@ -259,7 +259,7 @@ public class AreaMapNavigation : MonoBehaviour {
                     if (RandomizerSettings.Customization.AlwaysShowDoorHints.Value && RandomizerLocationManager.KeystoneDoorMapGuidToMoonGuid.ContainsKey(runtimeIcon.Guid)) {
                         string text = Randomizer.Keysanity.MapHintForDoor(RandomizerLocationManager.KeystoneDoorMapGuidToMoonGuid[runtimeIcon.Guid]).Replace("\n(Touch door to get hint!)", "");
                         Vector3 pos = WorldToMapPosition(runtimeIcon.Position);
-                        pos.y -= (text.Contains("\n") ? offset : (offset * 0.6f)); // smaller offset for 1 liners
+                        pos.y -= text.Contains("\n") ? offset : offset * 0.6f; // smaller offset for 1 liners
                         AreaMapUI.Instance.KeysanityDoorTooltips[doorCount].transform.localScale = textScale;
                         AreaMapUI.Instance.KeysanityDoorTooltips[doorCount].transform.position = pos;
                         AreaMapUI.Instance.KeysanityDoorTooltips[doorCount].OverrideText = text;

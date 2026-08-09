@@ -289,7 +289,7 @@ public static class RandomizerSwitch {
                             if (p[0] == "d")
                                 int.TryParse(p[1], out duration);
                             else if (p[0] == "s")
-                                SilentMode = (p[1].Trim().ToLower() == "true");
+                                SilentMode = p[1].Trim().ToLower() == "true";
                         }
 
                         Randomizer.showHint(RandomizerUI.Message.PickupMessage(message, duration / 60f));

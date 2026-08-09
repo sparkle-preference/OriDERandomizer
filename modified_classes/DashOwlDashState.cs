@@ -18,7 +18,7 @@ public class DashOwlDashState : DashOwlState {
     public override void UpdateState() {
         DashOwl.FlyMovement.Kickback.Stop();
         Vector3 a = m_dashTargetOffset * (DashOwl.Settings.DashCurve.Evaluate(CurrentStateTime + RandomizerBonusSkill.TimeScale(Time.deltaTime)) - DashOwl.Settings.DashCurve.Evaluate(CurrentStateTime));
-        DashOwl.FlyMovement.Velocity = ((Time.deltaTime != 0f) ? (a / RandomizerBonusSkill.TimeScale(Time.deltaTime)) : Vector3.zero);
+        DashOwl.FlyMovement.Velocity = Time.deltaTime != 0f ? a / RandomizerBonusSkill.TimeScale(Time.deltaTime) : Vector3.zero;
         base.UpdateState();
     }
 

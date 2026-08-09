@@ -13,7 +13,7 @@ public class SeinDoorHandler : SaveSerialize, ISeinReceiver {
     public void OnDoorOverlap(Door door) {
         if (m_enterDoorHint == null) {
             if (Characters.Sein.Controller.CanMove) {
-                m_enterDoorHint = UI.Hints.Show((!door.OverrideEnterDoorMessage) ? EnterDoorMessage : door.OverrideEnterDoorMessage, HintLayer.Gameplay, 1f);
+                m_enterDoorHint = UI.Hints.Show(!door.OverrideEnterDoorMessage ? EnterDoorMessage : door.OverrideEnterDoorMessage, HintLayer.Gameplay, 1f);
             }
         } else {
             m_enterDoorHint.Visibility.ResetWaitDuration();

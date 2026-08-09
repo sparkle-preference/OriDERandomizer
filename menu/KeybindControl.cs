@@ -62,7 +62,7 @@ public class KeybindControl : MonoBehaviour {
         string text = string.Empty;
         bool flag = true;
         foreach (KeyCode keyCode in codes) {
-            text += ((!flag) ? ", " : string.Empty);
+            text += !flag ? ", " : string.Empty;
             text += keyCode;
             flag = false;
         }

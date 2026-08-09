@@ -51,7 +51,7 @@ public class DebugWidget : MonoBehaviour {
             FieldInfo[] fields = monoBehaviour.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             foreach (FieldInfo fieldInfo in fields) {
                 object value = fieldInfo.GetValue(monoBehaviour);
-                string text = (value != null) ? value.ToString() : "(null)";
+                string text = value != null ? value.ToString() : "(null)";
                 if (value != null && typeof(MonoBehaviour).IsAssignableFrom(fieldInfo.FieldType)) {
                     list.Add("  - " + fieldInfo.Name + ": " + text + " (" + ((MonoBehaviour)value).GetInstanceID() + ")");
                 } else if (value != null && typeof(List<CleverMenuItemGroup.CleverMenuItemGroupItem>).IsAssignableFrom(fieldInfo.FieldType)) {
@@ -61,9 +61,9 @@ public class DebugWidget : MonoBehaviour {
                     foreach (CleverMenuItemGroup.CleverMenuItemGroupItem item in groupItems) {
                         list.Add("    - Item " + num++);
                         CleverMenuItemGroupBase itemGroup = item.ItemGroup;
-                        list.Add("      - ItemGroup: " + ((itemGroup != null) ? itemGroup.name : null));
+                        list.Add("      - ItemGroup: " + (itemGroup != null ? itemGroup.name : null));
                         CleverMenuItem menuItem = item.MenuItem;
-                        list.Add("      - MenuItem: " + ((menuItem != null) ? menuItem.name : null));
+                        list.Add("      - MenuItem: " + (menuItem != null ? menuItem.name : null));
                     }
                 } else if (value != null && typeof(IEnumerable).IsAssignableFrom(fieldInfo.FieldType)) {
                     list.Add("  - " + fieldInfo.Name + ": " + ((IEnumerable)value).Cast<object>().Count() + " items");

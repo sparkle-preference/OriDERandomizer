@@ -94,7 +94,7 @@ public class InventoryManager : MenuScreen {
                 SuspensionManager.ResumeAll();
             }
 
-            m_currentCloseMessageSound = ((!component) ? CloseStatisticsMessageSound : CloseAbilityMessageSound);
+            m_currentCloseMessageSound = !component ? CloseStatisticsMessageSound : CloseAbilityMessageSound;
             if (component && PressAbilityOptionSound) {
                 Sound.Play(PressAbilityOptionSound.GetSound(null), transform.position, null);
             }

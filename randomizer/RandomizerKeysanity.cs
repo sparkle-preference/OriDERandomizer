@@ -123,9 +123,9 @@ public class RandomizerKeysanity {
 
     // coords -2..-257 are multiworld manifest pseudo-locations: those keys sit
     // in another world, so "found" means the server granted us that slot
-    private bool clueResolved(int coords) => (coords <= -2 && coords >= -257) ? RandomizerMW.ManifestLocGranted(coords) : Randomizer.HaveCoord(coords);
+    private bool clueResolved(int coords) => coords <= -2 && coords >= -257 ? RandomizerMW.ManifestLocGranted(coords) : Randomizer.HaveCoord(coords);
 
-    private static int apSlot(int coords) => (coords <= -2 && coords >= -257) ? -coords - 2 : -1;
+    private static int apSlot(int coords) => coords <= -2 && coords >= -257 ? -coords - 2 : -1;
 
     // Me when I'm using LINQ responsibly (<- me when I lie)
     private string hintsForDoor(int id, int skipCoords = -1) => RandomizerMW.ResolveNames(
@@ -159,7 +159,7 @@ public class RandomizerKeysanity {
 
     private string GetProgress(int id, bool printKeystone) {
         if (hintMap.TryGetValue(id, out var baseHint)) {
-            var canOpen = (inventory.GetRandomizerItem(id) - countForDoor(id)) == 0;
+            var canOpen = inventory.GetRandomizerItem(id) - countForDoor(id) == 0;
             var hint = $"{baseHint}{(printKeystone ? " Keystone " : " ")}({inventory.GetRandomizerItem(id)}/{countForDoor(id)})";
             if (canOpen) {
                 return $"${hint}$";

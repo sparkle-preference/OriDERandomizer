@@ -136,7 +136,7 @@ public class FloatingRockLaserEnemy : Enemy {
     public float DesiredLaserRotationDirection {
         get {
             bool flag = Vector3.Dot(PositionToPlayerPosition.normalized, Vector3.Cross(m_laserDirection, Vector3.back)) > 0f;
-            return (!flag) ? -1 : 1;
+            return !flag ? -1 : 1;
         }
     }
 
@@ -147,7 +147,7 @@ public class FloatingRockLaserEnemy : Enemy {
 
         float num = LaserAngleOverTimeCurve.Evaluate(Controller.StateMachine.CurrentStateTime / Settings.LaserDuration);
         float num2 = Laser.CurrentLaserLength / Settings.LaserChaseSpeedDistance;
-        float num3 = (!Mathf.Approximately(num2, 0f)) ? (num * Settings.LaserChaseSpeed / num2) : 0f;
+        float num3 = !Mathf.Approximately(num2, 0f) ? num * Settings.LaserChaseSpeed / num2 : 0f;
         float num4 = MoonMath.Angle.AngleFromVector(m_laserDirection) + m_laserRotationSpeed * RandomizerBonusSkill.TimeScale(Time.deltaTime) * num3;
         m_laserDirection = MoonMath.Angle.VectorFromAngle(num4);
         Laser.transform.eulerAngles = new Vector3(0f, 0f, num4 - 90f);
@@ -169,7 +169,7 @@ public class FloatingRockLaserEnemy : Enemy {
         m_laserDirection = PositionToPlayerPosition.normalized;
         bool flag = Vector3.Dot(vector.normalized, Vector3.Cross(m_laserDirection, Vector3.forward)) > 0f;
         float num = MoonMath.Angle.AngleFromVector(m_laserDirection);
-        num += ((!flag) ? -1 : 1) * Settings.LaserAngularOffset;
+        num += (!flag ? -1 : 1) * Settings.LaserAngularOffset;
         m_laserDirection = MoonMath.Angle.VectorFromAngle(num);
         m_laserRotationSpeed = DesiredLaserRotationDirection;
     }

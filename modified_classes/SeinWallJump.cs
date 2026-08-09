@@ -128,7 +128,7 @@ public class SeinWallJump : CharacterState, ISeinReceiver {
             }
 
             if (Sein.Input.NormalizedHorizontal == -i) {
-                PlatformMovement.LocalSpeedX = JumpStrength.x * RandomizerBonus.Jumpscale * ((!left) ? -1 : 1);
+                PlatformMovement.LocalSpeedX = JumpStrength.x * RandomizerBonus.Jumpscale * (!left ? -1 : 1);
                 CharacterSpriteMirror.FaceLeft = !left;
                 CharacterAnimationSystem.CharacterAnimationState state = Sein.PlatformBehaviour.Visuals.Animation.PlayRandom(AwayAnimation, 10, ShouldKeepPlayingWallJumpLeftAwayAnimation);
                 state.OnStopPlaying = OnAnimationEnd;

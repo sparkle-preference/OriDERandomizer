@@ -386,7 +386,7 @@ public static class Randomizer {
     }
 
     public static void hintAndLog(float x, float y) {
-        string message = ((int)x) + " " + ((int)y);
+        string message = (int)x + " " + (int)y;
         showHint(RandomizerUI.Message.PickupMessage(message));
         log(message);
     }
@@ -877,7 +877,7 @@ public static class Randomizer {
             }
         }
 
-        printInfo("Error using door at " + ((int)position.x) + ", " + ((int)position.y));
+        printInfo("Error using door at " + (int)position.x + ", " + (int)position.y);
     }
 
     public static int ordHash(string s) {

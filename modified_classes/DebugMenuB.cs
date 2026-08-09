@@ -308,7 +308,7 @@ public class DebugMenuB : SaveSerialize {
                 () => m_superSlowMotion,
                 delegate(bool val) {
                     m_superSlowMotion = val;
-                    Time.timeScale = ((!val) ? 1f : 0.25f);
+                    Time.timeScale = !val ? 1f : 0.25f;
                 }
             )
         );
@@ -595,7 +595,7 @@ public class DebugMenuB : SaveSerialize {
     }
 
     private void LimitPhysicsIterationSetter(bool obj) {
-        Time.maximumDeltaTime = ((!obj) ? 0.033333335f : 0.016666668f);
+        Time.maximumDeltaTime = !obj ? 0.033333335f : 0.016666668f;
     }
 
     private bool StartFPSTest0() {
