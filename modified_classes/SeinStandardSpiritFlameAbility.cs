@@ -5,21 +5,13 @@ using UnityEngine;
 using Input = Core.Input;
 
 public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
-    public SpiritFlame CurrentSpiritFlame {
-        get { return GetStandardSpiritFlame(OriLevel); }
-    }
+    public SpiritFlame CurrentSpiritFlame => GetStandardSpiritFlame(OriLevel);
 
-    public int OriLevel {
-        get { return m_sein.PlayerAbilities.OriStrength; }
-    }
+    public int OriLevel => m_sein.PlayerAbilities.OriStrength;
 
-    public bool LockShootingSpiritFlame {
-        get { return m_sein.Abilities.SpiritFlame.LockShootingSpiritFlame; }
-    }
+    public bool LockShootingSpiritFlame => m_sein.Abilities.SpiritFlame.LockShootingSpiritFlame;
 
-    public int MaxTargets {
-        get { return m_sein.PlayerAbilities.SplitFlameTargets; }
-    }
+    public int MaxTargets => m_sein.PlayerAbilities.SplitFlameTargets;
 
     private bool ProcessAutofire(bool pressed, bool held, bool released) {
         switch (RandomizerSettings.Controls.Autofire.Value) {
@@ -155,9 +147,7 @@ public class SeinStandardSpiritFlameAbility : CharacterState, ISeinReceiver {
         return StandardSpiritFlames[index];
     }
 
-    public List<ISpiritFlameAttackable> ClosestAttackables {
-        get { return m_sein.Abilities.SpiritFlameTargetting.ClosestAttackables; }
-    }
+    public List<ISpiritFlameAttackable> ClosestAttackables => m_sein.Abilities.SpiritFlameTargetting.ClosestAttackables;
 
     public void SetReferenceToSein(SeinCharacter sein) {
         m_sein = sein;

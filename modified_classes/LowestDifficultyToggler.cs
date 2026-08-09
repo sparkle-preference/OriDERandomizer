@@ -1,13 +1,9 @@
 using UnityEngine;
 
 public class LowestDifficultyToggler : MonoBehaviour, IDebugMenuToggleable {
-    public string Name {
-        get { return "Lowest Difficulty"; }
-    }
+    public string Name => "Lowest Difficulty";
 
-    public string HelpText {
-        get { return "Toggle lowest difficulty"; }
-    }
+    public string HelpText => "Toggle lowest difficulty";
 
     public string[] ToggleOptions {
         get {
@@ -21,8 +17,8 @@ public class LowestDifficultyToggler : MonoBehaviour, IDebugMenuToggleable {
     }
 
     public int CurrentToggleOptionId {
-        get { return (int)DifficultyController.Instance.LowestDifficulty; }
-        set { DifficultyController.Instance.LowestDifficulty = (DifficultyMode)((value % ToggleOptions.Length + ToggleOptions.Length) % ToggleOptions.Length); }
+        get => (int)DifficultyController.Instance.LowestDifficulty;
+        set => DifficultyController.Instance.LowestDifficulty = (DifficultyMode)((value % ToggleOptions.Length + ToggleOptions.Length) % ToggleOptions.Length);
     }
 
     private int m_currentOption;

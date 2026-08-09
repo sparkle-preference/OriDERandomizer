@@ -2,23 +2,21 @@
 
 public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable {
     public float Speed {
-        get { return Velocity.magnitude; }
-        set { Velocity = Velocity.normalized * Speed; }
+        get => Velocity.magnitude;
+        set => Velocity = Velocity.normalized * Speed;
     }
 
     public float Angle {
-        get { return MoonMath.Angle.AngleFromVector(Velocity); }
-        set { Velocity = Velocity.magnitude * MoonMath.Angle.VectorFromAngle(value); }
+        get => MoonMath.Angle.AngleFromVector(Velocity);
+        set => Velocity = Velocity.magnitude * MoonMath.Angle.VectorFromAngle(value);
     }
 
     public Vector2 VelocityAsDelta {
-        get { return Velocity * Time.deltaTime; }
-        set { Velocity = Time.deltaTime != 0f ? value / Time.deltaTime : Vector2.zero; }
+        get => Velocity * Time.deltaTime;
+        set => Velocity = Time.deltaTime != 0f ? value / Time.deltaTime : Vector2.zero;
     }
 
-    public Rigidbody Rigidbody {
-        get { return m_rigidbody; }
-    }
+    public Rigidbody Rigidbody => m_rigidbody;
 
     public override void Awake() {
         base.Awake();
@@ -51,7 +49,7 @@ public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable {
     }
 
     public float VelocityX {
-        get { return Velocity.x; }
+        get => Velocity.x;
         set {
             Vector2 velocity = Velocity;
             velocity.x = value;
@@ -60,7 +58,7 @@ public class FlyMovement : SaveSerialize, IDamageReciever, ISuspendable {
     }
 
     public float VelocityY {
-        get { return Velocity.y; }
+        get => Velocity.y;
         set {
             Vector2 velocity = Velocity;
             velocity.y = value;

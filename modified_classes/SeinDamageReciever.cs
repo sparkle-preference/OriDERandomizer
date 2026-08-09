@@ -4,29 +4,17 @@ using Game;
 using UnityEngine;
 
 public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver, IProjectileDetonatable {
-    public CharacterLeftRightMovement CharacterLeftRightMovement {
-        get { return Sein.PlatformBehaviour.LeftRightMovement; }
-    }
+    public CharacterLeftRightMovement CharacterLeftRightMovement => Sein.PlatformBehaviour.LeftRightMovement;
 
-    public CharacterGravity CharacterGravity {
-        get { return Sein.PlatformBehaviour.Gravity; }
-    }
+    public CharacterGravity CharacterGravity => Sein.PlatformBehaviour.Gravity;
 
-    public CharacterInstantStop CharacterInstantStop {
-        get { return Sein.PlatformBehaviour.InstantStop; }
-    }
+    public CharacterInstantStop CharacterInstantStop => Sein.PlatformBehaviour.InstantStop;
 
-    public SeinHealthController HealthController {
-        get { return Sein.Mortality.Health; }
-    }
+    public SeinHealthController HealthController => Sein.Mortality.Health;
 
-    public PlatformMovement PlatformMovement {
-        get { return Sein.PlatformBehaviour.PlatformMovement; }
-    }
+    public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
-    public Renderer Sprite {
-        get { return Sein.PlatformBehaviour.Visuals.SpriteRenderer; }
-    }
+    public Renderer Sprite => Sein.PlatformBehaviour.Visuals.SpriteRenderer;
 
     public void Start() {
         CharacterGravity.ModifyGravityPlatformMovementSettingsEvent += ModifyGravityPlatformMovementSettings;
@@ -271,9 +259,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
         m_invincibleToEnemiesTimeRemaining = 0f;
     }
 
-    public bool IsInvinsible {
-        get { return m_invincibleTimeRemaining > 0f; }
-    }
+    public bool IsInvinsible => m_invincibleTimeRemaining > 0f;
 
     public bool ShouldHurtAnimationKeepPlaying() {
         return !PlatformMovement.IsOnGround;

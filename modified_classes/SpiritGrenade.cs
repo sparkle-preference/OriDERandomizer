@@ -3,9 +3,7 @@ using Game;
 using UnityEngine;
 
 public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashAttackable, ISuspendable {
-    public bool IsInsideSpiritTorch {
-        get { return m_ignitableTorch != null; }
-    }
+    public bool IsInsideSpiritTorch => m_ignitableTorch != null;
 
     public void Awake() {
         DamageDealer damageDealer = DamageDealer;
@@ -86,9 +84,7 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
         }
     }
 
-    public Vector3 Position {
-        get { return transform.position; }
-    }
+    public Vector3 Position => transform.position;
 
     public bool IsDead() {
         return gameObject.activeSelf;
@@ -135,9 +131,7 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
     public void OnBashDehighlight() {
     }
 
-    public int BashPriority {
-        get { return 100; }
-    }
+    public int BashPriority => 100;
 
     public bool IsSuspended { get; set; }
 

@@ -6,9 +6,7 @@ using UnityEngine;
 using Input = Core.Input;
 
 public class SavePedestal : SaveSerialize {
-    public bool IsInside {
-        get { return CurrentState == State.Highlighted; }
-    }
+    public bool IsInside => CurrentState == State.Highlighted;
 
     public override void Awake() {
         base.Awake();
@@ -26,9 +24,7 @@ public class SavePedestal : SaveSerialize {
         ar.Serialize(ref m_hasBeenUsedBefore);
     }
 
-    private bool CanTeleport {
-        get { return m_sceneTeleporter && TeleporterController.CanTeleport(m_sceneTeleporter.Identifier); }
-    }
+    private bool CanTeleport => m_sceneTeleporter && TeleporterController.CanTeleport(m_sceneTeleporter.Identifier);
 
     public void Highlight() {
         if (OriTarget) {
@@ -87,9 +83,7 @@ public class SavePedestal : SaveSerialize {
         }
     }
 
-    public float DistanceToSein {
-        get { return Vector3.Distance(m_transform.position, Characters.Sein.Position); }
-    }
+    public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
 
     public void FixedUpdate() {
         if (Characters.Sein == null) {

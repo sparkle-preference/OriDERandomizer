@@ -4,9 +4,7 @@ using UnityEngine;
 using Input = Core.Input;
 
 public class AreaMapNavigation : MonoBehaviour {
-    public float ZoomTime {
-        get { return GameMapTransitionManager.Instance.ZoomTime; }
-    }
+    public float ZoomTime => GameMapTransitionManager.Instance.ZoomTime;
 
     public float Zoom {
         get {
@@ -52,12 +50,12 @@ public class AreaMapNavigation : MonoBehaviour {
     public Bounds Bounds { get; set; }
 
     public Vector2 MapPlanePosition {
-        get { return MapPivot.localPosition; }
-        set { MapPivot.localPosition = value; }
+        get => MapPivot.localPosition;
+        set => MapPivot.localPosition = value;
     }
 
     public Vector2 MapPlaneSize {
-        get { return MapPivot.localScale; }
+        get => MapPivot.localScale;
         set {
             Vector3 localScale = MapPivot.localScale;
             localScale.x = value.x;

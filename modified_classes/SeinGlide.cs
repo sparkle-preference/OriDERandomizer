@@ -3,17 +3,11 @@ using UnityEngine;
 using Input = Core.Input;
 
 public class SeinGlide : CharacterState, ISeinReceiver {
-    public CharacterGravity CharacterGravity {
-        get { return Sein.PlatformBehaviour.Gravity; }
-    }
+    public CharacterGravity CharacterGravity => Sein.PlatformBehaviour.Gravity;
 
-    public CharacterLeftRightMovement CharacterLeftRightMovement {
-        get { return Sein.PlatformBehaviour.LeftRightMovement; }
-    }
+    public CharacterLeftRightMovement CharacterLeftRightMovement => Sein.PlatformBehaviour.LeftRightMovement;
 
-    public PlatformMovement PlatformMovement {
-        get { return Sein.PlatformBehaviour.PlatformMovement; }
-    }
+    public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
     public void Start() {
         CharacterGravity.ModifyGravityPlatformMovementSettingsEvent += ModifyGravityPlatformMovementSettings;
@@ -44,7 +38,7 @@ public class SeinGlide : CharacterState, ISeinReceiver {
     }
 
     public bool IsGliding {
-        get { return m_isGliding; }
+        get => m_isGliding;
         set {
             if (m_isGliding != value) {
                 m_isGliding = value;
@@ -75,13 +69,9 @@ public class SeinGlide : CharacterState, ISeinReceiver {
         m_playedOpenSound = false;
     }
 
-    public bool CanGlide {
-        get { return !PlatformMovement.IsOnGround && !PlatformMovement.IsOnWall && !Sein.Controller.InputLocked && !SeinAbilityRestrictZone.IsInside(); }
-    }
+    public bool CanGlide => !PlatformMovement.IsOnGround && !PlatformMovement.IsOnWall && !Sein.Controller.InputLocked && !SeinAbilityRestrictZone.IsInside();
 
-    public bool WantsToGlide {
-        get { return Input.Glide.Pressed && !NeedsRightTriggerReleased && m_lockGlidingRemainingTime <= 0f; }
-    }
+    public bool WantsToGlide => Input.Glide.Pressed && !NeedsRightTriggerReleased && m_lockGlidingRemainingTime <= 0f;
 
     public void LockGliding(float time) {
         m_lockGlidingRemainingTime = time;
@@ -208,17 +198,11 @@ public class SeinGlide : CharacterState, ISeinReceiver {
         }
     }
 
-    public float GlideOpeningTime {
-        get { return 0.5f; }
-    }
+    public float GlideOpeningTime => 0.5f;
 
-    public bool ShouldGlideIdleAnimationPlay {
-        get { return ShouldGlideIdleAnimationKeepPlaying(); }
-    }
+    public bool ShouldGlideIdleAnimationPlay => ShouldGlideIdleAnimationKeepPlaying();
 
-    public bool ShouldGlideMovingAnimationPlay {
-        get { return ShouldGlideMovingAnimationKeepPlaying(); }
-    }
+    public bool ShouldGlideMovingAnimationPlay => ShouldGlideMovingAnimationKeepPlaying();
 
     public bool ShouldGlideIdleAnimationKeepPlaying() {
         return IsGliding;

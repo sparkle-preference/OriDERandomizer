@@ -4,9 +4,7 @@ using Game;
 using UnityEngine;
 
 public class GoToSceneController : MonoBehaviour {
-    public ScenesManager ScenesManager {
-        get { return Scenes.Manager; }
-    }
+    public ScenesManager ScenesManager => Scenes.Manager;
 
     public static bool CheckStartInScene(MoonGuid guid) {
         return Instance == null || Instance.StartInScene == guid || Instance.StartInScene == MoonGuid.Empty;

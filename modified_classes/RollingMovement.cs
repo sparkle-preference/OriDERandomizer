@@ -9,18 +9,16 @@ public class RollingMovement : SaveSerialize, ISuspendable {
     public event Action<Vector3, float, Collider> OnCollisionWallRightEvent = delegate { };
 
     public float SpeedY {
-        get { return Speed.y; }
-        set { Speed.y = value; }
+        get => Speed.y;
+        set => Speed.y = value;
     }
 
     public float SpeedX {
-        get { return Speed.x; }
-        set { Speed.x = value; }
+        get => Speed.x;
+        set => Speed.x = value;
     }
 
-    public float GroundAngle {
-        get { return 57.29578f * Mathf.Atan2(-GroundNormal.x, GroundNormal.y); }
-    }
+    public float GroundAngle => 57.29578f * Mathf.Atan2(-GroundNormal.x, GroundNormal.y);
 
     public Vector2 WorldToGround(Vector2 world) {
         return MoonMath.Angle.Unrotate(world, GroundAngle);
@@ -76,9 +74,7 @@ public class RollingMovement : SaveSerialize, ISuspendable {
         }
     }
 
-    public Vector3 GroundBinormal {
-        get { return Vector3.Cross(GroundNormal, Vector3.forward); }
-    }
+    public Vector3 GroundBinormal => Vector3.Cross(GroundNormal, Vector3.forward);
 
     public void FixedUpdate() {
         Ground.Update();

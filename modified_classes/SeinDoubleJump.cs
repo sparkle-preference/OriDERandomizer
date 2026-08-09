@@ -24,17 +24,11 @@ public class SeinDoubleJump : CharacterState, ISeinReceiver {
         }
     }
 
-    public PlatformMovement PlatformMovement {
-        get { return Sein.PlatformBehaviour.PlatformMovement; }
-    }
+    public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
-    public SeinJump Jump {
-        get { return Sein.Abilities.Jump; }
-    }
+    public SeinJump Jump => Sein.Abilities.Jump;
 
-    public bool CanDoubleJump {
-        get { return enabled && !PlatformMovement.IsOnGround && m_numberOfJumpsAvailable != 0 && m_remainingLockTime <= 0f && !SeinAbilityRestrictZone.IsInside(); }
-    }
+    public bool CanDoubleJump => enabled && !PlatformMovement.IsOnGround && m_numberOfJumpsAvailable != 0 && m_remainingLockTime <= 0f && !SeinAbilityRestrictZone.IsInside();
 
     public void SetReferenceToSein(SeinCharacter sein) {
         Sein = sein;

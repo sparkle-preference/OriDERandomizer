@@ -16,17 +16,13 @@ namespace Game {
         }
 
         public static MenuScreenManager Menu {
-            get { return m_sMenu; }
-            set { m_sMenu = value; }
+            get => m_sMenu;
+            set => m_sMenu = value;
         }
 
-        public static bool MainMenuVisible {
-            get { return m_sMenu != null && (m_sMenu.MainMenuVisible || m_sMenu.ResumeScreenVisible); }
-        }
+        public static bool MainMenuVisible => m_sMenu != null && (m_sMenu.MainMenuVisible || m_sMenu.ResumeScreenVisible);
 
-        public static bool MainMenuExists {
-            get { return m_sMenu != null; }
-        }
+        public static bool MainMenuExists => m_sMenu != null;
 
         public static bool IsInventoryVisible() {
             return MainMenuVisible && m_sMenu.IsInventoryVisible();
@@ -51,9 +47,7 @@ namespace Game {
         }
 
         public static class Hints {
-            public static Vector3 HintPosition {
-                get { return OnScreenPositions.TopCenter; }
-            }
+            public static Vector3 HintPosition => OnScreenPositions.TopCenter;
 
             public static void HideExistingHint() {
                 HideExistingHint(false);
@@ -91,9 +85,7 @@ namespace Game {
                 return null;
             }
 
-            public static bool IsShowingHint {
-                get { return m_currentHint; }
-            }
+            public static bool IsShowingHint => m_currentHint;
 
             public static void HideExistingHint(bool force) {
                 if (m_currentLayer == HintLayer.Randomizer && !force) {

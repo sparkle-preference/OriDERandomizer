@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class SaveSlotsItemsUI : MonoBehaviour {
     public float TargetScroll {
-        get { return m_targetScroll; }
+        get => m_targetScroll;
         set {
             m_targetScroll = value;
             m_targetScroll = Mathf.Clamp(m_targetScroll, 0f, Items.Count - 2);

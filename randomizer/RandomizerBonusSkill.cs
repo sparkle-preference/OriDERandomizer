@@ -415,19 +415,18 @@ public static class RandomizerBonusSkill {
     }
 
     public static int ActiveBonus {
-        get { return get(1589); }
-        set { set(1589, value); }
+        get => get(1589);
+        set => set(1589, value);
     }
 
     public static int LevelExplosionCooldown;
 
     public static Vector3 LastAltR {
-        get {
-            return new Vector3(
+        get =>
+            new Vector3(
                 get(84) / 100f,
                 get(85) / 100f
             );
-        }
         set {
             set(84, (int)(value.x * 100));
             set(85, (int)(value.y * 100));
@@ -435,12 +434,11 @@ public static class RandomizerBonusSkill {
     }
 
     public static Vector3 LastSoulLink {
-        get {
-            return new Vector3(
+        get =>
+            new Vector3(
                 get(86) / 100f,
                 get(87) / 100f
             );
-        }
         set {
             set(86, (int)(value.x * 100));
             set(87, (int)(value.y * 100));
@@ -468,13 +466,9 @@ public static class RandomizerBonusSkill {
         }
     }
 
-    public static float ExtremeSpeed {
-        get { return IsActive(103) ? 3.0f : 1.0f; }
-    }
+    public static float ExtremeSpeed => IsActive(103) ? 3.0f : 1.0f;
 
-    public static bool Invincible {
-        get { return IsActive(110); }
-    }
+    public static bool Invincible => IsActive(110);
 
     public static float EnergyDrainRate;
 

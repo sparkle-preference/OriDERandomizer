@@ -324,9 +324,7 @@ public class PlayerInput : MonoBehaviour {
         }
     }
 
-    public bool WasKeyboardUsedLast {
-        get { return GameSettings.Instance.CurrentControlScheme > ControlScheme.Controller; }
-    }
+    public bool WasKeyboardUsedLast => GameSettings.Instance.CurrentControlScheme > ControlScheme.Controller;
 
     private bool KeyboardUsedLast(IButtonInput iButtonInput) {
         if (iButtonInput is KeyCodeButtonInput) {

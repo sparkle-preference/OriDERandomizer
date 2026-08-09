@@ -56,9 +56,7 @@ public class PlayerInputRebinding {
         }
     }
 
-    private static string KeyRebindingFile {
-        get { return Path.Combine(OutputFolder.PlayerDataFolderPath, keyRebindingFileName); }
-    }
+    private static string KeyRebindingFile => Path.Combine(OutputFolder.PlayerDataFolderPath, keyRebindingFileName);
 
     public static void GetKeyRebindSettingsFromFile() {
         try {
@@ -369,9 +367,7 @@ public class PlayerInputRebinding {
         return keyBindingSettings;
     }
 
-    private static string ControllerRemappingFile {
-        get { return Path.Combine(OutputFolder.PlayerDataFolderPath, controllerRebindingFileName); }
-    }
+    private static string ControllerRemappingFile => Path.Combine(OutputFolder.PlayerDataFolderPath, controllerRebindingFileName);
 
     public static XboxControllerInput.Button GetRemappedJoystickButton(XboxControllerInput.Button joystickButtonIndex) {
         return intToButton[m_controllerButtonRemappings[ButtonToInt(joystickButtonIndex)]];
@@ -874,9 +870,7 @@ public class PlayerInputRebinding {
         }
     }
 
-    public static string ControllerRebindingFile {
-        get { return Path.Combine(OutputFolder.PlayerDataFolderPath, controllerInputRebindingsFileName); }
-    }
+    public static string ControllerRebindingFile => Path.Combine(OutputFolder.PlayerDataFolderPath, controllerInputRebindingsFileName);
 
     private static string keyRebindingFileName = "KeyRebindings.txt";
 

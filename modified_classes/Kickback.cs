@@ -3,9 +3,7 @@ using UnityEngine;
 
 [Serializable]
 public class Kickback {
-    public float KickbackDuration {
-        get { return KickbackCurve[KickbackCurve.length - 1].time; }
-    }
+    public float KickbackDuration => KickbackCurve[KickbackCurve.length - 1].time;
 
     public Vector2 KickbackDirection { get; private set; }
 
@@ -19,9 +17,7 @@ public class Kickback {
         }
     }
 
-    public Vector2 KickbackVector {
-        get { return CurrentKickbackSpeed * KickbackDirection; }
-    }
+    public Vector2 KickbackVector => CurrentKickbackSpeed * KickbackDirection;
 
     public void ApplyKickback(float kickbackMultiplier) {
         m_kickbackMultiplier = kickbackMultiplier;

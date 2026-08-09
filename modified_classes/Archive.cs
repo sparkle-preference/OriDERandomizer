@@ -9,7 +9,7 @@ public class Archive {
     }
 
     public MemoryStream MemoryStream {
-        get { return m_memoryStream; }
+        get => m_memoryStream;
         set {
             if (m_memoryStream != null) {
                 ((IDisposable)m_memoryStream).Dispose();
@@ -40,13 +40,9 @@ public class Archive {
         binaryReader.Read(MemoryStream.GetBuffer(), 0, num);
     }
 
-    public bool Reading {
-        get { return !m_write; }
-    }
+    public bool Reading => !m_write;
 
-    public bool Writing {
-        get { return m_write; }
-    }
+    public bool Writing => m_write;
 
     public void ResetStream() {
         MemoryStream.Position = 0L;

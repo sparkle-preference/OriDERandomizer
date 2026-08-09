@@ -12,17 +12,11 @@ public class SeinHealthController : SaveSerialize, ISeinReceiver {
         VisualMaxAmount = Mathf.MoveTowards(VisualMaxAmount, (int)Amount, Time.deltaTime * 4f);
     }
 
-    public float VisualMinAmountNormalized {
-        get { return VisualMinAmount / MaxHealth; }
-    }
+    public float VisualMinAmountNormalized => VisualMinAmount / MaxHealth;
 
-    public float VisualMaxAmountNormalized {
-        get { return VisualMaxAmount / MaxHealth; }
-    }
+    public float VisualMaxAmountNormalized => VisualMaxAmount / MaxHealth;
 
-    public int HealthUpgradesCollected {
-        get { return MaxHealth / 4 - 3; }
-    }
+    public int HealthUpgradesCollected => MaxHealth / 4 - 3;
 
     public void OnRespawn() {
         InstantiateUtility.Instantiate(RespawnEffect, m_sein.Transform.position, Quaternion.identity);
@@ -74,9 +68,7 @@ public class SeinHealthController : SaveSerialize, ISeinReceiver {
         }
     }
 
-    public bool IsFull {
-        get { return Amount == MaxHealth; }
-    }
+    public bool IsFull => Amount == MaxHealth;
 
     public void SetReferenceToSein(SeinCharacter sein) {
         m_sein = sein;

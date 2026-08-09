@@ -19,9 +19,7 @@ public class TransparentWallB : SaveSerialize, ISuspendable {
         ar.Serialize(ref m_hasBeenShown);
     }
 
-    public float SenseTime {
-        get { return Animator.Duration / 2f; }
-    }
+    public float SenseTime => Animator.Duration / 2f;
 
     public void Start() {
         AnimatorDriver animatorDriver = Animator.AnimatorDriver;
@@ -99,13 +97,9 @@ public class TransparentWallB : SaveSerialize, ISuspendable {
         m_beingTriggered = false;
     }
 
-    public bool HasSense {
-        get { return !(Characters.Sein == null); }
-    }
+    public bool HasSense => !(Characters.Sein == null);
 
-    public bool WallVisible {
-        get { return m_beingTriggered; }
-    }
+    public bool WallVisible => m_beingTriggered;
 
     public bool IsSuspended { get; set; }
 

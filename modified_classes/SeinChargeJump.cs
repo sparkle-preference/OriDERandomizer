@@ -7,21 +7,13 @@ using UnityEngine;
 public class SeinChargeJump : CharacterState, ISeinReceiver {
     public event Action<float> OnJumpEvent = delegate { };
 
-    public PlayerAbilities PlayerAbilities {
-        get { return Sein.PlayerAbilities; }
-    }
+    public PlayerAbilities PlayerAbilities => Sein.PlayerAbilities;
 
-    public PlatformMovement PlatformMovement {
-        get { return Sein.PlatformBehaviour.PlatformMovement; }
-    }
+    public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
-    public SeinChargeJump ChargeJump {
-        get { return Sein.Abilities.ChargeJump; }
-    }
+    public SeinChargeJump ChargeJump => Sein.Abilities.ChargeJump;
 
-    public CharacterUpwardsDeceleration UpwardsDeceleration {
-        get { return Sein.PlatformBehaviour.UpwardsDeceleration; }
-    }
+    public CharacterUpwardsDeceleration UpwardsDeceleration => Sein.PlatformBehaviour.UpwardsDeceleration;
 
     public void OnDoubleJump() {
         UpwardsDeceleration.Reset();
@@ -91,9 +83,7 @@ public class SeinChargeJump : CharacterState, ISeinReceiver {
         m_stateCurrentTime += Time.deltaTime;
     }
 
-    public bool CanChargeJump {
-        get { return Sein.Abilities.ChargeJumpCharging.IsCharged && PlatformMovement.IsOnGround; }
-    }
+    public bool CanChargeJump => Sein.Abilities.ChargeJumpCharging.IsCharged && PlatformMovement.IsOnGround;
 
     public void PerformChargeJump() {
         float chargedJumpStrength = ChargedJumpStrength + ChargedJumpStrength * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());

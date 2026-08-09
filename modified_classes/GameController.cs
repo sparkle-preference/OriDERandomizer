@@ -13,9 +13,7 @@ using Shader = Frameworks.Shader;
 public class GameController : SaveSerialize, ISuspendable {
     public bool MainMenuCanBeOpened { get; set; }
 
-    public int GameTimeInSeconds {
-        get { return Mathf.RoundToInt(Timer.CurrentTime); }
-    }
+    public int GameTimeInSeconds => Mathf.RoundToInt(Timer.CurrentTime);
 
     public void PerformSaveGameSequence() {
         RandomizerStatsManager.OnSave(false);
@@ -24,13 +22,9 @@ public class GameController : SaveSerialize, ISuspendable {
         }
     }
 
-    public bool IsPackageFullyInstalled {
-        get { return !DebugMenuB.IsFullyInstalledDebugOverride; }
-    }
+    public bool IsPackageFullyInstalled => !DebugMenuB.IsFullyInstalledDebugOverride;
 
-    public bool IsTrial {
-        get { return PCTrialValue; }
-    }
+    public bool IsTrial => PCTrialValue;
 
     public bool IsDemo {
         get {
@@ -163,9 +157,7 @@ public class GameController : SaveSerialize, ISuspendable {
 
     public bool GameplaySuspendedForUI { get; set; }
 
-    public bool InputLocked {
-        get { return LockInput || LockInputByAction; }
-    }
+    public bool InputLocked => LockInput || LockInputByAction;
 
     public bool LockInputByAction { get; set; }
 
@@ -519,9 +511,7 @@ public class GameController : SaveSerialize, ISuspendable {
     private void HandleBuildIDString() {
     }
 
-    public bool GameInTitleScreen {
-        get { return GameStateMachine.Instance.CurrentState == GameStateMachine.State.TitleScreen || GameStateMachine.Instance.CurrentState == GameStateMachine.State.StartScreen; }
-    }
+    public bool GameInTitleScreen => GameStateMachine.Instance.CurrentState == GameStateMachine.State.TitleScreen || GameStateMachine.Instance.CurrentState == GameStateMachine.State.StartScreen;
 
     public bool IsSuspended { get; set; }
 

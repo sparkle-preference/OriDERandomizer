@@ -14,21 +14,13 @@ public class TraceGroundMovement : SaveSerialize, IDamageReciever, ISuspendable 
         SuspensionManager.Unregister(this);
     }
 
-    public Vector3 Right {
-        get { return Vector3.Cross(Vector3.back, m_floorNormal); }
-    }
+    public Vector3 Right => Vector3.Cross(Vector3.back, m_floorNormal);
 
-    public Vector3 Left {
-        get { return -Right; }
-    }
+    public Vector3 Left => -Right;
 
-    public Vector3 Up {
-        get { return m_floorNormal; }
-    }
+    public Vector3 Up => m_floorNormal;
 
-    public Vector3 Down {
-        get { return -Up; }
-    }
+    public Vector3 Down => -Up;
 
     public void OnCollisionEnter(Collision collision) {
         OnCollision(collision);

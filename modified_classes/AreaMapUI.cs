@@ -18,9 +18,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
     public AreaMapIconManager IconManager { get; set; }
 
-    public Transform FadeOutGroup {
-        get { return FadeOutAnimator.transform; }
-    }
+    public Transform FadeOutGroup => FadeOutAnimator.transform;
 
     public void Hide() {
         gameObject.SetActive(false);
@@ -160,9 +158,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
         }
     }
 
-    public Vector3 SoulFlameMarkerWorldPosition {
-        get { return Characters.Sein.SoulFlame.SoulFlamePosition + PlayerPositionOffset + Vector3.up; }
-    }
+    public Vector3 SoulFlameMarkerWorldPosition => Characters.Sein.SoulFlame.SoulFlamePosition + PlayerPositionOffset + Vector3.up;
 
     private void UpdatePlayerPositionMarker() {
         if (PlayerPositionMarker) {

@@ -102,9 +102,7 @@ public class AnimatorAction : ActionMethod {
         }
     }
 
-    private string TargetName {
-        get { return AnimatorsMode != FindAnimatorsMode.SpecifyAnimators ? !Target ? "unkown" : Target.name : Animators.Length <= 0 || !Animators[0] ? "unkown" : Animators[0].name; }
-    }
+    private string TargetName => AnimatorsMode != FindAnimatorsMode.SpecifyAnimators ? !Target ? "unkown" : Target.name : Animators.Length <= 0 || !Animators[0] ? "unkown" : Animators[0].name;
 
     public override string GetNiceName() {
         switch (Command) {

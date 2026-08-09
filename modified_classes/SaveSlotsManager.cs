@@ -5,26 +5,22 @@ using UnityEngine;
 
 public class SaveSlotsManager : MonoBehaviour {
     public static int CurrentSlotIndex {
-        get { return Instance.m_currentSlotIndex; }
-        set { Instance.m_currentSlotIndex = value; }
+        get => Instance.m_currentSlotIndex;
+        set => Instance.m_currentSlotIndex = value;
     }
 
     public static int BackupIndex {
-        get { return Instance.m_backupIndex; }
-        set { Instance.m_backupIndex = value; }
+        get => Instance.m_backupIndex;
+        set => Instance.m_backupIndex = value;
     }
 
-    public static SaveSlotInfo CurrentSaveSlot {
-        get { return FindOrCreateSaveSlot(CurrentSlotIndex); }
-    }
+    public static SaveSlotInfo CurrentSaveSlot => FindOrCreateSaveSlot(CurrentSlotIndex);
 
     public bool AnySaveSlotsExist {
         get { return SaveSlots.Any(slot => slot != null); }
     }
 
-    public static int SaveSlotCount {
-        get { return Instance.SaveSlots.Count; }
-    }
+    public static int SaveSlotCount => Instance.SaveSlots.Count;
 
     public static bool SlotExists(int slotIndex) {
         return SlotByIndex(slotIndex) != null;

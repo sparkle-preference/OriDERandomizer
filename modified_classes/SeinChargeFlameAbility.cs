@@ -7,13 +7,9 @@ using UnityEngine;
 using Input = Core.Input;
 
 public class SeinChargeFlameAbility : CharacterState, ISeinReceiver {
-    public float ChargeDuration {
-        get { return ChargeFlameSettings.ChargeDuration; }
-    }
+    public float ChargeDuration => ChargeFlameSettings.ChargeDuration;
 
-    public bool HasEnoughEnergy {
-        get { return m_sein.Energy.CanAfford(m_sein.PlayerAbilities.ChargeFlameEfficiency.HasAbility ? 0f : 0.5f); }
-    }
+    public bool HasEnoughEnergy => m_sein.Energy.CanAfford(m_sein.PlayerAbilities.ChargeFlameEfficiency.HasAbility ? 0f : 0.5f);
 
     public void SpendEnergy() {
         m_sein.Energy.Spend(m_sein.PlayerAbilities.ChargeFlameEfficiency.HasAbility ? 0f : 0.5f);
@@ -241,13 +237,9 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver {
         }
     }
 
-    public Input.InputButtonProcessor ChargeFlameButton {
-        get { return Input.SpiritFlame; }
-    }
+    public Input.InputButtonProcessor ChargeFlameButton => Input.SpiritFlame;
 
-    public bool IsCharging {
-        get { return Logic.CurrentState != State.Start; }
-    }
+    public bool IsCharging => Logic.CurrentState != State.Start;
 
     public override void UpdateCharacterState() {
         Logic.UpdateState(Time.deltaTime);
@@ -290,9 +282,7 @@ public class SeinChargeFlameAbility : CharacterState, ISeinReceiver {
         return ChargingSoundLevelA;
     }
 
-    public Dictionary<IAttackable, CapturedProjectile> CapturedProjectiles {
-        get { return m_capturedProjectiles; }
-    }
+    public Dictionary<IAttackable, CapturedProjectile> CapturedProjectiles => m_capturedProjectiles;
 
     public void OnEnterChargedState() {
         m_capturedProjectiles.Clear();

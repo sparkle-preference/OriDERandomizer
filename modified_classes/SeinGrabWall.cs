@@ -5,21 +5,13 @@ using UnityEngine;
 using Input = Core.Input;
 
 public class SeinGrabWall : CharacterState, ISeinReceiver {
-    public CharacterGravity CharacterGravity {
-        get { return Sein.PlatformBehaviour.Gravity; }
-    }
+    public CharacterGravity CharacterGravity => Sein.PlatformBehaviour.Gravity;
 
-    public CharacterLeftRightMovement CharacterLeftRightMovement {
-        get { return Sein.PlatformBehaviour.LeftRightMovement; }
-    }
+    public CharacterLeftRightMovement CharacterLeftRightMovement => Sein.PlatformBehaviour.LeftRightMovement;
 
-    public PlatformMovementListOfColliders ListOfCollidedObjects {
-        get { return Sein.PlatformBehaviour.PlatformMovementListOfColliders; }
-    }
+    public PlatformMovementListOfColliders ListOfCollidedObjects => Sein.PlatformBehaviour.PlatformMovementListOfColliders;
 
-    public PlatformMovement PlatformMovement {
-        get { return Sein.PlatformBehaviour.PlatformMovement; }
-    }
+    public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
     public TextureAnimationWithTransitions PickAwayAnimation() {
         if (Sein.PlayerAbilities.ChargeJump.HasAbility) {
@@ -49,9 +41,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver {
         }
     }
 
-    public bool IsNotMoving {
-        get { return PlatformMovement.LocalSpeedY == 0f; }
-    }
+    public bool IsNotMoving => PlatformMovement.LocalSpeedY == 0f;
 
     public void ModifyHorizontalPlatformMovementSettings(HorizontalPlatformMovementSettings settings) {
         if (IsGrabbing && !PlatformMovement.IsOnGround && !PlatformMovement.IsOnCeiling) {
@@ -92,7 +82,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver {
     }
 
     public bool IsGrabbing {
-        get { return m_isGrabbing; }
+        get => m_isGrabbing;
         set {
             if (m_isGrabbing != value) {
                 m_isGrabbing = value;
@@ -183,29 +173,17 @@ public class SeinGrabWall : CharacterState, ISeinReceiver {
         }
     }
 
-    public bool WantToGrab {
-        get { return RandomizerSettings.Controls.InvertClimb ^ Input.Glide.Pressed; }
-    }
+    public bool WantToGrab => RandomizerSettings.Controls.InvertClimb ^ Input.Glide.Pressed;
 
-    public bool CanGrab {
-        get { return Sein.Abilities.WallSlide.IsOnWall && (Sein.PlatformBehaviour.PlatformMovement.HasWallLeft || !Sein.Controller.FaceLeft) && (Sein.PlatformBehaviour.PlatformMovement.HasWallRight || Sein.Controller.FaceLeft) && !m_requiresRelease && !SeinAbilityRestrictZone.IsInside() && PlatformMovement.HeadAgainstWall; }
-    }
+    public bool CanGrab => Sein.Abilities.WallSlide.IsOnWall && (Sein.PlatformBehaviour.PlatformMovement.HasWallLeft || !Sein.Controller.FaceLeft) && (Sein.PlatformBehaviour.PlatformMovement.HasWallRight || Sein.Controller.FaceLeft) && !m_requiresRelease && !SeinAbilityRestrictZone.IsInside() && PlatformMovement.HeadAgainstWall;
 
-    public bool ShouldGrabWallUpAnimationPlay {
-        get { return ShouldGrabWallUpAnimationKeepPlaying(); }
-    }
+    public bool ShouldGrabWallUpAnimationPlay => ShouldGrabWallUpAnimationKeepPlaying();
 
-    public bool ShouldGrabWallDownAnimationPlay {
-        get { return ShouldGrabWallDownAnimationKeepPlaying(); }
-    }
+    public bool ShouldGrabWallDownAnimationPlay => ShouldGrabWallDownAnimationKeepPlaying();
 
-    public bool ShouldGrabWallAwayAnimationPlay {
-        get { return ShouldGrabWallAwayAnimationKeepPlaying(); }
-    }
+    public bool ShouldGrabWallAwayAnimationPlay => ShouldGrabWallAwayAnimationKeepPlaying();
 
-    public bool ShouldGrabWallIdleAnimationPlay {
-        get { return ShouldGrabWallIdleAnimationKeepPlaying(); }
-    }
+    public bool ShouldGrabWallIdleAnimationPlay => ShouldGrabWallIdleAnimationKeepPlaying();
 
     public bool ShouldGrabWallUpAnimationKeepPlaying() {
         return IsGrabbing && PlatformMovement.LocalSpeedY > 0f;
@@ -223,9 +201,7 @@ public class SeinGrabWall : CharacterState, ISeinReceiver {
         return IsGrabbing && PlatformMovement.LocalSpeedY == 0f && !IsGrabbingAway;
     }
 
-    public bool IsGrabbingAway {
-        get { return (Sein.Input.NormalizedHorizontal == -1 && PlatformMovement.HasWallRight) || (Sein.Input.NormalizedHorizontal == 1 && PlatformMovement.HasWallLeft); }
-    }
+    public bool IsGrabbingAway => (Sein.Input.NormalizedHorizontal == -1 && PlatformMovement.HasWallRight) || (Sein.Input.NormalizedHorizontal == 1 && PlatformMovement.HasWallLeft);
 
     public void HandleWallClimbUpSteps() {
         if (PlatformMovement.LocalSpeedY > 0f && m_nextWallClimbUpTime < m_currentTime) {

@@ -397,7 +397,7 @@ public static class BingoController {
         public MultiBoolGoal Owner;
 
         public virtual bool Completed {
-            get { return get(ItemId) != 0; }
+            get => get(ItemId) != 0;
             set {
                 bool prior = Completed;
                 set(ItemId, value ? 1 : 0);
@@ -453,7 +453,7 @@ public static class BingoController {
         }
 
         public override bool Completed {
-            get { return (get(ItemId) & (1 << Bit)) != 0; }
+            get => (get(ItemId) & (1 << Bit)) != 0;
             set {
                 if (Completed == value)
                     return;
@@ -551,7 +551,7 @@ public static class BingoController {
 
                 return Subgoals[key].Completed;
             }
-            set { Subgoals[key].Completed = value; }
+            set => Subgoals[key].Completed = value;
         }
 
         public MultiBoolGoal(string name, List<BoolGoal> subgoals) {
@@ -628,7 +628,7 @@ public static class BingoController {
         }
 
         public int Value {
-            get { return get(ItemId); }
+            get => get(ItemId);
             set {
                 int delta = value - Value;
                 set(ItemId, value);

@@ -98,21 +98,13 @@ public class GameMapTeleporter {
         }
     }
 
-    public Vector2 WorldMapIconPosition {
-        get { return m_worldMapIconTransform.position; }
-    }
+    public Vector2 WorldMapIconPosition => m_worldMapIconTransform.position;
 
-    public Vector2 AreaMapIconPosition {
-        get { return m_areaMapIconTransform.position; }
-    }
+    public Vector2 AreaMapIconPosition => m_areaMapIconTransform.position;
 
-    public Vector2 WorldProjectedPositon {
-        get { return WorldMapUI.Instance.WorldToProjectedPosition(WorldPosition); }
-    }
+    public Vector2 WorldProjectedPositon => WorldMapUI.Instance.WorldToProjectedPosition(WorldPosition);
 
-    public RuntimeGameWorldArea Area {
-        get { return GameWorld.Instance.FindRuntimeArea(GameWorld.Instance.FindAreaFromPosition(WorldPosition)); }
-    }
+    public RuntimeGameWorldArea Area => GameWorld.Instance.FindRuntimeArea(GameWorld.Instance.FindAreaFromPosition(WorldPosition));
 
     public void Hide() {
         if (m_worldMapIconGameObject) {

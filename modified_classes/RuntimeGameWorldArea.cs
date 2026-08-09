@@ -59,9 +59,7 @@ public class RuntimeGameWorldArea {
         m_worldAreaStates.Clear();
     }
 
-    public bool AreaDiscovered {
-        get { return m_worldAreaStates.Count > 0; }
-    }
+    public bool AreaDiscovered => m_worldAreaStates.Count > 0;
 
     public float CompletionAmount {
         get {
@@ -78,9 +76,7 @@ public class RuntimeGameWorldArea {
         m_dirtyCompletionAmount = true;
     }
 
-    public int CompletionPercentage {
-        get { return Mathf.RoundToInt(CompletionAmount * 100f); }
-    }
+    public int CompletionPercentage => Mathf.RoundToInt(CompletionAmount * 100f);
 
     private bool IconIsCompletionType(WorldMapIconType type) {
         switch (type) {
@@ -131,9 +127,7 @@ public class RuntimeGameWorldArea {
         }
     }
 
-    private bool HasSenseAbility {
-        get { return Characters.Sein && Characters.Sein.PlayerAbilities.Sense.HasAbility; }
-    }
+    private bool HasSenseAbility => Characters.Sein && Characters.Sein.PlayerAbilities.Sense.HasAbility;
 
     public bool IsHidden(Vector3 worldPosition) {
         if (HasSenseAbility) {

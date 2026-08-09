@@ -35,9 +35,7 @@ public class ActivateAction : ActionMethod {
         }
     }
 
-    private string TargetName {
-        get { return !(Target != null) ? "unkown" : Target.name; }
-    }
+    private string TargetName => !(Target != null) ? "unkown" : Target.name;
 
     public override string GetNiceName() {
         return (!Activate ? "Deactivate " : "Activate ") + TargetName;

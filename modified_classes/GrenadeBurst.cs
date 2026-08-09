@@ -88,8 +88,8 @@ public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
     }
 
     public bool IsSuspended {
-        get { return m_suspended; }
-        set { m_suspended = value; }
+        get => m_suspended;
+        set => m_suspended = value;
     }
 
     public float BurstRadius = 5f;

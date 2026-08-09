@@ -1,17 +1,11 @@
 ﻿using UnityEngine;
 
 public class GameMapTransitionManager : MonoBehaviour {
-    public bool IsTransitioning {
-        get { return m_zoomTime != 0f && m_zoomTime < 1f; }
-    }
+    public bool IsTransitioning => m_zoomTime != 0f && m_zoomTime < 1f;
 
-    public bool InWorldMapMode {
-        get { return Mathf.Approximately(m_zoomTime, 0f); }
-    }
+    public bool InWorldMapMode => Mathf.Approximately(m_zoomTime, 0f);
 
-    public bool InAreaMapMode {
-        get { return m_zoomTime >= 1f; }
-    }
+    public bool InAreaMapMode => m_zoomTime >= 1f;
 
     public void Awake() {
         Instance = this;
@@ -23,9 +17,7 @@ public class GameMapTransitionManager : MonoBehaviour {
         }
     }
 
-    public float ZoomTime {
-        get { return m_zoomTime; }
-    }
+    public float ZoomTime => m_zoomTime;
 
     public void ZoomToWorldMap() {
         if (!GameMapUI.Instance.ShowingTeleporters) {

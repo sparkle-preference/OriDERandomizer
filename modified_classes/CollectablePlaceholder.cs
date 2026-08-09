@@ -82,9 +82,7 @@ public class CollectablePlaceholder : SaveSerialize, ISuspendable, IDynamicGraph
         ar.Serialize(ref m_remainingRespawnTime);
     }
 
-    public bool Collected {
-        get { return m_collected; }
-    }
+    public bool Collected => m_collected;
 
     public bool IsSuspended { get; set; }
 

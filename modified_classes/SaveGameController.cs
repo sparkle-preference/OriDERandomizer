@@ -6,17 +6,11 @@ using Game;
 
 [Serializable]
 public class SaveGameController {
-    public int CurrentSlotIndex {
-        get { return SaveSlotsManager.CurrentSlotIndex; }
-    }
+    public int CurrentSlotIndex => SaveSlotsManager.CurrentSlotIndex;
 
-    public int CurrentBackupIndex {
-        get { return SaveSlotsManager.BackupIndex; }
-    }
+    public int CurrentBackupIndex => SaveSlotsManager.BackupIndex;
 
-    public bool SaveGameQueried {
-        get { return true; }
-    }
+    public bool SaveGameQueried => true;
 
     public void SaveToFile(string filename) {
         using (BinaryWriter binaryWriter = new BinaryWriter(File.Open(filename, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))) {
@@ -114,9 +108,7 @@ public class SaveGameController {
         }
     }
 
-    public string CurrentSaveFilePath {
-        get { return GetSaveFilePath(CurrentSlotIndex); }
-    }
+    public string CurrentSaveFilePath => GetSaveFilePath(CurrentSlotIndex);
 
     public string GetSaveFilePath(int slotIndex, int backupIndex = -1) {
         if (backupIndex == -1) {

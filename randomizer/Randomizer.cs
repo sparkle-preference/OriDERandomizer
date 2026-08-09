@@ -1440,9 +1440,7 @@ public static class Randomizer {
         RandomizerLocationManager.UpdateReachable();
     }
 
-    public static bool SafeIsBashing {
-        get => (Characters.Sein.Abilities.Bash && Characters.Sein.Abilities.Bash.IsBashing) || false;
-    }
+    public static bool SafeIsBashing => (Characters.Sein.Abilities.Bash && Characters.Sein.Abilities.Bash.IsBashing) || false;
 
     public static RandomizerInventory Inventory { get; private set; }
     public static RandomizerKeysanity Keysanity { get; private set; }

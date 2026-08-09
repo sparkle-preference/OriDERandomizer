@@ -7,96 +7,54 @@ using Input = Core.Input;
 public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISuspendable, ICanActivateStompers {
     public event Action OnTriggeredAnimationFinished = delegate { };
 
-    public bool InputLocked {
-        get { return (Sein.Abilities.Lever && Sein.Abilities.Lever.InputLocked) || GameController.Instance.LockInput || GameController.Instance.LockInputByAction; }
-    }
+    public bool InputLocked => (Sein.Abilities.Lever && Sein.Abilities.Lever.InputLocked) || GameController.Instance.LockInput || GameController.Instance.LockInputByAction;
 
-    public bool CanMove {
-        get { return !InputLocked && !IsPlayingAnimation; }
-    }
+    public bool CanMove => !InputLocked && !IsPlayingAnimation;
 
     public bool FaceLeft {
-        get { return Sein.PlatformBehaviour.LeftRightMovement.SpriteMirror.FaceLeft; }
-        set { Sein.PlatformBehaviour.LeftRightMovement.SpriteMirror.FaceLeft = value; }
+        get => Sein.PlatformBehaviour.LeftRightMovement.SpriteMirror.FaceLeft;
+        set => Sein.PlatformBehaviour.LeftRightMovement.SpriteMirror.FaceLeft = value;
     }
 
-    public Transform Transform {
-        get { return m_transform; }
-    }
+    public Transform Transform => m_transform;
 
-    public bool IsCrouching {
-        get { return Sein.Abilities.Crouch && Sein.Abilities.Crouch.IsCrouching; }
-    }
+    public bool IsCrouching => Sein.Abilities.Crouch && Sein.Abilities.Crouch.IsCrouching;
 
-    private bool IsGrabbingBlock {
-        get { return Sein.Abilities.GrabBlock && Sein.Abilities.GrabBlock.IsGrabbing; }
-    }
+    private bool IsGrabbingBlock => Sein.Abilities.GrabBlock && Sein.Abilities.GrabBlock.IsGrabbing;
 
-    public bool IsGrabbingWall {
-        get { return Sein.Abilities.GrabWall && Sein.Abilities.GrabWall.IsGrabbing; }
-    }
+    public bool IsGrabbingWall => Sein.Abilities.GrabWall && Sein.Abilities.GrabWall.IsGrabbing;
 
-    public bool IsGrabbingLever {
-        get { return Sein.Abilities.Lever && Sein.Abilities.Lever.IsUsingLever; }
-    }
+    public bool IsGrabbingLever => Sein.Abilities.Lever && Sein.Abilities.Lever.IsUsingLever;
 
-    public bool IsGliding {
-        get { return Sein.Abilities.Glide && Sein.Abilities.Glide.IsGliding; }
-    }
+    public bool IsGliding => Sein.Abilities.Glide && Sein.Abilities.Glide.IsGliding;
 
-    public bool IsPushPulling {
-        get { return Sein.Abilities.GrabBlock && Sein.Abilities.GrabBlock.IsGrabbing; }
-    }
+    public bool IsPushPulling => Sein.Abilities.GrabBlock && Sein.Abilities.GrabBlock.IsGrabbing;
 
-    public bool IsSwimming {
-        get { return Sein.Abilities.Swimming && Sein.Abilities.Swimming.IsSwimming; }
-    }
+    public bool IsSwimming => Sein.Abilities.Swimming && Sein.Abilities.Swimming.IsSwimming;
 
-    public bool IsBashing {
-        get { return Sein.Abilities.Bash && Sein.Abilities.Bash.IsBashing; }
-    }
+    public bool IsBashing => Sein.Abilities.Bash && Sein.Abilities.Bash.IsBashing;
 
-    public bool IsAimingGrenade {
-        get { return Sein.Abilities.Grenade && Sein.Abilities.Grenade.IsAiming; }
-    }
+    public bool IsAimingGrenade => Sein.Abilities.Grenade && Sein.Abilities.Grenade.IsAiming;
 
-    public bool IsInsideSoulFlame {
-        get { return Sein.SoulFlame.InsideCheckpointMarker; }
-    }
+    public bool IsInsideSoulFlame => Sein.SoulFlame.InsideCheckpointMarker;
 
-    public bool IsCarrying {
-        get { return Sein.Abilities.Carry && (Sein.Abilities.Carry.IsCarrying || Sein.Abilities.Carry.IsPickingUp); }
-    }
+    public bool IsCarrying => Sein.Abilities.Carry && (Sein.Abilities.Carry.IsCarrying || Sein.Abilities.Carry.IsPickingUp);
 
-    public bool IsStomping {
-        get { return Sein.Abilities.Stomp && Sein.Abilities.Stomp.IsStomping; }
-    }
+    public bool IsStomping => Sein.Abilities.Stomp && Sein.Abilities.Stomp.IsStomping;
 
-    public bool IsCharging {
-        get { return Sein.Abilities.ChargeFlame && Sein.Abilities.ChargeFlame.IsCharging; }
-    }
+    public bool IsCharging => Sein.Abilities.ChargeFlame && Sein.Abilities.ChargeFlame.IsCharging;
 
-    public bool IsChargingJump {
-        get { return Sein.Abilities.ChargeJumpCharging && Sein.Abilities.ChargeJumpCharging.IsCharging; }
-    }
+    public bool IsChargingJump => Sein.Abilities.ChargeJumpCharging && Sein.Abilities.ChargeJumpCharging.IsCharging;
 
     public bool IsSuspended { get; set; }
 
-    public Component[] Suspendables {
-        get { return m_suspendables; }
-    }
+    public Component[] Suspendables => m_suspendables;
 
-    public bool AnimationHasMetaData {
-        get { return IsPlayingAnimation && Sein.Animation.Animator.CurrentAnimation.AnimationMetaData != null; }
-    }
+    public bool AnimationHasMetaData => IsPlayingAnimation && Sein.Animation.Animator.CurrentAnimation.AnimationMetaData != null;
 
-    public bool IsDashing {
-        get { return Sein.Abilities.Dash && Sein.Abilities.Dash.IsDashingOrChangeDashing; }
-    }
+    public bool IsDashing => Sein.Abilities.Dash && Sein.Abilities.Dash.IsDashingOrChangeDashing;
 
-    public bool IsStandingOnEdge {
-        get { return Sein.Abilities.StandingOnEdge && Sein.Abilities.StandingOnEdge.StandingOnEdge; }
-    }
+    public bool IsStandingOnEdge => Sein.Abilities.StandingOnEdge && Sein.Abilities.StandingOnEdge.StandingOnEdge;
 
     public void EnterPlayingAnimation() {
         IsPlayingAnimation = true;

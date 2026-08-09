@@ -104,9 +104,7 @@ public class DoorWithSlots : SaveSerialize {
         }
     }
 
-    public float DistanceToSein {
-        get { return Vector3.Distance(m_transform.position, Characters.Sein.Position); }
-    }
+    public float DistanceToSein => Vector3.Distance(m_transform.position, Characters.Sein.Position);
 
     public bool OriHasTargets {
         get {
@@ -115,9 +113,7 @@ public class DoorWithSlots : SaveSerialize {
         }
     }
 
-    public bool SeinInRange {
-        get { return !OriHasTargets && DistanceToSein <= Radius && (Randomizer.OpenMode || ((!m_opensOnLeftSide || m_transform.position.x >= Characters.Sein.Position.x) && (m_opensOnLeftSide || m_transform.position.x <= Characters.Sein.Position.x))); }
-    }
+    public bool SeinInRange => !OriHasTargets && DistanceToSein <= Radius && (Randomizer.OpenMode || ((!m_opensOnLeftSide || m_transform.position.x >= Characters.Sein.Position.x) && (m_opensOnLeftSide || m_transform.position.x <= Characters.Sein.Position.x)));
 
     public void FixedUpdate() {
         switch (CurrentState) {

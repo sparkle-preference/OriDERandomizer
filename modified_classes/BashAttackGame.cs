@@ -192,9 +192,7 @@ internal class BashAttackGame : Suspendable, IPooled {
         Randomizer.BashWasQueued = false;
     }
 
-    public Input.InputButtonProcessor ButtonBash {
-        get { return Input.Bash; }
-    }
+    public Input.InputButtonProcessor ButtonBash => Input.Bash;
 
     public float Angle;
 

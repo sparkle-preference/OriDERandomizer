@@ -72,21 +72,13 @@ namespace Core {
             }
         }
 
-        public static Vector2 Axis {
-            get { return new Vector2(Horizontal, Vertical); }
-        }
+        public static Vector2 Axis => new Vector2(Horizontal, Vertical);
 
-        public static Vector2 AnalogAxisLeft {
-            get { return new Vector2(HorizontalAnalogLeft, VerticalAnalogLeft); }
-        }
+        public static Vector2 AnalogAxisLeft => new Vector2(HorizontalAnalogLeft, VerticalAnalogLeft);
 
-        public static Vector2 AnalogAxisRight {
-            get { return new Vector2(HorizontalAnalogRight, VerticalAnalogRight); }
-        }
+        public static Vector2 AnalogAxisRight => new Vector2(HorizontalAnalogRight, VerticalAnalogRight);
 
-        public static Vector2 DigiPadAxis {
-            get { return new Vector2(HorizontalDigiPad, VerticalDigiPad); }
-        }
+        public static Vector2 DigiPadAxis => new Vector2(HorizontalDigiPad, VerticalDigiPad);
 
         public static Vector2 CursorPositionUI {
             get {
@@ -281,25 +273,15 @@ namespace Core {
                 IsPressed = isPressed;
             }
 
-            public bool OnPressed {
-                get { return IsPressed && !WasPressed; }
-            }
+            public bool OnPressed => IsPressed && !WasPressed;
 
-            public bool OnPressedNotUsed {
-                get { return IsPressed && !WasPressed && !Used; }
-            }
+            public bool OnPressedNotUsed => IsPressed && !WasPressed && !Used;
 
-            public bool OnReleased {
-                get { return !IsPressed && WasPressed; }
-            }
+            public bool OnReleased => !IsPressed && WasPressed;
 
-            public bool Pressed {
-                get { return IsPressed; }
-            }
+            public bool Pressed => IsPressed;
 
-            public bool Released {
-                get { return !IsPressed; }
-            }
+            public bool Released => !IsPressed;
 
             public bool WasPressed;
 

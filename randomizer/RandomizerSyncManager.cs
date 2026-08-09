@@ -122,9 +122,7 @@ public static class RandomizerSyncManager {
         }
     }
 
-    public static bool WsOpen {
-        get { return !wsDead && NativeWebSocket.Loaded && wsStartedUrl != null && NativeWebSocket.GetState() == NativeWebSocket.SocketState.Open; }
-    }
+    public static bool WsOpen => !wsDead && NativeWebSocket.Loaded && wsStartedUrl != null && NativeWebSocket.GetState() == NativeWebSocket.SocketState.Open;
 
     public static void Update() {
         try {
@@ -692,9 +690,7 @@ public static class RandomizerSyncManager {
 
     public static HashSet<string> CurrentSignals;
 
-    public static bool NetworkFree {
-        get { return Randomizer.SyncId == "" || (PickupQueue.Count == 0 && SendingPickup == null && !webClient.IsBusy); }
-    }
+    public static bool NetworkFree => Randomizer.SyncId == "" || (PickupQueue.Count == 0 && SendingPickup == null && !webClient.IsBusy);
 
     // Same fields the http tick sends, as a form-encoded body. The server's
     // ws adapter must parse this identically to request.form.
@@ -766,9 +762,7 @@ public static class RandomizerSyncManager {
     private static float completeNextAt;
 
     // BingoController checks this before its own http fallback
-    public static bool WsNoHttp {
-        get { return wsNoHttp; }
-    }
+    public static bool WsNoHttp => wsNoHttp;
 
     public static string fixInt(int stupidFuckingSignedInt) {
         return ((uint)stupidFuckingSignedInt).ToString();

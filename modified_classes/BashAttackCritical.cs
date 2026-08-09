@@ -64,8 +64,8 @@ public class BashAttackCritical : Suspendable, IPooled {
     }
 
     public override bool IsSuspended {
-        get { return m_suspended; }
-        set { m_suspended = value; }
+        get => m_suspended;
+        set => m_suspended = value;
     }
 
     public void FixedUpdate() {

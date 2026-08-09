@@ -16,19 +16,14 @@ public class GameWorldArea : MonoBehaviour {
     public CageStructureTool BoundaryCage;
     public Condition VisitableCondition;
 
-    public Bounds Bounds {
-        get => new Bounds(BoundingTransform.position, BoundingTransform.localScale);
-    }
+    public Bounds Bounds => new Bounds(BoundingTransform.position, BoundingTransform.localScale);
 
-    public Rect BoundingRect {
-        get {
-            return new Rect {
-                width = BoundingTransform.lossyScale.x,
-                height = BoundingTransform.lossyScale.y,
-                center = BoundingTransform.position
-            };
-        }
-    }
+    public Rect BoundingRect =>
+        new Rect {
+            width = BoundingTransform.lossyScale.x,
+            height = BoundingTransform.lossyScale.y,
+            center = BoundingTransform.position
+        };
 
     public bool InsideFace(Vector3 worldPosition) {
         return BoundaryCage.FindFaceAtPositionFaster(BoundaryCage.transform.InverseTransformPoint(worldPosition)) != null;
