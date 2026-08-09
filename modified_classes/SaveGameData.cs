@@ -48,8 +48,7 @@ public class SaveGameData {
     public SaveScene Master => InsertScene(MoonGuid.Empty);
 
     public SaveScene GetScene(MoonGuid sceneGuid) {
-        SaveScene result;
-        if (Scenes.TryGetValue(sceneGuid, out result)) {
+        if (Scenes.TryGetValue(sceneGuid, out var result)) {
             return result;
         }
 
@@ -57,8 +56,7 @@ public class SaveGameData {
     }
 
     public SaveScene InsertScene(MoonGuid sceneGuid) {
-        SaveScene saveScene;
-        if (Scenes.TryGetValue(sceneGuid, out saveScene)) {
+        if (Scenes.TryGetValue(sceneGuid, out var saveScene)) {
             return saveScene;
         }
 
@@ -70,8 +68,7 @@ public class SaveGameData {
     }
 
     public SaveScene InsertPendingScene(MoonGuid sceneGUID) {
-        SaveScene saveScene;
-        if (PendingScenes.TryGetValue(sceneGUID, out saveScene)) {
+        if (PendingScenes.TryGetValue(sceneGUID, out var saveScene)) {
             return saveScene;
         }
 

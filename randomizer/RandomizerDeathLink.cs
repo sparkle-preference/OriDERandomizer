@@ -51,8 +51,7 @@ public static class RandomizerDeathLink {
             if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null)
                 return;
             var parts = payload.Split(new[] { ';' }, 2);
-            int token;
-            if (!int.TryParse(parts[0], out token)
+            if (!int.TryParse(parts[0], out var token)
                 || token <= Characters.Sein.Inventory.GetRandomizerItem(LastToken))
                 return;
             Characters.Sein.Inventory.SetRandomizerItem(LastToken, token);

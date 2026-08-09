@@ -139,8 +139,7 @@ public static class Randomizer {
                         lastLineNum += 1;
 
                         var lineParts = line.Split('|');
-                        int coords;
-                        int.TryParse(lineParts[0], out coords);
+                        int.TryParse(lineParts[0], out var coords);
 
                         // field 5 is the Archipelago annotation; absent on
                         // every non-AP seed and on AP seeds downloaded before
@@ -1248,8 +1247,7 @@ public static class Randomizer {
     }
 
     public static void GetDataFromSeedLine(int coords, string code, string id, string area) {
-        int id_number;
-        int.TryParse(id, out id_number);
+        int.TryParse(id, out var id_number);
         // If we are processing a repeatable or multipickup recur over items in them.
         if (code == "RP" || code == "MU") {
             // Check the full pickup code + id for sense. This is for sense=MUEC cases. Otherwise processed in the recursion.
@@ -1273,8 +1271,7 @@ public static class Randomizer {
 
         if (code == "EN") {
             // door entries are coord|EN|targetX|targetY
-            int doorY;
-            int.TryParse(area, out doorY);
+            int.TryParse(area, out var doorY);
             DoorTable[coords] = new Vector3(id_number, doorY);
         }
 

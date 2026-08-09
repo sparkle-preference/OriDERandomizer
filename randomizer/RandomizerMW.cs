@@ -86,8 +86,7 @@ public static class RandomizerMW {
 
     public static int OwnPid() {
         var parts = (Randomizer.SyncId ?? "").Split('.');
-        int pid;
-        return parts.Length > 1 && int.TryParse(parts[1], out pid) ? pid : 0;
+        return parts.Length > 1 && int.TryParse(parts[1], out var pid) ? pid : 0;
     }
 
     public static bool IsSelf(string token) {
@@ -105,8 +104,7 @@ public static class RandomizerMW {
         if (parts.Length != 2)
             return;
         ApItems[coords] = parts;
-        int slot;
-        if (!string.IsNullOrEmpty(ownSlot) && int.TryParse(ownSlot, out slot))
+        if (!string.IsNullOrEmpty(ownSlot) && int.TryParse(ownSlot, out var slot))
             ApSelfSlots[coords] = slot;
     }
 
@@ -120,13 +118,11 @@ public static class RandomizerMW {
     /// Returns false when there is nothing to grant here.
     /// </summary>
     public static bool GrantSelfItem(int coords) {
-        int slot;
-        if (!ApSelfSlots.TryGetValue(coords, out slot) || !Manifest.ContainsKey(slot))
+        if (!ApSelfSlots.TryGetValue(coords, out var slot) || !Manifest.ContainsKey(slot))
             return false;
         if (SlotGranted(slot)) {
             // died and came back to it: the item is already ours
-            string[] ap;
-            var name = ApItems.TryGetValue(coords, out ap) ? ap[1] : "That";
+            var name = ApItems.TryGetValue(coords, out var ap) ? ap[1] : "That";
             RandomizerSwitch.PickupMessage(ColorWrap(name) + " (already collected)");
             return true;
         }
@@ -145,8 +141,7 @@ public static class RandomizerMW {
     /// treat the location as spent.
     /// </summary>
     public static bool SelfItemCollected(int coords) {
-        int slot;
-        return ApSelfSlots.TryGetValue(coords, out slot) && SlotGranted(slot);
+        return ApSelfSlots.TryGetValue(coords, out var slot) && SlotGranted(slot);
     }
 
     // has this manifest slot already been granted into the save?
@@ -163,8 +158,7 @@ public static class RandomizerMW {
             ApGrants = true;
             foreach (var pair in payload.Split(';')) {
                 var eq = pair.IndexOf('=');
-                int slot;
-                if (eq > 0 && int.TryParse(pair.Substring(0, eq), out slot))
+                if (eq > 0 && int.TryParse(pair.Substring(0, eq), out var slot))
                     SlotSenders[slot] = pair.Substring(eq + 1);
             }
         } catch (Exception e) {
@@ -175,8 +169,7 @@ public static class RandomizerMW {
     // who to name on a grant: the apfrom signal when Archipelago sent it,
     // the manifest's finder otherwise (plain multiworld). "" = yourself.
     private static string SenderFor(ManifestEntry entry) {
-        string token;
-        if (SlotSenders.TryGetValue(entry.Slot, out token))
+        if (SlotSenders.TryGetValue(entry.Slot, out var token))
             return token == "" ? "" : ApName(token);
         return PlayerName(entry.Finder);
     }
@@ -212,8 +205,7 @@ public static class RandomizerMW {
         try {
             foreach (var pair in field.Split(';')) {
                 var eq = pair.IndexOf('=');
-                int slot;
-                if (eq > 0 && int.TryParse(pair.Substring(0, eq), out slot))
+                if (eq > 0 && int.TryParse(pair.Substring(0, eq), out var slot))
                     ApHints[slot] = pair.Substring(eq + 1);
             }
         } catch (Exception e) {
@@ -225,8 +217,7 @@ public static class RandomizerMW {
     // Every display site reads through here, so a seed with no AP hints shows
     // exactly what it always showed.
     public static string ApHintOr(int slot, string baked) {
-        string text;
-        if (slot >= 0 && ApHints.TryGetValue(slot, out text) && text != "")
+        if (slot >= 0 && ApHints.TryGetValue(slot, out var text) && text != "")
             return text;
         return baked;
     }
@@ -283,8 +274,7 @@ public static class RandomizerMW {
         try {
             foreach (var pair in field.Split(';')) {
                 var dot = pair.IndexOf('.');
-                int pid;
-                if (dot > 0 && int.TryParse(pair.Substring(0, dot), out pid) && pair.Length > dot + 1)
+                if (dot > 0 && int.TryParse(pair.Substring(0, dot), out var pid) && pair.Length > dot + 1)
                     PlayerNames[pid] = pair.Substring(dot + 1);
             }
         } catch (Exception e) {
@@ -332,8 +322,7 @@ public static class RandomizerMW {
             // our dungeon keys living in someone else's world still get
             // clues: the manifest knows whose world and which zone
             if (Randomizer.CluesMode && entry.Code == "EV") {
-                int evId;
-                if (int.TryParse(entry.Id, out evId) && evId % 2 == 0)
+                if (int.TryParse(entry.Id, out var evId) && evId % 2 == 0)
                     RandomizerClues.AddClue(clue, evId / 2, slot);
             }
 
@@ -358,8 +347,7 @@ public static class RandomizerMW {
             // same for keysanity door keys; the clue's coords are the manifest
             // pseudo-location, resolved as found via the granted-slot bits
             if (Randomizer.Keysanity.IsActive && entry.Code == "RB") {
-                int rbId;
-                if (int.TryParse(entry.Id, out rbId))
+                if (int.TryParse(entry.Id, out var rbId))
                     Randomizer.Keysanity.AddClue(rbId, coords, clue);
             }
         } catch (Exception e) {
@@ -548,8 +536,7 @@ public static class RandomizerMW {
                     case "KS": ks++; break;
                     case "MS": ms++; break;
                     case "EX":
-                        int val;
-                        if (int.TryParse(entry.Id, out val))
+                        if (int.TryParse(entry.Id, out var val))
                             exp += val;
                         break;
                     case "RB":

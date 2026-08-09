@@ -472,10 +472,8 @@ public class RandomizerBootstrap {
         }
 
         var pieces = Randomizer.SpawnWith.Substring(wsLocation + offset).Split(',');
-        int warpX;
-        int.TryParse(pieces[0], out warpX);
-        int warpY;
-        int.TryParse(pieces[1], out warpY);
+        int.TryParse(pieces[0], out var warpX);
+        int.TryParse(pieces[1], out var warpY);
         var position = new Vector3(warpX, warpY, 0);
         // This only takes a position, and loads scenes at that position. Doesn't require the metadata.
         // Definitely not as nice as adding a load to the action sequence, but significantly easier.

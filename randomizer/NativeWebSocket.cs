@@ -230,8 +230,7 @@ public static class NativeWebSocket {
     }
 
     public static string GetLastError() {
-        int length;
-        var ptr = get_last_error(out length);
+        var ptr = get_last_error(out var length);
         if (ptr == IntPtr.Zero || length == 0)
             return "";
         var bytes = new byte[length];
@@ -245,8 +244,7 @@ public static class NativeWebSocket {
 
     // Returns null when the queue is empty.
     public static string GetPendingMessage() {
-        int length;
-        var ptr = get_pending_message(out length);
+        var ptr = get_pending_message(out var length);
         if (ptr == IntPtr.Zero)
             return null;
         var bytes = new byte[length];
