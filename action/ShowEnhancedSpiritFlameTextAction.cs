@@ -1,35 +1,34 @@
-using System;
 using Game;
 using UnityEngine;
 
 public class ShowEnhancedSpiritFlameTextAction : PerformingAction {
     public override void Perform(IContext context) {
-        if (this.FreezeGame) {
+        if (FreezeGame) {
             SuspensionManager.SuspendAll();
         }
 
-        if (this.Messages == null) {
+        if (Messages == null) {
             return;
         }
 
         RandomizerMessageProvider messageProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
-        messageProvider.messages = this.Messages;
-        this.m_messageBox = UI.MessageController.ShowEnhancedSpiritFlameMessage(messageProvider);
-        if (this.m_messageBox) {
-            this.m_messageBox.OnMessageScreenHide += this.OnMessageScreenHide;
+        messageProvider.messages = Messages;
+        m_messageBox = UI.MessageController.ShowEnhancedSpiritFlameMessage(messageProvider);
+        if (m_messageBox) {
+            m_messageBox.OnMessageScreenHide += OnMessageScreenHide;
             Characters.Ori.StartTwinkle();
-        } else if (this.FreezeGame) {
+        } else if (FreezeGame) {
             SuspensionManager.ResumeAll();
         }
     }
 
     public void OnMessageScreenHide() {
-        if (this.FreezeGame) {
+        if (FreezeGame) {
             SuspensionManager.ResumeAll();
         }
 
-        if (this.m_messageBox) {
-            this.m_messageBox.OnMessageScreenHide -= this.OnMessageScreenHide;
+        if (m_messageBox) {
+            m_messageBox.OnMessageScreenHide -= OnMessageScreenHide;
         }
 
         Characters.Ori.StopTwinkle();
@@ -39,7 +38,7 @@ public class ShowEnhancedSpiritFlameTextAction : PerformingAction {
     }
 
     public override bool IsPerforming {
-        get { return this.m_messageBox; }
+        get { return m_messageBox; }
     }
 
     public MessageDescriptor[] Messages;

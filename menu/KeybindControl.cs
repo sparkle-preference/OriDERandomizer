@@ -4,59 +4,58 @@ using UnityEngine;
 
 public class KeybindControl : MonoBehaviour {
     private void Awake() {
-        this.messageBox = base.transform.Find("text/stateText").GetComponent<MessageBox>();
+        messageBox = transform.Find("text/stateText").GetComponent<MessageBox>();
     }
 
     public void BeginEditing() {
-        this.currentKeys.Clear();
-        this.currentKeys.AddRange(this.GetKeys());
+        currentKeys.Clear();
+        currentKeys.AddRange(GetKeys());
         SuspensionManager.SuspendAll();
-        this.editing = true;
-        this.exit = 0;
-        this.tooltipProvider.SetMessage("Backspace: remove bind\nEnter: finish editing");
-        this.owner.tooltipController.UpdateTooltip();
+        editing = true;
+        exit = 0;
+        tooltipProvider.SetMessage("Backspace: remove bind\nEnter: finish editing");
+        owner.tooltipController.UpdateTooltip();
     }
 
     public void Update() {
-        if (!this.editing) {
+        if (!editing) {
             return;
         }
 
-        if (this.exit < 2) {
-            this.exit++;
+        if (exit < 2) {
+            exit++;
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Return) && this.currentKeys.Count > 0) {
-            this.editing = false;
+        if (Input.GetKeyDown(KeyCode.Return) && currentKeys.Count > 0) {
+            editing = false;
             SuspensionManager.ResumeAll();
-            this.SetKeys(this.currentKeys.ToArray());
+            SetKeys(currentKeys.ToArray());
             PlayerInputRebinding.WriteKeyRebindSettings();
             PlayerInput.Instance.RefreshControlScheme();
-            this.tooltipProvider.SetMessage(this.owner.DefaultTooltip);
-            this.owner.tooltipController.UpdateTooltip();
+            tooltipProvider.SetMessage(owner.DefaultTooltip);
+            owner.tooltipController.UpdateTooltip();
             return;
         }
 
         if (Input.GetKeyDown(KeyCode.Backspace)) {
-            if (this.currentKeys.Count > 0) {
-                this.currentKeys.RemoveAt(this.currentKeys.Count - 1);
-                this.UpdateMessageBox();
-                return;
+            if (currentKeys.Count > 0) {
+                currentKeys.RemoveAt(currentKeys.Count - 1);
+                UpdateMessageBox();
             }
         } else if (Input.anyKeyDown) {
             foreach (object obj in Enum.GetValues(typeof(KeyCode))) {
                 KeyCode keyCode = (KeyCode)obj;
-                if (Input.GetKeyDown(keyCode) && !this.currentKeys.Contains(keyCode)) {
-                    this.currentKeys.Add(keyCode);
-                    this.UpdateMessageBox();
+                if (Input.GetKeyDown(keyCode) && !currentKeys.Contains(keyCode)) {
+                    currentKeys.Add(keyCode);
+                    UpdateMessageBox();
                 }
             }
         }
     }
 
     private void UpdateMessageBox() {
-        this.messageBox.SetMessage(new MessageDescriptor(KeybindControl.KeyBindingToString(this.currentKeys.ToArray())));
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(currentKeys.ToArray())));
     }
 
     public static string KeyBindingToString(KeyCode[] codes) {
@@ -72,19 +71,19 @@ public class KeybindControl : MonoBehaviour {
     }
 
     public void Reset() {
-        this.messageBox.SetMessage(new MessageDescriptor(KeybindControl.KeyBindingToString(this.GetKeys())));
-        this.editing = false;
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+        editing = false;
     }
 
     public void Init(Func<KeyCode[]> getKeys, Action<KeyCode[]> setKeys, CustomSettingsScreen owner) {
         this.owner = owner;
-        this.GetKeys = getKeys;
-        this.SetKeys = setKeys;
-        this.messageBox.SetMessage(new MessageDescriptor(KeybindControl.KeyBindingToString(getKeys())));
-        CleverMenuItemTooltip component = base.GetComponent<CleverMenuItemTooltip>();
-        this.tooltipProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
-        this.tooltipProvider.SetMessage(owner.DefaultTooltip);
-        component.Tooltip = this.tooltipProvider;
+        GetKeys = getKeys;
+        SetKeys = setKeys;
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
+        CleverMenuItemTooltip component = GetComponent<CleverMenuItemTooltip>();
+        tooltipProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
+        tooltipProvider.SetMessage(owner.DefaultTooltip);
+        component.Tooltip = tooltipProvider;
         owner.tooltipController.UpdateTooltip();
     }
 

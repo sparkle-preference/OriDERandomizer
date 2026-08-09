@@ -1,5 +1,3 @@
-using System;
-
 public abstract class RandomizerChaosEffect {
     public abstract void Clear();
 

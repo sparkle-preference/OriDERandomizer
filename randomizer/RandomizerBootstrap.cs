@@ -1,40 +1,42 @@
 using System;
 using System.Collections.Generic;
+using Core;
 using Game;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 public class RandomizerBootstrap {
     public static void Initialize() {
-        Events.Scheduler.OnSceneRootPreEnabled.Add(new Action<SceneRoot>(RandomizerBootstrap.BootstrapScenePreEnabled));
-        Events.Scheduler.OnSceneRootEnabledAfterSerialize.Add(new Action<SceneRoot>(RandomizerBootstrap.BootstrapSceneAfterSerialize));
+        Events.Scheduler.OnSceneRootPreEnabled.Add(BootstrapScenePreEnabled);
+        Events.Scheduler.OnSceneRootEnabledAfterSerialize.Add(BootstrapSceneAfterSerialize);
     }
 
     public static void FixedUpdate() {
-        for (int i = 0; i < RandomizerBootstrap.s_bootstrappedScenesPreEnabled.Count;) {
-            if (Core.Scenes.Manager.GetSceneManagerScene(RandomizerBootstrap.s_bootstrappedScenesPreEnabled[i]) != null) {
+        for (int i = 0; i < s_bootstrappedScenesPreEnabled.Count;) {
+            if (Scenes.Manager.GetSceneManagerScene(s_bootstrappedScenesPreEnabled[i]) != null) {
                 i++;
             } else {
-                RandomizerBootstrap.s_bootstrappedScenesPreEnabled.RemoveAt(i);
+                s_bootstrappedScenesPreEnabled.RemoveAt(i);
             }
         }
 
-        for (int i = 0; i < RandomizerBootstrap.s_bootstrappedScenesAfterSerialize.Count;) {
-            if (Core.Scenes.Manager.GetSceneManagerScene(RandomizerBootstrap.s_bootstrappedScenesAfterSerialize[i]) != null) {
+        for (int i = 0; i < s_bootstrappedScenesAfterSerialize.Count;) {
+            if (Scenes.Manager.GetSceneManagerScene(s_bootstrappedScenesAfterSerialize[i]) != null) {
                 i++;
             } else {
-                RandomizerBootstrap.s_bootstrappedScenesAfterSerialize.RemoveAt(i);
+                s_bootstrappedScenesAfterSerialize.RemoveAt(i);
             }
         }
     }
 
     private static void BootstrapScenePreEnabled(SceneRoot sceneRoot) {
-        if (RandomizerBootstrap.s_bootstrappedScenesPreEnabled.Contains(sceneRoot.name)) {
+        if (s_bootstrappedScenesPreEnabled.Contains(sceneRoot.name)) {
             return;
         }
 
-        if (RandomizerBootstrap.s_bootstrapPreEnabled.ContainsKey(sceneRoot.name)) {
-            RandomizerBootstrap.s_bootstrappedScenesPreEnabled.Add(sceneRoot.name);
-            RandomizerBootstrap.s_bootstrapPreEnabled[sceneRoot.name].Invoke(sceneRoot);
+        if (s_bootstrapPreEnabled.ContainsKey(sceneRoot.name)) {
+            s_bootstrappedScenesPreEnabled.Add(sceneRoot.name);
+            s_bootstrapPreEnabled[sceneRoot.name].Invoke(sceneRoot);
         }
 
         if (RandomizerEnhancedMode.TextBootstrapScenes.ContainsKey(sceneRoot.name) && (Randomizer.EnhancedMode || Randomizer.EnhancedSeinInSeed)) {
@@ -47,17 +49,17 @@ public class RandomizerBootstrap {
     }
 
     private static void BootstrapSceneAfterSerialize(SceneRoot sceneRoot) {
-        if (RandomizerBootstrap.s_bootstrappedScenesAfterSerialize.Contains(sceneRoot.name)) {
+        if (s_bootstrappedScenesAfterSerialize.Contains(sceneRoot.name)) {
             return;
         }
 
-        if (RandomizerBootstrap.s_bootstrapAfterSerialize.ContainsKey(sceneRoot.name)) {
-            RandomizerBootstrap.s_bootstrappedScenesAfterSerialize.Add(sceneRoot.name);
-            RandomizerBootstrap.s_bootstrapAfterSerialize[sceneRoot.name].Invoke(sceneRoot);
+        if (s_bootstrapAfterSerialize.ContainsKey(sceneRoot.name)) {
+            s_bootstrappedScenesAfterSerialize.Add(sceneRoot.name);
+            s_bootstrapAfterSerialize[sceneRoot.name].Invoke(sceneRoot);
             // We also need to process these functions after serialisation not caused by
             // scene loading, e.g. after death. So connect those hooks.
             sceneRoot.SaveSceneManager.sceneRoot = sceneRoot;
-            sceneRoot.SaveSceneManager.bootstrapHook = RandomizerBootstrap.s_bootstrapAfterSerialize[sceneRoot.name];
+            sceneRoot.SaveSceneManager.bootstrapHook = s_bootstrapAfterSerialize[sceneRoot.name];
         }
     }
 
@@ -91,7 +93,7 @@ public class RandomizerBootstrap {
             obj.gameObject.SetActive(false);
         }
 
-        Transform clone = UnityEngine.Object.Instantiate<Transform>(obj);
+        Transform clone = Object.Instantiate(obj);
         if (name != null) {
             clone.gameObject.name = name;
         }
@@ -113,7 +115,7 @@ public class RandomizerBootstrap {
 
     private static void BootstrapTitleScreen(SceneRoot sceneRoot) {
         SaveSlotsItemsUI itemsUI = sceneRoot.transform.FindChild("ui").GetComponent<TitleScreenManager>().SaveSlotsScreen.ItemsUI;
-        foreach (SaveSlotUI saveSlotUI in new UnityEngine.Object[2] { itemsUI.SaveSlotUI, itemsUI.SaveSlotCompletedUI }) {
+        foreach (SaveSlotUI saveSlotUI in new Object[2] { itemsUI.SaveSlotUI, itemsUI.SaveSlotCompletedUI }) {
             saveSlotUI.EasyTextMessageProvider = RandomizerText.DifficultyOverrides.Easy.NameOverride;
             saveSlotUI.NormalTextMessageProvider = RandomizerText.DifficultyOverrides.Normal.NameOverride;
             saveSlotUI.HardTextMessageProvider = RandomizerText.DifficultyOverrides.Hard.NameOverride;
@@ -276,7 +278,7 @@ public class RandomizerBootstrap {
         OnSceneStartRunAction runAction = musicSequence.gameObject.AddComponent<OnSceneStartRunAction>();
         runAction.ActionToRun = musicSequence;
         runAction.TriggerOnce = true;
-        RandomizerBootstrap.SetGuidAndSave(sceneRoot, runAction, new MoonGuid(560691571, 1097907217, -1524861543, 276788056));
+        SetGuidAndSave(sceneRoot, runAction, new MoonGuid(560691571, 1097907217, -1524861543, 276788056));
 
         // patch the post-Ginso cutscene to fix softlock when Sein's dialogue is auto-skipped
         ActionSequence seinAnimationSequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/seinSpriteAction").GetComponent<ActionSequence>();
@@ -293,9 +295,9 @@ public class RandomizerBootstrap {
         WaitAction waitAction = bridgeSequence.gameObject.AddComponent<WaitAction>();
         waitAction.Duration = 10f;
         bridgeSequence.Actions.Insert(16, waitAction);
-        RandomizerBootstrap.SetGuidAndSave(sceneRoot, waitAction, new MoonGuid(705566895, 1206307123, -626862952, 223115723));
+        SetGuidAndSave(sceneRoot, waitAction, new MoonGuid(705566895, 1206307123, -626862952, 223115723));
         serializer.OnValidate();
-        RandomizerBootstrap.SetGuidAndSave(sceneRoot, serializer, new MoonGuid(1360931587, 1176121670, -1051255642, 855352030));
+        SetGuidAndSave(sceneRoot, serializer, new MoonGuid(1360931587, 1176121670, -1051255642, 855352030));
     }
 
     private static void BootstrapMountHoruHub(SceneRoot sceneRoot) {
@@ -305,51 +307,51 @@ public class RandomizerBootstrap {
         // door1LavaDrain - (L3) mountHoruBreakyPathTop
         ActionSequence doorSequence = lavaDrainParent.FindChild("*door1LavaDrains/*door1LavaDrain").GetComponent<ActionSequence>();
         RandomizerPickupAction pickupAction = RandomizerLocationManager.AddPickupAction(doorSequence.gameObject, "HoruL3");
-        (pickupAction as SaveSerialize).RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
+        pickupAction.RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
         doorSequence.Actions.Insert(3, pickupAction);
         ActionSequence.Rename(doorSequence.Actions);
 
         // door2LavaDrain - (R1) mountHoruStomperSystemsR
         doorSequence = lavaDrainParent.FindChild("*door2LavaDrains/*door2LavaDrain").GetComponent<ActionSequence>();
         pickupAction = RandomizerLocationManager.AddPickupAction(doorSequence.gameObject, "HoruR1");
-        (pickupAction as SaveSerialize).RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
+        pickupAction.RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
         doorSequence.Actions.Insert(3, pickupAction);
         ActionSequence.Rename(doorSequence.Actions);
 
         // door3LavaDrain - (R2) mountHoruProjectileCorridor
         doorSequence = lavaDrainParent.FindChild("*door3LavaDrains/*door3LavaDrain").GetComponent<ActionSequence>();
         pickupAction = RandomizerLocationManager.AddPickupAction(doorSequence.gameObject, "HoruR2");
-        (pickupAction as SaveSerialize).RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
+        pickupAction.RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
         doorSequence.Actions.Insert(3, pickupAction);
         ActionSequence.Rename(doorSequence.Actions);
 
         // door5LavaDrain - (R3) mountHoruMovingPlatform
         doorSequence = lavaDrainParent.FindChild("*door5LavaDrains/*door5LavaDrain").GetComponent<ActionSequence>();
         pickupAction = RandomizerLocationManager.AddPickupAction(doorSequence.gameObject, "HoruR3");
-        (pickupAction as SaveSerialize).RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
+        pickupAction.RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
         doorSequence.Actions.Insert(3, pickupAction);
         ActionSequence.Rename(doorSequence.Actions);
 
         // door7LavaDrain - (L2) mountHoruBigPushBlock
         doorSequence = lavaDrainParent.FindChild("*door7LavaDrains/*door7LavaDrain").GetComponent<ActionSequence>();
         pickupAction = RandomizerLocationManager.AddPickupAction(doorSequence.gameObject, "HoruL2");
-        (pickupAction as SaveSerialize).RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
+        pickupAction.RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
         doorSequence.Actions.Insert(3, pickupAction);
         ActionSequence.Rename(doorSequence.Actions);
 
         // door8LavaDrain - (L1) mountHoruBlockableLasers
         doorSequence = lavaDrainParent.FindChild("*door8LavaDrains/*door8LavaDrain").GetComponent<ActionSequence>();
         pickupAction = RandomizerLocationManager.AddPickupAction(doorSequence.gameObject, "HoruL1");
-        (pickupAction as SaveSerialize).RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
+        pickupAction.RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
         doorSequence.Actions.Insert(3, pickupAction);
         ActionSequence.Rename(doorSequence.Actions);
 
         // special cases for L4/R4
         RandomizerPickupAction leftPickupAction = RandomizerLocationManager.AddPickupAction(lavaDrainParent.gameObject, "HoruL4", "giveLeftPickup");
-        (leftPickupAction as SaveSerialize).RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
+        leftPickupAction.RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
 
         RandomizerPickupAction rightPickupAction = RandomizerLocationManager.AddPickupAction(lavaDrainParent.gameObject, "HoruR4", "giveRightPickup");
-        (rightPickupAction as SaveSerialize).RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
+        rightPickupAction.RegisterToSaveSceneManager(sceneRoot.SaveSceneManager);
 
         // door4LavaDrain - L4/R4, whichever comes first
         doorSequence = lavaDrainParent.FindChild("*door4LavaDrains/*door4LavaDrain").GetComponent<ActionSequence>();
@@ -357,7 +359,7 @@ public class RandomizerBootstrap {
         obj.transform.parent = doorSequence.transform;
 
         RunActionCondition conditionPickupAction = obj.AddComponent<RunActionCondition>();
-        RandomizerBootstrap.SetGuidAndSave(sceneRoot, conditionPickupAction, new MoonGuid(-1261986975, 1336041250, 1663544246, -817715174));
+        SetGuidAndSave(sceneRoot, conditionPickupAction, new MoonGuid(-1261986975, 1336041250, 1663544246, -817715174));
         conditionPickupAction.Action = leftPickupAction;
         conditionPickupAction.ElseAction = rightPickupAction;
         conditionPickupAction.Condition = (doorSequence.Actions[2] as RunActionCondition).Condition;
@@ -371,7 +373,7 @@ public class RandomizerBootstrap {
         obj.transform.parent = doorSequence.transform;
 
         conditionPickupAction = obj.AddComponent<RunActionCondition>();
-        RandomizerBootstrap.SetGuidAndSave(sceneRoot, conditionPickupAction, new MoonGuid(-300318401, 1327879929, 1536957364, -1500614911));
+        SetGuidAndSave(sceneRoot, conditionPickupAction, new MoonGuid(-300318401, 1327879929, 1536957364, -1500614911));
         conditionPickupAction.Action = rightPickupAction;
         conditionPickupAction.ElseAction = leftPickupAction;
         conditionPickupAction.Condition = (doorSequence.Actions[2] as RunActionCondition).Condition;
@@ -428,13 +430,13 @@ public class RandomizerBootstrap {
         obj.transform.parent = sceneRoot.transform.FindChild("laserPuzzle");
 
         ActionSequence sequence = obj.AddComponent<ActionSequence>();
-        RandomizerBootstrap.SetGuidAndSave(sceneRoot, sequence, new MoonGuid(-217873041, 1228699831, -192933462, 1616173080));
+        SetGuidAndSave(sceneRoot, sequence, new MoonGuid(-217873041, 1228699831, -192933462, 1616173080));
 
         TriggerByString trigger = obj.AddComponent<TriggerByString>();
         trigger.Data = new TriggerByString.StringTriggerData { String = "horuLaserPuzzleSolved", TriggerEvent = TriggerByString.TriggerEvent.Always };
         trigger.TriggerOnce = true;
         trigger.ActionToRun = sequence;
-        RandomizerBootstrap.SetGuidAndSave(sceneRoot, trigger, new MoonGuid(-1643625622, 1244944140, -1378018126, -449882576));
+        SetGuidAndSave(sceneRoot, trigger, new MoonGuid(-1643625622, 1244944140, -1378018126, -449882576));
 
         foreach (Transform child in sceneRoot.transform.FindChild("laserPuzzle/enemyStoppers")) {
             if (child.name == "blockableLaser") {
@@ -447,9 +449,9 @@ public class RandomizerBootstrap {
                 sequence.Actions.Add(activate);
 
                 if (child.position.x < 265f) {
-                    RandomizerBootstrap.SetGuidAndSave(sceneRoot, activate, new MoonGuid(296308939, 1211527480, -1445804128, 1888526783));
+                    SetGuidAndSave(sceneRoot, activate, new MoonGuid(296308939, 1211527480, -1445804128, 1888526783));
                 } else {
-                    RandomizerBootstrap.SetGuidAndSave(sceneRoot, activate, new MoonGuid(83562839, 1305673046, 1379750071, 220123169));
+                    SetGuidAndSave(sceneRoot, activate, new MoonGuid(83562839, 1305673046, 1379750071, 220123169));
                 }
             }
         }
@@ -477,7 +479,7 @@ public class RandomizerBootstrap {
         Vector3 position = new Vector3(warpX, warpY, 0);
         // This only takes a position, and loads scenes at that position. Doesn't require the metadata.
         // Definitely not as nice as adding a load to the action sequence, but significantly easier.
-        Core.Scenes.Manager.AdditivelyLoadScenesAtPosition(position, true, false, true);
+        Scenes.Manager.AdditivelyLoadScenesAtPosition(position, true, false, true);
 
         ActionSequence actionSequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
         List<ActionMethod> original_list = new List<ActionMethod>(actionSequence.Actions);
@@ -493,7 +495,7 @@ public class RandomizerBootstrap {
         SetCharacterPosition setPosition = actionSequence.gameObject.AddComponent<SetCharacterPosition>();
         setPosition.transform.position = position;
         setPosition.Position = setPosition.transform;
-        RandomizerBootstrap.SetGuidAndSave(sceneRoot, setPosition, new MoonGuid(2033807637, 1102752838, 351348109, 1564353675));
+        SetGuidAndSave(sceneRoot, setPosition, new MoonGuid(2033807637, 1102752838, 351348109, 1564353675));
         actionSequence.Actions.Add(setPosition);
         // create checkpoint -- should be immediately after warp.
         actionSequence.Actions.Add(original_list[14]);
@@ -678,7 +680,7 @@ public class RandomizerBootstrap {
 
         // Put a hint on reentry of misty when misty is complete.
         Transform pedestalTorch = sceneRoot.transform.FindChild("pedestalTorch");
-        Transform reentryHintTransform = CloneObject(sceneRoot, pedestalTorch, "reentryHint", true);
+        Transform reentryHintTransform = CloneObject(sceneRoot, pedestalTorch, "reentryHint");
         // The location of the collision trigger.
         reentryHintTransform.position = new Vector3(-606, -26);
         reentryHintTransform.localScale = new Vector3(5, 20);
@@ -688,7 +690,7 @@ public class RandomizerBootstrap {
         ShowSpiritTreeTextAction reentryHint = reentryHintTransform.gameObject.AddComponent<ShowSpiritTreeTextAction>();
         reentryHint.Message = reentryText;
         // Location of the text.
-        Transform reentryTextTarget = CloneObject(sceneRoot, pedestalTorch, "reentryTarget", true);
+        Transform reentryTextTarget = CloneObject(sceneRoot, pedestalTorch, "reentryTarget");
         reentryTextTarget.position = new Vector3(-619, -25);
         reentryHint.Target = reentryTextTarget;
 
@@ -774,25 +776,25 @@ public class RandomizerBootstrap {
     }
 
     private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>> {
-        { "moonGrottoRopeBridge", new Action<SceneRoot>(RandomizerBootstrap.BootstrapMoonGrottoBridge) },
-        { "mountHoruHubMid", new Action<SceneRoot>(RandomizerBootstrap.BootstrapMountHoruHub) },
-        { "mountHoruLaserPuzzle", new Action<SceneRoot>(RandomizerBootstrap.BootstrapMountHoruLaserPuzzle) },
-        { "northMangroveFallsLanternIntro", new Action<SceneRoot>(RandomizerBootstrap.BootstrapBlackrootLanternRoom) },
-        { "mangroveFallsDashIntro", new Action<SceneRoot>(RandomizerBootstrap.BootstrapBlackrootBoulderArea) },
-        { "spiritTreeRefined", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSpiritTree) },
-        { "sunkenGladesIntroSplitA", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSunkenGladesKeystoneDoor) },
-        { "sunkenGladesIntroSplitB", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSunkenGladesSpiritWell) },
-        { "thornfeltSwampActTwoStart", new Action<SceneRoot>(RandomizerBootstrap.BootstrapThornfeltSwampMain) },
-        { "titleScreenSwallowsNest", new Action<SceneRoot>(RandomizerBootstrap.BootstrapTitleScreen) },
-        { "westGladesMistyWoodsCaveTransition", new Action<SceneRoot>(RandomizerBootstrap.BootstrapValleyEntry) },
-        { "westGladesFireflyAreaA", new Action<SceneRoot>(RandomizerBootstrap.BootstrapValleyThreeBirdArea) },
-        { "sunkenGladesRunaway", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSunkenGladesRunaway) },
-        { "sunkenGladesSpiritCavernWalljumpB", new Action<SceneRoot>(RandomizerBootstrap.BootstrapWallJumpTreeHint) },
-        { "sunkenGladesOriRoom", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSeinRoomHint) },
-        { "sunkenGladesEnemyIntroductionC", new Action<SceneRoot>(RandomizerBootstrap.BootstrapRhinoBeforeSein) },
-        { "sorrowPassForestB", new Action<SceneRoot>(RandomizerBootstrap.BootstrapMistyPedestal) },
-        { "ginsoTreeResurrection", new Action<SceneRoot>(RandomizerBootstrap.BootstrapGinsoUpperMiniboss) },
-        { "forlornRuinsC", new Action<SceneRoot>(RandomizerBootstrap.BootstrapForlornRuinsBridge) },
+        { "moonGrottoRopeBridge", BootstrapMoonGrottoBridge },
+        { "mountHoruHubMid", BootstrapMountHoruHub },
+        { "mountHoruLaserPuzzle", BootstrapMountHoruLaserPuzzle },
+        { "northMangroveFallsLanternIntro", BootstrapBlackrootLanternRoom },
+        { "mangroveFallsDashIntro", BootstrapBlackrootBoulderArea },
+        { "spiritTreeRefined", BootstrapSpiritTree },
+        { "sunkenGladesIntroSplitA", BootstrapSunkenGladesKeystoneDoor },
+        { "sunkenGladesIntroSplitB", BootstrapSunkenGladesSpiritWell },
+        { "thornfeltSwampActTwoStart", BootstrapThornfeltSwampMain },
+        { "titleScreenSwallowsNest", BootstrapTitleScreen },
+        { "westGladesMistyWoodsCaveTransition", BootstrapValleyEntry },
+        { "westGladesFireflyAreaA", BootstrapValleyThreeBirdArea },
+        { "sunkenGladesRunaway", BootstrapSunkenGladesRunaway },
+        { "sunkenGladesSpiritCavernWalljumpB", BootstrapWallJumpTreeHint },
+        { "sunkenGladesOriRoom", BootstrapSeinRoomHint },
+        { "sunkenGladesEnemyIntroductionC", BootstrapRhinoBeforeSein },
+        { "sorrowPassForestB", BootstrapMistyPedestal },
+        { "ginsoTreeResurrection", BootstrapGinsoUpperMiniboss },
+        { "forlornRuinsC", BootstrapForlornRuinsBridge },
     };
 
     private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();
@@ -804,9 +806,9 @@ public class RandomizerBootstrap {
     // this is the place. Things altered here may be serialised (saved) by the scene. If you 
     // want to make new serialised scene elements you'll need to use PreEnabled.
     private static Dictionary<string, Action<SceneRoot>> s_bootstrapAfterSerialize = new Dictionary<string, Action<SceneRoot>> {
-        { "moonGrottoEnemyPuzzle", new Action<SceneRoot>(RandomizerBootstrap.BootstrapMoonGrottoMiniboss) },
-        { "sunkenGladesOriRoom", new Action<SceneRoot>(RandomizerBootstrap.BootstrapSeinRoomWall) },
-        { "ginsoTreePuzzles", new Action<SceneRoot>(RandomizerBootstrap.BootstrapGinsoLowerMiniboss) },
+        { "moonGrottoEnemyPuzzle", BootstrapMoonGrottoMiniboss },
+        { "sunkenGladesOriRoom", BootstrapSeinRoomWall },
+        { "ginsoTreePuzzles", BootstrapGinsoLowerMiniboss },
     };
 
     private static List<string> s_bootstrappedScenesAfterSerialize = new List<string>();

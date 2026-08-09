@@ -1,11 +1,10 @@
-using System;
 using Core;
 using Game;
 using UnityEngine;
 
 public class TransparentWallB : SaveSerialize, ISuspendable {
     public TransparentWallB() {
-        this.IsSuspended = false;
+        IsSuspended = false;
     }
 
     public new void Awake() {
@@ -17,87 +16,87 @@ public class TransparentWallB : SaveSerialize, ISuspendable {
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref this.m_hasBeenShown);
+        ar.Serialize(ref m_hasBeenShown);
     }
 
     public float SenseTime {
-        get { return this.Animator.Duration / 2f; }
+        get { return Animator.Duration / 2f; }
     }
 
     public void Start() {
-        AnimatorDriver animatorDriver = this.Animator.AnimatorDriver;
-        if (this.WallVisible) {
-            this.Animator.Initialize();
+        AnimatorDriver animatorDriver = Animator.AnimatorDriver;
+        if (WallVisible) {
+            Animator.Initialize();
             animatorDriver.GoToEnd();
-        } else if (this.HasSense) {
-            this.Animator.Initialize();
-            animatorDriver.CurrentTime = this.SenseTime;
+        } else if (HasSense) {
+            Animator.Initialize();
+            animatorDriver.CurrentTime = SenseTime;
             animatorDriver.Pause();
             animatorDriver.Sample();
         } else {
-            this.Animator.Initialize();
+            Animator.Initialize();
             animatorDriver.GoToStart();
         }
     }
 
     public void OnTriggerEnter(Collider other) {
-        this.OnEnterTrigger(other);
-        this.OnTrigger(other);
+        OnEnterTrigger(other);
+        OnTrigger(other);
     }
 
     public void OnTriggerStay(Collider other) {
-        this.OnTrigger(other);
+        OnTrigger(other);
     }
 
     private void OnEnterTrigger(Collider other) {
         if (other.gameObject.CompareTag("Player")) {
-            if (!this.m_hasBeenShown) {
+            if (!m_hasBeenShown) {
                 if (SeinTransparentWallHandler.Instance) {
-                    Sound.Play(SeinTransparentWallHandler.Instance.EnterTransparentWallFirstTimeSoundProvider.GetSound(null), base.transform.position, null);
+                    Sound.Play(SeinTransparentWallHandler.Instance.EnterTransparentWallFirstTimeSoundProvider.GetSound(null), transform.position, null);
                 }
             } else if (SeinTransparentWallHandler.Instance) {
-                Sound.Play(SeinTransparentWallHandler.Instance.EnterTransparentWallSoundProvider.GetSound(null), base.transform.position, null);
+                Sound.Play(SeinTransparentWallHandler.Instance.EnterTransparentWallSoundProvider.GetSound(null), transform.position, null);
             }
         }
     }
 
     public void OnTrigger(Collider other) {
         if (other.gameObject.CompareTag("Player")) {
-            this.m_beingTriggered = true;
-            if (!this.m_hasBeenShown) {
-                this.m_hasBeenShown = true;
+            m_beingTriggered = true;
+            if (!m_hasBeenShown) {
+                m_hasBeenShown = true;
                 AchievementsLogic.Instance.RevealTransparentWall();
             }
         }
     }
 
     public void FixedUpdate() {
-        if (this.IsSuspended) {
+        if (IsSuspended) {
             return;
         }
 
-        AnimatorDriver animatorDriver = this.Animator.AnimatorDriver;
-        if (this.WallVisible) {
+        AnimatorDriver animatorDriver = Animator.AnimatorDriver;
+        if (WallVisible) {
             if (animatorDriver.IsReversed || !animatorDriver.IsPlaying) {
                 animatorDriver.SetForward();
                 animatorDriver.Resume();
             }
-        } else if (this.m_lastVisiable) {
+        } else if (m_lastVisiable) {
             animatorDriver.SetBackwards();
             animatorDriver.Resume();
             if (SeinTransparentWallHandler.Instance) {
-                Sound.Play(SeinTransparentWallHandler.Instance.LeaveTransparentWallSoundProvider.GetSound(null), base.transform.position, null);
+                Sound.Play(SeinTransparentWallHandler.Instance.LeaveTransparentWallSoundProvider.GetSound(null), transform.position, null);
             }
         }
 
-        this.m_lastVisiable = this.WallVisible;
-        if (animatorDriver.CurrentTime < this.SenseTime && this.HasSense) {
+        m_lastVisiable = WallVisible;
+        if (animatorDriver.CurrentTime < SenseTime && HasSense) {
             animatorDriver.Pause();
-            animatorDriver.CurrentTime = this.SenseTime;
+            animatorDriver.CurrentTime = SenseTime;
             animatorDriver.Sample();
         }
 
-        this.m_beingTriggered = false;
+        m_beingTriggered = false;
     }
 
     public bool HasSense {
@@ -105,7 +104,7 @@ public class TransparentWallB : SaveSerialize, ISuspendable {
     }
 
     public bool WallVisible {
-        get { return this.m_beingTriggered; }
+        get { return m_beingTriggered; }
     }
 
     public bool IsSuspended { get; set; }

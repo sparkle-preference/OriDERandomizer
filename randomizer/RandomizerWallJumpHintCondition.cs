@@ -1,6 +1,4 @@
-using System;
 using Game;
-using UnityEngine;
 
 public class RandomizerWallJumpHintCondition : Condition {
     public override bool Validate(IContext context) {
@@ -25,8 +23,5 @@ public class RandomizerWallJumpHintCondition : Condition {
         }
 
         return true;
-    }
-
-    public RandomizerWallJumpHintCondition() {
     }
 }

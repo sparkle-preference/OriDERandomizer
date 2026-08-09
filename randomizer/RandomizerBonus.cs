@@ -52,9 +52,8 @@ public static class RandomizerBonus {
         switch (ID) {
             case 0:
                 if (!flag) {
-                    Characters.Sein.Mortality.Health.SetAmount((float)(Characters.Sein.Mortality.Health.MaxHealth + 20));
+                    Characters.Sein.Mortality.Health.SetAmount(Characters.Sein.Mortality.Health.MaxHealth + 20);
                     RandomizerSwitch.PickupMessage("Mega Health");
-                    return;
                 }
 
                 break;
@@ -62,7 +61,6 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Energy.SetCurrent(Characters.Sein.Energy.Max + 5f);
                     RandomizerSwitch.PickupMessage("Mega Energy");
-                    return;
                 }
 
                 break;
@@ -75,22 +73,20 @@ public static class RandomizerBonus {
             case 6:
                 if (!flag) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("Attack Upgrade (" + RandomizerBonus.SpiritFlameLevel().ToString() + ")");
+                    RandomizerSwitch.PickupMessage("Attack Upgrade (" + SpiritFlameLevel() + ")");
                     return;
                 }
 
-                if (RandomizerBonus.SpiritFlameLevel() > 0) {
+                if (SpiritFlameLevel() > 0) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                    RandomizerSwitch.PickupMessage("Attack Upgrade (" + RandomizerBonus.SpiritFlameLevel().ToString() + ")");
-                    return;
+                    RandomizerSwitch.PickupMessage("Attack Upgrade (" + SpiritFlameLevel() + ")");
                 }
 
                 break;
             case 8:
                 RandomizerSwitch.PickupMessage("Explosion Power Upgrade");
-                if (!RandomizerBonus.ExplosionPower()) {
+                if (!ExplosionPower()) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    return;
                 }
 
                 break;
@@ -104,182 +100,174 @@ public static class RandomizerBonus {
                 if (Characters.Sein.Inventory.GetRandomizerItem(ID) == 1)
                     RandomizerSwitch.PickupMessage("Spirit Light Efficiency");
                 else
-                    RandomizerSwitch.PickupMessage("Spirit Light Efficiency (" + Characters.Sein.Inventory.GetRandomizerItem(ID).ToString() + ")");
+                    RandomizerSwitch.PickupMessage("Spirit Light Efficiency (" + Characters.Sein.Inventory.GetRandomizerItem(ID) + ")");
                 break;
             case 10:
                 RandomizerSwitch.PickupMessage("Extra Air Dash");
-                if (!RandomizerBonus.DoubleAirDash()) {
+                if (!DoubleAirDash()) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                    return;
                 }
 
                 break;
             case 11:
                 RandomizerSwitch.PickupMessage("Charge Dash Efficiency");
-                if (!RandomizerBonus.ChargeDashEfficiency()) {
+                if (!ChargeDashEfficiency()) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                    return;
                 }
 
                 break;
             case 12:
                 if (!flag) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    if (RandomizerBonus.DoubleJumpUpgrades() == 1) {
+                    if (DoubleJumpUpgrades() == 1) {
                         RandomizerSwitch.PickupMessage("Extra Double Jump");
                         return;
                     }
 
-                    RandomizerSwitch.PickupMessage("Extra Double Jump (" + RandomizerBonus.DoubleJumpUpgrades().ToString() + ")");
-                    return;
-                } else if (RandomizerBonus.DoubleJumpUpgrades() > 0) {
+                    RandomizerSwitch.PickupMessage("Extra Double Jump (" + DoubleJumpUpgrades() + ")");
+                } else if (DoubleJumpUpgrades() > 0) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                    if (RandomizerBonus.DoubleJumpUpgrades() == 1) {
+                    if (DoubleJumpUpgrades() == 1) {
                         RandomizerSwitch.PickupMessage("Extra Double Jump");
                         return;
                     }
 
-                    RandomizerSwitch.PickupMessage("Extra Double Jump (" + RandomizerBonus.DoubleJumpUpgrades().ToString() + ")");
-                    return;
+                    RandomizerSwitch.PickupMessage("Extra Double Jump (" + DoubleJumpUpgrades() + ")");
                 }
 
                 break;
             case 13:
                 if (!flag) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("Health Regeneration (" + RandomizerBonus.HealthRegeneration().ToString() + ")");
+                    RandomizerSwitch.PickupMessage("Health Regeneration (" + HealthRegeneration() + ")");
                     return;
                 }
 
-                if (RandomizerBonus.HealthRegeneration() > 0) {
+                if (HealthRegeneration() > 0) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                    RandomizerSwitch.PickupMessage("Health Regeneration (" + RandomizerBonus.HealthRegeneration().ToString() + ")");
-                    return;
+                    RandomizerSwitch.PickupMessage("Health Regeneration (" + HealthRegeneration() + ")");
                 }
 
                 break;
             case 15:
                 if (!flag) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("Energy Regeneration (" + RandomizerBonus.EnergyRegeneration().ToString() + ")");
+                    RandomizerSwitch.PickupMessage("Energy Regeneration (" + EnergyRegeneration() + ")");
                     return;
                 }
 
-                if (RandomizerBonus.EnergyRegeneration() > 0) {
+                if (EnergyRegeneration() > 0) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                    RandomizerSwitch.PickupMessage("Energy Regeneration (" + RandomizerBonus.EnergyRegeneration().ToString() + ")");
-                    return;
+                    RandomizerSwitch.PickupMessage("Energy Regeneration (" + EnergyRegeneration() + ")");
                 }
 
                 break;
             case 17:
                 if (flag) {
-                    if (RandomizerBonus.WaterVeinShards() > 0) {
+                    if (WaterVeinShards() > 0) {
                         Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                        RandomizerSwitch.PickupMessage("*Water Vein Shard (" + RandomizerBonus.WaterVeinShards().ToString() + "/3)*");
+                        RandomizerSwitch.PickupMessage("*Water Vein Shard (" + WaterVeinShards() + "/3)*");
                     }
                 } else {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("*Water Vein Shard (" + RandomizerBonus.WaterVeinShards().ToString() + "/3)*", 300);
+                    RandomizerSwitch.PickupMessage("*Water Vein Shard (" + WaterVeinShards() + "/3)*", 300);
                 }
 
-                Keys.GinsoTree = (RandomizerBonus.WaterVeinShards() >= 3);
+                Keys.GinsoTree = (WaterVeinShards() >= 3);
                 if (Keys.GinsoTree)
                     RandomizerStatsManager.FoundEvent(0);
                 return;
             case 19:
                 if (flag) {
-                    if (RandomizerBonus.GumonSealShards() > 0) {
+                    if (GumonSealShards() > 0) {
                         Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                        RandomizerSwitch.PickupMessage("#Gumon Seal Shard (" + RandomizerBonus.GumonSealShards().ToString() + "/3)#");
+                        RandomizerSwitch.PickupMessage("#Gumon Seal Shard (" + GumonSealShards() + "/3)#");
                     }
                 } else {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("#Gumon Seal Shard (" + RandomizerBonus.GumonSealShards().ToString() + "/3)#", 300);
+                    RandomizerSwitch.PickupMessage("#Gumon Seal Shard (" + GumonSealShards() + "/3)#", 300);
                 }
 
-                Keys.ForlornRuins = (RandomizerBonus.GumonSealShards() >= 3);
+                Keys.ForlornRuins = (GumonSealShards() >= 3);
                 if (Keys.ForlornRuins)
                     RandomizerStatsManager.FoundEvent(2);
                 return;
             case 21:
                 if (flag) {
-                    if (RandomizerBonus.SunstoneShards() > 0) {
+                    if (SunstoneShards() > 0) {
                         Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                        RandomizerSwitch.PickupMessage("@Sunstone Shard (" + RandomizerBonus.SunstoneShards().ToString() + "/3)@");
+                        RandomizerSwitch.PickupMessage("@Sunstone Shard (" + SunstoneShards() + "/3)@");
                     }
                 } else {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("@Sunstone Shard (" + RandomizerBonus.SunstoneShards().ToString() + "/3)@", 300);
+                    RandomizerSwitch.PickupMessage("@Sunstone Shard (" + SunstoneShards() + "/3)@", 300);
                 }
 
-                Keys.MountHoru = (RandomizerBonus.SunstoneShards() >= 3);
+                Keys.MountHoru = (SunstoneShards() >= 3);
                 if (Keys.MountHoru)
                     RandomizerStatsManager.FoundEvent(4);
                 return;
             case 28:
                 if (!flag) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                } else if (RandomizerBonus.WarmthFrags() > 0) {
+                } else if (WarmthFrags() > 0) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
                 }
 
-                if (Randomizer.fragKeyFinish < RandomizerBonus.WarmthFrags()) {
+                if (Randomizer.fragKeyFinish < WarmthFrags()) {
                     RandomizerSwitch.PickupMessage("@Warmth Fragment (extra)@", 300);
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage(string.Concat(new object[] { "@Warmth Fragment (", RandomizerBonus.WarmthFrags().ToString(), "/", Randomizer.fragKeyFinish, ")@" }), 300);
+                RandomizerSwitch.PickupMessage(string.Concat("@Warmth Fragment (", WarmthFrags().ToString(), "/", Randomizer.fragKeyFinish, ")@"), 300);
                 break;
             case 29:
                 return;
             case 30:
                 if (!flag) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("Bleeding x" + RandomizerBonus.Bleeding().ToString());
+                    RandomizerSwitch.PickupMessage("Bleeding x" + Bleeding());
                     return;
                 }
 
-                if (RandomizerBonus.Bleeding() > 0) {
+                if (Bleeding() > 0) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                    RandomizerSwitch.PickupMessage("Bleeding x" + RandomizerBonus.Bleeding().ToString());
-                    return;
+                    RandomizerSwitch.PickupMessage("Bleeding x" + Bleeding());
                 }
 
                 break;
             case 31:
                 if (!flag)
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                else if (RandomizerBonus.Lifesteal() > 0)
+                else if (Lifesteal() > 0)
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
                 if (Lifesteal() == 1)
                     RandomizerSwitch.PickupMessage("Health Leech");
                 else
-                    RandomizerSwitch.PickupMessage("Health Leech x" + RandomizerBonus.Lifesteal().ToString());
+                    RandomizerSwitch.PickupMessage("Health Leech x" + Lifesteal());
                 break;
             case 32:
                 if (!flag)
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                else if (RandomizerBonus.Manavamp() > 0)
+                else if (Manavamp() > 0)
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
                 if (Manavamp() == 1)
                     RandomizerSwitch.PickupMessage("Energy Leech");
                 else
-                    RandomizerSwitch.PickupMessage("Energy Leech x" + RandomizerBonus.Manavamp().ToString());
+                    RandomizerSwitch.PickupMessage("Energy Leech x" + Manavamp());
                 break;
             case 33:
                 int v;
                 if (!flag) {
                     v = Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("Skill Velocity Upgrade x" + v.ToString());
+                    RandomizerSwitch.PickupMessage("Skill Velocity Upgrade x" + v);
                     if (Characters.Sein.Inventory.GetRandomizerItem(108) == 0)
                         RandomizerBonusSkill.FoundBonusSkill(108);
                     return;
                 }
 
                 v = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                RandomizerSwitch.PickupMessage("Skill Velocity Upgrade x" + v.ToString());
-                return;
+                RandomizerSwitch.PickupMessage("Skill Velocity Upgrade x" + v);
                 break;
             case 34:
                 Characters.Sein.Inventory.SetRandomizerItem(34, 1);
@@ -297,15 +285,14 @@ public static class RandomizerBonus {
                 int j;
                 if (!flag) {
                     j = Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("Jump Upgrade x" + j.ToString());
+                    RandomizerSwitch.PickupMessage("Jump Upgrade x" + j);
                     if (Characters.Sein.Inventory.GetRandomizerItem(108) == 0)
                         RandomizerBonusSkill.FoundBonusSkill(108);
                     return;
                 }
 
                 j = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                RandomizerSwitch.PickupMessage("Jump Upgrade x" + j.ToString());
-                return;
+                RandomizerSwitch.PickupMessage("Jump Upgrade x" + j);
                 break;
             case 40:
                 if (!Characters.Sein || flag)
@@ -605,20 +592,20 @@ public static class RandomizerBonus {
     }
 
     public static void Update() {
-        int healthRegenLevel = RandomizerBonus.HealthRegeneration() + (Characters.Sein.PlayerAbilities.HealthMarkers.HasAbility ? 2 : 0) - RandomizerBonus.Bleeding();
-        int energyRegenLevel = RandomizerBonus.EnergyRegeneration() + (Characters.Sein.PlayerAbilities.EnergyMarkers.HasAbility ? 2 : 0);
+        int healthRegenLevel = HealthRegeneration() + (Characters.Sein.PlayerAbilities.HealthMarkers.HasAbility ? 2 : 0) - Bleeding();
+        int energyRegenLevel = EnergyRegeneration() + (Characters.Sein.PlayerAbilities.EnergyMarkers.HasAbility ? 2 : 0);
 
         if (healthRegenLevel > 0) {
-            Characters.Sein.Mortality.Health.GainHealth((float)healthRegenLevel * RandomizerBonus.HealthRegenAmount * Time.deltaTime / RandomizerBonus.HealthRegenTimeSeconds);
+            Characters.Sein.Mortality.Health.GainHealth(healthRegenLevel * HealthRegenAmount * Time.deltaTime / HealthRegenTimeSeconds);
         } else if (healthRegenLevel < 0) {
-            Characters.Sein.Mortality.Health.LoseHealth((float)(-healthRegenLevel) * RandomizerBonus.HealthRegenAmount * Time.deltaTime / RandomizerBonus.HealthRegenTimeSeconds);
+            Characters.Sein.Mortality.Health.LoseHealth(-healthRegenLevel * HealthRegenAmount * Time.deltaTime / HealthRegenTimeSeconds);
         }
 
-        if (RandomizerBonus.Bleeding() > 0 && Characters.Sein.Mortality.Health.Amount <= 0f) {
+        if (Bleeding() > 0 && Characters.Sein.Mortality.Health.Amount <= 0f) {
             Characters.Sein.Mortality.DamageReciever.OnRecieveDamage(new Damage(1f, default(Vector2), default(Vector3), DamageType.Water, null));
         }
 
-        Characters.Sein.Energy.Gain((float)energyRegenLevel * RandomizerBonus.EnergyRegenAmount * Time.deltaTime / RandomizerBonus.EnergyRegenTimeSeconds);
+        Characters.Sein.Energy.Gain(energyRegenLevel * EnergyRegenAmount * Time.deltaTime / EnergyRegenTimeSeconds);
         RandomizerBonusSkill.Update();
     }
 
@@ -628,8 +615,8 @@ public static class RandomizerBonus {
                 damage = 20f;
             }
 
-            Characters.Sein.Mortality.Health.GainHealth((float)RandomizerBonus.Lifesteal() * 0.2f * damage);
-            Characters.Sein.Energy.Gain((float)RandomizerBonus.Manavamp() * 0.05f * damage);
+            Characters.Sein.Mortality.Health.GainHealth(Lifesteal() * 0.2f * damage);
+            Characters.Sein.Energy.Gain(Manavamp() * 0.05f * damage);
         }
     }
 
@@ -765,7 +752,7 @@ public static class RandomizerBonus {
         get { return Randomizer.Inventory.GetRandomizerItem(422) > 0 && !RandomizerBonusSkill.IsActive(115); }
     }
 
-    private static Dictionary<int, String> BonusNames = new Dictionary<int, String>() {
+    private static Dictionary<int, String> BonusNames = new Dictionary<int, String> {
         { 6, "Attack Upgrade" },
         { 13, "Health Regeneration" },
         { 15, "Energy Regeneration" },
@@ -790,37 +777,37 @@ public static class RandomizerBonus {
 
     public static bool DoubleAirDashUsed;
 
-    private static RandomizerBonus.Ability[] abilities = new RandomizerBonus.Ability[] {
-        new RandomizerBonus.Ability("Quick Flame", (PlayerAbilities p) => p.QuickFlame),
-        new RandomizerBonus.Ability("Spark Flame", (PlayerAbilities p) => p.SparkFlame),
-        new RandomizerBonus.Ability("Charge Flame Burn", (PlayerAbilities p) => p.ChargeFlameBurn),
-        new RandomizerBonus.Ability("Split Flame", (PlayerAbilities p) => p.SplitFlameUpgrade),
-        new RandomizerBonus.Ability("Ultra Light Burst", (PlayerAbilities p) => p.GrenadeUpgrade),
-        new RandomizerBonus.Ability("Cinder Flame", (PlayerAbilities p) => p.CinderFlame),
-        new RandomizerBonus.Ability("Ultra Stomp", (PlayerAbilities p) => p.StompUpgrade),
-        new RandomizerBonus.Ability("Rapid Flame", (PlayerAbilities p) => p.RapidFire),
-        new RandomizerBonus.Ability("Charge Flame Blast", (PlayerAbilities p) => p.ChargeFlameBlast),
-        new RandomizerBonus.Ability("Ultra Split Flame", (PlayerAbilities p) => p.UltraSplitFlame),
-        new RandomizerBonus.Ability("Spirit Magnet", (PlayerAbilities p) => p.Magnet),
-        new RandomizerBonus.Ability("Map Markers", (PlayerAbilities p) => p.MapMarkers),
-        new RandomizerBonus.Ability("Life Efficiency", (PlayerAbilities p) => p.HealthEfficiency),
-        new RandomizerBonus.Ability("Ultra Spirit Magnet", (PlayerAbilities p) => p.UltraMagnet),
-        new RandomizerBonus.Ability("Energy Efficiency", (PlayerAbilities p) => p.EnergyEfficiency),
-        new RandomizerBonus.Ability("Ability Markers", (PlayerAbilities p) => p.AbilityMarkers),
-        new RandomizerBonus.Ability("Spirit Efficiency", (PlayerAbilities p) => p.SoulEfficiency),
-        new RandomizerBonus.Ability("Life Markers", (PlayerAbilities p) => p.HealthMarkers),
-        new RandomizerBonus.Ability("Energy Markers", (PlayerAbilities p) => p.EnergyMarkers),
-        new RandomizerBonus.Ability("Sense", (PlayerAbilities p) => p.Sense),
-        new RandomizerBonus.Ability("Rekindle", (PlayerAbilities p) => p.Rekindle),
-        new RandomizerBonus.Ability("Regroup", (PlayerAbilities p) => p.Regroup),
-        new RandomizerBonus.Ability("Charge Flame Efficiency", (PlayerAbilities p) => p.ChargeFlameEfficiency),
-        new RandomizerBonus.Ability("Air Dash", (PlayerAbilities p) => p.AirDash),
-        new RandomizerBonus.Ability("Ultra Soul Link", (PlayerAbilities p) => p.UltraSoulFlame),
-        new RandomizerBonus.Ability("Charge Dash", (PlayerAbilities p) => p.ChargeDash),
-        new RandomizerBonus.Ability("Water Breath", (PlayerAbilities p) => p.WaterBreath),
-        new RandomizerBonus.Ability("Soul Link Efficiency", (PlayerAbilities p) => p.SoulFlameEfficiency),
-        new RandomizerBonus.Ability("Triple Jump", (PlayerAbilities p) => p.DoubleJumpUpgrade),
-        new RandomizerBonus.Ability("Ultra Defense", (PlayerAbilities p) => p.UltraDefense)
+    private static Ability[] abilities = {
+        new Ability("Quick Flame", p => p.QuickFlame),
+        new Ability("Spark Flame", p => p.SparkFlame),
+        new Ability("Charge Flame Burn", p => p.ChargeFlameBurn),
+        new Ability("Split Flame", p => p.SplitFlameUpgrade),
+        new Ability("Ultra Light Burst", p => p.GrenadeUpgrade),
+        new Ability("Cinder Flame", p => p.CinderFlame),
+        new Ability("Ultra Stomp", p => p.StompUpgrade),
+        new Ability("Rapid Flame", p => p.RapidFire),
+        new Ability("Charge Flame Blast", p => p.ChargeFlameBlast),
+        new Ability("Ultra Split Flame", p => p.UltraSplitFlame),
+        new Ability("Spirit Magnet", p => p.Magnet),
+        new Ability("Map Markers", p => p.MapMarkers),
+        new Ability("Life Efficiency", p => p.HealthEfficiency),
+        new Ability("Ultra Spirit Magnet", p => p.UltraMagnet),
+        new Ability("Energy Efficiency", p => p.EnergyEfficiency),
+        new Ability("Ability Markers", p => p.AbilityMarkers),
+        new Ability("Spirit Efficiency", p => p.SoulEfficiency),
+        new Ability("Life Markers", p => p.HealthMarkers),
+        new Ability("Energy Markers", p => p.EnergyMarkers),
+        new Ability("Sense", p => p.Sense),
+        new Ability("Rekindle", p => p.Rekindle),
+        new Ability("Regroup", p => p.Regroup),
+        new Ability("Charge Flame Efficiency", p => p.ChargeFlameEfficiency),
+        new Ability("Air Dash", p => p.AirDash),
+        new Ability("Ultra Soul Link", p => p.UltraSoulFlame),
+        new Ability("Charge Dash", p => p.ChargeDash),
+        new Ability("Water Breath", p => p.WaterBreath),
+        new Ability("Soul Link Efficiency", p => p.SoulFlameEfficiency),
+        new Ability("Triple Jump", p => p.DoubleJumpUpgrade),
+        new Ability("Ultra Defense", p => p.UltraDefense)
     };
 
     public static float HealthRegenAmount = 4f;
@@ -844,8 +831,8 @@ public static class RandomizerBonus {
                 return;
             }
 
-            RandomizerSwitch.PickupMessage("$" + this.name + "$", 240);
-            this.selector(Characters.Sein.PlayerAbilities).HasAbility = true;
+            RandomizerSwitch.PickupMessage("$" + name + "$", 240);
+            selector(Characters.Sein.PlayerAbilities).HasAbility = true;
         }
 
         public void Lost() {
@@ -853,11 +840,11 @@ public static class RandomizerBonus {
                 return;
             }
 
-            RandomizerSwitch.PickupMessage("@" + this.name + " Lost!!@", 240);
-            this.selector(Characters.Sein.PlayerAbilities).HasAbility = false;
+            RandomizerSwitch.PickupMessage("@" + name + " Lost!!@", 240);
+            selector(Characters.Sein.PlayerAbilities).HasAbility = false;
         }
 
-        public bool Has() => Characters.Sein && this.selector(Characters.Sein.PlayerAbilities).HasAbility;
+        public bool Has() => Characters.Sein && selector(Characters.Sein.PlayerAbilities).HasAbility;
         private string name;
         private Func<PlayerAbilities, CharacterAbility> selector;
     }

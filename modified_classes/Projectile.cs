@@ -5,8 +5,8 @@ using UnityEngine;
 
 public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFlameAttackable, IStompAttackable, IBashAttackable, IPooled, ISuspendable, IPortalVisitor, IReflectable {
     Vector3 IPortalVisitor.Speed {
-        get { return this.Direction; }
-        set { this.Direction = value; }
+        get { return Direction; }
+        set { Direction = value; }
     }
 
     public Vector3 Direction { get; set; }
@@ -20,64 +20,64 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
     public bool IsSuspended { get; set; }
 
     public void OnValidate() {
-        this.m_onKillRecievers = base.GetComponentsInChildren(typeof(IKillReciever));
+        m_onKillRecievers = GetComponentsInChildren(typeof(IKillReciever));
     }
 
     public void OnPoolSpawned() {
-        this.HasBeenBashedByOri = false;
-        this.CurrentTime = 0f;
-        this.Gravity = this.m_originalGravity;
-        this.Direction = Vector3.left;
-        this.Speed = 0f;
-        this.m_collider.enabled = this.m_colliderEnabledAtStart;
-        this.m_explode = false;
-        this.m_explodeLater = false;
-        this.m_lastLoop = null;
-        this.LastReflector = null;
-        this.Displacement = Vector3.zero;
-        this.IsSuspended = false;
-        this.Owner = null;
+        HasBeenBashedByOri = false;
+        CurrentTime = 0f;
+        Gravity = m_originalGravity;
+        Direction = Vector3.left;
+        Speed = 0f;
+        m_collider.enabled = m_colliderEnabledAtStart;
+        m_explode = false;
+        m_explodeLater = false;
+        m_lastLoop = null;
+        LastReflector = null;
+        Displacement = Vector3.zero;
+        IsSuspended = false;
+        Owner = null;
     }
 
     public void Start() {
-        if (this.RotateSpriteToDirection) {
-            base.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(this.Direction));
+        if (RotateSpriteToDirection) {
+            transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(Direction));
         }
 
-        if (this.EnableCollisionGracePeriod) {
-            this.m_collider.enabled = false;
+        if (EnableCollisionGracePeriod) {
+            m_collider.enabled = false;
         }
     }
 
     public void Awake() {
-        this.m_nullify = delegate() { this.m_lastLoop = null; };
+        m_nullify = delegate { m_lastLoop = null; };
         SuspensionManager.Register(this);
-        this.Direction = Vector3.left;
-        this.Speed = 0f;
-        this.m_collider = base.GetComponent<Collider>();
-        this.m_colliderEnabledAtStart = this.m_collider.enabled;
-        this.Rigidbody = base.GetComponent<Rigidbody>();
-        DamageDealer component = base.GetComponent<DamageDealer>();
+        Direction = Vector3.left;
+        Speed = 0f;
+        m_collider = GetComponent<Collider>();
+        m_colliderEnabledAtStart = m_collider.enabled;
+        Rigidbody = GetComponent<Rigidbody>();
+        DamageDealer component = GetComponent<DamageDealer>();
         if (component) {
             DamageDealer damageDealer = component;
-            damageDealer.OnDamageDealtEvent = (Action<GameObject, Damage>)Delegate.Combine(damageDealer.OnDamageDealtEvent, new Action<GameObject, Damage>(this.OnDamageDealt));
+            damageDealer.OnDamageDealtEvent = (Action<GameObject, Damage>)Delegate.Combine(damageDealer.OnDamageDealtEvent, new Action<GameObject, Damage>(OnDamageDealt));
         }
 
-        if (this.ProjectileLoop) {
-            this.m_lastLoop = Sound.Play(this.ProjectileLoop.GetSound(null), base.transform.position, this.m_nullify);
-            if (this.m_lastLoop) {
-                this.m_lastLoop.AttachTo = base.transform;
+        if (ProjectileLoop) {
+            m_lastLoop = Sound.Play(ProjectileLoop.GetSound(null), transform.position, m_nullify);
+            if (m_lastLoop) {
+                m_lastLoop.AttachTo = transform;
             }
         }
 
-        this.m_originalGravity = this.Gravity;
+        m_originalGravity = Gravity;
     }
 
     public void OnEnable() {
         Targets.Attackables.Add(this);
         PortalVistor.All.Add(this);
-        this.CurrentTime = 0f;
-        this.Rigidbody.velocity = Vector3.zero;
+        CurrentTime = 0f;
+        Rigidbody.velocity = Vector3.zero;
     }
 
     public void OnDisable() {
@@ -90,7 +90,7 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
     }
 
     public virtual bool CanBeBashed() {
-        return this.CanProjectileBeBashed;
+        return CanProjectileBeBashed;
     }
 
     public bool CanBeSpiritFlamed() {
@@ -106,8 +106,8 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
     }
 
     public void OnEnterBash() {
-        if (this.m_lastLoop) {
-            this.m_lastLoop.FadeOut(0.3f, true);
+        if (m_lastLoop) {
+            m_lastLoop.FadeOut(0.3f, true);
         }
     }
 
@@ -125,17 +125,17 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
         DamageType type = damage.Type;
         switch (type) {
             case DamageType.Bash:
-                this.HasBeenBashedByOri = true;
-                this.Direction = damage.Force.normalized;
-                if (this.UseBashSpeed) {
-                    this.Speed = this.BashSpeed;
+                HasBeenBashedByOri = true;
+                Direction = damage.Force.normalized;
+                if (UseBashSpeed) {
+                    Speed = BashSpeed;
                 }
 
-                if (this.CancelGravityOnBash) {
-                    this.Gravity = 0f;
+                if (CancelGravityOnBash) {
+                    Gravity = 0f;
                 }
 
-                this.Owner = null;
+                Owner = null;
                 return;
             case DamageType.Grenade:
                 break;
@@ -146,18 +146,18 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 
                 break;
             case DamageType.StompBlast:
-                this.Direction = damage.Force.normalized;
-                this.Owner = null;
+                Direction = damage.Force.normalized;
+                Owner = null;
                 return;
         }
 
-        this.Direction = damage.Force.normalized;
-        this.Owner = null;
+        Direction = damage.Force.normalized;
+        Owner = null;
     }
 
     public Vector3 Position {
-        get { return base.transform.position; }
-        set { base.transform.position = value; }
+        get { return transform.position; }
+        set { transform.position = value; }
     }
 
     public bool CanBeStomped() {
@@ -208,102 +208,102 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
     }
 
     public void OnDamageDealt(GameObject go, Damage damage) {
-        if (go == this.Owner) {
+        if (go == Owner) {
             return;
         }
 
         IProjectileDetonatable projectileDetonatable = go.FindComponent<IProjectileDetonatable>();
         if (projectileDetonatable != null && projectileDetonatable.CanDetonateProjectiles()) {
-            this.ExplodeProjectile();
+            ExplodeProjectile();
         }
     }
 
     public virtual void FixedUpdate() {
-        if (this.IsSuspended) {
-            this.Rigidbody.velocity = Vector3.zero;
+        if (IsSuspended) {
+            Rigidbody.velocity = Vector3.zero;
             return;
         }
 
-        if (this.EnableCollisionGracePeriod && this.CurrentTime > this.CollisionGracePeriod) {
-            this.m_collider.enabled = true;
+        if (EnableCollisionGracePeriod && CurrentTime > CollisionGracePeriod) {
+            m_collider.enabled = true;
         }
 
-        if (this.m_lastLoop == null && this.ProjectileLoop != null) {
-            this.m_lastLoop = Sound.Play(this.ProjectileLoop.GetSound(null), base.transform.position, this.m_nullify);
-            if (this.m_lastLoop) {
-                this.m_lastLoop.AttachTo = base.transform;
+        if (m_lastLoop == null && ProjectileLoop != null) {
+            m_lastLoop = Sound.Play(ProjectileLoop.GetSound(null), transform.position, m_nullify);
+            if (m_lastLoop) {
+                m_lastLoop.AttachTo = transform;
             }
         }
 
-        this.CurrentTime += Time.deltaTime;
-        if (this.CurrentTime > this.MaximumLiveTime) {
-            this.m_explode = true;
+        CurrentTime += Time.deltaTime;
+        if (CurrentTime > MaximumLiveTime) {
+            m_explode = true;
         }
 
-        if (WaterZone.PositionInWater(this.Position)) {
-            this.m_explode = true;
+        if (WaterZone.PositionInWater(Position)) {
+            m_explode = true;
         }
 
-        if (this.Gravity > 0f) {
-            this.SpeedVector += RandomizerBonusSkill.TimeScale(Vector3.down * this.Gravity * Time.fixedDeltaTime);
+        if (Gravity > 0f) {
+            SpeedVector += RandomizerBonusSkill.TimeScale(Vector3.down * Gravity * Time.fixedDeltaTime);
         }
 
-        this.UpdateVelocity();
-        if (this.RotateSpriteToDirection) {
-            float num = base.transform.eulerAngles.z;
-            num = Mathf.MoveTowardsAngle(num, MoonMath.Angle.AngleFromDirection(this.Direction), this.SpriteTurnSpeed * Time.deltaTime);
-            base.transform.eulerAngles = new Vector3(0f, 0f, num);
+        UpdateVelocity();
+        if (RotateSpriteToDirection) {
+            float num = transform.eulerAngles.z;
+            num = Mathf.MoveTowardsAngle(num, MoonMath.Angle.AngleFromDirection(Direction), SpriteTurnSpeed * Time.deltaTime);
+            transform.eulerAngles = new Vector3(0f, 0f, num);
         }
 
-        if (this.m_explode) {
-            this.ExplodeProjectile();
+        if (m_explode) {
+            ExplodeProjectile();
         }
 
-        if (this.m_explodeLater) {
-            this.m_explode = true;
-            this.m_explodeLater = false;
+        if (m_explodeLater) {
+            m_explode = true;
+            m_explodeLater = false;
         }
     }
 
     public void ExplodeProjectile() {
-        if (this.m_lastLoop) {
-            this.m_lastLoop.FadeOut(0.3f, true);
+        if (m_lastLoop) {
+            m_lastLoop.FadeOut(0.3f, true);
         }
 
-        for (int i = 0; i < this.m_onKillRecievers.Length; i++) {
-            if (this.m_onKillRecievers[i]) {
-                ((IKillReciever)this.m_onKillRecievers[i]).OnKill();
+        for (int i = 0; i < m_onKillRecievers.Length; i++) {
+            if (m_onKillRecievers[i]) {
+                ((IKillReciever)m_onKillRecievers[i]).OnKill();
             }
         }
 
-        InstantiateUtility.Destroy(base.gameObject);
+        InstantiateUtility.Destroy(gameObject);
     }
 
     public void OnCollisionEnter(Collision collision) {
-        this.m_explodeLater = true;
+        m_explodeLater = true;
     }
 
     public void OnCollisionStay(Collision collision) {
-        this.m_explode = true;
+        m_explode = true;
     }
 
     public void UpdateVelocity() {
-        Vector3 vector = -Vector3.ClampMagnitude(this.Displacement / Time.deltaTime, 10f);
-        this.Displacement += vector * Time.deltaTime;
-        this.Rigidbody.velocity = RandomizerBonusSkill.TimeScale(this.Direction * this.Speed + vector);
+        Vector3 vector = -Vector3.ClampMagnitude(Displacement / Time.deltaTime, 10f);
+        Displacement += vector * Time.deltaTime;
+        Rigidbody.velocity = RandomizerBonusSkill.TimeScale(Direction * Speed + vector);
     }
 
     public Vector3 SpeedVector {
-        get { return this.Speed * this.Direction; }
+        get { return Speed * Direction; }
         set {
-            this.Speed = value.magnitude;
-            this.Direction = value.normalized;
+            Speed = value.magnitude;
+            Direction = value.normalized;
         }
     }
 
     public void UpdateSpeedAndDirection() {
-        this.Direction = this.Rigidbody.velocity.normalized;
-        this.Speed = RandomizerBonusSkill.TimeScale(this.Rigidbody.velocity.magnitude);
+        Direction = Rigidbody.velocity.normalized;
+        Speed = RandomizerBonusSkill.TimeScale(Rigidbody.velocity.magnitude);
     }
 
     public GameObject Owner;

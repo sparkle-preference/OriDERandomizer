@@ -8,123 +8,123 @@ public class SeinChargeJump : CharacterState, ISeinReceiver {
     public event Action<float> OnJumpEvent = delegate { };
 
     public PlayerAbilities PlayerAbilities {
-        get { return this.Sein.PlayerAbilities; }
+        get { return Sein.PlayerAbilities; }
     }
 
     public PlatformMovement PlatformMovement {
-        get { return this.Sein.PlatformBehaviour.PlatformMovement; }
+        get { return Sein.PlatformBehaviour.PlatformMovement; }
     }
 
     public SeinChargeJump ChargeJump {
-        get { return this.Sein.Abilities.ChargeJump; }
+        get { return Sein.Abilities.ChargeJump; }
     }
 
     public CharacterUpwardsDeceleration UpwardsDeceleration {
-        get { return this.Sein.PlatformBehaviour.UpwardsDeceleration; }
+        get { return Sein.PlatformBehaviour.UpwardsDeceleration; }
     }
 
     public void OnDoubleJump() {
-        this.UpwardsDeceleration.Reset();
-        this.ChangeState(SeinChargeJump.State.Normal);
+        UpwardsDeceleration.Reset();
+        ChangeState(State.Normal);
     }
 
     public override void UpdateCharacterState() {
-        if (this.Sein.IsSuspended) {
+        if (Sein.IsSuspended) {
             return;
         }
 
-        this.UpdateState();
+        UpdateState();
     }
 
-    public void ChangeState(SeinChargeJump.State state) {
-        this.CurrentState = state;
-        this.m_stateCurrentTime = 0f;
-        this.m_attackablesIgnore.Clear();
-        SeinChargeJump.State currentState = this.CurrentState;
+    public void ChangeState(State state) {
+        CurrentState = state;
+        m_stateCurrentTime = 0f;
+        m_attackablesIgnore.Clear();
+        State currentState = CurrentState;
     }
 
     public void UpdateState() {
-        SeinChargeJump.State currentState = this.CurrentState;
-        if (currentState == SeinChargeJump.State.Jumping) {
-            if (this.m_stateCurrentTime > this.JumpDuration) {
-                this.ChangeState(SeinChargeJump.State.Normal);
+        State currentState = CurrentState;
+        if (currentState == State.Jumping) {
+            if (m_stateCurrentTime > JumpDuration) {
+                ChangeState(State.Normal);
             }
 
             for (int i = 0; i < Targets.Attackables.Count; i++) {
                 IAttackable attackable = Targets.Attackables[i];
-                if (!InstantiateUtility.IsDestroyed(attackable as Component) && !this.m_attackablesIgnore.Contains(attackable) && attackable.CanBeStomped()) {
-                    Vector3 vector = attackable.Position - this.Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
+                if (!InstantiateUtility.IsDestroyed(attackable as Component) && !m_attackablesIgnore.Contains(attackable) && attackable.CanBeStomped()) {
+                    Vector3 vector = attackable.Position - Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
                     float magnitude = vector.magnitude;
-                    if (magnitude < 3f && Vector2.Dot(vector.normalized, this.PlatformMovement.LocalSpeed.normalized) > 0f) {
-                        this.m_attackablesIgnore.Add(attackable);
-                        Damage damage = new Damage((float)this.Damage, this.PlatformMovement.WorldSpeed.normalized * 3f, this.Sein.Position, DamageType.Stomp, base.gameObject);
+                    if (magnitude < 3f && Vector2.Dot(vector.normalized, PlatformMovement.LocalSpeed.normalized) > 0f) {
+                        m_attackablesIgnore.Add(attackable);
+                        Damage damage = new Damage(Damage, PlatformMovement.WorldSpeed.normalized * 3f, Sein.Position, DamageType.Stomp, gameObject);
                         damage.DealToComponents(((Component)attackable).gameObject);
                         if (attackable.IsDead() && attackable is IStompAttackable && ((IStompAttackable)attackable).CountsTowardsSuperJumpAchievement()) {
                             AchievementsLogic.Instance.OnSuperJumpedThroughEnemy();
                         }
 
-                        if (this.ExplosionEffect) {
-                            InstantiateUtility.Instantiate(this.ExplosionEffect, Vector3.Lerp(base.transform.position, attackable.Position, 0.5f), Quaternion.identity);
+                        if (ExplosionEffect) {
+                            InstantiateUtility.Instantiate(ExplosionEffect, Vector3.Lerp(transform.position, attackable.Position, 0.5f), Quaternion.identity);
                         }
 
                         break;
                     }
                 }
             }
-        } else if (this.Sein.Abilities.ChargeJumpCharging.IsCharged && RandomizerBonus.EnhancedChargeJump) {
+        } else if (Sein.Abilities.ChargeJumpCharging.IsCharged && RandomizerBonus.EnhancedChargeJump) {
             for (int i = 0; i < Targets.Attackables.Count; i++) {
                 IAttackable attackable = Targets.Attackables[i];
                 if (!InstantiateUtility.IsDestroyed(attackable as Component) && attackable.CanBeStomped()) {
-                    Vector3 vector = attackable.Position - this.Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
+                    Vector3 vector = attackable.Position - Sein.PlatformBehaviour.PlatformMovement.HeadPosition;
                     float magnitude = vector.magnitude;
                     if (magnitude < 3.75f) {
-                        Damage damage = new Damage((float)this.Damage, this.PlatformMovement.WorldSpeed.normalized * 3f, this.Sein.Position, DamageType.Stomp, base.gameObject);
+                        Damage damage = new Damage(Damage, PlatformMovement.WorldSpeed.normalized * 3f, Sein.Position, DamageType.Stomp, gameObject);
                         damage.DealToComponents(((Component)attackable).gameObject);
-                        if (this.ExplosionEffect && attackable.IsDead()) {
-                            InstantiateUtility.Instantiate(this.ExplosionEffect, Vector3.Lerp(base.transform.position, attackable.Position, 0.5f), Quaternion.identity);
+                        if (ExplosionEffect && attackable.IsDead()) {
+                            InstantiateUtility.Instantiate(ExplosionEffect, Vector3.Lerp(transform.position, attackable.Position, 0.5f), Quaternion.identity);
                         }
                     }
                 }
             }
         }
 
-        this.m_stateCurrentTime += Time.deltaTime;
+        m_stateCurrentTime += Time.deltaTime;
     }
 
     public bool CanChargeJump {
-        get { return this.Sein.Abilities.ChargeJumpCharging.IsCharged && this.PlatformMovement.IsOnGround; }
+        get { return Sein.Abilities.ChargeJumpCharging.IsCharged && PlatformMovement.IsOnGround; }
     }
 
     public void PerformChargeJump() {
-        float chargedJumpStrength = this.ChargedJumpStrength + this.ChargedJumpStrength * 0.08f * (float)(RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
-        this.PlatformMovement.LocalSpeedY = chargedJumpStrength;
-        this.OnJumpEvent(chargedJumpStrength);
-        Sound.Play(this.JumpSound.GetSound(null), this.Sein.PlatformBehaviour.PlatformMovement.Position, null);
-        this.UpwardsDeceleration.Deceleration = this.Deceleration;
-        this.Sein.Mortality.DamageReciever.MakeInvincibleToEnemies(this.JumpDuration);
-        this.ChangeState(SeinChargeJump.State.Jumping);
-        this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.JumpAnimation, 10, new Func<bool>(this.ShouldChargeJumpAnimationKeepPlaying));
-        this.Sein.PlatformBehaviour.Visuals.SpriteRotater.BeginTiltLeftRightInAir(1.5f);
-        if (this.Sein.PlatformBehaviour.JumpSustain) {
-            this.Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(this.PlatformMovement.LocalSpeedY, 1f);
+        float chargedJumpStrength = ChargedJumpStrength + ChargedJumpStrength * 0.08f * (RandomizerBonus.Velocity() + RandomizerBonus.Jumpgrades());
+        PlatformMovement.LocalSpeedY = chargedJumpStrength;
+        OnJumpEvent(chargedJumpStrength);
+        Sound.Play(JumpSound.GetSound(null), Sein.PlatformBehaviour.PlatformMovement.Position, null);
+        UpwardsDeceleration.Deceleration = Deceleration;
+        Sein.Mortality.DamageReciever.MakeInvincibleToEnemies(JumpDuration);
+        ChangeState(State.Jumping);
+        Sein.PlatformBehaviour.Visuals.Animation.Play(JumpAnimation, 10, ShouldChargeJumpAnimationKeepPlaying);
+        Sein.PlatformBehaviour.Visuals.SpriteRotater.BeginTiltLeftRightInAir(1.5f);
+        if (Sein.PlatformBehaviour.JumpSustain) {
+            Sein.PlatformBehaviour.JumpSustain.SetAmountOfSpeedToLose(PlatformMovement.LocalSpeedY, 1f);
         }
 
-        this.Sein.Abilities.ChargeJumpCharging.EndCharge();
+        Sein.Abilities.ChargeJumpCharging.EndCharge();
         JumpFlipPlatform.OnSeinChargeJumpEvent();
     }
 
     public bool ShouldChargeJumpAnimationKeepPlaying() {
-        return this.PlatformMovement.IsInAir && !this.PlatformMovement.IsOnWall && !this.PlatformMovement.IsOnCeiling;
+        return PlatformMovement.IsInAir && !PlatformMovement.IsOnWall && !PlatformMovement.IsOnCeiling;
     }
 
     public void SetReferenceToSein(SeinCharacter sein) {
-        this.Sein = sein;
-        this.Sein.Abilities.ChargeJump = this;
+        Sein = sein;
+        Sein.Abilities.ChargeJump = this;
     }
 
     public override void Serialize(Archive ar) {
         base.Serialize(ar);
-        ar.Serialize(ref this.m_superJumpedEnemies);
+        ar.Serialize(ref m_superJumpedEnemies);
     }
 
     public SeinCharacter Sein;
@@ -135,7 +135,7 @@ public class SeinChargeJump : CharacterState, ISeinReceiver {
 
     public float JumpDuration = 0.5f;
 
-    public SeinChargeJump.State CurrentState;
+    public State CurrentState;
 
     // private, like vanilla: public would put these in Unity's serialized set
     private float m_stateCurrentTime;

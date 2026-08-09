@@ -5,7 +5,7 @@ using UnityEngine;
 [ExecuteInEditMode]
 public class GameWorldArea : MonoBehaviour {
     private const float PIXELS_PER_UNIT = 5f;
-    public List<GameWorldArea.WorldMapIcon> Icons = new List<GameWorldArea.WorldMapIcon>();
+    public List<WorldMapIcon> Icons = new List<WorldMapIcon>();
     public MessageProvider AreaName;
     public MessageProvider LowerAreaName;
     public string AreaNameString;
@@ -17,21 +17,21 @@ public class GameWorldArea : MonoBehaviour {
     public Condition VisitableCondition;
 
     public Bounds Bounds {
-        get => new Bounds(this.BoundingTransform.position, this.BoundingTransform.localScale);
+        get => new Bounds(BoundingTransform.position, BoundingTransform.localScale);
     }
 
     public Rect BoundingRect {
         get {
-            return new Rect() {
-                width = this.BoundingTransform.lossyScale.x,
-                height = this.BoundingTransform.lossyScale.y,
-                center = (Vector2)this.BoundingTransform.position
+            return new Rect {
+                width = BoundingTransform.lossyScale.x,
+                height = BoundingTransform.lossyScale.y,
+                center = BoundingTransform.position
             };
         }
     }
 
     public bool InsideFace(Vector3 worldPosition) {
-        return this.BoundaryCage.FindFaceAtPositionFaster(this.BoundaryCage.transform.InverseTransformPoint(worldPosition)) != null;
+        return BoundaryCage.FindFaceAtPositionFaster(BoundaryCage.transform.InverseTransformPoint(worldPosition)) != null;
     }
 
     [Serializable]
@@ -42,10 +42,10 @@ public class GameWorldArea : MonoBehaviour {
         public bool IsSecret;
 
         public WorldMapIcon(SceneMetaData.WorldMapIcon worldMapIcon) {
-            this.Guid = new MoonGuid(worldMapIcon.Guid);
-            this.Position = worldMapIcon.Position;
-            this.Icon = worldMapIcon.Icon;
-            this.IsSecret = worldMapIcon.IsSecret;
+            Guid = new MoonGuid(worldMapIcon.Guid);
+            Position = worldMapIcon.Position;
+            Icon = worldMapIcon.Icon;
+            IsSecret = worldMapIcon.IsSecret;
         }
 
         public WorldMapIcon() {

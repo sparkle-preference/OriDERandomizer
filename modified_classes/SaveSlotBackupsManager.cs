@@ -6,45 +6,45 @@ using UnityEngine;
 
 public class SaveSlotBackupsManager : MonoBehaviour {
     public void Awake() {
-        SaveSlotBackupsManager.m_instance = this;
-        Events.Scheduler.OnGameReset.Add(new Action(this.OnGameReset));
-        XboxOneSave.OnSaveGameCacheCleared += this.OnSaveGameCacheCleared;
-        this.ClearCache();
+        m_instance = this;
+        Events.Scheduler.OnGameReset.Add(OnGameReset);
+        XboxOneSave.OnSaveGameCacheCleared += OnSaveGameCacheCleared;
+        ClearCache();
     }
 
     public void OnDestroy() {
-        Events.Scheduler.OnGameReset.Remove(new Action(this.OnGameReset));
-        XboxOneSave.OnSaveGameCacheCleared -= this.OnSaveGameCacheCleared;
+        Events.Scheduler.OnGameReset.Remove(OnGameReset);
+        XboxOneSave.OnSaveGameCacheCleared -= OnSaveGameCacheCleared;
     }
 
     public void OnGameReset() {
-        this.ClearCache();
+        ClearCache();
     }
 
     public void OnSaveGameCacheCleared() {
-        this.ClearCache();
+        ClearCache();
     }
 
     public static void RequestReadBackups(int slotIndex, Action onFinishedReading) {
-        SaveSlotBackupsManager.m_instance.m_currentReadingSlot = slotIndex;
-        SaveSlotBackup saveSlotBackup = SaveSlotBackupsManager.m_instance.FindByIndex(slotIndex);
+        m_instance.m_currentReadingSlot = slotIndex;
+        SaveSlotBackup saveSlotBackup = m_instance.FindByIndex(slotIndex);
         if (saveSlotBackup.IsLoaded) {
             if (onFinishedReading != null) {
                 onFinishedReading();
             }
         } else {
-            SaveSlotBackupsManager.m_instance.m_onFinishedReaded = onFinishedReading;
+            m_instance.m_onFinishedReaded = onFinishedReading;
         }
     }
 
     public static SaveSlotBackup SaveSlotBackupAtIndex(int index) {
-        return SaveSlotBackupsManager.m_instance.m_saveSlotBackups[index];
+        return m_instance.m_saveSlotBackups[index];
     }
 
     public static void DeleteAllBackups(int slotIndex) {
-        SaveSlotBackup saveSlotBackup = SaveSlotBackupsManager.SaveSlotBackupAtIndex(slotIndex);
+        SaveSlotBackup saveSlotBackup = SaveSlotBackupAtIndex(slotIndex);
         for (int i = 0; i < 5; i++) {
-            string path = SaveSlotBackupsManager.m_instance.BackupName(slotIndex, i);
+            string path = m_instance.BackupName(slotIndex, i);
             File.Delete(path);
         }
 
@@ -55,9 +55,9 @@ public class SaveSlotBackupsManager : MonoBehaviour {
 
     public static void CreateCurrentBackup() {
         try {
-            if (Time.realtimeSinceStartup >= SaveSlotBackupsManager.m_instance.m_lastSaveTime + 60f) {
-                SaveSlotBackupsManager.m_instance.m_lastSaveTime = Time.realtimeSinceStartup;
-                SaveSlotBackupsManager.m_instance.CreateBackup(SaveSlotsManager.CurrentSlotIndex);
+            if (Time.realtimeSinceStartup >= m_instance.m_lastSaveTime + 60f) {
+                m_instance.m_lastSaveTime = Time.realtimeSinceStartup;
+                m_instance.CreateBackup(SaveSlotsManager.CurrentSlotIndex);
             }
         } catch (Exception exception) {
             Debug.LogException(exception);
@@ -65,22 +65,22 @@ public class SaveSlotBackupsManager : MonoBehaviour {
     }
 
     public static void ResetBackupDelay() {
-        if (SaveSlotBackupsManager.m_instance) {
-            SaveSlotBackupsManager.m_instance.m_lastSaveTime = 0f;
+        if (m_instance) {
+            m_instance.m_lastSaveTime = 0f;
         }
     }
 
     public void RestoreBackup(int slotIndex, int backupIndex) {
-        string filename = this.BackupName(slotIndex, backupIndex);
+        string filename = BackupName(slotIndex, backupIndex);
         GameController.Instance.SaveGameController.LoadFromFile(filename);
         GameController.Instance.SaveGameController.RestoreCheckpoint();
     }
 
     private void CreateBackup(int slotIndex) {
         SaveGameController saveGameController = GameController.Instance.SaveGameController;
-        SaveSlotBackup saveSlotBackup = this.FindByIndex(slotIndex);
+        SaveSlotBackup saveSlotBackup = FindByIndex(slotIndex);
         int num = saveSlotBackup.IndexOfOldestSaveSlotInfo();
-        string destFileName = this.BackupName(slotIndex, num);
+        string destFileName = BackupName(slotIndex, num);
         File.Copy(saveGameController.GetSaveFilePath(SaveSlotsManager.CurrentSlotIndex), destFileName, true);
         SaveSlotInfo saveSlot = new SaveSlotInfo(SaveSlotsManager.CurrentSaveSlot);
         saveSlotBackup.SaveSlotInfos[num] = new SaveSlotBackupInfo(num, saveSlot);
@@ -92,53 +92,53 @@ public class SaveSlotBackupsManager : MonoBehaviour {
     }
 
     public void Update() {
-        if (this.IsBusyLoading()) {
+        if (IsBusyLoading()) {
             return;
         }
 
-        if (this.m_createBackupPending) {
-            this.m_createBackupPending = false;
-            XboxOneSave.WriteSaveGame(this.m_backupBytes, this.m_backupName);
-            this.m_backupBytes = null;
+        if (m_createBackupPending) {
+            m_createBackupPending = false;
+            XboxOneSave.WriteSaveGame(m_backupBytes, m_backupName);
+            m_backupBytes = null;
         }
 
-        if (this.IsBusyLoading()) {
+        if (IsBusyLoading()) {
             return;
         }
 
-        if (this.m_buffersToDelete.Count > 0) {
-            int[] array = this.m_buffersToDelete.Pop();
+        if (m_buffersToDelete.Count > 0) {
+            int[] array = m_buffersToDelete.Pop();
             XboxOneSave.DeleteSaveGame(array[0], array[1]);
         }
 
-        if (this.IsBusyLoading() || this.m_currentReadingSlot == -1) {
+        if (IsBusyLoading() || m_currentReadingSlot == -1) {
             return;
         }
 
-        SaveSlotBackup saveSlotBackup = this.FindByIndex(this.m_currentReadingSlot);
+        SaveSlotBackup saveSlotBackup = FindByIndex(m_currentReadingSlot);
         if (!saveSlotBackup.IsLoaded) {
-            this.LookForBackup(this.m_currentReadingSlot, saveSlotBackup.Count);
+            LookForBackup(m_currentReadingSlot, saveSlotBackup.Count);
         }
 
         if (saveSlotBackup.IsLoaded) {
-            if (this.m_onFinishedReaded != null) {
-                this.m_onFinishedReaded();
-                this.m_onFinishedReaded = null;
+            if (m_onFinishedReaded != null) {
+                m_onFinishedReaded();
+                m_onFinishedReaded = null;
             }
 
-            this.m_currentReadingSlot = -1;
+            m_currentReadingSlot = -1;
         }
     }
 
     private void ClearCache() {
-        this.m_saveSlotBackups.Clear();
+        m_saveSlotBackups.Clear();
         for (int i = 0; i < 50; i++) {
-            this.m_saveSlotBackups.Add(new SaveSlotBackup(i));
+            m_saveSlotBackups.Add(new SaveSlotBackup(i));
         }
     }
 
     private SaveSlotBackup FindByIndex(int index) {
-        return this.m_saveSlotBackups[index];
+        return m_saveSlotBackups[index];
     }
 
     private string BackupName(int slot, int index) {
@@ -146,8 +146,8 @@ public class SaveSlotBackupsManager : MonoBehaviour {
     }
 
     private void LookForBackup(int slotIndex, int backupIndex) {
-        SaveSlotBackup saveSlotBackup = this.FindByIndex(this.m_currentReadingSlot);
-        string path = this.BackupName(slotIndex, backupIndex);
+        SaveSlotBackup saveSlotBackup = FindByIndex(m_currentReadingSlot);
+        string path = BackupName(slotIndex, backupIndex);
         if (File.Exists(path)) {
             using (BinaryReader binaryReader = new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))) {
                 SaveSlotInfo saveSlotInfo = new SaveSlotInfo();

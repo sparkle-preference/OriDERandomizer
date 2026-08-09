@@ -1,161 +1,160 @@
-using System;
 using System.Collections.Generic;
-using Core;
 using Game;
 using SmartInput;
 using UnityEngine;
+using Input = Core.Input;
 
 public class PlayerInput : MonoBehaviour {
     public PlayerInput() {
-        this.m_lastPressedButtonInput = -1;
-        this.m_lastPressedAxisInput = -1;
+        m_lastPressedButtonInput = -1;
+        m_lastPressedAxisInput = -1;
     }
 
     public void ClearControls() {
-        this.HorizontalAnalogLeft.Clear();
-        this.VerticalAnalogLeft.Clear();
-        this.HorizontalAnalogRight.Clear();
-        this.VerticalAnalogRight.Clear();
-        this.HorizontalDigiPad.Clear();
-        this.VerticalDigiPad.Clear();
-        this.Jump.Clear();
-        this.SpiritFlame.Clear();
-        this.SoulFlame.Clear();
-        this.Bash.Clear();
-        this.ChargeJump.Clear();
-        this.Glide.Clear();
-        this.Grab.Clear();
-        this.LeftShoulder.Clear();
-        this.RightShoulder.Clear();
-        this.Select.Clear();
-        this.Start.Clear();
-        this.LeftStick.Clear();
-        this.RightStick.Clear();
-        this.MenuDown.Clear();
-        this.MenuUp.Clear();
-        this.MenuLeft.Clear();
-        this.MenuRight.Clear();
-        this.MenuPageLeft.Clear();
-        this.MenuPageRight.Clear();
-        this.ActionButtonA.Clear();
-        this.ZoomIn.Clear();
-        this.ZoomOut.Clear();
-        this.Cancel.Clear();
-        this.Copy.Clear();
-        this.Delete.Clear();
-        this.Focus.Clear();
-        this.Filter.Clear();
-        this.Legend.Clear();
-        this.Stomp.Clear();
+        HorizontalAnalogLeft.Clear();
+        VerticalAnalogLeft.Clear();
+        HorizontalAnalogRight.Clear();
+        VerticalAnalogRight.Clear();
+        HorizontalDigiPad.Clear();
+        VerticalDigiPad.Clear();
+        Jump.Clear();
+        SpiritFlame.Clear();
+        SoulFlame.Clear();
+        Bash.Clear();
+        ChargeJump.Clear();
+        Glide.Clear();
+        Grab.Clear();
+        LeftShoulder.Clear();
+        RightShoulder.Clear();
+        Select.Clear();
+        Start.Clear();
+        LeftStick.Clear();
+        RightStick.Clear();
+        MenuDown.Clear();
+        MenuUp.Clear();
+        MenuLeft.Clear();
+        MenuRight.Clear();
+        MenuPageLeft.Clear();
+        MenuPageRight.Clear();
+        ActionButtonA.Clear();
+        ZoomIn.Clear();
+        ZoomOut.Clear();
+        Cancel.Clear();
+        Copy.Clear();
+        Delete.Clear();
+        Focus.Clear();
+        Filter.Clear();
+        Legend.Clear();
+        Stomp.Clear();
     }
 
     public void AddXboxOneControls() {
     }
 
     public void AddControllerControls() {
-        this.HorizontalAnalogLeft.Add(new ControllerAxisInput(XboxControllerInput.Axis.LeftStickX));
-        this.VerticalAnalogLeft.Add(new ControllerAxisInput(XboxControllerInput.Axis.LeftStickY));
-        this.HorizontalAnalogRight.Add(new ControllerAxisInput(XboxControllerInput.Axis.RightStickX));
-        this.VerticalAnalogRight.Add(new ControllerAxisInput(XboxControllerInput.Axis.RightStickY));
+        HorizontalAnalogLeft.Add(new ControllerAxisInput(XboxControllerInput.Axis.LeftStickX));
+        VerticalAnalogLeft.Add(new ControllerAxisInput(XboxControllerInput.Axis.LeftStickY));
+        HorizontalAnalogRight.Add(new ControllerAxisInput(XboxControllerInput.Axis.RightStickX));
+        VerticalAnalogRight.Add(new ControllerAxisInput(XboxControllerInput.Axis.RightStickY));
         PlayerInputRebinding.ControllerBindingSettings controllerRebindings = PlayerInputRebinding.ControllerRebindings;
         foreach (PlayerInputRebinding.ControllerButton button in controllerRebindings.HorizontalDigiPadLeft) {
-            this.HorizontalDigiPad.Add(new ButtonAxisInput(this.ControllerButtonToButtonInput(button), ButtonAxisInput.Mode.Negative));
+            HorizontalDigiPad.Add(new ButtonAxisInput(ControllerButtonToButtonInput(button), ButtonAxisInput.Mode.Negative));
         }
 
         foreach (PlayerInputRebinding.ControllerButton button2 in controllerRebindings.HorizontalDigiPadRight) {
-            this.HorizontalDigiPad.Add(new ButtonAxisInput(this.ControllerButtonToButtonInput(button2), ButtonAxisInput.Mode.Positive));
+            HorizontalDigiPad.Add(new ButtonAxisInput(ControllerButtonToButtonInput(button2), ButtonAxisInput.Mode.Positive));
         }
 
         foreach (PlayerInputRebinding.ControllerButton button3 in controllerRebindings.VerticalDigiPadDown) {
-            this.VerticalDigiPad.Add(new ButtonAxisInput(this.ControllerButtonToButtonInput(button3), ButtonAxisInput.Mode.Negative));
+            VerticalDigiPad.Add(new ButtonAxisInput(ControllerButtonToButtonInput(button3), ButtonAxisInput.Mode.Negative));
         }
 
         foreach (PlayerInputRebinding.ControllerButton button4 in controllerRebindings.VerticalDigiPadUp) {
-            this.VerticalDigiPad.Add(new ButtonAxisInput(this.ControllerButtonToButtonInput(button4), ButtonAxisInput.Mode.Positive));
+            VerticalDigiPad.Add(new ButtonAxisInput(ControllerButtonToButtonInput(button4), ButtonAxisInput.Mode.Positive));
         }
 
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Jump, this.Jump);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.SpiritFlame, this.SpiritFlame);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.SoulFlame, this.SoulFlame);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Bash, this.Bash);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.ChargeJump, this.ChargeJump);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.ZoomIn, this.ZoomIn);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Glide, this.Glide);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Grab, this.Grab);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.ZoomOut, this.ZoomOut);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.LeftShoulder, this.LeftShoulder);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.RightShoulder, this.RightShoulder);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Select, this.Select);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Start, this.Start);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.LeftStick, this.LeftStick);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.RightStick, this.RightStick);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.MenuDown, this.MenuDown);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.MenuDown, this.MenuDown);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.MenuUp, this.MenuUp);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.MenuUp, this.MenuUp);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.MenuLeft, this.MenuLeft);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.MenuLeft, this.MenuLeft);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.MenuRight, this.MenuRight);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.MenuRight, this.MenuRight);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.ActionButtonA, this.ActionButtonA);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Cancel, this.Cancel);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.MenuPageLeft, this.MenuPageLeft);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.MenuPageRight, this.MenuPageRight);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Copy, this.Copy);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Delete, this.Delete);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Focus, this.Focus);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Filter, this.Filter);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Legend, this.Legend);
-        this.AddControllerButtonsToButtonInput(controllerRebindings.Stomp, this.Stomp);
+        AddControllerButtonsToButtonInput(controllerRebindings.Jump, Jump);
+        AddControllerButtonsToButtonInput(controllerRebindings.SpiritFlame, SpiritFlame);
+        AddControllerButtonsToButtonInput(controllerRebindings.SoulFlame, SoulFlame);
+        AddControllerButtonsToButtonInput(controllerRebindings.Bash, Bash);
+        AddControllerButtonsToButtonInput(controllerRebindings.ChargeJump, ChargeJump);
+        AddControllerButtonsToButtonInput(controllerRebindings.ZoomIn, ZoomIn);
+        AddControllerButtonsToButtonInput(controllerRebindings.Glide, Glide);
+        AddControllerButtonsToButtonInput(controllerRebindings.Grab, Grab);
+        AddControllerButtonsToButtonInput(controllerRebindings.ZoomOut, ZoomOut);
+        AddControllerButtonsToButtonInput(controllerRebindings.LeftShoulder, LeftShoulder);
+        AddControllerButtonsToButtonInput(controllerRebindings.RightShoulder, RightShoulder);
+        AddControllerButtonsToButtonInput(controllerRebindings.Select, Select);
+        AddControllerButtonsToButtonInput(controllerRebindings.Start, Start);
+        AddControllerButtonsToButtonInput(controllerRebindings.LeftStick, LeftStick);
+        AddControllerButtonsToButtonInput(controllerRebindings.RightStick, RightStick);
+        AddControllerButtonsToButtonInput(controllerRebindings.MenuDown, MenuDown);
+        AddControllerButtonsToButtonInput(controllerRebindings.MenuDown, MenuDown);
+        AddControllerButtonsToButtonInput(controllerRebindings.MenuUp, MenuUp);
+        AddControllerButtonsToButtonInput(controllerRebindings.MenuUp, MenuUp);
+        AddControllerButtonsToButtonInput(controllerRebindings.MenuLeft, MenuLeft);
+        AddControllerButtonsToButtonInput(controllerRebindings.MenuLeft, MenuLeft);
+        AddControllerButtonsToButtonInput(controllerRebindings.MenuRight, MenuRight);
+        AddControllerButtonsToButtonInput(controllerRebindings.MenuRight, MenuRight);
+        AddControllerButtonsToButtonInput(controllerRebindings.ActionButtonA, ActionButtonA);
+        AddControllerButtonsToButtonInput(controllerRebindings.Cancel, Cancel);
+        AddControllerButtonsToButtonInput(controllerRebindings.MenuPageLeft, MenuPageLeft);
+        AddControllerButtonsToButtonInput(controllerRebindings.MenuPageRight, MenuPageRight);
+        AddControllerButtonsToButtonInput(controllerRebindings.Copy, Copy);
+        AddControllerButtonsToButtonInput(controllerRebindings.Delete, Delete);
+        AddControllerButtonsToButtonInput(controllerRebindings.Focus, Focus);
+        AddControllerButtonsToButtonInput(controllerRebindings.Filter, Filter);
+        AddControllerButtonsToButtonInput(controllerRebindings.Legend, Legend);
+        AddControllerButtonsToButtonInput(controllerRebindings.Stomp, Stomp);
     }
 
     public void AddKeyboardControls() {
         PlayerInputRebinding.KeyBindingSettings keyRebindings = PlayerInputRebinding.KeyRebindings;
         foreach (KeyCode keyCode in keyRebindings.HorizontalDigiPadLeft) {
-            this.HorizontalDigiPad.Add(new ButtonAxisInput(new KeyCodeButtonInput(keyCode), ButtonAxisInput.Mode.Negative));
+            HorizontalDigiPad.Add(new ButtonAxisInput(new KeyCodeButtonInput(keyCode), ButtonAxisInput.Mode.Negative));
         }
 
         foreach (KeyCode keyCode2 in keyRebindings.HorizontalDigiPadRight) {
-            this.HorizontalDigiPad.Add(new ButtonAxisInput(new KeyCodeButtonInput(keyCode2), ButtonAxisInput.Mode.Positive));
+            HorizontalDigiPad.Add(new ButtonAxisInput(new KeyCodeButtonInput(keyCode2), ButtonAxisInput.Mode.Positive));
         }
 
         foreach (KeyCode keyCode3 in keyRebindings.VerticalDigiPadDown) {
-            this.VerticalDigiPad.Add(new ButtonAxisInput(new KeyCodeButtonInput(keyCode3), ButtonAxisInput.Mode.Negative));
+            VerticalDigiPad.Add(new ButtonAxisInput(new KeyCodeButtonInput(keyCode3), ButtonAxisInput.Mode.Negative));
         }
 
         foreach (KeyCode keyCode4 in keyRebindings.VerticalDigiPadUp) {
-            this.VerticalDigiPad.Add(new ButtonAxisInput(new KeyCodeButtonInput(keyCode4), ButtonAxisInput.Mode.Positive));
+            VerticalDigiPad.Add(new ButtonAxisInput(new KeyCodeButtonInput(keyCode4), ButtonAxisInput.Mode.Positive));
         }
 
-        this.AddKeyCodesToButtonInput(keyRebindings.MenuLeft, this.MenuLeft);
-        this.AddKeyCodesToButtonInput(keyRebindings.MenuRight, this.MenuRight);
-        this.AddKeyCodesToButtonInput(keyRebindings.MenuDown, this.MenuDown);
-        this.AddKeyCodesToButtonInput(keyRebindings.MenuUp, this.MenuUp);
-        this.AddKeyCodesToButtonInput(keyRebindings.MenuPageLeft, this.MenuPageLeft);
-        this.AddKeyCodesToButtonInput(keyRebindings.MenuPageRight, this.MenuPageRight);
-        this.AddKeyCodesToButtonInput(keyRebindings.ActionButtonA, this.ActionButtonA);
-        this.AddKeyCodesToButtonInput(keyRebindings.SoulFlame, this.SoulFlame);
-        this.AddKeyCodesToButtonInput(keyRebindings.Jump, this.Jump);
-        this.AddKeyCodesToButtonInput(keyRebindings.Grab, this.Grab);
-        this.AddKeyCodesToButtonInput(keyRebindings.SpiritFlame, this.SpiritFlame);
-        this.AddKeyCodesToButtonInput(keyRebindings.Bash, this.Bash);
-        this.AddKeyCodesToButtonInput(keyRebindings.Glide, this.Glide);
-        this.AddKeyCodesToButtonInput(keyRebindings.ChargeJump, this.ChargeJump);
-        this.AddKeyCodesToButtonInput(keyRebindings.Select, this.Select);
-        this.AddKeyCodesToButtonInput(keyRebindings.Start, this.Start);
-        this.AddKeyCodesToButtonInput(keyRebindings.Cancel, this.Cancel);
-        this.AddKeyCodesToButtonInput(keyRebindings.LeftShoulder, this.LeftShoulder);
-        this.AddKeyCodesToButtonInput(keyRebindings.RightShoulder, this.RightShoulder);
-        this.AddKeyCodesToButtonInput(keyRebindings.LeftStick, this.LeftStick);
-        this.AddKeyCodesToButtonInput(keyRebindings.RightStick, this.RightStick);
-        this.AddKeyCodesToButtonInput(keyRebindings.ZoomIn, this.ZoomIn);
-        this.AddKeyCodesToButtonInput(keyRebindings.ZoomOut, this.ZoomOut);
-        this.AddKeyCodesToButtonInput(keyRebindings.Copy, this.Copy);
-        this.AddKeyCodesToButtonInput(keyRebindings.Delete, this.Delete);
-        this.AddKeyCodesToButtonInput(keyRebindings.Focus, this.Focus);
-        this.AddKeyCodesToButtonInput(keyRebindings.Filter, this.Filter);
-        this.AddKeyCodesToButtonInput(keyRebindings.Legend, this.Legend);
-        this.AddKeyCodesToButtonInput(keyRebindings.Stomp, this.Stomp);
+        AddKeyCodesToButtonInput(keyRebindings.MenuLeft, MenuLeft);
+        AddKeyCodesToButtonInput(keyRebindings.MenuRight, MenuRight);
+        AddKeyCodesToButtonInput(keyRebindings.MenuDown, MenuDown);
+        AddKeyCodesToButtonInput(keyRebindings.MenuUp, MenuUp);
+        AddKeyCodesToButtonInput(keyRebindings.MenuPageLeft, MenuPageLeft);
+        AddKeyCodesToButtonInput(keyRebindings.MenuPageRight, MenuPageRight);
+        AddKeyCodesToButtonInput(keyRebindings.ActionButtonA, ActionButtonA);
+        AddKeyCodesToButtonInput(keyRebindings.SoulFlame, SoulFlame);
+        AddKeyCodesToButtonInput(keyRebindings.Jump, Jump);
+        AddKeyCodesToButtonInput(keyRebindings.Grab, Grab);
+        AddKeyCodesToButtonInput(keyRebindings.SpiritFlame, SpiritFlame);
+        AddKeyCodesToButtonInput(keyRebindings.Bash, Bash);
+        AddKeyCodesToButtonInput(keyRebindings.Glide, Glide);
+        AddKeyCodesToButtonInput(keyRebindings.ChargeJump, ChargeJump);
+        AddKeyCodesToButtonInput(keyRebindings.Select, Select);
+        AddKeyCodesToButtonInput(keyRebindings.Start, Start);
+        AddKeyCodesToButtonInput(keyRebindings.Cancel, Cancel);
+        AddKeyCodesToButtonInput(keyRebindings.LeftShoulder, LeftShoulder);
+        AddKeyCodesToButtonInput(keyRebindings.RightShoulder, RightShoulder);
+        AddKeyCodesToButtonInput(keyRebindings.LeftStick, LeftStick);
+        AddKeyCodesToButtonInput(keyRebindings.RightStick, RightStick);
+        AddKeyCodesToButtonInput(keyRebindings.ZoomIn, ZoomIn);
+        AddKeyCodesToButtonInput(keyRebindings.ZoomOut, ZoomOut);
+        AddKeyCodesToButtonInput(keyRebindings.Copy, Copy);
+        AddKeyCodesToButtonInput(keyRebindings.Delete, Delete);
+        AddKeyCodesToButtonInput(keyRebindings.Focus, Focus);
+        AddKeyCodesToButtonInput(keyRebindings.Filter, Filter);
+        AddKeyCodesToButtonInput(keyRebindings.Legend, Legend);
+        AddKeyCodesToButtonInput(keyRebindings.Stomp, Stomp);
     }
 
     private void AddKeyCodesToButtonInput(KeyCode[] keyCodes, CompoundButtonInput buttonInput) {
@@ -165,75 +164,75 @@ public class PlayerInput : MonoBehaviour {
     }
 
     public void Awake() {
-        PlayerInput.Instance = this;
-        this.RefreshControlScheme();
-        this.LeftClick = new KeyCodeButtonInput(KeyCode.Mouse0);
-        this.RightClick = new KeyCodeButtonInput(KeyCode.Mouse1);
-        this.m_allButtonInput = new List<IButtonInput> {
-            this.Jump,
-            this.SpiritFlame,
-            this.SoulFlame,
-            this.Bash,
-            this.ChargeJump,
-            this.Glide,
-            this.Grab,
-            this.LeftShoulder,
-            this.RightShoulder,
-            this.Select,
-            this.Start,
-            this.LeftStick,
-            this.RightStick,
-            this.MenuDown,
-            this.MenuUp,
-            this.MenuLeft,
-            this.MenuRight,
-            this.MenuPageRight,
-            this.MenuPageLeft,
-            this.ActionButtonA,
-            this.Cancel,
-            this.Copy,
-            this.Delete,
-            this.Focus,
-            this.Filter,
-            this.Legend,
-            this.Stomp
+        Instance = this;
+        RefreshControlScheme();
+        LeftClick = new KeyCodeButtonInput(KeyCode.Mouse0);
+        RightClick = new KeyCodeButtonInput(KeyCode.Mouse1);
+        m_allButtonInput = new List<IButtonInput> {
+            Jump,
+            SpiritFlame,
+            SoulFlame,
+            Bash,
+            ChargeJump,
+            Glide,
+            Grab,
+            LeftShoulder,
+            RightShoulder,
+            Select,
+            Start,
+            LeftStick,
+            RightStick,
+            MenuDown,
+            MenuUp,
+            MenuLeft,
+            MenuRight,
+            MenuPageRight,
+            MenuPageLeft,
+            ActionButtonA,
+            Cancel,
+            Copy,
+            Delete,
+            Focus,
+            Filter,
+            Legend,
+            Stomp
         };
-        this.m_allButtonProcessor = new List<Core.Input.InputButtonProcessor> {
-            Core.Input.Jump,
-            Core.Input.SpiritFlame,
-            Core.Input.SoulFlame,
-            Core.Input.Bash,
-            Core.Input.ChargeJump,
-            Core.Input.Glide,
-            Core.Input.Grab,
-            Core.Input.LeftShoulder,
-            Core.Input.RightShoulder,
-            Core.Input.Select,
-            Core.Input.Start,
-            Core.Input.LeftStick,
-            Core.Input.RightStick,
-            Core.Input.MenuDown,
-            Core.Input.MenuUp,
-            Core.Input.MenuLeft,
-            Core.Input.MenuRight,
-            Core.Input.MenuPageRight,
-            Core.Input.MenuPageLeft,
-            Core.Input.ActionButtonA,
-            Core.Input.Cancel,
-            Core.Input.Copy,
-            Core.Input.Delete,
-            Core.Input.Focus,
-            Core.Input.Filter,
-            Core.Input.Legend,
-            Core.Input.Stomp
+        m_allButtonProcessor = new List<Input.InputButtonProcessor> {
+            Input.Jump,
+            Input.SpiritFlame,
+            Input.SoulFlame,
+            Input.Bash,
+            Input.ChargeJump,
+            Input.Glide,
+            Input.Grab,
+            Input.LeftShoulder,
+            Input.RightShoulder,
+            Input.Select,
+            Input.Start,
+            Input.LeftStick,
+            Input.RightStick,
+            Input.MenuDown,
+            Input.MenuUp,
+            Input.MenuLeft,
+            Input.MenuRight,
+            Input.MenuPageRight,
+            Input.MenuPageLeft,
+            Input.ActionButtonA,
+            Input.Cancel,
+            Input.Copy,
+            Input.Delete,
+            Input.Focus,
+            Input.Filter,
+            Input.Legend,
+            Input.Stomp
         };
-        this.m_allAxisInput = new List<IAxisInput> {
-            this.HorizontalAnalogLeft,
-            this.VerticalAnalogLeft,
-            this.HorizontalAnalogRight,
-            this.VerticalAnalogRight,
-            this.HorizontalDigiPad,
-            this.VerticalDigiPad
+        m_allAxisInput = new List<IAxisInput> {
+            HorizontalAnalogLeft,
+            VerticalAnalogLeft,
+            HorizontalAnalogRight,
+            VerticalAnalogRight,
+            HorizontalDigiPad,
+            VerticalDigiPad
         };
     }
 
@@ -249,77 +248,77 @@ public class PlayerInput : MonoBehaviour {
     }
 
     public void FixedUpdate() {
-        if (!this.Active) {
+        if (!Active) {
             return;
         }
 
         Vector2 vector = UI.Cameras.Current.Camera.ScreenToViewportPoint(UnityEngine.Input.mousePosition);
-        Core.Input.CursorMoved = (Vector2.Distance(vector, Core.Input.CursorPosition) > 0.0001f);
-        Core.Input.CursorPosition = vector;
-        Core.Input.HorizontalAnalogLeft = this.SimplifyAxis(this.HorizontalAnalogLeft.AxisValue());
-        Core.Input.VerticalAnalogLeft = this.SimplifyAxis(this.VerticalAnalogLeft.AxisValue());
-        this.ApplyDeadzone(ref Core.Input.HorizontalAnalogLeft, ref Core.Input.VerticalAnalogLeft);
-        Core.Input.HorizontalAnalogRight = this.SimplifyAxis(this.HorizontalAnalogRight.AxisValue());
-        Core.Input.VerticalAnalogRight = this.SimplifyAxis(this.VerticalAnalogRight.AxisValue());
-        this.ApplyDeadzone(ref Core.Input.HorizontalAnalogRight, ref Core.Input.VerticalAnalogRight);
-        Core.Input.HorizontalDigiPad = Mathf.RoundToInt(this.HorizontalDigiPad.AxisValue());
-        Core.Input.VerticalDigiPad = Mathf.RoundToInt(this.VerticalDigiPad.AxisValue());
-        Core.Input.AnyStart.Update(this.IsAnyStartPressed());
-        Core.Input.ZoomIn.Update(this.ZoomIn.GetButton());
-        Core.Input.ZoomOut.Update(this.ZoomOut.GetButton());
-        Core.Input.LeftClick.Update(this.LeftClick.GetButton());
-        Core.Input.RightClick.Update(this.RightClick.GetButton());
-        this.m_lastPressedButtonInput = -1;
-        for (int i = 0; i < this.m_allButtonInput.Count; i++) {
-            bool button = this.m_allButtonInput[i].GetButton();
+        Input.CursorMoved = (Vector2.Distance(vector, Input.CursorPosition) > 0.0001f);
+        Input.CursorPosition = vector;
+        Input.HorizontalAnalogLeft = SimplifyAxis(HorizontalAnalogLeft.AxisValue());
+        Input.VerticalAnalogLeft = SimplifyAxis(VerticalAnalogLeft.AxisValue());
+        ApplyDeadzone(ref Input.HorizontalAnalogLeft, ref Input.VerticalAnalogLeft);
+        Input.HorizontalAnalogRight = SimplifyAxis(HorizontalAnalogRight.AxisValue());
+        Input.VerticalAnalogRight = SimplifyAxis(VerticalAnalogRight.AxisValue());
+        ApplyDeadzone(ref Input.HorizontalAnalogRight, ref Input.VerticalAnalogRight);
+        Input.HorizontalDigiPad = Mathf.RoundToInt(HorizontalDigiPad.AxisValue());
+        Input.VerticalDigiPad = Mathf.RoundToInt(VerticalDigiPad.AxisValue());
+        Input.AnyStart.Update(IsAnyStartPressed());
+        Input.ZoomIn.Update(ZoomIn.GetButton());
+        Input.ZoomOut.Update(ZoomOut.GetButton());
+        Input.LeftClick.Update(LeftClick.GetButton());
+        Input.RightClick.Update(RightClick.GetButton());
+        m_lastPressedButtonInput = -1;
+        for (int i = 0; i < m_allButtonInput.Count; i++) {
+            bool button = m_allButtonInput[i].GetButton();
             if (button) {
-                this.m_lastPressedButtonInput = i;
+                m_lastPressedButtonInput = i;
             }
 
-            this.m_allButtonProcessor[i].Update(button);
+            m_allButtonProcessor[i].Update(button);
         }
 
-        this.RefreshControls();
-        if (!ControlsScreen.IsVisible && this.m_lastPressedButtonInput != -1) {
-            bool flag = this.WasKeyboardUsedLast;
-            if (this.m_lastPressedButtonInput != -1) {
-                flag = this.KeyboardUsedLast(this.m_allButtonInput[this.m_lastPressedButtonInput]);
+        RefreshControls();
+        if (!ControlsScreen.IsVisible && m_lastPressedButtonInput != -1) {
+            bool flag = WasKeyboardUsedLast;
+            if (m_lastPressedButtonInput != -1) {
+                flag = KeyboardUsedLast(m_allButtonInput[m_lastPressedButtonInput]);
             }
 
-            if (flag != this.WasKeyboardUsedLast) {
+            if (flag != WasKeyboardUsedLast) {
                 GameSettings.Instance.CurrentControlScheme = ((!flag) ? ControlScheme.Controller : GameSettings.Instance.KeyboardScheme);
             }
         }
     }
 
     public void RefreshControls() {
-        Core.Input.Horizontal = Mathf.Clamp((float)Core.Input.HorizontalDigiPad + Core.Input.HorizontalAnalogLeft, -1f, 1f);
-        Core.Input.Vertical = Mathf.Clamp((float)Core.Input.VerticalDigiPad + Core.Input.VerticalAnalogLeft, -1f, 1f);
-        Core.Input.Down.Update(Core.Input.NormalizedVertical == -1f);
-        Core.Input.Up.Update(Core.Input.NormalizedVertical == 1f);
-        Core.Input.Left.Update(Core.Input.NormalizedHorizontal == -1);
-        Core.Input.Right.Update(Core.Input.NormalizedHorizontal == 1);
-        for (int i = 0; i < Core.Input.Buttons.Length; i++) {
-            Core.Input.Buttons[i].Used = false;
+        Input.Horizontal = Mathf.Clamp(Input.HorizontalDigiPad + Input.HorizontalAnalogLeft, -1f, 1f);
+        Input.Vertical = Mathf.Clamp(Input.VerticalDigiPad + Input.VerticalAnalogLeft, -1f, 1f);
+        Input.Down.Update(Input.NormalizedVertical == -1f);
+        Input.Up.Update(Input.NormalizedVertical == 1f);
+        Input.Left.Update(Input.NormalizedHorizontal == -1);
+        Input.Right.Update(Input.NormalizedHorizontal == 1);
+        for (int i = 0; i < Input.Buttons.Length; i++) {
+            Input.Buttons[i].Used = false;
         }
 
         RandomizerRebinding.FixedUpdate();
     }
 
     public void RefreshControlScheme() {
-        this.ClearControls();
-        this.AddControllerControls();
-        this.AddXboxOneControls();
-        this.AddKeyboardControls();
+        ClearControls();
+        AddControllerControls();
+        AddXboxOneControls();
+        AddKeyboardControls();
         PlayerInputRebinding.RefreshControllerButtonRemappings();
     }
 
     private void RefreshLastPressedButton() {
-        this.m_lastPressedButtonInput = -1;
-        this.m_lastPressedAxisInput = -1;
-        for (int i = 0; i < this.m_allButtonInput.Count; i++) {
-            if (this.m_allButtonInput[i].GetButton()) {
-                this.m_lastPressedButtonInput = i;
+        m_lastPressedButtonInput = -1;
+        m_lastPressedAxisInput = -1;
+        for (int i = 0; i < m_allButtonInput.Count; i++) {
+            if (m_allButtonInput[i].GetButton()) {
+                m_lastPressedButtonInput = i;
                 return;
             }
         }
@@ -336,12 +335,12 @@ public class PlayerInput : MonoBehaviour {
 
         AxisButtonInput axisButtonInput = iButtonInput as AxisButtonInput;
         if (axisButtonInput != null) {
-            return this.KeyboardUsedLast(axisButtonInput.GetAxisInput());
+            return KeyboardUsedLast(axisButtonInput.GetAxisInput());
         }
 
         CompoundButtonInput compoundButtonInput = iButtonInput as CompoundButtonInput;
         if (compoundButtonInput != null) {
-            return this.KeyboardUsedLast(compoundButtonInput.GetLastPressed());
+            return KeyboardUsedLast(compoundButtonInput.GetLastPressed());
         }
 
         return iButtonInput is ControllerButtonInput && false;
@@ -349,23 +348,23 @@ public class PlayerInput : MonoBehaviour {
 
     private bool KeyboardUsedLast(IAxisInput iAxisInput) {
         if (iAxisInput is ButtonAxisInput) {
-            return this.KeyboardUsedLast((iAxisInput as ButtonAxisInput).GetButtonInput());
+            return KeyboardUsedLast((iAxisInput as ButtonAxisInput).GetButtonInput());
         }
 
         if (iAxisInput is CompoundAxisInput) {
-            return this.KeyboardUsedLast((iAxisInput as CompoundAxisInput).GetLastPressed());
+            return KeyboardUsedLast((iAxisInput as CompoundAxisInput).GetLastPressed());
         }
 
         return iAxisInput is ControllerAxisInput && false;
     }
 
     private bool IsAnyStartPressed() {
-        return XboxControllerInput.GetButton(XboxControllerInput.Button.Start, -1) || XboxControllerInput.GetButton(XboxControllerInput.Button.ButtonA, -1) || XboxControllerInput.GetButton(XboxControllerInput.Button.ButtonB, -1) || XboxControllerInput.GetButton(XboxControllerInput.Button.ButtonX, -1) || XboxControllerInput.GetButton(XboxControllerInput.Button.ButtonY, -1) || MoonInput.GetKey(KeyCode.Space) || MoonInput.GetKey(KeyCode.X) || MoonInput.GetKey(KeyCode.Mouse0) || MoonInput.GetKey(KeyCode.Return) || MoonInput.GetKey(KeyCode.Escape) || MoonInput.anyKey;
+        return XboxControllerInput.GetButton(XboxControllerInput.Button.Start) || XboxControllerInput.GetButton(XboxControllerInput.Button.ButtonA) || XboxControllerInput.GetButton(XboxControllerInput.Button.ButtonB) || XboxControllerInput.GetButton(XboxControllerInput.Button.ButtonX) || XboxControllerInput.GetButton(XboxControllerInput.Button.ButtonY) || MoonInput.GetKey(KeyCode.Space) || MoonInput.GetKey(KeyCode.X) || MoonInput.GetKey(KeyCode.Mouse0) || MoonInput.GetKey(KeyCode.Return) || MoonInput.GetKey(KeyCode.Escape) || MoonInput.anyKey;
     }
 
     public void AddControllerButtonsToButtonInput(PlayerInputRebinding.ControllerButton[] buttons, CompoundButtonInput buttonInput) {
         for (int i = 0; i < buttons.Length; i++) {
-            buttonInput.Add(this.ControllerButtonToButtonInput(buttons[i]));
+            buttonInput.Add(ControllerButtonToButtonInput(buttons[i]));
         }
     }
 
@@ -502,7 +501,7 @@ public class PlayerInput : MonoBehaviour {
 
     public List<IButtonInput> m_allButtonInput;
 
-    public List<Core.Input.InputButtonProcessor> m_allButtonProcessor;
+    public List<Input.InputButtonProcessor> m_allButtonProcessor;
 
     public List<IAxisInput> m_allAxisInput;
 

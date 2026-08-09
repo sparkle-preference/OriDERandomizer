@@ -1,4 +1,3 @@
-using System;
 using Core;
 using Game;
 using UnityEngine;
@@ -7,7 +6,7 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
     public new void Awake() {
         base.Awake();
         SuspensionManager.Register(this);
-        this.m_transform = base.transform;
+        m_transform = transform;
     }
 
     public override void OnDestroy() {
@@ -16,63 +15,62 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
     }
 
     public void Start() {
-        this.m_distanceStompedIntoGround = 0f;
-        this.m_startLocalPosition = base.transform.localPosition;
+        m_distanceStompedIntoGround = 0f;
+        m_startLocalPosition = transform.localPosition;
     }
 
     public void OnRecieveDamage(Damage damage) {
-        if (damage.Type == DamageType.Stomp && Vector3.Dot(base.transform.rotation * Vector3.down, Characters.Sein.PlatformBehaviour.PlatformMovement.GravityDirection) > Mathf.Cos(0.17453292f) && !this.m_activated) {
-            this.m_distanceStompedIntoGround = Mathf.Min(this.StompIntoGroundAmount, this.m_distanceStompedIntoGround + this.StompIntoGroundAmount / (float)this.NumberOfStomps);
-            this.m_remainingRiseDelayTime = this.RisingDelay;
-            if (Mathf.Approximately(this.m_distanceStompedIntoGround, this.StompIntoGroundAmount)) {
-                BingoController.OnStompPost(this.MoonGuid);
-                this.m_activated = true;
-                if (this.AllTheWayInAction) {
-                    this.AllTheWayInAction.Perform(null);
+        if (damage.Type == DamageType.Stomp && Vector3.Dot(transform.rotation * Vector3.down, Characters.Sein.PlatformBehaviour.PlatformMovement.GravityDirection) > Mathf.Cos(0.17453292f) && !m_activated) {
+            m_distanceStompedIntoGround = Mathf.Min(StompIntoGroundAmount, m_distanceStompedIntoGround + StompIntoGroundAmount / NumberOfStomps);
+            m_remainingRiseDelayTime = RisingDelay;
+            if (Mathf.Approximately(m_distanceStompedIntoGround, StompIntoGroundAmount)) {
+                BingoController.OnStompPost(MoonGuid);
+                m_activated = true;
+                if (AllTheWayInAction) {
+                    AllTheWayInAction.Perform(null);
                 }
 
-                if (this.AllTheWayInSound) {
-                    Sound.Play(this.AllTheWayInSound.GetSound(null), this.m_transform.position, null);
-                    return;
+                if (AllTheWayInSound) {
+                    Sound.Play(AllTheWayInSound.GetSound(null), m_transform.position, null);
                 }
-            } else if (this.StompSound) {
-                Sound.Play(this.StompSound.GetSound(null), this.m_transform.position, null);
+            } else if (StompSound) {
+                Sound.Play(StompSound.GetSound(null), m_transform.position, null);
             }
         }
     }
 
     public void FixedUpdate() {
-        if (this.IsSuspended) {
+        if (IsSuspended) {
             return;
         }
 
-        if (this.m_remainingRiseDelayTime > 0f) {
-            this.m_remainingRiseDelayTime -= Time.deltaTime;
-            if (this.m_remainingRiseDelayTime < 0f) {
-                this.m_remainingRiseDelayTime = 0f;
+        if (m_remainingRiseDelayTime > 0f) {
+            m_remainingRiseDelayTime -= Time.deltaTime;
+            if (m_remainingRiseDelayTime < 0f) {
+                m_remainingRiseDelayTime = 0f;
             }
         }
 
-        if (!this.m_activated && this.m_remainingRiseDelayTime < 0f) {
-            this.m_distanceStompedIntoGround -= Time.deltaTime * this.RiseSpeed;
-            if (this.m_distanceStompedIntoGround < 0f) {
-                this.m_distanceStompedIntoGround = 0f;
+        if (!m_activated && m_remainingRiseDelayTime < 0f) {
+            m_distanceStompedIntoGround -= Time.deltaTime * RiseSpeed;
+            if (m_distanceStompedIntoGround < 0f) {
+                m_distanceStompedIntoGround = 0f;
             }
         }
 
-        base.transform.localPosition = Vector3.Lerp(base.transform.localPosition, this.m_startLocalPosition + Vector3.down * this.m_distanceStompedIntoGround, 0.3f);
+        transform.localPosition = Vector3.Lerp(transform.localPosition, m_startLocalPosition + Vector3.down * m_distanceStompedIntoGround, 0.3f);
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref this.m_activated);
-        ar.Serialize(ref this.m_distanceStompedIntoGround);
-        ar.Serialize(ref this.m_remainingRiseDelayTime);
+        ar.Serialize(ref m_activated);
+        ar.Serialize(ref m_distanceStompedIntoGround);
+        ar.Serialize(ref m_remainingRiseDelayTime);
     }
 
     public bool IsSuspended { get; set; }
 
     public Vector3 Position {
-        get { return this.m_transform.position; }
+        get { return m_transform.position; }
     }
 
     public bool CanBeChargeFlamed() {
@@ -116,8 +114,8 @@ public class StompPost : SaveSerialize, IDamageReciever, IAttackable, IStompAtta
     }
 
     public void ForceActivate() {
-        this.m_activated = true;
-        base.transform.localPosition = base.transform.localPosition + Vector3.down * this.StompIntoGroundAmount;
+        m_activated = true;
+        transform.localPosition = transform.localPosition + Vector3.down * StompIntoGroundAmount;
     }
 
     public int NumberOfStomps = 3;

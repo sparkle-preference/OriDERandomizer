@@ -1,33 +1,31 @@
-using System;
-
 public class RandomizerPickupAction : ActionMethod {
     public void Awake() {
-        if (this.LocationName != null) {
+        if (LocationName != null) {
             return;
         }
 
-        if (RandomizerLocationManager.LocationsByGuid.ContainsKey(this.MoonGuid)) {
-            this.LocationName = RandomizerLocationManager.LocationsByGuid[this.MoonGuid].Name;
+        if (RandomizerLocationManager.LocationsByGuid.ContainsKey(MoonGuid)) {
+            LocationName = RandomizerLocationManager.LocationsByGuid[MoonGuid].Name;
         }
 
-        if (this.LocationName == null) {
-            this.LocationName = "Unknown";
+        if (LocationName == null) {
+            LocationName = "Unknown";
         }
     }
 
     public override void Perform(IContext context) {
-        if (!this.Granted) {
-            RandomizerLocationManager.GivePickup(this.MoonGuid);
-            this.Granted = true;
+        if (!Granted) {
+            RandomizerLocationManager.GivePickup(MoonGuid);
+            Granted = true;
         }
     }
 
     public override string GetNiceName() {
-        return "Give randomized pickup " + this.LocationName;
+        return "Give randomized pickup " + LocationName;
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref this.Granted);
+        ar.Serialize(ref Granted);
     }
 
     public string LocationName;

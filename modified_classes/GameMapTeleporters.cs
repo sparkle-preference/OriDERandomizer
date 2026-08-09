@@ -1,8 +1,8 @@
-using System;
 using System.Collections.Generic;
 using Core;
 using Game;
 using UnityEngine;
+using Input = Core.Input;
 
 public class GameMapTeleporters : MonoBehaviour {
     public List<GameMapTeleporter> Teleporters {
@@ -11,7 +11,7 @@ public class GameMapTeleporters : MonoBehaviour {
 
     [ContextMenu("Show teleporters")]
     public void ShowTeleporters() {
-        foreach (GameMapTeleporter gameMapTeleporter in this.Teleporters) {
+        foreach (GameMapTeleporter gameMapTeleporter in Teleporters) {
             if (gameMapTeleporter.Activated) {
                 gameMapTeleporter.Show();
             }
@@ -19,43 +19,43 @@ public class GameMapTeleporters : MonoBehaviour {
     }
 
     public void HideTeleporters() {
-        foreach (GameMapTeleporter gameMapTeleporter in this.Teleporters) {
+        foreach (GameMapTeleporter gameMapTeleporter in Teleporters) {
             gameMapTeleporter.Hide();
         }
     }
 
     private void ChangeSelection(int index) {
-        if (this.SelectedIndex == index) {
+        if (SelectedIndex == index) {
             return;
         }
 
-        this.SetIndex(index);
-        if (this.SwitchTeleporterSelectionSound) {
-            Sound.Play(this.SwitchTeleporterSelectionSound.GetSound(null), base.transform.position, null);
+        SetIndex(index);
+        if (SwitchTeleporterSelectionSound) {
+            Sound.Play(SwitchTeleporterSelectionSound.GetSound(null), transform.position, null);
         }
 
         if (GameMapTransitionManager.Instance.InWorldMapMode) {
-            AreaMapUI.Instance.Navigation.ScrollPosition = this.Teleporters[index].WorldPosition;
+            AreaMapUI.Instance.Navigation.ScrollPosition = Teleporters[index].WorldPosition;
         }
     }
 
     private int TeleporterUnderMouse() {
         int result = -1;
-        if (this.Teleporters.Count <= 12) {
+        if (Teleporters.Count <= 12) {
             // There are no custom teleporters, so use the default behaviour.
             if (GameMapTransitionManager.Instance.InWorldMapMode) {
-                for (int i = 0; i < this.Teleporters.Count; i++) {
-                    GameMapTeleporter gameMapTeleporter = this.Teleporters[i];
-                    if (gameMapTeleporter.Activated && Vector3.Distance(Core.Input.CursorPositionUI, gameMapTeleporter.WorldMapIconPosition) < 1f) {
+                for (int i = 0; i < Teleporters.Count; i++) {
+                    GameMapTeleporter gameMapTeleporter = Teleporters[i];
+                    if (gameMapTeleporter.Activated && Vector3.Distance(Input.CursorPositionUI, gameMapTeleporter.WorldMapIconPosition) < 1f) {
                         result = i;
                     }
                 }
             }
 
             if (GameMapTransitionManager.Instance.InAreaMapMode) {
-                for (int j = 0; j < this.Teleporters.Count; j++) {
-                    GameMapTeleporter gameMapTeleporter2 = this.Teleporters[j];
-                    if (gameMapTeleporter2.Activated && Vector3.Distance(Core.Input.CursorPositionUI, gameMapTeleporter2.AreaMapIconPosition) < 1f) {
+                for (int j = 0; j < Teleporters.Count; j++) {
+                    GameMapTeleporter gameMapTeleporter2 = Teleporters[j];
+                    if (gameMapTeleporter2.Activated && Vector3.Distance(Input.CursorPositionUI, gameMapTeleporter2.AreaMapIconPosition) < 1f) {
                         result = j;
                     }
                 }
@@ -66,8 +66,8 @@ public class GameMapTeleporters : MonoBehaviour {
             // The gameMapTeleporter.WorldMapIconPosition is centered left and right, but is at the
             // top of the teleporter icon, so we remove roughly half the height to centre it.
             float minimum = 1f;
-            for (int k = 0; k < this.Teleporters.Count; k++) {
-                GameMapTeleporter gameMapTeleporter3 = this.Teleporters[k];
+            for (int k = 0; k < Teleporters.Count; k++) {
+                GameMapTeleporter gameMapTeleporter3 = Teleporters[k];
                 if (gameMapTeleporter3.Activated) {
                     Vector2 teleporterCenter;
                     if (GameMapTransitionManager.Instance.InWorldMapMode) {
@@ -76,7 +76,7 @@ public class GameMapTeleporters : MonoBehaviour {
                         teleporterCenter = new Vector2(gameMapTeleporter3.AreaMapIconPosition.x, gameMapTeleporter3.AreaMapIconPosition.y - 0.125f);
                     }
 
-                    float distance = Vector3.Distance(Core.Input.CursorPositionUI, teleporterCenter);
+                    float distance = Vector3.Distance(Input.CursorPositionUI, teleporterCenter);
                     if (distance < minimum) {
                         result = k;
                         minimum = distance;
@@ -89,25 +89,25 @@ public class GameMapTeleporters : MonoBehaviour {
     }
 
     private void AdvanceWorldMap() {
-        this.m_flyBackTime = 0f;
-        if (Core.Input.Axis.magnitude < 0.5f) {
-            this.m_released = true;
+        m_flyBackTime = 0f;
+        if (Input.Axis.magnitude < 0.5f) {
+            m_released = true;
         }
 
-        if (Core.Input.CursorMoved) {
-            int num = this.TeleporterUnderMouse();
+        if (Input.CursorMoved) {
+            int num = TeleporterUnderMouse();
             if (num != -1) {
-                this.ChangeSelection(num);
+                ChangeSelection(num);
             }
         }
 
-        if (Core.Input.Axis.magnitude > 0.5f && this.m_released) {
-            Vector2 normalized = Core.Input.Axis.normalized;
-            Vector2 worldMapIconPosition = this.SelectedTeleporter.WorldMapIconPosition;
+        if (Input.Axis.magnitude > 0.5f && m_released) {
+            Vector2 normalized = Input.Axis.normalized;
+            Vector2 worldMapIconPosition = SelectedTeleporter.WorldMapIconPosition;
             int num2 = -1;
             float num3 = float.MaxValue;
-            for (int i = 0; i < this.Teleporters.Count; i++) {
-                GameMapTeleporter gameMapTeleporter = this.Teleporters[i];
+            for (int i = 0; i < Teleporters.Count; i++) {
+                GameMapTeleporter gameMapTeleporter = Teleporters[i];
                 if (gameMapTeleporter.Activated) {
                     Vector2 vector = gameMapTeleporter.WorldMapIconPosition - worldMapIconPosition;
                     if (vector.magnitude < num3 && Vector3.Dot(vector.normalized, normalized) > 0.707f) {
@@ -118,27 +118,27 @@ public class GameMapTeleporters : MonoBehaviour {
             }
 
             if (num2 != -1) {
-                this.m_released = false;
-                this.ChangeSelection(num2);
+                m_released = false;
+                ChangeSelection(num2);
             }
         }
     }
 
     private void AdvanceAreaMap() {
-        if (Core.Input.CursorMoved) {
-            int num = this.TeleporterUnderMouse();
+        if (Input.CursorMoved) {
+            int num = TeleporterUnderMouse();
             if (num != -1) {
-                this.ChangeSelection(num);
+                ChangeSelection(num);
             }
         }
 
-        if (AreaMapUI.Instance.Navigation.ScrollingSensitivityCurve.Evaluate(Core.Input.Axis.magnitude) > 0f) {
-            this.m_flyBackTime = 1.1f;
-            this.m_previousScrollPosition = AreaMapUI.Instance.Navigation.ScrollPosition;
+        if (AreaMapUI.Instance.Navigation.ScrollingSensitivityCurve.Evaluate(Input.Axis.magnitude) > 0f) {
+            m_flyBackTime = 1.1f;
+            m_previousScrollPosition = AreaMapUI.Instance.Navigation.ScrollPosition;
             float num2 = 9f;
-            int index = this.SelectedIndex;
-            for (int i = 0; i < this.Teleporters.Count; i++) {
-                GameMapTeleporter gameMapTeleporter = this.Teleporters[i];
+            int index = SelectedIndex;
+            for (int i = 0; i < Teleporters.Count; i++) {
+                GameMapTeleporter gameMapTeleporter = Teleporters[i];
                 if (gameMapTeleporter.Activated) {
                     float magnitude = gameMapTeleporter.AreaMapIconPosition.magnitude;
                     if (magnitude < num2) {
@@ -148,11 +148,11 @@ public class GameMapTeleporters : MonoBehaviour {
                 }
             }
 
-            this.ChangeSelection(index);
+            ChangeSelection(index);
         } else {
-            this.m_flyBackTime -= Time.deltaTime;
-            if (this.m_flyBackTime < 1f && this.m_flyBackTime > 0f) {
-                AreaMapUI.Instance.Navigation.ScrollPosition = Vector2.Lerp(this.m_previousScrollPosition, this.Teleporters[this.SelectedIndex].WorldPosition, 1f - Mathf.SmoothStep(0f, 1f, this.m_flyBackTime));
+            m_flyBackTime -= Time.deltaTime;
+            if (m_flyBackTime < 1f && m_flyBackTime > 0f) {
+                AreaMapUI.Instance.Navigation.ScrollPosition = Vector2.Lerp(m_previousScrollPosition, Teleporters[SelectedIndex].WorldPosition, 1f - Mathf.SmoothStep(0f, 1f, m_flyBackTime));
             }
         }
     }
@@ -162,56 +162,56 @@ public class GameMapTeleporters : MonoBehaviour {
             return;
         }
 
-        foreach (GameMapTeleporter gameMapTeleporter in this.Teleporters) {
+        foreach (GameMapTeleporter gameMapTeleporter in Teleporters) {
             gameMapTeleporter.Update();
         }
 
         if (GameMapTransitionManager.Instance.InWorldMapMode) {
-            this.AdvanceWorldMap();
+            AdvanceWorldMap();
         }
 
         if (GameMapTransitionManager.Instance.InAreaMapMode) {
-            this.AdvanceAreaMap();
+            AdvanceAreaMap();
         }
 
-        if (Core.Input.LeftClick.OnPressed) {
-            this.m_clickedPosition = Core.Input.CursorPositionUI;
+        if (Input.LeftClick.OnPressed) {
+            m_clickedPosition = Input.CursorPositionUI;
         }
 
-        bool flag = Core.Input.LeftClick.OnReleased && Vector2.Distance(Core.Input.CursorPositionUI, this.m_clickedPosition) < 0.01f && this.TeleporterUnderMouse() != -1;
-        if (Core.Input.ActionButtonA.OnPressed || flag) {
-            UI.Menu.HideMenuScreen(false);
-            if (this.SelectTeleporterSound) {
-                Sound.Play(this.SelectTeleporterSound.GetSound(null), base.transform.position, null);
+        bool flag = Input.LeftClick.OnReleased && Vector2.Distance(Input.CursorPositionUI, m_clickedPosition) < 0.01f && TeleporterUnderMouse() != -1;
+        if (Input.ActionButtonA.OnPressed || flag) {
+            UI.Menu.HideMenuScreen();
+            if (SelectTeleporterSound) {
+                Sound.Play(SelectTeleporterSound.GetSound(null), transform.position, null);
             }
 
-            TeleporterController.BeginTeleportation(this.SelectedTeleporter);
+            TeleporterController.BeginTeleportation(SelectedTeleporter);
         }
     }
 
     public void OnDisable() {
-        this.HideTeleporters();
+        HideTeleporters();
         if (GameMapUI.Instance.ShowingTeleporters) {
             TeleporterController.OnClose();
         }
     }
 
     public GameMapTeleporter SelectedTeleporter {
-        get { return this.Teleporters[this.SelectedIndex]; }
+        get { return Teleporters[SelectedIndex]; }
     }
 
     public void Select(string identifier) {
-        int num = this.Teleporters.FindIndex((GameMapTeleporter a) => a.Identifier == identifier);
+        int num = Teleporters.FindIndex(a => a.Identifier == identifier);
         if (num != -1) {
-            this.SetIndex(num);
+            SetIndex(num);
         }
     }
 
     public void SetIndex(int index) {
-        this.SelectedTeleporter.Dehighlight();
-        this.SelectedIndex = index;
-        this.SelectedTeleporter.Highlight();
-        GameWorldArea area = GameWorld.Instance.FindAreaFromPosition(this.SelectedTeleporter.WorldPosition);
+        SelectedTeleporter.Dehighlight();
+        SelectedIndex = index;
+        SelectedTeleporter.Highlight();
+        GameWorldArea area = GameWorld.Instance.FindAreaFromPosition(SelectedTeleporter.WorldPosition);
         GameMapUI.Instance.CurrentHighlightedArea = GameWorld.Instance.FindRuntimeArea(area);
     }
 

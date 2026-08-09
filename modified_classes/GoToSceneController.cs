@@ -9,60 +9,60 @@ public class GoToSceneController : MonoBehaviour {
     }
 
     public static bool CheckStartInScene(MoonGuid guid) {
-        return GoToSceneController.Instance == null || GoToSceneController.Instance.StartInScene == guid || GoToSceneController.Instance.StartInScene == MoonGuid.Empty;
+        return Instance == null || Instance.StartInScene == guid || Instance.StartInScene == MoonGuid.Empty;
     }
 
     public void Awake() {
-        GoToSceneController.Instance = this;
+        Instance = this;
     }
 
     public void OnDestroy() {
-        if (GoToSceneController.Instance == this) {
-            GoToSceneController.Instance = null;
+        if (Instance == this) {
+            Instance = null;
         }
     }
 
     private void GoToScene(MoonGuid sceneGuid, Vector3 position, string sceneName, Action onComplete, bool createCheckpoint, bool async) {
-        this.StartInScene = sceneGuid;
+        StartInScene = sceneGuid;
         if (sceneName == "titleScreenSwallowsNest") {
             GameStateMachine.Instance.SetToStartScreen();
         }
 
-        this.m_onCompleteLoad = onComplete;
-        this.m_position = position;
-        this.ScenesManager.SetTargetPositions(this.m_position);
+        m_onCompleteLoad = onComplete;
+        m_position = position;
+        ScenesManager.SetTargetPositions(m_position);
         InstantLoadScenesController.Instance.LoadScenesAtPosition(null, async);
-        this.m_createCheckpointLater = createCheckpoint;
-        this.m_useAfterSceneLoad = true;
-        this.ScenesManager.AllowUnloadingOnScenes(position);
+        m_createCheckpointLater = createCheckpoint;
+        m_useAfterSceneLoad = true;
+        ScenesManager.AllowUnloadingOnScenes(position);
     }
 
     private void FinishGoingToPositionImmediately() {
         UI.Cameras.Current.MoveCameraToTargetInstantly(false);
-        this.ScenesManager.UnloadScenesAtPosition(true);
-        this.ScenesManager.AutoLoadingUnloading = true;
-        if (this.m_onCompleteImmediateLoad != null) {
-            this.m_onCompleteImmediateLoad();
-            this.m_onCompleteImmediateLoad = null;
+        ScenesManager.UnloadScenesAtPosition(true);
+        ScenesManager.AutoLoadingUnloading = true;
+        if (m_onCompleteImmediateLoad != null) {
+            m_onCompleteImmediateLoad();
+            m_onCompleteImmediateLoad = null;
         }
 
         UI.Cameras.Current.Controller.UpdateCamera();
     }
 
     public void OnScenesEnabled() {
-        if (this.m_useAfterSceneLoad) {
-            this.m_useAfterSceneLoad = false;
-            this.CompleteGoingToAScene();
+        if (m_useAfterSceneLoad) {
+            m_useAfterSceneLoad = false;
+            CompleteGoingToAScene();
         }
     }
 
     public void CompleteGoingToAScene() {
         if (Characters.Current != null) {
-            Characters.Current.Position = this.m_position;
+            Characters.Current.Position = m_position;
             Characters.Current.PlaceOnGround();
         }
 
-        UI.Cameras.Current.CameraTarget.SetTargetPosition(this.m_position);
+        UI.Cameras.Current.CameraTarget.SetTargetPosition(m_position);
         UI.Cameras.Current.Controller.PuppetController.Reset();
         UI.Cameras.Current.GoToChaseMode();
         UI.Cameras.Current.MoveCameraToTargetInstantly(false);
@@ -74,14 +74,14 @@ public class GoToSceneController : MonoBehaviour {
     }
 
     public void OnInstantLoadScenesControllerCompletedLoading() {
-        if (this.m_onCompleteLoad != null) {
-            this.m_onCompleteLoad();
-            this.m_onCompleteLoad = null;
+        if (m_onCompleteLoad != null) {
+            m_onCompleteLoad();
+            m_onCompleteLoad = null;
         }
 
         UI.Cameras.Current.Controller.UpdateCamera();
-        if (this.m_createCheckpointLater) {
-            this.m_createCheckpointLater = false;
+        if (m_createCheckpointLater) {
+            m_createCheckpointLater = false;
             GameController.Instance.CreateCheckpoint();
             GameController.Instance.SaveGameController.PerformSave();
             GameController.Instance.PerformSaveGameSequence();
@@ -89,37 +89,37 @@ public class GoToSceneController : MonoBehaviour {
     }
 
     public void OnScenesManagerFixedUpdate() {
-        if (this.m_isMovingImmediately) {
-            this.m_isMovingImmediately = false;
-            this.ScenesManager.SetTargetPositions(this.m_position);
-            this.ScenesManager.AutoLoadingUnloading = false;
-            this.ScenesManager.EnableDisabledScenesAtPosition();
-            this.CompleteGoingToAScene();
-            LateStartHook.AddLateStartMethod(new Action(this.FinishGoingToPositionImmediately));
+        if (m_isMovingImmediately) {
+            m_isMovingImmediately = false;
+            ScenesManager.SetTargetPositions(m_position);
+            ScenesManager.AutoLoadingUnloading = false;
+            ScenesManager.EnableDisabledScenesAtPosition();
+            CompleteGoingToAScene();
+            LateStartHook.AddLateStartMethod(FinishGoingToPositionImmediately);
         }
     }
 
     public void GoToScene(SceneMetaData sceneMetaData, Action onComplete, bool createCheckpoint) {
-        this.GoToScene(sceneMetaData.SceneMoonGuid, sceneMetaData.SeinPlaceholderPosition, sceneMetaData.name, onComplete, createCheckpoint, false);
+        GoToScene(sceneMetaData.SceneMoonGuid, sceneMetaData.SeinPlaceholderPosition, sceneMetaData.name, onComplete, createCheckpoint, false);
     }
 
     public void GoToScene(RuntimeSceneMetaData sceneMetaData, Action onComplete, bool createCheckpoint) {
-        this.GoToScene(sceneMetaData.SceneMoonGuid, sceneMetaData.PlaceholderPosition, sceneMetaData.Scene, onComplete, createCheckpoint, false);
+        GoToScene(sceneMetaData.SceneMoonGuid, sceneMetaData.PlaceholderPosition, sceneMetaData.Scene, onComplete, createCheckpoint, false);
     }
 
     public void GoToSceneAsync(SceneMetaData sceneMetaData, Action onComplete, bool createCheckpoint) {
-        this.GoToScene(sceneMetaData.SceneMoonGuid, sceneMetaData.SeinPlaceholderPosition, sceneMetaData.name, onComplete, createCheckpoint, true);
+        GoToScene(sceneMetaData.SceneMoonGuid, sceneMetaData.SeinPlaceholderPosition, sceneMetaData.name, onComplete, createCheckpoint, true);
     }
 
     public void GoToSceneAsync(RuntimeSceneMetaData sceneMetaData, Action onComplete, bool createCheckpoint) {
-        this.GoToScene(sceneMetaData.SceneMoonGuid, sceneMetaData.PlaceholderPosition, sceneMetaData.Scene, onComplete, createCheckpoint, true);
+        GoToScene(sceneMetaData.SceneMoonGuid, sceneMetaData.PlaceholderPosition, sceneMetaData.Scene, onComplete, createCheckpoint, true);
     }
 
     public void GoToSceneImmediately(SceneMetaData scene, Action onComplete) {
-        this.StartInScene = scene.SceneMoonGuid;
-        this.m_position = scene.SeinPlaceholderPosition;
-        this.m_onCompleteImmediateLoad = onComplete;
-        this.m_isMovingImmediately = true;
+        StartInScene = scene.SceneMoonGuid;
+        m_position = scene.SeinPlaceholderPosition;
+        m_onCompleteImmediateLoad = onComplete;
+        m_isMovingImmediately = true;
     }
 
     public void GoToScene(string path) {
@@ -127,7 +127,7 @@ public class GoToSceneController : MonoBehaviour {
         if (sceneInformation == null) {
             Randomizer.LogError("Bad scene path: " + path);
         } else {
-            this.GoToScene(sceneInformation, null, true);
+            GoToScene(sceneInformation, null, true);
         }
     }
 

@@ -1,65 +1,63 @@
-using System;
 using System.Collections;
-using System.Diagnostics;
 using Core;
 using Game;
 using UnityEngine;
 
 public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver, IProjectileDetonatable {
     public CharacterLeftRightMovement CharacterLeftRightMovement {
-        get { return this.Sein.PlatformBehaviour.LeftRightMovement; }
+        get { return Sein.PlatformBehaviour.LeftRightMovement; }
     }
 
     public CharacterGravity CharacterGravity {
-        get { return this.Sein.PlatformBehaviour.Gravity; }
+        get { return Sein.PlatformBehaviour.Gravity; }
     }
 
     public CharacterInstantStop CharacterInstantStop {
-        get { return this.Sein.PlatformBehaviour.InstantStop; }
+        get { return Sein.PlatformBehaviour.InstantStop; }
     }
 
     public SeinHealthController HealthController {
-        get { return this.Sein.Mortality.Health; }
+        get { return Sein.Mortality.Health; }
     }
 
     public PlatformMovement PlatformMovement {
-        get { return this.Sein.PlatformBehaviour.PlatformMovement; }
+        get { return Sein.PlatformBehaviour.PlatformMovement; }
     }
 
     public Renderer Sprite {
-        get { return this.Sein.PlatformBehaviour.Visuals.SpriteRenderer; }
+        get { return Sein.PlatformBehaviour.Visuals.SpriteRenderer; }
     }
 
     public void Start() {
-        this.CharacterGravity.ModifyGravityPlatformMovementSettingsEvent += new Action<GravityPlatformMovementSettings>(this.ModifyGravityPlatformMovementSettings);
-        this.CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent += new Action<HorizontalPlatformMovementSettings>(this.ModifyHorizontalPlatformMovementSettings);
-        Game.Checkpoint.Events.OnPostRestore.Add(new Action(this.OnRestoreCheckpoint));
+        CharacterGravity.ModifyGravityPlatformMovementSettingsEvent += ModifyGravityPlatformMovementSettings;
+        CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent += ModifyHorizontalPlatformMovementSettings;
+        Game.Checkpoint.Events.OnPostRestore.Add(OnRestoreCheckpoint);
     }
 
     public new void OnDestroy() {
         base.OnDestroy();
-        this.CharacterGravity.ModifyGravityPlatformMovementSettingsEvent -= new Action<GravityPlatformMovementSettings>(this.ModifyGravityPlatformMovementSettings);
-        this.CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent -= new Action<HorizontalPlatformMovementSettings>(this.ModifyHorizontalPlatformMovementSettings);
-        Game.Checkpoint.Events.OnPostRestore.Remove(new Action(this.OnRestoreCheckpoint));
+        CharacterGravity.ModifyGravityPlatformMovementSettingsEvent -= ModifyGravityPlatformMovementSettings;
+        CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent -= ModifyHorizontalPlatformMovementSettings;
+        Game.Checkpoint.Events.OnPostRestore.Remove(OnRestoreCheckpoint);
     }
 
     public override void OnEnter() {
-        this.CharacterInstantStop.Active = false;
+        CharacterInstantStop.Active = false;
     }
 
     public override void OnExit() {
-        this.CharacterInstantStop.Active = true;
+        CharacterInstantStop.Active = true;
     }
 
     public void OnRecieveDamage(Damage damage) {
         if (RandomizerBonusSkill.Invincible)
             return;
         if (damage.Amount < 9000f || damage.Type != DamageType.Water) {
-            if (this.IsImmortal) {
+            if (IsImmortal) {
                 return;
             }
 
-            if (!this.Sein.Controller.CanMove) {
+            if (!Sein.Controller.CanMove) {
                 return;
             }
 
@@ -69,13 +67,13 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
         }
 
         damage.SetAmount(Mathf.Round(damage.Amount * Randomizer.DamageModifier));
-        bool flag = this.m_invincibleTimeRemaining > 0f;
-        bool flag2 = this.m_invincibleToEnemiesTimeRemaining > 0f || (RandomizerBonus.EnhancedChargeJump && this.Sein.Abilities.ChargeJumpCharging && this.Sein.Abilities.ChargeJumpCharging.IsCharged);
-        if (this.Sein.Abilities.Stomp && this.Sein.Abilities.Stomp.Logic.CurrentState == this.Sein.Abilities.Stomp.State.StompDown) {
+        bool flag = m_invincibleTimeRemaining > 0f;
+        bool flag2 = m_invincibleToEnemiesTimeRemaining > 0f || (RandomizerBonus.EnhancedChargeJump && Sein.Abilities.ChargeJumpCharging && Sein.Abilities.ChargeJumpCharging.IsCharged);
+        if (Sein.Abilities.Stomp && Sein.Abilities.Stomp.Logic.CurrentState == Sein.Abilities.Stomp.State.StompDown) {
             flag = true;
         }
 
-        if (!this.Sein.gameObject.activeInHierarchy) {
+        if (!Sein.gameObject.activeInHierarchy) {
             return;
         }
 
@@ -87,7 +85,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
             damage.SetAmount(0f);
         }
 
-        if (damage.Amount < 100f && this.Sein.Abilities.GrabWall && RandomizerBonus.EnhancedClimb && (damage.Type == DamageType.Spikes || damage.Type == DamageType.Lava)) {
+        if (damage.Amount < 100f && Sein.Abilities.GrabWall && RandomizerBonus.EnhancedClimb && (damage.Type == DamageType.Spikes || damage.Type == DamageType.Lava)) {
             damage.SetAmount(0f);
         }
 
@@ -109,10 +107,10 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
             } else {
                 int num = Mathf.RoundToInt(damage.Amount / 4f);
                 if (num > 3) {
-                    num = Mathf.FloorToInt((float)(num - 3) * 0.5f) + 3;
+                    num = Mathf.FloorToInt((num - 3) * 0.5f) + 3;
                 }
 
-                damage.SetAmount((float)(num * 4));
+                damage.SetAmount(num * 4);
             }
         }
 
@@ -121,126 +119,126 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
         }
 
         UI.Vignette.SeinHurt.Restart();
-        SoundDescriptor soundForDamage = ((damage.Amount >= this.BadlyHurtAmount) ? this.SeinBadlyHurtSound : this.SeinHurtSound).GetSoundForDamage(damage);
+        SoundDescriptor soundForDamage = ((damage.Amount >= BadlyHurtAmount) ? SeinBadlyHurtSound : SeinHurtSound).GetSoundForDamage(damage);
         if (soundForDamage != null) {
-            SoundPlayer soundPlayer = Sound.Play(soundForDamage, this.PlatformMovement.Position, null);
+            SoundPlayer soundPlayer = Sound.Play(soundForDamage, PlatformMovement.Position, null);
             if (soundPlayer) {
-                soundPlayer.AttachTo = this.Sein.PlatformBehaviour.transform;
+                soundPlayer.AttachTo = Sein.PlatformBehaviour.transform;
             }
         }
 
         int num2 = Mathf.CeilToInt(damage.Amount / 4f);
-        damage.SetAmount((float)num2);
-        if (damage.Amount < 1000f && this.Sein.PlayerAbilities.UltraDefense.HasAbility) {
-            damage.SetAmount((float)Mathf.RoundToInt((float)num2 * 0.8f));
+        damage.SetAmount(num2);
+        if (damage.Amount < 1000f && Sein.PlayerAbilities.UltraDefense.HasAbility) {
+            damage.SetAmount(Mathf.RoundToInt(num2 * 0.8f));
         }
 
-        Attacking.DamageDisplayText.Create(damage, this.Sein.transform);
-        damage.SetAmount((float)(num2 * 4));
-        if (damage.Amount < 1000f && this.Sein.PlayerAbilities.UltraDefense.HasAbility) {
-            damage.SetAmount((float)(Mathf.FloorToInt((float)(num2 * 2) * 0.8f) * 2));
+        Attacking.DamageDisplayText.Create(damage, Sein.transform);
+        damage.SetAmount(num2 * 4);
+        if (damage.Amount < 1000f && Sein.PlayerAbilities.UltraDefense.HasAbility) {
+            damage.SetAmount(Mathf.FloorToInt(num2 * 2 * 0.8f) * 2);
         }
 
         int num3 = Mathf.RoundToInt(damage.Amount);
-        if ((float)num3 >= this.HealthController.Amount) {
-            this.Sein.Mortality.Health.TakeDamage(num3);
-            this.OnKill(damage);
+        if (num3 >= HealthController.Amount) {
+            Sein.Mortality.Health.TakeDamage(num3);
+            OnKill(damage);
             return;
         }
 
-        this.Sein.Mortality.Health.TakeDamage(num3);
+        Sein.Mortality.Health.TakeDamage(num3);
         if (damage.Type != DamageType.Drowning) {
-            this.MakeInvincible(1f);
-            base.StartCoroutine(this.FlashSprite());
-            if (this.HurtEffect) {
-                GameObject expr_3BA = (GameObject)InstantiateUtility.Instantiate(this.HurtEffect);
-                expr_3BA.transform.position = base.transform.position;
-                Vector3 vector = this.PlatformMovement.LocalSpeed.normalized + damage.Force.normalized;
+            MakeInvincible(1f);
+            StartCoroutine(FlashSprite());
+            if (HurtEffect) {
+                GameObject expr_3BA = (GameObject)InstantiateUtility.Instantiate(HurtEffect);
+                expr_3BA.transform.position = transform.position;
+                Vector3 vector = PlatformMovement.LocalSpeed.normalized + damage.Force.normalized;
                 float z = Mathf.Atan2(vector.y, vector.x) * 57.29578f;
                 expr_3BA.transform.rotation = Quaternion.Euler(0f, 0f, z);
             }
 
-            base.Active = true;
-            if (this.Sein.Abilities.GrabWall) {
-                this.Sein.Abilities.GrabWall.Exit();
+            Active = true;
+            if (Sein.Abilities.GrabWall) {
+                Sein.Abilities.GrabWall.Exit();
             }
 
-            if (this.Sein.Abilities.Dash) {
-                this.Sein.Abilities.Dash.Exit();
+            if (Sein.Abilities.Dash) {
+                Sein.Abilities.Dash.Exit();
             }
 
-            this.PlatformMovement.LocalSpeed = ((damage.Force.x <= 0f) ? new Vector2(-this.HurtSpeed.x, this.HurtSpeed.y) : this.HurtSpeed);
-            this.m_hurtTimeRemaining = this.HurtDuration;
-            this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.HurtAnimation, 140, new Func<bool>(this.ShouldHurtAnimationKeepPlaying));
+            PlatformMovement.LocalSpeed = ((damage.Force.x <= 0f) ? new Vector2(-HurtSpeed.x, HurtSpeed.y) : HurtSpeed);
+            m_hurtTimeRemaining = HurtDuration;
+            Sein.PlatformBehaviour.Visuals.Animation.Play(HurtAnimation, 140, ShouldHurtAnimationKeepPlaying);
             return;
         }
 
-        base.StartCoroutine(this.FlashSprite());
+        StartCoroutine(FlashSprite());
     }
 
     public void SetReferenceToSein(SeinCharacter sein) {
-        this.Sein = sein;
+        Sein = sein;
     }
 
     public override void UpdateCharacterState() {
-        if (this.Sein.IsSuspended) {
+        if (Sein.IsSuspended) {
             return;
         }
 
-        this.m_hurtTimeRemaining -= Time.deltaTime;
-        this.m_invincibleTimeRemaining -= Time.deltaTime;
-        this.m_invincibleToEnemiesTimeRemaining -= Time.deltaTime;
-        if (this.m_hurtTimeRemaining < 0f) {
-            this.m_hurtTimeRemaining = 0f;
+        m_hurtTimeRemaining -= Time.deltaTime;
+        m_invincibleTimeRemaining -= Time.deltaTime;
+        m_invincibleToEnemiesTimeRemaining -= Time.deltaTime;
+        if (m_hurtTimeRemaining < 0f) {
+            m_hurtTimeRemaining = 0f;
         }
 
-        if (this.m_invincibleTimeRemaining < 0f) {
-            this.m_invincibleTimeRemaining = 0f;
+        if (m_invincibleTimeRemaining < 0f) {
+            m_invincibleTimeRemaining = 0f;
         }
 
-        if (this.m_invincibleToEnemiesTimeRemaining < 0f) {
-            this.m_invincibleToEnemiesTimeRemaining = 0f;
+        if (m_invincibleToEnemiesTimeRemaining < 0f) {
+            m_invincibleToEnemiesTimeRemaining = 0f;
         }
 
-        if (base.Active && this.m_hurtTimeRemaining == 0f) {
-            base.Active = false;
+        if (Active && m_hurtTimeRemaining == 0f) {
+            Active = false;
         }
     }
 
     public void ModifyHorizontalPlatformMovementSettings(HorizontalPlatformMovementSettings settings) {
-        if (base.Active) {
-            settings.Ground.ApplySpeedMultiplier(this.MoveSpeed);
-            settings.Air.ApplySpeedMultiplier(this.MoveSpeed);
+        if (Active) {
+            settings.Ground.ApplySpeedMultiplier(MoveSpeed);
+            settings.Air.ApplySpeedMultiplier(MoveSpeed);
         }
     }
 
     public void ModifyGravityPlatformMovementSettings(GravityPlatformMovementSettings settings) {
-        if (base.Active) {
-            settings.GravityStrength *= this.GravityMultiplier;
+        if (Active) {
+            settings.GravityStrength *= GravityMultiplier;
         }
     }
 
     public void MakeInvincible(float duration) {
-        this.m_invincibleTimeRemaining = Mathf.Max(this.m_invincibleTimeRemaining, duration);
+        m_invincibleTimeRemaining = Mathf.Max(m_invincibleTimeRemaining, duration);
     }
 
     public void MakeInvincibleToEnemies(float duration) {
-        this.m_invincibleToEnemiesTimeRemaining = Mathf.Max(this.m_invincibleToEnemiesTimeRemaining, duration);
+        m_invincibleToEnemiesTimeRemaining = Mathf.Max(m_invincibleToEnemiesTimeRemaining, duration);
     }
 
     public void ResetInviciblity() {
-        this.m_invincibleTimeRemaining = 0f;
-        this.m_invincibleToEnemiesTimeRemaining = 0f;
+        m_invincibleTimeRemaining = 0f;
+        m_invincibleToEnemiesTimeRemaining = 0f;
     }
 
     public void OnRestoreCheckpoint() {
-        this.SpriteMaterialTintColor(new Color(0f, 0f, 0f, 0f));
+        SpriteMaterialTintColor(new Color(0f, 0f, 0f, 0f));
         CameraFrustumOptimizer.ForceUpdate();
-        if (this.m_died) {
-            this.m_died = false;
-            this.Sein.Active = true;
-            this.Sein.GetComponent<GoThroughPlatformHandler>().UpdateColliders();
-            this.Sein.Mortality.Health.OnRespawn();
+        if (m_died) {
+            m_died = false;
+            Sein.Active = true;
+            Sein.GetComponent<GoThroughPlatformHandler>().UpdateColliders();
+            Sein.Mortality.Health.OnRespawn();
             if (WorldMapLogic.Instance.MapEnabledArea.FindFaceAtPositionFaster(Characters.Sein.Position) != null) {
                 GameController.Instance.SaveGameController.PerformSave();
             }
@@ -252,9 +250,9 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
     public IEnumerator FlashSprite() {
         yield return new WaitForFixedUpdate();
         for (int i = 0; i < 8; i++) {
-            this.SpriteMaterialTintColor(Color.red);
+            SpriteMaterialTintColor(Color.red);
             yield return new WaitForSeconds(0.05f);
-            this.SpriteMaterialTintColor(new Color(0f, 0f, 0f, 0f));
+            SpriteMaterialTintColor(new Color(0f, 0f, 0f, 0f));
             yield return new WaitForSeconds(0.05f);
         }
 
@@ -262,46 +260,46 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
     }
 
     public void SpriteMaterialTintColor(Color color) {
-        if (this.Sprite) {
-            this.Sprite.sharedMaterial.SetColor(ShaderProperties.TintColor, color);
+        if (Sprite) {
+            Sprite.sharedMaterial.SetColor(ShaderProperties.TintColor, color);
         }
     }
 
     public void OnEnable() {
-        this.SpriteMaterialTintColor(new Color(0f, 0f, 0f, 0f));
-        this.m_invincibleTimeRemaining = 0f;
-        this.m_invincibleToEnemiesTimeRemaining = 0f;
+        SpriteMaterialTintColor(new Color(0f, 0f, 0f, 0f));
+        m_invincibleTimeRemaining = 0f;
+        m_invincibleToEnemiesTimeRemaining = 0f;
     }
 
     public bool IsInvinsible {
-        get { return this.m_invincibleTimeRemaining > 0f; }
+        get { return m_invincibleTimeRemaining > 0f; }
     }
 
     public bool ShouldHurtAnimationKeepPlaying() {
-        return !this.PlatformMovement.IsOnGround;
+        return !PlatformMovement.IsOnGround;
     }
 
     public void OnKill(Damage damage) {
-        if (!this.Sein.Active) {
+        if (!Sein.Active) {
             return;
         }
 
         BingoController.OnDeath(damage);
-        this.m_died = true;
-        SoundDescriptor soundForDamage = this.SeinDeathSound.GetSoundForDamage(damage);
+        m_died = true;
+        SoundDescriptor soundForDamage = SeinDeathSound.GetSoundForDamage(damage);
         if (soundForDamage != null) {
-            SoundPlayer soundPlayer = Sound.Play(soundForDamage, this.PlatformMovement.Position, null);
+            SoundPlayer soundPlayer = Sound.Play(soundForDamage, PlatformMovement.Position, null);
             if (soundPlayer) {
-                soundPlayer.AttachTo = this.Sein.PlatformBehaviour.transform;
+                soundPlayer.AttachTo = Sein.PlatformBehaviour.transform;
             }
         }
 
-        Utility.DisableLate(this.Sein);
+        Utility.DisableLate(Sein);
         SeinDeathCounter.Count++;
         SeinDeathsManager.OnDeath();
         GameController.Instance.ResumeGameplay();
-        if (this.DeathEffectProvider) {
-            this.InstantiateDeathEffect(damage);
+        if (DeathEffectProvider) {
+            InstantiateDeathEffect(damage);
         }
 
         Events.Scheduler.OnPlayerDeath.Call();
@@ -311,21 +309,21 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
             SaveSlotBackupsManager.DeleteAllBackups(SaveSlotsManager.CurrentSlotIndex);
         }
 
-        GameController.Instance.StartCoroutine(this.OnKillRoutine());
+        GameController.Instance.StartCoroutine(OnKillRoutine());
     }
 
     private void InstantiateDeathEffect(Damage damage) {
-        GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(this.DeathEffectProvider.Prefab(new DamageContext(damage)));
+        GameObject gameObject = (GameObject)InstantiateUtility.Instantiate(DeathEffectProvider.Prefab(new DamageContext(damage)));
         damage.DealToComponents(gameObject);
-        Transform transform = this.Sein.PlatformBehaviour.Visuals.SpriteMirror.transform;
+        Transform transform = Sein.PlatformBehaviour.Visuals.SpriteMirror.transform;
         gameObject.transform.localPosition = transform.position;
         gameObject.transform.localScale = transform.localScale;
         gameObject.transform.localRotation = transform.localRotation;
     }
 
     public IEnumerator OnKillRoutine() {
-        float deathDuration = this.DeathDuration;
-        for (float t = 0f; t < deathDuration; t += ((!this.Sein.IsSuspended) ? Time.deltaTime : 0f)) {
+        float deathDuration = DeathDuration;
+        for (float t = 0f; t < deathDuration; t += ((!Sein.IsSuspended) ? Time.deltaTime : 0f)) {
             if (Characters.Sein == null) {
                 yield break;
             }
@@ -334,27 +332,26 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
         }
 
         if (DifficultyController.Instance.Difficulty == DifficultyMode.OneLife) {
-            InstantiateUtility.Instantiate(this.GameOverScreen, Vector3.zero, Quaternion.identity);
+            InstantiateUtility.Instantiate(GameOverScreen, Vector3.zero, Quaternion.identity);
         } else {
-            UI.Fader.Fade(this.DeathFadeInDuration, 0f, this.DeathFadeOutDuration, new Action(this.OnKillFadeInComplete), null);
+            UI.Fader.Fade(DeathFadeInDuration, 0f, DeathFadeOutDuration, OnKillFadeInComplete, null);
         }
 
-        yield return new WaitForSeconds(this.DeathFadeInDuration);
+        yield return new WaitForSeconds(DeathFadeInDuration);
         SeinDeathCounter.SendTelemetryData();
-        yield break;
     }
 
     public void OnKillFadeInComplete() {
-        GameController.Instance.RestoreCheckpoint(null);
+        GameController.Instance.RestoreCheckpoint();
     }
 
     public bool CanDetonateProjectiles() {
-        return this.m_invincibleToEnemiesTimeRemaining == 0f;
+        return m_invincibleToEnemiesTimeRemaining == 0f;
     }
 
     public override void Serialize(Archive ar) {
         base.Serialize(ar);
-        ar.Serialize(ref this.m_serializationFiller);
+        ar.Serialize(ref m_serializationFiller);
     }
 
     public SeinCharacter Sein;

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Game;
 using UnityEngine;
@@ -7,31 +6,31 @@ public class SkillItem : MonoBehaviour {
     public int ActualRequiredSkillPoints {
         get {
             if (DifficultyController.Instance.Difficulty == DifficultyMode.Hard) {
-                return this.RequiredHardSkillPoints;
+                return RequiredHardSkillPoints;
             }
 
-            return this.RequiredSkillPoints;
+            return RequiredSkillPoints;
         }
     }
 
     public int ActualTotalRequiredSkillPoints {
         get {
             if (DifficultyController.Instance.Difficulty == DifficultyMode.Hard) {
-                return this.TotalRequiredHardSkillPoints;
+                return TotalRequiredHardSkillPoints;
             }
 
-            return this.TotalRequiredSkillPoints;
+            return TotalRequiredSkillPoints;
         }
     }
 
     public int TotalRequiredHardSkillPoints {
-        get { return this.m_totalRequiredHardPoints; }
-        set { this.m_totalRequiredHardPoints = value; }
+        get { return m_totalRequiredHardPoints; }
+        set { m_totalRequiredHardPoints = value; }
     }
 
     public int TotalRequiredSkillPoints {
-        get { return this.m_totalRequiredPoints; }
-        set { this.m_totalRequiredPoints = value; }
+        get { return m_totalRequiredPoints; }
+        set { m_totalRequiredPoints = value; }
     }
 
     public Color LargeIconColor { get; set; }
@@ -41,16 +40,16 @@ public class SkillItem : MonoBehaviour {
     }
 
     public bool RequiresAbilitiesOrItems {
-        get { return this.RequiredAbilities.Count != 0 || this.RequiredItems.Count != 0; }
+        get { return RequiredAbilities.Count != 0 || RequiredItems.Count != 0; }
     }
 
     public bool SoulRequirementMet {
-        get { return this.ActualRequiredSkillPoints <= Characters.Sein.Level.SkillPoints; }
+        get { return ActualRequiredSkillPoints <= Characters.Sein.Level.SkillPoints; }
     }
 
     public bool AbilitiesRequirementMet {
         get {
-            using (List<SkillItem>.Enumerator enumerator = this.RequiredItems.GetEnumerator()) {
+            using (List<SkillItem>.Enumerator enumerator = RequiredItems.GetEnumerator()) {
                 while (enumerator.MoveNext()) {
                     if (!enumerator.Current.HasSkillItem) {
                         return false;
@@ -63,47 +62,47 @@ public class SkillItem : MonoBehaviour {
     }
 
     public void Awake() {
-        this.m_animator = this.Icon.GetComponent<TransparencyAnimator>();
+        m_animator = Icon.GetComponent<TransparencyAnimator>();
     }
 
     public bool CanEarnSkill {
-        get { return this.SoulRequirementMet && this.AbilitiesRequirementMet; }
+        get { return SoulRequirementMet && AbilitiesRequirementMet; }
     }
 
     public void FixedUpdate() {
-        this.UpdateItem();
+        UpdateItem();
     }
 
     public void UpdateItem() {
-        this.LearntSkillGlow.SetActive(this.HasSkillItem && this.Visible);
-        this.Icon.gameObject.SetActive(this.Visible);
-        if (this.HasSkillItem == this.m_animator.AnimatorDriver.IsReversed) {
-            this.m_animator.Initialize();
-            if (this.HasSkillItem) {
-                this.m_animator.AnimatorDriver.ContinueForward();
+        LearntSkillGlow.SetActive(HasSkillItem && Visible);
+        Icon.gameObject.SetActive(Visible);
+        if (HasSkillItem == m_animator.AnimatorDriver.IsReversed) {
+            m_animator.Initialize();
+            if (HasSkillItem) {
+                m_animator.AnimatorDriver.ContinueForward();
             } else {
-                this.m_animator.AnimatorDriver.ContinueBackwards();
+                m_animator.AnimatorDriver.ContinueBackwards();
             }
         }
     }
 
     public void OnEnable() {
-        this.HasSkillItem = Characters.Sein.PlayerAbilities.HasAbility(this.Ability);
-        this.UpdateItem();
-        this.m_animator.Initialize();
-        if (this.HasSkillItem) {
-            this.m_animator.AnimatorDriver.GoToEnd();
+        HasSkillItem = Characters.Sein.PlayerAbilities.HasAbility(Ability);
+        UpdateItem();
+        m_animator.Initialize();
+        if (HasSkillItem) {
+            m_animator.AnimatorDriver.GoToEnd();
         } else {
-            this.m_animator.AnimatorDriver.GoToStart();
+            m_animator.AnimatorDriver.GoToStart();
         }
     }
 
     public MessageProvider Name {
-        get { return RandomizerText.GetAbilityName(this.Ability) ?? NameMessageProvider; }
+        get { return RandomizerText.GetAbilityName(Ability) ?? NameMessageProvider; }
     }
 
     public MessageProvider Description {
-        get { return RandomizerText.GetAbilityDescription(this.Ability) ?? DescriptionMessageProvider; }
+        get { return RandomizerText.GetAbilityDescription(Ability) ?? DescriptionMessageProvider; }
     }
 
     public int RequiredSkillPoints = 1;
@@ -132,7 +131,7 @@ public class SkillItem : MonoBehaviour {
 
     public bool HasSkillItem;
 
-    private int m_totalRequiredPoints = 0;
+    private int m_totalRequiredPoints;
 
-    private int m_totalRequiredHardPoints = 0;
+    private int m_totalRequiredHardPoints;
 }

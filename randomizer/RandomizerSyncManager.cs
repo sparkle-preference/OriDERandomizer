@@ -1,12 +1,14 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Text;
 using Game;
 using Sein.World;
 using UnityEngine;
+using Events = Sein.World.Events;
 
 public static class RandomizerSyncManager {
     public static void Initialize() {
@@ -44,9 +46,9 @@ public static class RandomizerSyncManager {
         SkillInfos.Add(new SkillInfoLine(50, 8, AbilityType.Dash));
         SkillInfos.Add(new SkillInfoLine(51, 9, AbilityType.Grenade));
         EventInfos.Add(new EventInfoLine(0, 0, () => Keys.GinsoTree));
-        EventInfos.Add(new EventInfoLine(1, 1, () => Sein.World.Events.WaterPurified));
+        EventInfos.Add(new EventInfoLine(1, 1, () => Events.WaterPurified));
         EventInfos.Add(new EventInfoLine(2, 2, () => Keys.ForlornRuins));
-        EventInfos.Add(new EventInfoLine(3, 3, () => Sein.World.Events.WindRestored));
+        EventInfos.Add(new EventInfoLine(3, 3, () => Events.WindRestored));
         EventInfos.Add(new EventInfoLine(4, 4, () => Keys.MountHoru));
         if (Randomizer.SyncId != "") {
             string[] parts = Randomizer.SyncId.Split('.');
@@ -191,8 +193,8 @@ public static class RandomizerSyncManager {
                 nvc["y"] = pos.y.ToString();
                 nvc["version"] = Randomizer.VERSION;
                 for (int i = 0; i < 8; i++) {
-                    nvc["seen_" + i.ToString()] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(1560 + i));
-                    nvc["have_" + i.ToString()] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(930 + i));
+                    nvc["seen_" + i] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(1560 + i));
+                    nvc["have_" + i] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(930 + i));
                 }
 
                 string apHints = RandomizerMW.HintRequestField();
@@ -238,7 +240,7 @@ public static class RandomizerSyncManager {
     // (plandos especially, escaped commas inflate 3x). Chunked escaping is
     // character-wise safe: seed text is ASCII.
     private static string EscapeLong(string s) {
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
         for (int i = 0; i < s.Length; i += 16000)
             sb.Append(Uri.EscapeDataString(s.Substring(i, Math.Min(16000, s.Length - i))));
         return sb.ToString();
@@ -255,15 +257,15 @@ public static class RandomizerSyncManager {
     public static void CheckPickups(object sender, UploadValuesCompletedEventArgs e) {
         try {
             if (e.Error != null) {
-                if (e.Error is System.NullReferenceException)
+                if (e.Error is NullReferenceException)
                     return;
-                Randomizer.LogError("CheckPickups got error: " + e.Error.ToString());
+                Randomizer.LogError("CheckPickups got error: " + e.Error);
             }
 
             if (!e.Cancelled && e.Error == null) {
                 if (!Characters.Sein)
                     return;
-                ProcessTickResponse(System.Text.Encoding.UTF8.GetString(e.Result));
+                ProcessTickResponse(Encoding.UTF8.GetString(e.Result));
                 return;
             }
 
@@ -272,7 +274,6 @@ public static class RandomizerSyncManager {
                     Randomizer.printInfo("Co-op server error, try reloading the seed (Alt+L)");
                 else
                     Randomizer.LogError("Co-op server error, try reloading the seed (Alt+L)");
-                return;
             }
         } catch (Exception e2) {
             Randomizer.LogError("CheckPickups threw error: " + e2.Message);
@@ -394,9 +395,7 @@ public static class RandomizerSyncManager {
             {
                 bool mustRefreshLogic = false;
                 string[] array = data.Split(
-                    new char[] {
-                        ','
-                    }
+                    ','
                 );
                 int bf = int.Parse(array[0]);
                 foreach (SkillInfoLine skillInfoLine in SkillInfos) {
@@ -430,9 +429,9 @@ public static class RandomizerSyncManager {
                             if (WarpDatas.ContainsKey(splitpair[0])) {
                                 WarpDatas[splitpair[0]].GrantFromNetwork();
                                 continue;
-                            } else {
-                                Randomizer.LogError($"Unknown ?Warp? {rawUpgrade}");
                             }
+
+                            Randomizer.LogError($"Unknown ?Warp? {rawUpgrade}");
                         }
 
                         int id = int.Parse(splitpair[0]);
@@ -456,7 +455,7 @@ public static class RandomizerSyncManager {
                         } else if (RandomizerBonus.UpgradeCount(id) < cnt) {
                             RandomizerBonus.UpgradeID(id);
                             mustRefreshLogic = true;
-                        } else if (!PickupQueue.Where((Pickup p) => p.type == "RB" && p.id == splitpair[0]).Any() && RandomizerBonus.UpgradeCount(id) > cnt) {
+                        } else if (!PickupQueue.Where(p => p.type == "RB" && p.id == splitpair[0]).Any() && RandomizerBonus.UpgradeCount(id) > cnt) {
                             RandomizerBonus.UpgradeID(-id);
                             mustRefreshLogic = true;
                         }
@@ -467,7 +466,7 @@ public static class RandomizerSyncManager {
                 // always present (possibly empty) so the slot bitfields can
                 // sit at a fixed index 6; legacy games omit it when empty.
                 if (array.Length > 5 && array[5] != "") {
-                    foreach (string text in array[5].Split(new char[] { '|' })) {
+                    foreach (string text in array[5].Split('|')) {
                         if (text == "" || CurrentSignals.Contains(text))
                             continue;
                         if (text == "stop") {
@@ -480,7 +479,7 @@ public static class RandomizerSyncManager {
                                 RandomizerStatsManager.WriteStatsFile();
                             }
                         } else if (text.StartsWith("pickup:")) {
-                            string[] parts = text.Substring(7).Split(new char[] { '|' });
+                            string[] parts = text.Substring(7).Split('|');
                             RandomizerAction action;
                             action = new RandomizerAction(parts[0], parts[1]);
                             RandomizerSwitch.GivePickup(action, 0, false);
@@ -667,7 +666,7 @@ public static class RandomizerSyncManager {
         return false;
     }
 
-    private static float tslu = 0f;
+    private static float tslu;
 
     public static Pickup SendingPickup;
 
@@ -685,7 +684,7 @@ public static class RandomizerSyncManager {
 
     public static List<TeleportInfoLine> TeleportInfos;
 
-    public static int ChaosTimeoutCounter = 0;
+    public static int ChaosTimeoutCounter;
 
     public static Queue<Pickup> PickupQueue;
 
@@ -701,7 +700,7 @@ public static class RandomizerSyncManager {
     // ws adapter must parse this identically to request.form.
     private static string TickPayload() {
         Vector3 pos = Characters.Sein.Position;
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
         sb.Append("x=").Append(pos.x.ToString());
         sb.Append("&y=").Append(pos.y.ToString());
         sb.Append("&version=").Append(Uri.EscapeDataString(Randomizer.VERSION));
@@ -775,7 +774,7 @@ public static class RandomizerSyncManager {
         return ((uint)stupidFuckingSignedInt).ToString();
     }
 
-    public static Dictionary<string, RandomizerAction> TPIds = new Dictionary<string, RandomizerAction>() {
+    public static Dictionary<string, RandomizerAction> TPIds = new Dictionary<string, RandomizerAction> {
         { "swamp", new RandomizerAction("TP", "Swamp") },
         { "sorrowPass", new RandomizerAction("TP", "Valley") },
         { "moonGrotto", new RandomizerAction("TP", "Grotto") },
@@ -790,33 +789,33 @@ public static class RandomizerSyncManager {
 
     public class Pickup {
         public override bool Equals(object obj) {
-            if (obj == null || base.GetType() != obj.GetType()) {
+            if (obj == null || GetType() != obj.GetType()) {
                 return false;
             }
 
             Pickup pickup = (Pickup)obj;
-            return this.type == pickup.type && this.id == pickup.id && this.coords == pickup.coords;
+            return type == pickup.type && id == pickup.id && coords == pickup.coords;
         }
 
         public override int GetHashCode() {
-            return (this.type + this.id).GetHashCode() ^ this.coords.GetHashCode();
+            return (type + id).GetHashCode() ^ coords.GetHashCode();
         }
 
         public Pickup(string _type, string _id, int _coords) {
-            this.type = _type;
-            this.id = _id;
-            this.coords = _coords;
+            type = _type;
+            id = _id;
+            coords = _coords;
         }
 
         public Pickup(RandomizerAction action, int _coords) {
-            this.type = action.Action;
-            this.id = action.ValAsStr();
-            this.coords = _coords;
+            type = action.Action;
+            id = action.ValAsStr();
+            coords = _coords;
         }
 
         public string CleanedId {
             get {
-                string cleaned_id = this.id.Replace("#", "");
+                string cleaned_id = id.Replace("#", "");
                 if (cleaned_id.Contains("\\"))
                     cleaned_id = cleaned_id.Split('\\')[0];
                 return cleaned_id;
@@ -824,7 +823,7 @@ public static class RandomizerSyncManager {
         }
 
         public Uri GetURL() {
-            string url = RootUrl + "/found/" + this.coords + "/" + this.type + "/" + this.CleanedId;
+            string url = RootUrl + "/found/" + coords + "/" + type + "/" + CleanedId;
             url += "?zone=" + RandomizerStatsManager.CurrentZone();
 
             return new Uri(url);
@@ -833,7 +832,7 @@ public static class RandomizerSyncManager {
         // found:<token>|<qs>|<coords>|<kind>|<id> — id last, the server
         // parses it greedily (TW ids carry commas)
         public string WsBody(int token) {
-            return "found:" + token + "|zone=" + Uri.EscapeDataString(RandomizerStatsManager.CurrentZone()) + "|" + this.coords + "|" + this.type + "|" + this.CleanedId;
+            return "found:" + token + "|zone=" + Uri.EscapeDataString(RandomizerStatsManager.CurrentZone()) + "|" + coords + "|" + type + "|" + CleanedId;
         }
 
         public string id;
@@ -846,22 +845,22 @@ public static class RandomizerSyncManager {
 
     public class SkillInfoLine {
         public SkillInfoLine(int _id, int _bit, AbilityType _skill) {
-            this.bit = _bit;
-            this.id = _id;
-            this.skill = _skill;
+            bit = _bit;
+            id = _id;
+            skill = _skill;
         }
 
         public override bool Equals(object obj) {
-            if (obj == null || base.GetType() != obj.GetType()) {
+            if (obj == null || GetType() != obj.GetType()) {
                 return false;
             }
 
             SkillInfoLine skillInfoLine = (SkillInfoLine)obj;
-            return this.bit == skillInfoLine.bit && this.id == skillInfoLine.id && this.skill == skillInfoLine.skill;
+            return bit == skillInfoLine.bit && id == skillInfoLine.id && skill == skillInfoLine.skill;
         }
 
         public override int GetHashCode() {
-            return this.skill.GetHashCode() ^ this.id.GetHashCode() ^ this.bit.GetHashCode();
+            return skill.GetHashCode() ^ id.GetHashCode() ^ bit.GetHashCode();
         }
 
         public int id;
@@ -873,23 +872,23 @@ public static class RandomizerSyncManager {
 
     public class UpgradeInfoLine {
         public UpgradeInfoLine(int _id, int _bit, bool _stacks, UpgradeCounter _counter) {
-            this.bit = _bit;
-            this.id = _id;
-            this.stacks = _stacks;
-            this.counter = _counter;
+            bit = _bit;
+            id = _id;
+            stacks = _stacks;
+            counter = _counter;
         }
 
         public override bool Equals(object obj) {
-            if (obj == null || base.GetType() != obj.GetType()) {
+            if (obj == null || GetType() != obj.GetType()) {
                 return false;
             }
 
             UpgradeInfoLine upgradeInfoLine = (UpgradeInfoLine)obj;
-            return this.bit == upgradeInfoLine.bit && this.id == upgradeInfoLine.id;
+            return bit == upgradeInfoLine.bit && id == upgradeInfoLine.id;
         }
 
         public override int GetHashCode() {
-            return this.bit.GetHashCode() ^ this.id.GetHashCode();
+            return bit.GetHashCode() ^ id.GetHashCode();
         }
 
         public int id;
@@ -905,22 +904,22 @@ public static class RandomizerSyncManager {
 
     public class EventInfoLine {
         public EventInfoLine(int _id, int _bit, EventChecker _checker) {
-            this.bit = _bit;
-            this.id = _id;
-            this.checker = _checker;
+            bit = _bit;
+            id = _id;
+            checker = _checker;
         }
 
         public override bool Equals(object obj) {
-            if (obj == null || base.GetType() != obj.GetType()) {
+            if (obj == null || GetType() != obj.GetType()) {
                 return false;
             }
 
             EventInfoLine eventInfoLine = (EventInfoLine)obj;
-            return this.bit == eventInfoLine.bit && this.id == eventInfoLine.id;
+            return bit == eventInfoLine.bit && id == eventInfoLine.id;
         }
 
         public override int GetHashCode() {
-            return this.bit.GetHashCode() ^ this.id.GetHashCode();
+            return bit.GetHashCode() ^ id.GetHashCode();
         }
 
         public int id;
@@ -932,21 +931,21 @@ public static class RandomizerSyncManager {
 
     public class TeleportInfoLine {
         public TeleportInfoLine(string _id, int _bit) {
-            this.bit = _bit;
-            this.id = _id;
+            bit = _bit;
+            id = _id;
         }
 
         public override bool Equals(object obj) {
-            if (obj == null || base.GetType() != obj.GetType()) {
+            if (obj == null || GetType() != obj.GetType()) {
                 return false;
             }
 
             TeleportInfoLine teleportInfoLine = (TeleportInfoLine)obj;
-            return this.bit == teleportInfoLine.bit && this.id == teleportInfoLine.id;
+            return bit == teleportInfoLine.bit && id == teleportInfoLine.id;
         }
 
         public override int GetHashCode() {
-            return this.bit.GetHashCode() ^ this.id.GetHashCode();
+            return bit.GetHashCode() ^ id.GetHashCode();
         }
 
         public string id;
@@ -956,10 +955,10 @@ public static class RandomizerSyncManager {
 
     public class WarpData {
         public WarpData(string _name, string _area, int _x, int _y) {
-            this.x = _x;
-            this.y = _y;
-            this.name = $"Warp to {_name}";
-            this.area = _area;
+            x = _x;
+            y = _y;
+            name = $"Warp to {_name}";
+            area = _area;
         }
 
         public int x;
@@ -968,22 +967,22 @@ public static class RandomizerSyncManager {
         public string area;
 
         public override int GetHashCode() {
-            return this.name.GetHashCode();
+            return name.GetHashCode();
         }
 
         public void GrantFromNetwork() {
-            if (TeleporterController.HasCustomWarp(this.name))
+            if (TeleporterController.HasCustomWarp(name))
                 return;
-            if (!Randomizer.WarpLogicLocations.ContainsKey(this.name)) {
-                Randomizer.WarpLogicLocations.Add(this.name, this.area);
+            if (!Randomizer.WarpLogicLocations.ContainsKey(name)) {
+                Randomizer.WarpLogicLocations.Add(name, area);
             }
 
-            RandomizerSwitch.GivePickup(new RandomizerAction("TW", $"{this.name},{this.x},{this.y}"), 0, false);
+            RandomizerSwitch.GivePickup(new RandomizerAction("TW", $"{name},{x},{y}"), 0, false);
         }
     }
 
 
-    public static Dictionary<string, WarpData> WarpDatas = new Dictionary<string, WarpData>() {
+    public static Dictionary<string, WarpData> WarpDatas = new Dictionary<string, WarpData> {
         { "917_-70", new WarpData("Stomp Tree Roof", "StompAreaRoofExpWarp", 917, -70) },
         { "790_-195", new WarpData("Swamp Swim", "SwampWaterWarp", 790, -195) },
         { "720_-95", new WarpData("Inner Swamp EC", "InnerSwampSkyArea", 720, -95) },

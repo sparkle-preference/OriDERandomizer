@@ -1,10 +1,9 @@
 using System;
-using System.Linq;
-using System.ComponentModel;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
-using Core;
 using UnityEngine;
+using Input = Core.Input;
 
 public static class RandomizerSettings {
     public static void WriteDefaultFile() {
@@ -30,12 +29,12 @@ public static class RandomizerSettings {
                 var line = rawLine;
 
                 if (line.Contains("//"))
-                    line = line.Split(new string[] { "//" }, StringSplitOptions.None)[0].Trim();
+                    line = line.Split(new[] { "//" }, StringSplitOptions.None)[0].Trim();
 
                 if (!line.Contains(":"))
                     continue;
 
-                string[] parts = line.Split(new char[] { ':' }, 2);
+                string[] parts = line.Split(new[] { ':' }, 2);
                 string setting = parts[0].Trim();
                 if (!All.ContainsKey(setting)) {
                     continue;
@@ -99,7 +98,6 @@ public static class RandomizerSettings {
         try {
             if (All.ContainsKey(setting)) {
                 All[setting].Parse(value);
-                return;
             }
         } catch (Exception) {
             All[setting].Reset();
@@ -140,16 +138,14 @@ public static class RandomizerSettings {
 
     public static bool IsSwimBoosting() {
         if (Controls.InvertSwim)
-            return !Core.Input.Jump.IsPressed;
-        else
-            return Core.Input.Jump.IsPressed;
+            return !Input.Jump.IsPressed;
+        return Input.Jump.IsPressed;
     }
 
     public static bool SwimBoostPressed() {
         if (Controls.InvertSwim)
-            return Core.Input.Jump.OnReleased;
-        else
-            return Core.Input.Jump.OnPressed;
+            return Input.Jump.OnReleased;
+        return Input.Jump.OnPressed;
     }
 
     public static void SetDirty() {
@@ -207,7 +203,7 @@ public static class RandomizerSettings {
 
     public static MapFilterMode CurrentFilter = MapFilterMode.InLogic;
 
-    private static bool dirty = false;
+    private static bool dirty;
 
     public enum AutofireMode {
         Off,
@@ -319,11 +315,11 @@ public static class RandomizerSettings {
 
     public abstract class SettingBase {
         public SettingBase(string name, string comment = "", bool nag = true, bool hidden = false) {
-            this.Name = name;
+            Name = name;
             All[name] = this;
-            this.Nag = nag;
-            this.Hidden = hidden;
-            this.Comment = comment;
+            Nag = nag;
+            Hidden = hidden;
+            Comment = comment;
         }
 
         public abstract bool IsDefault();
@@ -347,18 +343,18 @@ public static class RandomizerSettings {
 
     public abstract class Setting<T> : SettingBase {
         public Setting(string name, T defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, comment, nag, hidden) {
-            this.Default = defaultValue;
-            this.Value = this.Default;
+            Default = defaultValue;
+            Value = Default;
         }
 
-        public override bool IsDefault() => this.Value.Equals(this.Default);
+        public override bool IsDefault() => Value.Equals(Default);
 
         public override string ToString() {
-            return this.Value.ToString();
+            return Value.ToString();
         }
 
         public override void Reset() {
-            this.Value = this.Default;
+            Value = Default;
         }
 
         public static implicit operator T(Setting<T> setting) => setting.Value;
@@ -373,7 +369,7 @@ public static class RandomizerSettings {
         }
 
         public override void Parse(string value) {
-            this.Value = bool.Parse(value);
+            Value = bool.Parse(value);
         }
 
         public override string ValidValues() => "[True|False]";
@@ -384,7 +380,7 @@ public static class RandomizerSettings {
         }
 
         public override void Parse(string value) {
-            this.Value = float.Parse(value);
+            Value = float.Parse(value);
         }
 
         public override string ValidValues() => "A decimal number";
@@ -409,23 +405,23 @@ public static class RandomizerSettings {
         public override string ValidValues() => "R,G,B,A (more details at top of file)";
 
         public override void Parse(string value) {
-            string[] parts = value.Split(new char[] { ',' });
-            this.Value = new UnityEngine.Color(float.Parse(parts[0]) / divisor, float.Parse(parts[1]) / divisor, float.Parse(parts[2]) / divisor, float.Parse(parts[3]) / divisor);
+            string[] parts = value.Split(',');
+            Value = new Color(float.Parse(parts[0]) / divisor, float.Parse(parts[1]) / divisor, float.Parse(parts[2]) / divisor, float.Parse(parts[3]) / divisor);
         }
 
         public override string ToString() {
-            return String.Format("{0:F0}, {1:F0}, {2:F0}, {3:F0}", this.Value.r * divisor, this.Value.g * divisor, this.Value.b * divisor, this.Value.a * divisor);
+            return String.Format("{0:F0}, {1:F0}, {2:F0}, {3:F0}", Value.r * divisor, Value.g * divisor, Value.b * divisor, Value.a * divisor);
         }
 
         public float divisor;
     }
 
-    public class EnumSetting<T> : Setting<T> where T : System.Enum {
+    public class EnumSetting<T> : Setting<T> where T : Enum {
         public EnumSetting(string name, T defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
         }
 
         public override void Parse(string value) {
-            this.Value = (T)Enum.Parse(typeof(T), value, true);
+            Value = (T)Enum.Parse(typeof(T), value, true);
         }
 
         public override string ValidValues() => $"{String.Join("|", Enum.GetNames(typeof(T)))}";

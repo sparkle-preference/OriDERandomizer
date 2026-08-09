@@ -1,71 +1,70 @@
-using System;
 using Core;
 using UnityEngine;
 
 public class SeinEdgeClamber : CharacterState, ISeinReceiver {
     public PlatformMovement PlatformMovement {
-        get { return this.Sein.PlatformBehaviour.PlatformMovement; }
+        get { return Sein.PlatformBehaviour.PlatformMovement; }
     }
 
     public CharacterLeftRightMovement LeftRightMovement {
-        get { return this.Sein.PlatformBehaviour.LeftRightMovement; }
+        get { return Sein.PlatformBehaviour.LeftRightMovement; }
     }
 
     public void SetReferenceToSein(SeinCharacter sein) {
-        this.Sein = sein;
-        this.Sein.Abilities.EdgeClamber = this;
+        Sein = sein;
+        Sein.Abilities.EdgeClamber = this;
     }
 
     public override void UpdateCharacterState() {
-        if (!base.Active) {
+        if (!Active) {
             return;
         }
 
-        if (this.m_isEdgeClambering) {
-            if (!this.PlatformMovement.IsOnWall) {
-                this.m_isEdgeClambering = false;
+        if (m_isEdgeClambering) {
+            if (!PlatformMovement.IsOnWall) {
+                m_isEdgeClambering = false;
             }
-        } else if (this.PlatformMovement.IsOnWall && !this.PlatformMovement.HeadAgainstWall && this.PlatformMovement.FeetAgainstWall && ((this.PlatformMovement.HasWallLeft && this.Sein.Input.NormalizedHorizontal < 0) || (this.PlatformMovement.HasWallRight && this.Sein.Input.NormalizedHorizontal > 0)) && this.PlatformMovement.LocalSpeedY > 0f) {
-            if (this.PlatformMovement.HasWallLeft && this.Sein.PlatformBehaviour.PlatformMovementListOfColliders.WallLeftCollider && this.Sein.PlatformBehaviour.PlatformMovementListOfColliders.WallLeftCollider.GetComponent<NonEdgeClamberble>()) {
+        } else if (PlatformMovement.IsOnWall && !PlatformMovement.HeadAgainstWall && PlatformMovement.FeetAgainstWall && ((PlatformMovement.HasWallLeft && Sein.Input.NormalizedHorizontal < 0) || (PlatformMovement.HasWallRight && Sein.Input.NormalizedHorizontal > 0)) && PlatformMovement.LocalSpeedY > 0f) {
+            if (PlatformMovement.HasWallLeft && Sein.PlatformBehaviour.PlatformMovementListOfColliders.WallLeftCollider && Sein.PlatformBehaviour.PlatformMovementListOfColliders.WallLeftCollider.GetComponent<NonEdgeClamberble>()) {
                 return;
             }
 
-            if (this.PlatformMovement.HasWallRight && this.Sein.PlatformBehaviour.PlatformMovementListOfColliders.WallRightCollider && this.Sein.PlatformBehaviour.PlatformMovementListOfColliders.WallRightCollider.GetComponent<NonEdgeClamberble>()) {
+            if (PlatformMovement.HasWallRight && Sein.PlatformBehaviour.PlatformMovementListOfColliders.WallRightCollider && Sein.PlatformBehaviour.PlatformMovementListOfColliders.WallRightCollider.GetComponent<NonEdgeClamberble>()) {
                 return;
             }
 
-            this.PerformEdgeClamber();
+            PerformEdgeClamber();
         }
 
         base.UpdateCharacterState();
     }
 
     public void PerformEdgeClamber() {
-        this.PerformEdgeClamber(0.65f);
+        PerformEdgeClamber(0.65f);
     }
 
     public void PerformEdgeClamber(float minSpeedFactor) {
-        this.Sein.PlatformBehaviour.Visuals.Animation.Play(this.EdgeClamberAnimation, 10, new Func<bool>(this.ShouldAnimationKeepPlaying));
-        this.m_isEdgeClambering = true;
-        if (this.PlatformMovement.LocalSpeedY < 9f) {
-            this.PlatformMovement.LocalSpeedY = 9f;
+        Sein.PlatformBehaviour.Visuals.Animation.Play(EdgeClamberAnimation, 10, ShouldAnimationKeepPlaying);
+        m_isEdgeClambering = true;
+        if (PlatformMovement.LocalSpeedY < 9f) {
+            PlatformMovement.LocalSpeedY = 9f;
         }
 
-        if (this.PlatformMovement.HasWallLeft) {
-            this.PlatformMovement.LocalSpeedX = Mathf.Min(this.PlatformMovement.LocalSpeedX, this.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.MaxSpeed * -minSpeedFactor);
+        if (PlatformMovement.HasWallLeft) {
+            PlatformMovement.LocalSpeedX = Mathf.Min(PlatformMovement.LocalSpeedX, Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.MaxSpeed * -minSpeedFactor);
         } else {
-            this.PlatformMovement.LocalSpeedX = Mathf.Max(this.PlatformMovement.LocalSpeedX, this.Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.MaxSpeed * minSpeedFactor);
+            PlatformMovement.LocalSpeedX = Mathf.Max(PlatformMovement.LocalSpeedX, Sein.PlatformBehaviour.LeftRightMovement.Settings.Ground.MaxSpeed * minSpeedFactor);
         }
 
-        if (this.EdgeClamberSound) {
-            Sound.Play(this.EdgeClamberSound.GetSound(null), base.transform.position, null);
+        if (EdgeClamberSound) {
+            Sound.Play(EdgeClamberSound.GetSound(null), transform.position, null);
         }
 
-        this.Sein.PlatformBehaviour.AirNoDeceleration.NoDeceleration = true;
+        Sein.PlatformBehaviour.AirNoDeceleration.NoDeceleration = true;
     }
 
     public bool ShouldAnimationKeepPlaying() {
-        return !this.PlatformMovement.IsOnGround;
+        return !PlatformMovement.IsOnGround;
     }
 
     public TextureAnimationWithTransitions EdgeClamberAnimation;

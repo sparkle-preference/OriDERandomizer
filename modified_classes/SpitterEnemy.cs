@@ -1,4 +1,3 @@
-using System;
 using fsm;
 using fsm.triggers;
 using UnityEngine;
@@ -11,13 +10,13 @@ public class SpitterEnemy : GroundEnemy {
     }
 
     public override bool CanBeOptimized() {
-        IState currentState = this.Controller.StateMachine.CurrentState;
-        return currentState == this.State.Idle || currentState == this.State.Walk;
+        IState currentState = Controller.StateMachine.CurrentState;
+        return currentState == State.Idle || currentState == State.Walk;
     }
 
     public bool WilhelmScreamZoneRectanglesContain(Vector2 position) {
-        for (int i = 0; i < this.ActionZones.Length; i++) {
-            Transform transform = this.ActionZones[i];
+        for (int i = 0; i < ActionZones.Length; i++) {
+            Transform transform = ActionZones[i];
             Rect rect = default(Rect);
             rect.width = transform.lossyScale.x;
             rect.height = transform.lossyScale.y;
@@ -32,110 +31,108 @@ public class SpitterEnemy : GroundEnemy {
 
     public new void Start() {
         base.Start();
-        this.State.Idle = new SpitterEnemyIdleState(this);
-        this.State.Walk = new SpitterEnemyWalkState(this);
-        this.State.RunBack = new SpitterEnemyRunBackState(this);
-        this.State.SpitterEnemyCharging = new SpitterEnemyChargingState(this);
-        this.State.Shooting = new SpitterEnemyShootingState(this);
-        this.State.Thrown = new SpitterEnemyThrownState(this);
-        this.State.Stomped = new SpitterEnemyStompedState(this);
-        this.State.Stunned = new SpitterEnemyStunnedState(this);
-        this.Controller.StateMachine.RegisterStates(
-            new IState[] {
-                this.State.Idle,
-                this.State.Walk,
-                this.State.RunBack,
-                this.State.SpitterEnemyCharging,
-                this.State.Shooting,
-                this.State.Stunned,
-                this.State.Thrown,
-                this.State.Stomped
-            }
+        State.Idle = new SpitterEnemyIdleState(this);
+        State.Walk = new SpitterEnemyWalkState(this);
+        State.RunBack = new SpitterEnemyRunBackState(this);
+        State.SpitterEnemyCharging = new SpitterEnemyChargingState(this);
+        State.Shooting = new SpitterEnemyShootingState(this);
+        State.Thrown = new SpitterEnemyThrownState(this);
+        State.Stomped = new SpitterEnemyStompedState(this);
+        State.Stunned = new SpitterEnemyStunnedState(this);
+        Controller.StateMachine.RegisterStates(
+            State.Idle,
+            State.Walk,
+            State.RunBack,
+            State.SpitterEnemyCharging,
+            State.Shooting,
+            State.Stunned,
+            State.Thrown,
+            State.Stomped
         );
-        this.Controller.StateMachine.Configure(this.State.Idle).AddTransition<AttackTriggered>(this.State.SpitterEnemyCharging, (ICondition)null, null).AddTransition<OnFixedUpdate>(this.State.Walk, () => base.AfterTime(this.Settings.IdleDuration) && base.IsOnScreen(), null).AddTransition<OnFixedUpdate>(this.State.RunBack, new Func<bool>(this.CanSeePlayer), null).AddTransition<OnReceiveDamage>(this.State.Thrown, new Func<bool>(this.ShouldThrow), new Action(this.State.Thrown.OnThrow)).AddTransition<OnReceiveDamage>(this.State.Stomped, new Func<bool>(this.ShouldStomped), new Action(this.State.Stomped.OnStomped)).AddTransition<OnReceiveDamage>(this.State.SpitterEnemyCharging, (ICondition)null, null);
-        this.Controller.StateMachine.Configure(this.State.Walk).AddTransition<AttackTriggered>(this.State.SpitterEnemyCharging, (ICondition)null, null).AddTransition<OnFixedUpdate>(this.State.Idle, () => base.AfterTime(this.Settings.WalkDuration) && base.IsOnScreen(), null).AddTransition<OnFixedUpdate>(this.State.Idle, () => !base.IsOnScreen(), null).AddTransition<OnFixedUpdate>(this.State.Idle, new Func<bool>(this.HasHitWall), new Action(this.TurnAround)).AddTransition<OnFixedUpdate>(this.State.RunBack, new Func<bool>(this.CanSeePlayer), null).AddTransition<OnReceiveDamage>(this.State.Thrown, new Func<bool>(this.ShouldThrow), new Action(this.State.Thrown.OnThrow)).AddTransition<OnReceiveDamage>(this.State.Stomped, new Func<bool>(this.ShouldStomped), new Action(this.State.Stomped.OnStomped)).AddTransition<OnReceiveDamage>(this.State.SpitterEnemyCharging, (ICondition)null, null);
-        this.Controller.StateMachine.Configure(this.State.RunBack).AddTransition<AttackTriggered>(this.State.SpitterEnemyCharging, (ICondition)null, null).AddTransition<OnFixedUpdate>(this.State.Idle, () => !this.CanSeePlayer(), null).AddTransition<OnFixedUpdate>(this.State.SpitterEnemyCharging, new Func<bool>(this.FurtherThanMinChargeDistance), null).AddTransition<OnFixedUpdate>(this.State.SpitterEnemyCharging, new Func<bool>(this.HasHitWall), new Action(this.TurnAround)).AddTransition<OnReceiveDamage>(this.State.Thrown, new Func<bool>(this.ShouldThrow), new Action(this.State.Thrown.OnThrow)).AddTransition<OnReceiveDamage>(this.State.Stomped, new Func<bool>(this.ShouldStomped), new Action(this.State.Stomped.OnStomped)).AddTransition<OnReceiveDamage>(this.State.SpitterEnemyCharging, (ICondition)null, null);
-        this.Controller.StateMachine.Configure(this.State.SpitterEnemyCharging).AddTransition<OnFixedUpdate>(this.State.Shooting, () => base.AfterTime(this.Settings.ChargeDuration), null).AddTransition<OnReceiveDamage>(this.State.Thrown, new Func<bool>(this.ShouldThrow), new Action(this.State.Thrown.OnThrow)).AddTransition<OnReceiveDamage>(this.State.Stomped, new Func<bool>(this.ShouldStomped), new Action(this.State.Stomped.OnStomped));
-        this.Controller.StateMachine.Configure(this.State.Shooting).AddTransition<OnFixedUpdate>(this.State.Idle, () => base.AfterTime(this.Settings.ShootingDuration) && !this.CanSeePlayer(), null).AddTransition<OnFixedUpdate>(this.State.RunBack, () => base.AfterTime(this.Settings.ShootingDuration) && this.CloserThanMinChargeDistance(), null).AddTransition<OnFixedUpdate>(this.State.SpitterEnemyCharging, () => base.AfterTime(this.Settings.ShootingDuration) && this.FurtherThanMinChargeDistance(), null).AddTransition<OnReceiveDamage>(this.State.Thrown, new Func<bool>(this.ShouldThrow), new Action(this.State.Thrown.OnThrow)).AddTransition<OnReceiveDamage>(this.State.Stomped, new Func<bool>(this.ShouldStomped), new Action(this.State.Stomped.OnStomped));
-        this.Controller.StateMachine.Configure(this.State.Thrown).AddTransition<OnFixedUpdate>(this.State.Stunned, new Func<bool>(this.IsOnGround), null).AddTransition<OnReceiveDamage>(this.State.Thrown, new Func<bool>(this.ShouldThrow), new Action(this.State.Thrown.OnThrow));
-        this.Controller.StateMachine.Configure(this.State.Stomped).AddTransition<OnFixedUpdate>(this.State.Stunned, new Func<bool>(this.IsOnGround), null).AddTransition<OnReceiveDamage>(this.State.Thrown, new Func<bool>(this.ShouldThrow), new Action(this.State.Thrown.OnThrow)).AddTransition<OnReceiveDamage>(this.State.Stomped, new Func<bool>(this.ShouldStomped), new Action(this.State.Stomped.OnStomped));
-        this.Controller.StateMachine.Configure(this.State.Stunned).AddTransition<OnFixedUpdate>(this.State.Idle, () => base.AfterTime(this.Settings.StunnedDuration) && !this.CanSeePlayer(), null).AddTransition<OnFixedUpdate>(this.State.RunBack, () => base.AfterTime(this.Settings.StunnedDuration) && this.CanSeePlayer(), null).AddTransition<OnReceiveDamage>(this.State.Thrown, new Func<bool>(this.ShouldThrow), new Action(this.State.Thrown.OnThrow));
-        this.Controller.StateMachine.ChangeState(this.State.Idle);
+        Controller.StateMachine.Configure(State.Idle).AddTransition<AttackTriggered>(State.SpitterEnemyCharging).AddTransition<OnFixedUpdate>(State.Walk, () => AfterTime(Settings.IdleDuration) && IsOnScreen()).AddTransition<OnFixedUpdate>(State.RunBack, CanSeePlayer).AddTransition<OnReceiveDamage>(State.Thrown, ShouldThrow, State.Thrown.OnThrow).AddTransition<OnReceiveDamage>(State.Stomped, ShouldStomped, State.Stomped.OnStomped).AddTransition<OnReceiveDamage>(State.SpitterEnemyCharging);
+        Controller.StateMachine.Configure(State.Walk).AddTransition<AttackTriggered>(State.SpitterEnemyCharging).AddTransition<OnFixedUpdate>(State.Idle, () => AfterTime(Settings.WalkDuration) && IsOnScreen()).AddTransition<OnFixedUpdate>(State.Idle, () => !IsOnScreen()).AddTransition<OnFixedUpdate>(State.Idle, HasHitWall, TurnAround).AddTransition<OnFixedUpdate>(State.RunBack, CanSeePlayer).AddTransition<OnReceiveDamage>(State.Thrown, ShouldThrow, State.Thrown.OnThrow).AddTransition<OnReceiveDamage>(State.Stomped, ShouldStomped, State.Stomped.OnStomped).AddTransition<OnReceiveDamage>(State.SpitterEnemyCharging);
+        Controller.StateMachine.Configure(State.RunBack).AddTransition<AttackTriggered>(State.SpitterEnemyCharging).AddTransition<OnFixedUpdate>(State.Idle, () => !CanSeePlayer()).AddTransition<OnFixedUpdate>(State.SpitterEnemyCharging, FurtherThanMinChargeDistance).AddTransition<OnFixedUpdate>(State.SpitterEnemyCharging, HasHitWall, TurnAround).AddTransition<OnReceiveDamage>(State.Thrown, ShouldThrow, State.Thrown.OnThrow).AddTransition<OnReceiveDamage>(State.Stomped, ShouldStomped, State.Stomped.OnStomped).AddTransition<OnReceiveDamage>(State.SpitterEnemyCharging);
+        Controller.StateMachine.Configure(State.SpitterEnemyCharging).AddTransition<OnFixedUpdate>(State.Shooting, () => AfterTime(Settings.ChargeDuration)).AddTransition<OnReceiveDamage>(State.Thrown, ShouldThrow, State.Thrown.OnThrow).AddTransition<OnReceiveDamage>(State.Stomped, ShouldStomped, State.Stomped.OnStomped);
+        Controller.StateMachine.Configure(State.Shooting).AddTransition<OnFixedUpdate>(State.Idle, () => AfterTime(Settings.ShootingDuration) && !CanSeePlayer()).AddTransition<OnFixedUpdate>(State.RunBack, () => AfterTime(Settings.ShootingDuration) && CloserThanMinChargeDistance()).AddTransition<OnFixedUpdate>(State.SpitterEnemyCharging, () => AfterTime(Settings.ShootingDuration) && FurtherThanMinChargeDistance()).AddTransition<OnReceiveDamage>(State.Thrown, ShouldThrow, State.Thrown.OnThrow).AddTransition<OnReceiveDamage>(State.Stomped, ShouldStomped, State.Stomped.OnStomped);
+        Controller.StateMachine.Configure(State.Thrown).AddTransition<OnFixedUpdate>(State.Stunned, IsOnGround).AddTransition<OnReceiveDamage>(State.Thrown, ShouldThrow, State.Thrown.OnThrow);
+        Controller.StateMachine.Configure(State.Stomped).AddTransition<OnFixedUpdate>(State.Stunned, IsOnGround).AddTransition<OnReceiveDamage>(State.Thrown, ShouldThrow, State.Thrown.OnThrow).AddTransition<OnReceiveDamage>(State.Stomped, ShouldStomped, State.Stomped.OnStomped);
+        Controller.StateMachine.Configure(State.Stunned).AddTransition<OnFixedUpdate>(State.Idle, () => AfterTime(Settings.StunnedDuration) && !CanSeePlayer()).AddTransition<OnFixedUpdate>(State.RunBack, () => AfterTime(Settings.StunnedDuration) && CanSeePlayer()).AddTransition<OnReceiveDamage>(State.Thrown, ShouldThrow, State.Thrown.OnThrow);
+        Controller.StateMachine.ChangeState(State.Idle);
     }
 
     public bool IsOnGround() {
-        return this.PlatformMovement.IsOnGround;
+        return PlatformMovement.IsOnGround;
     }
 
     public bool HasHitWall() {
-        return this.PlatformMovement.IsOnWall;
+        return PlatformMovement.IsOnWall;
     }
 
     public void TurnAround() {
-        base.FaceLeft = !base.FaceLeft;
+        FaceLeft = !FaceLeft;
     }
 
     public bool CanSeePlayer() {
-        return this.Controller.NearSein && base.PositionToPlayerPosition.magnitude < this.Settings.SeePlayerDistance;
+        return Controller.NearSein && PositionToPlayerPosition.magnitude < Settings.SeePlayerDistance;
     }
 
     public bool FurtherThanMinChargeDistance() {
-        return base.PositionToPlayerPosition.magnitude > this.Settings.MinChargeDistance;
+        return PositionToPlayerPosition.magnitude > Settings.MinChargeDistance;
     }
 
     public bool CloserThanMinChargeDistance() {
-        return base.PositionToPlayerPosition.magnitude < this.Settings.MinChargeDistance;
+        return PositionToPlayerPosition.magnitude < Settings.MinChargeDistance;
     }
 
     public new void FixedUpdate() {
         base.FixedUpdate();
-        if (base.IsSuspended) {
+        if (IsSuspended) {
             return;
         }
 
         bool flag;
-        if (this.PlatformMovement.MovingHorizontally && EnemyStopper.InsideEnemyStopper(base.Position, (!base.FaceLeft) ? Vector3.right : Vector3.left, out flag)) {
-            base.FaceLeft = !base.FaceLeft;
-            if (this.Controller.StateMachine.CurrentState == this.State.RunBack) {
-                this.Controller.StateMachine.ChangeState(this.State.SpitterEnemyCharging);
+        if (PlatformMovement.MovingHorizontally && EnemyStopper.InsideEnemyStopper(Position, (!FaceLeft) ? Vector3.right : Vector3.left, out flag)) {
+            FaceLeft = !FaceLeft;
+            if (Controller.StateMachine.CurrentState == State.RunBack) {
+                Controller.StateMachine.ChangeState(State.SpitterEnemyCharging);
             }
         }
 
-        if (!this.PlatformMovement.IsSuspended && this.PlatformMovement.IsInAir) {
-            this.PlatformMovement.LocalSpeedY -= this.Settings.Gravity * RandomizerBonusSkill.TimeScale(Time.deltaTime);
+        if (!PlatformMovement.IsSuspended && PlatformMovement.IsInAir) {
+            PlatformMovement.LocalSpeedY -= Settings.Gravity * RandomizerBonusSkill.TimeScale(Time.deltaTime);
         }
 
-        this.UpdateRotation();
-        if (base.IsInWater) {
-            base.Drown();
+        UpdateRotation();
+        if (IsInWater) {
+            Drown();
         }
 
-        if (this.WilhelmScreamZoneRectanglesContain(base.transform.position) && !this.m_hasEnteredZone && this.EnterZoneAction) {
-            this.m_hasEnteredZone = true;
+        if (WilhelmScreamZoneRectanglesContain(transform.position) && !m_hasEnteredZone && EnterZoneAction) {
+            m_hasEnteredZone = true;
             BingoController.OnScream();
-            this.EnterZoneAction.Perform(null);
+            EnterZoneAction.Perform(null);
         }
     }
 
     public void UpdateRotation() {
-        IState currentState = this.Controller.StateMachine.CurrentState;
-        float currentStateTime = this.Controller.StateMachine.CurrentStateTime;
-        if (currentState == this.State.Thrown) {
+        IState currentState = Controller.StateMachine.CurrentState;
+        float currentStateTime = Controller.StateMachine.CurrentStateTime;
+        if (currentState == State.Thrown) {
             float num = 1f - Mathf.InverseLerp(0.3f, 0.6f, currentStateTime);
-            this.FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(this.ThrownDirection) - 90f) * num);
+            FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(ThrownDirection) - 90f) * num);
         } else {
-            float b = (!this.PlatformMovement.IsOnGround) ? 0f : this.PlatformMovement.GroundAngle;
-            this.FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(this.FeetTransform.eulerAngles.z, b, 0.2f));
+            float b = (!PlatformMovement.IsOnGround) ? 0f : PlatformMovement.GroundAngle;
+            FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.2f));
         }
     }
 
     public bool ShouldThrow() {
-        OnReceiveDamage onReceiveDamage = (OnReceiveDamage)this.Controller.StateMachine.CurrentTrigger;
+        OnReceiveDamage onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
         return onReceiveDamage.Damage.Type == DamageType.Bash;
     }
 
     public bool ShouldStomped() {
-        OnReceiveDamage onReceiveDamage = (OnReceiveDamage)this.Controller.StateMachine.CurrentTrigger;
+        OnReceiveDamage onReceiveDamage = (OnReceiveDamage)Controller.StateMachine.CurrentTrigger;
         return onReceiveDamage.Damage.Type == DamageType.StompBlast;
     }
 
@@ -163,7 +160,7 @@ public class SpitterEnemy : GroundEnemy {
 
     private bool m_hasEnteredZone;
 
-    public SpitterEnemy.States State = new SpitterEnemy.States();
+    public States State = new States();
 
     public class States {
         public SpitterEnemyIdleState Idle;

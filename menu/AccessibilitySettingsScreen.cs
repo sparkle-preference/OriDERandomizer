@@ -1,5 +1,3 @@
-using System;
-
 public class AccessibilitySettingsScreen : CustomSettingsScreen {
     public override void InitScreen() {
         AddSlider(RandomizerSettings.Accessibility.CameraShakeFactor, 0f, 1f, 0.1f, "Allows adjusting the strength of camera shake effects (0% - 100%).");

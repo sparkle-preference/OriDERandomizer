@@ -1,4 +1,3 @@
-using System;
 using Game;
 using UnityEngine;
 
@@ -20,38 +19,38 @@ public class Naru : MonoBehaviour, ICharacter {
     }
 
     public Vector3 Position {
-        get { return base.transform.position; }
-        set { base.transform.position = value; }
+        get { return transform.position; }
+        set { transform.position = value; }
     }
 
     public void Activate(bool active) {
-        base.gameObject.SetActive(active);
+        gameObject.SetActive(active);
     }
 
     public GameObject GameObject {
-        get { return base.gameObject; }
+        get { return gameObject; }
     }
 
     public bool FaceLeft {
-        get { return this.Animation.SpriteMirror.FaceLeft; }
-        set { this.Animation.SpriteMirror.FaceLeft = value; }
+        get { return Animation.SpriteMirror.FaceLeft; }
+        set { Animation.SpriteMirror.FaceLeft = value; }
     }
 
     public Vector3 Speed {
-        get { return this.PlatformBehaviour.PlatformMovement.LocalSpeed; }
-        set { this.PlatformBehaviour.PlatformMovement.LocalSpeed = value; }
+        get { return PlatformBehaviour.PlatformMovement.LocalSpeed; }
+        set { PlatformBehaviour.PlatformMovement.LocalSpeed = value; }
     }
 
     public Transform Transform {
-        get { return base.transform; }
+        get { return transform; }
     }
 
     public bool IsOnGround {
-        get { return this.PlatformBehaviour.PlatformMovement.IsOnGround; }
+        get { return PlatformBehaviour.PlatformMovement.IsOnGround; }
     }
 
     public void PlaceOnGround() {
-        this.PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
+        PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
     }
 
     public CharacterAnimationSystem Animation;

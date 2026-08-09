@@ -49,7 +49,7 @@ public static class RandomizerMW {
     public static Dictionary<int, string> ApHints = new Dictionary<int, string>();
 
     // only AP grants straddle ticks; native multiworld grants immediately
-    public static bool ApGrants = false;
+    public static bool ApGrants;
 
     public static void Reset() {
         Manifest.Clear();
@@ -101,7 +101,7 @@ public static class RandomizerMW {
     public static void AddApLine(int coords, string apField, string ownSlot = null) {
         if (string.IsNullOrEmpty(apField))
             return;
-        string[] parts = apField.Split(new char[] { ';' }, 2);
+        string[] parts = apField.Split(new[] { ';' }, 2);
         if (parts.Length != 2)
             return;
         ApItems[coords] = parts;
@@ -203,7 +203,7 @@ public static class RandomizerMW {
     // manifest slots we have told the server about, and the countdown to
     // repeating that for the ones it has not answered
     private static HashSet<int> hintsAsked = new HashSet<int>();
-    private static int hintResendTicks = 0;
+    private static int hintResendTicks;
     public const int HintResendPeriod = 30;
     public const int MaxHintRequests = 8;
 
@@ -306,7 +306,7 @@ public static class RandomizerMW {
     public static void AddManifestEntry(int coords, string value, string zone, string holder = null) {
         try {
             int slot = -coords - 2;
-            string[] parts = value.Split(new char[] { ',' }, 3);
+            string[] parts = value.Split(new[] { ',' }, 3);
             ManifestEntry entry = new ManifestEntry();
             entry.Slot = slot;
             entry.Finder = int.Parse(parts[0]);
@@ -380,7 +380,7 @@ public static class RandomizerMW {
     public const int ApBatchMessageThreshold = 1;
 
     private static List<int> pendingSlots = new List<int>();
-    private static int windowTicks = 0;
+    private static int windowTicks;
 
     // tick field 6: 8 ";"-joined 32-bit uints. Returns true if anything was
     // granted, so the caller can refresh logic.
@@ -489,12 +489,12 @@ public static class RandomizerMW {
         return true;
     }
 
-    private static Dictionary<string, string> SkillNames = new Dictionary<string, string>() {
+    private static Dictionary<string, string> SkillNames = new Dictionary<string, string> {
         { "0", "Bash" }, { "2", "Charge Flame" }, { "3", "Wall Jump" }, { "4", "Stomp" }, { "5", "Double Jump" },
         { "8", "Charge Jump" }, { "12", "Climb" }, { "14", "Glide" }, { "50", "Dash" }, { "51", "Grenade" }, { "15", "Spirit Flame" }
     };
 
-    private static Dictionary<string, string> EventNames = new Dictionary<string, string>() {
+    private static Dictionary<string, string> EventNames = new Dictionary<string, string> {
         { "0", "Water Vein" }, { "1", "Clean Water" }, { "2", "Gumon Seal" }, { "3", "Wind Restored" }, { "4", "Sunstone" }, { "5", "Warmth Returned" }
     };
 
@@ -502,9 +502,9 @@ public static class RandomizerMW {
         return $"{wrap}{n} {(n == 1 ? singular : plural)}{wrap}";
     }
 
-    private static HashSet<string> blueStuff = new HashSet<string>() { "Water Vein", "Ginso Teleporter", "Clean Water" };
-    private static HashSet<string> orangeStuff = new HashSet<string>() { "Gumon Seal", "Forlorn Teleporter", "Wind Restored" };
-    private static HashSet<string> redStuff = new HashSet<string>() { "Sunstone", "Horu Teleporter", "Warmth Returned" };
+    private static HashSet<string> blueStuff = new HashSet<string> { "Water Vein", "Ginso Teleporter", "Clean Water" };
+    private static HashSet<string> orangeStuff = new HashSet<string> { "Gumon Seal", "Forlorn Teleporter", "Wind Restored" };
+    private static HashSet<string> redStuff = new HashSet<string> { "Sunstone", "Horu Teleporter", "Warmth Returned" };
 
     public static string ColorWrap(string input) {
         if (SkillNames.ContainsValue(input)) return $"${input}$"; // skill names are green
@@ -588,7 +588,7 @@ public static class RandomizerMW {
             if (ks > 0) counts.Add(Counted(ks, "Keystone", "Keystones"));
             if (ms > 0) counts.Add(Counted(ms, "Mapstone", "Mapstones"));
             if (other > 0) counts.Add(Counted(other, "other item", "other items"));
-            if (exp > 0) counts.Add(exp.ToString() + " Spirit Light");
+            if (exp > 0) counts.Add(exp + " Spirit Light");
             if (counts.Count > 0)
                 lines.Add(string.Join(", ", counts.ToArray()));
             if (lines.Count > 0) {

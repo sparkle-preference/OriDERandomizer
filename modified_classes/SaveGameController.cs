@@ -20,14 +20,14 @@ public class SaveGameController {
 
     public void SaveToFile(string filename) {
         using (BinaryWriter binaryWriter = new BinaryWriter(File.Open(filename, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))) {
-            this.SaveToWriter(binaryWriter);
+            SaveToWriter(binaryWriter);
         }
     }
 
     public bool LoadFromFile(string filename) {
         bool result;
         using (BinaryReader binaryReader = new BinaryReader(File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))) {
-            result = this.LoadFromReader(binaryReader);
+            result = LoadFromReader(binaryReader);
         }
 
         return result;
@@ -36,7 +36,7 @@ public class SaveGameController {
     public byte[] SaveToBytes() {
         MemoryStream memoryStream = new MemoryStream();
         using (BinaryWriter binaryWriter = new BinaryWriter(memoryStream)) {
-            this.SaveToWriter(binaryWriter);
+            SaveToWriter(binaryWriter);
         }
 
         return memoryStream.ToArray();
@@ -63,7 +63,7 @@ public class SaveGameController {
             return false;
         }
 
-        if (this.SaveWasOneLifeAndKilled) {
+        if (SaveWasOneLifeAndKilled) {
             SaveSceneManager.ClearSaveSlotForOneLife(Game.Checkpoint.SaveGameData);
         }
 
@@ -73,14 +73,14 @@ public class SaveGameController {
     public bool LoadFromBytes(byte[] binary) {
         bool result;
         using (BinaryReader binaryReader = new BinaryReader(new MemoryStream(binary))) {
-            result = this.LoadFromReader(binaryReader);
+            result = LoadFromReader(binaryReader);
         }
 
         return result;
     }
 
     public bool SaveExists(int slotIndex) {
-        if (!this.CanPerformLoad()) {
+        if (!CanPerformLoad()) {
             return false;
         }
 
@@ -89,12 +89,12 @@ public class SaveGameController {
             return frameDataOfType != null && frameDataOfType.SaveFileExists;
         }
 
-        return File.Exists(this.GetSaveFilePath(slotIndex, -1));
+        return File.Exists(GetSaveFilePath(slotIndex));
     }
 
     public bool SaveFileExists {
         get {
-            if (!this.CanPerformLoad()) {
+            if (!CanPerformLoad()) {
                 return false;
             }
 
@@ -110,12 +110,12 @@ public class SaveGameController {
                 return false;
             }
 
-            return File.Exists(this.CurrentSaveFilePath);
+            return File.Exists(CurrentSaveFilePath);
         }
     }
 
     public string CurrentSaveFilePath {
-        get { return this.GetSaveFilePath(this.CurrentSlotIndex, -1); }
+        get { return GetSaveFilePath(CurrentSlotIndex); }
     }
 
     public string GetSaveFilePath(int slotIndex, int backupIndex = -1) {
@@ -127,7 +127,7 @@ public class SaveGameController {
     }
 
     public void Refresh() {
-        this.CanPerformLoad();
+        CanPerformLoad();
     }
 
     public bool PerformLoad() {
@@ -135,12 +135,12 @@ public class SaveGameController {
             return Recorder.Instance.OnPerformLoad();
         }
 
-        if (!this.CanPerformLoad()) {
+        if (!CanPerformLoad()) {
             return false;
         }
 
-        bool result = this.LoadFromFile(this.GetSaveFilePath(this.CurrentSlotIndex, this.CurrentBackupIndex));
-        this.RestoreCheckpoint();
+        bool result = LoadFromFile(GetSaveFilePath(CurrentSlotIndex, CurrentBackupIndex));
+        RestoreCheckpoint();
         return result;
     }
 
@@ -149,24 +149,24 @@ public class SaveGameController {
             return Recorder.Instance.OnPerformLoad();
         }
 
-        return this.CanPerformLoad() && this.LoadFromFile(this.GetSaveFilePath(this.CurrentSlotIndex, this.CurrentBackupIndex));
+        return CanPerformLoad() && LoadFromFile(GetSaveFilePath(CurrentSlotIndex, CurrentBackupIndex));
     }
 
     public bool OnLoadComplete(byte[] buffer) {
-        bool result = this.LoadFromBytes(buffer);
-        this.RestoreCheckpoint();
+        bool result = LoadFromBytes(buffer);
+        RestoreCheckpoint();
         return result;
     }
 
     public void PerformSave() {
-        if (!this.CanPerformSave()) {
+        if (!CanPerformSave()) {
             return;
         }
 
         Randomizer.OnSave();
         SaveSlotsManager.CurrentSaveSlot.FillData();
         SaveSlotsManager.BackupIndex = -1;
-        this.SaveToFile(this.CurrentSaveFilePath);
+        SaveToFile(CurrentSaveFilePath);
         if (Recorder.IsRecordering) {
             Recorder.Instance.OnPerformSave();
         }
@@ -185,7 +185,7 @@ public class SaveGameController {
 
     public void RestoreCheckpoint() {
         GameController.Instance.IsLoadingGame = true;
-        LateStartHook.AddLateStartMethod(new Action(this.RestoreCheckpointPart1));
+        LateStartHook.AddLateStartMethod(RestoreCheckpointPart1);
     }
 
     public void RestoreCheckpointPart1() {
@@ -200,18 +200,18 @@ public class SaveGameController {
         GoToSceneController.Instance.StartInScene = MoonGuid.Empty;
         Game.Checkpoint.SaveGameData.ClearPendingScenes();
         Scenes.Manager.MarkLoadingScenesAsCancel();
-        if (this.SaveWasOneLifeAndKilled) {
+        if (SaveWasOneLifeAndKilled) {
             RuntimeSceneMetaData sceneInformation = Scenes.Manager.GetSceneInformation("sunkenGladesRunaway");
             GameController.Instance.RequireInitialValues = true;
             GameStateMachine.Instance.SetToGame();
             DifficultyController.Instance.ChangeDifficulty(DifficultyMode.OneLife);
             GoToSceneController.Instance.StartInScene = sceneInformation.SceneMoonGuid;
             GameController.Instance.IsLoadingGame = false;
-            GoToSceneController.Instance.GoToSceneAsync(sceneInformation, new Action(this.OnFinishedLoading), false);
+            GoToSceneController.Instance.GoToSceneAsync(sceneInformation, OnFinishedLoading, false);
             return;
         }
 
-        InstantLoadScenesController.Instance.OnScenesEnabledCallback = new Action(this.OnFinishedLoading);
+        InstantLoadScenesController.Instance.OnScenesEnabledCallback = OnFinishedLoading;
         InstantLoadScenesController.Instance.LoadScenesAtPosition(null, true, false);
     }
 

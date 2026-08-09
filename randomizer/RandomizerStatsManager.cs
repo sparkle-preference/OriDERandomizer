@@ -1,10 +1,10 @@
 using System;
-using System.IO;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using Game;
+using System.Text.RegularExpressions;
 using Core;
+using Game;
 
 public static class RandomizerStatsManager {
     public static void Initialize() {
@@ -71,7 +71,7 @@ public static class RandomizerStatsManager {
         KeyItemOffsets.Add("Sunstone", 14);
         KeyItemOffsets.Add("Warmth Returned", 15);
 
-        SkillsById = new Dictionary<int, string>() {
+        SkillsById = new Dictionary<int, string> {
             { 0, "Bash" },
             { 2, "Charge Flame" },
             { 3, "Wall Jump" },
@@ -83,7 +83,7 @@ public static class RandomizerStatsManager {
             { 50, "Dash" },
             { 51, "Grenade" }
         };
-        EventsById = new Dictionary<int, string>() {
+        EventsById = new Dictionary<int, string> {
             { 0, "Water Vein" },
             { 1, "Clean Water" },
             { 2, "Gumon Seal" },
@@ -247,10 +247,10 @@ public static class RandomizerStatsManager {
         try {
             inc(Reloads, 1);
             MenuCache = new Dictionary<int, int>();
-            foreach (int single in new int[] { DSLS, TSLD, Reloads, AltRCount, shoof_sum, PPM_max, PPM_max_time, PPM_max_count, Saves })
+            foreach (int single in new[] { DSLS, TSLD, Reloads, AltRCount, shoof_sum, PPM_max, PPM_max_time, PPM_max_count, Saves })
                 MenuCache[single] = get(single);
 
-            foreach (int group in new int[] { Time, Deaths })
+            foreach (int group in new[] { Time, Deaths })
             foreach (int offset in Offsets.Values)
                 MenuCache[group + offset] = get(group + offset);
             WriteFromCache = true;
@@ -299,7 +299,7 @@ public static class RandomizerStatsManager {
     }
 
     public static int GetObtainedPickupCount(string areaName) {
-        if (!Game.Characters.Sein?.Inventory)
+        if (!Characters.Sein?.Inventory)
             return 0;
         return get(Pickups + Offsets[areaName]);
     }
@@ -320,7 +320,7 @@ public static class RandomizerStatsManager {
             if (UpdateAndReset(Drought, Drought_max))
                 set(Drought_max_end, time);
             if (count >= 10) {
-                int ppm = (int)(Math.Round((float)count / ((float)time / 60f), 2) * 100);
+                int ppm = (int)(Math.Round(count / (time / 60f), 2) * 100);
                 if (ppm > get(PPM_max)) {
                     set(PPM_max, ppm);
                     set(PPM_max_time, time);
@@ -363,7 +363,7 @@ public static class RandomizerStatsManager {
                     if (zone == "unknown") {
                         line += "\t\tN/A";
                     } else {
-                        line += "\t\t" + get(Deaths + offset).ToString();
+                        line += "\t\t" + get(Deaths + offset);
                     }
 
                     int time = get(Time + offset);
@@ -373,15 +373,15 @@ public static class RandomizerStatsManager {
                         line += "\t";
                     if (PickupCounts.ContainsKey(zone)) {
                         int count = get(Pickups + offset);
-                        string pickupstr = count.ToString() + "/" + PickupCounts[zone];
+                        string pickupstr = count + "/" + PickupCounts[zone];
                         line += "\t\t" + pickupstr;
                         if (pickupstr.Length < 5)
                             line += "\t";
-                        float ppm = (float)count / ((float)time / 60f);
+                        float ppm = count / (time / 60f);
                         if (time == 0 || ppm > 256 || zone == "unknown") {
                             line += "\t\tN/A";
                         } else {
-                            line += "\t\t" + Math.Round(ppm, 2).ToString();
+                            line += "\t\t" + Math.Round(ppm, 2);
                         }
                     } else {
                         line += "\t\tN/A\t\t\tN/A";
@@ -392,26 +392,26 @@ public static class RandomizerStatsManager {
 
                 break;
             case 1:
-                float ppm_max = (float)get(PPM_max) / 100f;
-                statsPage = "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_12_1_\nSaves:					" + get(Saves).ToString();
-                statsPage += "\nReloads:					" + get(Reloads).ToString();
+                float ppm_max = get(PPM_max) / 100f;
+                statsPage = "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_12_1_\nSaves:					" + get(Saves);
+                statsPage += "\nReloads:					" + get(Reloads);
                 var altrc = get(AltRCount);
                 if (altrc > 0) {
-                    statsPage += "\nAlt+Rs Used:				" + get(altrc).ToString();
-                    statsPage += "\nTeleporters Used:			" + get(TeleporterCount).ToString();
+                    statsPage += "\nAlt+Rs Used:				" + get(altrc);
+                    statsPage += "\nTeleporters Used:			" + get(TeleporterCount);
                 } else
-                    statsPage += "\nTimes Warped:				" + get(TeleporterCount).ToString();
+                    statsPage += "\nTimes Warped:				" + get(TeleporterCount);
 
-                statsPage += "\nEnemies Killed:				" + get(EnemiesKilled).ToString();
-                statsPage += "\nBy Leveling up:				" + get(LevelUpKills).ToString();
-                statsPage += "\nExp collected:				" + get(ExpGained).ToString();
+                statsPage += "\nEnemies Killed:				" + get(EnemiesKilled);
+                statsPage += "\nBy Leveling up:				" + get(LevelUpKills);
+                statsPage += "\nExp collected:				" + get(ExpGained);
                 if (get(ExpBonus) > 0) {
-                    statsPage += " + " + get(ExpBonus).ToString() + " bonus";
+                    statsPage += " + " + get(ExpBonus) + " bonus";
                 }
 
-                statsPage += "\nPeak Pickups Per Minute:		" + ppm_max.ToString();
+                statsPage += "\nPeak Pickups Per Minute:		" + ppm_max;
                 if (ppm_max > 0)
-                    statsPage += " (" + get(PPM_max_count).ToString() + " / " + FormatTime(get(PPM_max_time), false) + ")";
+                    statsPage += " (" + get(PPM_max_count) + " / " + FormatTime(get(PPM_max_time), false) + ")";
                 statsPage += "\nLongest Drought:			" + FormatTime(get(Drought_max), false);
                 if (get(Drought_max) > 0) {
                     string startTime = "0:00";
@@ -422,8 +422,8 @@ public static class RandomizerStatsManager {
                 }
 
                 statsPage += "\nWorst death (time lost):		" + FormatTime(get(TSLDOS_max), false);
-                statsPage += "\nWorst death (pickups lost):	" + get(PSLDOS_max).ToString();
-                statsPage += "\nMost deaths at one save:		" + Math.Max(get(DSLS_max), get(DSLS)).ToString();
+                statsPage += "\nWorst death (pickups lost):	" + get(PSLDOS_max);
+                statsPage += "\nMost deaths at one save:		" + Math.Max(get(DSLS_max), get(DSLS));
                 statsPage += "\nTotal time lost to deaths:		" + FormatTime(get(shoof_sum), false);
                 statsPage += "\nLongest time without dying:	" + FormatTime(Math.Max(get(TSLD_max), get(TSLD)), false);
                 break;
@@ -472,8 +472,6 @@ public static class RandomizerStatsManager {
 
                 foreach (string line in last)
                     statsPage += "\n" + line;
-                break;
-            default:
                 break;
         }
 
@@ -600,8 +598,7 @@ public static class RandomizerStatsManager {
     public static string FormatTime(int seconds, bool padding) {
         if (padding)
             return FormatTime(seconds);
-        else
-            return FormatTime(seconds).Trim();
+        return FormatTime(seconds).Trim();
     }
 
     public static string FormatTime(int seconds) {
@@ -621,7 +618,7 @@ public static class RandomizerStatsManager {
                 minutesPart = "   " + minutesPart;
         if (minutes >= 60) {
             int hours = minutes / 60;
-            return hours.ToString() + ":" + minutesPart + ":" + secondsPart;
+            return hours + ":" + minutesPart + ":" + secondsPart;
         }
 
         return minutesPart + ":" + secondsPart;
@@ -632,8 +629,6 @@ public static class RandomizerStatsManager {
         switch (source) {
             case DamageType.LevelUp:
                 inc(LevelUpKills, 1);
-                break;
-            default:
                 break;
         }
     }
@@ -722,5 +717,5 @@ public static class RandomizerStatsManager {
     public static Dictionary<string, string> ZonePrettyNames;
     public static Dictionary<string, string> SceneToZone;
     public static Dictionary<int, int> MenuCache;
-    public static int StatsTimer = 0;
+    public static int StatsTimer;
 }

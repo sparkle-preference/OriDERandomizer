@@ -7,15 +7,15 @@ public class PlayerAbilities : SaveSerialize, ISeinReceiver {
 
     public int OriStrength {
         get {
-            if (this.UltraSplitFlame.HasAbility) {
+            if (UltraSplitFlame.HasAbility) {
                 return 3;
             }
 
-            if (this.CinderFlame.HasAbility) {
+            if (CinderFlame.HasAbility) {
                 return 2;
             }
 
-            if (this.SparkFlame.HasAbility) {
+            if (SparkFlame.HasAbility) {
                 return 1;
             }
 
@@ -25,11 +25,11 @@ public class PlayerAbilities : SaveSerialize, ISeinReceiver {
 
     public int SplitFlameTargets {
         get {
-            if (this.UltraSplitFlame.HasAbility) {
+            if (UltraSplitFlame.HasAbility) {
                 return 4 + RandomizerBonus.SpiritFlameLevel();
             }
 
-            if (this.SplitFlameUpgrade.HasAbility) {
+            if (SplitFlameUpgrade.HasAbility) {
                 return 2 + RandomizerBonus.SpiritFlameLevel();
             }
 
@@ -53,64 +53,64 @@ public class PlayerAbilities : SaveSerialize, ISeinReceiver {
 
     public new void Awake() {
         base.Awake();
-        this.Abilities = new CharacterAbility[] {
-            this.Bash,
-            this.ChargeFlame,
-            this.WallJump,
-            this.Stomp,
-            this.DoubleJump,
-            this.ChargeJump,
-            this.Magnet,
-            this.UltraMagnet,
-            this.Climb,
-            this.Glide,
-            this.SpiritFlame,
-            this.RapidFire,
-            this.SoulEfficiency,
-            this.WaterBreath,
-            this.ChargeFlameBlast,
-            this.ChargeFlameBurn,
-            this.DoubleJumpUpgrade,
-            this.BashBuff,
-            this.UltraDefense,
-            this.HealthEfficiency,
-            this.Sense,
-            this.StompUpgrade,
-            this.QuickFlame,
-            this.MapMarkers,
-            this.EnergyEfficiency,
-            this.HealthMarkers,
-            this.EnergyMarkers,
-            this.AbilityMarkers,
-            this.Rekindle,
-            this.Regroup,
-            this.ChargeFlameEfficiency,
-            this.UltraSoulFlame,
-            this.SoulFlameEfficiency,
-            this.SplitFlameUpgrade,
-            this.SparkFlame,
-            this.CinderFlame,
-            this.UltraSplitFlame,
-            this.Dash,
-            this.Grenade,
-            this.GrenadeUpgrade,
-            this.ChargeDash,
-            this.AirDash,
-            this.GrenadeEfficiency
+        Abilities = new[] {
+            Bash,
+            ChargeFlame,
+            WallJump,
+            Stomp,
+            DoubleJump,
+            ChargeJump,
+            Magnet,
+            UltraMagnet,
+            Climb,
+            Glide,
+            SpiritFlame,
+            RapidFire,
+            SoulEfficiency,
+            WaterBreath,
+            ChargeFlameBlast,
+            ChargeFlameBurn,
+            DoubleJumpUpgrade,
+            BashBuff,
+            UltraDefense,
+            HealthEfficiency,
+            Sense,
+            StompUpgrade,
+            QuickFlame,
+            MapMarkers,
+            EnergyEfficiency,
+            HealthMarkers,
+            EnergyMarkers,
+            AbilityMarkers,
+            Rekindle,
+            Regroup,
+            ChargeFlameEfficiency,
+            UltraSoulFlame,
+            SoulFlameEfficiency,
+            SplitFlameUpgrade,
+            SparkFlame,
+            CinderFlame,
+            UltraSplitFlame,
+            Dash,
+            Grenade,
+            GrenadeUpgrade,
+            ChargeDash,
+            AirDash,
+            GrenadeEfficiency
         };
     }
 
     public void SetAllAbilitys(bool abilityEnabled) {
-        foreach (CharacterAbility characterAbility in this.Abilities) {
+        foreach (CharacterAbility characterAbility in Abilities) {
             characterAbility.HasAbility = abilityEnabled;
         }
 
-        this.m_sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
+        m_sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
     }
 
     public override void Serialize(Archive ar) {
         try {
-            foreach (CharacterAbility characterAbility in this.Abilities) {
+            foreach (CharacterAbility characterAbility in Abilities) {
                 ar.Serialize(ref characterAbility.HasAbility);
             }
         } catch (Exception exception) {
@@ -118,246 +118,246 @@ public class PlayerAbilities : SaveSerialize, ISeinReceiver {
         }
 
         if (ar.Reading) {
-            this.m_sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
+            m_sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
         }
     }
 
     public void SetAbility(AbilityType ability, bool value) {
         switch (ability) {
             case AbilityType.Bash:
-                this.Bash.HasAbility = value;
+                Bash.HasAbility = value;
                 break;
             case AbilityType.ChargeFlame:
-                this.ChargeFlame.HasAbility = value;
+                ChargeFlame.HasAbility = value;
                 break;
             case AbilityType.WallJump:
-                this.WallJump.HasAbility = value;
+                WallJump.HasAbility = value;
                 break;
             case AbilityType.Stomp:
-                this.Stomp.HasAbility = value;
+                Stomp.HasAbility = value;
                 break;
             case AbilityType.DoubleJump:
-                this.DoubleJump.HasAbility = value;
+                DoubleJump.HasAbility = value;
                 break;
             case AbilityType.ChargeJump:
-                this.ChargeJump.HasAbility = value;
+                ChargeJump.HasAbility = value;
                 break;
             case AbilityType.Magnet:
-                this.Magnet.HasAbility = value;
+                Magnet.HasAbility = value;
                 break;
             case AbilityType.UltraMagnet:
-                this.UltraMagnet.HasAbility = value;
+                UltraMagnet.HasAbility = value;
                 break;
             case AbilityType.Climb:
-                this.Climb.HasAbility = value;
+                Climb.HasAbility = value;
                 break;
             case AbilityType.Glide:
-                this.Glide.HasAbility = value;
+                Glide.HasAbility = value;
                 break;
             case AbilityType.SpiritFlame:
-                this.SpiritFlame.HasAbility = value;
+                SpiritFlame.HasAbility = value;
                 Characters.Ori.MoveOriToPlayer();
                 break;
             case AbilityType.RapidFlame:
-                this.RapidFire.HasAbility = value;
+                RapidFire.HasAbility = value;
                 break;
             case AbilityType.SplitFlameUpgrade:
-                this.SplitFlameUpgrade.HasAbility = value;
+                SplitFlameUpgrade.HasAbility = value;
                 break;
             case AbilityType.SoulEfficiency:
-                this.SoulEfficiency.HasAbility = value;
+                SoulEfficiency.HasAbility = value;
                 break;
             case AbilityType.WaterBreath:
-                this.WaterBreath.HasAbility = value;
+                WaterBreath.HasAbility = value;
                 break;
             case AbilityType.ChargeFlameBlast:
-                this.ChargeFlameBlast.HasAbility = value;
+                ChargeFlameBlast.HasAbility = value;
                 break;
             case AbilityType.ChargeFlameBurn:
-                this.ChargeFlameBurn.HasAbility = value;
+                ChargeFlameBurn.HasAbility = value;
                 break;
             case AbilityType.DoubleJumpUpgrade:
-                this.DoubleJumpUpgrade.HasAbility = value;
+                DoubleJumpUpgrade.HasAbility = value;
                 break;
             case AbilityType.BashBuff:
-                this.BashBuff.HasAbility = value;
+                BashBuff.HasAbility = value;
                 break;
             case AbilityType.UltraDefense:
-                this.UltraDefense.HasAbility = value;
+                UltraDefense.HasAbility = value;
                 break;
             case AbilityType.HealthEfficiency:
-                this.HealthEfficiency.HasAbility = value;
+                HealthEfficiency.HasAbility = value;
                 break;
             case AbilityType.Sense:
-                this.Sense.HasAbility = value;
+                Sense.HasAbility = value;
                 break;
             case AbilityType.UltraStomp:
-                this.StompUpgrade.HasAbility = value;
+                StompUpgrade.HasAbility = value;
                 break;
             case AbilityType.SparkFlame:
-                this.SparkFlame.HasAbility = value;
+                SparkFlame.HasAbility = value;
                 break;
             case AbilityType.QuickFlame:
-                this.QuickFlame.HasAbility = value;
+                QuickFlame.HasAbility = value;
                 break;
             case AbilityType.MapMarkers:
-                this.MapMarkers.HasAbility = value;
+                MapMarkers.HasAbility = value;
                 if (value)
                     foreach (var area in GameWorld.Instance.RuntimeAreas)
                         area.DiscoverAllAreas();
                 break;
             case AbilityType.EnergyEfficiency:
-                this.EnergyEfficiency.HasAbility = value;
+                EnergyEfficiency.HasAbility = value;
                 break;
             case AbilityType.HealthMarkers:
-                this.HealthMarkers.HasAbility = value;
+                HealthMarkers.HasAbility = value;
                 break;
             case AbilityType.EnergyMarkers:
-                this.EnergyMarkers.HasAbility = value;
+                EnergyMarkers.HasAbility = value;
                 break;
             case AbilityType.AbilityMarkers:
-                this.AbilityMarkers.HasAbility = value;
+                AbilityMarkers.HasAbility = value;
                 break;
             case AbilityType.Rekindle:
-                this.Rekindle.HasAbility = value;
+                Rekindle.HasAbility = value;
                 break;
             case AbilityType.Regroup:
-                this.Regroup.HasAbility = value;
+                Regroup.HasAbility = value;
                 break;
             case AbilityType.ChargeFlameEfficiency:
-                this.ChargeFlameEfficiency.HasAbility = value;
+                ChargeFlameEfficiency.HasAbility = value;
                 break;
             case AbilityType.UltraSoulFlame:
-                this.UltraSoulFlame.HasAbility = value;
+                UltraSoulFlame.HasAbility = value;
                 break;
             case AbilityType.SoulFlameEfficiency:
-                this.SoulFlameEfficiency.HasAbility = value;
+                SoulFlameEfficiency.HasAbility = value;
                 break;
             case AbilityType.CinderFlame:
-                this.CinderFlame.HasAbility = value;
+                CinderFlame.HasAbility = value;
                 break;
             case AbilityType.UltraSplitFlame:
-                this.UltraSplitFlame.HasAbility = value;
+                UltraSplitFlame.HasAbility = value;
                 break;
             case AbilityType.Dash:
-                this.Dash.HasAbility = value;
+                Dash.HasAbility = value;
                 break;
             case AbilityType.Grenade:
-                this.Grenade.HasAbility = value;
+                Grenade.HasAbility = value;
                 break;
             case AbilityType.GrenadeUpgrade:
-                this.GrenadeUpgrade.HasAbility = value;
+                GrenadeUpgrade.HasAbility = value;
                 break;
             case AbilityType.ChargeDash:
-                this.ChargeDash.HasAbility = value;
+                ChargeDash.HasAbility = value;
                 break;
             case AbilityType.AirDash:
-                this.AirDash.HasAbility = value;
+                AirDash.HasAbility = value;
                 break;
             case AbilityType.GrenadeEfficiency:
-                this.GrenadeEfficiency.HasAbility = value;
+                GrenadeEfficiency.HasAbility = value;
                 break;
         }
 
-        this.m_sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
+        m_sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
     }
 
     public bool HasAbility(AbilityType ability) {
         switch (ability) {
             case AbilityType.Bash:
-                return this.Bash.HasAbility;
+                return Bash.HasAbility;
             case AbilityType.ChargeFlame:
-                return this.ChargeFlame.HasAbility;
+                return ChargeFlame.HasAbility;
             case AbilityType.WallJump:
-                return this.WallJump.HasAbility;
+                return WallJump.HasAbility;
             case AbilityType.Stomp:
-                return this.Stomp.HasAbility;
+                return Stomp.HasAbility;
             case AbilityType.DoubleJump:
-                return this.DoubleJump.HasAbility;
+                return DoubleJump.HasAbility;
             case AbilityType.ChargeJump:
-                return this.ChargeJump.HasAbility;
+                return ChargeJump.HasAbility;
             case AbilityType.Magnet:
-                return this.Magnet.HasAbility;
+                return Magnet.HasAbility;
             case AbilityType.UltraMagnet:
-                return this.UltraMagnet.HasAbility;
+                return UltraMagnet.HasAbility;
             case AbilityType.Climb:
-                return this.Climb.HasAbility;
+                return Climb.HasAbility;
             case AbilityType.Glide:
-                return this.Glide.HasAbility;
+                return Glide.HasAbility;
             case AbilityType.SpiritFlame:
-                return this.SpiritFlame.HasAbility;
+                return SpiritFlame.HasAbility;
             case AbilityType.RapidFlame:
-                return this.RapidFire.HasAbility;
+                return RapidFire.HasAbility;
             case AbilityType.SplitFlameUpgrade:
-                return this.SplitFlameUpgrade.HasAbility;
+                return SplitFlameUpgrade.HasAbility;
             case AbilityType.SoulEfficiency:
-                return this.SoulEfficiency.HasAbility;
+                return SoulEfficiency.HasAbility;
             case AbilityType.WaterBreath:
-                return this.WaterBreath.HasAbility;
+                return WaterBreath.HasAbility;
             case AbilityType.ChargeFlameBlast:
-                return this.ChargeFlameBlast.HasAbility;
+                return ChargeFlameBlast.HasAbility;
             case AbilityType.ChargeFlameBurn:
-                return this.ChargeFlameBurn.HasAbility;
+                return ChargeFlameBurn.HasAbility;
             case AbilityType.DoubleJumpUpgrade:
-                return this.DoubleJumpUpgrade.HasAbility;
+                return DoubleJumpUpgrade.HasAbility;
             case AbilityType.BashBuff:
-                return this.BashBuff.HasAbility;
+                return BashBuff.HasAbility;
             case AbilityType.UltraDefense:
-                return this.UltraDefense.HasAbility;
+                return UltraDefense.HasAbility;
             case AbilityType.HealthEfficiency:
-                return this.HealthEfficiency.HasAbility;
+                return HealthEfficiency.HasAbility;
             case AbilityType.Sense:
-                return this.Sense.HasAbility;
+                return Sense.HasAbility;
             case AbilityType.UltraStomp:
-                return this.StompUpgrade.HasAbility;
+                return StompUpgrade.HasAbility;
             case AbilityType.SparkFlame:
-                return this.SparkFlame.HasAbility;
+                return SparkFlame.HasAbility;
             case AbilityType.QuickFlame:
-                return this.QuickFlame.HasAbility;
+                return QuickFlame.HasAbility;
             case AbilityType.MapMarkers:
-                return this.MapMarkers.HasAbility;
+                return MapMarkers.HasAbility;
             case AbilityType.EnergyEfficiency:
-                return this.EnergyEfficiency.HasAbility;
+                return EnergyEfficiency.HasAbility;
             case AbilityType.HealthMarkers:
-                return this.HealthMarkers.HasAbility;
+                return HealthMarkers.HasAbility;
             case AbilityType.EnergyMarkers:
-                return this.EnergyMarkers.HasAbility;
+                return EnergyMarkers.HasAbility;
             case AbilityType.AbilityMarkers:
-                return this.AbilityMarkers.HasAbility;
+                return AbilityMarkers.HasAbility;
             case AbilityType.Rekindle:
-                return this.Rekindle.HasAbility;
+                return Rekindle.HasAbility;
             case AbilityType.Regroup:
-                return this.Regroup.HasAbility;
+                return Regroup.HasAbility;
             case AbilityType.ChargeFlameEfficiency:
-                return this.ChargeFlameEfficiency.HasAbility;
+                return ChargeFlameEfficiency.HasAbility;
             case AbilityType.UltraSoulFlame:
-                return this.UltraSoulFlame.HasAbility;
+                return UltraSoulFlame.HasAbility;
             case AbilityType.SoulFlameEfficiency:
-                return this.SoulFlameEfficiency.HasAbility;
+                return SoulFlameEfficiency.HasAbility;
             case AbilityType.CinderFlame:
-                return this.CinderFlame.HasAbility;
+                return CinderFlame.HasAbility;
             case AbilityType.UltraSplitFlame:
-                return this.UltraSplitFlame.HasAbility;
+                return UltraSplitFlame.HasAbility;
             case AbilityType.Dash:
-                return this.Dash.HasAbility;
+                return Dash.HasAbility;
             case AbilityType.Grenade:
-                return this.Grenade.HasAbility;
+                return Grenade.HasAbility;
             case AbilityType.GrenadeUpgrade:
-                return this.GrenadeUpgrade.HasAbility;
+                return GrenadeUpgrade.HasAbility;
             case AbilityType.ChargeDash:
-                return this.ChargeDash.HasAbility;
+                return ChargeDash.HasAbility;
             case AbilityType.AirDash:
-                return this.AirDash.HasAbility;
+                return AirDash.HasAbility;
             case AbilityType.GrenadeEfficiency:
-                return this.GrenadeEfficiency.HasAbility;
+                return GrenadeEfficiency.HasAbility;
         }
 
         return false;
     }
 
     public void SetReferenceToSein(SeinCharacter sein) {
-        this.m_sein = sein;
-        this.m_sein.PlayerAbilities = this;
+        m_sein = sein;
+        m_sein.PlayerAbilities = this;
     }
 
     public CharacterAbility Bash;

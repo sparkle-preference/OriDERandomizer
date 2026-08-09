@@ -1,29 +1,30 @@
 using System;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 [Serializable]
 public class GameMapTeleporter {
     public GameMapTeleporter(SceneMetaData.Teleporter teleporter, SceneMetaData sceneMetaData) {
-        this.Identifier = teleporter.Identifier;
-        this.WorldPosition = teleporter.SceneLocalPosition + sceneMetaData.RootPosition;
+        Identifier = teleporter.Identifier;
+        WorldPosition = teleporter.SceneLocalPosition + sceneMetaData.RootPosition;
     }
 
     public void Show() {
         AreaMapUI instance = AreaMapUI.Instance;
-        if (this.m_worldMapIconGameObject) {
-            this.m_worldMapIconGameObject.SetActive(true);
+        if (m_worldMapIconGameObject) {
+            m_worldMapIconGameObject.SetActive(true);
         } else {
-            GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(instance.TeleportPrefab);
-            this.m_worldMapIconTransform = gameObject.transform;
-            this.m_worldMapIconGameObject = this.m_worldMapIconTransform.gameObject;
-            this.m_worldMapIconHighlightAnimator = this.m_worldMapIconGameObject.transform.FindChild("highlight").GetComponentInChildren<TransparencyAnimator>();
-            this.m_worldMapIconTransform.position = WorldMapUI.Instance.WorldToUIPosition(this.WorldPosition);
-            this.m_worldMapIconTransform.parent = WorldMapUI.Instance.FadeOutGroup;
-            TransparencyAnimator.Register(this.m_worldMapIconTransform);
-            if (this.Name.GetType() == typeof(RandomizerMessageProvider)) {
-                Renderer[] componentsInChildren = this.m_worldMapIconGameObject.GetComponentsInChildren<Renderer>();
-                int[] multiplicative = new int[] { 0, 10, 11, 12 };
-                int[] others = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            GameObject gameObject = Object.Instantiate(instance.TeleportPrefab);
+            m_worldMapIconTransform = gameObject.transform;
+            m_worldMapIconGameObject = m_worldMapIconTransform.gameObject;
+            m_worldMapIconHighlightAnimator = m_worldMapIconGameObject.transform.FindChild("highlight").GetComponentInChildren<TransparencyAnimator>();
+            m_worldMapIconTransform.position = WorldMapUI.Instance.WorldToUIPosition(WorldPosition);
+            m_worldMapIconTransform.parent = WorldMapUI.Instance.FadeOutGroup;
+            TransparencyAnimator.Register(m_worldMapIconTransform);
+            if (Name.GetType() == typeof(RandomizerMessageProvider)) {
+                Renderer[] componentsInChildren = m_worldMapIconGameObject.GetComponentsInChildren<Renderer>();
+                int[] multiplicative = { 0, 10, 11, 12 };
+                int[] others = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
                 foreach (int index in multiplicative) {
                     Color originalColor = componentsInChildren[index].material.color;
                     Color newColor = new Color(
@@ -48,20 +49,20 @@ public class GameMapTeleporter {
             }
         }
 
-        if (this.m_areaMapIconGameObject) {
-            this.m_areaMapIconGameObject.SetActive(true);
+        if (m_areaMapIconGameObject) {
+            m_areaMapIconGameObject.SetActive(true);
         } else {
-            GameObject gameObject2 = UnityEngine.Object.Instantiate<GameObject>(instance.TeleportPrefab);
-            this.m_areaMapIconTransform = gameObject2.transform;
-            this.m_areaMapIconGameObject = this.m_areaMapIconTransform.gameObject;
-            this.m_areaMapIconHighlightAnimator = this.m_areaMapIconGameObject.transform.FindChild("highlight").GetComponentInChildren<TransparencyAnimator>();
-            this.m_areaMapIconTransform.position = AreaMapUI.Instance.Navigation.WorldToMapPosition(this.WorldPosition + Vector3.up * 4f);
-            this.m_areaMapIconTransform.parent = AreaMapUI.Instance.FadeOutGroup;
-            TransparencyAnimator.Register(this.m_areaMapIconTransform);
-            if (this.Name.GetType() == typeof(RandomizerMessageProvider)) {
-                Renderer[] componentsInChildren2 = this.m_areaMapIconGameObject.GetComponentsInChildren<Renderer>();
-                int[] multiplicative2 = new int[] { 0, 10, 11, 12 };
-                int[] others2 = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            GameObject gameObject2 = Object.Instantiate(instance.TeleportPrefab);
+            m_areaMapIconTransform = gameObject2.transform;
+            m_areaMapIconGameObject = m_areaMapIconTransform.gameObject;
+            m_areaMapIconHighlightAnimator = m_areaMapIconGameObject.transform.FindChild("highlight").GetComponentInChildren<TransparencyAnimator>();
+            m_areaMapIconTransform.position = AreaMapUI.Instance.Navigation.WorldToMapPosition(WorldPosition + Vector3.up * 4f);
+            m_areaMapIconTransform.parent = AreaMapUI.Instance.FadeOutGroup;
+            TransparencyAnimator.Register(m_areaMapIconTransform);
+            if (Name.GetType() == typeof(RandomizerMessageProvider)) {
+                Renderer[] componentsInChildren2 = m_areaMapIconGameObject.GetComponentsInChildren<Renderer>();
+                int[] multiplicative2 = { 0, 10, 11, 12 };
+                int[] others2 = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
                 foreach (int index3 in multiplicative2) {
                     Color originalColor3 = componentsInChildren2[index3].material.color;
                     Color newColor3 = new Color(
@@ -88,89 +89,89 @@ public class GameMapTeleporter {
     }
 
     public void Update() {
-        if (this.m_worldMapIconTransform) {
-            this.m_worldMapIconTransform.position = WorldMapUI.Instance.WorldToUIPosition(this.WorldPosition);
+        if (m_worldMapIconTransform) {
+            m_worldMapIconTransform.position = WorldMapUI.Instance.WorldToUIPosition(WorldPosition);
         }
 
-        if (this.m_areaMapIconTransform) {
-            this.m_areaMapIconTransform.position = AreaMapUI.Instance.Navigation.WorldToMapPosition(this.WorldPosition + Vector3.up * 4f);
+        if (m_areaMapIconTransform) {
+            m_areaMapIconTransform.position = AreaMapUI.Instance.Navigation.WorldToMapPosition(WorldPosition + Vector3.up * 4f);
         }
     }
 
     public Vector2 WorldMapIconPosition {
-        get { return this.m_worldMapIconTransform.position; }
+        get { return m_worldMapIconTransform.position; }
     }
 
     public Vector2 AreaMapIconPosition {
-        get { return this.m_areaMapIconTransform.position; }
+        get { return m_areaMapIconTransform.position; }
     }
 
     public Vector2 WorldProjectedPositon {
-        get { return WorldMapUI.Instance.WorldToProjectedPosition(this.WorldPosition); }
+        get { return WorldMapUI.Instance.WorldToProjectedPosition(WorldPosition); }
     }
 
     public RuntimeGameWorldArea Area {
-        get { return GameWorld.Instance.FindRuntimeArea(GameWorld.Instance.FindAreaFromPosition(this.WorldPosition)); }
+        get { return GameWorld.Instance.FindRuntimeArea(GameWorld.Instance.FindAreaFromPosition(WorldPosition)); }
     }
 
     public void Hide() {
-        if (this.m_worldMapIconGameObject) {
-            this.m_worldMapIconGameObject.SetActive(false);
+        if (m_worldMapIconGameObject) {
+            m_worldMapIconGameObject.SetActive(false);
         }
 
-        if (this.m_areaMapIconGameObject) {
-            this.m_areaMapIconGameObject.SetActive(false);
+        if (m_areaMapIconGameObject) {
+            m_areaMapIconGameObject.SetActive(false);
         }
     }
 
     public void Highlight() {
-        if (this.m_worldMapIconHighlightAnimator) {
-            this.m_worldMapIconHighlightAnimator.AnimatorDriver.ContinueForward();
+        if (m_worldMapIconHighlightAnimator) {
+            m_worldMapIconHighlightAnimator.AnimatorDriver.ContinueForward();
         }
 
-        if (this.m_areaMapIconHighlightAnimator) {
-            this.m_areaMapIconHighlightAnimator.AnimatorDriver.ContinueForward();
+        if (m_areaMapIconHighlightAnimator) {
+            m_areaMapIconHighlightAnimator.AnimatorDriver.ContinueForward();
         }
     }
 
     public void Dehighlight() {
-        if (this.m_worldMapIconHighlightAnimator) {
-            this.m_worldMapIconHighlightAnimator.AnimatorDriver.ContinueBackwards();
+        if (m_worldMapIconHighlightAnimator) {
+            m_worldMapIconHighlightAnimator.AnimatorDriver.ContinueBackwards();
         }
 
-        if (this.m_areaMapIconHighlightAnimator) {
-            this.m_areaMapIconHighlightAnimator.AnimatorDriver.ContinueBackwards();
+        if (m_areaMapIconHighlightAnimator) {
+            m_areaMapIconHighlightAnimator.AnimatorDriver.ContinueBackwards();
         }
     }
 
     public GameMapTeleporter(string name, float x, float y) {
-        this.Identifier = name;
-        this.WorldPosition = new Vector3(x, y, 0f);
-        this.Activated = false;
+        Identifier = name;
+        WorldPosition = new Vector3(x, y, 0f);
+        Activated = false;
         RandomizerMessageProvider randomizerMessageProvider = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
         randomizerMessageProvider.SetMessage(name);
-        this.Name = randomizerMessageProvider;
+        Name = randomizerMessageProvider;
     }
 
     public GameMapTeleporter(string name, Vector3 position, bool activated) {
-        this.Identifier = name;
-        this.WorldPosition = position;
-        this.Activated = activated;
+        Identifier = name;
+        WorldPosition = position;
+        Activated = activated;
         RandomizerMessageProvider randomizerMessageProvider = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
         randomizerMessageProvider.SetMessage(name);
-        this.Name = randomizerMessageProvider;
+        Name = randomizerMessageProvider;
     }
 
     public void SetInfo(string name, Vector3 position, bool activated) {
-        if (this.Identifier != name) {
-            this.Identifier = name;
+        if (Identifier != name) {
+            Identifier = name;
             RandomizerMessageProvider randomizerMessageProvider = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
             randomizerMessageProvider.SetMessage(name);
-            this.Name = randomizerMessageProvider;
+            Name = randomizerMessageProvider;
         }
 
-        this.WorldPosition = position;
-        this.Activated = activated;
+        WorldPosition = position;
+        Activated = activated;
     }
 
     public string Identifier;

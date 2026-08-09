@@ -1,38 +1,37 @@
-using System;
 using Game;
 using UnityEngine;
 
 public class SeinCharacter : MonoBehaviour, ICharacter {
     public Vector2 PhysicsSpeed {
         get {
-            PlatformMovement platformMovement = this.PlatformBehaviour.PlatformMovement;
+            PlatformMovement platformMovement = PlatformBehaviour.PlatformMovement;
             return (!platformMovement.IsOnGround) ? platformMovement.WorldSpeed : (platformMovement.GroundNormal * platformMovement.LocalSpeedY + platformMovement.GroundBinormal * platformMovement.LocalSpeedX);
         }
     }
 
     public CharacterAnimationSystem Animation {
-        get { return this.PlatformBehaviour.Visuals.Animation; }
+        get { return PlatformBehaviour.Visuals.Animation; }
     }
 
     public bool IsSuspended {
-        get { return this.PlatformBehaviour.PlatformMovement.IsSuspended; }
+        get { return PlatformBehaviour.PlatformMovement.IsSuspended; }
     }
 
     public Vector3 Position {
-        get { return this.PlatformBehaviour.PlatformMovement.Position; }
-        set { this.PlatformBehaviour.PlatformMovement.Position = value; }
+        get { return PlatformBehaviour.PlatformMovement.Position; }
+        set { PlatformBehaviour.PlatformMovement.Position = value; }
     }
 
     public bool Active {
-        get { return base.gameObject.activeSelf; }
-        set { base.gameObject.SetActive(value); }
+        get { return gameObject.activeSelf; }
+        set { gameObject.SetActive(value); }
     }
 
     public void Awake() {
         Characters.Sein = this;
         Characters.Current = this;
-        this.Input = new SeinInput(this);
-        this.MakeBelongToSein(base.gameObject);
+        Input = new SeinInput(this);
+        MakeBelongToSein(gameObject);
     }
 
     public void OnDestroy() {
@@ -40,7 +39,7 @@ public class SeinCharacter : MonoBehaviour, ICharacter {
             Characters.Sein = null;
         }
 
-        if (object.ReferenceEquals(Characters.Current, this)) {
+        if (ReferenceEquals(Characters.Current, this)) {
             Characters.Current = null;
         }
     }
@@ -50,49 +49,49 @@ public class SeinCharacter : MonoBehaviour, ICharacter {
     }
 
     public void FixedUpdate() {
-        this.Input.Update();
+        Input.Update();
     }
 
     public void Activate(bool active) {
-        base.gameObject.SetActive(active);
+        gameObject.SetActive(active);
         if (active) {
-            base.gameObject.BroadcastMessage("SetReferenceToSein", this, SendMessageOptions.DontRequireReceiver);
+            gameObject.BroadcastMessage("SetReferenceToSein", this, SendMessageOptions.DontRequireReceiver);
         }
     }
 
     public GameObject GameObject {
-        get { return base.gameObject; }
+        get { return gameObject; }
     }
 
     public bool FaceLeft {
-        get { return this.Animation.SpriteMirror.FaceLeft; }
-        set { this.Animation.SpriteMirror.FaceLeft = value; }
+        get { return Animation.SpriteMirror.FaceLeft; }
+        set { Animation.SpriteMirror.FaceLeft = value; }
     }
 
     public Vector3 Speed {
-        get { return this.PlatformBehaviour.PlatformMovement.LocalSpeed; }
-        set { this.PlatformBehaviour.PlatformMovement.LocalSpeed = value; }
+        get { return PlatformBehaviour.PlatformMovement.LocalSpeed; }
+        set { PlatformBehaviour.PlatformMovement.LocalSpeed = value; }
     }
 
     public Transform Transform {
-        get { return base.transform; }
+        get { return transform; }
     }
 
     public bool IsOnGround {
-        get { return this.PlatformBehaviour.PlatformMovement.IsOnGround; }
+        get { return PlatformBehaviour.PlatformMovement.IsOnGround; }
     }
 
     public void PlaceOnGround() {
-        this.PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
+        PlatformBehaviour.PlatformMovement.PlaceOnGround(0.5f, 0f);
     }
 
     public void ResetAirLimits() {
-        if (this.Abilities.DoubleJump) {
-            this.Abilities.DoubleJump.ResetDoubleJump();
+        if (Abilities.DoubleJump) {
+            Abilities.DoubleJump.ResetDoubleJump();
         }
 
-        if (this.Abilities.Dash) {
-            this.Abilities.Dash.ResetDashLimit();
+        if (Abilities.Dash) {
+            Abilities.Dash.ResetDashLimit();
         }
     }
 

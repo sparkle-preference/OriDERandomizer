@@ -1,51 +1,49 @@
-using System;
 using Sein.World;
-using UnityEngine;
 
 public class SetSeinWorldStateAction : ActionMethod {
     public override void Perform(IContext context) {
         GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
-        switch (this.State) {
+        switch (State) {
             case WorldState.WaterPurified:
                 Randomizer.Inventory.FinishedGinsoEscape = true;
                 Randomizer.NeedGinsoEscapeCleanup = true;
-                RandomizerLocationManager.GivePickup(this.MoonGuid);
+                RandomizerLocationManager.GivePickup(MoonGuid);
                 return;
             case WorldState.GumoFree:
-                Events.GumoFree = this.IsTrue;
+                Events.GumoFree = IsTrue;
                 return;
             case WorldState.SpiritTreeReached:
-                Events.SpiritTreeReached = this.IsTrue;
+                Events.SpiritTreeReached = IsTrue;
                 return;
             case WorldState.GinsoTreeKey:
-                RandomizerLocationManager.GivePickup(this.MoonGuid);
+                RandomizerLocationManager.GivePickup(MoonGuid);
                 return;
             case (WorldState)4:
             case (WorldState)6:
                 return;
             case WorldState.GinsoTreeEntered:
-                Events.GinsoTreeEntered = this.IsTrue;
+                Events.GinsoTreeEntered = IsTrue;
                 return;
             case WorldState.WindRestored:
-                RandomizerLocationManager.GivePickup(this.MoonGuid);
+                RandomizerLocationManager.GivePickup(MoonGuid);
                 return;
             case WorldState.GravityActivated:
-                Events.GravityActivated = this.IsTrue;
+                Events.GravityActivated = IsTrue;
                 return;
             case WorldState.MistLifted:
-                Events.MistLifted = this.IsTrue;
+                Events.MistLifted = IsTrue;
                 return;
             case WorldState.ForlornRuinsKey:
-                RandomizerLocationManager.GivePickup(this.MoonGuid);
+                RandomizerLocationManager.GivePickup(MoonGuid);
                 return;
             case WorldState.MountHoruKey:
-                RandomizerLocationManager.GivePickup(this.MoonGuid);
+                RandomizerLocationManager.GivePickup(MoonGuid);
                 return;
             case WorldState.WarmthReturned:
-                RandomizerLocationManager.GivePickup(this.MoonGuid);
+                RandomizerLocationManager.GivePickup(MoonGuid);
                 return;
             case WorldState.DarknessLifted:
-                Events.DarknessLifted = this.IsTrue;
+                Events.DarknessLifted = IsTrue;
                 return;
             default:
                 return;
@@ -53,7 +51,7 @@ public class SetSeinWorldStateAction : ActionMethod {
     }
 
     public override string GetNiceName() {
-        return "Set " + ActionHelper.GetName(this.State.ToString()) + " to " + ActionHelper.GetName(this.IsTrue.ToString());
+        return "Set " + ActionHelper.GetName(State.ToString()) + " to " + ActionHelper.GetName(IsTrue.ToString());
     }
 
     public WorldState State;

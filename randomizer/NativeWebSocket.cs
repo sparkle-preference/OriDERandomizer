@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
+using UnityEngine;
 
 // Managed face of the native websocket sidecar. The dll is built from
 // github.com/timoschwarzer/dotnet-native-websocket (our changes are PR'd
@@ -22,7 +24,7 @@ using System.Runtime.InteropServices;
 // line-0 seed parsing, before the UI exists, and Randomizer.LogError
 // renders on-screen — it writes its line and then NREs at that phase.
 public static class NativeWebSocket {
-    public enum SocketState : int {
+    public enum SocketState {
         Connecting = 0,
         Open = 1,
         Closing = 2,
@@ -139,7 +141,7 @@ public static class NativeWebSocket {
     // Process.MainModule on this Mono is not so dependable.
     private static string ExeDir() {
         try {
-            string dataPath = UnityEngine.Application.dataPath;
+            string dataPath = Application.dataPath;
             if (!string.IsNullOrEmpty(dataPath))
                 return Path.GetDirectoryName(dataPath);
         } catch (Exception e) {
@@ -234,7 +236,7 @@ public static class NativeWebSocket {
             return "";
         byte[] bytes = new byte[length];
         Marshal.Copy(ptr, bytes, 0, length);
-        return System.Text.Encoding.UTF8.GetString(bytes);
+        return Encoding.UTF8.GetString(bytes);
     }
 
     public static bool HasPendingMessage() {
@@ -250,6 +252,6 @@ public static class NativeWebSocket {
         byte[] bytes = new byte[length];
         Marshal.Copy(ptr, bytes, 0, length);
         pop_pending_message();
-        return System.Text.Encoding.UTF8.GetString(bytes);
+        return Encoding.UTF8.GetString(bytes);
     }
 }

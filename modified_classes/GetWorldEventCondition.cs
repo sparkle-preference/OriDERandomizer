@@ -1,21 +1,19 @@
-using System;
 using System.Collections.Generic;
 using Game;
-using Sein.World;
 
 public class GetWorldEventCondition : Condition {
     public override bool Validate(IContext context) {
-        if (this.WorldEvents.UniqueID == 26 && Randomizer.Inventory.FinishedGinsoEscape) {
-            return this.State != 21;
+        if (WorldEvents.UniqueID == 26 && Randomizer.Inventory.FinishedGinsoEscape) {
+            return State != 21;
         }
 
-        int value = World.Events.Find(this.WorldEvents).Value;
-        if (this.States.Count == 0) {
-            return this.State == value;
+        int value = World.Events.Find(WorldEvents).Value;
+        if (States.Count == 0) {
+            return State == value;
         }
 
-        for (int i = 0; i < this.States.Count; i++) {
-            int num = this.States[i];
+        for (int i = 0; i < States.Count; i++) {
+            int num = States[i];
             if (value == num) {
                 return true;
             }

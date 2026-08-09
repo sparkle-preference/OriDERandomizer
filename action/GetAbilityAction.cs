@@ -1,10 +1,7 @@
-using System;
-using Game;
-
 [Category("Sein")]
 public class GetAbilityAction : ActionMethod {
     public override void Perform(IContext context) {
-        RandomizerLocationManager.GivePickup(this.MoonGuid);
+        RandomizerLocationManager.GivePickup(MoonGuid);
         GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
     }
 

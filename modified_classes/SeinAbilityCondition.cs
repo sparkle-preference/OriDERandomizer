@@ -1,12 +1,10 @@
-using System;
-using Game;
-using Sein.World;
 using Core;
+using Game;
 
 public class SeinAbilityCondition : Condition {
     public override bool Validate(IContext context) {
         if (Characters.Sein != null) {
-            if (this.Ability == AbilityType.Stomp) {
+            if (Ability == AbilityType.Stomp) {
                 if (Randomizer.Inventory.FinishedGinsoEscape && Scenes.Manager.CurrentScene != null) {
                     string scene = Scenes.Manager.CurrentScene.Scene;
                     if (scene == "ginsoTreeTurrets")
@@ -24,7 +22,7 @@ public class SeinAbilityCondition : Condition {
                 }
             }
 
-            return Characters.Sein.PlayerAbilities.HasAbility(this.Ability);
+            return Characters.Sein.PlayerAbilities.HasAbility(Ability);
         }
 
         return false;

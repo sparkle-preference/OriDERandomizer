@@ -8,10 +8,9 @@ never be present in a release).
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 
-public partial class SaveGameData {
+public class SaveGameData {
     public bool LoadFromReader(BinaryReader reader) {
         this.Scenes.Clear();
         this.PendingScenes.Clear();
@@ -51,7 +50,7 @@ public partial class SaveGameData {
                 if (logging) {
                     string str = "";
                     for (int l = 0; l < saveObject.Data.MemoryStream.GetBuffer().Length; l++) {
-                        str = str + saveObject.Data.MemoryStream.GetBuffer()[l].ToString() + " ";
+                        str = str + saveObject.Data.MemoryStream.GetBuffer()[l] + " ";
                     }
 
                     Randomizer.log(str);
@@ -60,9 +59,7 @@ public partial class SaveGameData {
                 if (reading && DifferentDataMap.ContainsKey(saveObject.Id.ToString())) {
                     saveObject.Data = new Archive();
                     string[] array2 = ((string)DifferentDataMap[saveObject.Id.ToString()]).Split(
-                        new char[] {
-                            ' '
-                        }
+                        ' '
                     );
                     byte[] bytes = new byte[array2.Length];
                     for (int m = 0; m < array2.Length; m++) {
@@ -70,7 +67,7 @@ public partial class SaveGameData {
                     }
 
                     BinaryReader binaryReader = new BinaryReader(new MemoryStream(bytes));
-                    saveObject.Data.MemoryStream.SetLength((long)bytes.Length);
+                    saveObject.Data.MemoryStream.SetLength(bytes.Length);
                     binaryReader.Read(saveObject.Data.MemoryStream.GetBuffer(), 0, bytes.Length);
                 }
 

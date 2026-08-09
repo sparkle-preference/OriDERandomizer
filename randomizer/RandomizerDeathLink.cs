@@ -1,5 +1,4 @@
 using System;
-using Core;
 using Game;
 using UnityEngine;
 
@@ -51,7 +50,7 @@ public static class RandomizerDeathLink {
         try {
             if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null)
                 return;
-            string[] parts = payload.Split(new char[] { ';' }, 2);
+            string[] parts = payload.Split(new[] { ';' }, 2);
             int token;
             if (!int.TryParse(parts[0], out token)
                 || token <= Characters.Sein.Inventory.GetRandomizerItem(LastToken))
@@ -144,7 +143,7 @@ public static class RandomizerDeathLink {
     public static string Field() {
         if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null)
             return null;
-        return Characters.Sein.Inventory.GetRandomizerItem(Deaths).ToString() + "."
-            + Characters.Sein.Inventory.GetRandomizerItem(LinkedDeaths).ToString();
+        return Characters.Sein.Inventory.GetRandomizerItem(Deaths) + "."
+            + Characters.Sein.Inventory.GetRandomizerItem(LinkedDeaths);
     }
 }

@@ -1,20 +1,19 @@
-using System;
 using System.Collections.Generic;
 using Sein.World;
 
 public static class RandomizerClues {
     public static void initialize() {
-        RandomizerClues.RevealOrder = new int[3];
-        RandomizerClues.Clues = new List<string>();
-        RandomizerClues.ClueSlots = new List<int>();
+        RevealOrder = new int[3];
+        Clues = new List<string>();
+        ClueSlots = new List<int>();
     }
 
     // slot is the multiworld manifest slot this clue's key sits in, or -1 for
     // a key that stayed in our own world (nothing to buy a hint for)
     public static void AddClue(string clue, int order, int slot = -1) {
-        RandomizerClues.Clues.Add(clue);
-        RandomizerClues.ClueSlots.Add(slot);
-        RandomizerClues.RevealOrder[order] = RandomizerClues.Clues.Count;
+        Clues.Add(clue);
+        ClueSlots.Add(slot);
+        RevealOrder[order] = Clues.Count;
     }
 
     // index 0: WV, 1: GS, 2: SS. Ori reveals a clue once you hold the key or
@@ -27,22 +26,22 @@ public static class RandomizerClues {
             return true;
         if (i == 2 && Keys.MountHoru)
             return true;
-        return RandomizerBonus.SkillTreeProgression() >= RandomizerClues.RevealOrder[i] * 3;
+        return RandomizerBonus.SkillTreeProgression() >= RevealOrder[i] * 3;
     }
 
     public static int SlotFor(int i) {
-        int index = RandomizerClues.RevealOrder[i] - 1;
-        return (RandomizerClues.ClueSlots != null && index >= 0 && index < RandomizerClues.ClueSlots.Count)
-            ? RandomizerClues.ClueSlots[index]
+        int index = RevealOrder[i] - 1;
+        return (ClueSlots != null && index >= 0 && index < ClueSlots.Count)
+            ? ClueSlots[index]
             : -1;
     }
 
     public static string ClueFor(int i) {
-        return RandomizerMW.ApHintOr(SlotFor(i), RandomizerClues.Clues[RandomizerClues.RevealOrder[i] - 1]);
+        return RandomizerMW.ApHintOr(SlotFor(i), Clues[RevealOrder[i] - 1]);
     }
 
     public static void WantHints(List<int> needed) {
-        if (RandomizerClues.Clues == null || RandomizerClues.RevealOrder == null)
+        if (Clues == null || RevealOrder == null)
             return;
         for (int i = 0; i < 3; i++)
             if (Revealed(i))
@@ -53,7 +52,7 @@ public static class RandomizerClues {
         string text = "";
         string text2 = "";
         string text3 = "";
-        string[] array = new string[] {
+        string[] array = {
             "????",
             "????",
             "????"
@@ -78,32 +77,30 @@ public static class RandomizerClues {
 
         return RandomizerMW.ResolveNames(
             string.Concat(
-                new string[] {
-                    text,
-                    "WV: ",
-                    array[0],
-                    text,
-                    "  ",
-                    text2,
-                    "GS: ",
-                    array[1],
-                    text2,
-                    "  ",
-                    text3,
-                    "SS: ",
-                    array[2],
-                    text3
-                }
+                text,
+                "WV: ",
+                array[0],
+                text,
+                "  ",
+                text2,
+                "GS: ",
+                array[1],
+                text2,
+                "  ",
+                text3,
+                "SS: ",
+                array[2],
+                text3
             )
         );
     }
 
     public static void FinishClues() {
         for (int i = 0; i < 3; i++) {
-            if (RandomizerClues.RevealOrder[i] == 0) {
-                RandomizerClues.Clues.Add("Unknown");
-                RandomizerClues.ClueSlots.Add(-1);
-                RandomizerClues.RevealOrder[i] = RandomizerClues.Clues.Count;
+            if (RevealOrder[i] == 0) {
+                Clues.Add("Unknown");
+                ClueSlots.Add(-1);
+                RevealOrder[i] = Clues.Count;
             }
         }
     }

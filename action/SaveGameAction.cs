@@ -1,4 +1,3 @@
-using System;
 using Game;
 
 public class SaveGameAction : ActionMethod {
@@ -15,7 +14,7 @@ public class SaveGameAction : ActionMethod {
             }
 
             if (Characters.Sein.Mortality.Health.Amount < Characters.Sein.Mortality.Health.MaxHealth) {
-                sein.Mortality.Health.Amount = (float)sein.Mortality.Health.MaxHealth;
+                sein.Mortality.Health.Amount = sein.Mortality.Health.MaxHealth;
             }
         }
 

@@ -19,21 +19,21 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
     }
 
     public void OnCollectEnergyOrbPickup(EnergyOrbPickup energyOrbPickup) {
-        float num = (float)energyOrbPickup.Amount;
-        if (this.Sein.PlayerAbilities.EnergyEfficiency.HasAbility) {
+        float num = energyOrbPickup.Amount;
+        if (Sein.PlayerAbilities.EnergyEfficiency.HasAbility) {
             num *= 1.5f;
         }
 
-        bool couldAffordBefore = this.Sein.SoulFlame.CanAffordSoulFlame;
+        bool couldAffordBefore = Sein.SoulFlame.CanAffordSoulFlame;
         AchievementsLogic.Instance.OnCollectedEnergyShard();
-        this.Sein.Energy.Gain(num);
+        Sein.Energy.Gain(num);
         energyOrbPickup.Collected();
-        if (!couldAffordBefore && this.Sein.SoulFlame.CanAffordSoulFlame) {
+        if (!couldAffordBefore && Sein.SoulFlame.CanAffordSoulFlame) {
             UI.SeinUI.ShakeSoulFlame();
         }
 
-        if (!this.Sein.PlayerAbilities.WallJump.HasAbility) {
-            this.EnergyOrbInfo.RunActionIfFirstTime();
+        if (!Sein.PlayerAbilities.WallJump.HasAbility) {
+            EnergyOrbInfo.RunActionIfFirstTime();
         }
 
         UI.SeinUI.ShakeEnergyOrbBar();
@@ -61,15 +61,14 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
             if (Randomizer.IgnoreEnemyExp)
                 return;
             RandomizerBonus.ExpWithBonuses(expOrbPickup.Amount, true);
-            this.Sein.Level.GainExperience(num);
-            if (this.m_expText && this.m_expText.gameObject.activeInHierarchy)
-                this.m_expText.Amount += num;
+            Sein.Level.GainExperience(num);
+            if (m_expText && m_expText.gameObject.activeInHierarchy)
+                m_expText.Amount += num;
             else
-                this.m_expText = Orbs.OrbDisplayText.Create(Characters.Sein.Transform, Vector3.up, num);
+                m_expText = Orbs.OrbDisplayText.Create(Characters.Sein.Transform, Vector3.up, num);
             UI.SeinUI.ShakeExperienceBar();
             if (GameWorld.Instance.CurrentArea != null)
                 GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
-            return;
         } else {
             if (!RandomizerLocationManager.IsPickupRepeatable(expOrbPickup.MoonGuid) || Randomizer.RepeatableCheck()) {
                 RandomizerLocationManager.GivePickup(expOrbPickup.MoonGuid);
@@ -82,7 +81,6 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
             if (GameWorld.Instance.CurrentArea != null)
                 GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
             expOrbPickup.Collected();
-            return;
         }
     }
 
@@ -117,12 +115,12 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
     }
 
     public void OnCollectRestoreHealthPickup(RestoreHealthPickup restoreHealthPickup) {
-        int amount = restoreHealthPickup.Amount * ((!this.Sein.PlayerAbilities.HealthEfficiency.HasAbility) ? 1 : 2);
-        this.Sein.Mortality.Health.GainHealth(amount);
+        int amount = restoreHealthPickup.Amount * ((!Sein.PlayerAbilities.HealthEfficiency.HasAbility) ? 1 : 2);
+        Sein.Mortality.Health.GainHealth(amount);
         restoreHealthPickup.Collected();
         UI.SeinUI.ShakeHealthbar();
-        if (!this.Sein.PlayerAbilities.WallJump.HasAbility) {
-            this.HealthOrbInfo.RunActionIfFirstTime();
+        if (!Sein.PlayerAbilities.WallJump.HasAbility) {
+            HealthOrbInfo.RunActionIfFirstTime();
         }
     }
 
@@ -142,53 +140,53 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
     }
 
     public void SetReferenceToSein(SeinCharacter sein) {
-        this.Sein = sein;
+        Sein = sein;
     }
 
     public void OnEnterCheckpoint(InvisibleCheckpoint checkpoint) {
-        if (this.Sein.IsSuspended) {
+        if (Sein.IsSuspended) {
             return;
         }
 
-        Vector3 position = this.Sein.Position;
+        Vector3 position = Sein.Position;
         if (checkpoint.RespawnPosition != Vector2.zero) {
-            this.Sein.Position = new Vector3(checkpoint.RespawnPosition.x, checkpoint.RespawnPosition.y) + checkpoint.transform.position;
+            Sein.Position = new Vector3(checkpoint.RespawnPosition.x, checkpoint.RespawnPosition.y) + checkpoint.transform.position;
         }
 
         GameController.Instance.CreateCheckpoint();
-        this.Sein.Position = position;
+        Sein.Position = position;
         checkpoint.OnCheckpointCreated();
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref this.ExpOrbInfo.HasBeenCollectedBefore);
-        ar.Serialize(ref this.KeystoneInfo.HasBeenCollectedBefore);
-        ar.Serialize(ref this.EnergyOrbInfo.HasBeenCollectedBefore);
-        ar.Serialize(ref this.HealthOrbInfo.HasBeenCollectedBefore);
-        ar.Serialize(ref this.SmallExpOrbInfo.HasBeenCollectedBefore);
-        ar.Serialize(ref this.MediumExpOrbInfo.HasBeenCollectedBefore);
-        ar.Serialize(ref this.LargeExpOrbInfo.HasBeenCollectedBefore);
-        ar.Serialize(ref this.m_collectedMaxEnergySlotsCount);
-        ar.Serialize(ref this.m_energySlotsAchievementAwarded);
-        ar.Serialize(ref this.m_collectedHealthSlotsCount);
-        ar.Serialize(ref this.m_healthSlotsAchievementAwarded);
+        ar.Serialize(ref ExpOrbInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref KeystoneInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref EnergyOrbInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref HealthOrbInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref SmallExpOrbInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref MediumExpOrbInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref LargeExpOrbInfo.HasBeenCollectedBefore);
+        ar.Serialize(ref m_collectedMaxEnergySlotsCount);
+        ar.Serialize(ref m_energySlotsAchievementAwarded);
+        ar.Serialize(ref m_collectedHealthSlotsCount);
+        ar.Serialize(ref m_healthSlotsAchievementAwarded);
     }
 
     public SeinCharacter Sein;
 
-    public SeinPickupProcessor.CollectableInformation ExpOrbInfo = new SeinPickupProcessor.CollectableInformation();
+    public CollectableInformation ExpOrbInfo = new CollectableInformation();
 
-    public SeinPickupProcessor.CollectableInformation KeystoneInfo = new SeinPickupProcessor.CollectableInformation();
+    public CollectableInformation KeystoneInfo = new CollectableInformation();
 
-    public SeinPickupProcessor.CollectableInformation EnergyOrbInfo = new SeinPickupProcessor.CollectableInformation();
+    public CollectableInformation EnergyOrbInfo = new CollectableInformation();
 
-    public SeinPickupProcessor.CollectableInformation HealthOrbInfo = new SeinPickupProcessor.CollectableInformation();
+    public CollectableInformation HealthOrbInfo = new CollectableInformation();
 
-    public SeinPickupProcessor.CollectableInformation SmallExpOrbInfo = new SeinPickupProcessor.CollectableInformation();
+    public CollectableInformation SmallExpOrbInfo = new CollectableInformation();
 
-    public SeinPickupProcessor.CollectableInformation MediumExpOrbInfo = new SeinPickupProcessor.CollectableInformation();
+    public CollectableInformation MediumExpOrbInfo = new CollectableInformation();
 
-    public SeinPickupProcessor.CollectableInformation LargeExpOrbInfo = new SeinPickupProcessor.CollectableInformation();
+    public CollectableInformation LargeExpOrbInfo = new CollectableInformation();
 
     public ActionMethod HeartContainerSequence;
 

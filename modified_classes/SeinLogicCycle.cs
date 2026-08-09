@@ -1,118 +1,117 @@
-using System;
 using Game;
 using UnityEngine;
 
 public class SeinLogicCycle : MonoBehaviour {
     public void Start() {
-        this.Sein = Characters.Sein;
+        Sein = Characters.Sein;
     }
 
     public SeinMortality Mortality {
-        get { return this.Sein.Mortality; }
+        get { return Sein.Mortality; }
     }
 
     public SeinAbilities Abilities {
-        get { return this.Sein.Abilities; }
+        get { return Sein.Abilities; }
     }
 
     public PlatformBehaviour PlatformBehaviour {
-        get { return this.Sein.PlatformBehaviour; }
+        get { return Sein.PlatformBehaviour; }
     }
 
     public void FixedUpdate() {
-        if (this.Sein.IsSuspended) {
+        if (Sein.IsSuspended) {
             return;
         }
 
-        SeinAbilities abilities = this.Abilities;
-        this.PlatformBehaviour.Gravity.SetStateActive(this.AllowGravity);
-        this.PlatformBehaviour.GravityToGround.SetStateActive(this.AllowGravityToGround);
-        this.PlatformBehaviour.InstantStop.SetStateActive(this.AllowInstantStop);
-        this.PlatformBehaviour.LeftRightMovement.SetStateActive(this.AllowLeftRightMovement);
-        this.PlatformBehaviour.AirNoDeceleration.SetStateActive(this.AllowAirNoDeceleration);
-        this.PlatformBehaviour.ApplyFrictionToSpeed.SetStateActive(this.ApplyFrictionToSpeed);
-        abilities.StandardSpiritFlame.SetStateActive(this.AllowStandardSpiritFlame);
-        abilities.Bash.SetStateActive(this.AllowBash);
-        abilities.LookUp.SetStateActive(this.AllowLooking);
-        abilities.Lever.SetStateActive(this.AllowLever);
-        abilities.Footsteps.SetStateActive(this.AllowFootsteps);
-        abilities.SpiritFlameTargetting.SetStateActive(this.AllowSpiritFlameTargetting);
-        abilities.ChargeFlame.SetStateActive(this.AllowChargeFlame);
-        abilities.WallSlide.SetStateActive(this.AllowWallSlide);
-        abilities.Stomp.SetStateActive(this.AllowStomp);
-        abilities.Carry.SetStateActive(this.AllowCarry);
-        abilities.Fall.SetStateActive(this.AllowFall);
-        abilities.GrabBlock.SetStateActive(this.AllowGrabBlock);
-        abilities.Idle.SetStateActive(this.AllowIdle);
-        abilities.Run.SetStateActive(this.AllowRun);
-        abilities.Crouch.SetStateActive(this.AllowCrouching);
-        abilities.GrabWall.SetStateActive(this.AllowWallGrabbing);
-        abilities.Jump.SetStateActive(this.AllowJumping);
-        abilities.DoubleJump.SetStateActive(this.AllowDoubleJump);
-        abilities.Glide.SetStateActive(this.AllowGliding);
-        abilities.WallJump.SetStateActive(this.AllowWallJump);
-        abilities.ChargeJumpCharging.SetStateActive(this.AllowChargeJumpCharging);
-        abilities.ChargeJump.SetStateActive(this.AllowChargeJump);
-        abilities.WallChargeJump.SetStateActive(this.AllowWallChargeJump);
-        abilities.StandingOnEdge.SetStateActive(this.AllowStandingOnEdge);
-        abilities.PushAgainstWall.SetStateActive(this.AllowPushAgainstWall);
-        abilities.EdgeClamber.SetStateActive(this.AllowEdgeClamber);
-        this.Mortality.CrushDetector.SetStateActive(this.AllowCrushDetector);
-        this.PlatformBehaviour.Visuals.SpriteRotater.SetStateActive(this.AllowSpriteRotater);
-        this.Mortality.DamageReciever.SetStateActive(this.AllowDamageReciever);
-        abilities.Invincibility.SetStateActive(this.AllowInvincibility);
-        this.PlatformBehaviour.JumpSustain.SetStateActive(this.AllowJumpSustain);
-        this.PlatformBehaviour.UpwardsDeceleration.SetStateActive(this.AllowUpwardsDeceleration);
-        this.Sein.ForceController.SetStateActive(this.AllowForceController);
-        abilities.Swimming.SetStateActive(this.AllowSwimming);
-        abilities.Dash.SetStateActive(this.AllowDash);
-        abilities.Grenade.SetStateActive(this.AllowGrenade);
-        this.Sein.SoulFlame.SetStateActive(true);
-        CharacterState.UpdateCharacterState(this.Mortality.CrushDetector);
-        CharacterState.UpdateCharacterState(this.Mortality.DamageReciever);
-        CharacterState.UpdateCharacterState(this.PlatformBehaviour.Gravity);
-        CharacterState.UpdateCharacterState(this.PlatformBehaviour.GravityToGround);
-        CharacterState.UpdateCharacterState(this.PlatformBehaviour.InstantStop);
-        CharacterState.UpdateCharacterState(this.Abilities.Carry);
-        CharacterState.UpdateCharacterState(this.Abilities.GrabBlock);
-        CharacterState.UpdateCharacterState(this.Abilities.SpiritFlameTargetting);
-        CharacterState.UpdateCharacterState(this.Abilities.SpiritFlame);
-        CharacterState.UpdateCharacterState(this.Abilities.ChargeFlame);
-        CharacterState.UpdateCharacterState(this.Abilities.StandardSpiritFlame);
-        CharacterState.UpdateCharacterState(this.Abilities.IceSpiritFlame);
-        CharacterState.UpdateCharacterState(this.Abilities.StandingOnEdge);
-        CharacterState.UpdateCharacterState(this.Abilities.Glide);
-        CharacterState.UpdateCharacterState(this.Abilities.Bash);
-        CharacterState.UpdateCharacterState(this.Abilities.WallJump);
-        CharacterState.UpdateCharacterState(this.Abilities.EdgeClamber);
-        CharacterState.UpdateCharacterState(this.Abilities.DoubleJump);
-        CharacterState.UpdateCharacterState(this.Abilities.ChargeJumpCharging);
-        CharacterState.UpdateCharacterState(this.Abilities.ChargeJump);
-        CharacterState.UpdateCharacterState(this.Abilities.WallChargeJump);
-        CharacterState.UpdateCharacterState(this.Abilities.Jump);
-        CharacterState.UpdateCharacterState(this.Abilities.Fall);
-        CharacterState.UpdateCharacterState(this.Abilities.PushAgainstWall);
-        CharacterState.UpdateCharacterState(this.PlatformBehaviour.AirNoDeceleration);
-        CharacterState.UpdateCharacterState(this.PlatformBehaviour.ApplyFrictionToSpeed);
-        CharacterState.UpdateCharacterState(this.Abilities.Crouch);
-        CharacterState.UpdateCharacterState(this.Abilities.Invincibility);
-        CharacterState.UpdateCharacterState(this.Abilities.Run);
-        CharacterState.UpdateCharacterState(this.Abilities.Idle);
-        CharacterState.UpdateCharacterState(this.Abilities.LookUp);
-        CharacterState.UpdateCharacterState(this.Abilities.GrabWall);
-        CharacterState.UpdateCharacterState(this.Abilities.Footsteps);
-        CharacterState.UpdateCharacterState(this.Sein.Abilities.Lever);
-        CharacterState.UpdateCharacterState(this.PlatformBehaviour.JumpSustain);
-        CharacterState.UpdateCharacterState(this.PlatformBehaviour.UpwardsDeceleration);
-        CharacterState.UpdateCharacterState(this.Sein.ForceController);
-        CharacterState.UpdateCharacterState(this.Abilities.WallSlide);
-        CharacterState.UpdateCharacterState(this.Abilities.Stomp);
-        CharacterState.UpdateCharacterState(this.Abilities.Swimming);
-        CharacterState.UpdateCharacterState(this.PlatformBehaviour.Visuals.SpriteRotater);
-        CharacterState.UpdateCharacterState(this.Sein.SoulFlame);
-        CharacterState.UpdateCharacterState(this.Abilities.Dash);
-        CharacterState.UpdateCharacterState(this.Abilities.Grenade);
-        this.Sein.Controller.HandleOffscreenIssue();
+        SeinAbilities abilities = Abilities;
+        PlatformBehaviour.Gravity.SetStateActive(AllowGravity);
+        PlatformBehaviour.GravityToGround.SetStateActive(AllowGravityToGround);
+        PlatformBehaviour.InstantStop.SetStateActive(AllowInstantStop);
+        PlatformBehaviour.LeftRightMovement.SetStateActive(AllowLeftRightMovement);
+        PlatformBehaviour.AirNoDeceleration.SetStateActive(AllowAirNoDeceleration);
+        PlatformBehaviour.ApplyFrictionToSpeed.SetStateActive(ApplyFrictionToSpeed);
+        abilities.StandardSpiritFlame.SetStateActive(AllowStandardSpiritFlame);
+        abilities.Bash.SetStateActive(AllowBash);
+        abilities.LookUp.SetStateActive(AllowLooking);
+        abilities.Lever.SetStateActive(AllowLever);
+        abilities.Footsteps.SetStateActive(AllowFootsteps);
+        abilities.SpiritFlameTargetting.SetStateActive(AllowSpiritFlameTargetting);
+        abilities.ChargeFlame.SetStateActive(AllowChargeFlame);
+        abilities.WallSlide.SetStateActive(AllowWallSlide);
+        abilities.Stomp.SetStateActive(AllowStomp);
+        abilities.Carry.SetStateActive(AllowCarry);
+        abilities.Fall.SetStateActive(AllowFall);
+        abilities.GrabBlock.SetStateActive(AllowGrabBlock);
+        abilities.Idle.SetStateActive(AllowIdle);
+        abilities.Run.SetStateActive(AllowRun);
+        abilities.Crouch.SetStateActive(AllowCrouching);
+        abilities.GrabWall.SetStateActive(AllowWallGrabbing);
+        abilities.Jump.SetStateActive(AllowJumping);
+        abilities.DoubleJump.SetStateActive(AllowDoubleJump);
+        abilities.Glide.SetStateActive(AllowGliding);
+        abilities.WallJump.SetStateActive(AllowWallJump);
+        abilities.ChargeJumpCharging.SetStateActive(AllowChargeJumpCharging);
+        abilities.ChargeJump.SetStateActive(AllowChargeJump);
+        abilities.WallChargeJump.SetStateActive(AllowWallChargeJump);
+        abilities.StandingOnEdge.SetStateActive(AllowStandingOnEdge);
+        abilities.PushAgainstWall.SetStateActive(AllowPushAgainstWall);
+        abilities.EdgeClamber.SetStateActive(AllowEdgeClamber);
+        Mortality.CrushDetector.SetStateActive(AllowCrushDetector);
+        PlatformBehaviour.Visuals.SpriteRotater.SetStateActive(AllowSpriteRotater);
+        Mortality.DamageReciever.SetStateActive(AllowDamageReciever);
+        abilities.Invincibility.SetStateActive(AllowInvincibility);
+        PlatformBehaviour.JumpSustain.SetStateActive(AllowJumpSustain);
+        PlatformBehaviour.UpwardsDeceleration.SetStateActive(AllowUpwardsDeceleration);
+        Sein.ForceController.SetStateActive(AllowForceController);
+        abilities.Swimming.SetStateActive(AllowSwimming);
+        abilities.Dash.SetStateActive(AllowDash);
+        abilities.Grenade.SetStateActive(AllowGrenade);
+        Sein.SoulFlame.SetStateActive(true);
+        CharacterState.UpdateCharacterState(Mortality.CrushDetector);
+        CharacterState.UpdateCharacterState(Mortality.DamageReciever);
+        CharacterState.UpdateCharacterState(PlatformBehaviour.Gravity);
+        CharacterState.UpdateCharacterState(PlatformBehaviour.GravityToGround);
+        CharacterState.UpdateCharacterState(PlatformBehaviour.InstantStop);
+        CharacterState.UpdateCharacterState(Abilities.Carry);
+        CharacterState.UpdateCharacterState(Abilities.GrabBlock);
+        CharacterState.UpdateCharacterState(Abilities.SpiritFlameTargetting);
+        CharacterState.UpdateCharacterState(Abilities.SpiritFlame);
+        CharacterState.UpdateCharacterState(Abilities.ChargeFlame);
+        CharacterState.UpdateCharacterState(Abilities.StandardSpiritFlame);
+        CharacterState.UpdateCharacterState(Abilities.IceSpiritFlame);
+        CharacterState.UpdateCharacterState(Abilities.StandingOnEdge);
+        CharacterState.UpdateCharacterState(Abilities.Glide);
+        CharacterState.UpdateCharacterState(Abilities.Bash);
+        CharacterState.UpdateCharacterState(Abilities.WallJump);
+        CharacterState.UpdateCharacterState(Abilities.EdgeClamber);
+        CharacterState.UpdateCharacterState(Abilities.DoubleJump);
+        CharacterState.UpdateCharacterState(Abilities.ChargeJumpCharging);
+        CharacterState.UpdateCharacterState(Abilities.ChargeJump);
+        CharacterState.UpdateCharacterState(Abilities.WallChargeJump);
+        CharacterState.UpdateCharacterState(Abilities.Jump);
+        CharacterState.UpdateCharacterState(Abilities.Fall);
+        CharacterState.UpdateCharacterState(Abilities.PushAgainstWall);
+        CharacterState.UpdateCharacterState(PlatformBehaviour.AirNoDeceleration);
+        CharacterState.UpdateCharacterState(PlatformBehaviour.ApplyFrictionToSpeed);
+        CharacterState.UpdateCharacterState(Abilities.Crouch);
+        CharacterState.UpdateCharacterState(Abilities.Invincibility);
+        CharacterState.UpdateCharacterState(Abilities.Run);
+        CharacterState.UpdateCharacterState(Abilities.Idle);
+        CharacterState.UpdateCharacterState(Abilities.LookUp);
+        CharacterState.UpdateCharacterState(Abilities.GrabWall);
+        CharacterState.UpdateCharacterState(Abilities.Footsteps);
+        CharacterState.UpdateCharacterState(Sein.Abilities.Lever);
+        CharacterState.UpdateCharacterState(PlatformBehaviour.JumpSustain);
+        CharacterState.UpdateCharacterState(PlatformBehaviour.UpwardsDeceleration);
+        CharacterState.UpdateCharacterState(Sein.ForceController);
+        CharacterState.UpdateCharacterState(Abilities.WallSlide);
+        CharacterState.UpdateCharacterState(Abilities.Stomp);
+        CharacterState.UpdateCharacterState(Abilities.Swimming);
+        CharacterState.UpdateCharacterState(PlatformBehaviour.Visuals.SpriteRotater);
+        CharacterState.UpdateCharacterState(Sein.SoulFlame);
+        CharacterState.UpdateCharacterState(Abilities.Dash);
+        CharacterState.UpdateCharacterState(Abilities.Grenade);
+        Sein.Controller.HandleOffscreenIssue();
     }
 
     public bool AllowInvincibility {
@@ -128,11 +127,11 @@ public class SeinLogicCycle : MonoBehaviour {
     }
 
     public bool AllowSpiritFlameTargetting {
-        get { return this.Sein.PlayerAbilities.SpiritFlame.HasAbility && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsBashing; }
+        get { return Sein.PlayerAbilities.SpiritFlame.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsBashing; }
     }
 
     public bool AllowCrushDetector {
-        get { return !this.Sein.Controller.IsPlayingAnimation; }
+        get { return !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowSpriteRotater {
@@ -140,27 +139,27 @@ public class SeinLogicCycle : MonoBehaviour {
     }
 
     public bool AllowDamageReciever {
-        get { return !this.Sein.Controller.IsPlayingAnimation; }
+        get { return !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowJumpSustain {
-        get { return !this.Sein.Controller.IsPlayingAnimation; }
+        get { return !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowUpwardsDeceleration {
-        get { return !this.Sein.Controller.IsPlayingAnimation; }
+        get { return !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowForceController {
-        get { return !this.Sein.Controller.IsPlayingAnimation; }
+        get { return !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowGravity {
-        get { return !this.Sein.Controller.IsPlayingAnimation; }
+        get { return !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowGravityToGround {
-        get { return !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsPlayingAnimation; }
+        get { return !Sein.Controller.IsSwimming && !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowSwimming {
@@ -168,119 +167,119 @@ public class SeinLogicCycle : MonoBehaviour {
     }
 
     public bool AllowDash {
-        get { return !RandomizerBonus.Swimming() && !this.Sein.Controller.IsGrabbingLever && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsPushPulling && !this.Sein.Controller.IsAimingGrenade && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsBashing && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.AllAbilities) && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.Dash) && this.Sein.Controller.CanMove; }
+        get { return !RandomizerBonus.Swimming() && !Sein.Controller.IsGrabbingLever && !Sein.Controller.IsCarrying && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsPushPulling && !Sein.Controller.IsAimingGrenade && !Sein.Controller.IsStomping && !Sein.Controller.IsBashing && !SeinAbilityRestrictZone.IsInside() && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.Dash) && Sein.Controller.CanMove; }
     }
 
     public bool AllowGrenade {
-        get { return !RandomizerBonus.Swimming() && !this.Sein.Controller.IsGrabbingLever && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsPushPulling && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.AllAbilities) && this.Sein.Controller.CanMove && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsStandingOnEdge && !this.Sein.Controller.IsDashing; }
+        get { return !RandomizerBonus.Swimming() && !Sein.Controller.IsGrabbingLever && !Sein.Controller.IsCarrying && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsPushPulling && !SeinAbilityRestrictZone.IsInside() && Sein.Controller.CanMove && !Sein.Controller.IsBashing && !Sein.Controller.IsStandingOnEdge && !Sein.Controller.IsDashing; }
     }
 
     public bool AllowInstantStop {
-        get { return !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsPlayingAnimation; }
+        get { return !Sein.Controller.IsSwimming && !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowLeftRightMovement {
-        get { return !this.Sein.Controller.IsPlayingAnimation && (!this.Sein.Controller.IsSwimming || !this.Sein.Abilities.Swimming.IsUnderwater); }
+        get { return !Sein.Controller.IsPlayingAnimation && (!Sein.Controller.IsSwimming || !Sein.Abilities.Swimming.IsUnderwater); }
     }
 
     public bool AllowBash {
-        get { return this.Sein.PlayerAbilities.Bash.HasAbility && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsPushPulling && !this.Sein.Controller.IsGrabbingLever && !this.Sein.Controller.IsAimingGrenade; }
+        get { return Sein.PlayerAbilities.Bash.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsPushPulling && !Sein.Controller.IsGrabbingLever && !Sein.Controller.IsAimingGrenade; }
     }
 
     public bool AllowLooking {
-        get { return !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsAimingGrenade; }
+        get { return !Sein.Controller.IsSwimming && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade; }
     }
 
     public bool AllowLever {
-        get { return !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsPushPulling && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsAimingGrenade; }
+        get { return !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsPushPulling && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping && !Sein.Controller.IsAimingGrenade; }
     }
 
     public bool AllowFootsteps {
-        get { return !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsSwimming; }
+        get { return !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsSwimming; }
     }
 
     public bool AllowStandardSpiritFlame {
-        get { return this.Sein.PlayerAbilities.SpiritFlame.HasAbility && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsBashing; }
+        get { return Sein.PlayerAbilities.SpiritFlame.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsBashing; }
     }
 
     public bool AllowChargeFlame {
-        get { return this.Sein.PlayerAbilities.ChargeFlame.HasAbility && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsBashing; }
+        get { return Sein.PlayerAbilities.ChargeFlame.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsBashing; }
     }
 
     public bool AllowWallSlide {
-        get { return !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsGliding && !this.Sein.Controller.IsStomping; }
+        get { return !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsCarrying && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsGliding && !Sein.Controller.IsStomping; }
     }
 
     public bool AllowStomp {
-        get { return this.Sein.PlayerAbilities.Stomp.HasAbility && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsGrabbingWall && !this.Sein.Controller.IsAimingGrenade; }
+        get { return Sein.PlayerAbilities.Stomp.HasAbility && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsCarrying && !Sein.Controller.IsBashing && !Sein.Controller.IsGrabbingWall && !Sein.Controller.IsAimingGrenade; }
     }
 
     public bool AllowCarry {
-        get { return !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsAimingGrenade; }
+        get { return !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping && !Sein.Controller.IsAimingGrenade; }
     }
 
     public bool AllowFall {
-        get { return !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsBashing; }
+        get { return !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing; }
     }
 
     public bool AllowGrabBlock {
-        get { return !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsAimingGrenade; }
+        get { return !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsBashing && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsAimingGrenade; }
     }
 
     public bool AllowIdle {
-        get { return !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsPushPulling; }
+        get { return !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsCarrying && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsPushPulling; }
     }
 
     public bool AllowRun {
-        get { return !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsPushPulling; }
+        get { return !Sein.Controller.IsCarrying && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsSwimming && !Sein.Controller.IsBashing && !Sein.Controller.IsPushPulling; }
     }
 
     public bool AllowCrouching {
-        get { return !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsAimingGrenade && !this.Sein.Controller.IsDashing; }
+        get { return !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade && !Sein.Controller.IsDashing; }
     }
 
     public bool AllowWallGrabbing {
-        get { return (this.Sein.PlayerAbilities.Climb.HasAbility || (RandomizerBonus.EnhancedWallJump && this.Sein.PlayerAbilities.WallJump.HasAbility)) && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation; }
+        get { return (Sein.PlayerAbilities.Climb.HasAbility || (RandomizerBonus.EnhancedWallJump && Sein.PlayerAbilities.WallJump.HasAbility)) && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowJumping {
-        get { return !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation; }
+        get { return !Sein.Controller.IsSwimming && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowDoubleJump {
-        get { return this.Sein.PlayerAbilities.DoubleJump.HasAbility && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation; }
+        get { return Sein.PlayerAbilities.DoubleJump.HasAbility && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowGliding {
-        get { return this.Sein.PlayerAbilities.Glide.HasAbility && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsGrabbingWall && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsDashing; }
+        get { return Sein.PlayerAbilities.Glide.HasAbility && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsGrabbingWall && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsDashing; }
     }
 
     public bool AllowWallJump {
-        get { return (this.Sein.PlayerAbilities.WallJump.HasAbility || (RandomizerBonus.EnhancedClimb && this.Sein.PlayerAbilities.Climb.HasAbility)) && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsGliding && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation; }
+        get { return (Sein.PlayerAbilities.WallJump.HasAbility || (RandomizerBonus.EnhancedClimb && Sein.PlayerAbilities.Climb.HasAbility)) && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsGliding && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowChargeJumpCharging {
-        get { return this.AllowChargeJump || this.AllowDash; }
+        get { return AllowChargeJump || AllowDash; }
     }
 
     public bool AllowChargeJump {
-        get { return this.Sein.PlayerAbilities.ChargeJump.HasAbility && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsAimingGrenade; }
+        get { return Sein.PlayerAbilities.ChargeJump.HasAbility && !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade; }
     }
 
     public bool AllowWallChargeJump {
-        get { return !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsAimingGrenade; }
+        get { return !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade; }
     }
 
     public bool AllowStandingOnEdge {
-        get { return !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsStomping && !this.Sein.Controller.IsPlayingAnimation && !this.Sein.Controller.IsAimingGrenade; }
+        get { return !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsStomping && !Sein.Controller.IsPlayingAnimation && !Sein.Controller.IsAimingGrenade; }
     }
 
     public bool AllowPushAgainstWall {
-        get { return !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsPlayingAnimation; }
+        get { return !Sein.Controller.IsSwimming && !Sein.Controller.IsCarrying && !Sein.Controller.IsPlayingAnimation; }
     }
 
     public bool AllowEdgeClamber {
-        get { return !this.Sein.Controller.IsCarrying && !this.Sein.Controller.IsSwimming && !this.Sein.Controller.IsPlayingAnimation; }
+        get { return !Sein.Controller.IsCarrying && !Sein.Controller.IsSwimming && !Sein.Controller.IsPlayingAnimation; }
     }
 
     public SeinCharacter Sein;

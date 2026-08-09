@@ -11,9 +11,7 @@ public static class RandomizerColorManager {
         if (File.Exists("Color.txt")) {
             string text = File.ReadAllText("Color.txt").ToLower();
             string[] lines = text.Split(
-                new char[] {
-                    '\n'
-                }
+                '\n'
             );
             if (lines != null && lines.Length >= 1 && lines[0].Trim().Equals("customrotation")) {
                 colors.Clear();
@@ -24,9 +22,7 @@ public static class RandomizerColorManager {
                 int i = 1;
                 while (i < lines.Length - 1 && !string.IsNullOrEmpty(lines[i]) && lines[i].Length >= 6) {
                     string[] components = lines[i].Split(
-                        new char[] {
-                            ','
-                        }
+                        ','
                     );
                     if (components != null && components.Length >= 4) {
                         float.TryParse(components[0], out red);
@@ -41,9 +37,7 @@ public static class RandomizerColorManager {
                     }
 
                     components = lines[i + 1].Split(
-                        new char[] {
-                            ','
-                        }
+                        ','
                     );
                     if (components != null && components.Length >= 5) {
                         float red2;
@@ -61,8 +55,8 @@ public static class RandomizerColorManager {
                         green2 /= 511f;
                         blue2 /= 511f;
                         alpha2 /= 511f;
-                        for (int j = 1; j <= (int)frames; j++) {
-                            colors.Add(new Color(red + (red2 - red) * (float)j / frames, green + (green2 - green) * (float)j / frames, blue + (blue2 - blue) * (float)j / frames, alpha + (alpha2 - alpha) * (float)j / frames));
+                        for (int j = 1; j <= frames; j++) {
+                            colors.Add(new Color(red + (red2 - red) * j / frames, green + (green2 - green) * j / frames, blue + (blue2 - blue) * j / frames, alpha + (alpha2 - alpha) * j / frames));
                         }
                     }
 
@@ -77,9 +71,7 @@ public static class RandomizerColorManager {
             colors.Clear();
             customRotation = false;
             string[] components2 = text.Split(
-                new char[] {
-                    ','
-                }
+                ','
             );
             if (components2 != null && (components2.Length == 3 || components2.Length == 4)) {
                 float red3 = 0f;
@@ -118,7 +110,7 @@ public static class RandomizerColorManager {
                         while (enumerator.MoveNext()) {
                             int map = enumerator.Current;
                             if (map > currentMap) {
-                                distance = (float)(map - currentMap - 4) * 2f;
+                                distance = (map - currentMap - 4) * 2f;
                                 break;
                             }
                         }
@@ -165,7 +157,7 @@ public static class RandomizerColorManager {
                 Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color = colors[0];
             }
         } catch (Exception e) {
-            Randomizer.LogError("ColorTick: " + colorIndex.ToString() + " out of " + colors.Count.ToString() + ": " + e.Message);
+            Randomizer.LogError("ColorTick: " + colorIndex + " out of " + colors.Count + ": " + e.Message);
         }
     }
 
@@ -195,15 +187,15 @@ public static class RandomizerColorManager {
         }
     }
 
-    private static bool customColor = false;
+    private static bool customColor;
 
-    private static bool customRotation = false;
+    private static bool customRotation;
 
     private static List<Color> colors = new List<Color>();
 
     private static List<Color> colorBeforeSense = new List<Color>(); // this is an Optional actually
 
-    private static int colorIndex = 0;
+    private static int colorIndex;
 
     private static Vector3 HotColdTarget;
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Game;
 using Sein.World;
+using Events = Sein.World.Events;
 
 namespace Protogen {
     public class Inventory {
@@ -29,26 +30,26 @@ namespace Protogen {
 
         public override string ToString() {
             List<string> parts = new List<string>();
-            parts.AddRange(this.Unlocks.ToList<string>());
+            parts.AddRange(Unlocks.ToList());
 
-            if (this.Keystones > 0) {
-                parts.Add("Keystone=" + this.Keystones);
+            if (Keystones > 0) {
+                parts.Add("Keystone=" + Keystones);
             }
 
-            if (this.Mapstones > 0) {
-                parts.Add("Mapstone=" + this.Mapstones);
+            if (Mapstones > 0) {
+                parts.Add("Mapstone=" + Mapstones);
             }
 
-            if (this.Health > 0) {
-                parts.Add("Health=" + this.Health);
+            if (Health > 0) {
+                parts.Add("Health=" + Health);
             }
 
-            if (this.Energy > 0) {
-                parts.Add("Energy=" + this.Energy);
+            if (Energy > 0) {
+                parts.Add("Energy=" + Energy);
             }
 
-            if (this.Acs > 0) {
-                parts.Add("Ability=" + this.Acs);
+            if (Acs > 0) {
+                parts.Add("Ability=" + Acs);
             }
 
             return String.Join(", ", parts.ToArray());
@@ -150,11 +151,11 @@ namespace Protogen {
 
             currentInventory.Unlocks.Add("Lure");
 
-            if (Sein.World.Events.WaterPurified) {
+            if (Events.WaterPurified) {
                 currentInventory.Unlocks.Add("Water");
             }
 
-            if (Sein.World.Events.WindRestored) {
+            if (Events.WindRestored) {
                 currentInventory.Unlocks.Add("Wind");
             }
 

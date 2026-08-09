@@ -6,42 +6,42 @@ using UnityEngine;
 
 public class InventoryManager : MenuScreen {
     public override void Show() {
-        this.NavigationManager.SetVisible(true);
-        this.NavigationManager.SetIndexToFirst();
+        NavigationManager.SetVisible(true);
+        NavigationManager.SetIndexToFirst();
     }
 
     public override void Hide() {
-        this.NavigationManager.SetVisible(false);
+        NavigationManager.SetVisible(false);
     }
 
     public override void ShowImmediate() {
-        this.NavigationManager.SetVisibleImmediate(true);
-        this.NavigationManager.SetIndexToFirst();
+        NavigationManager.SetVisibleImmediate(true);
+        NavigationManager.SetIndexToFirst();
     }
 
     public override void HideImmediate() {
-        this.NavigationManager.SetVisibleImmediate(false);
+        NavigationManager.SetVisibleImmediate(false);
     }
 
     public void Awake() {
-        InventoryManager.Instance = this;
+        Instance = this;
 
-        CleverMenuItemSelectionManager navigationManager = this.NavigationManager;
-        navigationManager.OptionChangeCallback = (Action)Delegate.Combine(navigationManager.OptionChangeCallback, new Action(this.OnMenuItemChange));
-        navigationManager.OptionPressedCallback = (Action)Delegate.Combine(navigationManager.OptionPressedCallback, new Action(this.OnMenuItemPressed));
-        navigationManager.OnBackPressedCallback = (Action)Delegate.Combine(navigationManager.OnBackPressedCallback, new Action(this.OnBackPressed));
+        CleverMenuItemSelectionManager navigationManager = NavigationManager;
+        navigationManager.OptionChangeCallback = (Action)Delegate.Combine(navigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
+        navigationManager.OptionPressedCallback = (Action)Delegate.Combine(navigationManager.OptionPressedCallback, new Action(OnMenuItemPressed));
+        navigationManager.OnBackPressedCallback = (Action)Delegate.Combine(navigationManager.OnBackPressedCallback, new Action(OnBackPressed));
 
         DifficultyController instance = DifficultyController.Instance;
-        instance.OnDifficultyChanged = (Action)Delegate.Combine(instance.OnDifficultyChanged, new Action(this.OnDifficultyChanged));
+        instance.OnDifficultyChanged = (Action)Delegate.Combine(instance.OnDifficultyChanged, new Action(OnDifficultyChanged));
 
-        if (this.Difficulty) {
-            DifficultyModeMessageProvider difficultyProvider = (DifficultyModeMessageProvider)this.Difficulty.MessageProvider;
+        if (Difficulty) {
+            DifficultyModeMessageProvider difficultyProvider = (DifficultyModeMessageProvider)Difficulty.MessageProvider;
             difficultyProvider.Easy = RandomizerText.DifficultyOverrides.Easy.NameOverrideUpper;
             difficultyProvider.Normal = RandomizerText.DifficultyOverrides.Normal.NameOverrideUpper;
             difficultyProvider.Hard = RandomizerText.DifficultyOverrides.Hard.NameOverrideUpper;
             difficultyProvider.OneLife = RandomizerText.DifficultyOverrides.OneLife.NameOverrideUpper;
 
-            ActionSequence difficultySequence = (ActionSequence)this.Difficulty.transform.parent.GetComponent<RunActionCondition>().Action;
+            ActionSequence difficultySequence = (ActionSequence)Difficulty.transform.parent.GetComponent<RunActionCondition>().Action;
             InstantiateAction difficultyAction = (InstantiateAction)difficultySequence.Actions[0];
             ChangeDifficultyScreen difficultyScreen = difficultyAction.Prefab.GetComponent<ChangeDifficultyScreen>();
             difficultyScreen.Easy = RandomizerText.DifficultyOverrides.Easy.NameOverride;
@@ -55,76 +55,76 @@ public class InventoryManager : MenuScreen {
             changeDifficultyManager.MenuItems[2].GetComponentInChildren<MessageBox>().SetMessageProvider(RandomizerText.DifficultyOverrides.Hard.NameOverrideUpper);
         }
 
-        this.waterVeinClueText = UnityEngine.Object.Instantiate<MessageBox>(this.EnergyUpgradesText);
-        this.waterVeinClueText.transform.position = this.GinsoTreeKey.transform.position + Vector3.down * 0.55f;
-        this.waterVeinClueText.transform.SetParent(this.GinsoTreeKey.transform);
-        this.gumonSealClueText = UnityEngine.Object.Instantiate<MessageBox>(this.EnergyUpgradesText);
-        this.gumonSealClueText.transform.position = this.ForlornRuinsKey.transform.position + Vector3.down * 0.55f;
-        this.gumonSealClueText.transform.SetParent(this.ForlornRuinsKey.transform);
-        this.sunstoneClueText = UnityEngine.Object.Instantiate<MessageBox>(this.EnergyUpgradesText);
-        this.sunstoneClueText.transform.position = this.MountHoruKey.transform.position + Vector3.down * 0.55f;
-        this.sunstoneClueText.transform.SetParent(this.MountHoruKey.transform);
+        waterVeinClueText = Instantiate(EnergyUpgradesText);
+        waterVeinClueText.transform.position = GinsoTreeKey.transform.position + Vector3.down * 0.55f;
+        waterVeinClueText.transform.SetParent(GinsoTreeKey.transform);
+        gumonSealClueText = Instantiate(EnergyUpgradesText);
+        gumonSealClueText.transform.position = ForlornRuinsKey.transform.position + Vector3.down * 0.55f;
+        gumonSealClueText.transform.SetParent(ForlornRuinsKey.transform);
+        sunstoneClueText = Instantiate(EnergyUpgradesText);
+        sunstoneClueText.transform.position = MountHoruKey.transform.position + Vector3.down * 0.55f;
+        sunstoneClueText.transform.SetParent(MountHoruKey.transform);
     }
 
     public void OnBackPressed() {
-        UI.Menu.HideMenuScreen(false);
+        UI.Menu.HideMenuScreen();
     }
 
     public void OnMenuItemChange() {
     }
 
     public void OnMenuItemPressed() {
-        InventoryAbilityItem component = this.NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
+        InventoryAbilityItem component = NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
         if (component && !component.HasAbility) {
-            if (this.PressUngainedAbilityOptionSound) {
-                Sound.Play(this.PressUngainedAbilityOptionSound.GetSound(null), base.transform.position, null);
+            if (PressUngainedAbilityOptionSound) {
+                Sound.Play(PressUngainedAbilityOptionSound.GetSound(null), transform.position, null);
             }
 
             return;
         }
 
-        InventoryItemHelpText component2 = this.NavigationManager.CurrentMenuItem.GetComponent<InventoryItemHelpText>();
+        InventoryItemHelpText component2 = NavigationManager.CurrentMenuItem.GetComponent<InventoryItemHelpText>();
         if (component2) {
             SuspensionManager.SuspendAll();
-            MessageBox messageBox = UI.MessageController.ShowMessageBoxB(this.HelpMessageBox, component2.HelpMessage, Vector3.zero, float.PositiveInfinity);
+            MessageBox messageBox = UI.MessageController.ShowMessageBoxB(HelpMessageBox, component2.HelpMessage, Vector3.zero, float.PositiveInfinity);
             if (messageBox) {
                 messageBox.SetAvatar(component2.Avatar);
-                messageBox.OnMessageScreenHide += this.OnMessageScreenHide;
+                messageBox.OnMessageScreenHide += OnMessageScreenHide;
             } else {
                 SuspensionManager.ResumeAll();
             }
 
-            this.m_currentCloseMessageSound = ((!component) ? this.CloseStatisticsMessageSound : this.CloseAbilityMessageSound);
-            if (component && this.PressAbilityOptionSound) {
-                Sound.Play(this.PressAbilityOptionSound.GetSound(null), base.transform.position, null);
+            m_currentCloseMessageSound = ((!component) ? CloseStatisticsMessageSound : CloseAbilityMessageSound);
+            if (component && PressAbilityOptionSound) {
+                Sound.Play(PressAbilityOptionSound.GetSound(null), transform.position, null);
             }
         }
     }
 
     public void OnMessageScreenHide() {
         SuspensionManager.ResumeAll();
-        if (this.m_currentCloseMessageSound && base.transform) {
-            Sound.Play(this.m_currentCloseMessageSound.GetSound(null), base.transform.position, null);
+        if (m_currentCloseMessageSound && transform) {
+            Sound.Play(m_currentCloseMessageSound.GetSound(null), transform.position, null);
         }
     }
 
     public void OnDestroy() {
-        if (InventoryManager.Instance == this) {
-            InventoryManager.Instance = null;
+        if (Instance == this) {
+            Instance = null;
         }
 
-        CleverMenuItemSelectionManager navigationManager = this.NavigationManager;
-        navigationManager.OptionChangeCallback = (Action)Delegate.Remove(navigationManager.OptionChangeCallback, new Action(this.OnMenuItemChange));
-        navigationManager.OptionPressedCallback = (Action)Delegate.Remove(navigationManager.OptionPressedCallback, new Action(this.OnMenuItemPressed));
-        navigationManager.OnBackPressedCallback = (Action)Delegate.Remove(navigationManager.OnBackPressedCallback, new Action(this.OnBackPressed));
+        CleverMenuItemSelectionManager navigationManager = NavigationManager;
+        navigationManager.OptionChangeCallback = (Action)Delegate.Remove(navigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
+        navigationManager.OptionPressedCallback = (Action)Delegate.Remove(navigationManager.OptionPressedCallback, new Action(OnMenuItemPressed));
+        navigationManager.OnBackPressedCallback = (Action)Delegate.Remove(navigationManager.OnBackPressedCallback, new Action(OnBackPressed));
 
         DifficultyController instance = DifficultyController.Instance;
-        instance.OnDifficultyChanged = (Action)Delegate.Remove(instance.OnDifficultyChanged, new Action(this.OnDifficultyChanged));
+        instance.OnDifficultyChanged = (Action)Delegate.Remove(instance.OnDifficultyChanged, new Action(OnDifficultyChanged));
     }
 
     public void OnDifficultyChanged() {
-        if (this.Difficulty) {
-            this.Difficulty.RefreshText();
+        if (Difficulty) {
+            Difficulty.RefreshText();
         }
     }
 
@@ -134,42 +134,42 @@ public class InventoryManager : MenuScreen {
             return;
         }
 
-        this.CompletionText.SetMessage(new MessageDescriptor(GameWorld.Instance.CompletionPercentage + "%"));
-        this.DeathText.SetMessage(new MessageDescriptor(SeinDeathCounter.Count.ToString()));
-        this.HealthUpgradesText.SetMessage(new MessageDescriptor(sein.Mortality.Health.HealthUpgradesCollected + " / " + 12));
-        this.EnergyUpgradesText.SetMessage(new MessageDescriptor(sein.Energy.EnergyUpgradesCollected + " / " + 15));
-        this.SkillPointUniquesText.SetMessage(new MessageDescriptor(sein.Inventory.SkillPointsCollected + " / " + 33));
-        this.waterVeinClueText.SetMessage(new MessageDescriptor(this.GetKeyLabel(Keys.GinsoTree, RandomizerBonus.WaterVeinShards(), 0)));
-        this.gumonSealClueText.SetMessage(new MessageDescriptor(this.GetKeyLabel(Keys.ForlornRuins, RandomizerBonus.GumonSealShards(), 1)));
-        this.sunstoneClueText.SetMessage(new MessageDescriptor(this.GetKeyLabel(Keys.MountHoru, RandomizerBonus.SunstoneShards(), 2)));
+        CompletionText.SetMessage(new MessageDescriptor(GameWorld.Instance.CompletionPercentage + "%"));
+        DeathText.SetMessage(new MessageDescriptor(SeinDeathCounter.Count.ToString()));
+        HealthUpgradesText.SetMessage(new MessageDescriptor(sein.Mortality.Health.HealthUpgradesCollected + " / " + 12));
+        EnergyUpgradesText.SetMessage(new MessageDescriptor(sein.Energy.EnergyUpgradesCollected + " / " + 15));
+        SkillPointUniquesText.SetMessage(new MessageDescriptor(sein.Inventory.SkillPointsCollected + " / " + 33));
+        waterVeinClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.GinsoTree, RandomizerBonus.WaterVeinShards(), 0)));
+        gumonSealClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.ForlornRuins, RandomizerBonus.GumonSealShards(), 1)));
+        sunstoneClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.MountHoru, RandomizerBonus.SunstoneShards(), 2)));
         GameTimer timer = GameController.Instance.Timer;
-        this.TimeText.SetMessage(new MessageDescriptor(string.Format("{0:D2}:{1:D2}:{2:D2}", timer.Hours, timer.Minutes, timer.Seconds)));
-        InventoryAbilityItem component = this.NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
+        TimeText.SetMessage(new MessageDescriptor(string.Format("{0:D2}:{1:D2}:{2:D2}", timer.Hours, timer.Minutes, timer.Seconds)));
+        InventoryAbilityItem component = NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
         if (component) {
-            this.AbilityNameText.gameObject.SetActive(true);
-            this.AbilityItemHighlight.SetActive(true);
-            this.AbilityItemHighlight.transform.position = component.transform.position;
+            AbilityNameText.gameObject.SetActive(true);
+            AbilityItemHighlight.SetActive(true);
+            AbilityItemHighlight.transform.position = component.transform.position;
             if (component.HasAbility) {
-                this.AbilityNameText.SetMessageProvider(component.AbilityName);
+                AbilityNameText.SetMessageProvider(component.AbilityName);
             } else {
-                this.AbilityNameText.SetMessageProvider(this.LockedMessageProvider);
+                AbilityNameText.SetMessageProvider(LockedMessageProvider);
             }
         } else {
-            this.AbilityNameText.gameObject.SetActive(false);
-            this.AbilityItemHighlight.SetActive(false);
+            AbilityNameText.gameObject.SetActive(false);
+            AbilityItemHighlight.SetActive(false);
         }
 
-        if (this.Difficulty) {
-            this.Difficulty.RefreshText();
+        if (Difficulty) {
+            Difficulty.RefreshText();
         }
     }
 
     public void FixedUpdate() {
-        this.UpdateItems();
+        UpdateItems();
     }
 
     public void OnEnable() {
-        this.UpdateItems();
+        UpdateItems();
     }
 
     public string GetKeyLabel(bool hasKey, int shards, int keyIndex) {

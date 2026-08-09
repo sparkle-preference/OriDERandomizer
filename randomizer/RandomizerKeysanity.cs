@@ -1,9 +1,8 @@
-using Game;
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
-using UnityEngine;
+using Game;
 
 public class RandomizerKeysanity {
     public bool IsActive;
@@ -14,7 +13,7 @@ public class RandomizerKeysanity {
     private RandomizerInventory inventory;
 
     public RandomizerKeysanity(RandomizerInventory inv) {
-        doorKeyMap = new Dictionary<MoonGuid, int>() {
+        doorKeyMap = new Dictionary<MoonGuid, int> {
             { new MoonGuid(-1232154268, 1164352171, -836255810, -1590216903), 300 },
             { new MoonGuid(594661726, 1329767267, -1704907880, -27301018), 301 },
             { new MoonGuid(-1932550571, 1250172391, -1917455943, -1939528727), 302 },
@@ -31,7 +30,7 @@ public class RandomizerKeysanity {
 
         reverseDoorKeyMap = doorKeyMap.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
 
-        hintMap = new Dictionary<int, string>() {
+        hintMap = new Dictionary<int, string> {
             { 300, "Glades Pool" },
             { 301, "Lower Spirit Caverns" },
             { 302, "Grotto" },
@@ -51,7 +50,7 @@ public class RandomizerKeysanity {
 
     public void Initialize() {
         IsActive = false;
-        keyClueMap = new Dictionary<int, List<RandomizerKeysanityHintInfo>>() {
+        keyClueMap = new Dictionary<int, List<RandomizerKeysanityHintInfo>> {
             { 300, new List<RandomizerKeysanityHintInfo>() },
             { 301, new List<RandomizerKeysanityHintInfo>() },
             { 302, new List<RandomizerKeysanityHintInfo>() },

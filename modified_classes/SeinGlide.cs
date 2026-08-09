@@ -1,142 +1,142 @@
-using System;
 using Core;
 using UnityEngine;
+using Input = Core.Input;
 
 public class SeinGlide : CharacterState, ISeinReceiver {
     public CharacterGravity CharacterGravity {
-        get { return this.Sein.PlatformBehaviour.Gravity; }
+        get { return Sein.PlatformBehaviour.Gravity; }
     }
 
     public CharacterLeftRightMovement CharacterLeftRightMovement {
-        get { return this.Sein.PlatformBehaviour.LeftRightMovement; }
+        get { return Sein.PlatformBehaviour.LeftRightMovement; }
     }
 
     public PlatformMovement PlatformMovement {
-        get { return this.Sein.PlatformBehaviour.PlatformMovement; }
+        get { return Sein.PlatformBehaviour.PlatformMovement; }
     }
 
     public void Start() {
-        this.CharacterGravity.ModifyGravityPlatformMovementSettingsEvent += this.ModifyGravityPlatformMovementSettings;
-        this.CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent += this.ModifyHorizontalPlatformMovementSettings;
+        CharacterGravity.ModifyGravityPlatformMovementSettingsEvent += ModifyGravityPlatformMovementSettings;
+        CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent += ModifyHorizontalPlatformMovementSettings;
     }
 
     public new void OnDestroy() {
         base.OnDestroy();
-        this.CharacterGravity.ModifyGravityPlatformMovementSettingsEvent -= this.ModifyGravityPlatformMovementSettings;
-        this.CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent -= this.ModifyHorizontalPlatformMovementSettings;
-        this.IsGliding = false;
+        CharacterGravity.ModifyGravityPlatformMovementSettingsEvent -= ModifyGravityPlatformMovementSettings;
+        CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent -= ModifyHorizontalPlatformMovementSettings;
+        IsGliding = false;
     }
 
     public override void OnExit() {
-        this.IsGliding = false;
+        IsGliding = false;
     }
 
     public void ModifyGravityPlatformMovementSettings(GravityPlatformMovementSettings settings) {
-        if (this.IsGliding && this.PlatformMovement.LocalSpeedY < 0f) {
-            settings.GravityStrength *= this.GravityMultiplier;
+        if (IsGliding && PlatformMovement.LocalSpeedY < 0f) {
+            settings.GravityStrength *= GravityMultiplier;
         }
     }
 
     public void ModifyHorizontalPlatformMovementSettings(HorizontalPlatformMovementSettings settings) {
-        if (this.IsGliding) {
-            settings.Air.ApplySpeedMultiplier(this.MoveSpeed);
+        if (IsGliding) {
+            settings.Air.ApplySpeedMultiplier(MoveSpeed);
         }
     }
 
     public bool IsGliding {
-        get { return this.m_isGliding; }
+        get { return m_isGliding; }
         set {
-            if (this.m_isGliding != value) {
-                this.m_isGliding = value;
-                if (this.m_isGliding) {
-                    this.OnEnterGlide();
+            if (m_isGliding != value) {
+                m_isGliding = value;
+                if (m_isGliding) {
+                    OnEnterGlide();
                 } else {
-                    this.OnExitGlide();
+                    OnExitGlide();
                 }
             }
         }
     }
 
     public void OnEnterGlide() {
-        this.UpdateAnimations();
+        UpdateAnimations();
     }
 
     public void OnExitGlide() {
-        if (this.m_parachuteLoopLastSound) {
-            this.m_parachuteLoopLastSound.FadeOut(1f, true);
+        if (m_parachuteLoopLastSound) {
+            m_parachuteLoopLastSound.FadeOut(1f, true);
         }
 
         base.OnExit();
-        if (this.RunningTime > 0.3f) {
-            Sound.Play(this.CloseParachuteSound.GetSound(null), this.PlatformMovement.Position, null);
+        if (RunningTime > 0.3f) {
+            Sound.Play(CloseParachuteSound.GetSound(null), PlatformMovement.Position, null);
         }
 
-        this.RunningTime = 0f;
-        this.m_playedOpenSound = false;
+        RunningTime = 0f;
+        m_playedOpenSound = false;
     }
 
     public bool CanGlide {
-        get { return !this.PlatformMovement.IsOnGround && !this.PlatformMovement.IsOnWall && !this.Sein.Controller.InputLocked && !SeinAbilityRestrictZone.IsInside(SeinAbilityRestrictZoneMode.AllAbilities); }
+        get { return !PlatformMovement.IsOnGround && !PlatformMovement.IsOnWall && !Sein.Controller.InputLocked && !SeinAbilityRestrictZone.IsInside(); }
     }
 
     public bool WantsToGlide {
-        get { return Core.Input.Glide.Pressed && !this.NeedsRightTriggerReleased && this.m_lockGlidingRemainingTime <= 0f; }
+        get { return Input.Glide.Pressed && !NeedsRightTriggerReleased && m_lockGlidingRemainingTime <= 0f; }
     }
 
     public void LockGliding(float time) {
-        this.m_lockGlidingRemainingTime = time;
+        m_lockGlidingRemainingTime = time;
     }
 
     public void UpdateGliding() {
-        if (!this.CanGlide || !this.WantsToGlide) {
-            this.IsGliding = false;
+        if (!CanGlide || !WantsToGlide) {
+            IsGliding = false;
         }
 
-        this.m_pressedMoveHorizontally = false;
-        this.RunningTime += Time.deltaTime;
-        if (!this.m_playedOpenSound && this.RunningTime > 0.15f && this.RunningTime < 0.2f) {
-            Sound.Play(this.OpenParachuteSound.GetSound(null), this.PlatformMovement.Position, null);
-            this.m_playedOpenSound = true;
+        m_pressedMoveHorizontally = false;
+        RunningTime += Time.deltaTime;
+        if (!m_playedOpenSound && RunningTime > 0.15f && RunningTime < 0.2f) {
+            Sound.Play(OpenParachuteSound.GetSound(null), PlatformMovement.Position, null);
+            m_playedOpenSound = true;
         }
 
-        if (!this.IsGliding) {
-            this.Exit();
+        if (!IsGliding) {
+            Exit();
             return;
         }
 
-        if (this.PlatformMovement.LocalSpeedY < -this.GlideSpeed) {
-            this.PlatformMovement.LocalSpeedY = -this.GlideSpeed;
+        if (PlatformMovement.LocalSpeedY < -GlideSpeed) {
+            PlatformMovement.LocalSpeedY = -GlideSpeed;
         }
 
-        this.UpdateAnimations();
-        if (this.m_pressedMoveHorizontally && !this.m_wasMovingHorizantally) {
-            Sound.Play(this.TurnLeftRightSound.GetSound(null), this.PlatformMovement.Position, null);
-        } else if (this.m_parachuteLoopLastSound == null) {
-            this.m_parachuteLoopLastSound = Sound.Play(this.ParachuteLoopSound.GetSound(null), this.PlatformMovement.Position, delegate() { this.m_parachuteLoopLastSound = null; });
-            if (this.m_parachuteLoopLastSound) {
-                this.m_parachuteLoopLastSound.AttachTo = this.PlatformMovement.transform;
+        UpdateAnimations();
+        if (m_pressedMoveHorizontally && !m_wasMovingHorizantally) {
+            Sound.Play(TurnLeftRightSound.GetSound(null), PlatformMovement.Position, null);
+        } else if (m_parachuteLoopLastSound == null) {
+            m_parachuteLoopLastSound = Sound.Play(ParachuteLoopSound.GetSound(null), PlatformMovement.Position, delegate { m_parachuteLoopLastSound = null; });
+            if (m_parachuteLoopLastSound) {
+                m_parachuteLoopLastSound.AttachTo = PlatformMovement.transform;
             }
         }
 
-        this.m_wasMovingHorizantally = this.m_pressedMoveHorizontally;
-        this.HandleFloatZones();
+        m_wasMovingHorizantally = m_pressedMoveHorizontally;
+        HandleFloatZones();
     }
 
     private void UpdateAnimations() {
-        if (this.ShouldGlideMovingAnimationPlay) {
-            this.m_pressedMoveHorizontally = true;
-            this.Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(this.MovingAnimation, 110, new Func<bool>(this.ShouldGlideMovingAnimationKeepPlaying), false);
-        } else if (this.ShouldGlideIdleAnimationPlay) {
-            this.Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(this.IdleAnimation, 110, new Func<bool>(this.ShouldGlideIdleAnimationKeepPlaying), false);
+        if (ShouldGlideMovingAnimationPlay) {
+            m_pressedMoveHorizontally = true;
+            Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(MovingAnimation, 110, ShouldGlideMovingAnimationKeepPlaying);
+        } else if (ShouldGlideIdleAnimationPlay) {
+            Sein.PlatformBehaviour.Visuals.Animation.PlayLoop(IdleAnimation, 110, ShouldGlideIdleAnimationKeepPlaying);
         }
     }
 
     public void HandleFloatZones() {
         for (int i = 0; i < FloatZone.All.Count; i++) {
             FloatZone floatZone = FloatZone.All[i];
-            if (floatZone.BoundingRect.Contains(this.Sein.Position)) {
-                PlatformMovement platformMovement = this.Sein.PlatformBehaviour.PlatformMovement;
-                Vector2 b = Vector2.up * this.Sein.PlatformBehaviour.Gravity.CurrentSettings.GravityStrength * Time.deltaTime;
+            if (floatZone.BoundingRect.Contains(Sein.Position)) {
+                PlatformMovement platformMovement = Sein.PlatformBehaviour.PlatformMovement;
+                Vector2 b = Vector2.up * Sein.PlatformBehaviour.Gravity.CurrentSettings.GravityStrength * Time.deltaTime;
                 platformMovement.LocalSpeed += b;
                 Vector2 localSpeed = platformMovement.LocalSpeed;
                 if (localSpeed.y < 0f) {
@@ -149,14 +149,14 @@ public class SeinGlide : CharacterState, ISeinReceiver {
                 }
 
                 platformMovement.LocalSpeed = localSpeed;
-                this.Sein.ResetAirLimits();
+                Sein.ResetAirLimits();
                 return;
             }
         }
 
         if (RandomizerBonus.EnhancedGlide) {
-            PlatformMovement platformMovement = this.Sein.PlatformBehaviour.PlatformMovement;
-            Vector2 b = Vector2.up * this.Sein.PlatformBehaviour.Gravity.CurrentSettings.GravityStrength * Time.deltaTime;
+            PlatformMovement platformMovement = Sein.PlatformBehaviour.PlatformMovement;
+            Vector2 b = Vector2.up * Sein.PlatformBehaviour.Gravity.CurrentSettings.GravityStrength * Time.deltaTime;
             platformMovement.LocalSpeed += b;
             Vector2 localSpeed = platformMovement.LocalSpeed;
             if (localSpeed.y < 0f) {
@@ -169,39 +169,38 @@ public class SeinGlide : CharacterState, ISeinReceiver {
             }
 
             platformMovement.LocalSpeed = localSpeed;
-            this.Sein.ResetAirLimits();
-            return;
+            Sein.ResetAirLimits();
         }
     }
 
     public override void UpdateCharacterState() {
-        if (this.CharacterLeftRightMovement.HorizontalInput != 0f) {
-            this.m_isMoveAnimation = 3;
-        } else if (this.m_isMoveAnimation > 0) {
-            this.m_isMoveAnimation--;
+        if (CharacterLeftRightMovement.HorizontalInput != 0f) {
+            m_isMoveAnimation = 3;
+        } else if (m_isMoveAnimation > 0) {
+            m_isMoveAnimation--;
         }
 
-        if (this.m_lockGlidingRemainingTime > 0f) {
-            this.m_lockGlidingRemainingTime -= Time.deltaTime;
-            if (this.m_lockGlidingRemainingTime < 0f) {
-                this.m_lockGlidingRemainingTime = 0f;
+        if (m_lockGlidingRemainingTime > 0f) {
+            m_lockGlidingRemainingTime -= Time.deltaTime;
+            if (m_lockGlidingRemainingTime < 0f) {
+                m_lockGlidingRemainingTime = 0f;
             }
         }
 
-        if (this.NeedsRightTriggerReleased && Core.Input.Glide.Released) {
-            this.NeedsRightTriggerReleased = false;
+        if (NeedsRightTriggerReleased && Input.Glide.Released) {
+            NeedsRightTriggerReleased = false;
         }
 
-        if (this.IsGliding) {
-            this.UpdateGliding();
-        } else if (this.CanGlide && this.WantsToGlide && this.Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY < 0f) {
-            this.IsGliding = true;
+        if (IsGliding) {
+            UpdateGliding();
+        } else if (CanGlide && WantsToGlide && Sein.PlatformBehaviour.PlatformMovement.LocalSpeedY < 0f) {
+            IsGliding = true;
         }
     }
 
     public bool CanEnter {
         get {
-            bool isGliding = this.IsGliding;
+            bool isGliding = IsGliding;
             if (isGliding) {
             }
 
@@ -214,24 +213,24 @@ public class SeinGlide : CharacterState, ISeinReceiver {
     }
 
     public bool ShouldGlideIdleAnimationPlay {
-        get { return this.ShouldGlideIdleAnimationKeepPlaying(); }
+        get { return ShouldGlideIdleAnimationKeepPlaying(); }
     }
 
     public bool ShouldGlideMovingAnimationPlay {
-        get { return this.ShouldGlideMovingAnimationKeepPlaying(); }
+        get { return ShouldGlideMovingAnimationKeepPlaying(); }
     }
 
     public bool ShouldGlideIdleAnimationKeepPlaying() {
-        return this.IsGliding;
+        return IsGliding;
     }
 
     public bool ShouldGlideMovingAnimationKeepPlaying() {
-        return this.IsGliding && this.m_isMoveAnimation > 0;
+        return IsGliding && m_isMoveAnimation > 0;
     }
 
     public void SetReferenceToSein(SeinCharacter sein) {
-        this.Sein = sein;
-        this.Sein.Abilities.Glide = this;
+        Sein = sein;
+        Sein.Abilities.Glide = this;
     }
 
     public SeinCharacter Sein;

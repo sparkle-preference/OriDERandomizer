@@ -1,24 +1,23 @@
-using System;
 using UnityEngine;
 
 public class RandomizerChaosDamageModifier : RandomizerChaosEffect {
     public override void Clear() {
-        this.Countdown = 0;
+        Countdown = 0;
         Randomizer.DamageModifier = 1f;
     }
 
     public override void Start() {
-        this.Countdown = UnityEngine.Random.Range(360, 3600);
-        int num = UnityEngine.Random.Range(0, 8);
+        Countdown = Random.Range(360, 3600);
+        int num = Random.Range(0, 8);
         if (num <= 3) {
             Randomizer.showChaosEffect("Damage vulnerability");
-            Randomizer.DamageModifier = UnityEngine.Random.Range(1.5f, 4f);
+            Randomizer.DamageModifier = Random.Range(1.5f, 4f);
             return;
         }
 
         if (num <= 6) {
             Randomizer.showChaosEffect("Damage reduction");
-            Randomizer.DamageModifier = UnityEngine.Random.Range(0.25f, 0.8f);
+            Randomizer.DamageModifier = Random.Range(0.25f, 0.8f);
             return;
         }
 
@@ -29,10 +28,10 @@ public class RandomizerChaosDamageModifier : RandomizerChaosEffect {
     }
 
     public override void Update() {
-        if (this.Countdown > 0) {
-            this.Countdown--;
-            if (this.Countdown == 0) {
-                this.Clear();
+        if (Countdown > 0) {
+            Countdown--;
+            if (Countdown == 0) {
+                Clear();
             }
         }
     }

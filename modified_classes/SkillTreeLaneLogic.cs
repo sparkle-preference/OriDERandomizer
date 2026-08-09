@@ -4,26 +4,26 @@ using UnityEngine;
 
 public class SkillTreeLaneLogic : SaveSerialize {
     public float Index {
-        get { return this.m_index; }
+        get { return m_index; }
     }
 
     public void OnEnable() {
-        this.UpdateItems(true);
-        foreach (SkillItem skillItem in this.Skills) {
-            skillItem.LargeIconColor = this.LargeIconColor;
+        UpdateItems(true);
+        foreach (SkillItem skillItem in Skills) {
+            skillItem.LargeIconColor = LargeIconColor;
         }
     }
 
     public void FixedUpdate() {
-        this.UpdateItems(false);
+        UpdateItems(false);
     }
 
     public void UpdateItems(bool instant) {
         int firstUnlearnedIndex = 0;
         int totalPointsNeeded = 0;
         int totalHardPointsNeeded = 0;
-        for (int i = 0; i < this.Skills.Count; i++) {
-            SkillItem skillItem = this.Skills[i];
+        for (int i = 0; i < Skills.Count; i++) {
+            SkillItem skillItem = Skills[i];
             if (!skillItem.HasSkillItem) {
                 if (firstUnlearnedIndex == 0) {
                     firstUnlearnedIndex = i + 1;
@@ -37,20 +37,20 @@ public class SkillTreeLaneLogic : SaveSerialize {
         }
 
         --firstUnlearnedIndex;
-        this.m_index = ((!instant) ? Mathf.MoveTowards(this.m_index, (float)firstUnlearnedIndex, Time.deltaTime * 3f) : ((float)firstUnlearnedIndex));
-        this.SkillEarntAnimator.Initialize();
-        this.SkillEarntAnimator.SampleValue(this.m_index, true);
-        if (!this.m_laneAchievedAwarded && this.HasAllSkills) {
-            SkillTreeLaneLogic.OnSkillTreeDoneEvent(this.Type);
-            this.m_laneAchievedAwarded = true;
+        m_index = ((!instant) ? Mathf.MoveTowards(m_index, firstUnlearnedIndex, Time.deltaTime * 3f) : firstUnlearnedIndex);
+        SkillEarntAnimator.Initialize();
+        SkillEarntAnimator.SampleValue(m_index, true);
+        if (!m_laneAchievedAwarded && HasAllSkills) {
+            OnSkillTreeDoneEvent(Type);
+            m_laneAchievedAwarded = true;
         }
     }
 
     public bool HasAllSkills {
         get {
             bool result = true;
-            for (int i = 0; i < this.Skills.Count; i++) {
-                if (!this.Skills[i].HasSkillItem) {
+            for (int i = 0; i < Skills.Count; i++) {
+                if (!Skills[i].HasSkillItem) {
                     result = false;
                     break;
                 }
@@ -61,7 +61,7 @@ public class SkillTreeLaneLogic : SaveSerialize {
     }
 
     public override void Serialize(Archive ar) {
-        ar.Serialize(ref this.m_laneAchievedAwarded);
+        ar.Serialize(ref m_laneAchievedAwarded);
     }
 
     public BaseAnimator SkillEarntAnimator;
@@ -72,11 +72,11 @@ public class SkillTreeLaneLogic : SaveSerialize {
 
     public Color LargeIconColor;
 
-    public SkillTreeLaneLogic.SkillTreeType Type;
+    public SkillTreeType Type;
 
     private bool m_laneAchievedAwarded;
 
-    public static Action<SkillTreeLaneLogic.SkillTreeType> OnSkillTreeDoneEvent = delegate(SkillTreeLaneLogic.SkillTreeType A_0) { };
+    public static Action<SkillTreeType> OnSkillTreeDoneEvent = delegate { };
 
     public enum SkillTreeType {
         Energy,

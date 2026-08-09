@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using Game;
 using Sein.World;
-using System.Linq;
+using UnityEngine;
+using Events = Sein.World.Events;
 
 public static class RandomizerSwitch {
     public static void SkillPointPickup() {
@@ -27,7 +29,7 @@ public static class RandomizerSwitch {
     }
 
     public static void ExpOrbPickup(int Value, int coords) {
-        PickupMessage(Value.ToString() + " " + RandomizerExpNames.ExpName(coords));
+        PickupMessage(Value + " " + RandomizerExpNames.ExpName(coords));
         if (Randomizer.ZeroXP) {
             return;
         }
@@ -147,7 +149,7 @@ public static class RandomizerSwitch {
                     RandomizerBonus.UpgradeID(422);
                 else
                     PickupMessage("*Clean Water*", 300);
-                Sein.World.Events.WaterPurified = true;
+                Events.WaterPurified = true;
                 break;
             case 2:
                 PickupMessage("#Gumon Seal#", 300);
@@ -155,7 +157,7 @@ public static class RandomizerSwitch {
                 break;
             case 3:
                 PickupMessage("#Wind Restored#", 300);
-                Sein.World.Events.WindRestored = true;
+                Events.WindRestored = true;
                 break;
             case 4:
                 PickupMessage("@Sunstone@", 300);
@@ -163,7 +165,7 @@ public static class RandomizerSwitch {
                 break;
             case 5:
                 PickupMessage("@Warmth Returned@", 300);
-                Sein.World.Events.WarmthReturned = true;
+                Events.WarmthReturned = true;
                 break;
         }
 
@@ -208,7 +210,9 @@ public static class RandomizerSwitch {
 
             PickupMessage(colorChar + "Broken " + Value + " teleporter\nCollect " + shardPart + colorChar, 300);
             return;
-        } else if (colorChar != ' ' && Randomizer.CluesMode && Randomizer.TeleportersLockedByClues && !RandomizerClues.IsClueActive(dungeonAbbr)) {
+        }
+
+        if (colorChar != ' ' && Randomizer.CluesMode && Randomizer.TeleportersLockedByClues && !RandomizerClues.IsClueActive(dungeonAbbr)) {
             PickupMessage($"{colorChar}Broken {Value} teleporter\nGet the {shardPart} clue to activate{colorChar}", 300);
             return;
         }
@@ -223,7 +227,7 @@ public static class RandomizerSwitch {
                 case "RP":
                 case "MU":
                     foreach (RandomizerAction subpart in action.Decompose())
-                        RandomizerSwitch.GivePickup(subpart, coords, false);
+                        GivePickup(subpart, coords, false);
                     SilentMode = false;
                     break;
                 case "AC":
@@ -296,7 +300,7 @@ public static class RandomizerSwitch {
                 case "WT":
                     RandomizerTrackedDataManager.SetRelic(Randomizer.RelicZoneLookup[(string)action.Value]);
                     int relics = Characters.Sein.Inventory.GetRandomizerItem(402);
-                    string relicStr = "\n(" + relics.ToString() + "/" + Randomizer.RelicCount.ToString() + ")";
+                    string relicStr = "\n(" + relics + "/" + Randomizer.RelicCount + ")";
                     if (relics >= Randomizer.RelicCount) {
                         relicStr = "$" + relicStr + "$";
                     }
@@ -310,9 +314,9 @@ public static class RandomizerSwitch {
                         Randomizer.SaveAfterWarp = action.Action == "WS";
                         string[] xy = ((string)action.Value).Split(',');
                         if (xy.Length > 2 && xy[2] == "force") {
-                            Randomizer.WarpTo(new UnityEngine.Vector3(float.Parse(xy[0]), float.Parse(xy[1])), 15);
+                            Randomizer.WarpTo(new Vector3(float.Parse(xy[0]), float.Parse(xy[1])), 15);
                         } else {
-                            Randomizer.WarpTarget = new UnityEngine.Vector3(float.Parse(xy[0]), float.Parse(xy[1]));
+                            Randomizer.WarpTarget = new Vector3(float.Parse(xy[0]), float.Parse(xy[1]));
                             Randomizer.WarpSource = Characters.Sein.Position;
                             Randomizer.CanWarp = 7;
                         }
@@ -330,7 +334,7 @@ public static class RandomizerSwitch {
                     int.TryParse(pieces2[2], out warpY);
                     TeleporterController.AddCustomTeleporter(pieces2[0], warpX, warpY);
                     TeleporterController.Activate(pieces2[0]);
-                    PickupMessage(pieces2[0], 120);
+                    PickupMessage(pieces2[0]);
                     break;
                 case "NB":
                     // NB entries are coord|NB|x,y
@@ -339,7 +343,7 @@ public static class RandomizerSwitch {
                     int.TryParse(pieces3[0], out positionX);
                     int positionY;
                     int.TryParse(pieces3[1], out positionY);
-                    Randomizer.NightBerryWarpPosition = new UnityEngine.Vector3(positionX, positionY);
+                    Randomizer.NightBerryWarpPosition = new Vector3(positionX, positionY);
                     Characters.Sein.Inventory.SetRandomizerItem(82, 1);
                     break;
                 case "MW":
@@ -347,7 +351,7 @@ public static class RandomizerSwitch {
                     // player's item. Nothing to grant locally: the
                     // found_locally send below tells the server, which flips
                     // the owner's slot bit and their client self-grants.
-                    string[] mwPieces = ((string)action.Value).Split(new char[] { ',' }, 3);
+                    string[] mwPieces = ((string)action.Value).Split(new[] { ',' }, 3);
                     string[] apItem;
                     if (RandomizerMW.ApItems.TryGetValue(coords, out apItem)) {
                         // Archipelago reserved location: the owner here is our
@@ -413,7 +417,7 @@ public static class RandomizerSwitch {
     }
 
 
-    public static bool SilentMode = false;
+    public static bool SilentMode;
 
     // when set, appended to every pickup message; RandomizerMW uses it to
     // render multiworld grants as "[pickup] from Player N" in one line

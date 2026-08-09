@@ -1,9 +1,6 @@
+using System;
 using System.Collections.Generic;
 using Core;
-using Game;
-using System;
-using Sein.World;
-using UnityEngine;
 
 public static class RandomizerCreditsManager {
     public static void Initialize() {

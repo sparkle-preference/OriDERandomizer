@@ -5,115 +5,115 @@ using UnityEngine;
 
 public class ActionSequence : PerformingAction, IPooled, ISuspendable {
     public bool IsRunning {
-        get { return this.m_isRunning; }
-        set { this.m_isRunning = value; }
+        get { return m_isRunning; }
+        set { m_isRunning = value; }
     }
 
     public int Index {
-        get { return this.m_index; }
-        set { this.m_index = value; }
+        get { return m_index; }
+        set { m_index = value; }
     }
 
     public void OnPoolSpawned() {
-        this.Stop();
-        this.m_isSuspended = false;
+        Stop();
+        m_isSuspended = false;
     }
 
     public override void Awake() {
         SuspensionManager.Register(this);
-        Game.Checkpoint.Events.OnPostRestore.Add(new Action(this.OnRestoreCheckpoint));
-        Events.Scheduler.OnGameReset.Add(new Action(this.OnGameReset));
+        Game.Checkpoint.Events.OnPostRestore.Add(OnRestoreCheckpoint);
+        Events.Scheduler.OnGameReset.Add(OnGameReset);
     }
 
     public override void OnDestroy() {
         SuspensionManager.Unregister(this);
         base.OnDestroy();
-        Game.Checkpoint.Events.OnPostRestore.Remove(new Action(this.OnRestoreCheckpoint));
-        Events.Scheduler.OnGameReset.Remove(new Action(this.OnGameReset));
+        Game.Checkpoint.Events.OnPostRestore.Remove(OnRestoreCheckpoint);
+        Events.Scheduler.OnGameReset.Remove(OnGameReset);
     }
 
     private void OnGameReset() {
-        if (this.m_isRunning) {
-            this.Stop();
+        if (m_isRunning) {
+            Stop();
         }
     }
 
     public void OnRestoreCheckpoint() {
-        ActionSequenceSerializer component = base.GetComponent<ActionSequenceSerializer>();
+        ActionSequenceSerializer component = GetComponent<ActionSequenceSerializer>();
         if (component) {
             return;
         }
 
-        this.Stop();
+        Stop();
     }
 
     public void FindActions() {
-        this.Actions.Clear();
-        for (int i = 0; i < base.transform.childCount; i++) {
-            Transform child = base.transform.GetChild(i);
+        Actions.Clear();
+        for (int i = 0; i < transform.childCount; i++) {
+            Transform child = transform.GetChild(i);
             foreach (ActionMethod item in child.GetComponents<ActionMethod>()) {
-                this.Actions.Add(item);
+                Actions.Add(item);
             }
         }
 
-        this.Actions.Sort((ActionMethod a, ActionMethod b) => string.Compare(a.name, b.name, StringComparison.Ordinal));
+        Actions.Sort((a, b) => string.Compare(a.name, b.name, StringComparison.Ordinal));
     }
 
     public override void Perform(IContext context) {
-        this.Perform(context, false);
+        Perform(context, false);
     }
 
     public override void PerformInstantly(IContext context) {
-        this.Perform(context, true);
+        Perform(context, true);
     }
 
     public void Perform(IContext context, bool instant) {
-        if (!base.enabled) {
+        if (!enabled) {
             return;
         }
 
-        if (this.Actions == null) {
-            this.FindActions();
+        if (Actions == null) {
+            FindActions();
         }
 
-        if (this.Actions.Count == 0) {
+        if (Actions.Count == 0) {
             return;
         }
 
-        this.m_isRunning = true;
-        this.m_isInstant = instant;
-        this.m_index = 0;
-        this.m_context = context;
-        this.RunAction(this.Actions[this.m_index]);
-        this.UpdateActions();
+        m_isRunning = true;
+        m_isInstant = instant;
+        m_index = 0;
+        m_context = context;
+        RunAction(Actions[m_index]);
+        UpdateActions();
     }
 
     public void RunAction(ActionMethod action) {
         if (action) {
-            if (this.m_isInstant) {
-                action.PerformInstantly(this.m_context);
+            if (m_isInstant) {
+                action.PerformInstantly(m_context);
             } else {
-                action.Perform(this.m_context);
+                action.Perform(m_context);
             }
         }
     }
 
     public void FixedUpdate() {
-        if (this.m_isSuspended) {
+        if (m_isSuspended) {
             return;
         }
 
-        this.UpdateActions();
+        UpdateActions();
     }
 
     public void UpdateActions() {
-        if (!this.m_isRunning) {
+        if (!m_isRunning) {
             return;
         }
 
-        int count = this.Actions.Count;
-        while (this.m_index < count) {
-            ActionMethod actionMethod = this.Actions[this.m_index];
+        int count = Actions.Count;
+        while (m_index < count) {
+            ActionMethod actionMethod = Actions[m_index];
             if (actionMethod != null && actionMethod is WaitAction) {
                 WaitAction waitAction = actionMethod as WaitAction;
                 if (waitAction.IsPerforming) {
@@ -121,13 +121,13 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable {
                 }
             }
 
-            this.m_index++;
-            if (this.m_index == count) {
-                this.m_isRunning = false;
+            m_index++;
+            if (m_index == count) {
+                m_isRunning = false;
                 return;
             }
 
-            this.RunAction(this.Actions[this.m_index]);
+            RunAction(Actions[m_index]);
         }
     }
 
@@ -137,7 +137,7 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable {
             ActionMethod actionMethod = actions[i];
             num++;
             string niceName = actionMethod.GetNiceName();
-            actionMethod.name = ActionSequence.FormatName(num, niceName);
+            actionMethod.name = FormatName(num, niceName);
         }
     }
 
@@ -150,38 +150,38 @@ public class ActionSequence : PerformingAction, IPooled, ISuspendable {
     }
 
     public void RefreshNames() {
-        this.FindActions();
-        ActionSequence.Rename(this.Actions);
+        FindActions();
+        Rename(Actions);
     }
 
     public override string GetNiceName() {
-        return base.gameObject.name;
+        return gameObject.name;
     }
 
     public bool IsSuspended {
-        get { return this.m_isSuspended; }
-        set { this.m_isSuspended = value; }
+        get { return m_isSuspended; }
+        set { m_isSuspended = value; }
     }
 
     public override void Stop() {
-        this.m_isRunning = false;
-        this.m_isInstant = false;
-        this.m_index = 0;
-        this.m_context = null;
+        m_isRunning = false;
+        m_isInstant = false;
+        m_index = 0;
+        m_context = null;
     }
 
     public override bool IsPerforming {
-        get { return this.m_isRunning; }
+        get { return m_isRunning; }
     }
 
     public override void Serialize(Archive ar) {
-        ActionSequenceSerializer component = base.GetComponent<ActionSequenceSerializer>();
+        ActionSequenceSerializer component = GetComponent<ActionSequenceSerializer>();
         if (component) {
             return;
         }
 
         if (ar.Reading) {
-            this.Stop();
+            Stop();
         }
 
         base.Serialize(ar);
