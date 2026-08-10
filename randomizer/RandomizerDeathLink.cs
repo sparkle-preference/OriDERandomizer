@@ -29,6 +29,10 @@ public static class RandomizerDeathLink {
     private static string killSource;
     private static bool killInFlight;
     private static int stableFrames;
+    // deaths only count while armed; arming needs the player genuinely alive
+    // (hp > 0, stable). A save made mid-death re-fires the death hook on
+    // every load and respawns at 0 hp, so it can never re-arm.
+    private static bool armed;
 
     // CanMove goes true before the respawn fade finishes; the win message
     // waits the same way (Randomizer.UpdatePendingWin)
@@ -40,6 +44,7 @@ public static class RandomizerDeathLink {
         killSource = null;
         killInFlight = false;
         stableFrames = 0;
+        armed = false;
     }
 
     // tick signal payload: "<token>;<source>". The server's token only ever
@@ -70,6 +75,14 @@ public static class RandomizerDeathLink {
         try {
             if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null)
                 return;
+            if (!armed) {
+                // a re-fired hook (dead-save load) is the same death again
+                killPending = false;
+                killInFlight = false;
+                stableFrames = 0;
+                return;
+            }
+            armed = false;
             Characters.Sein.Inventory.IncRandomizerItem(Deaths, 1);
             if (killInFlight) {
                 killInFlight = false;
@@ -87,7 +100,7 @@ public static class RandomizerDeathLink {
 
     public static void Update() {
         try {
-            if (!Enabled || !killPending)
+            if (!Enabled)
                 return;
             var stable = Characters.Sein && Characters.Sein.Active
                 && Characters.Sein.Controller.CanMove
@@ -95,6 +108,10 @@ public static class RandomizerDeathLink {
                 && !Randomizer.CreditsActive
                 && Characters.Sein.gameObject.activeInHierarchy
                 && Randomizer.DamageModifier > 0f;
+            if (!armed && stable && Characters.Sein.Mortality.Health.Amount > 0f)
+                armed = true;
+            if (!killPending)
+                return;
             stableFrames = stable ? stableFrames + 1 : 0;
             if (stableFrames < StableFramesNeeded)
                 return;
