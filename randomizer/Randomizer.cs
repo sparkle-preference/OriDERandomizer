@@ -12,7 +12,7 @@ using Events = Game.Events;
 using Random = System.Random;
 
 public static class Randomizer {
-    public static string VERSION = "4.2.8";
+    public static string VERSION = "4.2.9";
 
     public static void initialize() {
         try {
@@ -138,6 +138,11 @@ public static class Randomizer {
                     foreach (var line in allLines.Skip(1)) {
                         lastLine = line;
                         lastLineNum += 1;
+
+                        if (line.StartsWith("//")) {
+                            ParseMetaLine(line.Substring(2).Trim());
+                            continue;
+                        }
 
                         var lineParts = line.Split('|');
                         int.TryParse(lineParts[0], out var coords);
@@ -1202,20 +1207,6 @@ public static class Randomizer {
             else if (flag == "keysanity")
                 Keysanity.IsActive = true;
 
-            else if (flag.StartsWith("keytiers=")) {
-                // per-door thresholds for exported-keystone seeds, positional
-                // (0 = door absent); a malformed token just disables tiers
-                try {
-                    var tierParts = flag.Substring(9).Split('+');
-                    var tiers = new int[tierParts.Length];
-                    for (var ti = 0; ti < tierParts.Length; ti++)
-                        tiers[ti] = int.Parse(tierParts[ti]);
-                    RandomizerLocationManager.KeyTiers = tiers;
-                } catch (Exception) {
-                    RandomizerLocationManager.KeyTiers = null;
-                }
-            }
-
             else if (flag == "enhanced")
                 EnhancedMode = true;
 
@@ -1257,6 +1248,24 @@ public static class Randomizer {
                 if (!HotColdMapsWithFrags.Contains(coords)) {
                     HotColdMapsWithFrags.Add(coords);
                 }
+            }
+        }
+    }
+
+    // seed metadata: "//Key=Value" lines after the flagline, invisible to the
+    // pickup parse. Unknown keys are ignored, like unknown flags.
+    public static void ParseMetaLine(string meta) {
+        if (meta.ToLower().StartsWith("keytiers=")) {
+            // per-door thresholds for exported-keystone seeds, positional
+            // (0 = door absent); a malformed line just disables tiers
+            try {
+                var tierParts = meta.Substring("keytiers=".Length).Split('+');
+                var tiers = new int[tierParts.Length];
+                for (var ti = 0; ti < tierParts.Length; ti++)
+                    tiers[ti] = int.Parse(tierParts[ti]);
+                RandomizerLocationManager.KeyTiers = tiers;
+            } catch (Exception) {
+                RandomizerLocationManager.KeyTiers = null;
             }
         }
     }
