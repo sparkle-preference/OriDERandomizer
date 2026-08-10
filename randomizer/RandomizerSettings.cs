@@ -11,7 +11,7 @@ public static class RandomizerSettings {
         WriteSettings();
     }
 
-    public static string LastAddedSetting = "Multiworld Outbound Message Background Color";
+    public static string LastAddedSetting = "Keystone Door Logic Warnings";
 
     public static void ParseSettings() {
         if (!File.Exists("RandomizerSettings.txt")) {
@@ -175,6 +175,7 @@ public static class RandomizerSettings {
         Customization.HintLevel = new EnumSetting<HintLevels>("Hints", HintLevels.NewPlayer, "NewPlayer (default): Show loading tips intended for new rando players.\nExperienced: Show loading tips intended for more experienced rando players.\nDisabled: do not show loading screen tips.", false);
         Customization.RandomizedExpNames = new BoolSetting("Randomized Experience Names", false, "True: Replace the word \"Experience\" with a random currency name whenever you gain experience from a pickup.\nFalse (default): Experience pickups are just called Experience.", false);
         Customization.AlwaysShowDoorHints = new BoolSetting("Always Show Keysanity Door Hints", false, "True: Always show any unlocked Keysanity door hints when viewing the map.\nFalse (default): Only show Keysanity door hints in the map when hovering a door.");
+        Customization.KeyLockWarnings = new BoolSetting("Keystone Door Logic Warnings", true, "True (default): Warn when touching a keystone door that is not currently in logic, since opening it early could make the seed uncompletable.\nFalse: no warning.");
         Customization.PickupMessageBgColor = new ColorSetting("Pickup Message Background Color", new Color(0f, 0f, 0f, 0.5f), 510f, "Red, Blue, Green, Transparency (0-255 for each): Background color for pickup messages.\nDefault: 0, 0, 0, 255", false);
         Customization.MwPickupMessageBgColor = new ColorSetting("Multiworld Outbound Message Background Color", new Color(64f / 510f, 64f / 510f, 64f / 510f, 255f / 510f), 510f, "Red, Blue, Green, Transparency (0-255 for each): Background color for pickup messages sent to another Player.\nBoth local pickups and pickups received from another player will use the \"Pickup Message Background Color\" color.\nThis is for pickups that you find in your seed and send to another player.\nDefault: 64, 64, 64, 255", false);
 
@@ -278,6 +279,8 @@ public static class RandomizerSettings {
         public static BoolSetting RandomizedExpNames;
 
         public static BoolSetting AlwaysShowDoorHints;
+
+        public static BoolSetting KeyLockWarnings;
 
         public static ColorSetting PickupMessageBgColor;
 

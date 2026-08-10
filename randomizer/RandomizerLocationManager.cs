@@ -361,6 +361,32 @@ public class RandomizerLocationManager {
 
         foreach (var item in LocationsByName)
             item.Value.Reachable = reachable.Contains(item.Key);
+
+        // key-lock warning mask. KeyTiers seeds charge per-door tiers against
+        // lifetime keystones (item 70); other seeds share the conservative
+        // gate: unspent supply must cover every visible unopened door
+        var doorMask = 0;
+        var ksCollected = Randomizer.Inventory.GetRandomizerItem(70);
+        var ksUnspent = ksCollected - SpentKeystones();
+        var visibleCost = 0;
+        foreach (var ksDoor in KeystoneDoors.Values) {
+            if ((keystoneDoorsOpened & (1 << ksDoor.Index)) != 0 || !reachable.Contains(ksDoor.Source))
+                continue;
+            var pos = DoorWirePos[ksDoor.Source];
+            if (Randomizer.OpenWorld && pos == 0)
+                continue;   // the Glades door is pre-opened
+            if (KeyTiers != null) {
+                if (pos < KeyTiers.Length && KeyTiers[pos] > 0 && ksCollected >= KeyTiers[pos])
+                    doorMask |= 1 << ksDoor.Index;
+            } else
+                visibleCost += DoorCosts[pos];
+        }
+        if (KeyTiers == null && ksUnspent >= visibleCost)
+            foreach (var ksDoor in KeystoneDoors.Values)
+                if ((keystoneDoorsOpened & (1 << ksDoor.Index)) == 0 && reachable.Contains(ksDoor.Source))
+                    doorMask |= 1 << ksDoor.Index;
+        DoorsInLogicMask = doorMask;
+        DoorLogicValid = true;
 /* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
         {
             if (reachable.Contains(item.Key))
@@ -414,6 +440,63 @@ public class RandomizerLocationManager {
     private static string spawnNodeName;
 
     public static Dictionary<MoonGuid, KeystoneDoor> KeystoneDoors = new Dictionary<MoonGuid, KeystoneDoor>();
+
+    // --- key-lock warnings (non-keysanity): is each unopened door in logic? ---
+    // recomputed with reachability; RAM-only, so nothing can warn before the
+    // first sweep of a loaded save
+    public static int DoorsInLogicMask;
+    public static bool DoorLogicValid;
+    // wire order, from the seed's KeyTiers flag (AP exported-keystone seeds)
+    public static int[] KeyTiers;
+    private static HashSet<MoonGuid> warnedDoors = new HashSet<MoonGuid>();
+    // wire position by home node -- archipelago shared.KEYSTONE_DOORS order --
+    // and in-game key costs by wire position
+    private static readonly Dictionary<string, int> DoorWirePos = new Dictionary<string, int> {
+        {"GladesFirstKeyDoor", 0}, {"SpiritCavernsDoor", 1}, {"GumoHideout", 2},
+        {"SwampKeyDoorPlatform", 3}, {"SpiritTreeDoor", 4}, {"BashTreeDoorClosed", 5},
+        {"UpperGinsoDoorClosed", 6}, {"MistyBeforeMiniBoss", 7}, {"ForlornKeyDoor", 8},
+        {"LowerSorrow", 9}, {"LeftSorrowMiddleDoorClosed", 10}, {"ChargeJumpDoor", 11}};
+    private static readonly int[] DoorCosts = {2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4};
+
+    public static void ResetDoorLogic() {
+        DoorsInLogicMask = 0;
+        DoorLogicValid = false;
+        KeyTiers = null;
+        warnedDoors.Clear();
+    }
+
+    // keys sunk into opened doors; refunds mean partial fills never count
+    public static int SpentKeystones() {
+        var opened = Randomizer.Inventory.GetRandomizerItem(72);
+        var spent = 0;
+        foreach (var ksDoor in KeystoneDoors.Values)
+            if ((opened & (1 << ksDoor.Index)) != 0)
+                spent += DoorCosts[DoorWirePos[ksDoor.Source]];
+        return spent;
+    }
+
+    /// <summary>
+    /// DoorWithSlots.Highlight: doors take one click per key, so this is
+    /// advice ahead of the first click, never a block. Quiet for keysanity
+    /// (its doors can't waste keys), quiet once per door, and quiet forever
+    /// on a save that has keyduped (the counters stop meaning anything).
+    /// </summary>
+    public static void WarnIfDoorOutOfLogic(MoonGuid doorGuid) {
+        if (!RandomizerSettings.Customization.KeyLockWarnings.Value || Randomizer.Keysanity.IsActive
+            || !DoorLogicValid || !KeystoneDoors.ContainsKey(doorGuid))
+            return;
+        var door = KeystoneDoors[doorGuid];
+        if (IsDoorOpen(doorGuid) || (DoorsInLogicMask & (1 << door.Index)) != 0 || warnedDoors.Contains(doorGuid))
+            return;
+        if (Randomizer.Inventory.GetRandomizerItem(73) != 0)
+            return;
+        if (Characters.Sein.Inventory.Keystones + SpentKeystones() > Randomizer.Inventory.GetRandomizerItem(70)) {
+            Randomizer.Inventory.SetRandomizerItem(73, 1);
+            return;
+        }
+        warnedDoors.Add(doorGuid);
+        RandomizerSwitch.PickupMessage("This door is not currently in logic.\n Opening it at this time might render your seed uncompletable.", 300);
+    }
 
     public static Dictionary<MoonGuid, MoonGuid> KeystoneDoorMapGuidToMoonGuid = new Dictionary<MoonGuid, MoonGuid>();
 

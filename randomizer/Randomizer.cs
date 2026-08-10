@@ -97,6 +97,7 @@ public static class Randomizer {
             AllowOrbWarps = false;
             NightBerryWarpPosition = new Vector3(-910f, -300f);
             InLogicWarps = false;
+            RandomizerLocationManager.ResetDoorLogic();
             TeleportersLockedByClues = false;
             WarpLogicLocations = new Hashtable();
             Keysanity.Initialize();
@@ -1200,6 +1201,20 @@ public static class Randomizer {
 
             else if (flag == "keysanity")
                 Keysanity.IsActive = true;
+
+            else if (flag.StartsWith("keytiers=")) {
+                // per-door thresholds for exported-keystone seeds, positional
+                // (0 = door absent); a malformed token just disables tiers
+                try {
+                    var tierParts = flag.Substring(9).Split('+');
+                    var tiers = new int[tierParts.Length];
+                    for (var ti = 0; ti < tierParts.Length; ti++)
+                        tiers[ti] = int.Parse(tierParts[ti]);
+                    RandomizerLocationManager.KeyTiers = tiers;
+                } catch (Exception) {
+                    RandomizerLocationManager.KeyTiers = null;
+                }
+            }
 
             else if (flag == "enhanced")
                 EnhancedMode = true;

@@ -36,6 +36,7 @@ public class DoorWithSlots : SaveSerialize {
         }
 
         Randomizer.Keysanity.ApplyKeystoneCount(MoonGuid, NumberOfOrbsUsed);
+        RandomizerLocationManager.WarnIfDoorOutOfLogic(MoonGuid);
     }
 
     public void Unhighlight() {
