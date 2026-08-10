@@ -114,18 +114,8 @@ public class PlayerInputRebinding {
     }
 
     private static KeyCode[] StringToKeyBinding(string s) {
-        s = s.Split(
-            new[] {
-                ": "
-            },
-            StringSplitOptions.None
-        )[1];
-        var array = s.Split(
-            new[] {
-                ", "
-            },
-            StringSplitOptions.None
-        );
+        s = s.Split(new[] { ": " }, StringSplitOptions.None)[1];
+        var array = s.Split(new[] { ", " }, StringSplitOptions.None);
         var list = new List<KeyCode>();
         foreach (var value in array) {
             list.Add((KeyCode)(int)Enum.Parse(typeof(KeyCode), value));
@@ -381,111 +371,46 @@ public class PlayerInputRebinding {
                 streamReader.ReadLine();
                 streamReader.ReadLine();
                 var flag = bool.Parse(
-                    streamReader.ReadLine().Split(
-                        new[] {
-                            ": "
-                        },
-                        StringSplitOptions.None
-                    )[1]
+                    streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                 );
                 if (flag) {
                     streamReader.ReadLine();
                     m_controllerIsRemappingButtons = flag;
                     m_controllerButtonRemappings[0] = int.Parse(
-                        streamReader.ReadLine().Split(
-                            new[] {
-                                ": "
-                            },
-                            StringSplitOptions.None
-                        )[1]
+                        streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                     ) - 1;
                     m_controllerButtonRemappings[1] = int.Parse(
-                        streamReader.ReadLine().Split(
-                            new[] {
-                                ": "
-                            },
-                            StringSplitOptions.None
-                        )[1]
+                        streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                     ) - 1;
                     m_controllerButtonRemappings[2] = int.Parse(
-                        streamReader.ReadLine().Split(
-                            new[] {
-                                ": "
-                            },
-                            StringSplitOptions.None
-                        )[1]
+                        streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                     ) - 1;
                     m_controllerButtonRemappings[3] = int.Parse(
-                        streamReader.ReadLine().Split(
-                            new[] {
-                                ": "
-                            },
-                            StringSplitOptions.None
-                        )[1]
+                        streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                     ) - 1;
                     m_controllerButtonRemappings[4] = int.Parse(
-                        streamReader.ReadLine().Split(
-                            new[] {
-                                ": "
-                            },
-                            StringSplitOptions.None
-                        )[1]
+                        streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                     ) - 1;
                     m_controllerButtonRemappings[5] = int.Parse(
-                        streamReader.ReadLine().Split(
-                            new[] {
-                                ": "
-                            },
-                            StringSplitOptions.None
-                        )[1]
+                        streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                     ) - 1;
                     m_controllerButtonRemappings[6] = int.Parse(
-                        streamReader.ReadLine().Split(
-                            new[] {
-                                ": "
-                            },
-                            StringSplitOptions.None
-                        )[1]
+                        streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                     ) - 1;
                     m_controllerButtonRemappings[7] = int.Parse(
-                        streamReader.ReadLine().Split(
-                            new[] {
-                                ": "
-                            },
-                            StringSplitOptions.None
-                        )[1]
+                        streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                     ) - 1;
                     m_controllerButtonRemappings[8] = int.Parse(
-                        streamReader.ReadLine().Split(
-                            new[] {
-                                ": "
-                            },
-                            StringSplitOptions.None
-                        )[1]
+                        streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                     ) - 1;
                     m_controllerButtonRemappings[9] = int.Parse(
-                        streamReader.ReadLine().Split(
-                            new[] {
-                                ": "
-                            },
-                            StringSplitOptions.None
-                        )[1]
+                        streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                     ) - 1;
                     m_controllerButtonRemappings[12] = int.Parse(
-                        streamReader.ReadLine().Split(
-                            new[] {
-                                ": "
-                            },
-                            StringSplitOptions.None
-                        )[1]
+                        streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                     ) - 1;
                     m_controllerButtonRemappings[13] = int.Parse(
-                        streamReader.ReadLine().Split(
-                            new[] {
-                                ": "
-                            },
-                            StringSplitOptions.None
-                        )[1]
+                        streamReader.ReadLine().Split(new[] { ": " }, StringSplitOptions.None)[1]
                     ) - 1;
                     for (var i = 0; i < 10; i++) {
                         if (m_controllerButtonRemappings[i] < 0 || m_controllerButtonRemappings[i] > 11) {
@@ -658,18 +583,8 @@ public class PlayerInputRebinding {
     }
 
     public static ControllerButton[] StringToControllerBinding(string s) {
-        s = s.Split(
-            new[] {
-                ": "
-            },
-            StringSplitOptions.None
-        )[1];
-        var array = s.Split(
-            new[] {
-                ", "
-            },
-            StringSplitOptions.RemoveEmptyEntries
-        );
+        s = s.Split(new[] { ": " }, StringSplitOptions.None)[1];
+        var array = s.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
         var list = new List<ControllerButton>();
         foreach (var value in array) {
             list.Add((ControllerButton)(int)Enum.Parse(typeof(ControllerButton), value));

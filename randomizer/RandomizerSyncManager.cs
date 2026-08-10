@@ -392,9 +392,7 @@ public static class RandomizerSyncManager {
         {
             {
                 var mustRefreshLogic = false;
-                var array = data.Split(
-                    ','
-                );
+                var array = data.Split(',');
                 var bf = int.Parse(array[0]);
                 foreach (var skillInfoLine in SkillInfos) {
                     if (getBit(bf, skillInfoLine.bit) && !Characters.Sein.PlayerAbilities.HasAbility(skillInfoLine.skill)) {
