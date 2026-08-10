@@ -1,351 +1,276 @@
 using System;
 using System.Collections.Generic;
-using Game;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
-public class SaveSceneManager : MonoBehaviour
-{
-	public SaveSceneManager()
-	{
-	}
+public class SaveSceneManager : MonoBehaviour {
+    // Note: this type is marked as 'beforefieldinit'.
+    static SaveSceneManager() {
+    }
 
-	// Note: this type is marked as 'beforefieldinit'.
-	static SaveSceneManager()
-	{
-	}
+    public static SaveSceneManager FromTransform(Transform transform) {
+        var sceneRoot = SceneRoot.FindFromTransform(transform);
+        if (sceneRoot) {
+            return sceneRoot.SaveSceneManager;
+        }
 
-	public static SaveSceneManager FromTransform(Transform transform)
-	{
-		SceneRoot sceneRoot = SceneRoot.FindFromTransform(transform);
-		if (sceneRoot)
-		{
-			return sceneRoot.SaveSceneManager;
-		}
-		return null;
-	}
+        return null;
+    }
 
-	public void ReleaseNullReferences()
-	{
-		for (int i = 0; i < this.SaveData.Count; i++)
-		{
-			SaveSceneManager.SaveId saveId = this.SaveData[i];
-			if (saveId.SaveObject == null)
-			{
-				saveId.SaveObject = null;
-			}
-		}
-	}
+    public void ReleaseNullReferences() {
+        for (var i = 0; i < SaveData.Count; i++) {
+            var saveId = SaveData[i];
+            if (saveId.SaveObject == null) {
+                saveId.SaveObject = null;
+            }
+        }
+    }
 
-	[ContextMenu("Print info")]
-	public void PrintInfo()
-	{
-	}
+    [ContextMenu("Print info")]
+    public void PrintInfo() {
+    }
 
-	public void RegisterGameObject(GameObject go)
-	{
-		go.GetComponentsInChildren<SaveSerialize>(SaveSceneManager.s_saveSerializeList);
-		for (int i = 0; i < SaveSceneManager.s_saveSerializeList.Count; i++)
-		{
-			SaveSceneManager.s_saveSerializeList[i].RegisterToSaveSceneManager(this);
-		}
-		SaveSceneManager.s_saveSerializeList.Clear();
-	}
+    public void RegisterGameObject(GameObject go) {
+        go.GetComponentsInChildren(s_saveSerializeList);
+        for (var i = 0; i < s_saveSerializeList.Count; i++) {
+            s_saveSerializeList[i].RegisterToSaveSceneManager(this);
+        }
 
-	public void UnregisterGameObject(GameObject go)
-	{
-		go.GetComponentsInChildren<SaveSerialize>(SaveSceneManager.s_saveSerializeList);
-		for (int i = 0; i < SaveSceneManager.s_saveSerializeList.Count; i++)
-		{
-			SaveSceneManager.s_saveSerializableHashSet.Add(SaveSceneManager.s_saveSerializeList[i]);
-		}
-		this.SaveData.RemoveAll((SaveSceneManager.SaveId a) => SaveSceneManager.s_saveSerializableHashSet.Contains(a.Save));
-		SaveSceneManager.s_saveSerializeList.Clear();
-		SaveSceneManager.s_saveSerializableHashSet.Clear();
-	}
+        s_saveSerializeList.Clear();
+    }
 
-	public ISerializable IdToSaveSerialize(MoonGuid id)
-	{
-		if (id == null)
-		{
-			return null;
-		}
-		for (int i = 0; i < this.SaveData.Count; i++)
-		{
-			SaveSceneManager.SaveId saveId = this.SaveData[i];
-			if (saveId.Id == id)
-			{
-				return saveId.Save;
-			}
-		}
-		return null;
-	}
+    public void UnregisterGameObject(GameObject go) {
+        go.GetComponentsInChildren(s_saveSerializeList);
+        for (var i = 0; i < s_saveSerializeList.Count; i++) {
+            s_saveSerializableHashSet.Add(s_saveSerializeList[i]);
+        }
 
-	public MoonGuid SaveSerializeToId(ISerializable saveSerialize)
-	{
-		if (saveSerialize == null)
-		{
-			return null;
-		}
-		for (int i = 0; i < this.SaveData.Count; i++)
-		{
-			SaveSceneManager.SaveId saveId = this.SaveData[i];
-			if (saveId.Save == saveSerialize)
-			{
-				return saveId.Id;
-			}
-		}
-		return MoonGuid.Empty;
-	}
+        SaveData.RemoveAll(a => s_saveSerializableHashSet.Contains(a.Save));
+        s_saveSerializeList.Clear();
+        s_saveSerializableHashSet.Clear();
+    }
 
-	public bool SaveSerializeIsRegistered(ISerializable serializable)
-	{
-		for (int i = 0; i < this.SaveData.Count; i++)
-		{
-			SaveSceneManager.SaveId saveId = this.SaveData[i];
-			if (saveId.Save == serializable)
-			{
-				return true;
-			}
-		}
-		return false;
-	}
+    public ISerializable IdToSaveSerialize(MoonGuid id) {
+        if (id == null) {
+            return null;
+        }
 
-	public void AddSaveObject(ISerializable saveSerialize, MoonGuid guid)
-	{
-		SaveSceneManager.SaveId item = new SaveSceneManager.SaveId
-		{
-			Id = guid,
-			Save = saveSerialize
-		};
-		this.SaveData.RemoveAll((SaveSceneManager.SaveId a) => a.Id == guid);
-		this.SaveData.Add(item);
-	}
+        for (var i = 0; i < SaveData.Count; i++) {
+            var saveId = SaveData[i];
+            if (saveId.Id == id) {
+                return saveId.Save;
+            }
+        }
 
-	public static void RemoveSaveDataFromMaster(GameObject go)
-	{
-		go.GetComponentsInChildren<SaveSerialize>(SaveSceneManager.s_saveSerializeList);
-		for (int i = 0; i < SaveSceneManager.s_saveSerializeList.Count; i++)
-		{
-			SaveSerialize saveSerialize = SaveSceneManager.s_saveSerializeList[i];
-			MoonGuid moonGUID = MoonGuid.Empty;
-			foreach (SaveSceneManager.SaveId saveId in SaveSceneManager.Master.SaveData)
-			{
-				if (saveId.Save == saveSerialize)
-				{
-					moonGUID = saveId.Id;
-				}
-			}
-			if (moonGUID != MoonGuid.Empty)
-			{
-				Game.Checkpoint.SaveGameData.Master.SaveObjects.RemoveAll((SaveObject a) => a.Id == moonGUID);
-			}
-		}
-		SaveSceneManager.s_saveSerializeList.Clear();
-	}
+        return null;
+    }
 
-	public void Save(SaveScene saveScene)
-	{
-		saveScene.SaveObjects.Clear();
-		for (int i = 0; i < this.SaveData.Count; i++)
-		{
-			SaveSceneManager.SaveId saveId = this.SaveData[i];
-			try
-			{
-				if (saveId.Save as Component != null)
-				{
-					SaveObject item = new SaveObject(saveId.Id);
-					item.Data.WriteMode();
-					saveId.Save.Serialize(item.Data);
-					saveScene.SaveObjects.Add(item);
-				}
-			}
-			catch (Exception ex)
-			{
-			}
-		}
-	}
+    public MoonGuid SaveSerializeToId(ISerializable saveSerialize) {
+        if (saveSerialize == null) {
+            return null;
+        }
 
-	public void SaveWithoutClearing(SaveScene saveScene)
-	{
-		this.m_saveCache.Clear();
-		for (int i = 0; i < saveScene.SaveObjects.Count; i++)
-		{
-			this.m_saveCache.Add(saveScene.SaveObjects[i].Id, saveScene.SaveObjects[i].Data);
-		}
-		for (int j = 0; j < this.SaveData.Count; j++)
-		{
-			SaveSceneManager.SaveId saveId = this.SaveData[j];
-			try
-			{
-				if (saveId.Save as Component != null)
-				{
-					Archive archive;
-					if (this.m_saveCache.TryGetValue(saveId.Id, out archive))
-					{
-						archive.WriteMode();
-						saveId.Save.Serialize(archive);
-					}
-					else
-					{
-						SaveObject item = new SaveObject(saveId.Id);
-						item.Data.WriteMode();
-						saveId.Save.Serialize(item.Data);
-						saveScene.SaveObjects.Add(item);
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-			}
-		}
-		this.m_saveCache.Clear();
-	}
+        for (var i = 0; i < SaveData.Count; i++) {
+            var saveId = SaveData[i];
+            if (saveId.Save == saveSerialize) {
+                return saveId.Id;
+            }
+        }
 
-	public void Save(SaveScene saveScene, ISerializable serializable)
-	{
-		MoonGuid moonGuid = this.SaveSerializeToId(serializable);
-		bool flag = false;
-		for (int i = 0; i < saveScene.SaveObjects.Count; i++)
-		{
-			if (moonGuid == saveScene.SaveObjects[i].Id)
-			{
-				Archive data = saveScene.SaveObjects[i].Data;
-				data.WriteMode();
-				serializable.Serialize(data);
-				flag = true;
-			}
-		}
-		if (!flag)
-		{
-			SaveObject item = new SaveObject(moonGuid);
-			saveScene.SaveObjects.Add(item);
-			Archive data2 = item.Data;
-			data2.WriteMode();
-			serializable.Serialize(data2);
-		}
-	}
+        return MoonGuid.Empty;
+    }
 
-	public void Load(SaveScene saveScene, HashSet<SaveSerialize> objects)
-	{
-		for (int i = 0; i < saveScene.SaveObjects.Count; i++)
-		{
-			SaveObject saveObject = saveScene.SaveObjects[i];
-			ISerializable serializable = this.IdToSaveSerialize(saveObject.Id);
-			try
-			{
-				SaveSerialize saveSerialize = serializable as SaveSerialize;
-				if (saveSerialize != null && objects.Contains(saveSerialize))
-				{
-					saveObject.Data.ReadMode();
-					serializable.Serialize(saveObject.Data);
-				}
-			}
-			catch (Exception ex)
-			{
-			}
-		}
-		if (bootstrapHook != null) {
-			try
-			{
-				bootstrapHook(sceneRoot);
-			}
-			catch (Exception ex)
-			{
-				Randomizer.log("Bootstrap exception: " + ex.ToString());
-			}
-		}
-	}
+    public bool SaveSerializeIsRegistered(ISerializable serializable) {
+        for (var i = 0; i < SaveData.Count; i++) {
+            var saveId = SaveData[i];
+            if (saveId.Save == serializable) {
+                return true;
+            }
+        }
 
-	public void Load(SaveScene saveScene)
-	{
-		for (int i = 0; i < saveScene.SaveObjects.Count; i++)
-		{
-			SaveObject saveObject = saveScene.SaveObjects[i];
-			ISerializable serializable = this.IdToSaveSerialize(saveObject.Id);
-			try
-			{
-				if (serializable as Component)
-				{
-					saveObject.Data.ReadMode();
-					serializable.Serialize(saveObject.Data);
-				}
-			}
-			catch (Exception ex)
-			{
-			}
-		}
-		if (bootstrapHook != null) {
-			try
-			{
-				bootstrapHook(sceneRoot);
-			}
-			catch (Exception ex)
-			{
-				Randomizer.log("Bootstrap exception: " + ex.ToString());
-			}
-		}
-	}
+        return false;
+    }
 
-	public void AddChildSaveSerializables()
-	{
-		this.SaveData.Clear();
-		try
-		{
-			this.RegisterGameObject(base.gameObject);
-		}
-		catch (Exception ex)
-		{
-		}
-	}
+    public void AddSaveObject(ISerializable saveSerialize, MoonGuid guid) {
+        var item = new SaveId {
+            Id = guid,
+            Save = saveSerialize
+        };
+        SaveData.RemoveAll(a => a.Id == guid);
+        SaveData.Add(item);
+    }
 
-	public static void ClearSaveSlotForOneLife(SaveGameData data)
-	{
-		SaveObject item = default(SaveObject);
-		if (SeinDeathsManager.Instance)
-		{
-			item = data.Master.SaveObjects.Find((SaveObject a) => a.Id == SeinDeathsManager.Instance.MoonGuid);
-		}
-		data.PendingScenes.Clear();
-		data.Scenes.Clear();
-		SaveScene master = data.Master;
-		master.SaveObjects.Add(item);
-	}
+    public static void RemoveSaveDataFromMaster(GameObject go) {
+        go.GetComponentsInChildren(s_saveSerializeList);
+        for (var i = 0; i < s_saveSerializeList.Count; i++) {
+            var saveSerialize = s_saveSerializeList[i];
+            var moonGUID = MoonGuid.Empty;
+            foreach (var saveId in Master.SaveData) {
+                if (saveId.Save == saveSerialize) {
+                    moonGUID = saveId.Id;
+                }
+            }
 
-	public static SaveSceneManager Master;
+            if (moonGUID != MoonGuid.Empty) {
+                Game.Checkpoint.SaveGameData.Master.SaveObjects.RemoveAll(a => a.Id == moonGUID);
+            }
+        }
 
-	public List<SaveSceneManager.SaveId> SaveData = new List<SaveSceneManager.SaveId>();
+        s_saveSerializeList.Clear();
+    }
 
-	private static readonly List<SaveSerialize> s_saveSerializeList = new List<SaveSerialize>();
+    public void Save(SaveScene saveScene) {
+        saveScene.SaveObjects.Clear();
+        for (var i = 0; i < SaveData.Count; i++) {
+            var saveId = SaveData[i];
+            try {
+                if (saveId.Save as Component != null) {
+                    var item = new SaveObject(saveId.Id);
+                    item.Data.WriteMode();
+                    saveId.Save.Serialize(item.Data);
+                    saveScene.SaveObjects.Add(item);
+                }
+            } catch (Exception ex) {
+            }
+        }
+    }
 
-	private static readonly HashSet<ISerializable> s_saveSerializableHashSet = new HashSet<ISerializable>();
+    public void SaveWithoutClearing(SaveScene saveScene) {
+        m_saveCache.Clear();
+        for (var i = 0; i < saveScene.SaveObjects.Count; i++) {
+            m_saveCache.Add(saveScene.SaveObjects[i].Id, saveScene.SaveObjects[i].Data);
+        }
 
-	private Dictionary<MoonGuid, Archive> m_saveCache = new Dictionary<MoonGuid, Archive>();
+        for (var j = 0; j < SaveData.Count; j++) {
+            var saveId = SaveData[j];
+            try {
+                if (saveId.Save as Component != null) {
+                    if (m_saveCache.TryGetValue(saveId.Id, out var archive)) {
+                        archive.WriteMode();
+                        saveId.Save.Serialize(archive);
+                    } else {
+                        var item = new SaveObject(saveId.Id);
+                        item.Data.WriteMode();
+                        saveId.Save.Serialize(item.Data);
+                        saveScene.SaveObjects.Add(item);
+                    }
+                }
+            } catch (Exception ex) {
+            }
+        }
 
-	[Serializable]
-	public class SaveId
-	{
-		public SaveId()
-		{
-		}
+        m_saveCache.Clear();
+    }
 
-		public ISerializable Save
-		{
-			get
-			{
-				return (ISerializable)this.SaveObject;
-			}
-			set
-			{
-				this.SaveObject = (UnityEngine.Object)value;
-			}
-		}
+    public void Save(SaveScene saveScene, ISerializable serializable) {
+        var moonGuid = SaveSerializeToId(serializable);
+        var flag = false;
+        for (var i = 0; i < saveScene.SaveObjects.Count; i++) {
+            if (moonGuid == saveScene.SaveObjects[i].Id) {
+                Archive data = saveScene.SaveObjects[i].Data;
+                data.WriteMode();
+                serializable.Serialize(data);
+                flag = true;
+            }
+        }
 
-		public MoonGuid Id;
+        if (!flag) {
+            var item = new SaveObject(moonGuid);
+            saveScene.SaveObjects.Add(item);
+            Archive data2 = item.Data;
+            data2.WriteMode();
+            serializable.Serialize(data2);
+        }
+    }
 
-		public UnityEngine.Object SaveObject;
-	}
-		
-	public Action<SceneRoot> bootstrapHook;
-	
-	public SceneRoot sceneRoot;
+    public void Load(SaveScene saveScene, HashSet<SaveSerialize> objects) {
+        for (var i = 0; i < saveScene.SaveObjects.Count; i++) {
+            var saveObject = saveScene.SaveObjects[i];
+            var serializable = IdToSaveSerialize(saveObject.Id);
+            try {
+                var saveSerialize = serializable as SaveSerialize;
+                if (saveSerialize != null && objects.Contains(saveSerialize)) {
+                    saveObject.Data.ReadMode();
+                    serializable.Serialize(saveObject.Data);
+                }
+            } catch (Exception ex) {
+            }
+        }
+
+        if (bootstrapHook != null) {
+            try {
+                bootstrapHook(sceneRoot);
+            } catch (Exception ex) {
+                Randomizer.log("Bootstrap exception: " + ex);
+            }
+        }
+    }
+
+    public void Load(SaveScene saveScene) {
+        for (var i = 0; i < saveScene.SaveObjects.Count; i++) {
+            var saveObject = saveScene.SaveObjects[i];
+            var serializable = IdToSaveSerialize(saveObject.Id);
+            try {
+                if (serializable as Component) {
+                    saveObject.Data.ReadMode();
+                    serializable.Serialize(saveObject.Data);
+                }
+            } catch (Exception ex) {
+            }
+        }
+
+        if (bootstrapHook != null) {
+            try {
+                bootstrapHook(sceneRoot);
+            } catch (Exception ex) {
+                Randomizer.log("Bootstrap exception: " + ex);
+            }
+        }
+    }
+
+    public void AddChildSaveSerializables() {
+        SaveData.Clear();
+        try {
+            RegisterGameObject(gameObject);
+        } catch (Exception ex) {
+        }
+    }
+
+    public static void ClearSaveSlotForOneLife(SaveGameData data) {
+        var item = default(SaveObject);
+        if (SeinDeathsManager.Instance) {
+            item = data.Master.SaveObjects.Find((SaveObject a) => a.Id == SeinDeathsManager.Instance.MoonGuid);
+        }
+
+        data.PendingScenes.Clear();
+        data.Scenes.Clear();
+        SaveScene master = data.Master;
+        master.SaveObjects.Add(item);
+    }
+
+    public static SaveSceneManager Master;
+
+    public List<SaveId> SaveData = new List<SaveId>();
+
+    private static readonly List<SaveSerialize> s_saveSerializeList = new List<SaveSerialize>();
+
+    private static readonly HashSet<ISerializable> s_saveSerializableHashSet = new HashSet<ISerializable>();
+
+    private Dictionary<MoonGuid, Archive> m_saveCache = new Dictionary<MoonGuid, Archive>();
+
+    [Serializable]
+    public class SaveId {
+        public ISerializable Save {
+            get => (ISerializable)SaveObject;
+            set => SaveObject = (Object)value;
+        }
+
+        public MoonGuid Id;
+
+        public Object SaveObject;
+    }
+
+    public Action<SceneRoot> bootstrapHook;
+
+    public SceneRoot sceneRoot;
 }

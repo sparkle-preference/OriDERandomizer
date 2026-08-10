@@ -1,12 +1,10 @@
-using Game;
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
-using UnityEngine;
+using Game;
 
 public class RandomizerKeysanity {
-
     public bool IsActive;
     private Dictionary<MoonGuid, int> doorKeyMap;
     private Dictionary<int, MoonGuid> reverseDoorKeyMap;
@@ -15,7 +13,7 @@ public class RandomizerKeysanity {
     private RandomizerInventory inventory;
 
     public RandomizerKeysanity(RandomizerInventory inv) {
-        doorKeyMap = new Dictionary<MoonGuid, int>() {
+        doorKeyMap = new Dictionary<MoonGuid, int> {
             { new MoonGuid(-1232154268, 1164352171, -836255810, -1590216903), 300 },
             { new MoonGuid(594661726, 1329767267, -1704907880, -27301018), 301 },
             { new MoonGuid(-1932550571, 1250172391, -1917455943, -1939528727), 302 },
@@ -32,19 +30,19 @@ public class RandomizerKeysanity {
 
         reverseDoorKeyMap = doorKeyMap.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
 
-        hintMap = new Dictionary<int, string>() {
-            { 300, "Glades Pool"},
-            { 301, "Lower Spirit Caverns"},
-            { 302, "Grotto"},
-            { 303, "Swamp"},
-            { 304, "Upper Spirit Caverns"},
-            { 305, "Lower Ginso"},
-            { 306, "Upper Ginso"},
-            { 307, "Misty"},
-            { 308, "Forlorn"},
-            { 309, "Lower Sorrow"},
-            { 310, "Mid Sorrow"},
-            { 311, "Upper Sorrow"},
+        hintMap = new Dictionary<int, string> {
+            { 300, "Glades Pool" },
+            { 301, "Lower Spirit Caverns" },
+            { 302, "Grotto" },
+            { 303, "Swamp" },
+            { 304, "Upper Spirit Caverns" },
+            { 305, "Lower Ginso" },
+            { 306, "Upper Ginso" },
+            { 307, "Misty" },
+            { 308, "Forlorn" },
+            { 309, "Lower Sorrow" },
+            { 310, "Mid Sorrow" },
+            { 311, "Upper Sorrow" },
         };
 
         inventory = inv;
@@ -52,37 +50,39 @@ public class RandomizerKeysanity {
 
     public void Initialize() {
         IsActive = false;
-        keyClueMap = new Dictionary<int, List<RandomizerKeysanityHintInfo>>() {
-            { 300, new List<RandomizerKeysanityHintInfo>()},
-            { 301, new List<RandomizerKeysanityHintInfo>()},
-            { 302, new List<RandomizerKeysanityHintInfo>()},
-            { 303, new List<RandomizerKeysanityHintInfo>()},
-            { 304, new List<RandomizerKeysanityHintInfo>()},
-            { 305, new List<RandomizerKeysanityHintInfo>()},
-            { 306, new List<RandomizerKeysanityHintInfo>()},
-            { 307, new List<RandomizerKeysanityHintInfo>()},
-            { 308, new List<RandomizerKeysanityHintInfo>()},
-            { 309, new List<RandomizerKeysanityHintInfo>()},
-            { 310, new List<RandomizerKeysanityHintInfo>()},
-            { 311, new List<RandomizerKeysanityHintInfo>()},
+        keyClueMap = new Dictionary<int, List<RandomizerKeysanityHintInfo>> {
+            { 300, new List<RandomizerKeysanityHintInfo>() },
+            { 301, new List<RandomizerKeysanityHintInfo>() },
+            { 302, new List<RandomizerKeysanityHintInfo>() },
+            { 303, new List<RandomizerKeysanityHintInfo>() },
+            { 304, new List<RandomizerKeysanityHintInfo>() },
+            { 305, new List<RandomizerKeysanityHintInfo>() },
+            { 306, new List<RandomizerKeysanityHintInfo>() },
+            { 307, new List<RandomizerKeysanityHintInfo>() },
+            { 308, new List<RandomizerKeysanityHintInfo>() },
+            { 309, new List<RandomizerKeysanityHintInfo>() },
+            { 310, new List<RandomizerKeysanityHintInfo>() },
+            { 311, new List<RandomizerKeysanityHintInfo>() },
         };
     }
 
-    public void ApplyKeystoneCount(MoonGuid guid, int numberUsed) { 
+    public void ApplyKeystoneCount(MoonGuid guid, int numberUsed) {
         if (!IsActive) {
             return;
         }
 
         if (doorKeyMap.TryGetValue(guid, out var id)) {
-            if(!GetDoorHint(guid)) SetDoorHint(guid);
+            if (!GetDoorHint(guid)) SetDoorHint(guid);
             var count = inventory.GetRandomizerItem(id);
             Characters.Sein.Inventory.Keystones = count - numberUsed;
 
             if (count < countForDoor(id)) {
                 Randomizer.printInfo($"{hintMap[id]} {count}/{countForDoor(id)}: {hintsForDoor(id)}");
             }
+
             return;
         }
+
         Characters.Sein.Inventory.Keystones = 0;
     }
 
@@ -90,24 +90,25 @@ public class RandomizerKeysanity {
 
     private bool GetDoorHint(int id) => GetDoorHint(reverseDoorKeyMap[id]);
 
-    private void SetDoorHint(MoonGuid guid) =>  inventory.SetRandomizerItem(312, inventory.GetRandomizerItem(312) | (1 << RandomizerLocationManager.KeystoneDoors[guid].Index));
+    private void SetDoorHint(MoonGuid guid) => inventory.SetRandomizerItem(312, inventory.GetRandomizerItem(312) | (1 << RandomizerLocationManager.KeystoneDoors[guid].Index));
 
     public string MapHintForDoor(MoonGuid guid) {
         if (doorKeyMap.TryGetValue(guid, out var id)) {
-            if(RandomizerLocationManager.IsDoorOpen(guid))
+            if (RandomizerLocationManager.IsDoorOpen(guid))
                 return $"${hintMap[id]} (opened)$";
 
-            if(!IsActive) return hintMap[id];
+            if (!IsActive) return hintMap[id];
 
             var count = inventory.GetRandomizerItem(id);
-            if(count == countForDoor(id)) 
+            if (count == countForDoor(id))
                 return $"${hintMap[id]} {count}/{count}\n(Openable!)$";
 
-            if(GetDoorHint(guid))
+            if (GetDoorHint(guid))
                 return $"{hintMap[id]} {count}/{countForDoor(id)}\n{hintsForDoor(id)}";
 
             return $"{hintMap[id]} {count}/{countForDoor(id)}\n(Touch door to get hint!)";
         }
+
         Randomizer.log($"Unknown door {guid}");
         return "?Unknown Door?";
     }
@@ -122,17 +123,22 @@ public class RandomizerKeysanity {
 
     // coords -2..-257 are multiworld manifest pseudo-locations: those keys sit
     // in another world, so "found" means the server granted us that slot
-    private bool clueResolved(int coords) => (coords <= -2 && coords >= -257) ? RandomizerMW.ManifestLocGranted(coords) : Randomizer.HaveCoord(coords);
+    private bool clueResolved(int coords) => coords <= -2 && coords >= -257 ? RandomizerMW.ManifestLocGranted(coords) : Randomizer.HaveCoord(coords);
 
-    private static int apSlot(int coords) => (coords <= -2 && coords >= -257) ? -coords - 2 : -1;
+    private static int apSlot(int coords) => coords <= -2 && coords >= -257 ? -coords - 2 : -1;
 
     // Me when I'm using LINQ responsibly (<- me when I lie)
-    private string hintsForDoor(int id, int skipCoords = -1) => RandomizerMW.ResolveNames(String.Join(", ", keyClueMap[id]
-        .Where(rkhi => !(rkhi.Coords == skipCoords || clueResolved(rkhi.Coords)))         // only look at hints we still need
-        .GroupBy(rkhi => RandomizerMW.ApHintOr(apSlot(rkhi.Coords), rkhi.Area))           // group them by their areas
-        .OrderBy(grp=>$"{4-grp.Count()}{grp.Key}")                                        // sort by count and then area alphabetically
-        .Select(grp => grp.Count() == 1 ? grp.Key : $"{grp.Key} x{grp.Count()}")          // format for display (with x[NUM] for multiples)
-        .ToArray()));  // ^^^ me when I at least comment and format my LINQ bullshit reasonably?
+    private string hintsForDoor(int id, int skipCoords = -1) => RandomizerMW.ResolveNames(
+        String.Join(
+            ", ",
+            keyClueMap[id]
+                .Where(rkhi => !(rkhi.Coords == skipCoords || clueResolved(rkhi.Coords))) // only look at hints we still need
+                .GroupBy(rkhi => RandomizerMW.ApHintOr(apSlot(rkhi.Coords), rkhi.Area)) // group them by their areas
+                .OrderBy(grp => $"{4 - grp.Count()}{grp.Key}") // sort by count and then area alphabetically
+                .Select(grp => grp.Count() == 1 ? grp.Key : $"{grp.Key} x{grp.Count()}") // format for display (with x[NUM] for multiples)
+                .ToArray()
+        )
+    ); // ^^^ me when I at least comment and format my LINQ bullshit reasonably?
 
     // doors Ori has already given up their hint for: that is the moment an
     // Archipelago hint is worth buying for the keys we still need
@@ -153,20 +159,22 @@ public class RandomizerKeysanity {
 
     private string GetProgress(int id, bool printKeystone) {
         if (hintMap.TryGetValue(id, out var baseHint)) {
-            var canOpen = (inventory.GetRandomizerItem(id) - countForDoor(id)) == 0;
+            var canOpen = inventory.GetRandomizerItem(id) - countForDoor(id) == 0;
             var hint = $"{baseHint}{(printKeystone ? " Keystone " : " ")}({inventory.GetRandomizerItem(id)}/{countForDoor(id)})";
             if (canOpen) {
                 return $"${hint}$";
             }
+
             return hint;
         }
+
         return string.Empty;
     }
 
     public void ShowPickupHint(int id, int foundAt) {
         var progress = GetProgress(id, true);
-        if(progress.Length > 0 && progress[0] != '$' && GetDoorHint(id))
-            progress +=  $"\n(Remaining: {hintsForDoor(id, foundAt)})";
+        if (progress.Length > 0 && progress[0] != '$' && GetDoorHint(id))
+            progress += $"\n(Remaining: {hintsForDoor(id, foundAt)})";
 
         RandomizerSwitch.PickupMessage(progress);
     }
@@ -180,6 +188,7 @@ public class RandomizerKeysanity {
             RandomizerSwitch.PickupMessage($"{hintMap[keyId]} Door Hint");
             return;
         }
+
         var guid = reverseDoorKeyMap[keyId];
         if (!GetDoorHint(guid))
             SetDoorHint(guid);
@@ -195,6 +204,7 @@ public class RandomizerKeysanity {
         for (var id = 300; id < 312;) {
             sb.Append($"{GetProgress(id++, false)} {GetProgress(id++, false)} {GetProgress(id++, false)}\n");
         }
+
         Randomizer.printInfo(sb.ToString().TrimEnd());
     }
 
@@ -203,10 +213,11 @@ public class RandomizerKeysanity {
             return;
         }
 
-        keyClueMap[id].Add(new RandomizerKeysanityHintInfo {
-            Coords = coords,
-            Area = area,
-        });
+        keyClueMap[id].Add(
+            new RandomizerKeysanityHintInfo {
+                Coords = coords,
+                Area = area,
+            }
+        );
     }
-
 }

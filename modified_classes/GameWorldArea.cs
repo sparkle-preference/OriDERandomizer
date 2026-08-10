@@ -5,59 +5,65 @@ using UnityEngine;
 [ExecuteInEditMode]
 public class GameWorldArea : MonoBehaviour
 {
-	private const float PIXELS_PER_UNIT = 5f;
-	public List<GameWorldArea.WorldMapIcon> Icons = new List<GameWorldArea.WorldMapIcon>();
-	public MessageProvider AreaName;
-	public MessageProvider LowerAreaName;
-	public string AreaNameString;
-	public CageStructureTool CageStructureTool;
-	public Transform BoundingTransform;
-	public Texture WorldMapTexture;
-	public string AreaIdentifier = string.Empty;
-	public CageStructureTool BoundaryCage;
-	public Condition VisitableCondition;
+    public Bounds Bounds => new Bounds(BoundingTransform.position, BoundingTransform.localScale);
 
-	public Bounds Bounds
-	{
-		get => new Bounds(this.BoundingTransform.position, this.BoundingTransform.localScale);
-	}
+    public Rect BoundingRect =>
+        new Rect
+        {
+            width = BoundingTransform.lossyScale.x,
+            height = BoundingTransform.lossyScale.y,
+            center = BoundingTransform.position
+        };
 
-	public Rect BoundingRect
-	{
-		get
-		{
-			return new Rect()
-			{
-				width = this.BoundingTransform.lossyScale.x,
-				height = this.BoundingTransform.lossyScale.y,
-				center = (Vector2) this.BoundingTransform.position
-			};
-		}
-	}
+    public bool InsideFace(Vector3 worldPosition)
+    {
+        var vector = BoundaryCage.transform.InverseTransformPoint(worldPosition);
+        return BoundaryCage.FindFaceAtPositionFaster(vector) != null;
+    }
 
-	public bool InsideFace(Vector3 worldPosition)
-	{
-		return this.BoundaryCage.FindFaceAtPositionFaster(this.BoundaryCage.transform.InverseTransformPoint(worldPosition)) != null;
-	}
+    private const float PIXELS_PER_UNIT = 5f;
 
-	[Serializable]
-	public class WorldMapIcon
-	{
-		public MoonGuid Guid;
-		public WorldMapIconType Icon;
-		public Vector2 Position;
-		public bool IsSecret;
+    public List<WorldMapIcon> Icons = new List<WorldMapIcon>();
 
-		public WorldMapIcon(SceneMetaData.WorldMapIcon worldMapIcon)
-		{
-			this.Guid = new MoonGuid(worldMapIcon.Guid);
-			this.Position = worldMapIcon.Position;
-			this.Icon = worldMapIcon.Icon;
-			this.IsSecret = worldMapIcon.IsSecret;
-		}
+    public MessageProvider AreaName;
 
-		public WorldMapIcon()
-		{
-		}
-	}
+    public MessageProvider LowerAreaName;
+
+    public string AreaNameString;
+
+    public CageStructureTool CageStructureTool;
+
+    public Transform BoundingTransform;
+
+    public Texture WorldMapTexture;
+
+    public string AreaIdentifier = string.Empty;
+
+    public CageStructureTool BoundaryCage;
+
+    public Condition VisitableCondition;
+
+    [Serializable]
+    public class WorldMapIcon
+    {
+        public WorldMapIcon(SceneMetaData.WorldMapIcon worldMapIcon)
+        {
+            Guid = new MoonGuid(worldMapIcon.Guid);
+            Position = worldMapIcon.Position;
+            Icon = worldMapIcon.Icon;
+            IsSecret = worldMapIcon.IsSecret;
+        }
+
+        public WorldMapIcon()
+        {
+        }
+
+        public MoonGuid Guid;
+
+        public WorldMapIconType Icon;
+
+        public Vector2 Position;
+
+        public bool IsSecret;
+    }
 }

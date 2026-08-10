@@ -1,287 +1,228 @@
-using System;
 using System.Collections.Generic;
 using Game;
 using UnityEngine;
 
-public class RuntimeGameWorldArea
-{
-	public RuntimeGameWorldArea(GameWorldArea area)
-	{
-		this.Area = area;
-		this.Initialize();
-	}
+public class RuntimeGameWorldArea {
+    public RuntimeGameWorldArea(GameWorldArea area) {
+        Area = area;
+        Initialize();
+    }
 
-	public Vector2 FindCenterPositionOnDiscoveredAreas()
-	{
-		int num = 0;
-		Vector2 a = Vector2.zero;
-		Rect[] facesAsRectangles = this.Area.CageStructureTool.FacesAsRectangles;
-		for (int i = 0; i < this.Area.CageStructureTool.Faces.Count; i++)
-		{
-			CageStructureTool.Face face = this.Area.CageStructureTool.Faces[i];
-			if (this.IsDiscovered(face))
-			{
-				Rect rect = facesAsRectangles[i];
-				a += rect.center;
-				num++;
-			}
-		}
-		if (num > 0)
-		{
-			return a / (float)num;
-		}
-		return this.Area.BoundingRect.center;
-	}
+    public Vector2 FindCenterPositionOnDiscoveredAreas() {
+        var num = 0;
+        var a = Vector2.zero;
+        var facesAsRectangles = Area.CageStructureTool.FacesAsRectangles;
+        for (var i = 0; i < Area.CageStructureTool.Faces.Count; i++) {
+            var face = Area.CageStructureTool.Faces[i];
+            if (IsDiscovered(face)) {
+                var rect = facesAsRectangles[i];
+                a += rect.center;
+                num++;
+            }
+        }
 
-	public Vector2 FindCenterPositionOnUndiscoveredAreas()
-	{
-		int num = 0;
-		Vector2 a = Vector2.zero;
-		Rect[] facesAsRectangles = this.Area.CageStructureTool.FacesAsRectangles;
-		for (int i = 0; i < this.Area.CageStructureTool.Faces.Count; i++)
-		{
-			CageStructureTool.Face face = this.Area.CageStructureTool.Faces[i];
-			if (!this.IsDiscovered(face))
-			{
-				Rect rect = facesAsRectangles[i];
-				a += rect.center;
-				num++;
-			}
-		}
-		if (num > 0)
-		{
-			return a / (float)num;
-		}
-		return this.Area.BoundingRect.center;
-	}
+        if (num > 0) {
+            return a / num;
+        }
 
-	public void Initialize()
-	{
-		this.m_dirtyCompletionAmount = true;
-		this.Icons.Clear();
-		this.Icons.Capacity = this.Area.Icons.Count;
-		foreach (GameWorldArea.WorldMapIcon icon in this.Area.Icons)
-		{
-			this.Icons.Add(new RuntimeWorldMapIcon(icon, this));
-		}
-		this.m_worldAreaStates.Clear();
-	}
+        return Area.BoundingRect.center;
+    }
 
-	public bool AreaDiscovered
-	{
-		get
-		{
-			return this.m_worldAreaStates.Count > 0;
-		}
-	}
+    public Vector2 FindCenterPositionOnUndiscoveredAreas() {
+        var num = 0;
+        var a = Vector2.zero;
+        var facesAsRectangles = Area.CageStructureTool.FacesAsRectangles;
+        for (var i = 0; i < Area.CageStructureTool.Faces.Count; i++) {
+            var face = Area.CageStructureTool.Faces[i];
+            if (!IsDiscovered(face)) {
+                var rect = facesAsRectangles[i];
+                a += rect.center;
+                num++;
+            }
+        }
 
-	public float CompletionAmount
-	{
-		get
-		{
-			if (this.m_dirtyCompletionAmount)
-			{
-				this.m_dirtyCompletionAmount = false;
-				this.UpdateCompletionAmount();
-			}
-			return this.m_completionAmount;
-		}
-	}
+        if (num > 0) {
+            return a / num;
+        }
 
-	public void DirtyCompletionAmount()
-	{
-		this.m_dirtyCompletionAmount = true;
-	}
+        return Area.BoundingRect.center;
+    }
 
-	public int CompletionPercentage
-	{
-		get
-		{
-			return Mathf.RoundToInt(this.CompletionAmount * 100f);
-		}
-	}
+    public void Initialize() {
+        m_dirtyCompletionAmount = true;
+        Icons.Clear();
+        Icons.Capacity = Area.Icons.Count;
+        foreach (var icon in Area.Icons) {
+            Icons.Add(new RuntimeWorldMapIcon(icon, this));
+        }
 
-	private bool IconIsCompletionType(WorldMapIconType type)
-	{
-		switch (type)
-		{
-		case WorldMapIconType.HealthUpgrade:
-		case WorldMapIconType.EnergyUpgrade:
-		case WorldMapIconType.AbilityPoint:
-		case WorldMapIconType.Experience:
-		case WorldMapIconType.MapstonePickup:
-			break;
-		default:
-			if (type != WorldMapIconType.Keystone)
-			{
-				return false;
-			}
-			break;
-		}
-		return true;
-	}
+        m_worldAreaStates.Clear();
+    }
 
-	public void UpdateCompletionAmount()
-	{
-		int total = RandomizerStatsManager.PickupCounts[this.Area.AreaIdentifier];
-		int collected = RandomizerStatsManager.GetObtainedPickupCount(this.Area.AreaIdentifier);
+    public bool AreaDiscovered => m_worldAreaStates.Count > 0;
 
-		if (RandomizerTrackedDataManager.MapBitsByArea.ContainsKey(this.Area.AreaIdentifier))
-		{
-			total++;
-			if (RandomizerTrackedDataManager.GetMapstone(this.Area.AreaIdentifier))
-				collected++;
-		}
+    public float CompletionAmount {
+        get {
+            if (m_dirtyCompletionAmount) {
+                m_dirtyCompletionAmount = false;
+                UpdateCompletionAmount();
+            }
 
-		this.m_completionAmount = (float)collected / (float)total;
-	}
+            return m_completionAmount;
+        }
+    }
 
-	public void VisitMapAreaAtPosition(Vector3 worldPosition)
-	{
-		Vector3 position = this.Area.CageStructureTool.transform.InverseTransformPoint(worldPosition);
-		CageStructureTool.Face face = this.Area.CageStructureTool.FindFaceAtPositionFaster(position);
-		if (face != null)
-		{
-			WorldMapAreaState worldMapAreaState;
-			if (this.m_worldAreaStates.TryGetValue(face.ID, out worldMapAreaState))
-			{
-				if (worldMapAreaState != WorldMapAreaState.Visited)
-				{
-					this.m_dirtyCompletionAmount = true;
-					this.m_worldAreaStates[face.ID] = WorldMapAreaState.Visited;
-				}
-			}
-			else
-			{
-				this.m_dirtyCompletionAmount = true;
-				this.m_worldAreaStates[face.ID] = WorldMapAreaState.Visited;
-			}
-		}
-	}
+    public void DirtyCompletionAmount() {
+        m_dirtyCompletionAmount = true;
+    }
 
-	private bool HasSenseAbility
-	{
-		get
-		{
-			return Characters.Sein && Characters.Sein.PlayerAbilities.Sense.HasAbility;
-		}
-	}
+    public int CompletionPercentage => Mathf.RoundToInt(CompletionAmount * 100f);
 
-	public bool IsHidden(Vector3 worldPosition)
-	{
-		if (this.HasSenseAbility)
-		{
-			return false;
-		}
-		Vector3 position = this.Area.CageStructureTool.transform.InverseTransformPoint(worldPosition);
-		CageStructureTool.Face face = this.Area.CageStructureTool.FindFaceAtPositionFaster(position);
-		return face == null || this.IsHidden(face);
-	}
+    private bool IconIsCompletionType(WorldMapIconType type) {
+        switch (type) {
+            case WorldMapIconType.HealthUpgrade:
+            case WorldMapIconType.EnergyUpgrade:
+            case WorldMapIconType.AbilityPoint:
+            case WorldMapIconType.Experience:
+            case WorldMapIconType.MapstonePickup:
+                break;
+            default:
+                if (type != WorldMapIconType.Keystone) {
+                    return false;
+                }
 
-	public bool IsDiscovered(Vector3 worldPosition)
-	{
-		Vector3 position = this.Area.CageStructureTool.transform.InverseTransformPoint(worldPosition);
-		CageStructureTool.Face face = this.Area.CageStructureTool.FindFaceAtPositionFaster(position);
-		return face != null && this.IsDiscovered(face);
-	}
+                break;
+        }
 
-	public bool IsHidden(CageStructureTool.Face face)
-	{
-		return !this.m_worldAreaStates.ContainsKey(face.ID) || this.m_worldAreaStates[face.ID] == WorldMapAreaState.Hidden;
-	}
+        return true;
+    }
 
-	public bool IsDiscovered(CageStructureTool.Face face)
-	{
-		return this.m_worldAreaStates.ContainsKey(face.ID) && this.m_worldAreaStates[face.ID] == WorldMapAreaState.Discovered;
-	}
+    public void UpdateCompletionAmount() {
+        var total = RandomizerStatsManager.PickupCounts[Area.AreaIdentifier];
+        var collected = RandomizerStatsManager.GetObtainedPickupCount(Area.AreaIdentifier);
 
-	public void Serialize(Archive ar)
-	{
-		if (ar.Reading)
-		{
-			this.m_dirtyCompletionAmount = true;
-			this.m_worldAreaStates.Clear();
-			int num = ar.Serialize(0);
-			for (int i = 0; i < num; i++)
-			{
-				int key = ar.Serialize(0);
-				WorldMapAreaState value = (WorldMapAreaState)ar.Serialize(0);
-				this.m_worldAreaStates.Add(key, value);
-			}
-			num = ar.Serialize(0);
-			for (int j = 0; j < num; j++)
-			{
-				MoonGuid guid = MoonGuid.Empty;
-				guid.Serialize(ar);
-				WorldMapIconType icon = (WorldMapIconType)ar.Serialize(0);
-				RuntimeWorldMapIcon runtimeWorldMapIcon = this.Icons.Find((RuntimeWorldMapIcon a) => a.Guid == guid);
-				if (runtimeWorldMapIcon != null)
-				{
-					runtimeWorldMapIcon.Icon = icon;
-				}
-			}
-		}
-		else
-		{
-			ar.Serialize(this.m_worldAreaStates.Count);
-			foreach (KeyValuePair<int, WorldMapAreaState> keyValuePair in this.m_worldAreaStates)
-			{
-				ar.Serialize(keyValuePair.Key);
-				ar.Serialize((int)keyValuePair.Value);
-			}
-			ar.Serialize(this.Icons.Count);
-			foreach (RuntimeWorldMapIcon runtimeWorldMapIcon2 in this.Icons)
-			{
-				runtimeWorldMapIcon2.Guid.Serialize(ar);
-				ar.Serialize((int)runtimeWorldMapIcon2.Icon);
-			}
-		}
-	}
+        if (RandomizerTrackedDataManager.MapBitsByArea.ContainsKey(Area.AreaIdentifier)) {
+            total++;
+            if (RandomizerTrackedDataManager.GetMapstone(Area.AreaIdentifier))
+                collected++;
+        }
 
-	public void DiscoverAllAreas()
-	{
-		CageStructureTool cageStructureTool = this.Area.CageStructureTool;
-		foreach (CageStructureTool.Face face in cageStructureTool.Faces)
-		{
-			if (!this.m_worldAreaStates.ContainsKey(face.ID))
-			{
-				this.m_worldAreaStates[face.ID] = WorldMapAreaState.Discovered;
-			}
-		}
-	}
+        m_completionAmount = collected / (float)total;
+    }
 
-	public void VisitAllAreas()
-	{
-		this.m_worldAreaStates.Clear();
-		CageStructureTool cageStructureTool = this.Area.CageStructureTool;
-		foreach (CageStructureTool.Face face in cageStructureTool.Faces)
-		{
-			this.m_worldAreaStates[face.ID] = WorldMapAreaState.Visited;
-		}
-	}
+    public void VisitMapAreaAtPosition(Vector3 worldPosition) {
+        var position = Area.CageStructureTool.transform.InverseTransformPoint(worldPosition);
+        var face = Area.CageStructureTool.FindFaceAtPositionFaster(position);
+        if (face != null) {
+            if (m_worldAreaStates.TryGetValue(face.ID, out var worldMapAreaState)) {
+                if (worldMapAreaState != WorldMapAreaState.Visited) {
+                    m_dirtyCompletionAmount = true;
+                    m_worldAreaStates[face.ID] = WorldMapAreaState.Visited;
+                }
+            } else {
+                m_dirtyCompletionAmount = true;
+                m_worldAreaStates[face.ID] = WorldMapAreaState.Visited;
+            }
+        }
+    }
 
-	public bool FaceIsDiscoveredOrVisited(int id)
-	{
-		WorldMapAreaState worldMapAreaState;
-		return this.m_worldAreaStates.TryGetValue(id, out worldMapAreaState) && (worldMapAreaState == WorldMapAreaState.Discovered || worldMapAreaState == WorldMapAreaState.Visited);
-	}
+    private bool HasSenseAbility => Characters.Sein && Characters.Sein.PlayerAbilities.Sense.HasAbility;
 
-	public WorldMapAreaState GetFaceState(int id)
-	{
-		WorldMapAreaState result;
-		if (this.m_worldAreaStates.TryGetValue(id, out result))
-		{
-		}
-		return result;
-	}
+    public bool IsHidden(Vector3 worldPosition) {
+        if (HasSenseAbility) {
+            return false;
+        }
 
-	public GameWorldArea Area;
+        var position = Area.CageStructureTool.transform.InverseTransformPoint(worldPosition);
+        var face = Area.CageStructureTool.FindFaceAtPositionFaster(position);
+        return face == null || IsHidden(face);
+    }
 
-	public List<RuntimeWorldMapIcon> Icons = new List<RuntimeWorldMapIcon>();
+    public bool IsDiscovered(Vector3 worldPosition) {
+        var position = Area.CageStructureTool.transform.InverseTransformPoint(worldPosition);
+        var face = Area.CageStructureTool.FindFaceAtPositionFaster(position);
+        return face != null && IsDiscovered(face);
+    }
 
-	private readonly Dictionary<int, WorldMapAreaState> m_worldAreaStates = new Dictionary<int, WorldMapAreaState>();
+    public bool IsHidden(CageStructureTool.Face face) {
+        return !m_worldAreaStates.ContainsKey(face.ID) || m_worldAreaStates[face.ID] == WorldMapAreaState.Hidden;
+    }
 
-	private float m_completionAmount;
+    public bool IsDiscovered(CageStructureTool.Face face) {
+        return m_worldAreaStates.ContainsKey(face.ID) && m_worldAreaStates[face.ID] == WorldMapAreaState.Discovered;
+    }
 
-	private bool m_dirtyCompletionAmount;
+    public void Serialize(Archive ar) {
+        if (ar.Reading) {
+            m_dirtyCompletionAmount = true;
+            m_worldAreaStates.Clear();
+            var num = ar.Serialize(0);
+            for (var i = 0; i < num; i++) {
+                var key = ar.Serialize(0);
+                var value = (WorldMapAreaState)ar.Serialize(0);
+                m_worldAreaStates.Add(key, value);
+            }
+
+            num = ar.Serialize(0);
+            for (var j = 0; j < num; j++) {
+                var guid = MoonGuid.Empty;
+                guid.Serialize(ar);
+                var icon = (WorldMapIconType)ar.Serialize(0);
+                var runtimeWorldMapIcon = Icons.Find(a => a.Guid == guid);
+                if (runtimeWorldMapIcon != null) {
+                    runtimeWorldMapIcon.Icon = icon;
+                }
+            }
+        } else {
+            ar.Serialize(m_worldAreaStates.Count);
+            foreach (var keyValuePair in m_worldAreaStates) {
+                ar.Serialize(keyValuePair.Key);
+                ar.Serialize((int)keyValuePair.Value);
+            }
+
+            ar.Serialize(Icons.Count);
+            foreach (var runtimeWorldMapIcon2 in Icons) {
+                runtimeWorldMapIcon2.Guid.Serialize(ar);
+                ar.Serialize((int)runtimeWorldMapIcon2.Icon);
+            }
+        }
+    }
+
+    public void DiscoverAllAreas() {
+        var cageStructureTool = Area.CageStructureTool;
+        foreach (var face in cageStructureTool.Faces) {
+            if (!m_worldAreaStates.ContainsKey(face.ID)) {
+                m_worldAreaStates[face.ID] = WorldMapAreaState.Discovered;
+            }
+        }
+    }
+
+    public void VisitAllAreas() {
+        m_worldAreaStates.Clear();
+        var cageStructureTool = Area.CageStructureTool;
+        foreach (var face in cageStructureTool.Faces) {
+            m_worldAreaStates[face.ID] = WorldMapAreaState.Visited;
+        }
+    }
+
+    public bool FaceIsDiscoveredOrVisited(int id) {
+        return m_worldAreaStates.TryGetValue(id, out var worldMapAreaState) && (worldMapAreaState == WorldMapAreaState.Discovered || worldMapAreaState == WorldMapAreaState.Visited);
+    }
+
+    public WorldMapAreaState GetFaceState(int id) {
+        if (m_worldAreaStates.TryGetValue(id, out var result)) {
+        }
+
+        return result;
+    }
+
+    public GameWorldArea Area;
+
+    public List<RuntimeWorldMapIcon> Icons = new List<RuntimeWorldMapIcon>();
+
+    private readonly Dictionary<int, WorldMapAreaState> m_worldAreaStates = new Dictionary<int, WorldMapAreaState>();
+
+    private float m_completionAmount;
+
+    private bool m_dirtyCompletionAmount;
 }

@@ -1,188 +1,163 @@
-using System;
 using UnityEngine;
 
 [Category("BaseAnimator")]
-public class BaseAnimatorAction : ActionMethod
-{
-	public new void Start()
-	{
-		base.Start();
-		if (this.AnimatorsMode == BaseAnimatorAction.FindAnimatorsMode.GameObject)
-		{
-			this.Animators = this.Target.GetComponents<BaseAnimator>();
-		}
-		if (this.AnimatorsMode == BaseAnimatorAction.FindAnimatorsMode.GameObjectAndChildren)
-		{
-			this.Animators = this.Target.GetComponentsInChildren<BaseAnimator>();
-		}
-	}
+public class BaseAnimatorAction : ActionMethod {
+    public new void Start() {
+        base.Start();
+        if (AnimatorsMode == FindAnimatorsMode.GameObject) {
+            Animators = Target.GetComponents<BaseAnimator>();
+        }
 
-	public override void Perform(IContext context)
-	{
-		for (int i = 0; i < this.Animators.Length; i++)
-		{
-			BaseAnimator baseAnimator = this.Animators[i];
-			if (baseAnimator.enabled)
-			{
-				baseAnimator.Initialize();
-				switch (this.Command)
-				{
-				case BaseAnimatorAction.PlayMode.Restart:
-					baseAnimator.Initialize();
-					baseAnimator.AnimatorDriver.SetForward();
-					baseAnimator.AnimatorDriver.Restart();
-					break;
-				case BaseAnimatorAction.PlayMode.RestartReversed:
-					baseAnimator.Initialize();
-					baseAnimator.AnimatorDriver.SetBackwards();
-					baseAnimator.AnimatorDriver.Restart();
-					break;
-				case BaseAnimatorAction.PlayMode.Reverse:
-					baseAnimator.Initialize();
-					baseAnimator.AnimatorDriver.Reverse();
-					break;
-				case BaseAnimatorAction.PlayMode.Stop:
-					baseAnimator.Initialize();
-					baseAnimator.AnimatorDriver.Stop();
-					break;
-				case BaseAnimatorAction.PlayMode.Continue:
-					baseAnimator.Initialize();
-					baseAnimator.AnimatorDriver.Resume();
-					break;
-				case BaseAnimatorAction.PlayMode.ContinueForward:
-					baseAnimator.Initialize();
-					baseAnimator.AnimatorDriver.SetForward();
-					baseAnimator.AnimatorDriver.Resume();
-					break;
-				case BaseAnimatorAction.PlayMode.ContinueReversed:
-					baseAnimator.Initialize();
-					baseAnimator.AnimatorDriver.SetBackwards();
-					baseAnimator.AnimatorDriver.Resume();
-					break;
-				case BaseAnimatorAction.PlayMode.StopAtStart:
-					baseAnimator.Initialize();
-					baseAnimator.AnimatorDriver.Pause();
-					baseAnimator.AnimatorDriver.GoToStart();
-					break;
-				case BaseAnimatorAction.PlayMode.StopAtEnd:
-					baseAnimator.Initialize();
-					baseAnimator.AnimatorDriver.Pause();
-					baseAnimator.AnimatorDriver.GoToEnd();
-					break;
-				}
-			}
-		}
-	}
+        if (AnimatorsMode == FindAnimatorsMode.GameObjectAndChildren) {
+            Animators = Target.GetComponentsInChildren<BaseAnimator>();
+        }
+    }
 
-	public override void PerformInstantly(IContext context)
-	{
-		foreach (BaseAnimator baseAnimator in this.Animators)
-		{
-			if (baseAnimator.enabled)
-			{
-				baseAnimator.Initialize();
-				switch (this.Command)
-				{
-				case BaseAnimatorAction.PlayMode.Restart:
-					baseAnimator.AnimatorDriver.GoToEnd();
-					break;
-				case BaseAnimatorAction.PlayMode.RestartReversed:
-					baseAnimator.AnimatorDriver.GoToStart();
-					break;
-				case BaseAnimatorAction.PlayMode.Reverse:
-					baseAnimator.AnimatorDriver.GoToStart();
-					break;
-				case BaseAnimatorAction.PlayMode.Stop:
-					baseAnimator.AnimatorDriver.Stop();
-					break;
-				case BaseAnimatorAction.PlayMode.Continue:
-					if (baseAnimator.AnimatorDriver.IsReversed)
-					{
-						baseAnimator.AnimatorDriver.GoToStart();
-					}
-					else
-					{
-						baseAnimator.AnimatorDriver.GoToEnd();
-					}
-					break;
-				case BaseAnimatorAction.PlayMode.ContinueForward:
-					baseAnimator.AnimatorDriver.GoToEnd();
-					break;
-				case BaseAnimatorAction.PlayMode.ContinueReversed:
-					baseAnimator.AnimatorDriver.GoToStart();
-					break;
-				case BaseAnimatorAction.PlayMode.StopAtStart:
-					baseAnimator.AnimatorDriver.GoToStart();
-					break;
-				case BaseAnimatorAction.PlayMode.StopAtEnd:
-					baseAnimator.AnimatorDriver.GoToEnd();
-					break;
-				}
-			}
-		}
-	}
+    public override void Perform(IContext context) {
+        for (var i = 0; i < Animators.Length; i++) {
+            var baseAnimator = Animators[i];
+            if (baseAnimator.enabled) {
+                baseAnimator.Initialize();
+                switch (Command) {
+                    case PlayMode.Restart:
+                        baseAnimator.Initialize();
+                        baseAnimator.AnimatorDriver.SetForward();
+                        baseAnimator.AnimatorDriver.Restart();
+                        break;
+                    case PlayMode.RestartReversed:
+                        baseAnimator.Initialize();
+                        baseAnimator.AnimatorDriver.SetBackwards();
+                        baseAnimator.AnimatorDriver.Restart();
+                        break;
+                    case PlayMode.Reverse:
+                        baseAnimator.Initialize();
+                        baseAnimator.AnimatorDriver.Reverse();
+                        break;
+                    case PlayMode.Stop:
+                        baseAnimator.Initialize();
+                        baseAnimator.AnimatorDriver.Stop();
+                        break;
+                    case PlayMode.Continue:
+                        baseAnimator.Initialize();
+                        baseAnimator.AnimatorDriver.Resume();
+                        break;
+                    case PlayMode.ContinueForward:
+                        baseAnimator.Initialize();
+                        baseAnimator.AnimatorDriver.SetForward();
+                        baseAnimator.AnimatorDriver.Resume();
+                        break;
+                    case PlayMode.ContinueReversed:
+                        baseAnimator.Initialize();
+                        baseAnimator.AnimatorDriver.SetBackwards();
+                        baseAnimator.AnimatorDriver.Resume();
+                        break;
+                    case PlayMode.StopAtStart:
+                        baseAnimator.Initialize();
+                        baseAnimator.AnimatorDriver.Pause();
+                        baseAnimator.AnimatorDriver.GoToStart();
+                        break;
+                    case PlayMode.StopAtEnd:
+                        baseAnimator.Initialize();
+                        baseAnimator.AnimatorDriver.Pause();
+                        baseAnimator.AnimatorDriver.GoToEnd();
+                        break;
+                }
+            }
+        }
+    }
 
-	private string TargetName
-	{
-		get
-		{
-			return (this.AnimatorsMode != BaseAnimatorAction.FindAnimatorsMode.SpecifyAnimators) ? ((!this.Target) ? "unkown" : this.Target.name) : ((this.Animators.Length <= 0 || !this.Animators[0]) ? "unkown" : this.Animators[0].name);
-		}
-	}
+    public override void PerformInstantly(IContext context) {
+        foreach (var baseAnimator in Animators) {
+            if (baseAnimator.enabled) {
+                baseAnimator.Initialize();
+                switch (Command) {
+                    case PlayMode.Restart:
+                        baseAnimator.AnimatorDriver.GoToEnd();
+                        break;
+                    case PlayMode.RestartReversed:
+                        baseAnimator.AnimatorDriver.GoToStart();
+                        break;
+                    case PlayMode.Reverse:
+                        baseAnimator.AnimatorDriver.GoToStart();
+                        break;
+                    case PlayMode.Stop:
+                        baseAnimator.AnimatorDriver.Stop();
+                        break;
+                    case PlayMode.Continue:
+                        if (baseAnimator.AnimatorDriver.IsReversed) {
+                            baseAnimator.AnimatorDriver.GoToStart();
+                        } else {
+                            baseAnimator.AnimatorDriver.GoToEnd();
+                        }
 
-	public override string GetNiceName()
-	{
-		switch (this.Command)
-		{
-		case BaseAnimatorAction.PlayMode.Restart:
-			return "Restart " + this.TargetName + " BaseAnimator";
-		case BaseAnimatorAction.PlayMode.RestartReversed:
-			return "Restart reversed " + this.TargetName + " BaseAnimator";
-		case BaseAnimatorAction.PlayMode.Reverse:
-			return "Reverse " + this.TargetName + " BaseAnimator";
-		case BaseAnimatorAction.PlayMode.Stop:
-			return "Stop " + this.TargetName + " BaseAnimator";
-		case BaseAnimatorAction.PlayMode.Continue:
-			return "Continue " + this.TargetName + " BaseAnimator";
-		case BaseAnimatorAction.PlayMode.ContinueForward:
-			return "Continue forward " + this.TargetName + " BaseAnimator";
-		case BaseAnimatorAction.PlayMode.ContinueReversed:
-			return "Continue reversed " + this.TargetName + " BaseAnimator";
-		case BaseAnimatorAction.PlayMode.StopAtStart:
-			return "Stop at start " + this.TargetName + " BaseAnimator";
-		case BaseAnimatorAction.PlayMode.StopAtEnd:
-			return "Stop at end " + this.TargetName + " BaseAnimator";
-		default:
-			return base.GetNiceName();
-		}
-	}
+                        break;
+                    case PlayMode.ContinueForward:
+                        baseAnimator.AnimatorDriver.GoToEnd();
+                        break;
+                    case PlayMode.ContinueReversed:
+                        baseAnimator.AnimatorDriver.GoToStart();
+                        break;
+                    case PlayMode.StopAtStart:
+                        baseAnimator.AnimatorDriver.GoToStart();
+                        break;
+                    case PlayMode.StopAtEnd:
+                        baseAnimator.AnimatorDriver.GoToEnd();
+                        break;
+                }
+            }
+        }
+    }
 
-	[NotNull]
-	public GameObject Target;
+    private string TargetName => AnimatorsMode != FindAnimatorsMode.SpecifyAnimators ? !Target ? "unkown" : Target.name : Animators.Length <= 0 || !Animators[0] ? "unkown" : Animators[0].name;
 
-	public BaseAnimatorAction.FindAnimatorsMode AnimatorsMode;
+    public override string GetNiceName() {
+        switch (Command) {
+            case PlayMode.Restart:
+                return "Restart " + TargetName + " BaseAnimator";
+            case PlayMode.RestartReversed:
+                return "Restart reversed " + TargetName + " BaseAnimator";
+            case PlayMode.Reverse:
+                return "Reverse " + TargetName + " BaseAnimator";
+            case PlayMode.Stop:
+                return "Stop " + TargetName + " BaseAnimator";
+            case PlayMode.Continue:
+                return "Continue " + TargetName + " BaseAnimator";
+            case PlayMode.ContinueForward:
+                return "Continue forward " + TargetName + " BaseAnimator";
+            case PlayMode.ContinueReversed:
+                return "Continue reversed " + TargetName + " BaseAnimator";
+            case PlayMode.StopAtStart:
+                return "Stop at start " + TargetName + " BaseAnimator";
+            case PlayMode.StopAtEnd:
+                return "Stop at end " + TargetName + " BaseAnimator";
+            default:
+                return base.GetNiceName();
+        }
+    }
 
-	public BaseAnimatorAction.PlayMode Command;
+    [NotNull] public GameObject Target;
 
-	public BaseAnimator[] Animators;
+    public FindAnimatorsMode AnimatorsMode;
 
-	public enum PlayMode
-	{
-		Restart,
-		RestartReversed,
-		Reverse,
-		Stop,
-		Continue,
-		ContinueForward,
-		ContinueReversed,
-		StopAtStart,
-		StopAtEnd
-	}
+    public PlayMode Command;
 
-	public enum FindAnimatorsMode
-	{
-		GameObject,
-		GameObjectAndChildren,
-		SpecifyAnimators
-	}
+    public BaseAnimator[] Animators;
+
+    public enum PlayMode {
+        Restart,
+        RestartReversed,
+        Reverse,
+        Stop,
+        Continue,
+        ContinueForward,
+        ContinueReversed,
+        StopAtStart,
+        StopAtEnd
+    }
+
+    public enum FindAnimatorsMode {
+        GameObject,
+        GameObjectAndChildren,
+        SpecifyAnimators
+    }
 }

@@ -1,157 +1,108 @@
-using System;
 using UnityEngine;
 
-namespace Game
-{
-	public static class UI
-	{
-		public static MessageControllerB MessageController
-		{
-			get
-			{
-				UI.LoadMessageController();
-				return UI.m_messageController;
-			}
-		}
+namespace Game {
+    public static class UI {
+        public static MessageControllerB MessageController {
+            get {
+                LoadMessageController();
+                return m_messageController;
+            }
+        }
 
-		public static void LoadMessageController()
-		{
-			if (UI.m_messageController == null)
-			{
-				UI.m_messageController = (Resources.Load("MessageControllerB") as GameObject).GetComponent<MessageControllerB>();
-			}
-		}
+        public static void LoadMessageController() {
+            if (m_messageController == null) {
+                m_messageController = (Resources.Load("MessageControllerB") as GameObject).GetComponent<MessageControllerB>();
+            }
+        }
 
-		public static MenuScreenManager Menu
-		{
-			get
-			{
-				return UI.m_sMenu;
-			}
-			set
-			{
-				UI.m_sMenu = value;
-			}
-		}
+        public static MenuScreenManager Menu {
+            get => m_sMenu;
+            set => m_sMenu = value;
+        }
 
-		public static bool MainMenuVisible
-		{
-			get
-			{
-				return UI.m_sMenu != null && (UI.m_sMenu.MainMenuVisible || UI.m_sMenu.ResumeScreenVisible);
-			}
-		}
+        public static bool MainMenuVisible => m_sMenu != null && (m_sMenu.MainMenuVisible || m_sMenu.ResumeScreenVisible);
 
-		public static bool MainMenuExists
-		{
-			get
-			{
-				return UI.m_sMenu != null;
-			}
-		}
+        public static bool MainMenuExists => m_sMenu != null;
 
-		public static bool IsInventoryVisible()
-		{
-			return UI.MainMenuVisible && UI.m_sMenu.IsInventoryVisible();
-		}
+        public static bool IsInventoryVisible() {
+            return MainMenuVisible && m_sMenu.IsInventoryVisible();
+        }
 
-		private static MessageControllerB m_messageController;
+        private static MessageControllerB m_messageController;
 
-		public static FaderB Fader;
+        public static FaderB Fader;
 
-		public static SeinUI SeinUI;
+        public static SeinUI SeinUI;
 
-		private static MenuScreenManager m_sMenu;
+        private static MenuScreenManager m_sMenu;
 
-		public static Vignette Vignette;
+        public static Vignette Vignette;
 
-		public static class Cameras
-		{
-			public static CameraSystem System;
+        public static class Cameras {
+            public static CameraSystem System;
 
-			public static GameplayCamera Current;
+            public static GameplayCamera Current;
 
-			public static CameraManager Manager;
-		}
+            public static CameraManager Manager;
+        }
 
-		public static class Hints
-		{
-			public static Vector3 HintPosition
-			{
-				get
-				{
-					return OnScreenPositions.TopCenter;
-				}
-			}
+        public static class Hints {
+            public static Vector3 HintPosition => OnScreenPositions.TopCenter;
 
-			public static void HideExistingHint()
-			{
-				UI.Hints.HideExistingHint(false);
-			}
+            public static void HideExistingHint() {
+                HideExistingHint(false);
+            }
 
-			private static bool LayerShouldShow(HintLayer layer)
-			{
-				return !UI.Hints.m_currentHint || layer >= UI.Hints.m_currentLayer;
-			}
+            private static bool LayerShouldShow(HintLayer layer) {
+                return !m_currentHint || layer >= m_currentLayer;
+            }
 
-			public static MessageBox Show(MessageProvider messageProvider, HintLayer layer, float duration = 3f)
-			{
-				if (messageProvider == null)
-				{
-					return null;
-				}
-				if (UI.MessageController.AnyAbilityPickupStoryMessagesVisible)
-				{
-					return null;
-				}
-				if (UI.Hints.LayerShouldShow(layer))
-				{
-					UI.Hints.HideExistingHint(true);
-					UI.Hints.m_currentLayer = layer;
-					if (ShorterHintZone.IsInside)
-					{
-						duration = 1f;
-					}
-					if (layer == HintLayer.Randomizer)
-					{
-						UI.Hints.m_currentHint = UI.MessageController.ShowHintMessage(messageProvider, new Vector3(UI.Hints.HintPosition.x, UI.Hints.HintPosition.y, -7f), duration);
-					}
-					else
-					{
-						UI.Hints.m_currentHint = UI.MessageController.ShowHintMessage(messageProvider, UI.Hints.HintPosition, duration);
-					}
-					return UI.Hints.m_currentHint;
-				}
-				return null;
-			}
+            public static MessageBox Show(MessageProvider messageProvider, HintLayer layer, float duration = 3f) {
+                if (messageProvider == null) {
+                    return null;
+                }
 
-			public static bool IsShowingHint
-			{
-				get
-				{
-					return UI.Hints.m_currentHint;
-				}
-			}
+                if (MessageController.AnyAbilityPickupStoryMessagesVisible) {
+                    return null;
+                }
 
-			public static void HideExistingHint(bool force)
-			{
-				if (UI.Hints.m_currentLayer == HintLayer.Randomizer && !force)
-				{
-					return;
-				}
+                if (LayerShouldShow(layer)) {
+                    HideExistingHint(true);
+                    m_currentLayer = layer;
+                    if (ShorterHintZone.IsInside) {
+                        duration = 1f;
+                    }
 
-				if (UI.Hints.m_currentHint)
-				{
-					UI.Hints.m_currentHint.Visibility.HideMessageScreenImmediately();
-					UI.Hints.m_currentHint = null;
-				}
-			}
+                    if (layer == HintLayer.Randomizer) {
+                        m_currentHint = MessageController.ShowHintMessage(messageProvider, new Vector3(HintPosition.x, HintPosition.y, -7f), duration);
+                    } else {
+                        m_currentHint = MessageController.ShowHintMessage(messageProvider, HintPosition, duration);
+                    }
 
-			private static MessageBox m_currentHint;
+                    return m_currentHint;
+                }
 
-			private static HintLayer m_currentLayer;
+                return null;
+            }
 
-			private static bool m_showHints;
-		}
-	}
+            public static bool IsShowingHint => m_currentHint;
+
+            public static void HideExistingHint(bool force) {
+                if (m_currentLayer == HintLayer.Randomizer && !force) {
+                    return;
+                }
+
+                if (m_currentHint) {
+                    m_currentHint.Visibility.HideMessageScreenImmediately();
+                    m_currentHint = null;
+                }
+            }
+
+            private static MessageBox m_currentHint;
+
+            private static HintLayer m_currentLayer;
+
+            private static bool m_showHints;
+        }
+    }
 }

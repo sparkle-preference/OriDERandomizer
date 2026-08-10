@@ -2,104 +2,83 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SkillTreeLaneLogic : SaveSerialize
-{
-	public float Index
-	{
-		get
-		{
-			return this.m_index;
-		}
-	}
+public class SkillTreeLaneLogic : SaveSerialize {
+    public float Index => m_index;
 
-	public void OnEnable()
-	{
-		this.UpdateItems(true);
-		foreach (SkillItem skillItem in this.Skills)
-		{
-			skillItem.LargeIconColor = this.LargeIconColor;
-		}
-	}
+    public void OnEnable() {
+        UpdateItems(true);
+        foreach (var skillItem in Skills) {
+            skillItem.LargeIconColor = LargeIconColor;
+        }
+    }
 
-	public void FixedUpdate()
-	{
-		this.UpdateItems(false);
-	}
+    public void FixedUpdate() {
+        UpdateItems(false);
+    }
 
-	public void UpdateItems(bool instant)
-	{
-		int firstUnlearnedIndex = 0;
-		int totalPointsNeeded = 0;
-		int totalHardPointsNeeded = 0;
-		for (int i = 0; i < this.Skills.Count; i++)
-		{
-			SkillItem skillItem = this.Skills[i];
-			if (!skillItem.HasSkillItem)
-			{
-				if (firstUnlearnedIndex == 0)
-				{
-					firstUnlearnedIndex = i + 1;
-				}
-				
-				totalPointsNeeded += skillItem.RequiredSkillPoints;
-				totalHardPointsNeeded += skillItem.RequiredHardSkillPoints;
-				skillItem.TotalRequiredSkillPoints = totalPointsNeeded;
-				skillItem.TotalRequiredHardSkillPoints = totalHardPointsNeeded;
-			}
-		}
-		--firstUnlearnedIndex;
-		this.m_index = ((!instant) ? Mathf.MoveTowards(this.m_index, (float)firstUnlearnedIndex, Time.deltaTime * 3f) : ((float)firstUnlearnedIndex));
-		this.SkillEarntAnimator.Initialize();
-		this.SkillEarntAnimator.SampleValue(this.m_index, true);
-		if (!this.m_laneAchievedAwarded && this.HasAllSkills)
-		{
-			SkillTreeLaneLogic.OnSkillTreeDoneEvent(this.Type);
-			this.m_laneAchievedAwarded = true;
-		}
-	}
+    public void UpdateItems(bool instant) {
+        var firstUnlearnedIndex = 0;
+        var totalPointsNeeded = 0;
+        var totalHardPointsNeeded = 0;
+        for (var i = 0; i < Skills.Count; i++) {
+            var skillItem = Skills[i];
+            if (!skillItem.HasSkillItem) {
+                if (firstUnlearnedIndex == 0) {
+                    firstUnlearnedIndex = i + 1;
+                }
 
-	public bool HasAllSkills
-	{
-		get
-		{
-			bool result = true;
-			for (int i = 0; i < this.Skills.Count; i++)
-			{
-				if (!this.Skills[i].HasSkillItem)
-				{
-					result = false;
-					break;
-				}
-			}
-			return result;
-		}
-	}
+                totalPointsNeeded += skillItem.RequiredSkillPoints;
+                totalHardPointsNeeded += skillItem.RequiredHardSkillPoints;
+                skillItem.TotalRequiredSkillPoints = totalPointsNeeded;
+                skillItem.TotalRequiredHardSkillPoints = totalHardPointsNeeded;
+            }
+        }
 
-	public override void Serialize(Archive ar)
-	{
-		ar.Serialize(ref this.m_laneAchievedAwarded);
-	}
+        --firstUnlearnedIndex;
+        m_index = !instant ? Mathf.MoveTowards(m_index, firstUnlearnedIndex, Time.deltaTime * 3f) : firstUnlearnedIndex;
+        SkillEarntAnimator.Initialize();
+        SkillEarntAnimator.SampleValue(m_index, true);
+        if (!m_laneAchievedAwarded && HasAllSkills) {
+            OnSkillTreeDoneEvent(Type);
+            m_laneAchievedAwarded = true;
+        }
+    }
 
-	public BaseAnimator SkillEarntAnimator;
+    public bool HasAllSkills {
+        get {
+            var result = true;
+            for (var i = 0; i < Skills.Count; i++) {
+                if (!Skills[i].HasSkillItem) {
+                    result = false;
+                    break;
+                }
+            }
 
-	public List<SkillItem> Skills = new List<SkillItem>();
+            return result;
+        }
+    }
 
-	private float m_index;
+    public override void Serialize(Archive ar) {
+        ar.Serialize(ref m_laneAchievedAwarded);
+    }
 
-	public Color LargeIconColor;
+    public BaseAnimator SkillEarntAnimator;
 
-	public SkillTreeLaneLogic.SkillTreeType Type;
+    public List<SkillItem> Skills = new List<SkillItem>();
 
-	private bool m_laneAchievedAwarded;
+    private float m_index;
 
-	public static Action<SkillTreeLaneLogic.SkillTreeType> OnSkillTreeDoneEvent = delegate(SkillTreeLaneLogic.SkillTreeType A_0)
-	{
-	};
+    public Color LargeIconColor;
 
-	public enum SkillTreeType
-	{
-		Energy,
-		Utility,
-		Combat
-	}
+    public SkillTreeType Type;
+
+    private bool m_laneAchievedAwarded;
+
+    public static Action<SkillTreeType> OnSkillTreeDoneEvent = delegate { };
+
+    public enum SkillTreeType {
+        Energy,
+        Utility,
+        Combat
+    }
 }

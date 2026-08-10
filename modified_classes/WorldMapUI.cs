@@ -2,298 +2,217 @@ using System;
 using Game;
 using UnityEngine;
 
-public class WorldMapUI : MonoBehaviour
-{
-	public static bool IsReady
-	{
-		get
-		{
-			return WorldMapUI.Instance != null;
-		}
-	}
+public class WorldMapUI : MonoBehaviour {
+    public static bool IsReady => Instance != null;
 
-	public static bool UseCameraSettings
-	{
-		get
-		{
-			return !(WorldMapUI.Instance == null) && WorldMapUI.Instance.m_enabled;
-		}
-	}
+    public static bool UseCameraSettings => !(Instance == null) && Instance.m_enabled;
 
-	public void OnEnable()
-	{
-		this.m_enabled = true;
-	}
+    public void OnEnable() {
+        m_enabled = true;
+    }
 
-	public void OnDisable()
-	{
-		this.m_enabled = false;
-	}
+    public void OnDisable() {
+        m_enabled = false;
+    }
 
-	public static CameraSettings CameraSettings
-	{
-		get
-		{
-			if (WorldMapUI.Instance == null)
-			{
-				return null;
-			}
-			if (WorldMapUI.Instance.m_cameraSettings == null)
-			{
-				WorldMapUI.Instance.m_cameraSettings = new CameraSettings(WorldMapUI.Instance.CameraSettingsAsset, WorldMapUI.Instance.Fog);
-			}
-			return WorldMapUI.Instance.m_cameraSettings;
-		}
-	}
+    public static CameraSettings CameraSettings {
+        get {
+            if (Instance == null) {
+                return null;
+            }
 
-	public Transform FadeOutGroup
-	{
-		get
-		{
-			return this.CrossFade.transform;
-		}
-	}
+            if (Instance.m_cameraSettings == null) {
+                Instance.m_cameraSettings = new CameraSettings(Instance.CameraSettingsAsset, Instance.Fog);
+            }
 
-	public void Awake()
-	{
-		WorldMapUI.Instance = this;
-		base.transform.parent = GameMapUI.Instance.Group;
-		base.transform.position = Vector3.zero;
-		this.NavigationManager.OptionChangeCallback = (Action)Delegate.Combine(this.NavigationManager.OptionChangeCallback, new Action(this.OnMenuItemChange));
-	}
+            return Instance.m_cameraSettings;
+        }
+    }
 
-	public void OnMenuItemChange()
-	{
-		if (this.m_ignoreNavigationMenuItemChange)
-		{
-			return;
-		}
-		WorldMapOverworldArea currentArea = this.CurrentArea;
-		AreaMapUI.Instance.Navigation.ScrollPosition = currentArea.ScrollPosition;
-		GameMapUI.Instance.CurrentHighlightedArea = GameWorld.Instance.FindRuntimeArea(currentArea.Area);
-	}
+    public Transform FadeOutGroup => CrossFade.transform;
 
-	public void OnDestroy()
-	{
-		if (WorldMapUI.Instance == this)
-		{
-			UnityEngine.Object.DestroyObject(WorldMapUI.Instance);
-		}
-		this.NavigationManager.OptionChangeCallback = (Action)Delegate.Remove(this.NavigationManager.OptionChangeCallback, new Action(this.OnMenuItemChange));
-	}
+    public void Awake() {
+        Instance = this;
+        transform.parent = GameMapUI.Instance.Group;
+        transform.position = Vector3.zero;
+        NavigationManager.OptionChangeCallback = (Action)Delegate.Combine(NavigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
+    }
 
-	public void Activate()
-	{
-		base.gameObject.SetActive(true);
-		if (!GameMapUI.Instance.ShowingTeleporters)
-		{
-			this.ShowAreaSelection();
-		}
-		this.m_ignoreNavigationMenuItemChange = true;
-		foreach (WorldMapOverworldArea worldMapOverworldArea in this.NavigationManager.GetComponentsInChildren<WorldMapOverworldArea>())
-		{
-			if (worldMapOverworldArea.Area == GameMapUI.Instance.CurrentHighlightedArea.Area)
-			{
-				this.NavigationManager.SetCurrentMenuItem(worldMapOverworldArea.GetComponent<CleverMenuItem>());
-			}
-		}
-		this.m_ignoreNavigationMenuItemChange = false;
-	}
+    public void OnMenuItemChange() {
+        if (m_ignoreNavigationMenuItemChange) {
+            return;
+        }
 
-	public void Deactivate()
-	{
-		base.gameObject.SetActive(false);
-	}
+        var currentArea = CurrentArea;
+        AreaMapUI.Instance.Navigation.ScrollPosition = currentArea.ScrollPosition;
+        GameMapUI.Instance.CurrentHighlightedArea = GameWorld.Instance.FindRuntimeArea(currentArea.Area);
+    }
 
-	public float ZoomTime
-	{
-		get
-		{
-			return AreaMapUI.Instance.Navigation.ZoomTime;
-		}
-	}
+    public void OnDestroy() {
+        if (Instance == this) {
+            DestroyObject(Instance);
+        }
 
-	public Vector3 ScrollPosition
-	{
-		get
-		{
-			return AreaMapUI.Instance.Navigation.ScrollPosition;
-		}
-	}
+        NavigationManager.OptionChangeCallback = (Action)Delegate.Remove(NavigationManager.OptionChangeCallback, new Action(OnMenuItemChange));
+    }
 
-	public Vector3 WorldToProjectedPosition(Vector3 position)
-	{
-		return WorldMapOverworldLogic.Instance.WorldToOverworld(position);
-	}
+    public void Activate() {
+        gameObject.SetActive(true);
+        if (!GameMapUI.Instance.ShowingTeleporters) {
+            ShowAreaSelection();
+        }
 
-	public Vector3 WorldToUIPosition(Vector3 position)
-	{
-		return this.WorldToScreenToUI(this.WorldToProjectedPosition(position));
-	}
+        m_ignoreNavigationMenuItemChange = true;
+        foreach (var worldMapOverworldArea in NavigationManager.GetComponentsInChildren<WorldMapOverworldArea>()) {
+            if (worldMapOverworldArea.Area == GameMapUI.Instance.CurrentHighlightedArea.Area) {
+                NavigationManager.SetCurrentMenuItem(worldMapOverworldArea.GetComponent<CleverMenuItem>());
+            }
+        }
 
-	public Vector3 ClosePosition
-	{
-		get
-		{
-			return this.WorldToProjectedPosition(this.ScrollPosition) + Vector3.back * this.CloseZoom;
-		}
-	}
+        m_ignoreNavigationMenuItemChange = false;
+    }
 
-	public Vector3 FarPosition
-	{
-		get
-		{
-			return Vector3.back * this.FullZoom + this.CameraOffset;
-		}
-	}
+    public void Deactivate() {
+        gameObject.SetActive(false);
+    }
 
-	public WorldMapOverworldArea CurrentArea
-	{
-		get
-		{
-			return this.NavigationManager.CurrentMenuItem.GetComponent<WorldMapOverworldArea>();
-		}
-	}
+    public float ZoomTime => AreaMapUI.Instance.Navigation.ZoomTime;
 
-	public void UpdateCameraPosition()
-	{
-		if (!GameMapUI.Instance.ShowingObjective)
-		{
-			if (!GameMapUI.Instance.RevealingMap)
-			{
-				if (GameMapUI.Instance.ShowingTeleporters)
-				{
-					Vector3 b = GameMapUI.Instance.Teleporters.SelectedTeleporter.WorldProjectedPositon;
-					b.z = -2f;
-					b.x *= 0.3f;
-					b.y *= 0.1f;
-					b.y -= 3f;
-					this.CameraOffset = Vector3.Lerp(this.CameraOffset, b, 0.03f);
-				}
-				else if (this.NavigationManager.gameObject.activeSelf)
-				{
-					Vector3 position = this.CurrentArea.transform.position;
-					position.z = 0f;
-					Vector3 b2 = position * 0.2f;
-					this.CameraOffset = Vector3.Lerp(this.CameraOffset, b2, 0.03f);
-				}
-			}
-		}
+    public Vector3 ScrollPosition => AreaMapUI.Instance.Navigation.ScrollPosition;
 
-		Vector3 position2;
-		position2.x = Mathf.Lerp(this.FarPosition.x, this.ClosePosition.x, this.ZoomXYCurve.Evaluate(this.ZoomTime));
-		position2.y = Mathf.Lerp(this.FarPosition.y, this.ClosePosition.y, this.ZoomXYCurve.Evaluate(this.ZoomTime));
-		position2.z = Mathf.Lerp(this.FarPosition.z, this.ClosePosition.z, this.ZoomZCurve.Evaluate(this.ZoomTime));
-		this.Camera.transform.position = position2;
-	}
+    public Vector3 WorldToProjectedPosition(Vector3 position) {
+        return WorldMapOverworldLogic.Instance.WorldToOverworld(position);
+    }
 
-	public void FixedUpdate()
-	{
-		if (!GameMapUI.Instance.IsVisible)
-		{
-			return;
-		}
-		this.NavigationManager.IsActive = GameMapTransitionManager.Instance.InWorldMapMode;
-		this.UpdateCameraPosition();
-		if (Characters.Sein)
-		{
-			this.PlayerMarker.position = this.WorldToUIPosition(Characters.Sein.Position);
-		}
-	}
+    public Vector3 WorldToUIPosition(Vector3 position) {
+        return WorldToScreenToUI(WorldToProjectedPosition(position));
+    }
 
-	public Vector3 WorldToScreenToUI(Vector3 position)
-	{
-		Vector2 v = this.Camera.WorldToScreenPoint(position);
-		Camera camera = UI.Cameras.System.GUICamera.Camera;
-		Vector3 result = camera.ScreenToWorldPoint(v);
-		result.z = 0f;
-		return result;
-	}
+    public Vector3 ClosePosition => WorldToProjectedPosition(ScrollPosition) + Vector3.back * CloseZoom;
 
-	public void ShowAreaSelection()
-	{
-		this.NavigationManager.gameObject.SetActive(true);
-	}
+    public Vector3 FarPosition => Vector3.back * FullZoom + CameraOffset;
 
-	public void HideAreaSelection()
-	{
-		this.NavigationManager.gameObject.SetActive(false);
-	}
+    public WorldMapOverworldArea CurrentArea => NavigationManager.CurrentMenuItem.GetComponent<WorldMapOverworldArea>();
 
-	public static void Initialize()
-	{
-		if (WorldMapUI.m_isLoadingWorldMapScene)
-		{
-			WorldMapUI.m_cancelLoading = false;
-		}
-		else
-		{
-			WorldMapUI.m_isLoadingWorldMapScene = true;
-			Application.LoadLevelAdditiveAsync("worldMapScene");
-		}
-	}
+    public void UpdateCameraPosition() {
+        if (!GameMapUI.Instance.ShowingObjective) {
+            if (!GameMapUI.Instance.RevealingMap) {
+                if (GameMapUI.Instance.ShowingTeleporters) {
+                    Vector3 b = GameMapUI.Instance.Teleporters.SelectedTeleporter.WorldProjectedPositon;
+                    b.z = -2f;
+                    b.x *= 0.3f;
+                    b.y *= 0.1f;
+                    b.y -= 3f;
+                    CameraOffset = Vector3.Lerp(CameraOffset, b, 0.03f);
+                } else if (NavigationManager.gameObject.activeSelf) {
+                    var position = CurrentArea.transform.position;
+                    position.z = 0f;
+                    var b2 = position * 0.2f;
+                    CameraOffset = Vector3.Lerp(CameraOffset, b2, 0.03f);
+                }
+            }
+        }
 
-	public static void OnFinishedLoading(SceneRoot sceneRoot)
-	{
-		if (WorldMapUI.m_cancelLoading)
-		{
-			UnityEngine.Object.DestroyObject(sceneRoot.gameObject);
-		}
-		else
-		{
-			sceneRoot.EarlyStart();
-			UnityEngine.Object.DestroyObject(sceneRoot.GetComponent<SaveSceneManager>());
-			UnityEngine.Object.DestroyObject(sceneRoot.GetComponent<SceneSettingsComponent>());
-			UnityEngine.Object.DestroyObject(sceneRoot);
-			sceneRoot.gameObject.SetActive(true);
-		}
-		WorldMapUI.m_isLoadingWorldMapScene = false;
-		WorldMapUI.m_cancelLoading = false;
-	}
+        Vector3 position2;
+        position2.x = Mathf.Lerp(FarPosition.x, ClosePosition.x, ZoomXYCurve.Evaluate(ZoomTime));
+        position2.y = Mathf.Lerp(FarPosition.y, ClosePosition.y, ZoomXYCurve.Evaluate(ZoomTime));
+        position2.z = Mathf.Lerp(FarPosition.z, ClosePosition.z, ZoomZCurve.Evaluate(ZoomTime));
+        Camera.transform.position = position2;
+    }
 
-	public static void CancelLoading()
-	{
-		if (WorldMapUI.m_isLoadingWorldMapScene)
-		{
-			WorldMapUI.m_cancelLoading = true;
-		}
-	}
+    public void FixedUpdate() {
+        if (!GameMapUI.Instance.IsVisible) {
+            return;
+        }
 
-	public static WorldMapUI Instance;
+        NavigationManager.IsActive = GameMapTransitionManager.Instance.InWorldMapMode;
+        UpdateCameraPosition();
+        if (Characters.Sein) {
+            PlayerMarker.position = WorldToUIPosition(Characters.Sein.Position);
+        }
+    }
 
-	public Transform ProjectionPlane;
+    public Vector3 WorldToScreenToUI(Vector3 position) {
+        Vector2 v = Camera.WorldToScreenPoint(position);
+        var camera = UI.Cameras.System.GUICamera.Camera;
+        var result = camera.ScreenToWorldPoint(v);
+        result.z = 0f;
+        return result;
+    }
 
-	public Transform PlayerMarker;
+    public void ShowAreaSelection() {
+        NavigationManager.gameObject.SetActive(true);
+    }
 
-	public bool Activated;
+    public void HideAreaSelection() {
+        NavigationManager.gameObject.SetActive(false);
+    }
 
-	public float FullZoom = 20f;
+    public static void Initialize() {
+        if (m_isLoadingWorldMapScene) {
+            m_cancelLoading = false;
+        } else {
+            m_isLoadingWorldMapScene = true;
+            Application.LoadLevelAdditiveAsync("worldMapScene");
+        }
+    }
 
-	public float CloseZoom = 10f;
+    public static void OnFinishedLoading(SceneRoot sceneRoot) {
+        if (m_cancelLoading) {
+            DestroyObject(sceneRoot.gameObject);
+        } else {
+            sceneRoot.EarlyStart();
+            DestroyObject(sceneRoot.GetComponent<SaveSceneManager>());
+            DestroyObject(sceneRoot.GetComponent<SceneSettingsComponent>());
+            DestroyObject(sceneRoot);
+            sceneRoot.gameObject.SetActive(true);
+        }
 
-	public Camera Camera;
+        m_isLoadingWorldMapScene = false;
+        m_cancelLoading = false;
+    }
 
-	public TransparencyAnimator CrossFade;
+    public static void CancelLoading() {
+        if (m_isLoadingWorldMapScene) {
+            m_cancelLoading = true;
+        }
+    }
 
-	public CleverMenuItemSelectionManager NavigationManager;
+    public static WorldMapUI Instance;
 
-	public CameraSettingsAsset CameraSettingsAsset;
+    public Transform ProjectionPlane;
 
-	public FogGradientController Fog;
+    public Transform PlayerMarker;
 
-	public AnimationCurve ZoomXYCurve;
+    public bool Activated;
 
-	public AnimationCurve ZoomZCurve;
+    public float FullZoom = 20f;
 
-	public Vector3 CameraOffset;
+    public float CloseZoom = 10f;
 
-	private CameraSettings m_cameraSettings;
+    public Camera Camera;
 
-	private bool m_enabled;
+    public TransparencyAnimator CrossFade;
 
-	private bool m_ignoreNavigationMenuItemChange;
+    public CleverMenuItemSelectionManager NavigationManager;
 
-	private static bool m_isLoadingWorldMapScene;
+    public CameraSettingsAsset CameraSettingsAsset;
 
-	private static bool m_cancelLoading;
+    public FogGradientController Fog;
+
+    public AnimationCurve ZoomXYCurve;
+
+    public AnimationCurve ZoomZCurve;
+
+    public Vector3 CameraOffset;
+
+    private CameraSettings m_cameraSettings;
+
+    private bool m_enabled;
+
+    private bool m_ignoreNavigationMenuItemChange;
+
+    private static bool m_isLoadingWorldMapScene;
+
+    private static bool m_cancelLoading;
 }

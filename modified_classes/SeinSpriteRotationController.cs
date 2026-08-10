@@ -1,293 +1,204 @@
-using System;
 using UnityEngine;
 
-public class SeinSpriteRotationController : CharacterState, ISeinReceiver
-{
-	public void BeginTiltLeftRightInAir(float duration)
-	{
-		this.m_tiltLeftRightTimer = duration;
-	}
+public class SeinSpriteRotationController : CharacterState, ISeinReceiver {
+    public void BeginTiltLeftRightInAir(float duration) {
+        m_tiltLeftRightTimer = duration;
+    }
 
-	public void BeginTiltUpDownInAir(float duration)
-	{
-		this.m_tiltUpDownTimer = duration;
-	}
+    public void BeginTiltUpDownInAir(float duration) {
+        m_tiltUpDownTimer = duration;
+    }
 
-	public PlatformMovement PlatformMovement
-	{
-		get
-		{
-			return this.Sein.PlatformBehaviour.PlatformMovement;
-		}
-	}
+    public PlatformMovement PlatformMovement => Sein.PlatformBehaviour.PlatformMovement;
 
-	public SeinCrouch Crouch
-	{
-		get
-		{
-			return this.Sein.Abilities.Crouch;
-		}
-	}
+    public SeinCrouch Crouch => Sein.Abilities.Crouch;
 
-	public SeinStomp Stomp
-	{
-		get
-		{
-			return this.Sein.Abilities.Stomp;
-		}
-	}
+    public SeinStomp Stomp => Sein.Abilities.Stomp;
 
-	public SeinBashAttack BashAttack
-	{
-		get
-		{
-			return this.Sein.Abilities.Bash;
-		}
-	}
+    public SeinBashAttack BashAttack => Sein.Abilities.Bash;
 
-	public bool IsStomping
-	{
-		get
-		{
-			return this.Stomp && this.Stomp.Active;
-		}
-	}
+    public bool IsStomping => Stomp && Stomp.Active;
 
-	public void SetReferenceToSein(SeinCharacter sein)
-	{
-		this.Sein = sein;
-	}
+    public void SetReferenceToSein(SeinCharacter sein) {
+        Sein = sein;
+    }
 
-	private void UpdateUnderwaterRotation()
-	{
-		this.HeadAngle = 0f;
-		this.FeetAngle = 0f;
-		this.CenterAngle = this.Sein.Abilities.Swimming.SwimAngle + (float)((!this.Sein.Controller.FaceLeft) ? 0 : 180);
-	}
+    private void UpdateUnderwaterRotation() {
+        HeadAngle = 0f;
+        FeetAngle = 0f;
+        CenterAngle = Sein.Abilities.Swimming.SwimAngle + (!Sein.Controller.FaceLeft ? 0 : 180);
+    }
 
-	private void UpdateCinematicRotation()
-	{
-		if (this.PlatformMovement.IsOnGround)
-		{
-			this.m_groundAngle = Mathf.LerpAngle(this.m_groundAngle, this.PlatformMovement.GroundAngle, 0.1f);
-		}
-		else
-		{
-			this.m_groundAngle = Mathf.LerpAngle(this.m_groundAngle, 0f, 0.1f);
-		}
-		this.FeetAngle = this.m_groundAngle;
-		this.HeadAngle = 0f;
-		this.CenterAngle = 0f;
-	}
+    private void UpdateCinematicRotation() {
+        if (PlatformMovement.IsOnGround) {
+            m_groundAngle = Mathf.LerpAngle(m_groundAngle, PlatformMovement.GroundAngle, 0.1f);
+        } else {
+            m_groundAngle = Mathf.LerpAngle(m_groundAngle, 0f, 0.1f);
+        }
 
-	private void UpdateRegularRotation()
-	{
-		if (this.m_tiltLeftRightTimer > 0f)
-		{
-			this.m_tiltLeftRightTimer = Mathf.Max(this.m_tiltLeftRightTimer - Time.deltaTime, 0f);
-		}
-		if (this.m_tiltUpDownTimer > 0f)
-		{
-			this.m_tiltUpDownTimer = Mathf.Max(this.m_tiltUpDownTimer - Time.deltaTime, 0f);
-		}
-		this.CenterAngle = 0f;
-		this.HeadAngle = 0f;
-		this.FeetAngle = 0f;
-		if (this.PlatformMovement.HasWallLeft)
-		{
-			if (!this.PlatformMovement.WallLeft.WasOn)
-			{
-				this.m_wallLeftAngle = ((!this.PlatformMovement.WallLeftRayHit) ? this.PlatformMovement.GravityAngle : this.PlatformMovement.WallLeftAngle);
-			}
-			else if (this.PlatformMovement.WallLeftRayHit)
-			{
-				this.m_wallLeftAngle = Mathf.LerpAngle(this.m_wallLeftAngle, this.PlatformMovement.WallLeftAngle, 0.2f);
-			}
-			if (this.Sein.Abilities.Swimming && this.Sein.Abilities.Swimming.IsSwimming)
-			{
-				this.FeetAngle = this.PlatformMovement.GravityAngle;
-			}
-			else if (this.PlatformMovement.IsOnGround && this.Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft)
-			{
-				this.FeetAngle = this.PlatformMovement.GravityAngle;
-			}
-			else
-			{
-				this.FeetAngle = Mathf.Max(0f, this.m_wallLeftAngle);
-				this.HeadAngle = Mathf.Min(0f, this.m_wallLeftAngle);
-			}
-		}
-		else if (this.PlatformMovement.HasWallRight)
-		{
-			if (!this.PlatformMovement.WallRight.WasOn)
-			{
-				this.m_wallRightAngle = ((!this.PlatformMovement.WallRightRayHit) ? this.PlatformMovement.GravityAngle : this.PlatformMovement.WallRightAngle);
-			}
-			else if (this.PlatformMovement.WallRightRayHit)
-			{
-				this.m_wallRightAngle = Mathf.LerpAngle(this.m_wallRightAngle, this.PlatformMovement.WallRightAngle, 0.2f);
-			}
-			if (this.Sein.Abilities.Swimming && this.Sein.Abilities.Swimming.IsSwimming)
-			{
-				this.FeetAngle = this.PlatformMovement.GravityAngle;
-			}
-			else if (this.PlatformMovement.IsOnGround && !this.Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft)
-			{
-				this.FeetAngle = this.PlatformMovement.GravityAngle;
-			}
-			else
-			{
-				this.HeadAngle = Mathf.Max(0f, this.m_wallRightAngle);
-				this.FeetAngle = Mathf.Min(0f, this.m_wallRightAngle);
-			}
-		}
-		else if (this.PlatformMovement.IsOnGround)
-		{
-			if (this.Sein.Controller.IsAimingGrenade)
-			{
-				this.m_groundAngle = this.PlatformMovement.GroundAngle;
-			}
-			else if (!this.PlatformMovement.Ground.WasOn)
-			{
-				this.m_groundAngle = ((!this.PlatformMovement.GroundRayHit) ? this.PlatformMovement.GravityAngle : this.PlatformMovement.GroundAngle);
-			}
-			else if (this.PlatformMovement.GroundRayHit)
-			{
-				this.m_groundAngle = Mathf.LerpAngle(this.m_groundAngle, this.PlatformMovement.GroundAngle, 0.2f);
-			}
-			if (this.Sein.Abilities.Swimming && this.Sein.Abilities.Swimming.IsSwimming)
-			{
-				this.FeetAngle = this.PlatformMovement.GravityAngle;
-			}
-			else if (this.PlatformMovement.IsOnCeiling && this.Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft == this.PlatformMovement.CeilingNormal.x > 0f)
-			{
-				this.FeetAngle = this.PlatformMovement.GravityAngle;
-			}
-			else
-			{
-				this.FeetAngle = this.m_groundAngle;
-			}
-		}
-		else
-		{
-			this.FeetAngle = this.PlatformMovement.GravityAngle;
-			if (this.m_tiltLeftRightTimer > 0f)
-			{
-				this.CenterAngle -= Mathf.Atan2(this.PlatformMovement.LocalSpeedX, 12f) * 57.29578f * 0.5f * Mathf.Clamp01(this.m_tiltLeftRightTimer);
-			}
-			if (this.m_tiltUpDownTimer > 0f)
-			{
-				this.CenterAngle += (float)((!this.Sein.FaceLeft) ? 1 : -1) * Mathf.Atan2(this.PlatformMovement.LocalSpeedY, 12f) * 57.29578f * 0.5f * Mathf.Clamp01(this.m_tiltUpDownTimer);
-			}
-		}
-		if (this.Sein.Abilities.StandingOnEdge && this.Sein.Abilities.StandingOnEdge.StandingOnEdge)
-		{
-			this.FeetAngle = this.PlatformMovement.GravityAngle;
-		}
-	}
+        FeetAngle = m_groundAngle;
+        HeadAngle = 0f;
+        CenterAngle = 0f;
+    }
 
-	public override void UpdateCharacterState()
-	{
-		if (this.CinematicRotation)
-		{
-			this.UpdateCinematicRotation();
-		}
-		else if (this.Sein.Controller.IsDashing)
-		{
-			this.UpdateDashingRotation();
-		}
-		else if (this.Sein.Controller.IsStomping)
-		{
-			this.UpdateStompingRotation();
-		}
-		else if (this.Sein.Controller.IsSwimming && this.Sein.Abilities.Swimming.IsUnderwater && !this.Sein.Controller.IsBashing && !this.Sein.Controller.IsStomping)
-		{
-			this.UpdateUnderwaterRotation();
-		}
-		else
-		{
-			this.UpdateRegularRotation();
-		}
-		this.UpdateRotation();
-	}
+    private void UpdateRegularRotation() {
+        if (m_tiltLeftRightTimer > 0f) {
+            m_tiltLeftRightTimer = Mathf.Max(m_tiltLeftRightTimer - Time.deltaTime, 0f);
+        }
 
-	public void UpdateDashingRotation()
-	{
-		this.FeetAngle = (this.HeadAngle = (this.CenterAngle = 0f));
-		if (this.Sein.IsOnGround)
-		{
-			this.FeetAngle = this.Sein.Abilities.Dash.SpriteRotation;
-		}
-		else
-		{
-			this.CenterAngle = this.Sein.Abilities.Dash.SpriteRotation;
-		}
-	}
+        if (m_tiltUpDownTimer > 0f) {
+            m_tiltUpDownTimer = Mathf.Max(m_tiltUpDownTimer - Time.deltaTime, 0f);
+        }
 
-	public void UpdateStompingRotation()
-	{
-		this.FeetAngle = (this.HeadAngle = (this.CenterAngle = 0f));
-		this.CenterAngle = this.Sein.Abilities.Stomp.SpriteRotation;
-	}
+        CenterAngle = 0f;
+        HeadAngle = 0f;
+        FeetAngle = 0f;
+        if (PlatformMovement.HasWallLeft) {
+            if (!PlatformMovement.WallLeft.WasOn) {
+                m_wallLeftAngle = !PlatformMovement.WallLeftRayHit ? PlatformMovement.GravityAngle : PlatformMovement.WallLeftAngle;
+            } else if (PlatformMovement.WallLeftRayHit) {
+                m_wallLeftAngle = Mathf.LerpAngle(m_wallLeftAngle, PlatformMovement.WallLeftAngle, 0.2f);
+            }
 
-	public void UpdateRotation()
-	{
-		if (this.FeetTransform)
-		{
-			this.FeetTransform.eulerAngles = new Vector3(0f, 0f, this.FeetAngle);
-		}
-		if (this.HeadTransform)
-		{
-			this.HeadTransform.localEulerAngles = new Vector3(0f, 0f, this.HeadAngle);
-		}
-		if (this.CenterTransform)
-		{
-			this.CenterTransform.localEulerAngles = new Vector3(0f, 0f, this.CenterAngle);
-		}
-	}
+            if (Sein.Abilities.Swimming && Sein.Abilities.Swimming.IsSwimming) {
+                FeetAngle = PlatformMovement.GravityAngle;
+            } else if (PlatformMovement.IsOnGround && Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft) {
+                FeetAngle = PlatformMovement.GravityAngle;
+            } else {
+                FeetAngle = Mathf.Max(0f, m_wallLeftAngle);
+                HeadAngle = Mathf.Min(0f, m_wallLeftAngle);
+            }
+        } else if (PlatformMovement.HasWallRight) {
+            if (!PlatformMovement.WallRight.WasOn) {
+                m_wallRightAngle = !PlatformMovement.WallRightRayHit ? PlatformMovement.GravityAngle : PlatformMovement.WallRightAngle;
+            } else if (PlatformMovement.WallRightRayHit) {
+                m_wallRightAngle = Mathf.LerpAngle(m_wallRightAngle, PlatformMovement.WallRightAngle, 0.2f);
+            }
 
-	public override void Serialize(Archive ar)
-	{
-		ar.Serialize(ref this.FeetAngle);
-		ar.Serialize(ref this.CenterAngle);
-		ar.Serialize(ref this.m_ceilingAngle);
-		ar.Serialize(ref this.m_groundAngle);
-		ar.Serialize(ref this.m_localPosition);
-		ar.Serialize(ref this.m_wallLeftAngle);
-		ar.Serialize(ref this.m_wallRightAngle);
-		if (ar.Reading)
-		{
-			this.UpdateRotation();
-		}
-	}
+            if (Sein.Abilities.Swimming && Sein.Abilities.Swimming.IsSwimming) {
+                FeetAngle = PlatformMovement.GravityAngle;
+            } else if (PlatformMovement.IsOnGround && !Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft) {
+                FeetAngle = PlatformMovement.GravityAngle;
+            } else {
+                HeadAngle = Mathf.Max(0f, m_wallRightAngle);
+                FeetAngle = Mathf.Min(0f, m_wallRightAngle);
+            }
+        } else if (PlatformMovement.IsOnGround) {
+            if (Sein.Controller.IsAimingGrenade) {
+                m_groundAngle = PlatformMovement.GroundAngle;
+            } else if (!PlatformMovement.Ground.WasOn) {
+                m_groundAngle = !PlatformMovement.GroundRayHit ? PlatformMovement.GravityAngle : PlatformMovement.GroundAngle;
+            } else if (PlatformMovement.GroundRayHit) {
+                m_groundAngle = Mathf.LerpAngle(m_groundAngle, PlatformMovement.GroundAngle, 0.2f);
+            }
 
-	public Transform FeetTransform;
+            if (Sein.Abilities.Swimming && Sein.Abilities.Swimming.IsSwimming) {
+                FeetAngle = PlatformMovement.GravityAngle;
+            } else if (PlatformMovement.IsOnCeiling && Sein.PlatformBehaviour.Visuals.SpriteMirror.FaceLeft == PlatformMovement.CeilingNormal.x > 0f) {
+                FeetAngle = PlatformMovement.GravityAngle;
+            } else {
+                FeetAngle = m_groundAngle;
+            }
+        } else {
+            FeetAngle = PlatformMovement.GravityAngle;
+            if (m_tiltLeftRightTimer > 0f) {
+                CenterAngle -= Mathf.Atan2(PlatformMovement.LocalSpeedX, 12f) * 57.29578f * 0.5f * Mathf.Clamp01(m_tiltLeftRightTimer);
+            }
 
-	public Transform HeadTransform;
+            if (m_tiltUpDownTimer > 0f) {
+                CenterAngle += (!Sein.FaceLeft ? 1 : -1) * Mathf.Atan2(PlatformMovement.LocalSpeedY, 12f) * 57.29578f * 0.5f * Mathf.Clamp01(m_tiltUpDownTimer);
+            }
+        }
 
-	public Transform CenterTransform;
+        if (Sein.Abilities.StandingOnEdge && Sein.Abilities.StandingOnEdge.StandingOnEdge) {
+            FeetAngle = PlatformMovement.GravityAngle;
+        }
+    }
 
-	public bool CinematicRotation;
+    public override void UpdateCharacterState() {
+        if (CinematicRotation) {
+            UpdateCinematicRotation();
+        } else if (Sein.Controller.IsDashing) {
+            UpdateDashingRotation();
+        } else if (Sein.Controller.IsStomping) {
+            UpdateStompingRotation();
+        } else if (Sein.Controller.IsSwimming && Sein.Abilities.Swimming.IsUnderwater && !Sein.Controller.IsBashing && !Sein.Controller.IsStomping) {
+            UpdateUnderwaterRotation();
+        } else {
+            UpdateRegularRotation();
+        }
 
-	public float FeetAngle;
+        UpdateRotation();
+    }
 
-	public float HeadAngle;
+    public void UpdateDashingRotation() {
+        FeetAngle = HeadAngle = CenterAngle = 0f;
+        if (Sein.IsOnGround) {
+            FeetAngle = Sein.Abilities.Dash.SpriteRotation;
+        } else {
+            CenterAngle = Sein.Abilities.Dash.SpriteRotation;
+        }
+    }
 
-	public float CenterAngle;
+    public void UpdateStompingRotation() {
+        FeetAngle = HeadAngle = CenterAngle = 0f;
+        CenterAngle = Sein.Abilities.Stomp.SpriteRotation;
+    }
 
-	public SeinCharacter Sein;
+    public void UpdateRotation() {
+        if (FeetTransform) {
+            FeetTransform.eulerAngles = new Vector3(0f, 0f, FeetAngle);
+        }
 
-	private float m_ceilingAngle;
+        if (HeadTransform) {
+            HeadTransform.localEulerAngles = new Vector3(0f, 0f, HeadAngle);
+        }
 
-	private float m_groundAngle;
+        if (CenterTransform) {
+            CenterTransform.localEulerAngles = new Vector3(0f, 0f, CenterAngle);
+        }
+    }
 
-	private Vector2 m_localPosition;
+    public override void Serialize(Archive ar) {
+        ar.Serialize(ref FeetAngle);
+        ar.Serialize(ref CenterAngle);
+        ar.Serialize(ref m_ceilingAngle);
+        ar.Serialize(ref m_groundAngle);
+        ar.Serialize(ref m_localPosition);
+        ar.Serialize(ref m_wallLeftAngle);
+        ar.Serialize(ref m_wallRightAngle);
+        if (ar.Reading) {
+            UpdateRotation();
+        }
+    }
 
-	private float m_wallLeftAngle;
+    public Transform FeetTransform;
 
-	private float m_wallRightAngle;
+    public Transform HeadTransform;
 
-	private float m_tiltLeftRightTimer;
+    public Transform CenterTransform;
 
-	private float m_tiltUpDownTimer;
+    public bool CinematicRotation;
+
+    public float FeetAngle;
+
+    public float HeadAngle;
+
+    public float CenterAngle;
+
+    public SeinCharacter Sein;
+
+    private float m_ceilingAngle;
+
+    private float m_groundAngle;
+
+    private Vector2 m_localPosition;
+
+    private float m_wallLeftAngle;
+
+    private float m_wallRightAngle;
+
+    private float m_tiltLeftRightTimer;
+
+    private float m_tiltUpDownTimer;
 }

@@ -1,131 +1,83 @@
-using System;
 using Core;
 using Game;
 using UnityEngine;
 
-public class SeinEnergy : SaveSerialize
-{
-	public void SetCurrent(float current)
-	{
-		this.Current = current;
-		this.MinVisual = this.Current;
-		this.MaxVisual = this.Current;
-	}
+public class SeinEnergy : SaveSerialize {
+    public void SetCurrent(float current) {
+        Current = current;
+        MinVisual = Current;
+        MaxVisual = Current;
+    }
 
-	public void NotifyOutOfEnergy()
-	{
-		UI.SeinUI.ShakeEnergyOrbBar();
-		Sound.Play(this.OutOfEnergySound.GetSound(null), base.transform.position, null);
-	}
+    public void NotifyOutOfEnergy() {
+        UI.SeinUI.ShakeEnergyOrbBar();
+        Sound.Play(OutOfEnergySound.GetSound(null), transform.position, null);
+    }
 
-	public bool CanAfford(float amount)
-	{
-		return this.Current >= amount;
-	}
+    public bool CanAfford(float amount) {
+        return Current >= amount;
+    }
 
-	public float VisualMin
-	{
-		get
-		{
-			return this.MinVisual / this.Max;
-		}
-	}
+    public float VisualMin => MinVisual / Max;
 
-	public float VisualMax
-	{
-		get
-		{
-			return this.MaxVisual / this.Max;
-		}
-	}
+    public float VisualMax => MaxVisual / Max;
 
-	public void Gain(float amount)
-	{
-		if (this.Current > this.Max)
-		{
-			return;
-		}
-		this.Current += amount;
-		if (this.Current > this.Max)
-		{
-			this.Current = this.Max;
-		}
-		this.MaxVisual = this.Current;
-	}
+    public void Gain(float amount) {
+        if (Current > Max) {
+            return;
+        }
 
-	public void Spend(float amount)
-	{
-		this.Current -= amount;
-		if (this.Current < 0f)
-		{
-			this.Current = 0f;
-		}
-		this.MinVisual = this.Current;
-	}
+        Current += amount;
+        if (Current > Max) {
+            Current = Max;
+        }
 
-	public override void Serialize(Archive ar)
-	{
-		ar.Serialize(ref this.Current);
-		ar.Serialize(ref this.Max);
-		if (ar.Reading)
-		{
-			this.MinVisual = (this.MaxVisual = this.Current);
-		}
-	}
+        MaxVisual = Current;
+    }
 
-	public bool EnergyActive
-	{
-		get
-		{
-			return this.Max > 0f;
-		}
-	}
+    public void Spend(float amount) {
+        Current -= amount;
+        if (Current < 0f) {
+            Current = 0f;
+        }
 
-	public float VisualMaxNormalized
-	{
-		get
-		{
-			return this.MaxVisual / this.Max;
-		}
-	}
+        MinVisual = Current;
+    }
 
-	public float VisualMinNormalized
-	{
-		get
-		{
-			return this.MinVisual / this.Max;
-		}
-	}
+    public override void Serialize(Archive ar) {
+        ar.Serialize(ref Current);
+        ar.Serialize(ref Max);
+        if (ar.Reading) {
+            MinVisual = MaxVisual = Current;
+        }
+    }
 
-	public object EnergyUpgradesCollected
-	{
-		get
-		{
-			return this.Max;
-		}
-	}
+    public bool EnergyActive => Max > 0f;
 
-	public void Update()
-	{
-		this.MinVisual = Mathf.MoveTowards(this.MinVisual, (float)((int)(this.Current * 4f)) / 4f, Time.deltaTime);
-		this.MaxVisual = Mathf.MoveTowards(this.MaxVisual, (float)((int)(this.Current * 4f)) / 4f, Time.deltaTime);
-	}
+    public float VisualMaxNormalized => MaxVisual / Max;
 
-	public void RestoreAllEnergy()
-	{
-		if (this.Current < this.Max)
-		{
-			this.Current = this.Max;
-		}
-	}
+    public float VisualMinNormalized => MinVisual / Max;
 
-	public float MinVisual;
+    public object EnergyUpgradesCollected => Max;
 
-	public float MaxVisual;
+    public void Update() {
+        MinVisual = Mathf.MoveTowards(MinVisual, (int)(Current * 4f) / 4f, Time.deltaTime);
+        MaxVisual = Mathf.MoveTowards(MaxVisual, (int)(Current * 4f) / 4f, Time.deltaTime);
+    }
 
-	public float Current;
+    public void RestoreAllEnergy() {
+        if (Current < Max) {
+            Current = Max;
+        }
+    }
 
-	public float Max = 3f;
+    public float MinVisual;
 
-	public SoundProvider OutOfEnergySound;
+    public float MaxVisual;
+
+    public float Current;
+
+    public float Max = 3f;
+
+    public SoundProvider OutOfEnergySound;
 }

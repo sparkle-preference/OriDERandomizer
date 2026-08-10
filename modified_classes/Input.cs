@@ -1,393 +1,312 @@
-using System;
 using Game;
 using UnityEngine;
 
-namespace Core
-{
-	public class Input
-	{
-		static Input()
-		{
-			Input.Filter = new Input.InputButtonProcessor();
-			Input.Legend = new Input.InputButtonProcessor();
-			Input.Buttons = new Input.InputButtonProcessor[]
-			{
-				Input.Down,
-				Input.Up,
-				Input.Left,
-				Input.Right,
-				Input.Jump,
-				Input.SpiritFlame,
-				Input.Bash,
-				Input.SoulFlame,
-				Input.ChargeJump,
-				Input.Glide,
-				Input.Grab,
-				Input.LeftShoulder,
-				Input.RightShoulder,
-				Input.Start,
-				Input.AnyStart,
-				Input.Select,
-				Input.LeftStick,
-				Input.RightStick,
-				Input.MenuDown,
-				Input.MenuUp,
-				Input.MenuLeft,
-				Input.MenuRight,
-				Input.MenuPageLeft,
-				Input.MenuPageRight,
-				Input.ActionButtonA,
-				Input.ZoomIn,
-				Input.ZoomOut,
-				Input.Cancel,
-				Input.Copy,
-				Input.Delete,
-				Input.Focus,
-				Input.Filter,
-				Input.Legend,
-				Input.Stomp
-			};
-		}
-
-		public static int NormalizedHorizontal
-		{
-			get
-			{
-				if (Input.Horizontal < -0.4f)
-				{
-					return -1;
-				}
-				if (Input.Horizontal > 0.4f)
-				{
-					return 1;
-				}
-				return 0;
-			}
-		}
-
-		public static float NormalizedVertical
-		{
-			get
-			{
-				if (Input.Vertical < -0.6f)
-				{
-					return -1f;
-				}
-				if (Input.Vertical > 0.6f)
-				{
-					return 1f;
-				}
-				return 0f;
-			}
-		}
-
-		public static Vector2 Axis
-		{
-			get
-			{
-				return new Vector2(Input.Horizontal, Input.Vertical);
-			}
-		}
-
-		public static Vector2 AnalogAxisLeft
-		{
-			get
-			{
-				return new Vector2(Input.HorizontalAnalogLeft, Input.VerticalAnalogLeft);
-			}
-		}
-
-		public static Vector2 AnalogAxisRight
-		{
-			get
-			{
-				return new Vector2(Input.HorizontalAnalogRight, Input.VerticalAnalogRight);
-			}
-		}
-
-		public static Vector2 DigiPadAxis
-		{
-			get
-			{
-				return new Vector2((float)Input.HorizontalDigiPad, (float)Input.VerticalDigiPad);
-			}
-		}
-
-		public static Vector2 CursorPositionUI
-		{
-			get
-			{
-				Camera camera = UI.Cameras.System.GUICamera.Camera;
-				Vector2 cursorPosition = Input.CursorPosition;
-				return camera.ViewportToWorldPoint(cursorPosition);
-			}
-		}
-
-		public static bool OnAnyButtonPressed
-		{
-			get
-			{
-				for (int i = 0; i < Input.Buttons.Length; i++)
-				{
-					if (Input.Buttons[i].OnPressed)
-					{
-						return true;
-					}
-				}
-				return false;
-			}
-		}
-
-		public static bool AnyButtonPressed
-		{
-			get
-			{
-				for (int i = 0; i < Input.Buttons.Length; i++)
-				{
-					if (Input.Buttons[i].IsPressed)
-					{
-						return true;
-					}
-				}
-				return false;
-			}
-		}
-
-		public static bool AnyButtonReleased
-		{
-			get
-			{
-				for (int i = 0; i < Input.Buttons.Length; i++)
-				{
-					if (Input.Buttons[i].Released)
-					{
-						return true;
-					}
-				}
-				return false;
-			}
-		}
-
-		public static bool OnAnyButtonReleased
-		{
-			get
-			{
-				for (int i = 0; i < Input.Buttons.Length; i++)
-				{
-					if (Input.Buttons[i].OnReleased)
-					{
-						return true;
-					}
-				}
-				return false;
-			}
-		}
-
-		public static Input.InputButtonProcessor GetButton(Input.Button button)
-		{
-			switch (button)
-			{
-			case Input.Button.ButtonA:
-				return Input.Jump;
-			case Input.Button.ButtonX:
-				return Input.SpiritFlame;
-			case Input.Button.ButtonY:
-				return Input.Bash;
-			case Input.Button.ButtonB:
-				return Input.SoulFlame;
-			case Input.Button.LeftTrigger:
-				return Input.ChargeJump;
-			case Input.Button.RightTrigger:
-				return Input.Glide;
-			case Input.Button.LeftShoulder:
-				return Input.LeftShoulder;
-			case Input.Button.RightShoulder:
-				return Input.RightShoulder;
-			case Input.Button.Left:
-				return Input.Left;
-			case Input.Button.Right:
-				return Input.Right;
-			case Input.Button.Up:
-				return Input.Up;
-			case Input.Button.Down:
-				return Input.Down;
-			case Input.Button.LeftStick:
-				return Input.LeftStick;
-			case Input.Button.RightStick:
-				return Input.RightStick;
-			}
-			return Input.Unassigned;
-		}
+namespace Core {
+    public class Input {
+        static Input() {
+            Filter = new InputButtonProcessor();
+            Legend = new InputButtonProcessor();
+            Buttons = new[] {
+                Down,
+                Up,
+                Left,
+                Right,
+                Jump,
+                SpiritFlame,
+                Bash,
+                SoulFlame,
+                ChargeJump,
+                Glide,
+                Grab,
+                LeftShoulder,
+                RightShoulder,
+                Start,
+                AnyStart,
+                Select,
+                LeftStick,
+                RightStick,
+                MenuDown,
+                MenuUp,
+                MenuLeft,
+                MenuRight,
+                MenuPageLeft,
+                MenuPageRight,
+                ActionButtonA,
+                ZoomIn,
+                ZoomOut,
+                Cancel,
+                Copy,
+                Delete,
+                Focus,
+                Filter,
+                Legend,
+                Stomp
+            };
+        }
+
+        public static int NormalizedHorizontal {
+            get {
+                if (Horizontal < -0.4f) {
+                    return -1;
+                }
+
+                if (Horizontal > 0.4f) {
+                    return 1;
+                }
+
+                return 0;
+            }
+        }
+
+        public static float NormalizedVertical {
+            get {
+                if (Vertical < -0.6f) {
+                    return -1f;
+                }
+
+                if (Vertical > 0.6f) {
+                    return 1f;
+                }
+
+                return 0f;
+            }
+        }
+
+        public static Vector2 Axis => new Vector2(Horizontal, Vertical);
+
+        public static Vector2 AnalogAxisLeft => new Vector2(HorizontalAnalogLeft, VerticalAnalogLeft);
+
+        public static Vector2 AnalogAxisRight => new Vector2(HorizontalAnalogRight, VerticalAnalogRight);
+
+        public static Vector2 DigiPadAxis => new Vector2(HorizontalDigiPad, VerticalDigiPad);
+
+        public static Vector2 CursorPositionUI {
+            get {
+                var camera = UI.Cameras.System.GUICamera.Camera;
+                var cursorPosition = CursorPosition;
+                return camera.ViewportToWorldPoint(cursorPosition);
+            }
+        }
+
+        public static bool OnAnyButtonPressed {
+            get {
+                for (var i = 0; i < Buttons.Length; i++) {
+                    if (Buttons[i].OnPressed) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        public static bool AnyButtonPressed {
+            get {
+                for (var i = 0; i < Buttons.Length; i++) {
+                    if (Buttons[i].IsPressed) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
 
-		public static float Horizontal;
+        public static bool AnyButtonReleased {
+            get {
+                for (var i = 0; i < Buttons.Length; i++) {
+                    if (Buttons[i].Released) {
+                        return true;
+                    }
+                }
 
-		public static float Vertical;
+                return false;
+            }
+        }
 
-		public static int HorizontalDigiPad;
+        public static bool OnAnyButtonReleased {
+            get {
+                for (var i = 0; i < Buttons.Length; i++) {
+                    if (Buttons[i].OnReleased) {
+                        return true;
+                    }
+                }
 
-		public static int VerticalDigiPad;
+                return false;
+            }
+        }
 
-		public static float HorizontalAnalogLeft;
+        public static InputButtonProcessor GetButton(Button button) {
+            switch (button) {
+                case Button.ButtonA:
+                    return Jump;
+                case Button.ButtonX:
+                    return SpiritFlame;
+                case Button.ButtonY:
+                    return Bash;
+                case Button.ButtonB:
+                    return SoulFlame;
+                case Button.LeftTrigger:
+                    return ChargeJump;
+                case Button.RightTrigger:
+                    return Glide;
+                case Button.LeftShoulder:
+                    return LeftShoulder;
+                case Button.RightShoulder:
+                    return RightShoulder;
+                case Button.Left:
+                    return Left;
+                case Button.Right:
+                    return Right;
+                case Button.Up:
+                    return Up;
+                case Button.Down:
+                    return Down;
+                case Button.LeftStick:
+                    return LeftStick;
+                case Button.RightStick:
+                    return RightStick;
+            }
 
-		public static float VerticalAnalogLeft;
+            return Unassigned;
+        }
 
-		public static float HorizontalAnalogRight;
+        public static float Horizontal;
 
-		public static float VerticalAnalogRight;
+        public static float Vertical;
 
-		public static Input.InputButtonProcessor Down = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Up = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Left = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Right = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Jump = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor SpiritFlame = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Bash = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor SoulFlame = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor ChargeJump = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Glide = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Grab = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor ZoomIn = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor ZoomOut = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor LeftShoulder = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor RightShoulder = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Start = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor AnyStart = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Select = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Unassigned = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor LeftStick = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor RightStick = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor MenuDown = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor MenuUp = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor MenuLeft = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor MenuRight = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor MenuPageLeft = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor MenuPageRight = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor ActionButtonA = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Cancel = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor LeftClick = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor RightClick = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Copy = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Delete = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Focus = new Input.InputButtonProcessor();
-
-		public static Input.InputButtonProcessor Filter;
-
-		public static Input.InputButtonProcessor Legend;
-
-		public static Vector2 CursorPosition;
-
-		public static bool CursorMoved;
-
-		public static Input.InputButtonProcessor[] Buttons;
-
-		public static Input.InputButtonProcessor Stomp = new Input.InputButtonProcessor();
-
-		public class InputButtonProcessor
-		{
-			public void Update(bool isPressed)
-			{
-				this.WasPressed = this.IsPressed;
-				this.IsPressed = isPressed;
-			}
-
-			public bool OnPressed
-			{
-				get
-				{
-					return this.IsPressed && !this.WasPressed;
-				}
-			}
-
-			public bool OnPressedNotUsed
-			{
-				get
-				{
-					return this.IsPressed && !this.WasPressed && !this.Used;
-				}
-			}
-
-			public bool OnReleased
-			{
-				get
-				{
-					return !this.IsPressed && this.WasPressed;
-				}
-			}
-
-			public bool Pressed
-			{
-				get
-				{
-					return this.IsPressed;
-				}
-			}
-
-			public bool Released
-			{
-				get
-				{
-					return !this.IsPressed;
-				}
-			}
-
-			public bool WasPressed;
-
-			public bool IsPressed;
-
-			public bool Used;
-		}
-
-		public enum Button
-		{
-			ButtonA,
-			ButtonX,
-			ButtonY,
-			ButtonB,
-			LeftTrigger,
-			RightTrigger,
-			LeftShoulder,
-			RightShoulder,
-			Left,
-			Right,
-			Up,
-			Down,
-			Unassigned,
-			Any,
-			LeftStick,
-			RightStick
-		}
-	}
+        public static int HorizontalDigiPad;
+
+        public static int VerticalDigiPad;
+
+        public static float HorizontalAnalogLeft;
+
+        public static float VerticalAnalogLeft;
+
+        public static float HorizontalAnalogRight;
+
+        public static float VerticalAnalogRight;
+
+        public static InputButtonProcessor Down = new InputButtonProcessor();
+
+        public static InputButtonProcessor Up = new InputButtonProcessor();
+
+        public static InputButtonProcessor Left = new InputButtonProcessor();
+
+        public static InputButtonProcessor Right = new InputButtonProcessor();
+
+        public static InputButtonProcessor Jump = new InputButtonProcessor();
+
+        public static InputButtonProcessor SpiritFlame = new InputButtonProcessor();
+
+        public static InputButtonProcessor Bash = new InputButtonProcessor();
+
+        public static InputButtonProcessor SoulFlame = new InputButtonProcessor();
+
+        public static InputButtonProcessor ChargeJump = new InputButtonProcessor();
+
+        public static InputButtonProcessor Glide = new InputButtonProcessor();
+
+        public static InputButtonProcessor Grab = new InputButtonProcessor();
+
+        public static InputButtonProcessor ZoomIn = new InputButtonProcessor();
+
+        public static InputButtonProcessor ZoomOut = new InputButtonProcessor();
+
+        public static InputButtonProcessor LeftShoulder = new InputButtonProcessor();
+
+        public static InputButtonProcessor RightShoulder = new InputButtonProcessor();
+
+        public static InputButtonProcessor Start = new InputButtonProcessor();
+
+        public static InputButtonProcessor AnyStart = new InputButtonProcessor();
+
+        public static InputButtonProcessor Select = new InputButtonProcessor();
+
+        public static InputButtonProcessor Unassigned = new InputButtonProcessor();
+
+        public static InputButtonProcessor LeftStick = new InputButtonProcessor();
+
+        public static InputButtonProcessor RightStick = new InputButtonProcessor();
+
+        public static InputButtonProcessor MenuDown = new InputButtonProcessor();
+
+        public static InputButtonProcessor MenuUp = new InputButtonProcessor();
+
+        public static InputButtonProcessor MenuLeft = new InputButtonProcessor();
+
+        public static InputButtonProcessor MenuRight = new InputButtonProcessor();
+
+        public static InputButtonProcessor MenuPageLeft = new InputButtonProcessor();
+
+        public static InputButtonProcessor MenuPageRight = new InputButtonProcessor();
+
+        public static InputButtonProcessor ActionButtonA = new InputButtonProcessor();
+
+        public static InputButtonProcessor Cancel = new InputButtonProcessor();
+
+        public static InputButtonProcessor LeftClick = new InputButtonProcessor();
+
+        public static InputButtonProcessor RightClick = new InputButtonProcessor();
+
+        public static InputButtonProcessor Copy = new InputButtonProcessor();
+
+        public static InputButtonProcessor Delete = new InputButtonProcessor();
+
+        public static InputButtonProcessor Focus = new InputButtonProcessor();
+
+        public static InputButtonProcessor Filter;
+
+        public static InputButtonProcessor Legend;
+
+        public static Vector2 CursorPosition;
+
+        public static bool CursorMoved;
+
+        public static InputButtonProcessor[] Buttons;
+
+        public static InputButtonProcessor Stomp = new InputButtonProcessor();
+
+        public class InputButtonProcessor {
+            public void Update(bool isPressed) {
+                WasPressed = IsPressed;
+                IsPressed = isPressed;
+            }
+
+            public bool OnPressed => IsPressed && !WasPressed;
+
+            public bool OnPressedNotUsed => IsPressed && !WasPressed && !Used;
+
+            public bool OnReleased => !IsPressed && WasPressed;
+
+            public bool Pressed => IsPressed;
+
+            public bool Released => !IsPressed;
+
+            public bool WasPressed;
+
+            public bool IsPressed;
+
+            public bool Used;
+        }
+
+        public enum Button {
+            ButtonA,
+            ButtonX,
+            ButtonY,
+            ButtonB,
+            LeftTrigger,
+            RightTrigger,
+            LeftShoulder,
+            RightShoulder,
+            Left,
+            Right,
+            Up,
+            Down,
+            Unassigned,
+            Any,
+            LeftStick,
+            RightStick
+        }
+    }
 }

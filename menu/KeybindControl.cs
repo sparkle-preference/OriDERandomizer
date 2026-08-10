@@ -2,119 +2,104 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class KeybindControl : MonoBehaviour
-{
-	private void Awake()
-	{
-		this.messageBox = base.transform.Find("text/stateText").GetComponent<MessageBox>();
-	}
+public class KeybindControl : MonoBehaviour {
+    private void Awake() {
+        messageBox = transform.Find("text/stateText").GetComponent<MessageBox>();
+    }
 
-	public void BeginEditing()
-	{
-		this.currentKeys.Clear();
-		this.currentKeys.AddRange(this.GetKeys());
-		SuspensionManager.SuspendAll();
-		this.editing = true;
-		this.exit = 0;
-		this.tooltipProvider.SetMessage("Backspace: remove bind\nEnter: finish editing");
-		this.owner.tooltipController.UpdateTooltip();
-	}
+    public void BeginEditing() {
+        currentKeys.Clear();
+        currentKeys.AddRange(GetKeys());
+        SuspensionManager.SuspendAll();
+        editing = true;
+        exit = 0;
+        tooltipProvider.SetMessage("Backspace: remove bind\nEnter: finish editing");
+        owner.tooltipController.UpdateTooltip();
+    }
 
-	public void Update()
-	{
-		if (!this.editing)
-		{
-			return;
-		}
-		if (this.exit < 2)
-		{
-			this.exit++;
-			return;
-		}
-		if (Input.GetKeyDown(KeyCode.Return) && this.currentKeys.Count > 0)
-		{
-			this.editing = false;
-			SuspensionManager.ResumeAll();
-			this.SetKeys(this.currentKeys.ToArray());
-			PlayerInputRebinding.WriteKeyRebindSettings();
-			PlayerInput.Instance.RefreshControlScheme();
-			this.tooltipProvider.SetMessage(this.owner.DefaultTooltip);
-			this.owner.tooltipController.UpdateTooltip();
-			return;
-		}
-		if (Input.GetKeyDown(KeyCode.Backspace))
-		{
-			if (this.currentKeys.Count > 0)
-			{
-				this.currentKeys.RemoveAt(this.currentKeys.Count - 1);
-				this.UpdateMessageBox();
-				return;
-			}
-		}
-		else if (Input.anyKeyDown)
-		{
-			foreach (object obj in Enum.GetValues(typeof(KeyCode)))
-			{
-				KeyCode keyCode = (KeyCode)obj;
-				if (Input.GetKeyDown(keyCode) && !this.currentKeys.Contains(keyCode))
-				{
-					this.currentKeys.Add(keyCode);
-					this.UpdateMessageBox();
-				}
-			}
-		}
-	}
+    public void Update() {
+        if (!editing) {
+            return;
+        }
 
-	private void UpdateMessageBox()
-	{
-		this.messageBox.SetMessage(new MessageDescriptor(KeybindControl.KeyBindingToString(this.currentKeys.ToArray())));
-	}
+        if (exit < 2) {
+            exit++;
+            return;
+        }
 
-	public static string KeyBindingToString(KeyCode[] codes)
-	{
-		string text = string.Empty;
-		bool flag = true;
-		foreach (KeyCode keyCode in codes)
-		{
-			text += ((!flag) ? ", " : string.Empty);
-			text += keyCode;
-			flag = false;
-		}
-		return text;
-	}
+        if (Input.GetKeyDown(KeyCode.Return) && currentKeys.Count > 0) {
+            editing = false;
+            SuspensionManager.ResumeAll();
+            SetKeys(currentKeys.ToArray());
+            PlayerInputRebinding.WriteKeyRebindSettings();
+            PlayerInput.Instance.RefreshControlScheme();
+            tooltipProvider.SetMessage(owner.DefaultTooltip);
+            owner.tooltipController.UpdateTooltip();
+            return;
+        }
 
-	public void Reset()
-	{
-		this.messageBox.SetMessage(new MessageDescriptor(KeybindControl.KeyBindingToString(this.GetKeys())));
-		this.editing = false;
-	}
+        if (Input.GetKeyDown(KeyCode.Backspace)) {
+            if (currentKeys.Count > 0) {
+                currentKeys.RemoveAt(currentKeys.Count - 1);
+                UpdateMessageBox();
+            }
+        } else if (Input.anyKeyDown) {
+            foreach (var obj in Enum.GetValues(typeof(KeyCode))) {
+                var keyCode = (KeyCode)obj;
+                if (Input.GetKeyDown(keyCode) && !currentKeys.Contains(keyCode)) {
+                    currentKeys.Add(keyCode);
+                    UpdateMessageBox();
+                }
+            }
+        }
+    }
 
-	public void Init(Func<KeyCode[]> getKeys, Action<KeyCode[]> setKeys, CustomSettingsScreen owner)
-	{
-		this.owner = owner;
-		this.GetKeys = getKeys;
-		this.SetKeys = setKeys;
-		this.messageBox.SetMessage(new MessageDescriptor(KeybindControl.KeyBindingToString(getKeys())));
-		CleverMenuItemTooltip component = base.GetComponent<CleverMenuItemTooltip>();
-		this.tooltipProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
-		this.tooltipProvider.SetMessage(owner.DefaultTooltip);
-		component.Tooltip = this.tooltipProvider;
-		owner.tooltipController.UpdateTooltip();
-	}
+    private void UpdateMessageBox() {
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(currentKeys.ToArray())));
+    }
 
-	private Func<KeyCode[]> GetKeys;
+    public static string KeyBindingToString(KeyCode[] codes) {
+        var text = string.Empty;
+        var flag = true;
+        foreach (var keyCode in codes) {
+            text += !flag ? ", " : string.Empty;
+            text += keyCode;
+            flag = false;
+        }
 
-	private Action<KeyCode[]> SetKeys;
+        return text;
+    }
 
-	private bool editing;
+    public void Reset() {
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+        editing = false;
+    }
 
-	private MessageBox messageBox;
+    public void Init(Func<KeyCode[]> getKeys, Action<KeyCode[]> setKeys, CustomSettingsScreen owner) {
+        this.owner = owner;
+        GetKeys = getKeys;
+        SetKeys = setKeys;
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
+        var component = GetComponent<CleverMenuItemTooltip>();
+        tooltipProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
+        tooltipProvider.SetMessage(owner.DefaultTooltip);
+        component.Tooltip = tooltipProvider;
+        owner.tooltipController.UpdateTooltip();
+    }
 
-	private List<KeyCode> currentKeys = new List<KeyCode>();
+    private Func<KeyCode[]> GetKeys;
 
-	private int exit;
+    private Action<KeyCode[]> SetKeys;
 
-	private CustomSettingsScreen owner;
+    private bool editing;
 
-	private RandomizerMessageProvider tooltipProvider;
+    private MessageBox messageBox;
+
+    private List<KeyCode> currentKeys = new List<KeyCode>();
+
+    private int exit;
+
+    private CustomSettingsScreen owner;
+
+    private RandomizerMessageProvider tooltipProvider;
 }
