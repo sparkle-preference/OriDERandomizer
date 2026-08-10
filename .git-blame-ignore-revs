@@ -1,0 +1,25 @@
+# Contentless refactors, skipped by blame. GitHub's blame UI reads this file
+# automatically; locally, run once:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Merge #49 (code style normalization)
+241fa9e92458517c58f00a87bb120b597d103685
+# Retab RandomizerLocationManager.
+be98edc4b805462a6e94a27b70ab9eae098b159d
+# Tabs -> spaces
+ba11fac2089190e9bd004563d70d726097527eb0
+
+# Mostly-whitespace commits that also carry a few real lines, left visible so
+# blame can still find them. Uncomment to taste.
+# areas.ori whitespace + a real master/expert path swap (3 lines)
+#bab8744e4f7e1106242fdafee9ccf0393a7dc269
+# reindent + default map filter All -> Uncollected (6 lines)
+#d1172cebf73b6e3105524321d35ff2844b3d7c51
+# reindent + main function removal (6 lines)
+#f492bd2ddf846ce9d2f24ec053cb8355b7779f44
+# 3.3.1 release: line-ending flip + 48 real lines
+#9fb6a20560776419cdfc31b58c6057b2eb31a002
+# 0.1.5 release: reindent + 19 real lines
+#2ae44332b15e579b5cc6af0fc0c5213b28bcb1dc
+# pep8 cleanup + new main function (26 lines)
+#42c400e579a597bf0a4e3636adc943e928fff9dd
