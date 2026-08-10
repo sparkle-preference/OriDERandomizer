@@ -767,7 +767,7 @@ public static class Randomizer {
 
             var queueItem = MessageQueue.Dequeue();
             var message = queueItem.MessageString;
-            MessageQueueTime = (int)(queueItem.BaseDuration * 30f);
+            MessageQueueTime = queueItem.BaseDuration * 0.5f;
             MessageBgColor = queueItem.BgColor;
             if (message != "") {
                 MessageProvider.SetMessage(message);
@@ -776,7 +776,7 @@ public static class Randomizer {
             }
         }
 
-        MessageQueueTime--;
+        MessageQueueTime -= Time.deltaTime;
     }
 
     public static void OnDeath() {
@@ -1461,7 +1461,7 @@ public static class Randomizer {
     public static bool Shards;
     public static bool ColorShift;
     public static Queue<RandomizerUI.Message> MessageQueue;
-    public static int MessageQueueTime;
+    public static float MessageQueueTime;
     public static string PendingWinMessage;
     public static int WinMessageStableFrames;
     public static Color MessageBgColor;
