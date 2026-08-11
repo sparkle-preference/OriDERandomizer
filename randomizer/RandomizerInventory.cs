@@ -24,8 +24,9 @@ public class RandomizerInventory : SaveSerialize {
     }
 
     public int GetRandomizerItem(int code) {
-        if (randomizerItems.ContainsKey(code))
+        if (randomizerItems.ContainsKey(code)) {
             return randomizerItems[code];
+        }
 
         return 0;
     }
@@ -45,11 +46,13 @@ public class RandomizerInventory : SaveSerialize {
 
             randomizerItems.Clear();
             var count = ar.Serialize(0);
-            for (var i = 0; i < count; i++)
+            for (var i = 0; i < count; i++) {
                 randomizerItems[ar.Serialize(0)] = ar.Serialize(0);
+            }
 
-            foreach (var kvp in preserve)
+            foreach (var kvp in preserve) {
                 randomizerItems[kvp.Key] = kvp.Value;
+            }
         } else {
             ar.Serialize(randomizerItems.Count);
             foreach (var kvp in randomizerItems) {

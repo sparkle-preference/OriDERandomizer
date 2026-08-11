@@ -27,11 +27,13 @@ namespace Protogen {
         }
 
         public static HashSet<string> Reachable(AreaGraph graph, Inventory inventory, string startNode = null, Dictionary<string, HashSet<string>> primedPaths = null) {
-            if (startNode == null || !graph.OutgoingConnections.ContainsKey(startNode))
+            if (startNode == null || !graph.OutgoingConnections.ContainsKey(startNode)) {
                 startNode = graph.Origin.Name;
+            }
 
-            if (primedPaths == null)
+            if (primedPaths == null) {
                 primedPaths = new Dictionary<string, HashSet<string>>();
+            }
 
             var reachable = new HashSet<string>();
             var reachedWithKeystones = new Dictionary<string, int>();
@@ -57,8 +59,9 @@ namespace Protogen {
                                     foundAny = true;
                                     newNodes.Add(target);
                                     var destinationKeystonesUsed = reachedWithKeystones.ContainsKey(target) ? reachedWithKeystones[target] : 9999;
-                                    if (reachedWithKeystones[node] < destinationKeystonesUsed)
+                                    if (reachedWithKeystones[node] < destinationKeystonesUsed) {
                                         reachedWithKeystones[target] = reachedWithKeystones[node];
+                                    }
                                 }
                             }
                         }
@@ -76,13 +79,15 @@ namespace Protogen {
                                 )
                             )
                             .Select(conn => {
-                                    if (conn.Requirement.Unlocks.Contains("Mapstone"))
+                                    if (conn.Requirement.Unlocks.Contains("Mapstone")) {
                                         accessibleMapstones.Add(conn.Destination);
+                                    }
 
                                     var destinationKeystonesUsed = reachedWithKeystones.ContainsKey(conn.Destination.Name) ? reachedWithKeystones[conn.Destination.Name] : 9999;
 
-                                    if (reachedWithKeystones[conn.Source.Name] < destinationKeystonesUsed)
+                                    if (reachedWithKeystones[conn.Source.Name] < destinationKeystonesUsed) {
                                         reachedWithKeystones[conn.Destination.Name] = reachedWithKeystones[conn.Source.Name];
+                                    }
 
                                     foundAny = true;
                                     return conn.Destination.Name;
@@ -125,8 +130,9 @@ namespace Protogen {
                         newNodes.Add(conn.Destination.Name);
 
                         var destinationKeystonesUsed = reachedWithKeystones.ContainsKey(conn.Destination.Name) ? reachedWithKeystones[conn.Destination.Name] : 9999;
-                        if (keystonesNeeded < destinationKeystonesUsed)
+                        if (keystonesNeeded < destinationKeystonesUsed) {
                             reachedWithKeystones[conn.Destination.Name] = keystonesNeeded;
+                        }
                     }
                 }
 

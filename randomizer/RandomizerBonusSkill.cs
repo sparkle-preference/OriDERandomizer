@@ -96,17 +96,21 @@ public static class RandomizerBonusSkill {
                 }
 
                 if (ab == 102) {
-                    if (IsActive(ab) || Characters.Sein.Abilities.Carry.IsCarrying)
+                    if (IsActive(ab) || Characters.Sein.Abilities.Carry.IsCarrying) {
                         Characters.Sein.PlatformBehaviour.Gravity.BaseSettings.GravityAngle += 180f;
-                    else
+                    } else {
                         Characters.Sein.PlatformBehaviour.Gravity.BaseSettings.GravityAngle = 0f;
+                    }
+
                     Characters.Sein.PlatformBehaviour.LeftRightMovement.PlatformMovement.LocalSpeedX *= -1;
                 }
 
                 break;
             case 104:
-                if (!CanWarpTo(LastAltR))
+                if (!CanWarpTo(LastAltR)) {
                     return;
+                }
+
                 if (Characters.Sein.Energy.Current >= 0.5f) {
                     Characters.Sein.Energy.Spend(0.5f);
                     Randomizer.WarpTo(LastAltR, 0);
@@ -117,8 +121,10 @@ public static class RandomizerBonusSkill {
                 Characters.Sein.Energy.NotifyOutOfEnergy();
                 return;
             case 105:
-                if (!CanWarpTo(LastSoulLink))
+                if (!CanWarpTo(LastSoulLink)) {
                     return;
+                }
+
                 if (Characters.Sein.Energy.Current >= 0.5f) {
                     Characters.Sein.Energy.Spend(0.5f);
                     Randomizer.WarpTo(LastSoulLink, 0);
@@ -157,8 +163,9 @@ public static class RandomizerBonusSkill {
                     Characters.Sein.PlayerAbilities.SpiritFlame
                 };
                 for (var i = 0; i < abilities.Length; i++) {
-                    if (!actuallySkills.Contains(abilities[i]))
+                    if (!actuallySkills.Contains(abilities[i])) {
                         abilities[i].HasAbility = false;
+                    }
                 }
 
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
@@ -224,18 +231,20 @@ public static class RandomizerBonusSkill {
                         if (target is EntityTargetting) {
                             var enemyTarget = target as EntityTargetting;
                             var entity = enemyTarget.Entity;
-                            if (entity is JumperEnemy)
+                            if (entity is JumperEnemy) {
                                 CapturedName = "Fronkey";
-                            else if (entity is FishEnemy)
+                            } else if (entity is FishEnemy) {
                                 CapturedName = "Fish";
-                            else if (entity is SpitterEnemy)
+                            } else if (entity is SpitterEnemy) {
                                 CapturedName = "Frog";
-                            else if (entity is KamikazeSootEnemy)
+                            } else if (entity is KamikazeSootEnemy) {
                                 CapturedName = "Baneling";
-                            else if (entity is DashOwlEnemy)
+                            } else if (entity is DashOwlEnemy) {
                                 CapturedName = "Bird";
-                            else
+                            } else {
                                 return;
+                            }
+
                             CapturedEnemy = entity as Enemy;
                             Randomizer.LogError(CapturedEnemy.BoundingBox.ToString());
                             CapturedOffset = CapturedEnemy.PositionToPlayerPosition;
@@ -246,8 +255,10 @@ public static class RandomizerBonusSkill {
                         }
                     }
                 } else {
-                    if (CapturedLeft != Characters.Sein.FaceLeft)
+                    if (CapturedLeft != Characters.Sein.FaceLeft) {
                         CapturedOffset.x *= -1;
+                    }
+
                     CapturedEnemy.Position = Characters.Sein.Position + CapturedOffset;
                     CapturedEnemy.gameObject.SetActiveRecursively(true);
                     CapturedEnemy = null;
@@ -277,8 +288,10 @@ public static class RandomizerBonusSkill {
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 break;
             case 1587:
-                if (!Characters.Sein.Controller.CanMove || !Characters.Sein.Active)
+                if (!Characters.Sein.Controller.CanMove || !Characters.Sein.Active) {
                     return;
+                }
+
                 Randomizer.WarpTo(new Vector3(-2478, -593, 0), 0);
                 GameController.Instance.RemoveGameplayObjects();
                 RandomizerStatsManager.Finish();
@@ -310,16 +323,19 @@ public static class RandomizerBonusSkill {
 
     public static void Update() {
         if (!Characters.Sein.IsSuspended && Characters.Sein.Controller.CanMove && Characters.Sein.Active) {
-            if (DrainNextUpdate > 0)
+            if (DrainNextUpdate > 0) {
                 UpdateDrain();
+            }
+
             if (EnergyDrainRate > Characters.Sein.Energy.Current) {
                 foreach (var ds in ActiveDrainSkills) {
                     Deactivate(ds);
                     if (ds == 102) {
-                        if (Characters.Sein.Abilities.Carry.IsCarrying)
+                        if (Characters.Sein.Abilities.Carry.IsCarrying) {
                             Characters.Sein.PlatformBehaviour.Gravity.BaseSettings.GravityAngle += 180f;
-                        else
+                        } else {
                             Characters.Sein.PlatformBehaviour.Gravity.BaseSettings.GravityAngle = 0f;
+                        }
 
                         Characters.Sein.PlatformBehaviour.LeftRightMovement.PlatformMovement.LocalSpeedX *= -1;
                     }
@@ -330,8 +346,9 @@ public static class RandomizerBonusSkill {
                 return;
             }
 
-            if (EnergyDrainRate > 0f)
+            if (EnergyDrainRate > 0f) {
                 Characters.Sein.Energy.Spend(EnergyDrainRate);
+            }
         }
     }
 
@@ -349,10 +366,11 @@ public static class RandomizerBonusSkill {
         CapturedOffset = SaveOffset;
         CapturedLeft = SaveLeft;
         CapturedName = SaveName;
-        if (CapturedName != null)
+        if (CapturedName != null) {
             BonusSkillNames[112] = "Pokeball (" + CapturedName + ")";
-        else
+        } else {
             BonusSkillNames[112] = "Pokeball (empty)";
+        }
 
         UpdateDrain();
     }
@@ -360,20 +378,27 @@ public static class RandomizerBonusSkill {
     public static void FoundBonusSkill(int ID) {
         var psuedo = ID == 108 || ID == 115 || ID == 1587;
         if (get(ID) > 0) {
-            if (!psuedo)
+            if (!psuedo) {
                 RandomizerSwitch.PickupMessage(BonusSkillNames[ID] + " (duplicate)");
+            }
+
             return;
         }
 
-        if (!psuedo)
+        if (!psuedo) {
             RandomizerSwitch.PickupMessage("Unlocked Bonus Skill: " + BonusSkillNames[ID]);
+        }
+
         var offset = 0;
         var ubs = new Dictionary<int, int>(UnlockedBonusSkills);
-        if (ubs.Count > 0)
+        if (ubs.Count > 0) {
             offset = (1 + ubs.Keys.Max()) << 2;
+        }
+
         set(ID, offset + 1);
-        if (ActiveBonus == 0)
+        if (ActiveBonus == 0) {
             ActiveBonus = ID;
+        }
     }
 
     public static void Reset() {
@@ -382,8 +407,10 @@ public static class RandomizerBonusSkill {
 
     public static void UpdateDrain() {
         try {
-            if (!Characters.Sein || !Characters.Sein.Inventory || !Characters.Sein.PlatformBehaviour)
+            if (!Characters.Sein || !Characters.Sein.Inventory || !Characters.Sein.PlatformBehaviour) {
                 return;
+            }
+
             var ads = new HashSet<int>(ActiveDrainSkills);
 
             EnergyDrainRate = 0f;
@@ -473,8 +500,10 @@ public static class RandomizerBonusSkill {
 
     public static bool IsActive(int id) {
         try {
-            if (!Characters.Sein)
+            if (!Characters.Sein) {
                 return false;
+            }
+
             return (get(id) >> 1) % 2 == 1;
         } catch (Exception e) {
             Randomizer.LogError("IsActive: " + e.Message);
@@ -483,18 +512,22 @@ public static class RandomizerBonusSkill {
     }
 
     public static void Deactivate(int id) {
-        if (IsActive(id))
+        if (IsActive(id)) {
             set(id, get(id) - 2);
-        else if (RandomizerSettings.Dev)
+        } else if (RandomizerSettings.Dev) {
             Randomizer.log("ignoring deactivation of " + id + " since skill was not active");
+        }
+
         UpdateDrain();
     }
 
     public static void Activate(int id) {
-        if (!IsActive(id))
+        if (!IsActive(id)) {
             set(id, get(id) + 2);
-        else if (RandomizerSettings.Dev)
+        } else if (RandomizerSettings.Dev) {
             Randomizer.log("ignoring activation of " + id + " since skill was already active");
+        }
+
         UpdateDrain();
     }
 
@@ -502,8 +535,9 @@ public static class RandomizerBonusSkill {
         get {
             var ads = new HashSet<int>();
             foreach (var id in DrainRates.Keys) {
-                if (IsActive(id))
+                if (IsActive(id)) {
                     ads.Add(id);
+                }
             }
 
             return ads;
@@ -546,8 +580,10 @@ public static class RandomizerBonusSkill {
     };
 
     public static float AbilityDamage(float orig) {
-        if (IsActive(113))
+        if (IsActive(113)) {
             return 0;
+        }
+
         return orig;
     }
 
@@ -574,8 +610,10 @@ public static class RandomizerBonusSkill {
     }
 
     public static bool UnlockCreditWarp(string message) {
-        if (get(1587) > 0)
+        if (get(1587) > 0) {
             return false;
+        }
+
         FoundBonusSkill(1587);
         ActiveBonus = 1587;
         message += "\nPress " + RandomizerRebinding.BonusToggle.FirstBindName() + " to warp to credits";

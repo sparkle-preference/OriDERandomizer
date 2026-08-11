@@ -22,8 +22,10 @@ namespace Protogen {
             foreach (var rawLine in logicLines) {
                 var commStart = rawLine.IndexOf("--");
                 var line = (commStart == -1 ? rawLine : rawLine.Substring(0, commStart)).Trim();
-                if (line.StartsWith("--") || line == "")
+                if (line.StartsWith("--") || line == "") {
                     continue;
+                }
+
                 var segments = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 var first = segments.First().Trim();
                 switch (first) {

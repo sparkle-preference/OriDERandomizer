@@ -103,8 +103,9 @@ public class RuntimeGameWorldArea {
 
         if (RandomizerTrackedDataManager.MapBitsByArea.ContainsKey(Area.AreaIdentifier)) {
             total++;
-            if (RandomizerTrackedDataManager.GetMapstone(Area.AreaIdentifier))
+            if (RandomizerTrackedDataManager.GetMapstone(Area.AreaIdentifier)) {
                 collected++;
+            }
         }
 
         m_completionAmount = collected / (float)total;

@@ -82,8 +82,10 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
     }
 
     public void FixedUpdate() {
-        if (this is Enemy)
+        if (this is Enemy) {
             (this as Enemy).Animation.Animator.TextureAnimator.SpeedMultiplier = RandomizerBonusSkill.TimeScale(1f);
+        }
+
         if (FrustrumOptimized && !m_insideFrustum && CanBeOptimized()) {
             gameObject.SetActive(false);
         }

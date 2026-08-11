@@ -53,12 +53,16 @@ public static class RandomizerDeathLink {
     // inside the confirm window -- is not a second death.
     public static void OnSignal(string payload) {
         try {
-            if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null)
+            if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null) {
                 return;
+            }
+
             var parts = payload.Split(new[] { ';' }, 2);
             if (!int.TryParse(parts[0], out var token)
-                || token <= Characters.Sein.Inventory.GetRandomizerItem(LastToken))
+                || token <= Characters.Sein.Inventory.GetRandomizerItem(LastToken)) {
                 return;
+            }
+
             Characters.Sein.Inventory.SetRandomizerItem(LastToken, token);
             killPending = true;
             killSource = parts.Length > 1 ? parts[1] : "";
@@ -73,8 +77,10 @@ public static class RandomizerDeathLink {
     // refused and the kill is still owed.
     public static void OnDeath() {
         try {
-            if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null)
+            if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null) {
                 return;
+            }
+
             if (!armed) {
                 // a re-fired hook (dead-save load) is the same death again
                 killPending = false;
@@ -100,21 +106,29 @@ public static class RandomizerDeathLink {
 
     public static void Update() {
         try {
-            if (!Enabled)
+            if (!Enabled) {
                 return;
+            }
+
             var stable = Characters.Sein && Characters.Sein.Active
                 && Characters.Sein.Controller.CanMove
                 && !Characters.Sein.IsSuspended && !UI.MainMenuVisible
                 && !Randomizer.CreditsActive
                 && Characters.Sein.gameObject.activeInHierarchy
                 && Randomizer.DamageModifier > 0f;
-            if (!armed && stable && Characters.Sein.Mortality.Health.Amount > 0f)
+            if (!armed && stable && Characters.Sein.Mortality.Health.Amount > 0f) {
                 armed = true;
-            if (!killPending)
+            }
+
+            if (!killPending) {
                 return;
+            }
+
             stableFrames = stable ? stableFrames + 1 : 0;
-            if (stableFrames < StableFramesNeeded)
+            if (stableFrames < StableFramesNeeded) {
                 return;
+            }
+
             stableFrames = 0;
             Apply();
         } catch (Exception e) {
@@ -157,8 +171,10 @@ public static class RandomizerDeathLink {
 
     // tick field: "<total>.<linked>", or null on every seed without the option
     public static string Field() {
-        if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null)
+        if (!Enabled || !Characters.Sein || Characters.Sein.Inventory == null) {
             return null;
+        }
+
         return Characters.Sein.Inventory.GetRandomizerItem(Deaths) + "."
             + Characters.Sein.Inventory.GetRandomizerItem(LinkedDeaths);
     }

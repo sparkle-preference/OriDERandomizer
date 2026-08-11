@@ -13,8 +13,10 @@ public class RandomizerEnhancedMode {
         textAction.FreezeGame = false;
 
         sequence.Actions[index] = textAction;
-        if (dontFixWaitAction)
+        if (dontFixWaitAction) {
             return;
+        }
+
         (sequence.Actions[index + 1] as WaitAction).LastAction = textAction;
     }
 

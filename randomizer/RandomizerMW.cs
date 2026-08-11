@@ -98,14 +98,19 @@ public static class RandomizerMW {
     // field 6 is present only when the item is ours, and names the manifest
     // slot it lands in, so contact can grant it without the room round trip
     public static void AddApLine(int coords, string apField, string ownSlot = null) {
-        if (string.IsNullOrEmpty(apField))
+        if (string.IsNullOrEmpty(apField)) {
             return;
+        }
+
         var parts = apField.Split(new[] { ';' }, 2);
-        if (parts.Length != 2)
+        if (parts.Length != 2) {
             return;
+        }
+
         ApItems[coords] = parts;
-        if (!string.IsNullOrEmpty(ownSlot) && int.TryParse(ownSlot, out var slot))
+        if (!string.IsNullOrEmpty(ownSlot) && int.TryParse(ownSlot, out var slot)) {
             ApSelfSlots[coords] = slot;
+        }
     }
 
     // coord -> our own manifest slot, for reserved locations holding our item
@@ -118,8 +123,10 @@ public static class RandomizerMW {
     /// Returns false when there is nothing to grant here.
     /// </summary>
     public static bool GrantSelfItem(int coords) {
-        if (!ApSelfSlots.TryGetValue(coords, out var slot) || !Manifest.ContainsKey(slot))
+        if (!ApSelfSlots.TryGetValue(coords, out var slot) || !Manifest.ContainsKey(slot)) {
             return false;
+        }
+
         if (SlotGranted(slot)) {
             // died and came back to it: the item is already ours
             var name = ApItems.TryGetValue(coords, out var ap) ? ap[1] : "That";
@@ -146,8 +153,10 @@ public static class RandomizerMW {
 
     // has this manifest slot already been granted into the save?
     public static bool SlotGranted(int slot) {
-        if (slot < 0 || slot > 255 || !Characters.Sein)
+        if (slot < 0 || slot > 255 || !Characters.Sein) {
             return false;
+        }
+
         var local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + slot / 32);
         return (local & (1u << (slot % 32))) != 0;
     }
@@ -158,8 +167,9 @@ public static class RandomizerMW {
             ApGrants = true;
             foreach (var pair in payload.Split(';')) {
                 var eq = pair.IndexOf('=');
-                if (eq > 0 && int.TryParse(pair.Substring(0, eq), out var slot))
+                if (eq > 0 && int.TryParse(pair.Substring(0, eq), out var slot)) {
                     SlotSenders[slot] = pair.Substring(eq + 1);
+                }
             }
         } catch (Exception e) {
             Randomizer.LogError("MW.OnApFromSignal: " + e.Message);
@@ -169,8 +179,10 @@ public static class RandomizerMW {
     // who to name on a grant: the apfrom signal when Archipelago sent it,
     // the manifest's finder otherwise (plain multiworld). "" = yourself.
     private static string SenderFor(ManifestEntry entry) {
-        if (SlotSenders.TryGetValue(entry.Slot, out var token))
+        if (SlotSenders.TryGetValue(entry.Slot, out var token)) {
             return token == "" ? "" : ApName(token);
+        }
+
         return PlayerName(entry.Finder);
     }
 
@@ -205,8 +217,9 @@ public static class RandomizerMW {
         try {
             foreach (var pair in field.Split(';')) {
                 var eq = pair.IndexOf('=');
-                if (eq > 0 && int.TryParse(pair.Substring(0, eq), out var slot))
+                if (eq > 0 && int.TryParse(pair.Substring(0, eq), out var slot)) {
                     ApHints[slot] = pair.Substring(eq + 1);
+                }
             }
         } catch (Exception e) {
             Randomizer.LogError("MW.OnApHintsField: " + e.Message);
@@ -217,15 +230,18 @@ public static class RandomizerMW {
     // Every display site reads through here, so a seed with no AP hints shows
     // exactly what it always showed.
     public static string ApHintOr(int slot, string baked) {
-        if (slot >= 0 && ApHints.TryGetValue(slot, out var text) && text != "")
+        if (slot >= 0 && ApHints.TryGetValue(slot, out var text) && text != "") {
             return text;
+        }
+
         return baked;
     }
 
     public static void WantHint(List<int> needed, int slot) {
         if (slot >= 0 && needed.Count < MaxHintRequests && !ApHints.ContainsKey(slot)
-            && Manifest.ContainsKey(slot) && !needed.Contains(slot))
+            && Manifest.ContainsKey(slot) && !needed.Contains(slot)) {
             needed.Add(slot);
+        }
     }
 
     // "<slot>.<slot>" for the tick, or null when there is nothing to ask.
@@ -234,31 +250,42 @@ public static class RandomizerMW {
     // an unanswered one is only repeated every HintResendPeriod ticks.
     public static string HintRequestField() {
         try {
-            if (Randomizer.SyncMode != 5 || Manifest.Count == 0 || !Characters.Sein)
+            if (Randomizer.SyncMode != 5 || Manifest.Count == 0 || !Characters.Sein) {
                 return null;
+            }
+
             var needed = new List<int>();
             // the two bounded sets go first: keysanity alone can offer 40 rows
             // and would otherwise fill the budget before these are ever asked
-            if (Randomizer.CluesMode)
+            if (Randomizer.CluesMode) {
                 RandomizerClues.WantHints(needed);
+            }
+
             if (RandomizerBonus.ForlornEscapeHint()) {
                 WantHint(needed, Randomizer.StompSlot);
                 WantHint(needed, Randomizer.GrenadeSlot);
             }
 
-            if (Randomizer.Keysanity.IsActive)
+            if (Randomizer.Keysanity.IsActive) {
                 Randomizer.Keysanity.WantHints(needed);
+            }
+
             if (needed.Count == 0) {
                 hintsAsked.Clear();
                 return null;
             }
 
             var grew = false;
-            foreach (var slot in needed)
-                if (!hintsAsked.Contains(slot))
+            foreach (var slot in needed) {
+                if (!hintsAsked.Contains(slot)) {
                     grew = true;
-            if (!grew && --hintResendTicks > 0)
+                }
+            }
+
+            if (!grew && --hintResendTicks > 0) {
                 return null;
+            }
+
             hintsAsked.Clear();
             hintsAsked.UnionWith(needed);
             hintResendTicks = HintResendPeriod;
@@ -274,8 +301,9 @@ public static class RandomizerMW {
         try {
             foreach (var pair in field.Split(';')) {
                 var dot = pair.IndexOf('.');
-                if (dot > 0 && int.TryParse(pair.Substring(0, dot), out var pid) && pair.Length > dot + 1)
+                if (dot > 0 && int.TryParse(pair.Substring(0, dot), out var pid) && pair.Length > dot + 1) {
                     PlayerNames[pid] = pair.Substring(dot + 1);
+                }
             }
         } catch (Exception e) {
             Randomizer.LogError("MW.OnNamesField: " + e.Message);
@@ -315,15 +343,17 @@ public static class RandomizerMW {
             // seed-parse path that does that only sees plain TW lines
             if (entry.Code == "TW") {
                 var warp = entry.Id.Split(',');
-                if (warp.Length > 3 && !Randomizer.WarpLogicLocations.ContainsKey(warp[0]))
+                if (warp.Length > 3 && !Randomizer.WarpLogicLocations.ContainsKey(warp[0])) {
                     Randomizer.WarpLogicLocations.Add(warp[0], warp[3]);
+                }
             }
 
             // our dungeon keys living in someone else's world still get
             // clues: the manifest knows whose world and which zone
             if (Randomizer.CluesMode && entry.Code == "EV") {
-                if (int.TryParse(entry.Id, out var evId) && evId % 2 == 0)
+                if (int.TryParse(entry.Id, out var evId) && evId % 2 == 0) {
                     RandomizerClues.AddClue(clue, evId / 2, slot);
+                }
             }
 
             // the Forlorn escape names where Stomp and Grenade went, and an
@@ -332,23 +362,27 @@ public static class RandomizerMW {
             // "MIA" it has always printed.
             if (entry.Code == "SK" && (entry.Id == "4" || entry.Id == "51")) {
                 var stomp = entry.Id == "4";
-                if (stomp)
+                if (stomp) {
                     Randomizer.StompSlot = slot;
-                else
+                } else {
                     Randomizer.GrenadeSlot = slot;
+                }
+
                 if (!string.IsNullOrEmpty(holder)) {
-                    if (stomp)
+                    if (stomp) {
                         Randomizer.StompZone = clue;
-                    else
+                    } else {
                         Randomizer.GrenadeZone = clue;
+                    }
                 }
             }
 
             // same for keysanity door keys; the clue's coords are the manifest
             // pseudo-location, resolved as found via the granted-slot bits
             if (Randomizer.Keysanity.IsActive && entry.Code == "RB") {
-                if (int.TryParse(entry.Id, out var rbId))
+                if (int.TryParse(entry.Id, out var rbId)) {
                     Randomizer.Keysanity.AddClue(rbId, coords, clue);
+                }
             }
         } catch (Exception e) {
             Randomizer.LogError($"MW.AddManifestEntry({coords}, {value}): {e.Message}");
@@ -374,42 +408,52 @@ public static class RandomizerMW {
     // granted, so the caller can refresh logic.
     public static bool OnSlotsField(string field) {
         try {
-            if (string.IsNullOrEmpty(field) || !Characters.Sein || Characters.Sein.Inventory == null)
+            if (string.IsNullOrEmpty(field) || !Characters.Sein || Characters.Sein.Inventory == null) {
                 return false;
+            }
+
             var parts = field.Split(';');
 
             // first pass: which grantable slots are new this tick?
             var pending = new List<int>();
             var serverFields = new uint[8];
             for (var i = 0; i < 8 && i < parts.Length; i++) {
-                if (!uint.TryParse(parts[i], out serverFields[i]))
+                if (!uint.TryParse(parts[i], out serverFields[i])) {
                     continue;
+                }
+
                 var local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i);
                 var diff = serverFields[i] & ~local;
-                for (var bit = 0; bit < 32 && diff != 0; bit++)
-                    if ((diff & (1u << bit)) != 0)
+                for (var bit = 0; bit < 32 && diff != 0; bit++) {
+                    if ((diff & (1u << bit)) != 0) {
                         pending.Add(i * 32 + bit);
+                    }
+                }
             }
 
-            if (!ApGrants)
+            if (!ApGrants) {
                 return pending.Count > 0 && Grant(pending, BatchMessageThreshold);
+            }
 
             // pending is a level, not an edge: it stays set until we grant, so
             // only a NEW slot may re-arm the window
             var grew = false;
-            foreach (var slot in pending)
+            foreach (var slot in pending) {
                 if (!pendingSlots.Contains(slot)) {
                     pendingSlots.Add(slot);
                     grew = true;
                 }
+            }
 
             if (grew) {
                 windowTicks = ApGrantWindowTicks; // more may still be coming
                 return false;
             }
 
-            if (pendingSlots.Count == 0 || --windowTicks > 0)
+            if (pendingSlots.Count == 0 || --windowTicks > 0) {
                 return false;
+            }
+
             var ready = pendingSlots;
             pendingSlots = new List<int>();
             return Grant(ready, ApBatchMessageThreshold);
@@ -427,16 +471,20 @@ public static class RandomizerMW {
         var silent = Randomizer.CreditsActive;
         var batched = new List<ManifestEntry>();
         foreach (var slot in slots) {
-            if (!GrantSlot(slot, batch || silent, batched))
+            if (!GrantSlot(slot, batch || silent, batched)) {
                 continue;
+            }
+
             var i = slot / 32;
             var local = (uint)Characters.Sein.Inventory.GetRandomizerItem(GrantedSlotsBase + i);
             Characters.Sein.Inventory.SetRandomizerItem(GrantedSlotsBase + i, (int)(local | (1u << (slot % 32))));
             granted = true;
         }
 
-        if (batched.Count > 0 && !silent)
+        if (batched.Count > 0 && !silent) {
             ShowBatchMessage(batched);
+        }
+
         return granted;
     }
 
@@ -495,10 +543,22 @@ public static class RandomizerMW {
     private static HashSet<string> redStuff = new HashSet<string> { "Sunstone", "Horu Teleporter", "Warmth Returned" };
 
     public static string ColorWrap(string input) {
-        if (SkillNames.ContainsValue(input)) return $"${input}$"; // skill names are green
-        if (blueStuff.Contains(input)) return $"*{input}*"; // blue stuff is blue
-        if (orangeStuff.Contains(input)) return $"#{input}#"; // orange stuff is orange
-        if (redStuff.Contains(input)) return $"@{input}@"; // red stuff is red
+        if (SkillNames.ContainsValue(input)) {
+            return $"${input}$"; // skill names are green
+        }
+
+        if (blueStuff.Contains(input)) {
+            return $"*{input}*"; // blue stuff is blue
+        }
+
+        if (orangeStuff.Contains(input)) {
+            return $"#{input}#"; // orange stuff is orange
+        }
+
+        if (redStuff.Contains(input)) {
+            return $"@{input}@"; // red stuff is red
+        }
+
         return input; // this could have been a poem
     }
 
@@ -513,10 +573,12 @@ public static class RandomizerMW {
             var anySelf = false;
             foreach (var entry in entries) {
                 var sender = SenderFor(entry);
-                if (sender != "")
+                if (sender != "") {
                     finders.Add(sender);
-                else
+                } else {
                     anySelf = true;
+                }
+
                 switch (entry.Code) {
                     case "SK":
                         skills.Add(ColorWrap(SkillNames.ContainsKey(entry.Id) ? SkillNames[entry.Id] : "Unknown Skill " + entry.Id));
@@ -536,54 +598,104 @@ public static class RandomizerMW {
                     case "KS": ks++; break;
                     case "MS": ms++; break;
                     case "EX":
-                        if (int.TryParse(entry.Id, out var val))
+                        if (int.TryParse(entry.Id, out var val)) {
                             exp += val;
+                        }
+
                         break;
                     case "RB":
-                        if (entry.Id == "17")
+                        if (entry.Id == "17") {
                             wvs++;
-                        else if (entry.Id == "19")
+                        } else if (entry.Id == "19") {
                             gss++;
-                        else if (entry.Id == "21")
+                        } else if (entry.Id == "21") {
                             sss++;
-                        else if (entry.Id == "28")
+                        } else if (entry.Id == "28") {
                             wfg++;
-                        else
+                        } else {
                             rb++;
+                        }
+
                         break;
                     default: other++; break;
                 }
             }
 
-            if (wvs > 0) events.Add(Counted(wvs, "Water Vein Shard", "Water Vein Shards", "*"));
-            if (gss > 0) events.Add(Counted(gss, "Gumon Seal Shard", "Gumon Seal Shards", "#"));
-            if (sss > 0) events.Add(Counted(sss, "Sunstone Shard", "Sunstone Shards", "@"));
-            if (wfg > 0) events.Add(Counted(wfg, "Warmth Fragment", "Warmth Fragments", "@"));
+            if (wvs > 0) {
+                events.Add(Counted(wvs, "Water Vein Shard", "Water Vein Shards", "*"));
+            }
+
+            if (gss > 0) {
+                events.Add(Counted(gss, "Gumon Seal Shard", "Gumon Seal Shards", "#"));
+            }
+
+            if (sss > 0) {
+                events.Add(Counted(sss, "Sunstone Shard", "Sunstone Shards", "@"));
+            }
+
+            if (wfg > 0) {
+                events.Add(Counted(wfg, "Warmth Fragment", "Warmth Fragments", "@"));
+            }
+
             var lines = new List<string>();
-            if (skills.Count > 0)
+            if (skills.Count > 0) {
                 lines.Add(string.Join(", ", skills.ToArray()));
-            if (events.Count > 0)
+            }
+
+            if (events.Count > 0) {
                 lines.Add(string.Join(", ", events.ToArray()));
-            if (travel.Count > 0)
+            }
+
+            if (travel.Count > 0) {
                 lines.Add(string.Join(", ", travel.ToArray()));
+            }
+
             var counts = new List<string>();
             // TODO: maybe get their names even though it'll be so much work (probs a refactor on name handling in general misery emoji)
-            if (rb > 0) counts.Add(Counted(rb, "Bonus Pickup", "Bonus Pickups"));
-            if (hc > 0) counts.Add(Counted(hc, "Health Cell", "Health Cells"));
-            if (ec > 0) counts.Add(Counted(ec, "Energy Cell", "Energy Cells"));
-            if (ac > 0) counts.Add(Counted(ac, "Ability Cell", "Ability Cells"));
-            if (ks > 0) counts.Add(Counted(ks, "Keystone", "Keystones"));
-            if (ms > 0) counts.Add(Counted(ms, "Mapstone", "Mapstones"));
-            if (other > 0) counts.Add(Counted(other, "other item", "other items"));
-            if (exp > 0) counts.Add(exp + " Spirit Light");
-            if (counts.Count > 0)
+            if (rb > 0) {
+                counts.Add(Counted(rb, "Bonus Pickup", "Bonus Pickups"));
+            }
+
+            if (hc > 0) {
+                counts.Add(Counted(hc, "Health Cell", "Health Cells"));
+            }
+
+            if (ec > 0) {
+                counts.Add(Counted(ec, "Energy Cell", "Energy Cells"));
+            }
+
+            if (ac > 0) {
+                counts.Add(Counted(ac, "Ability Cell", "Ability Cells"));
+            }
+
+            if (ks > 0) {
+                counts.Add(Counted(ks, "Keystone", "Keystones"));
+            }
+
+            if (ms > 0) {
+                counts.Add(Counted(ms, "Mapstone", "Mapstones"));
+            }
+
+            if (other > 0) {
+                counts.Add(Counted(other, "other item", "other items"));
+            }
+
+            if (exp > 0) {
+                counts.Add(exp + " Spirit Light");
+            }
+
+            if (counts.Count > 0) {
                 lines.Add(string.Join(", ", counts.ToArray()));
+            }
+
             if (lines.Count > 0) {
                 var finderNames = new List<string>(finders);
                 finderNames.Sort();
                 // sorted first, so "self" lands last in a mixed batch
-                if (anySelf && finderNames.Count > 0)
+                if (anySelf && finderNames.Count > 0) {
                     finderNames.Add("self");
+                }
+
                 // no names at all means Archipelago handed back only things
                 // we found ourselves
                 var header = finderNames.Count > 0

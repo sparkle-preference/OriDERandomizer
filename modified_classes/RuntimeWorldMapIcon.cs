@@ -81,8 +81,10 @@ public class RuntimeWorldMapIcon {
             case RandomizerWorldMapIconType.CleanWater:
                 CreateIconFromInventory("waterPurifiedIcon/waterPurifiedGraphics", 20);
                 var offset = m_iconGameObject.transform.Find("waterPurifiedGraphic").localPosition;
-                foreach (var child in m_iconGameObject.transform)
+                foreach (var child in m_iconGameObject.transform) {
                     ((Transform)child).localPosition -= offset;
+                }
+
                 break;
             case RandomizerWorldMapIconType.WindRestored:
                 CreateIconFromInventory("windRestoredIcon/windRestoredIcon", 10);
@@ -97,8 +99,10 @@ public class RuntimeWorldMapIcon {
                 InitStandardIcon(WorldMapIconType.HealthUpgrade);
                 m_iconGameObject.name = "plantMapIcon(Clone)";
                 var componentsInChildren = m_iconGameObject.GetComponentsInChildren<Renderer>();
-                for (var i = 0; i < componentsInChildren.Length; i++)
+                for (var i = 0; i < componentsInChildren.Length; i++) {
                     componentsInChildren[i].material.color = new Color(0.1792157f, 0.2364706f, 0.8656863f);
+                }
+
                 m_iconGameObject.transform.rotation = Quaternion.Euler(0f, 0f, 180f);
                 break;
             case RandomizerWorldMapIconType.SkillTree:

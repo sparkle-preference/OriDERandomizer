@@ -23,8 +23,9 @@ public static class RandomizerText {
         get {
             var text = $"Current Filter ({RandomizerRebinding.ToggleMapMode.FirstBindName()}): *{RandomizerSettings.CurrentFilter.Desc()}*";
             if (RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.InLogic) {
-                if (RandomizerLocationManager.Areas == null)
+                if (RandomizerLocationManager.Areas == null) {
                     return $"{text}\n@Logic filter unavailable; areas.ori missing@";
+                }
             }
 
             return text;

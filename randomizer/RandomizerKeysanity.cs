@@ -72,7 +72,10 @@ public class RandomizerKeysanity {
         }
 
         if (doorKeyMap.TryGetValue(guid, out var id)) {
-            if (!GetDoorHint(guid)) SetDoorHint(guid);
+            if (!GetDoorHint(guid)) {
+                SetDoorHint(guid);
+            }
+
             var count = inventory.GetRandomizerItem(id);
             Characters.Sein.Inventory.Keystones = count - numberUsed;
 
@@ -94,17 +97,22 @@ public class RandomizerKeysanity {
 
     public string MapHintForDoor(MoonGuid guid) {
         if (doorKeyMap.TryGetValue(guid, out var id)) {
-            if (RandomizerLocationManager.IsDoorOpen(guid))
+            if (RandomizerLocationManager.IsDoorOpen(guid)) {
                 return $"${hintMap[id]} (opened)$";
+            }
 
-            if (!IsActive) return hintMap[id];
+            if (!IsActive) {
+                return hintMap[id];
+            }
 
             var count = inventory.GetRandomizerItem(id);
-            if (count == countForDoor(id))
+            if (count == countForDoor(id)) {
                 return $"${hintMap[id]} {count}/{count}\n(Openable!)$";
+            }
 
-            if (GetDoorHint(guid))
+            if (GetDoorHint(guid)) {
                 return $"{hintMap[id]} {count}/{countForDoor(id)}\n{hintsForDoor(id)}";
+            }
 
             return $"{hintMap[id]} {count}/{countForDoor(id)}\n(Touch door to get hint!)";
         }
@@ -143,14 +151,20 @@ public class RandomizerKeysanity {
     // doors Ori has already given up their hint for: that is the moment an
     // Archipelago hint is worth buying for the keys we still need
     public void WantHints(List<int> needed) {
-        if (!IsActive || keyClueMap == null)
+        if (!IsActive || keyClueMap == null) {
             return;
+        }
+
         for (var id = 300; id < 312; id++) {
-            if (!GetDoorHint(id))
+            if (!GetDoorHint(id)) {
                 continue;
-            foreach (var rkhi in keyClueMap[id])
-                if (!clueResolved(rkhi.Coords))
+            }
+
+            foreach (var rkhi in keyClueMap[id]) {
+                if (!clueResolved(rkhi.Coords)) {
                     RandomizerMW.WantHint(needed, apSlot(rkhi.Coords));
+                }
+            }
         }
     }
 
@@ -173,8 +187,9 @@ public class RandomizerKeysanity {
 
     public void ShowPickupHint(int id, int foundAt) {
         var progress = GetProgress(id, true);
-        if (progress.Length > 0 && progress[0] != '$' && GetDoorHint(id))
+        if (progress.Length > 0 && progress[0] != '$' && GetDoorHint(id)) {
             progress += $"\n(Remaining: {hintsForDoor(id, foundAt)})";
+        }
 
         RandomizerSwitch.PickupMessage(progress);
     }
@@ -182,21 +197,26 @@ public class RandomizerKeysanity {
     // the door-hint pickup (RB 313-324): same effect as touching door
     // keyId, minus needing to be anywhere near it
     public void UnlockDoorHint(int keyId) {
-        if (!reverseDoorKeyMap.ContainsKey(keyId))
+        if (!reverseDoorKeyMap.ContainsKey(keyId)) {
             return;
+        }
+
         if (!IsActive) {
             RandomizerSwitch.PickupMessage($"{hintMap[keyId]} Door Hint");
             return;
         }
 
         var guid = reverseDoorKeyMap[keyId];
-        if (!GetDoorHint(guid))
+        if (!GetDoorHint(guid)) {
             SetDoorHint(guid);
+        }
+
         var count = inventory.GetRandomizerItem(keyId);
-        if (count >= countForDoor(keyId))
+        if (count >= countForDoor(keyId)) {
             RandomizerSwitch.PickupMessage($"${hintMap[keyId]} Door Hint ({count}/{countForDoor(keyId)})$");
-        else
+        } else {
             RandomizerSwitch.PickupMessage($"{hintMap[keyId]} Door Hint ({count}/{countForDoor(keyId)})\n{hintsForDoor(keyId)}");
+        }
     }
 
     public void ShowKeyProgress() {

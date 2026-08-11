@@ -20,10 +20,11 @@ public static class RandomizerRebinding {
         streamWriter.WriteLine("--------");
         streamWriter.WriteLine("");
         foreach (var bindparts in rebindMap) {
-            if (bindparts.Value.HasBind())
+            if (bindparts.Value.HasBind()) {
                 streamWriter.WriteLine($"{bindparts.Key}: {bindparts.Value}{(bindparts.Key == "Double Bash" && Randomizer.BashTap ? ", Tap" : "")}");
-            else
+            } else {
                 streamWriter.WriteLine($"{bindparts.Key}: {DefaultBinds[bindparts.Key]}");
+            }
         }
 
         streamWriter.Flush();
@@ -59,8 +60,9 @@ public static class RandomizerRebinding {
                     dirty = true;
                 }
 
-                if (!DefaultBinds.ContainsKey(action))
+                if (!DefaultBinds.ContainsKey(action)) {
                     continue;
+                }
 
                 var bindingString = parts[1].Trim();
                 AssignBind(action, bindingString, writeList);
@@ -399,8 +401,10 @@ public static class RandomizerRebinding {
         public override string ToString() => String.Join(", ", Binds.Select(binds => binds.RawStr()).ToArray());
 
         public string FirstBindName() {
-            if (HasBind())
+            if (HasBind()) {
                 return Binds[0].ToString();
+            }
+
             return "<NO BIND>";
         }
 

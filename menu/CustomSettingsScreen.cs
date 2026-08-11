@@ -80,8 +80,10 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     public CleverMenuItem AddItem(string label) {
         var gameObject = Instantiate(SettingsScreen.Instance.transform.Find("highlightFade/pivot/damageText").gameObject);
         gameObject.transform.SetParent(pivot);
-        foreach (var c in gameObject.GetComponentsInChildren<MonoBehaviour>())
+        foreach (var c in gameObject.GetComponentsInChildren<MonoBehaviour>()) {
             c.enabled = true;
+        }
+
         var component = gameObject.GetComponent<CleverMenuItem>();
         component.Pressed = null;
         selectionManager.MenuItems.Add(component);
@@ -115,8 +117,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         // Template is music volume slider
         var clone = Instantiate(SettingsScreen.Instance.transform.Find("highlightFade/pivot/musicVolume").gameObject);
         clone.gameObject.name = setting.Name;
-        foreach (var c in clone.GetComponentsInChildren<MonoBehaviour>())
+        foreach (var c in clone.GetComponentsInChildren<MonoBehaviour>()) {
             c.enabled = true;
+        }
 
         // Add to navigation manager (required for all option types)
         clone.transform.SetParent(pivot);

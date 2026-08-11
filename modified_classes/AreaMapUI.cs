@@ -119,8 +119,10 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
         if (!GameMapUI.Instance.ShowingObjective) {
             var msg = $"#{ObjectiveMessageProvider}#: {RandomizerText.GetObjectiveText()}\n{RandomizerText.MapFilterText}";
-            if (msg.Count(c => c == '\n') > 1)
+            if (msg.Count(c => c == '\n') > 1) {
                 msg = "\n" + msg; // paddingu paddingu...
+            }
+
             ObjectiveText.SetMessage(new MessageDescriptor(msg));
             ObjectiveText.gameObject.SetActive(true);
         } else {
@@ -128,8 +130,10 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
         }
 
         if (GameMapTransitionManager.Instance.InAreaMapMode) {
-            if (Input.Legend.OnPressed)
+            if (Input.Legend.OnPressed) {
                 AreaMapLegend.Toggle();
+            }
+
             if (RandomizerRebinding.ToggleMapMode.OnPressed) {
                 RandomizerSettings.CurrentFilter = RandomizerSettings.CurrentFilter.Next();
                 IconManager.ShowAreaIcons();

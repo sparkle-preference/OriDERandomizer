@@ -42,7 +42,9 @@ public class RandomizerLocationManager {
     }
 
     public static void InitializeLogic() {
-        if (!HaveDownloadedAreas) return; //Areas thread hasn't returned yet, skip. It'll run this on its own on completion.
+        if (!HaveDownloadedAreas) {
+            return; //Areas thread hasn't returned yet, skip. It'll run this on its own on completion.
+        }
 
         var paths = InitializePaths();
 
@@ -81,15 +83,17 @@ public class RandomizerLocationManager {
 
         var flagLine = Randomizer.SeedMeta.Split(new[] { '|' }, 1)[0];
         var firstComma = flagLine.IndexOf(',');
-        if (firstComma < 0)
+        if (firstComma < 0) {
             return paths;
+        }
 
         var preset = flagLine.Substring(0, firstComma);
 
         if (preset.StartsWith("Sync")) {
             var secondComma = flagLine.IndexOf(',', firstComma + 1);
-            if (secondComma < 0)
+            if (secondComma < 0) {
                 return paths;
+            }
 
             preset = flagLine.Substring(firstComma + 1, secondComma - firstComma - 1);
         }
@@ -253,13 +257,17 @@ public class RandomizerLocationManager {
     // (areas:<content> frame). Survives the http host's retirement.
     public static string AreasHash() {
         try {
-            if (!File.Exists("areas.ori"))
+            if (!File.Exists("areas.ori")) {
                 return "none";
+            }
+
             using (var sha = SHA256.Create()) {
                 var h = sha.ComputeHash(File.ReadAllBytes("areas.ori"));
                 var sb = new StringBuilder();
-                foreach (var b in h)
+                foreach (var b in h) {
                     sb.Append(b.ToString("x2"));
+                }
+
                 return sb.ToString();
             }
         } catch (Exception e) {
@@ -274,15 +282,26 @@ public class RandomizerLocationManager {
 
     private static void ApplyAreasWorker(string content) {
         try {
-            if (!RandomizerSettings.DevSettings.AreasOri) return; // flag disables areas worker
-            if (File.Exists("areas.ori")) File.Move("areas.ori", "areas.ori.old"); // backup
+            if (!RandomizerSettings.DevSettings.AreasOri) {
+                return; // flag disables areas worker
+            }
+
+            if (File.Exists("areas.ori")) {
+                File.Move("areas.ori", "areas.ori.old"); // backup
+            }
+
             File.WriteAllText("areas.ori", content);
-            if (File.Exists("areas.ori.old")) File.Delete("areas.ori.old");
+            if (File.Exists("areas.ori.old")) {
+                File.Delete("areas.ori.old");
+            }
+
             Randomizer.log("ws: areas.ori updated from server, reloading logic");
             InitializeLogic();
         } catch (Exception e) {
             Randomizer.log($"ApplyAreasUpdate: {e}");
-            if (!File.Exists("areas.ori") && File.Exists("areas.ori.old")) File.Move("areas.ori.old", "areas.ori");
+            if (!File.Exists("areas.ori") && File.Exists("areas.ori.old")) {
+                File.Move("areas.ori.old", "areas.ori");
+            }
         }
     }
 
@@ -290,14 +309,24 @@ public class RandomizerLocationManager {
         if (RandomizerSettings.DevSettings.AreasOri) {
             var webClient = new QuickWebClient();
             try {
-                if (File.Exists("areas.ori")) File.Move("areas.ori", "areas.ori.old"); // backup
+                if (File.Exists("areas.ori")) {
+                    File.Move("areas.ori", "areas.ori.old"); // backup
+                }
+
                 ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
                 webClient.DownloadFile(AreasURL(), "areas.ori");
-                if (File.Exists("areas.ori.old")) File.Delete("areas.ori.old"); // clean backup
+                if (File.Exists("areas.ori.old")) {
+                    File.Delete("areas.ori.old"); // clean backup
+                }
             } catch (Exception e) {
                 Randomizer.LogError($"Failed to download areas.ori: ${e}");
-                if (File.Exists("areas.ori")) File.Delete("areas.ori"); // remove broken / failed
-                if (File.Exists("areas.ori.old")) File.Move("areas.ori.old", "areas.ori"); // restore backup
+                if (File.Exists("areas.ori")) {
+                    File.Delete("areas.ori"); // remove broken / failed
+                }
+
+                if (File.Exists("areas.ori.old")) {
+                    File.Move("areas.ori.old", "areas.ori"); // restore backup
+                }
             }
         }
 
@@ -306,8 +335,9 @@ public class RandomizerLocationManager {
     }
 
     public static void UpdateReachableWorker() {
-        if (Areas == null)
+        if (Areas == null) {
             return;
+        }
 
         var currentInventory = Inventory.FromCharacter();
         currentInventory.Unlocks.Add("Mapstone");
@@ -328,11 +358,13 @@ public class RandomizerLocationManager {
         var keystoneDoorsOpened = Randomizer.Inventory.GetRandomizerItem(72);
 
         foreach (var ksDoor in KeystoneDoors.Values) {
-            if ((keystoneDoorsOpened & (1 << ksDoor.Index)) == 0)
+            if ((keystoneDoorsOpened & (1 << ksDoor.Index)) == 0) {
                 continue;
+            }
 
-            if (!primedPaths.ContainsKey(ksDoor.Source))
+            if (!primedPaths.ContainsKey(ksDoor.Source)) {
                 primedPaths[ksDoor.Source] = new HashSet<string>();
+            }
 
             primedPaths[ksDoor.Source].Add(ksDoor.Destination);
         }
@@ -340,8 +372,9 @@ public class RandomizerLocationManager {
         if (Randomizer.InLogicWarps) {
             foreach (var teleporter in TeleporterController.Instance.Teleporters) {
                 if (Randomizer.WarpLogicLocations.Contains(teleporter.Identifier)) {
-                    if (!primedPaths.ContainsKey(spawnNodeName))
+                    if (!primedPaths.ContainsKey(spawnNodeName)) {
                         primedPaths[spawnNodeName] = new HashSet<string>();
+                    }
 
                     primedPaths[spawnNodeName].Add((string)Randomizer.WarpLogicLocations[teleporter.Identifier]);
                 }
@@ -356,11 +389,13 @@ public class RandomizerLocationManager {
             reachable.Add("Sein");
         }
 
-        if (reachable.Contains("ForlornEscape"))
+        if (reachable.Contains("ForlornEscape")) {
             reachable.Add("ForlornEscapePlant");
+        }
 
-        foreach (var item in LocationsByName)
+        foreach (var item in LocationsByName) {
             item.Value.Reachable = reachable.Contains(item.Key);
+        }
 
         // key-lock warning mask. KeyTiers seeds charge per-door tiers against
         // lifetime keystones (item 70); other seeds share the conservative
@@ -370,21 +405,31 @@ public class RandomizerLocationManager {
         var ksUnspent = ksCollected - SpentKeystones();
         var visibleCost = 0;
         foreach (var ksDoor in KeystoneDoors.Values) {
-            if ((keystoneDoorsOpened & (1 << ksDoor.Index)) != 0 || !reachable.Contains(ksDoor.Source))
+            if ((keystoneDoorsOpened & (1 << ksDoor.Index)) != 0 || !reachable.Contains(ksDoor.Source)) {
                 continue;
+            }
+
             var pos = DoorWirePos[ksDoor.Source];
-            if (Randomizer.OpenWorld && pos == 0)
+            if (Randomizer.OpenWorld && pos == 0) {
                 continue;   // the Glades door is pre-opened
+            }
+
             if (KeyTiers != null) {
-                if (pos < KeyTiers.Length && KeyTiers[pos] > 0 && ksCollected >= KeyTiers[pos])
+                if (pos < KeyTiers.Length && KeyTiers[pos] > 0 && ksCollected >= KeyTiers[pos]) {
                     doorMask |= 1 << ksDoor.Index;
-            } else
+                }
+            } else {
                 visibleCost += DoorCosts[pos];
+            }
         }
-        if (KeyTiers == null && ksUnspent >= visibleCost)
-            foreach (var ksDoor in KeystoneDoors.Values)
-                if ((keystoneDoorsOpened & (1 << ksDoor.Index)) == 0 && reachable.Contains(ksDoor.Source))
+        if (KeyTiers == null && ksUnspent >= visibleCost) {
+            foreach (var ksDoor in KeystoneDoors.Values) {
+                if ((keystoneDoorsOpened & (1 << ksDoor.Index)) == 0 && reachable.Contains(ksDoor.Source)) {
                     doorMask |= 1 << ksDoor.Index;
+                }
+            }
+        }
+
         DoorsInLogicMask = doorMask;
         DoorLogicValid = true;
 /* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
@@ -469,9 +514,12 @@ public class RandomizerLocationManager {
     public static int SpentKeystones() {
         var opened = Randomizer.Inventory.GetRandomizerItem(72);
         var spent = 0;
-        foreach (var ksDoor in KeystoneDoors.Values)
-            if ((opened & (1 << ksDoor.Index)) != 0)
+        foreach (var ksDoor in KeystoneDoors.Values) {
+            if ((opened & (1 << ksDoor.Index)) != 0) {
                 spent += DoorCosts[DoorWirePos[ksDoor.Source]];
+            }
+        }
+
         return spent;
     }
 
@@ -483,13 +531,19 @@ public class RandomizerLocationManager {
     /// </summary>
     public static void WarnIfDoorOutOfLogic(MoonGuid doorGuid) {
         if (!RandomizerSettings.Customization.KeyLockWarnings.Value || Randomizer.Keysanity.IsActive
-            || !DoorLogicValid || !KeystoneDoors.ContainsKey(doorGuid))
+            || !DoorLogicValid || !KeystoneDoors.ContainsKey(doorGuid)) {
             return;
+        }
+
         var door = KeystoneDoors[doorGuid];
-        if (IsDoorOpen(doorGuid) || (DoorsInLogicMask & (1 << door.Index)) != 0 || warnedDoors.Contains(doorGuid))
+        if (IsDoorOpen(doorGuid) || (DoorsInLogicMask & (1 << door.Index)) != 0 || warnedDoors.Contains(doorGuid)) {
             return;
-        if (Randomizer.Inventory.GetRandomizerItem(73) != 0)
+        }
+
+        if (Randomizer.Inventory.GetRandomizerItem(73) != 0) {
             return;
+        }
+
         if (Characters.Sein.Inventory.Keystones + SpentKeystones() > Randomizer.Inventory.GetRandomizerItem(70)) {
             Randomizer.Inventory.SetRandomizerItem(73, 1);
             return;

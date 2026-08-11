@@ -7,10 +7,13 @@ public class SeinAbilityCondition : Condition {
             if (Ability == AbilityType.Stomp) {
                 if (Randomizer.Inventory.FinishedGinsoEscape && Scenes.Manager.CurrentScene != null) {
                     var scene = Scenes.Manager.CurrentScene.Scene;
-                    if (scene == "ginsoTreeTurrets")
+                    if (scene == "ginsoTreeTurrets") {
                         return true;
-                    if (scene == "kuroMomentTreeDuplicate")
+                    }
+
+                    if (scene == "kuroMomentTreeDuplicate") {
                         return false;
+                    }
                 }
 
                 if (Randomizer.OpenWorld) {

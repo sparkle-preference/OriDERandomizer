@@ -41,36 +41,66 @@ public static class RandomizerTrackedDataManager {
         var wvShards = RandomizerBonus.WaterVeinShards();
         var gsShards = RandomizerBonus.GumonSealShards();
         var ssShards = RandomizerBonus.SunstoneShards();
-        if (wvShards > 0)
+        if (wvShards > 0) {
             bf += 1 << 0;
-        if (wvShards > 1)
+        }
+
+        if (wvShards > 1) {
             bf += 1 << 1;
-        if (Keys.GinsoTree)
+        }
+
+        if (Keys.GinsoTree) {
             bf += 1 << 2;
-        if (gsShards > 0)
+        }
+
+        if (gsShards > 0) {
             bf += 1 << 3;
-        if (gsShards > 1)
+        }
+
+        if (gsShards > 1) {
             bf += 1 << 4;
-        if (Keys.ForlornRuins)
+        }
+
+        if (Keys.ForlornRuins) {
             bf += 1 << 5;
-        if (ssShards > 0)
+        }
+
+        if (ssShards > 0) {
             bf += 1 << 6;
-        if (ssShards > 1)
+        }
+
+        if (ssShards > 1) {
             bf += 1 << 7;
-        if (Keys.MountHoru)
+        }
+
+        if (Keys.MountHoru) {
             bf += 1 << 8;
-        if (Events.WaterPurified)
+        }
+
+        if (Events.WaterPurified) {
             bf += 1 << 9;
-        if (Events.WindRestored)
+        }
+
+        if (Events.WindRestored) {
             bf += 1 << 10;
-        if (Randomizer.ForceTrees)
+        }
+
+        if (Randomizer.ForceTrees) {
             bf += 1 << 11;
-        if (Randomizer.Shards)
+        }
+
+        if (Randomizer.Shards) {
             bf += 1 << 12;
-        if (Randomizer.fragsEnabled)
+        }
+
+        if (Randomizer.fragsEnabled) {
             bf += 1 << 13;
-        if (Randomizer.WorldTour)
+        }
+
+        if (Randomizer.WorldTour) {
             bf += 1 << 14;
+        }
+
         return bf;
     }
 
@@ -78,8 +108,9 @@ public static class RandomizerTrackedDataManager {
         var bf = 0;
         var unlockedTPids = new List<string>();
         foreach (var gameMapTP in TeleporterController.Instance.Teleporters) {
-            if (gameMapTP.Activated)
+            if (gameMapTP.Activated) {
                 unlockedTPids.Add(gameMapTP.Identifier);
+            }
         }
 
         foreach (var tp in Teleporters) {
@@ -104,8 +135,10 @@ public static class RandomizerTrackedDataManager {
         }
 
         var output = "TPs active: " + string.Join(", ", owned.ToArray());
-        if (unowned.Count > 0)
+        if (unowned.Count > 0) {
             output += "\nremaining: " + string.Join(", ", unowned.ToArray());
+        }
+
         Randomizer.printInfo(output);
     }
 
@@ -126,8 +159,10 @@ public static class RandomizerTrackedDataManager {
         }
 
         var output = "Trees active: " + string.Join(", ", owned.ToArray());
-        if (unowned.Count > 0)
+        if (unowned.Count > 0) {
             output += "\nremaining: " + string.Join(", ", unowned.ToArray());
+        }
+
         Randomizer.printInfo(output);
     }
 
@@ -150,10 +185,14 @@ public static class RandomizerTrackedDataManager {
         }
 
         var output = "Relics collected: " + string.Join(", ", owned.ToArray());
-        if (unowned.Count > 0)
+        if (unowned.Count > 0) {
             output += "\nremaining: " + string.Join(", ", unowned.ToArray());
-        if (no_relics.Count > 0)
+        }
+
+        if (no_relics.Count > 0) {
             output += "\nrelicless: " + string.Join(", ", no_relics.ToArray());
+        }
+
         Randomizer.printInfo(output);
     }
 
@@ -167,10 +206,11 @@ public static class RandomizerTrackedDataManager {
                 if (GetMapstone(pair.Value)) {
                     owned.Add(MapZonesByBit[pair.Value]);
                 } else {
-                    if (BingoController.Active && BingoController.TouchedMapstone(pair.Key))
+                    if (BingoController.Active && BingoController.TouchedMapstone(pair.Key)) {
                         touched.Add(MapZonesByBit[pair.Value]);
-                    else
+                    } else {
                         unowned.Add(MapZonesByBit[pair.Value]);
+                    }
                 }
             }
 
@@ -179,8 +219,10 @@ public static class RandomizerTrackedDataManager {
                 output += "\ntouched: " + string.Join(", ", touched.ToArray());
             }
 
-            if (unowned.Count > 0)
+            if (unowned.Count > 0) {
                 output += "\nremaining: " + string.Join(", ", unowned.ToArray());
+            }
+
             Randomizer.printInfo(output);
         } catch (Exception e) {
             Randomizer.LogError("ListMapstones: " + e.Message);
@@ -249,8 +291,9 @@ public static class RandomizerTrackedDataManager {
     public static int GetSkillBitfield() {
         var bf = 0;
         foreach (var kvp in Skills) {
-            if (Characters.Sein.PlayerAbilities.HasAbility(kvp.Value))
+            if (Characters.Sein.PlayerAbilities.HasAbility(kvp.Value)) {
                 bf += 1 << kvp.Key;
+            }
         }
 
         return bf;
