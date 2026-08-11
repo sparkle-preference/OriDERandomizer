@@ -557,7 +557,7 @@ public class RandomizerLocationManager {
         }
 
         warnedDoors.Add(doorGuid);
-        RandomizerSwitch.PickupMessage("This door is not currently in logic.\n Opening it at this time might render your seed uncompletable.", 300);
+        Randomizer.printInfo("This door is not currently in logic.\n Opening it at this time might render your seed uncompletable.", 300);
     }
 
     public static Dictionary<MoonGuid, MoonGuid> KeystoneDoorMapGuidToMoonGuid = new Dictionary<MoonGuid, MoonGuid>();
