@@ -74,14 +74,26 @@ The randomness of chaos mode is based on the system clock instead of a set seed,
 
 
 
-BUILD INSTRUCTIONS
+DEVELOPMENT
 
+Preparation:
+To use the included project/solution and enable building the rando, copy the `Managed` folder of a clean game install (found in `Ori DE/oriDE_Data/Managed`) into the root of this repo, so that the `Managed` folder sits next to the `dnspy-modfile.json` file.
+    - Important: It needs to have a vanilla `Assembly-CSharp.dll`. If you have the rando installed, revert the file to its original, or repair the game via steam / do a clean reinstall.
+
+Developing:
+When adding new class or resource files, they need to be added to the corresponding list inside `dnspy-modfile.json`.
+Classes from the source assembly that are now modified also need to be added to the "replaceClasses" section.
+New files also need to be added to `Assembly-CSharp.csproj` so they can be formatted and used by IDEs.
+
+Formatting:
+The code can be automatically formatted using `dotnet-format.bat`.
+Note however, that this can't enforce everything. For example, it enforces braces being on the same line as an `if`, but doesn't force the braces to be present; that has to be done manually.
+
+Building:
 Building the rando uses a fork of dnSpy found at https://github.com/AsmPrgmC3/dnSpy/releases/latest
 
 Build steps:
 - Download dnSpy
-- Copy the `Managed` folder of a clean game install (found in `Ori DE/oriDE_Data/Managed`) into the root of this repo, so that the `Managed` folder sits next to the `dnspy-modfile.json` file.
-    - Important: It needs to have a vanilla `Assembly-CSharp.dll`. If you have the rando installed, revert the file to its original, or repair the game via steam / do a clean reinstall.
 - Run `path\to\dnSpy.exe --modfile:dnspy-modfile.json --runModfile --closeAfterModfile`
 
 `Assembly-CSharp.dll` will contain the updated rando.
@@ -91,6 +103,3 @@ To do that, open dnSpy and select "File -> Load Modfile...". Select the `dnspy-m
 Once that's done, you can run it anytime via "File -> Run Modfile" (or the shortcut Ctrl+Shift+M).
 
 To avoid copying the `Assembly-CSharp.dll` after every recompile, it's also possible to change the "outputFile" path in `dnspy-modfile.json` to point to your game's `Assembly-CSharp.dll`.
-
-When adding new class or resource files, they need to be added to the corresponding list inside `dnspy-modfile.json`.
-Classes from the source assembly that are now modified also need to be added to the "replaceClasses" section.
