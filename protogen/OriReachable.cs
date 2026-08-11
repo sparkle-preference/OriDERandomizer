@@ -79,19 +79,19 @@ namespace Protogen {
                                 )
                             )
                             .Select(conn => {
-                                    if (conn.Requirement.Unlocks.Contains("Mapstone")) {
-                                        accessibleMapstones.Add(conn.Destination);
-                                    }
-
-                                    var destinationKeystonesUsed = reachedWithKeystones.ContainsKey(conn.Destination.Name) ? reachedWithKeystones[conn.Destination.Name] : 9999;
-
-                                    if (reachedWithKeystones[conn.Source.Name] < destinationKeystonesUsed) {
-                                        reachedWithKeystones[conn.Destination.Name] = reachedWithKeystones[conn.Source.Name];
-                                    }
-
-                                    foundAny = true;
-                                    return conn.Destination.Name;
+                                if (conn.Requirement.Unlocks.Contains("Mapstone")) {
+                                    accessibleMapstones.Add(conn.Destination);
                                 }
+
+                                var destinationKeystonesUsed = reachedWithKeystones.ContainsKey(conn.Destination.Name) ? reachedWithKeystones[conn.Destination.Name] : 9999;
+
+                                if (reachedWithKeystones[conn.Source.Name] < destinationKeystonesUsed) {
+                                    reachedWithKeystones[conn.Destination.Name] = reachedWithKeystones[conn.Source.Name];
+                                }
+
+                                foundAny = true;
+                                return conn.Destination.Name;
+                            }
                             )
                     );
 

@@ -138,18 +138,16 @@ public static class RandomizerBonusSkill {
                 if (!Characters.Sein.SoulFlame.InsideCheckpointMarker) {
                     BonusSkillText("You can only Respec on a Soul Link!");
                     return;
-                }
+                } {
+                    var apToGain = RandomizerBonus.ResetAP();
+                    if (apToGain == 0) {
+                        BonusSkillText("No AP to refund");
+                        return;
+                    }
 
-            {
-                var apToGain = RandomizerBonus.ResetAP();
-                if (apToGain == 0) {
-                    BonusSkillText("No AP to refund");
-                    return;
-                }
-
-                BonusSkillText("Respec successful. " + apToGain + " AP refunded!");
-                var abilities = Characters.Sein.PlayerAbilities.Abilities;
-                var actuallySkills = new List<CharacterAbility> {
+                    BonusSkillText("Respec successful. " + apToGain + " AP refunded!");
+                    var abilities = Characters.Sein.PlayerAbilities.Abilities;
+                    var actuallySkills = new List<CharacterAbility> {
                     Characters.Sein.PlayerAbilities.WallJump,
                     Characters.Sein.PlayerAbilities.ChargeFlame,
                     Characters.Sein.PlayerAbilities.DoubleJump,
@@ -162,16 +160,16 @@ public static class RandomizerBonusSkill {
                     Characters.Sein.PlayerAbilities.Grenade,
                     Characters.Sein.PlayerAbilities.SpiritFlame
                 };
-                for (var i = 0; i < abilities.Length; i++) {
-                    if (!actuallySkills.Contains(abilities[i])) {
-                        abilities[i].HasAbility = false;
+                    for (var i = 0; i < abilities.Length; i++) {
+                        if (!actuallySkills.Contains(abilities[i])) {
+                            abilities[i].HasAbility = false;
+                        }
                     }
-                }
 
-                Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
-                Characters.Sein.Inventory.SkillPointsCollected += apToGain;
-                Characters.Sein.Level.SkillPoints += apToGain;
-            }
+                    Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
+                    Characters.Sein.Inventory.SkillPointsCollected += apToGain;
+                    Characters.Sein.Level.SkillPoints += apToGain;
+                }
                 return;
             case 107:
                 if (LevelExplosionCooldown > 0) {

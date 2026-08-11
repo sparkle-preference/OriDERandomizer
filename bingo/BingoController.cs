@@ -251,7 +251,7 @@ public static class BingoController {
         }
 
         IntGoals["OpenKSDoors"].Value++;
-//        if(RandomizerSettings.Dev) Randomizer.log("Opened door, guid " + doorGuid.ToString() + " " + locStr());
+        //        if(RandomizerSettings.Dev) Randomizer.log("Opened door, guid " + doorGuid.ToString() + " " + locStr());
     }
 
     public static void OnEnergyDoor(MoonGuid doorGuid) {
@@ -260,7 +260,7 @@ public static class BingoController {
         }
 
         IntGoals["OpenEnergyDoors"].Value++;
-//        if(RandomizerSettings.Dev) Randomizer.log("Opened door, guid " + doorGuid.ToString() + " " + locStr());
+        //        if(RandomizerSettings.Dev) Randomizer.log("Opened door, guid " + doorGuid.ToString() + " " + locStr());
     }
 
     public static void OnLoc(int loc) {
@@ -715,11 +715,11 @@ public static class BingoController {
         public static void mk() {
             var pairs = new List<BoolGoal>();
             for (var from = 0; from < Teleporters.Length; from++)
-            for (var to = 0; to < Teleporters.Length; to++) {
-                if (from != to) {
-                    pairs.Add(new BitfieldBoolGoal(JourneyKey(Teleporters[from], Teleporters[to]), JourneyBaseId + from, to));
+                for (var to = 0; to < Teleporters.Length; to++) {
+                    if (from != to) {
+                        pairs.Add(new BitfieldBoolGoal(JourneyKey(Teleporters[from], Teleporters[to]), JourneyBaseId + from, to));
+                    }
                 }
-            }
 
             var goal = new JourneyGoal("Journey", pairs);
             MultiBoolGoals[goal.Name] = goal;

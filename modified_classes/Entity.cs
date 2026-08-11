@@ -125,7 +125,7 @@ public class Entity : SaveSerialize, IRespawnReciever, IFrustumOptimizable, ISus
     }
 
     public void RegisterRespawnDelegate(Action onRespawn) {
-        DamageReciever.OnDeathEvent.Add(delegate(Damage a) { onRespawn(); });
+        DamageReciever.OnDeathEvent.Add(delegate (Damage a) { onRespawn(); });
     }
 
     public void PlaySound(SoundSource sound) {

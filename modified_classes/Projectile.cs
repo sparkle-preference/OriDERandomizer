@@ -348,5 +348,5 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
 
     private bool m_colliderEnabledAtStart;
 
-    [SerializeField] [HideInInspector] private Component[] m_onKillRecievers;
+    [SerializeField][HideInInspector] private Component[] m_onKillRecievers;
 }

@@ -79,10 +79,10 @@ Winners:	Team StoryTime (Dedew and Covert_Muffin)
             )
         );
 
-// i wish things could have been different. you deserved better.
+        // i wish things could have been different. you deserved better.
         Credits.Add(new KeyValuePair<string, int>("In memory of Mari L.", 3));
 
-// Credits.Add(new KeyValuePair<string, int>("In memory of Grandma Irine", 5));
+        // Credits.Add(new KeyValuePair<string, int>("In memory of Grandma Irine", 5));
 
         try {
             Credits.Add(new KeyValuePair<string, int>(RandomizerStatsManager.GetStatsPage(0), 45));

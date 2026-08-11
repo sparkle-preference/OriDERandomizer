@@ -321,7 +321,7 @@ public class SeinController : SaveSerialize, IDamageReciever, ISeinReceiver, ISu
 
     public Transform GetItemTransform;
 
-    [SerializeField] [HideInInspector] private Component[] m_suspendables;
+    [SerializeField][HideInInspector] private Component[] m_suspendables;
 
     private float m_horizontalInputDelay;
 }

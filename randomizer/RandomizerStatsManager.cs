@@ -258,9 +258,9 @@ public static class RandomizerStatsManager {
             }
 
             foreach (var group in new[] { Time, Deaths })
-            foreach (var offset in Offsets.Values) {
-                MenuCache[group + offset] = get(group + offset);
-            }
+                foreach (var offset in Offsets.Values) {
+                    MenuCache[group + offset] = get(group + offset);
+                }
 
             WriteFromCache = true;
         } catch (Exception) {

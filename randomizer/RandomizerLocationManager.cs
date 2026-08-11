@@ -432,18 +432,18 @@ public class RandomizerLocationManager {
 
         DoorsInLogicMask = doorMask;
         DoorLogicValid = true;
-/* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
-        {
-            if (reachable.Contains(item.Key))
-            {
-                item.Value.Reachable = true;
-            }
-            else if (item.Value.Reachable)
-            {
-                Randomizer.log("!!!! " + item.Key + " became unreachable!"); // can toggle this on for debugging but logging in a thread is spoopy
-                item.Value.Reachable = false;
-            }
-        }*/
+        /* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
+                {
+                    if (reachable.Contains(item.Key))
+                    {
+                        item.Value.Reachable = true;
+                    }
+                    else if (item.Value.Reachable)
+                    {
+                        Randomizer.log("!!!! " + item.Key + " became unreachable!"); // can toggle this on for debugging but logging in a thread is spoopy
+                        item.Value.Reachable = false;
+                    }
+                }*/
     }
 
     public static Dictionary<MoonGuid, Location> LocationsByGuid = new Dictionary<MoonGuid, Location>();
@@ -501,7 +501,7 @@ public class RandomizerLocationManager {
         {"SwampKeyDoorPlatform", 3}, {"SpiritTreeDoor", 4}, {"BashTreeDoorClosed", 5},
         {"UpperGinsoDoorClosed", 6}, {"MistyBeforeMiniBoss", 7}, {"ForlornKeyDoor", 8},
         {"LowerSorrow", 9}, {"LeftSorrowMiddleDoorClosed", 10}, {"ChargeJumpDoor", 11}};
-    private static readonly int[] DoorCosts = {2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4};
+    private static readonly int[] DoorCosts = { 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4 };
 
     public static void ResetDoorLogic() {
         DoorsInLogicMask = 0;

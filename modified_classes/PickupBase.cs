@@ -137,9 +137,9 @@ public abstract class PickupBase : SaveSerialize, IFrustumOptimizable, IPooled, 
 
     public bool FrustrumOptimized;
 
-    [HideInInspector] [SerializeField] private Component[] m_onKillRecievers;
+    [HideInInspector][SerializeField] private Component[] m_onKillRecievers;
 
-    [HideInInspector] [SerializeField] private Transform m_transform;
+    [HideInInspector][SerializeField] private Transform m_transform;
 
     private float m_currentTime;
 
