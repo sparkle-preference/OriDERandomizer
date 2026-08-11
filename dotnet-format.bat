@@ -1,0 +1,1 @@
+dotnet format OriDERandomizer.sln --exclude contrib

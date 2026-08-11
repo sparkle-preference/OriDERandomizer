@@ -198,7 +198,7 @@ public class DoorWithSlots : SaveSerialize {
 
     public Color OriHoverColor;
 
-    [SerializeField] [HideInInspector] private Transform m_transform;
+    [SerializeField][HideInInspector] private Transform m_transform;
 
     private int m_slotsPending;
 

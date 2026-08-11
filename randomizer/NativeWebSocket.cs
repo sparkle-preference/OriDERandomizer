@@ -87,15 +87,19 @@ public static class NativeWebSocket {
     private static VoidFn pop_pending_message;
 
     public static bool Load() {
-        if (Loaded)
+        if (Loaded) {
             return true;
+        }
+
         try {
             var dir = ExeDir();
             Randomizer.log($"ws diag: extracting to {dir}");
             var dllPath = Extract(DllResource, Path.Combine(dir, DllResource));
             CaPath = Extract(CaResource, Path.Combine(dir, CaResource));
-            if (dllPath == null)
+            if (dllPath == null) {
                 return false;
+            }
+
             var module = LoadLibrary(dllPath);
             if (module == IntPtr.Zero) {
                 Randomizer.log($"ws diag: LoadLibrary({dllPath}) failed, Win32 error {Marshal.GetLastWin32Error()}");
@@ -132,8 +136,10 @@ public static class NativeWebSocket {
 
     private static Delegate Bind(IntPtr module, string name, Type t) {
         var fn = GetProcAddress(module, name);
-        if (fn == IntPtr.Zero)
+        if (fn == IntPtr.Zero) {
             throw new MissingMethodException($"export {name} missing from {DllResource}");
+        }
+
         return Marshal.GetDelegateForFunctionPointer(fn, t);
     }
 
@@ -142,8 +148,9 @@ public static class NativeWebSocket {
     private static string ExeDir() {
         try {
             var dataPath = Application.dataPath;
-            if (!string.IsNullOrEmpty(dataPath))
+            if (!string.IsNullOrEmpty(dataPath)) {
                 return Path.GetDirectoryName(dataPath);
+            }
         } catch (Exception e) {
             Randomizer.log($"ws diag: Application.dataPath unavailable ({e.GetType().Name}); using cwd");
         }
@@ -166,12 +173,14 @@ public static class NativeWebSocket {
             if (!File.Exists(target) || new FileInfo(target).Length != bytes.Length) {
                 File.WriteAllBytes(target, bytes);
                 Randomizer.log($"ws diag: wrote {resource} ({bytes.Length} bytes) to {target}");
-            } else
+            } else {
                 Randomizer.log($"ws diag: {target} already current ({bytes.Length} bytes)");
+            }
         } catch (IOException e) {
             Randomizer.log($"ws diag: can't write {target} ({e.Message}); {(File.Exists(target) ? "using existing file" : "giving up")}");
-            if (!File.Exists(target))
+            if (!File.Exists(target)) {
                 return null;
+            }
         }
 
         return target;
@@ -231,8 +240,10 @@ public static class NativeWebSocket {
 
     public static string GetLastError() {
         var ptr = get_last_error(out var length);
-        if (ptr == IntPtr.Zero || length == 0)
+        if (ptr == IntPtr.Zero || length == 0) {
             return "";
+        }
+
         var bytes = new byte[length];
         Marshal.Copy(ptr, bytes, 0, length);
         return Encoding.UTF8.GetString(bytes);
@@ -245,8 +256,10 @@ public static class NativeWebSocket {
     // Returns null when the queue is empty.
     public static string GetPendingMessage() {
         var ptr = get_pending_message(out var length);
-        if (ptr == IntPtr.Zero)
+        if (ptr == IntPtr.Zero) {
             return null;
+        }
+
         var bytes = new byte[length];
         Marshal.Copy(ptr, bytes, 0, length);
         pop_pending_message();

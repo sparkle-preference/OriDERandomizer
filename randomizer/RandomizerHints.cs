@@ -51,7 +51,10 @@ public static class RandomizerHints {
 
     public static void TryShowSenseHint() {
         try {
-            if (File.GetLastWriteTime("RandomizerSettings.txt") > new DateTime(2023, 9, 9, 0, 0, 0)) return;
+            if (File.GetLastWriteTime("RandomizerSettings.txt") > new DateTime(2023, 9, 9, 0, 0, 0)) {
+                return;
+            }
+
             Randomizer.Print("In patch 4.0.7 onwards, #Sense# only changes Ori's color from the default (or custom) color when it is detecting an item.\nIf you previously set your Sense #cold color# to be similar to your normal color, consider changing one or both.\n(Don't want to see this message anymore? Add a blank line to the bottom of your RandomizerSettings.txt file and it will stop showing up.)", 15, false, false, false, true);
         } catch (Exception e) {
             Randomizer.LogError($"TryShowSenseHint: {e.Message}");
@@ -60,17 +63,32 @@ public static class RandomizerHints {
 
     public static void ShowTip() {
         var hl = RandomizerSettings.Customization.HintLevel.Value;
-        if (hl == RandomizerSettings.HintLevels.Disabled) return;
+        if (hl == RandomizerSettings.HintLevels.Disabled) {
+            return;
+        }
+
         if (hl == RandomizerSettings.HintLevels.Experienced) {
-            if (SeenMiscs.Count == MiscTips.Count) SeenMiscs.Clear();
+            if (SeenMiscs.Count == MiscTips.Count) {
+                SeenMiscs.Clear();
+            }
+
             var h = hintRandom.Next(MiscTips.Count);
-            while (SeenMiscs.Contains(h)) h = (h + 1) % MiscTips.Count;
+            while (SeenMiscs.Contains(h)) {
+                h = (h + 1) % MiscTips.Count;
+            }
+
             Randomizer.Print(MiscTips[h](), 9, false, false, false, true);
             SeenMiscs.Add(h);
         } else {
-            if (SeenNPTs.Count == NewPlayerTips.Count) SeenNPTs.Clear();
+            if (SeenNPTs.Count == NewPlayerTips.Count) {
+                SeenNPTs.Clear();
+            }
+
             var h = hintRandom.Next(NewPlayerTips.Count);
-            while (SeenNPTs.Contains(h)) h = (h + 1) % NewPlayerTips.Count;
+            while (SeenNPTs.Contains(h)) {
+                h = (h + 1) % NewPlayerTips.Count;
+            }
+
             Randomizer.Print(NewPlayerTips[h](), 9, false, false, false, true);
             SeenNPTs.Add(h);
         }

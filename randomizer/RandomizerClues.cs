@@ -20,12 +20,18 @@ public static class RandomizerClues {
     // have lit enough trees; that moment is also when an AP hint is worth
     // buying, so the predicate has exactly one home.
     public static bool Revealed(int i) {
-        if (i == 0 && Keys.GinsoTree)
+        if (i == 0 && Keys.GinsoTree) {
             return true;
-        if (i == 1 && Keys.ForlornRuins)
+        }
+
+        if (i == 1 && Keys.ForlornRuins) {
             return true;
-        if (i == 2 && Keys.MountHoru)
+        }
+
+        if (i == 2 && Keys.MountHoru) {
             return true;
+        }
+
         return RandomizerBonus.SkillTreeProgression() >= RevealOrder[i] * 3;
     }
 
@@ -41,11 +47,15 @@ public static class RandomizerClues {
     }
 
     public static void WantHints(List<int> needed) {
-        if (Clues == null || RevealOrder == null)
+        if (Clues == null || RevealOrder == null) {
             return;
-        for (var i = 0; i < 3; i++)
-            if (Revealed(i))
+        }
+
+        for (var i = 0; i < 3; i++) {
+            if (Revealed(i)) {
                 RandomizerMW.WantHint(needed, SlotFor(i));
+            }
+        }
     }
 
     public static string GetClues() {

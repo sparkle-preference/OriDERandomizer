@@ -38,8 +38,10 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
     }
 
     public void OnRecieveDamage(Damage damage) {
-        if (RandomizerBonusSkill.Invincible)
+        if (RandomizerBonusSkill.Invincible) {
             return;
+        }
+
         if (damage.Amount < 9000f || damage.Type != DamageType.Water) {
             if (IsImmortal) {
                 return;

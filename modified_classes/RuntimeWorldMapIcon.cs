@@ -81,8 +81,10 @@ public class RuntimeWorldMapIcon {
             case RandomizerWorldMapIconType.CleanWater:
                 CreateIconFromInventory("waterPurifiedIcon/waterPurifiedGraphics", 20);
                 var offset = m_iconGameObject.transform.Find("waterPurifiedGraphic").localPosition;
-                foreach (var child in m_iconGameObject.transform)
+                foreach (var child in m_iconGameObject.transform) {
                     ((Transform)child).localPosition -= offset;
+                }
+
                 break;
             case RandomizerWorldMapIconType.WindRestored:
                 CreateIconFromInventory("windRestoredIcon/windRestoredIcon", 10);

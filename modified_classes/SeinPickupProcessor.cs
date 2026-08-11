@@ -58,17 +58,22 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
         var num = RandomizerBonus.ExpWithBonuses(expOrbPickup.Amount, false);
         if (expOrbPickup.MessageType == ExpOrbPickup.ExpOrbMessageType.None) {
             expOrbPickup.Collected();
-            if (Randomizer.IgnoreEnemyExp)
+            if (Randomizer.IgnoreEnemyExp) {
                 return;
+            }
+
             RandomizerBonus.ExpWithBonuses(expOrbPickup.Amount, true);
             Sein.Level.GainExperience(num);
-            if (m_expText && m_expText.gameObject.activeInHierarchy)
+            if (m_expText && m_expText.gameObject.activeInHierarchy) {
                 m_expText.Amount += num;
-            else
+            } else {
                 m_expText = Orbs.OrbDisplayText.Create(Characters.Sein.Transform, Vector3.up, num);
+            }
+
             UI.SeinUI.ShakeExperienceBar();
-            if (GameWorld.Instance.CurrentArea != null)
+            if (GameWorld.Instance.CurrentArea != null) {
                 GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
+            }
         } else {
             if (!RandomizerLocationManager.IsPickupRepeatable(expOrbPickup.MoonGuid) || Randomizer.RepeatableCheck()) {
                 RandomizerLocationManager.GivePickup(expOrbPickup.MoonGuid);
@@ -78,8 +83,10 @@ public class SeinPickupProcessor : SaveSerialize, ISeinReceiver, IPickupCollecto
                 return;
             }
 
-            if (GameWorld.Instance.CurrentArea != null)
+            if (GameWorld.Instance.CurrentArea != null) {
                 GameWorld.Instance.CurrentArea.DirtyCompletionAmount();
+            }
+
             expOrbPickup.Collected();
         }
     }

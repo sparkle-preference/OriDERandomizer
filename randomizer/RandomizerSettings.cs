@@ -28,11 +28,13 @@ public static class RandomizerSettings {
             foreach (var rawLine in lines) {
                 var line = rawLine;
 
-                if (line.Contains("//"))
+                if (line.Contains("//")) {
                     line = line.Split(new[] { "//" }, StringSplitOptions.None)[0].Trim();
+                }
 
-                if (!line.Contains(":"))
+                if (!line.Contains(":")) {
                     continue;
+                }
 
                 var parts = line.Split(new[] { ':' }, 2);
                 var setting = parts[0].Trim();
@@ -87,8 +89,9 @@ public static class RandomizerSettings {
             }
 
             CurrentFilter = Customization.DefaultMapFilter.Value;
-            if (dirty)
+            if (dirty) {
                 WriteSettings();
+            }
         } catch (Exception e) {
             Randomizer.LogError("Error parsing settings: " + e.Message);
         }
@@ -106,8 +109,9 @@ public static class RandomizerSettings {
     }
 
     public static void WriteSettings() {
-        if (!dirty)
+        if (!dirty) {
             return;
+        }
 
         using (var writer = new StreamWriter("RandomizerSettings.txt", false)) {
             writer.WriteLine("// This file contains a variety of randomizer-specific settings.");
@@ -123,10 +127,14 @@ public static class RandomizerSettings {
             writer.WriteLine("// If you have any questions, please ask for help in the discord (orirando.com/discord, #bf-randomizer)");
             writer.WriteLine("");
             foreach (var setting in All) {
-                if (setting.Value.Hidden && !Dev.Value && setting.Value.IsDefault())
+                if (setting.Value.Hidden && !Dev.Value && setting.Value.IsDefault()) {
                     continue;
-                if (setting.Value.Comment != "")
+                }
+
+                if (setting.Value.Comment != "") {
                     writer.WriteLine($"// {setting.Value.Comment.Replace("\n", "\n// ")}");
+                }
+
                 writer.Write(setting.Key);
                 writer.Write(": ");
                 writer.WriteLine($"{setting.Value.ToString()}\n");
@@ -137,14 +145,18 @@ public static class RandomizerSettings {
     }
 
     public static bool IsSwimBoosting() {
-        if (Controls.InvertSwim)
+        if (Controls.InvertSwim) {
             return !Input.Jump.IsPressed;
+        }
+
         return Input.Jump.IsPressed;
     }
 
     public static bool SwimBoostPressed() {
-        if (Controls.InvertSwim)
+        if (Controls.InvertSwim) {
             return Input.Jump.OnReleased;
+        }
+
         return Input.Jump.OnPressed;
     }
 

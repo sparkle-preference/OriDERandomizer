@@ -17,10 +17,14 @@ public static class RandomizerSyncManager {
         webClient.DownloadStringCompleted += RetryOnFail;
         getClient = new WebClient();
         getClient.UploadValuesCompleted += CheckPickups;
-        if (CurrentSignals == null)
+        if (CurrentSignals == null) {
             CurrentSignals = new HashSet<String>();
-        if (PickupQueue == null)
+        }
+
+        if (PickupQueue == null) {
             PickupQueue = new Queue<Pickup>();
+        }
+
         SeedSent = false;
         SkillInfos = new List<SkillInfoLine>();
         EventInfos = new List<EventInfoLine>();
@@ -56,9 +60,9 @@ public static class RandomizerSyncManager {
             // every websocket path is armored: a broken merge, missing
             // setting, or native failure must never break seed loading
             var wsHost = RandomizerSettings.DevSettings.WsEndpoint;
-            if (wsHost == null)
+            if (wsHost == null) {
                 Randomizer.log("ws diag: WsEndpoint setting missing (RandomizerSettings not fully merged?); websocket off");
-            else {
+            } else {
                 var url = $"wss://{wsHost.Value}/netcode/game/{parts[0]}/player/{parts[1]}/ws";
                 wsUrl = url;
                 // alt+L doubles as the user's "retry the websocket" button:
@@ -88,10 +92,14 @@ public static class RandomizerSyncManager {
                 return;
             }
 
-            if (disable == null)
+            if (disable == null) {
                 Randomizer.log("ws diag: DisableWebsocket setting missing (RandomizerSettings not fully merged?); continuing");
-            if (wsStartedUrl == url)
+            }
+
+            if (wsStartedUrl == url) {
                 return;
+            }
+
             if (!NativeWebSocket.Load()) {
                 wsLoadAttempts++;
                 if (wsLoadAttempts >= 3) {
@@ -103,11 +111,15 @@ public static class RandomizerSyncManager {
             }
 
             wsLoadAttempts = 0;
-            if (wsStartedUrl != null)
+            if (wsStartedUrl != null) {
                 NativeWebSocket.Stop();
+            }
+
             wsDead = false;
-            if (NativeWebSocket.CaPath != null)
+            if (NativeWebSocket.CaPath != null) {
                 NativeWebSocket.SetCaFile(NativeWebSocket.CaPath);
+            }
+
             NativeWebSocket.SetUrl(url);
             NativeWebSocket.SetPingInterval(30);
             NativeWebSocket.SetAutoReconnect(true);
@@ -132,9 +144,9 @@ public static class RandomizerSyncManager {
                 && ((WsOpen && !wsFoundUnsupported) || !wsNoHttp)) {
                 SendingPickup = PickupQueue.Dequeue();
                 wsFoundAttempts = 0;
-                if (WsOpen && !wsFoundUnsupported)
+                if (WsOpen && !wsFoundUnsupported) {
                     SendFoundWs();
-                else {
+                } else {
                     wsFoundToken = 0;
                     webClient.DownloadStringAsync(SendingPickup.GetURL());
                 }
@@ -156,8 +168,10 @@ public static class RandomizerSyncManager {
             }
 
             // retry a failed native load every few seconds (max 3 tries)
-            if (!wsDead && wsUrl != null && wsStartedUrl == null && Time.realtimeSinceStartup >= wsNextTry)
+            if (!wsDead && wsUrl != null && wsStartedUrl == null && Time.realtimeSinceStartup >= wsNextTry) {
                 StartWebsocket(wsUrl);
+            }
+
             // once per seed load, offer our areas.ori hash — a server with
             // newer logic replies with the file (wait for the boot-time
             // http fetch to settle so we hash the fresh copy)
@@ -167,19 +181,25 @@ public static class RandomizerSyncManager {
             }
 
             // unacked complete: keeps retrying (multiworld releases ride on it)
-            if (completePending && Time.realtimeSinceStartup >= completeNextAt)
+            if (completePending && Time.realtimeSinceStartup >= completeNextAt) {
                 TrySendComplete();
+            }
+
             // websocket frames are drained every frame, not at tick
             // cadence — pushed signals should land with frame latency
             CheckWebsocketHealth();
             if (WsOpen) {
                 string frame;
-                while ((frame = NativeWebSocket.GetPendingMessage()) != null)
+                while ((frame = NativeWebSocket.GetPendingMessage()) != null) {
                     ProcessFrame(frame);
+                }
             }
 
             tslu += Time.deltaTime;
-            if (tslu < PERIOD) return;
+            if (tslu < PERIOD) {
+                return;
+            }
+
             if (WsOpen) {
                 tslu = 0f;
                 NativeWebSocket.SendText("tick:" + TickPayload());
@@ -196,11 +216,15 @@ public static class RandomizerSyncManager {
                 }
 
                 var apHints = RandomizerMW.HintRequestField();
-                if (apHints != null)
+                if (apHints != null) {
                     nvc["aph"] = apHints;
+                }
+
                 var deaths = RandomizerDeathLink.Field();
-                if (deaths != null)
+                if (deaths != null) {
                     nvc["dl"] = deaths;
+                }
+
                 var uri = new Uri(RootUrl + "/tick/");
                 getClient.UploadValuesAsync(uri, nvc);
             }
@@ -213,8 +237,10 @@ public static class RandomizerSyncManager {
         try {
             // no transport at all: leave SeedSent false, Update retries
             // until the socket reconnects (cheap: two bool checks/frame)
-            if (!WsOpen && wsNoHttp)
+            if (!WsOpen && wsNoHttp) {
                 return;
+            }
+
             var array = File.ReadAllLines(Randomizer.SeedFilePath);
             array[0] = array[0].Replace(',', '|');
             var seed = string.Join(",", array).Replace("#", "");
@@ -239,8 +265,10 @@ public static class RandomizerSyncManager {
     // character-wise safe: seed text is ASCII.
     private static string EscapeLong(string s) {
         var sb = new StringBuilder();
-        for (var i = 0; i < s.Length; i += 16000)
+        for (var i = 0; i < s.Length; i += 16000) {
             sb.Append(Uri.EscapeDataString(s.Substring(i, Math.Min(16000, s.Length - i))));
+        }
+
         return sb.ToString();
     }
 
@@ -255,23 +283,28 @@ public static class RandomizerSyncManager {
     public static void CheckPickups(object sender, UploadValuesCompletedEventArgs e) {
         try {
             if (e.Error != null) {
-                if (e.Error is NullReferenceException)
+                if (e.Error is NullReferenceException) {
                     return;
+                }
+
                 Randomizer.LogError("CheckPickups got error: " + e.Error);
             }
 
             if (!e.Cancelled && e.Error == null) {
-                if (!Characters.Sein)
+                if (!Characters.Sein) {
                     return;
+                }
+
                 ProcessTickResponse(Encoding.UTF8.GetString(e.Result));
                 return;
             }
 
             if (e.Error.GetType().Name == "WebException" && ((HttpWebResponse)((WebException)e.Error).Response).StatusCode == HttpStatusCode.PreconditionFailed) {
-                if (Randomizer.SyncMode == 1 || Randomizer.SyncMode == 5)
+                if (Randomizer.SyncMode == 1 || Randomizer.SyncMode == 5) {
                     Randomizer.printInfo("Co-op server error, try reloading the seed (Alt+L)");
-                else
+                } else {
                     Randomizer.LogError("Co-op server error, try reloading the seed (Alt+L)");
+                }
             }
         } catch (Exception e2) {
             Randomizer.LogError("CheckPickups threw error: " + e2.Message);
@@ -292,17 +325,21 @@ public static class RandomizerSyncManager {
             var sep = frame.IndexOf(':');
             var kind = sep < 0 ? frame : frame.Substring(0, sep);
             if (kind == "tick" && sep >= 0) {
-                if (!Characters.Sein)
+                if (!Characters.Sein) {
                     return;
+                }
+
                 ProcessTickResponse(frame.Substring(sep + 1));
             } else if (kind == "foundack" && sep >= 0) {
                 // dropping the ack is safe: the 5s timeout resends
-                if (!Characters.Sein)
+                if (!Characters.Sein) {
                     return;
+                }
+
                 OnFoundAck(frame.Substring(sep + 1));
-            } else if (kind == "bingoack" && sep >= 0)
+            } else if (kind == "bingoack" && sep >= 0) {
                 BingoController.OnBingoAck(frame.Substring(sep + 1));
-            else if (kind == "completeack") {
+            } else if (kind == "completeack") {
                 // no Sein guard: this arrives during credits
                 completePending = false;
             } else if (kind == "nohttp") {
@@ -312,10 +349,11 @@ public static class RandomizerSyncManager {
                 var body = frame.Substring(sep + 1);
                 // "ok" = our hash matched; anything real is the whole file
                 // (never overwrite with something implausibly small)
-                if (body != "ok" && body.Length > 10000)
+                if (body != "ok" && body.Length > 10000) {
                     RandomizerLocationManager.ApplyAreasUpdate(body);
-                else if (body != "ok")
+                } else if (body != "ok") {
                     Randomizer.log($"ws: ignoring suspiciously small areas frame ({body.Length} chars)");
+                }
             } else if (kind == "err" && sep >= 0) {
                 // a server that errs one of our frame kinds predates it:
                 // route that channel back to http
@@ -326,12 +364,14 @@ public static class RandomizerSyncManager {
                         wsFoundToken = 0;
                         webClient.DownloadStringAsync(SendingPickup.GetURL());
                     }
-                } else if (what.StartsWith("bingo"))
+                } else if (what.StartsWith("bingo")) {
                     BingoController.OnBingoErr();
+                }
 
                 Randomizer.log("ws: server err frame: " + what);
-            } else
+            } else {
                 Randomizer.LogError("ProcessFrame: unknown frame kind: " + kind);
+            }
         } catch (Exception e) {
             Randomizer.LogError("ProcessFrame threw error: " + e.Message);
         }
@@ -345,12 +385,16 @@ public static class RandomizerSyncManager {
         var parts = body.Split('|');
         var token = int.Parse(parts[0]);
         var status = int.Parse(parts[1]);
-        if (SendingPickup == null || token != wsFoundToken)
+        if (SendingPickup == null || token != wsFoundToken) {
             return;
+        }
+
         wsFoundToken = 0;
         if (status == 410) {
-            if (SendingPickup.type == "RB")
+            if (SendingPickup.type == "RB") {
                 RandomizerBonus.UpgradeID(-int.Parse(SendingPickup.id));
+            }
+
             SendingPickup = null;
         } else if (status < 300 || status == 406) {
             SendingPickup = null;
@@ -367,18 +411,19 @@ public static class RandomizerSyncManager {
     private static void FoundFallback() {
         if (!wsNoHttp) {
             wsFoundToken = 0;
-            if (!webClient.IsBusy)
+            if (!webClient.IsBusy) {
                 webClient.DownloadStringAsync(SendingPickup.GetURL());
-            else {
+            } else {
                 // webClient busy should be impossible here (the queue is
                 // serial), but never strand a pickup on an impossibility
                 PickupQueue.Enqueue(SendingPickup);
                 SendingPickup = null;
             }
-        } else if (WsOpen)
+        } else if (WsOpen) {
             SendFoundWs();
-        else
+        } else {
             wsFoundSentAt = Time.realtimeSinceStartup;
+        }
     }
 
     private static void SendFoundWs() {
@@ -436,17 +481,20 @@ public static class RandomizerSyncManager {
                         if (id >= 900 && id < 910) {
                             var tree = id - 899;
                             var treeName = RandomizerTrackedDataManager.Trees[tree];
-                            if (RandomizerTrackedDataManager.SetTree(tree))
+                            if (RandomizerTrackedDataManager.SetTree(tree)) {
                                 Randomizer.showHint(RandomizerUI.Message.PickupMessage(treeName + " tree (activated by teammate)"));
+                            }
                             // 911-921: relic progress
                         } else if (id >= 911 && id < 922) {
                             var relicZone = RandomizerTrackedDataManager.Zones[id - 911];
-                            if (RandomizerTrackedDataManager.SetRelic(relicZone))
+                            if (RandomizerTrackedDataManager.SetRelic(relicZone)) {
                                 Randomizer.showHint(RandomizerUI.Message.PickupMessage("#" + relicZone + " relic# (found by teammate)", 5f));
+                            }
                             // 100-129: bonus skills
                         } else if (id >= 100 && id < 130) {
-                            if (cnt > 0 && RandomizerBonus.UpgradeCount(id) == 0)
+                            if (cnt > 0 && RandomizerBonus.UpgradeCount(id) == 0) {
                                 RandomizerBonus.UpgradeID(id);
+                            }
                             // everything else!
                         } else if (RandomizerBonus.UpgradeCount(id) < cnt) {
                             RandomizerBonus.UpgradeID(id);
@@ -463,8 +511,10 @@ public static class RandomizerSyncManager {
                 // sit at a fixed index 6; legacy games omit it when empty.
                 if (array.Length > 5 && array[5] != "") {
                     foreach (var text in array[5].Split('|')) {
-                        if (text == "" || CurrentSignals.Contains(text))
+                        if (text == "" || CurrentSignals.Contains(text)) {
                             continue;
+                        }
+
                         if (text == "stop") {
                             RandomizerChaosManager.ClearEffects();
                         } else if (text.StartsWith("msg:")) {
@@ -493,9 +543,9 @@ public static class RandomizerSyncManager {
                             ChaosTimeoutCounter = 3600;
                         }
 
-                        if (WsOpen)
+                        if (WsOpen) {
                             NativeWebSocket.SendText("conf:" + text);
-                        else if (!wsNoHttp) {
+                        } else if (!wsNoHttp) {
                             var client = new WebClient();
                             client.DownloadStringAsync(new Uri(RootUrl + "/callback/" + text));
                         }
@@ -517,8 +567,9 @@ public static class RandomizerSyncManager {
 
                 if (Randomizer.SyncMode == 5 && array.Length > 6) {
                     // multiworld: our slot bitfields (what others found for us)
-                    if (RandomizerMW.OnSlotsField(array[6]))
+                    if (RandomizerMW.OnSlotsField(array[6])) {
                         mustRefreshLogic = true;
+                    }
                 }
 
                 if (Randomizer.SyncMode == 5 && array.Length > 8 && array[8] != "") {
@@ -565,8 +616,9 @@ public static class RandomizerSyncManager {
                     return;
                 }
 
-                if (e.Error != null)
+                if (e.Error != null) {
                     Randomizer.log($"RetryOnFail (ln: {ln}) got responseless excpetion: {e}");
+                }
             }
 
             SendingPickup = null;
@@ -595,8 +647,10 @@ public static class RandomizerSyncManager {
     // (completeack frame); the http path can't ack, so it just gets a few
     // spaced attempts. game_complete is idempotent server-side.
     public static void SendGameComplete() {
-        if (!Randomizer.Sync || Randomizer.SyncId == "")
+        if (!Randomizer.Sync || Randomizer.SyncId == "") {
             return;
+        }
+
         completePending = true;
         completeAttempts = 0;
         TrySendComplete();
@@ -615,19 +669,23 @@ public static class RandomizerSyncManager {
             }
 
             // no transport right now: attempts don't count, wait for the socket
-            if (completeAttempts >= 5)
+            if (completeAttempts >= 5) {
                 completePending = false;
+            }
         } catch (Exception e) {
             Randomizer.log("SendGameComplete: " + e.Message);
         }
     }
 
     public static void FoundTP(string identifier) {
-        if (!Randomizer.Sync)
+        if (!Randomizer.Sync) {
             return;
+        }
+
         try {
-            if (TPIds.ContainsKey(identifier) && !isTeleporterActivated(identifier, false))
+            if (TPIds.ContainsKey(identifier) && !isTeleporterActivated(identifier, false)) {
                 FoundPickup(TPIds[identifier], 1); // this used to be -1 but multiworlds need that
+            }
         } catch (Exception e) {
             Randomizer.LogError("FoundTP: " + e.Message);
         }
@@ -638,16 +696,23 @@ public static class RandomizerSyncManager {
     }
 
     public static bool isTeleporterActivated(string identifier, bool translate) {
-        if (translate)
+        if (translate) {
             identifier = Randomizer.TeleportTable[identifier].ToString();
+        }
+
         try {
             if (Characters.Sein && Characters.Sein.Inventory) {
-                if (identifier == "ginsoTree" && Characters.Sein.Inventory.GetRandomizerItem(1024) == 1)
+                if (identifier == "ginsoTree" && Characters.Sein.Inventory.GetRandomizerItem(1024) == 1) {
                     return true;
-                if (identifier == "forlorn" && Characters.Sein.Inventory.GetRandomizerItem(1025) == 1)
+                }
+
+                if (identifier == "forlorn" && Characters.Sein.Inventory.GetRandomizerItem(1025) == 1) {
                     return true;
-                if (identifier == "mountHoru" && Characters.Sein.Inventory.GetRandomizerItem(1026) == 1)
+                }
+
+                if (identifier == "mountHoru" && Characters.Sein.Inventory.GetRandomizerItem(1026) == 1) {
                     return true;
+                }
             }
 
             foreach (var gameMapTeleporter in TeleporterController.Instance.Teleporters) {
@@ -706,13 +771,17 @@ public static class RandomizerSyncManager {
         // archipelago: the manifest slots our own reveals want a hint for.
         // Absent on every other seed, and older servers ignore the key.
         var apHints = RandomizerMW.HintRequestField();
-        if (apHints != null)
+        if (apHints != null) {
             sb.Append("&aph=").Append(apHints);
+        }
+
         // archipelago death link: this run's death counters, which the
         // server diffs. Absent on every seed without the option.
         var deaths = RandomizerDeathLink.Field();
-        if (deaths != null)
+        if (deaths != null) {
             sb.Append("&dl=").Append(deaths);
+        }
+
         return sb.ToString();
     }
 
@@ -720,8 +789,10 @@ public static class RandomizerSyncManager {
     // for the session (bad TLS, old server, blocked port — http covers us).
     // A socket that connected once keeps auto-reconnecting forever.
     private static void CheckWebsocketHealth() {
-        if (wsDead || wsStartedUrl == null || !NativeWebSocket.Loaded)
+        if (wsDead || wsStartedUrl == null || !NativeWebSocket.Loaded) {
             return;
+        }
+
         if (NativeWebSocket.GetOpenCount() == 0 && NativeWebSocket.GetErrorCount() >= 8) {
             wsDead = true;
             NativeWebSocket.Stop();
@@ -808,8 +879,10 @@ public static class RandomizerSyncManager {
         public string CleanedId {
             get {
                 var cleaned_id = id.Replace("#", "");
-                if (cleaned_id.Contains("\\"))
+                if (cleaned_id.Contains("\\")) {
                     cleaned_id = cleaned_id.Split('\\')[0];
+                }
+
                 return cleaned_id;
             }
         }
@@ -963,8 +1036,10 @@ public static class RandomizerSyncManager {
         }
 
         public void GrantFromNetwork() {
-            if (TeleporterController.HasCustomWarp(name))
+            if (TeleporterController.HasCustomWarp(name)) {
                 return;
+            }
+
             if (!Randomizer.WarpLogicLocations.ContainsKey(name)) {
                 Randomizer.WarpLogicLocations.Add(name, area);
             }

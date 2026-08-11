@@ -158,8 +158,10 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public static void Activate(string identifier, bool natural) {
-        if (natural)
+        if (natural) {
             RandomizerSyncManager.FoundTP(identifier);
+        }
+
         BingoController.OnActivateTeleporter(identifier);
         foreach (var gameMapTeleporter in Instance.Teleporters) {
             if (gameMapTeleporter.Identifier == identifier) {
@@ -272,8 +274,10 @@ public class TeleporterController : SaveSerialize, ISuspendable {
             UberGCManager.CollectResourcesIfNeeded();
         }
 
-        if (Randomizer.IsUsingRandomizerTeleportAnywhere)
+        if (Randomizer.IsUsingRandomizerTeleportAnywhere) {
             RandomizerBonusSkill.LastAltR = Characters.Sein.Position;
+        }
+
         Characters.Sein.Position = m_teleporterTargetPosition + Vector3.up * 1.6f;
         CameraPivotZone.InstantUpdate();
         Scenes.Manager.UpdatePosition();
@@ -345,8 +349,10 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         }
 
         // If we already have that teleporter don't add it.
-        if (Instance.customWarps.Contains(name))
+        if (Instance.customWarps.Contains(name)) {
             return;
+        }
+
         Instance.customWarps.Add(name);
         var teleporter = new GameMapTeleporter(name, warpX, warpY);
         Instance.Teleporters.Add(teleporter);

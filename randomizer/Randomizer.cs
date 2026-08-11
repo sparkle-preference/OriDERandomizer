@@ -128,8 +128,9 @@ public static class Randomizer {
                         Message = "Good luck on your bingo!";
                         BingoController.Init(allLines[allLines.Count - 1]);
                         allLines.RemoveAt(allLines.Count - 1);
-                    } else
+                    } else {
                         BingoController.Active = false;
+                    }
 
                     if (CluesMode) {
                         RandomizerClues.initialize();
@@ -238,10 +239,14 @@ public static class Randomizer {
             return;
         }
 
-        if (Characters.Sein.Abilities.Carry.IsCarrying && !AllowOrbWarps)
+        if (Characters.Sein.Abilities.Carry.IsCarrying && !AllowOrbWarps) {
             Characters.Sein.Abilities.Carry.CurrentCarryable.Drop();
-        if (Characters.Sein.Abilities.Dash && Characters.Sein.Abilities.Dash.IsDashingOrChangeDashing)
+        }
+
+        if (Characters.Sein.Abilities.Dash && Characters.Sein.Abilities.Dash.IsDashingOrChangeDashing) {
             Characters.Sein.Abilities.Dash.StopDashing();
+        }
+
         BingoController.OnWarp();
         Characters.Sein.Position = position;
         Characters.Sein.Speed = new Vector3(0f, 0f);
@@ -252,12 +257,18 @@ public static class Randomizer {
     }
 
     public static void returnToStart() {
-        if (!Characters.Sein.Controller.CanMove || !Characters.Sein.Active)
+        if (!Characters.Sein.Controller.CanMove || !Characters.Sein.Active) {
             return;
-        if (Items.NightBerry != null)
+        }
+
+        if (Items.NightBerry != null) {
             Items.NightBerry.transform.position = new Vector3(-755f, -400f);
-        if (Characters.Sein.Abilities.Carry.IsCarrying && !AllowOrbWarps)
+        }
+
+        if (Characters.Sein.Abilities.Carry.IsCarrying && !AllowOrbWarps) {
             Characters.Sein.Abilities.Carry.CurrentCarryable.Drop();
+        }
+
         RandomizerStatsManager.WarpedToStart();
         RandomizerBonusSkill.LastAltR = Characters.Sein.Position;
         BingoController.OnWarp();
@@ -275,10 +286,13 @@ public static class Randomizer {
     }
 
     public static void TeleportAnywhere() {
-        if (!Characters.Sein.Controller.CanMove || !Characters.Sein.Active)
+        if (!Characters.Sein.Controller.CanMove || !Characters.Sein.Active) {
             return;
-        if (Characters.Sein.IsSuspended || UI.MainMenuVisible)
+        }
+
+        if (Characters.Sein.IsSuspended || UI.MainMenuVisible) {
             return;
+        }
 
         if (TeleporterController.CanTeleport(null)) {
             var defaultTeleporter = "sunkenGlades";
@@ -339,8 +353,9 @@ public static class Randomizer {
             RandomizerUI.Instance.QueueSideNotification(message);
         } else {
             MessageQueue.Enqueue(message);
-            if (RandomizerUI.Instance != null)
+            if (RandomizerUI.Instance != null) {
                 RandomizerUI.Instance.RecordRecentNotification(message);
+            }
         }
     }
 
@@ -459,8 +474,10 @@ public static class Randomizer {
                         }
                     }
 
-                    if (!loading)
+                    if (!loading) {
                         Warping--;
+                    }
+
                     if (Warping == 0 && SaveAfterWarp) {
                         GameController.Instance.CreateCheckpoint();
                         RandomizerStatsManager.OnSave(false);
@@ -476,8 +493,10 @@ public static class Randomizer {
             }
         }
 
-        if (CreditsActive)
+        if (CreditsActive) {
             return;
+        }
+
         if (RandomizerRebinding.ReloadSeed.IsPressed()) {
             initialize();
             if (RandomizerSettings.Dev) {
@@ -491,8 +510,10 @@ public static class Randomizer {
         if (Characters.Sein) {
             if (RandomizerRebinding.ShowStats.IsPressed()) {
                 RandomizerStatsManager.ShowStats(10);
-                if (BingoController.Active)
+                if (BingoController.Active) {
                     log("Current bingo state: \n" + BingoController.GetJson());
+                }
+
                 return;
             }
 
@@ -593,10 +614,12 @@ public static class Randomizer {
                 return;
             }
 
-            if (get(1104) > 0)
+            if (get(1104) > 0) {
                 returnToStart();
-            else
+            } else {
                 TeleportAnywhere();
+            }
+
             return;
         }
 
@@ -648,8 +671,9 @@ public static class Randomizer {
     }
 
     public static void showChaosEffect(string message) {
-        if (ChaosVerbose)
+        if (ChaosVerbose) {
             printInfo(message);
+        }
     }
 
     public static void showChaosMessage(string message) {
@@ -689,23 +713,30 @@ public static class Randomizer {
             g = pickups >= 256 ? "$" : "";
 
             text += $"{g}Total ({pickups}/256){g}\n";
-            if (CluesMode)
+            if (CluesMode) {
                 text += RandomizerClues.GetClues();
-            else if (Shards) {
-                if (Keys.GinsoTree)
+            } else if (Shards) {
+                if (Keys.GinsoTree) {
                     text += $"*WV ({RandomizerBonus.WaterVeinShards()}/3)*  ";
-                else
+                } else {
                     text += $"*WV* ({RandomizerBonus.WaterVeinShards()}/3)  ";
-                if (Keys.ForlornRuins)
+                }
+
+                if (Keys.ForlornRuins) {
                     text += $"#GS ({RandomizerBonus.GumonSealShards()}/3)#  ";
-                else
+                } else {
                     text += $"#GS# ({RandomizerBonus.GumonSealShards()}/3)  ";
-                if (Keys.MountHoru)
+                }
+
+                if (Keys.MountHoru) {
                     text += $"@SS ({RandomizerBonus.SunstoneShards()}/3)@  ";
-                else
+                } else {
                     text += $"@SS@ ({RandomizerBonus.SunstoneShards()}/3)  ";
+                }
             } else // the below is ugly code, but otoh it's also code that will only run for people who are playing clueless shardless seeds, and. :orishrug: they had it coming, or something.
+            {
                 text += $"*WV{(Keys.GinsoTree ? ": Found*" : "*: ????")}  #GS{(Keys.ForlornRuins ? ": Found#" : "#: ????")}  @SS{(Keys.MountHoru ? ": Found@" : "@: ????")}";
+            }
 
             if (fragsEnabled) {
                 var frags = RandomizerBonus.WarmthFrags();
@@ -752,8 +783,10 @@ public static class Randomizer {
     }
 
     public static void UpdatePendingWin() {
-        if (PendingWinMessage == null)
+        if (PendingWinMessage == null) {
             return;
+        }
+
         var stable = Characters.Sein && Characters.Sein.Active && Characters.Sein.Controller.CanMove
             && !Characters.Sein.IsSuspended && !UI.MainMenuVisible;
         // count stable frames, not just one: CanMove goes true before the respawn
@@ -816,7 +849,7 @@ public static class Randomizer {
 
     public static bool canFinalEscape(bool verbose) {
         if (fragsEnabled && RandomizerBonus.WarmthFrags() < fragKeyFinish) {
-            if (verbose)
+            if (verbose) {
                 printInfo(
                     string.Concat(
                         "Frags: (",
@@ -826,27 +859,35 @@ public static class Randomizer {
                         ")"
                     )
                 );
+            }
+
             return false;
         }
 
         if (WorldTour) {
             var relics = get(402);
             if (relics < RelicCount) {
-                if (verbose)
+                if (verbose) {
                     printInfo("Relics (" + relics + "/" + RelicCount + ")");
+                }
+
                 return false;
             }
         }
 
         if (ForceTrees && RandomizerBonus.SkillTreeProgression() < 10) {
-            if (verbose)
+            if (verbose) {
                 printInfo("Trees (" + RandomizerBonus.SkillTreeProgression() + "/10)");
+            }
+
             return false;
         }
 
         if (ForceMaps && RandomizerBonus.MapStoneProgression() < 9) {
-            if (verbose)
+            if (verbose) {
                 printInfo("Maps (" + RandomizerBonus.MapStoneProgression() + "/9)");
+            }
+
             return false;
         }
 
@@ -899,8 +940,10 @@ public static class Randomizer {
     }
 
     public static void Print(string text, int seconds, bool mute, bool setMessage, bool devOnly, bool immediate) {
-        if (devOnly && !RandomizerSettings.Dev)
+        if (devOnly && !RandomizerSettings.Dev) {
             return;
+        }
+
         if (immediate) {
             MessageProvider.SetMessage(text);
             if (mute) {
@@ -935,11 +978,13 @@ public static class Randomizer {
             var old_tick = LastTick;
             LastTick = DateTime.Now.Ticks % 10000000L;
             if (LastTick < old_tick) {
-                if (RandomizerSettings.QOL.CursorLock)
+                if (RandomizerSettings.QOL.CursorLock) {
                     Cursor.lockState = CursorLockMode.Confined;
+                }
 
-                if (GameStateMachine.Instance?.CurrentState == GameStateMachine.State.Prologue)
+                if (GameStateMachine.Instance?.CurrentState == GameStateMachine.State.Prologue) {
                     return;
+                }
 
                 BingoController.Tick();
                 if (ResetVolume == 1) {
@@ -953,10 +998,14 @@ public static class Randomizer {
                     CanWarp--;
                 }
 
-                if (RepeatableCooldown > 0)
+                if (RepeatableCooldown > 0) {
                     RepeatableCooldown--;
-                if (RandomizerStatsManager.StatsTimer > 0)
+                }
+
+                if (RandomizerStatsManager.StatsTimer > 0) {
                     RandomizerStatsManager.StatsTimer--;
+                }
+
                 RandomizerStatsManager.IncTime();
                 if (Scenes.Manager.CurrentScene != null) {
                     var scene = Scenes.Manager.CurrentScene.Scene;
@@ -992,8 +1041,9 @@ public static class Randomizer {
                     }
                 }
 
-                if (CreditsActive && !RandomizerCreditsManager.CreditsDone)
+                if (CreditsActive && !RandomizerCreditsManager.CreditsDone) {
                     RandomizerCreditsManager.Tick();
+                }
 
                 if (Characters.Sein) {
                     if (!Characters.Sein.IsSuspended && Scenes.Manager.CurrentScene != null) {
@@ -1004,15 +1054,19 @@ public static class Randomizer {
                         RandomizerTrackedDataManager.UpdateBitfields();
                         RandomizerColorManager.UpdateHotColdTarget();
                         if (Characters.Sein.Position.y > 935f && Inventory.FinishedGinsoEscape && Scenes.Manager.CurrentScene.Scene == "ginsoTreeWaterRisingEnd") {
-                            if (SafeIsBashing)
+                            if (SafeIsBashing) {
                                 Characters.Sein.Abilities.Bash.BashGameComplete(0f);
+                            }
+
                             Characters.Sein.Position = new Vector3(750f, -120f);
                             return;
                         }
 
                         if (get(1106) > 0 && Characters.Sein.Position.y > -235f && Scenes.Manager.CurrentScene.Scene == "forlornRuinsResurrection") {
-                            if (SafeIsBashing)
+                            if (SafeIsBashing) {
                                 Characters.Sein.Abilities.Bash.BashGameComplete(0f);
+                            }
+
                             Characters.Sein.Position = new Vector3(-1350f, -410f);
                             return;
                         }
@@ -1040,8 +1094,10 @@ public static class Randomizer {
 
                     if (RandomizerSyncManager.NetworkFree) {
                         foreach (var gameMapTP in TeleporterController.Instance.Teleporters) {
-                            if (gameMapTP.Activated)
+                            if (gameMapTP.Activated) {
                                 continue;
+                            }
+
                             if (gameMapTP.Identifier == "ginsoTree" && get(1024) == 1 && (RandomizerBonus.WaterVeinShards() >= 2 || RandomizerClues.IsClueActive("WV"))) {
                                 TeleporterController.Activate(TeleportTable["Ginso"].ToString(), false);
                                 if (RandomizerSettings.Customization.MultiplePickupMessages) {
@@ -1106,13 +1162,11 @@ public static class Randomizer {
         foreach (var rawFlag in rawFlags) {
             var flag = rawFlag.ToLower();
 
-            if (flag == "ohko")
+            if (flag == "ohko") {
                 OHKO = true;
-
-            else if (flag == "race")
+            } else if (flag == "race") {
                 SeedMeta = $"{String.Join(",", rawFlags.Select(f => f.ToLower().StartsWith("sync") ? "Sync" + cct(f.Skip(f.IndexOf('.') - 1)) : f).ToArray())}|{cct(seed.Skip(1).SkipWhile(c => Char.IsLower(c)))}"; // yeah that's right we're LINQ wizards baby anyways this is just a bit of censorship to make things a bit harder for people trying to cheat
-
-            else if (flag.StartsWith("worldtour")) {
+            } else if (flag.StartsWith("worldtour")) {
                 WorldTour = true;
                 if (flag.Contains("=")) {
                     RelicCountOverride = true;
@@ -1141,77 +1195,59 @@ public static class Randomizer {
                 }
 
                 SyncMode = syncMode;
-            } else if (flag == "bingo")
+            } else if (flag == "bingo") {
                 doBingo = true;
-
-            else if (flag == "noextraexp")
+            } else if (flag == "noextraexp") {
                 IgnoreEnemyExp = true;
-
-            else if (flag == "0xp") {
+            } else if (flag == "0xp") {
                 IgnoreEnemyExp = true;
                 ZeroXP = true;
-            } else if (flag == "nobonus")
+            } else if (flag == "nobonus") {
                 BonusActive = false;
-
-            else if (flag == "nonprogressivemapstones")
+            } else if (flag == "nonprogressivemapstones") {
                 ProgressiveMapStones = false;
-
-            else if (flag == "forcetrees")
+            } else if (flag == "forcetrees") {
                 ForceTrees = true;
-
-            else if (flag == "forcemaps")
+            } else if (flag == "forcemaps") {
                 ForceMaps = true;
-
-            else if (flag == "clues")
+            } else if (flag == "clues") {
                 CluesMode = true;
-
-            else if (flag == "shards")
+            } else if (flag == "shards") {
                 Shards = true;
-
-            else if (flag == "entrance")
+            } else if (flag == "entrance") {
                 Entrance = true;
-
-            else if (flag == "closeddungeons")
+            } else if (flag == "closeddungeons") {
                 OpenMode = false;
-
-            else if (flag == "openworld")
+            } else if (flag == "openworld") {
                 OpenWorld = true;
-
-            else if (flag.StartsWith("hotcold=")) {
+            } else if (flag.StartsWith("hotcold=")) {
                 HotCold = true;
                 HotColdTypes = new HashSet<string>(rawFlag.Substring(8).Split('+').ToList());
-            } else if (flag.StartsWith("sense="))
+            } else if (flag.StartsWith("sense=")) {
                 HotColdTypes = new HashSet<string>(rawFlag.Substring(6).Split('+').ToList());
-
-            else if (flag == "noaltr")
+            } else if (flag == "noaltr") {
                 AltRDisabled = true;
-
-            else if (flag == "stomptriggers")
+            } else if (flag == "stomptriggers") {
                 StompTriggers = true;
-
-            else if (flag == "goalmodefinish")
+            } else if (flag == "goalmodefinish") {
                 GoalModeFinish = true;
-
-            else if (flag == "orbwarp")
+            } else if (flag == "orbwarp") {
                 AllowOrbWarps = true;
-
-            else if (flag == "inlogicwarps")
+            } else if (flag == "inlogicwarps") {
                 InLogicWarps = true;
-
-            else if (flag == "cluelockedtps")
+            } else if (flag == "cluelockedtps") {
                 TeleportersLockedByClues = true;
-
-            else if (flag == "deathlink")
+            } else if (flag == "deathlink") {
                 RandomizerDeathLink.Enabled = true;
-
-            else if (flag == "keysanity")
+            } else if (flag == "keysanity") {
                 Keysanity.IsActive = true;
-
-            else if (flag == "enhanced")
+            } else if (flag == "enhanced") {
                 EnhancedMode = true;
+            }
 
-            if (flag == "seintalks")
+            if (flag == "seintalks") {
                 EnhancedSeinInSeed = true;
+            }
         }
 
         return doBingo;
@@ -1261,8 +1297,10 @@ public static class Randomizer {
             try {
                 var tierParts = meta.Substring("keytiers=".Length).Split('+');
                 var tiers = new int[tierParts.Length];
-                for (var ti = 0; ti < tierParts.Length; ti++)
+                for (var ti = 0; ti < tierParts.Length; ti++) {
                     tiers[ti] = int.Parse(tierParts[ti]);
+                }
+
                 RandomizerLocationManager.KeyTiers = tiers;
             } catch (Exception) {
                 RandomizerLocationManager.KeyTiers = null;
@@ -1315,8 +1353,9 @@ public static class Randomizer {
             Keysanity.AddClue(id_number, coords, area);
         }
 
-        if (code == "RB" && id_number == 410)
+        if (code == "RB" && id_number == 410) {
             EnhancedSeinInSeed = true;
+        }
 
         if (code == "TW") {
             //6399872|TW|Warp to Spirit Cavern AC,-219,-176,SpiritCavernsACWarp|Swamp
@@ -1339,8 +1378,10 @@ public static class Randomizer {
 
     public static bool SeenCoord(int coord) {
         if (!RandomizerTrackedDataManager.CoordsMap.ContainsKey(coord)) {
-            if (!knownUnknowns.Contains(coord))
+            if (!knownUnknowns.Contains(coord)) {
                 LogError("Unknown coord: " + coord);
+            }
+
             return false;
         }
 
@@ -1350,8 +1391,10 @@ public static class Randomizer {
 
     public static bool HaveCoord(int coord) {
         if (!RandomizerTrackedDataManager.CoordsMap.ContainsKey(coord)) {
-            if (!knownUnknowns.Contains(coord))
+            if (!knownUnknowns.Contains(coord)) {
                 LogError("Unknown coord: " + coord);
+            }
+
             return false;
         }
 
@@ -1361,8 +1404,10 @@ public static class Randomizer {
 
     public static void OnCoord(int coord) {
         if (!RandomizerTrackedDataManager.CoordsMap.ContainsKey(coord)) {
-            if (!knownUnknowns.Contains(coord))
+            if (!knownUnknowns.Contains(coord)) {
                 LogError("Unknown coord: " + coord);
+            }
+
             return;
         }
 
@@ -1370,13 +1415,16 @@ public static class Randomizer {
         var offset = RandomizerTrackedDataManager.CoordsMap[coord] % 32;
         var current = get(locID);
         // set Seen
-        if ((current >> offset) % 2 == 0)
+        if ((current >> offset) % 2 == 0) {
             set(locID, current + (1 << offset));
+        }
+
         // set Have
         locID = 930 + RandomizerTrackedDataManager.CoordsMap[coord] / 32;
         current = get(locID);
-        if ((current >> offset) % 2 == 0)
+        if ((current >> offset) % 2 == 0) {
             set(locID, current + (1 << offset));
+        }
     }
 
     public static void ApplyGrabForgiveness() {
@@ -1446,10 +1494,11 @@ public static class Randomizer {
             spawnECs += spawnItems.Where(item => item.Action == "EC").Select(item => (int)item.Value).Aggregate(0, (acc, next) => acc + next);
             // let the survivors regroup
             spawnItems = spawnItems.Where(item => item.Action != "HC" && item.Action != "EC").ToList();
-            if (spawnItems.Count == 1)
+            if (spawnItems.Count == 1) {
                 RandomizerSwitch.GivePickup(spawnItems[0], 2);
-            else if (spawnItems.Count > 1)
+            } else if (spawnItems.Count > 1) {
                 RandomizerSwitch.GivePickup(RandomizerAction.AsMulti(spawnItems), 2);
+            }
         }
 
         Characters.Sein.Energy.Max += spawnECs;

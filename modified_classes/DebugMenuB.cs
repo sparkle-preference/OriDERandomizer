@@ -141,8 +141,8 @@ public class DebugMenuB : SaveSerialize {
     public bool DisableArt() {
         if (m_art == null) {
             m_art = (from a in FindObjectsOfType<GameObject>()
-                where a.name == "art"
-                select a).ToArray();
+                     where a.name == "art"
+                     select a).ToArray();
             foreach (var gameObject in m_art) {
                 if (gameObject) {
                     gameObject.SetActive(false);
@@ -178,8 +178,8 @@ public class DebugMenuB : SaveSerialize {
     public bool DisableEnemies() {
         if (m_enemies == null) {
             m_enemies = (from a in FindObjectsOfType<GameObject>()
-                where a.name == "enemies"
-                select a).ToArray();
+                         where a.name == "enemies"
+                         select a).ToArray();
             foreach (var gameObject in m_enemies) {
                 if (gameObject) {
                     gameObject.SetActive(false);
@@ -259,21 +259,21 @@ public class DebugMenuB : SaveSerialize {
         }
 
         list.Add(new BoolDebugMenuItem("Cheats", CheatsGetter, CheatsSetter));
-        list.Add(new BoolDebugMenuItem("Disable Sound", () => Sound.AllSoundsDisabled, delegate(bool val) { Sound.AllSoundsDisabled = val; }));
-        list.Add(new BoolDebugMenuItem("Unlock Cutscenes", () => UnlockAllCutscenes, delegate(bool value) { UnlockAllCutscenes = value; }));
+        list.Add(new BoolDebugMenuItem("Disable Sound", () => Sound.AllSoundsDisabled, delegate (bool val) { Sound.AllSoundsDisabled = val; }));
+        list.Add(new BoolDebugMenuItem("Unlock Cutscenes", () => UnlockAllCutscenes, delegate (bool value) { UnlockAllCutscenes = value; }));
         list.Add(
             new BoolDebugMenuItem(
                 "Frame Performance Monitor",
                 () => FramePerformanceMonitor.Enabled,
-                delegate(bool val) {
+                delegate (bool val) {
                     SceneFrameworkPerformanceMonitor.Enabled = val;
                     FramePerformanceMonitor.Enabled = val;
                 }
             )
         );
-        list.Add(new BoolDebugMenuItem("Binary Profiler Log", () => BinaryProfilerLogMaker.Enabled, delegate(bool val) { BinaryProfilerLogMaker.Enabled = val; }));
-        list.Add(new BoolDebugMenuItem("Leaked Objects Detector", () => LeakedSceneObjectDetector.Enabled, delegate(bool val) { LeakedSceneObjectDetector.Enabled = val; }));
-        list.Add(new BoolDebugMenuItem("UberShader Detector", () => UberShaderDetector.Enabled, delegate(bool val) { UberShaderDetector.Enabled = val; }));
+        list.Add(new BoolDebugMenuItem("Binary Profiler Log", () => BinaryProfilerLogMaker.Enabled, delegate (bool val) { BinaryProfilerLogMaker.Enabled = val; }));
+        list.Add(new BoolDebugMenuItem("Leaked Objects Detector", () => LeakedSceneObjectDetector.Enabled, delegate (bool val) { LeakedSceneObjectDetector.Enabled = val; }));
+        list.Add(new BoolDebugMenuItem("UberShader Detector", () => UberShaderDetector.Enabled, delegate (bool val) { UberShaderDetector.Enabled = val; }));
         list.Add(new BoolDebugMenuItem("Debug Controls", DebugControlsGetter, DebugControlsSetter));
         list.Add(new BoolDebugMenuItem("Debug text", DebugTextGetter, DebugTextSetter));
         list.Add(new BoolDebugMenuItem("Scene Framework", DebugSceneFrameworkGetter, DebugSceneFrameworkSetter));
@@ -306,14 +306,14 @@ public class DebugMenuB : SaveSerialize {
             new BoolDebugMenuItem(
                 "Super Slow Motion",
                 () => m_superSlowMotion,
-                delegate(bool val) {
+                delegate (bool val) {
                     m_superSlowMotion = val;
                     Time.timeScale = !val ? 1f : 0.25f;
                 }
             )
         );
-        list2.Add(new BoolDebugMenuItem("Sync fixed update", () => SyncFramesTest.EnableSync, delegate(bool val) { SyncFramesTest.EnableSync = val; }));
-        list2.Add(new BoolDebugMenuItem("force fixed update", () => SyncFramesTest.EnabledForceFixedUpdate, delegate(bool val) { SyncFramesTest.EnabledForceFixedUpdate = val; }));
+        list2.Add(new BoolDebugMenuItem("Sync fixed update", () => SyncFramesTest.EnableSync, delegate (bool val) { SyncFramesTest.EnableSync = val; }));
+        list2.Add(new BoolDebugMenuItem("force fixed update", () => SyncFramesTest.EnabledForceFixedUpdate, delegate (bool val) { SyncFramesTest.EnabledForceFixedUpdate = val; }));
         if (Characters.Sein) {
             list2.Add(new SeinLevelUpDownDebugMenuItem("Level"));
             list2.Add(new SeinSkillUpDownDebugMenuItem("Skill Points"));
@@ -347,7 +347,7 @@ public class DebugMenuB : SaveSerialize {
         list2.Add(new BoolDebugMenuItem("Replay Engine", ReplayEngineActiveGetter, ReplayEngineActiveSetter));
         list2.Add(new ActionDebugMenuItem("Send leaderboard", SendLeaderboard));
         list2.Add(new ActionDebugMenuItem("Load Test Scene", LoadTestScene));
-        list2.Add(new BoolDebugMenuItem("Auto send leaderboard", () => LeaderboardsController.AutoUpload, delegate(bool v) { LeaderboardsController.AutoUpload = v; }));
+        list2.Add(new BoolDebugMenuItem("Auto send leaderboard", () => LeaderboardsController.AutoUpload, delegate (bool v) { LeaderboardsController.AutoUpload = v; }));
         var list3 = new List<IDebugMenuItem>();
         foreach (var text in ImportantLevelsNames) {
             var flag = false;
@@ -431,14 +431,14 @@ public class DebugMenuB : SaveSerialize {
             list7.Add(new ActionDebugMenuItem("Start FPS Test 120", StartFPSTest120));
             list7.Add(new ActionDebugMenuItem("Start FPS Test 180", StartFPSTest180));
             list7.Add(new ActionDebugMenuItem("Start FPS Test 240", StartFPSTest240));
-            list7.Add(new BoolDebugMenuItem("Override Misty Woods Conditions", () => SceneFPSTest.OVERRIDE_MISTYWOODS_CONDITION, delegate(bool val) { SceneFPSTest.OVERRIDE_MISTYWOODS_CONDITION = val; }));
-            list7.Add(new BoolDebugMenuItem("FPS Test Reverse IsCutscene", () => SceneFPSTest.HACK_REVERSE_ISCUTSCENE, delegate(bool val) { SceneFPSTest.HACK_REVERSE_ISCUTSCENE = val; }));
-            list7.Add(new BoolDebugMenuItem("Screenshot", () => SceneFPSTest.SHOULD_CREATE_SCREENSHOT, delegate(bool val) { SceneFPSTest.SHOULD_CREATE_SCREENSHOT = val; }));
-            list7.Add(new BoolDebugMenuItem("Memory Report", () => SceneFPSTest.SHOULD_CREATE_MEMORY_REPORT, delegate(bool val) { SceneFPSTest.SHOULD_CREATE_MEMORY_REPORT = val; }));
-            list7.Add(new BoolDebugMenuItem("Basic Sample", () => SceneFPSTest.SHOULD_RUN_SAMPLE, delegate(bool val) { SceneFPSTest.SHOULD_RUN_SAMPLE = val; }));
-            list7.Add(new BoolDebugMenuItem("No Camera", () => SceneFPSTest.SHOULD_RUN_CPU_SAMPLE, delegate(bool val) { SceneFPSTest.SHOULD_RUN_CPU_SAMPLE = val; }));
-            list7.Add(new BoolDebugMenuItem("Quad Scale 0", () => SceneFPSTest.SHOULD_RUN_CPU_B_SAMPLE, delegate(bool val) { SceneFPSTest.SHOULD_RUN_CPU_B_SAMPLE = val; }));
-            list7.Add(new BoolDebugMenuItem("Draw Debug UI", () => SceneFPSTest.DRAW_DEBUG_UI, delegate(bool val) { SceneFPSTest.DRAW_DEBUG_UI = val; }));
+            list7.Add(new BoolDebugMenuItem("Override Misty Woods Conditions", () => SceneFPSTest.OVERRIDE_MISTYWOODS_CONDITION, delegate (bool val) { SceneFPSTest.OVERRIDE_MISTYWOODS_CONDITION = val; }));
+            list7.Add(new BoolDebugMenuItem("FPS Test Reverse IsCutscene", () => SceneFPSTest.HACK_REVERSE_ISCUTSCENE, delegate (bool val) { SceneFPSTest.HACK_REVERSE_ISCUTSCENE = val; }));
+            list7.Add(new BoolDebugMenuItem("Screenshot", () => SceneFPSTest.SHOULD_CREATE_SCREENSHOT, delegate (bool val) { SceneFPSTest.SHOULD_CREATE_SCREENSHOT = val; }));
+            list7.Add(new BoolDebugMenuItem("Memory Report", () => SceneFPSTest.SHOULD_CREATE_MEMORY_REPORT, delegate (bool val) { SceneFPSTest.SHOULD_CREATE_MEMORY_REPORT = val; }));
+            list7.Add(new BoolDebugMenuItem("Basic Sample", () => SceneFPSTest.SHOULD_RUN_SAMPLE, delegate (bool val) { SceneFPSTest.SHOULD_RUN_SAMPLE = val; }));
+            list7.Add(new BoolDebugMenuItem("No Camera", () => SceneFPSTest.SHOULD_RUN_CPU_SAMPLE, delegate (bool val) { SceneFPSTest.SHOULD_RUN_CPU_SAMPLE = val; }));
+            list7.Add(new BoolDebugMenuItem("Quad Scale 0", () => SceneFPSTest.SHOULD_RUN_CPU_B_SAMPLE, delegate (bool val) { SceneFPSTest.SHOULD_RUN_CPU_B_SAMPLE = val; }));
+            list7.Add(new BoolDebugMenuItem("Draw Debug UI", () => SceneFPSTest.DRAW_DEBUG_UI, delegate (bool val) { SceneFPSTest.DRAW_DEBUG_UI = val; }));
         }
 
         list7.Add(new BoolDebugMenuItem("Streaming Install Debug Override", StreamingInstallDebugGetter, StreamingInstallDebugSetter));

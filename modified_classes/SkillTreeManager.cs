@@ -81,7 +81,10 @@ public class SkillTreeManager : MenuScreen {
             InstantiateUtility.Instantiate(GainSkillEffect, CurrentSkillItem.transform.position, Quaternion.identity);
             RandomizerBonus.SpentAP(CurrentSkillItem.ActualRequiredSkillPoints);
             BingoController.OnGainAbility(CurrentSkillItem.Ability);
-            if (CurrentSkillItem.Ability == AbilityType.Sense) RandomizerHints.TryShowSenseHint();
+            if (CurrentSkillItem.Ability == AbilityType.Sense) {
+                RandomizerHints.TryShowSenseHint();
+            }
+
             Characters.Sein.Level.SkillPoints -= CurrentSkillItem.ActualRequiredSkillPoints;
             if (OnGainAbility) {
                 OnGainAbility.Perform(null);
