@@ -411,7 +411,7 @@ public class RandomizerLocationManager {
 
             var pos = DoorWirePos[ksDoor.Source];
             if (Randomizer.OpenWorld && pos == 0) {
-                continue;   // the Glades door is pre-opened
+                continue; // the Glades door is pre-opened
             }
 
             if (KeyTiers != null) {
@@ -422,6 +422,7 @@ public class RandomizerLocationManager {
                 visibleCost += DoorCosts[pos];
             }
         }
+
         if (KeyTiers == null && ksUnspent >= visibleCost) {
             foreach (var ksDoor in KeystoneDoors.Values) {
                 if ((keystoneDoorsOpened & (1 << ksDoor.Index)) == 0 && reachable.Contains(ksDoor.Source)) {
@@ -490,17 +491,23 @@ public class RandomizerLocationManager {
     // recomputed with reachability; RAM-only, so nothing can warn before the
     // first sweep of a loaded save
     public static int DoorsInLogicMask;
+
     public static bool DoorLogicValid;
+
     // wire order, from the seed's KeyTiers flag (AP exported-keystone seeds)
     public static int[] KeyTiers;
+
     private static HashSet<MoonGuid> warnedDoors = new HashSet<MoonGuid>();
+
     // wire position by home node -- archipelago shared.KEYSTONE_DOORS order --
     // and in-game key costs by wire position
     private static readonly Dictionary<string, int> DoorWirePos = new Dictionary<string, int> {
-        {"GladesFirstKeyDoor", 0}, {"SpiritCavernsDoor", 1}, {"GumoHideout", 2},
-        {"SwampKeyDoorPlatform", 3}, {"SpiritTreeDoor", 4}, {"BashTreeDoorClosed", 5},
-        {"UpperGinsoDoorClosed", 6}, {"MistyBeforeMiniBoss", 7}, {"ForlornKeyDoor", 8},
-        {"LowerSorrow", 9}, {"LeftSorrowMiddleDoorClosed", 10}, {"ChargeJumpDoor", 11}};
+        { "GladesFirstKeyDoor", 0 }, { "SpiritCavernsDoor", 1 }, { "GumoHideout", 2 },
+        { "SwampKeyDoorPlatform", 3 }, { "SpiritTreeDoor", 4 }, { "BashTreeDoorClosed", 5 },
+        { "UpperGinsoDoorClosed", 6 }, { "MistyBeforeMiniBoss", 7 }, { "ForlornKeyDoor", 8 },
+        { "LowerSorrow", 9 }, { "LeftSorrowMiddleDoorClosed", 10 }, { "ChargeJumpDoor", 11 }
+    };
+
     private static readonly int[] DoorCosts = { 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4 };
 
     public static void ResetDoorLogic() {
@@ -548,6 +555,7 @@ public class RandomizerLocationManager {
             Randomizer.Inventory.SetRandomizerItem(73, 1);
             return;
         }
+
         warnedDoors.Add(doorGuid);
         RandomizerSwitch.PickupMessage("This door is not currently in logic.\n Opening it at this time might render your seed uncompletable.", 300);
     }
