@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
+            Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"/>
+    <PropertyGroup>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+        <ProjectGuid>{B2F3688A-DBFA-46BF-95CE-F90B6B58B96E}</ProjectGuid>
+        <OutputType>Library</OutputType>
+        <AppDesignerFolder>Properties</AppDesignerFolder>
+        <RootNamespace>Assembly_CSharp</RootNamespace>
+        <AssemblyName>Assembly_CSharp</AssemblyName>
+        <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+        <FileAlignment>512</FileAlignment>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+        <Optimize>false</Optimize>
+        <OutputPath>bin\Debug\</OutputPath>
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugType>pdbonly</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>bin\Release\</OutputPath>
+        <DefineConstants>TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="Assembly-CSharp">
+            <HintPath>Assembly-CSharp.dll</HintPath>
+        </Reference>
+        <Reference Include="Assembly-CSharp-firstpass">
+            <HintPath>Managed\Assembly-CSharp-firstpass.dll</HintPath>
+        </Reference>
+        <Reference Include="J2i.Net.XInputWrapper">
+            <HintPath>Managed\J2i.Net.XInputWrapper.dll</HintPath>
+        </Reference>
+        <Reference Include="LibTessDotNet">
+            <HintPath>Managed\LibTessDotNet.dll</HintPath>
+        </Reference>
+        <Reference Include="LostPolygon.SpriteSharp.Clipper">
+            <HintPath>Managed\LostPolygon.SpriteSharp.Clipper.dll</HintPath>
+        </Reference>
+        <Reference Include="Mono.Posix">
+            <HintPath>Managed\Mono.Posix.dll</HintPath>
+        </Reference>
+        <Reference Include="Mono.Security">
+            <HintPath>Managed\Mono.Security.dll</HintPath>
+        </Reference>
+        <Reference Include="mscorlib">
+            <HintPath>Managed\mscorlib.dll</HintPath>
+        </Reference>
+        <Reference Include="SteamworksManaged">
+            <HintPath>Managed\SteamworksManaged.dll</HintPath>
+        </Reference>
+        <Reference Include="System"/>
+        <Reference Include="System.Configuration">
+            <HintPath>Managed\System.Configuration.dll</HintPath>
+        </Reference>
+        <Reference Include="System.Core"/>
+        <Reference Include="System.Data"/>
+        <Reference Include="System.Security">
+            <HintPath>Managed\System.Security.dll</HintPath>
+        </Reference>
+        <Reference Include="System.Xml"/>
+        <Reference Include="UnityEngine">
+            <HintPath>Managed\UnityEngine.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.Networking">
+            <HintPath>Managed\UnityEngine.Networking.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.UI">
+            <HintPath>Managed\UnityEngine.UI.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Include="action\ActionMethod.cs"/>
+        <Compile Include="action\ActionSequence.cs"/>
+        <Compile Include="action\ActivateAction.cs"/>
+        <Compile Include="action\AnimatorAction.cs"/>
+        <Compile Include="action\BaseAnimatorAction.cs"/>
+        <Compile Include="action\GetAbilityAction.cs"/>
+        <Compile Include="action\LegacyDiscoverWorldMapAreasAction.cs"/>
+        <Compile Include="action\LevelUpDamageAction.cs"/>
+        <Compile Include="action\LoadGameAction.cs"/>
+        <Compile Include="action\NewGameAction.cs"/>
+        <Compile Include="action\ReturnToTitleScreenAction.cs"/>
+        <Compile Include="action\SaveGameAction.cs"/>
+        <Compile Include="action\SetSeinWorldStateAction.cs"/>
+        <Compile Include="action\ShowEnhancedSpiritFlameTextAction.cs"/>
+        <Compile Include="action\ShowWorldMapAction.cs"/>
+        <Compile Include="action\ShowWorldMapObjectiveAction.cs"/>
+        <Compile Include="action\WorldMapSetObjectiveTextAction.cs"/>
+        <Compile Include="bingo\BingoController.cs"/>
+        <Compile Include="contrib\B83.Win32.cs"/>
+        <Compile Include="menu\AccessibilitySettingsScreen.cs"/>
+        <Compile Include="menu\ControllerBindControl.cs"/>
+        <Compile Include="menu\ControllerBindsScreen.cs"/>
+        <Compile Include="menu\ControllerMenuBindsScreen.cs"/>
+        <Compile Include="menu\ControlsSettingsScreen.cs"/>
+        <Compile Include="menu\CustomSettingsScreen.cs"/>
+        <Compile Include="menu\KeybindControl.cs"/>
+        <Compile Include="menu\KeybindsScreen.cs"/>
+        <Compile Include="menu\MenuKeybindsScreen.cs"/>
+        <Compile Include="menu\ToggleCustomSettingsAction.cs"/>
+        <Compile Include="modified_classes\AbilityDebugMenuItems.cs"/>
+        <Compile Include="modified_classes\AllEnemiesKilledTrigger.cs"/>
+        <Compile Include="modified_classes\Archive.cs"/>
+        <Compile Include="modified_classes\AreaMapCanvas.cs"/>
+        <Compile Include="modified_classes\AreaMapDebugNavigation.cs"/>
+        <Compile Include="modified_classes\AreaMapIconManager.cs"/>
+        <Compile Include="modified_classes\AreaMapNavigation.cs"/>
+        <Compile Include="modified_classes\AreaMapUI.cs"/>
+        <Compile Include="modified_classes\BashAttackCritical.cs"/>
+        <Compile Include="modified_classes\BashAttackGame.cs"/>
+        <Compile Include="modified_classes\CameraShakeLogic.cs"/>
+        <Compile Include="modified_classes\ChargeFlameBurst.cs"/>
+        <Compile Include="modified_classes\CleverMenuItemGroup.cs"/>
+        <Compile Include="modified_classes\CleverMenuItemLayout.cs"/>
+        <Compile Include="modified_classes\CleverMenuItemSelectionManager.cs"/>
+        <Compile Include="modified_classes\CollectablePlaceholder.cs"/>
+        <Compile Include="modified_classes\Damage.cs"/>
+        <Compile Include="modified_classes\DashOwlDashState.cs"/>
+        <Compile Include="modified_classes\DebugMenu.cs"/>
+        <Compile Include="modified_classes\DebugMenuB.cs"/>
+        <Compile Include="modified_classes\DebugWidget.cs"/>
+        <Compile Include="modified_classes\DestroyWhenOutsideActiveBoundaries.cs"/>
+        <Compile Include="modified_classes\DifficultyToggler.cs"/>
+        <Compile Include="modified_classes\DoorWithSlots.cs"/>
+        <Compile Include="modified_classes\EnergyDoor.cs"/>
+        <Compile Include="modified_classes\Entity.cs"/>
+        <Compile Include="modified_classes\EntityController.cs"/>
+        <Compile Include="modified_classes\EntityDamageReciever.cs"/>
+        <Compile Include="modified_classes\FloatingRockLaserEnemy.cs"/>
+        <Compile Include="modified_classes\FlyMovement.cs"/>
+        <Compile Include="modified_classes\GameController.cs"/>
+        <Compile Include="modified_classes\GameMapTeleporter.cs"/>
+        <Compile Include="modified_classes\GameMapTeleporters.cs"/>
+        <Compile Include="modified_classes\GameMapTransitionManager.cs"/>
+        <Compile Include="modified_classes\GameWorldArea.cs"/>
+        <Compile Include="modified_classes\GetAbilityPedestal.cs"/>
+        <Compile Include="modified_classes\GetWorldEventCondition.cs"/>
+        <Compile Include="modified_classes\GoToSceneController.cs"/>
+        <Compile Include="modified_classes\GrenadeBurst.cs"/>
+        <Compile Include="modified_classes\HierarchyDebugMenu.cs"/>
+        <Compile Include="modified_classes\HintLayer.cs"/>
+        <Compile Include="modified_classes\IgnitableSpiritTorch.cs"/>
+        <Compile Include="modified_classes\Input.cs"/>
+        <Compile Include="modified_classes\InventoryManager.cs"/>
+        <Compile Include="modified_classes\JumperEnemy.cs"/>
+        <Compile Include="modified_classes\Kickback.cs"/>
+        <Compile Include="modified_classes\LowestDifficultyToggler.cs"/>
+        <Compile Include="modified_classes\MapStone.cs"/>
+        <Compile Include="modified_classes\MessageBox.cs"/>
+        <Compile Include="modified_classes\MessageControllerB.cs"/>
+        <Compile Include="modified_classes\MixerManager.cs"/>
+        <Compile Include="modified_classes\MusicVolumeSlider.cs"/>
+        <Compile Include="modified_classes\Naru.cs"/>
+        <Compile Include="modified_classes\OptionsScreen.cs"/>
+        <Compile Include="modified_classes\PickupBase.cs"/>
+        <Compile Include="modified_classes\PlatformingMovement.cs"/>
+        <Compile Include="modified_classes\PlayerAbilities.cs"/>
+        <Compile Include="modified_classes\PlayerInput.cs"/>
+        <Compile Include="modified_classes\PlayerInputRebinding.cs"/>
+        <Compile Include="modified_classes\Projectile.cs"/>
+        <Compile Include="modified_classes\ProjectileSpawner.cs"/>
+        <Compile Include="modified_classes\RammingRunningState.cs"/>
+        <Compile Include="modified_classes\RollingMovement.cs"/>
+        <Compile Include="modified_classes\RuntimeGameWorldArea.cs"/>
+        <Compile Include="modified_classes\RuntimeWorldMapIcon.cs"/>
+        <Compile Include="modified_classes\SaveGameController.cs"/>
+        <Compile Include="modified_classes\SaveGameData.cs"/>
+        <Compile Include="modified_classes\SaveGameData_analysis.cs"/>
+        <Compile Include="modified_classes\SavePedestal.cs"/>
+        <Compile Include="modified_classes\SaveSceneManager.cs"/>
+        <Compile Include="modified_classes\SaveSlotBackupsManager.cs"/>
+        <Compile Include="modified_classes\SaveSlotsItemsUI.cs"/>
+        <Compile Include="modified_classes\SaveSlotsManager.cs"/>
+        <Compile Include="modified_classes\SeinAbilityCondition.cs"/>
+        <Compile Include="modified_classes\SeinBashAttack.cs"/>
+        <Compile Include="modified_classes\SeinCharacter.cs"/>
+        <Compile Include="modified_classes\SeinChargeFlameAbility.cs"/>
+        <Compile Include="modified_classes\SeinChargeJump.cs"/>
+        <Compile Include="modified_classes\SeinController.cs"/>
+        <Compile Include="modified_classes\SeinDamageReciever.cs"/>
+        <Compile Include="modified_classes\SeinDashAttack.cs"/>
+        <Compile Include="modified_classes\SeinDeathsManager.cs"/>
+        <Compile Include="modified_classes\SeinDoorHandler.cs"/>
+        <Compile Include="modified_classes\SeinDoubleJump.cs"/>
+        <Compile Include="modified_classes\SeinEdgeClamber.cs"/>
+        <Compile Include="modified_classes\SeinEnergy.cs"/>
+        <Compile Include="modified_classes\SeinGlide.cs"/>
+        <Compile Include="modified_classes\SeinGrabWall.cs"/>
+        <Compile Include="modified_classes\SeinGrenadeAttack.cs"/>
+        <Compile Include="modified_classes\SeinHealthController.cs"/>
+        <Compile Include="modified_classes\SeinInventory.cs"/>
+        <Compile Include="modified_classes\SeinJump.cs"/>
+        <Compile Include="modified_classes\SeinLevel.cs"/>
+        <Compile Include="modified_classes\SeinLogicCycle.cs"/>
+        <Compile Include="modified_classes\SeinPickupProcessor.cs"/>
+        <Compile Include="modified_classes\SeinPrefabFactory.cs"/>
+        <Compile Include="modified_classes\SeinSoulFlame.cs"/>
+        <Compile Include="modified_classes\SeinSpriteRotationController.cs"/>
+        <Compile Include="modified_classes\SeinStandardSpiritFlameAbility.cs"/>
+        <Compile Include="modified_classes\SeinStomp.cs"/>
+        <Compile Include="modified_classes\SeinSwimming.cs"/>
+        <Compile Include="modified_classes\SeinWallChargeJump.cs"/>
+        <Compile Include="modified_classes\SeinWallJump.cs"/>
+        <Compile Include="modified_classes\SeinWorldStateCondition.cs"/>
+        <Compile Include="modified_classes\SkillItem.cs"/>
+        <Compile Include="modified_classes\SkillTreeLaneLogic.cs"/>
+        <Compile Include="modified_classes\SkillTreeManager.cs"/>
+        <Compile Include="modified_classes\SpikeProjectile.cs"/>
+        <Compile Include="modified_classes\SpiritGrenade.cs"/>
+        <Compile Include="modified_classes\SpitterEnemy.cs"/>
+        <Compile Include="modified_classes\StompPost.cs"/>
+        <Compile Include="modified_classes\SwarmEnemy.cs"/>
+        <Compile Include="modified_classes\TeleporterController.cs"/>
+        <Compile Include="modified_classes\TitleScreenPressStartLogic.cs"/>
+        <Compile Include="modified_classes\TraceGroundMovement.cs"/>
+        <Compile Include="modified_classes\TransparencyAnimator.cs"/>
+        <Compile Include="modified_classes\TransparentWallB.cs"/>
+        <Compile Include="modified_classes\UI.cs"/>
+        <Compile Include="modified_classes\WorldMapUI.cs"/>
+        <Compile Include="modified_classes\WormMortarShootingState.cs"/>
+        <Compile Include="protogen\AreaGraph.cs"/>
+        <Compile Include="protogen\Connection.cs"/>
+        <Compile Include="protogen\DictionaryUtil.cs"/>
+        <Compile Include="protogen\Inventory.cs"/>
+        <Compile Include="protogen\Node.cs"/>
+        <Compile Include="protogen\NodeType.cs"/>
+        <Compile Include="protogen\OriParse.cs"/>
+        <Compile Include="protogen\OriReachable.cs"/>
+        <Compile Include="randomizer\NativeWebSocket.cs"/>
+        <Compile Include="randomizer\Randomizer.cs"/>
+        <Compile Include="randomizer\RandomizerAction.cs"/>
+        <Compile Include="randomizer\RandomizerBonus.cs"/>
+        <Compile Include="randomizer\RandomizerBonusSkill.cs"/>
+        <Compile Include="randomizer\RandomizerBootstrap.cs"/>
+        <Compile Include="randomizer\RandomizerChaosColor.cs"/>
+        <Compile Include="randomizer\RandomizerChaosDamageModifier.cs"/>
+        <Compile Include="randomizer\RandomizerChaosEffect.cs"/>
+        <Compile Include="randomizer\RandomizerChaosGravity.cs"/>
+        <Compile Include="randomizer\RandomizerChaosManager.cs"/>
+        <Compile Include="randomizer\RandomizerChaosMovementSpeed.cs"/>
+        <Compile Include="randomizer\RandomizerChaosPoison.cs"/>
+        <Compile Include="randomizer\RandomizerChaosSpawner.cs"/>
+        <Compile Include="randomizer\RandomizerChaosTeleport.cs"/>
+        <Compile Include="randomizer\RandomizerChaosVelocityVector.cs"/>
+        <Compile Include="randomizer\RandomizerChaosZoom.cs"/>
+        <Compile Include="randomizer\RandomizerClues.cs"/>
+        <Compile Include="randomizer\RandomizerColorManager.cs"/>
+        <Compile Include="randomizer\RandomizerCreditsManager.cs"/>
+        <Compile Include="randomizer\RandomizerDeathLink.cs"/>
+        <Compile Include="randomizer\RandomizerEnhancedCleanWaterCondition.cs"/>
+        <Compile Include="randomizer\RandomizerEnhancedMode.cs"/>
+        <Compile Include="randomizer\RandomizerExpNames.cs"/>
+        <Compile Include="randomizer\RandomizerExtensions.cs"/>
+        <Compile Include="randomizer\RandomizerGoingDirectionCondition.cs"/>
+        <Compile Include="randomizer\RandomizerHints.cs"/>
+        <Compile Include="randomizer\RandomizerHotColdItem.cs"/>
+        <Compile Include="randomizer\RandomizerInventory.cs"/>
+        <Compile Include="randomizer\RandomizerKeysanity.cs"/>
+        <Compile Include="randomizer\RandomizerKeysanityHintInfo.cs"/>
+        <Compile Include="randomizer\RandomizerLocationData.cs"/>
+        <Compile Include="randomizer\RandomizerLocationManager.cs"/>
+        <Compile Include="randomizer\RandomizerMessageProvider.cs"/>
+        <Compile Include="randomizer\RandomizerMW.cs"/>
+        <Compile Include="randomizer\RandomizerPickupAction.cs"/>
+        <Compile Include="randomizer\RandomizerRebinding.cs"/>
+        <Compile Include="randomizer\RandomizerResources.cs"/>
+        <Compile Include="randomizer\RandomizerSettings.cs"/>
+        <Compile Include="randomizer\RandomizerStatsManager.cs"/>
+        <Compile Include="randomizer\RandomizerSwitch.cs"/>
+        <Compile Include="randomizer\RandomizerSyncManager.cs"/>
+        <Compile Include="randomizer\RandomizerText.cs"/>
+        <Compile Include="randomizer\RandomizerTrackedDataManager.cs"/>
+        <Compile Include="randomizer\RandomizerUI.cs"/>
+        <Compile Include="randomizer\RandomizerWallJumpHintCondition.cs"/>
+        <Compile Include="randomizer\RandomizerWorldMapIconManager.cs"/>
+        <Compile Include="randomizer\RandomizerWorldMapIconType.cs"/>
+    </ItemGroup>
+    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
+    <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+         Other similar extension points exist, see Microsoft.Common.targets.
+    <Target Name="BeforeBuild">
+    </Target>
+    <Target Name="AfterBuild">
+    </Target>
+    -->
+
+</Project>
