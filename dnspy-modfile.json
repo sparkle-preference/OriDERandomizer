@@ -346,6 +346,7 @@
 	"resourceFiles": [
 		"resource_files/hintMessageBackgroundWhite.png",
 		"resource_files/NativeWebSocket.dll",
-		"resource_files/cacert.pem"
+		"resource_files/cacert.pem",
+		"resource_files/plant.png"
 	]
 }
