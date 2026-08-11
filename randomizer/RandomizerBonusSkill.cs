@@ -47,8 +47,7 @@ public static class RandomizerBonusSkill {
     }
 
     public static void BonusSkillSlot(int slot) {
-        UnlockedBonusSkills.TryGetValue(slot, out var bonus);
-        if (bonus < 0) {
+        if (!UnlockedBonusSkills.TryGetValue(slot, out var bonus)) {
             Randomizer.Print("No bonus skill in slot " + (1 + slot), 3, false, false, false, true);
             return;
         }

@@ -98,12 +98,15 @@ public class RuntimeWorldMapIcon {
             case RandomizerWorldMapIconType.Plant:
                 InitStandardIcon(WorldMapIconType.HealthUpgrade);
                 m_iconGameObject.name = "plantMapIcon(Clone)";
-                var componentsInChildren = m_iconGameObject.GetComponentsInChildren<Renderer>();
-                for (var i = 0; i < componentsInChildren.Length; i++) {
-                    componentsInChildren[i].material.color = new Color(0.1792157f, 0.2364706f, 0.8656863f);
-                }
 
-                m_iconGameObject.transform.rotation = Quaternion.Euler(0f, 0f, 180f);
+                m_iconGameObject.transform.localScale *= 1.1f;
+
+                var icon = m_iconGameObject.GetComponent<Renderer>();
+                UberShaderAPI.SetMainTexture(icon, PlantTexture, true);
+                UberShaderAPI.SetColor(icon, Color.white * 0.5f, true);
+
+                var glow = m_iconGameObject.transform.Find("qq").GetComponent<Renderer>();
+                UberShaderAPI.SetColor(glow, new Color(0.29f, 0.51f, 0.89f) * 0.5f, true);
                 break;
             case RandomizerWorldMapIconType.SkillTree:
                 InitStandardIcon(WorldMapIconType.AbilityPedestal);
@@ -166,4 +169,17 @@ public class RuntimeWorldMapIcon {
     public RandomizerWorldMapIconType RandomizerIconType;
 
     private static Transform inventoryTemplate;
+
+    private static Texture2D PlantTexture {
+        get {
+            if (_plantTexture == null) {
+                _plantTexture = new Texture2D(0, 0);
+                _plantTexture.LoadImage(RandomizerResources.ReadResource("plant.png"));
+            }
+
+            return _plantTexture;
+        }
+    }
+
+    private static Texture2D _plantTexture;
 }
