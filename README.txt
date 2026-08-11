@@ -101,4 +101,5 @@ If you're compiling often, it might be more convenient to avoid dnSpy loading ti
 To do that, open dnSpy and select "File -> Load Modfile...". Select the `dnspy-modfile.json` next to this README.
 Once that's done, you can run it anytime via "File -> Run Modfile" (or the shortcut Ctrl+Shift+M).
 
-To avoid copying the `Assembly-CSharp.dll` after every recompile, it's also possible to change the "outputFile" path in `dnspy-modfile.json` to point to your game's `Assembly-CSharp.dll`.
+To avoid copying the `Assembly-CSharp.dll` after every recompile, it's also possible to change the "outputFile" path in `dnspy-modfile.json` to point to your game's `Assembly-CSharp.dll`,
+or to symlink the game file to the one here.
