@@ -83,7 +83,6 @@ To use the included project/solution and enable building the rando, copy the `Ma
 Developing:
 When adding new class or resource files, they need to be added to the corresponding list inside `dnspy-modfile.json`.
 Classes from the source assembly that are now modified also need to be added to the "replaceClasses" section.
-New files also need to be added to `Assembly-CSharp.csproj` so they can be formatted and used by IDEs.
 
 Formatting:
 The code can be automatically formatted using `dotnet-format.bat`.
