@@ -760,14 +760,14 @@ public static class Randomizer {
     }
 
     public static void UpdateMessages() {
-        if (MessageQueueTime <= 0) {
+        if (MessageQueueTime <= 0f) {
             if (MessageQueue.Count == 0) {
                 return;
             }
 
             var queueItem = MessageQueue.Dequeue();
             var message = queueItem.MessageString;
-            MessageQueueTime = queueItem.BaseDuration * 0.5f;
+            MessageQueueTime += queueItem.BaseDuration * 0.5f;
             MessageBgColor = queueItem.BgColor;
             if (message != "") {
                 MessageProvider.SetMessage(message);
@@ -776,7 +776,7 @@ public static class Randomizer {
             }
         }
 
-        MessageQueueTime -= Time.deltaTime;
+        MessageQueueTime -= Time.unscaledDeltaTime;
     }
 
     public static void OnDeath() {
