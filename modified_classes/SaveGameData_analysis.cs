@@ -58,9 +58,7 @@ public class SaveGameData {
 
                 if (reading && DifferentDataMap.ContainsKey(saveObject.Id.ToString())) {
                     saveObject.Data = new Archive();
-                    var array2 = ((string)DifferentDataMap[saveObject.Id.ToString()]).Split(
-                        ' '
-                    );
+                    var array2 = ((string)DifferentDataMap[saveObject.Id.ToString()]).Split(' ');
                     var bytes = new byte[array2.Length];
                     for (var m = 0; m < array2.Length; m++) {
                         bytes[m] = Convert.ToByte(array2[m]);
