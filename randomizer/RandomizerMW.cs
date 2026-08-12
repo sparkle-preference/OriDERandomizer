@@ -95,9 +95,9 @@ public static class RandomizerMW {
 
     // reserved AP line:
     //   <coord>|MW|<shadow>,<slot>,<label>|<zone>|<to>;<item>[|<own slot>]
-    // field 6 is present only when the item is ours: it identifies the item
-    // (and keys the location's spent bit) so contact can grant a copy without
-    // the room round trip. It does NOT predict which slot the room will fill.
+    // field 6 is present only when the item is ours, and names the manifest
+    // slot the bridge will fill for this location's check (the 4.2.12
+    // pairing), so contact can grant it without the room round trip.
     public static void AddApLine(int coords, string apField, string ownSlot = null) {
         if (string.IsNullOrEmpty(apField)) {
             return;
@@ -119,10 +119,10 @@ public static class RandomizerMW {
 
     /// <summary>
     /// Contact with a reserved location holding our own item. Grants it now
-    /// rather than waiting for the room to hand it back. Copies are claimed
-    /// lowest-open-slot-first — the same order the room fills them — so the
-    /// delivery for this check lands on a slot that is already granted and
-    /// the tick's bit-diff skips it, however finds interleave.
+    /// rather than waiting for the room to hand it back: the bridge fills
+    /// this check into exactly the promised slot, so the granted bit doubles
+    /// as the location's spent marker — server-backed, redelivered by the
+    /// tick after any rollback (death, quit-to-menu, restart).
     /// Returns false when there is nothing to grant here.
     /// </summary>
     public static bool GrantSelfItem(int coords) {
@@ -130,17 +130,8 @@ public static class RandomizerMW {
             return false;
         }
 
-        if (SelfConsumed(slot)) {
-            // died and came back to it: the item is already ours
-            var name = ApItems.TryGetValue(coords, out var ap) ? ap[1] : "That";
-            RandomizerSwitch.PickupMessage(ColorWrap(name) + " (already collected)");
-            return true;
-        }
-
-        var grant = NextUngrantedCopy(slot);
-        MarkSelfConsumed(slot);
-        if (grant < 0) {
-            // every copy already arrived from the room
+        if (SlotGranted(slot)) {
+            // came back to it after a rollback: the item is already ours
             var name = ApItems.TryGetValue(coords, out var ap) ? ap[1] : "That";
             RandomizerSwitch.PickupMessage(ColorWrap(name) + " (already collected)");
             return true;
@@ -148,44 +139,9 @@ public static class RandomizerMW {
 
         // "" is the apfrom token for "you found this yourself", so the grant
         // message carries no "from" suffix -- it reads as an ordinary pickup
-        SlotSenders[grant] = "";
-        Grant(new List<int> { grant }, ApBatchMessageThreshold);
+        SlotSenders[slot] = "";
+        Grant(new List<int> { slot }, ApBatchMessageThreshold);
         return true;
-    }
-
-    // location-consumed bits, keyed by the location's own-slot field (a
-    // location key, nothing more). In the death-preserved save range: the
-    // location stays spent through death while the granted bits roll back
-    // and the item comes back from the wire redelivery.
-    public const int SelfConsumedBase = 1580;
-
-    public static bool SelfConsumed(int slot) {
-        if (slot < 0 || slot > 255 || !Characters.Sein)
-            return false;
-        var bits = (uint)Characters.Sein.Inventory.GetRandomizerItem(SelfConsumedBase + slot / 32);
-        return (bits & (1u << (slot % 32))) != 0;
-    }
-
-    private static void MarkSelfConsumed(int slot) {
-        if (slot < 0 || slot > 255 || !Characters.Sein)
-            return;
-        var item = SelfConsumedBase + slot / 32;
-        var bits = (uint)Characters.Sein.Inventory.GetRandomizerItem(item);
-        Characters.Sein.Inventory.SetRandomizerItem(item, (int)(bits | (1u << (slot % 32))));
-    }
-
-    // lowest ungranted manifest slot holding the same item, or -1
-    private static int NextUngrantedCopy(int slot) {
-        var mine = Manifest[slot];
-        var best = -1;
-        foreach (var entry in Manifest.Values) {
-            if (entry.Code != mine.Code || entry.Id != mine.Id || SlotGranted(entry.Slot))
-                continue;
-            if (best < 0 || entry.Slot < best)
-                best = entry.Slot;
-        }
-
-        return best;
     }
 
     /// <summary>
@@ -195,7 +151,7 @@ public static class RandomizerMW {
     /// treat the location as spent.
     /// </summary>
     public static bool SelfItemCollected(int coords) {
-        return ApSelfSlots.TryGetValue(coords, out var slot) && SelfConsumed(slot);
+        return ApSelfSlots.TryGetValue(coords, out var slot) && SlotGranted(slot);
     }
 
     // has this manifest slot already been granted into the save?
