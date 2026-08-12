@@ -320,6 +320,22 @@ public static class RandomizerBonus {
                 j = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
                 RandomizerSwitch.PickupMessage("Jump Upgrade x" + j);
                 break;
+            case 38:
+                if (!flag) {
+                    var hp = Characters.Sein.Mortality.Health;
+                    hp.SetAmount(Mathf.Max(hp.Amount, hp.MaxHealth) + 4f);
+                    RandomizerSwitch.PickupMessage("Mini Health");
+                }
+
+                break;
+            case 39:
+                if (!flag) {
+                    var en = Characters.Sein.Energy;
+                    en.SetCurrent(Mathf.Max(en.Current, en.Max) + 1f);
+                    RandomizerSwitch.PickupMessage("Mini Energy");
+                }
+
+                break;
             case 40:
                 if (!Characters.Sein || flag) {
                     return;

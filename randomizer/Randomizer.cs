@@ -1502,10 +1502,14 @@ public static class Randomizer {
             }
         }
 
+        // top off without erasing over-max (temporary) amounts the spawn
+        // items just granted (mega/mini health and energy)
+        var healthOverflow = Mathf.Max(0f, Characters.Sein.Mortality.Health.Amount - Characters.Sein.Mortality.Health.MaxHealth);
+        var energyOverflow = Mathf.Max(0f, Characters.Sein.Energy.Current - Characters.Sein.Energy.Max);
         Characters.Sein.Energy.Max += spawnECs;
         Characters.Sein.Mortality.Health.MaxHealth += 4 * spawnHCs;
-        Characters.Sein.Mortality.Health.SetAmount(Characters.Sein.Mortality.Health.MaxHealth);
-        Characters.Sein.Energy.SetCurrent(Characters.Sein.Energy.Max);
+        Characters.Sein.Mortality.Health.SetAmount(Characters.Sein.Mortality.Health.MaxHealth + healthOverflow);
+        Characters.Sein.Energy.SetCurrent(Characters.Sein.Energy.Max + energyOverflow);
         RandomizerLocationManager.UpdateReachable();
     }
 
