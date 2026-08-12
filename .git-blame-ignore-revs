@@ -2,6 +2,9 @@
 # automatically; locally, run once:
 #   git config blame.ignoreRevsFile .git-blame-ignore-revs
 
+
+# Use `dotnet format` for some amount of auto-formatting (#52)
+3a106526056bace99a60f1e61c23d3b7b418a726
 # Merge #49 (code style normalization)
 241fa9e92458517c58f00a87bb120b597d103685
 # Retab RandomizerLocationManager.
