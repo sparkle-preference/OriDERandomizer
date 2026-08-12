@@ -799,6 +799,19 @@ public class RandomizerBootstrap {
         sceneRoot.OnValidate();
     }
 
+    private static void BootstrapL4(SceneRoot sceneRoot)
+    {
+        // This disables the rocks that block off access to HoruL4ChaseExp to prevent softlocks.
+        Transform rocks = sceneRoot.transform.FindChild("*waveSetup/timeline/blockingRock");
+        ActionSequence lavaSequence = sceneRoot.transform.FindChild("*waveSetup/simpleStompPost/baseAction").GetComponent<ActionSequence>();
+        Transform deactivateExample = lavaSequence.transform.FindChild("24. Deactivate waveGroup");
+        Transform deactivateRocks = CloneObject(sceneRoot, deactivateExample, "25. Deactivate Rocks");
+        ActivateAction deactivateRocksAction = deactivateRocks.GetComponent<ActivateAction>();
+        deactivateRocksAction.Target = rocks.gameObject;
+        lavaSequence.Actions.Add(deactivateRocksAction);
+        sceneRoot.OnValidate();
+    }
+
     private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>> {
         { "moonGrottoRopeBridge", BootstrapMoonGrottoBridge },
         { "mountHoruHubMid", BootstrapMountHoruHub },
@@ -820,6 +833,7 @@ public class RandomizerBootstrap {
         { "ginsoTreeResurrection", BootstrapGinsoUpperMiniboss },
         { "forlornRuinsC", BootstrapForlornRuinsBridge },
         { "horuFieldsB", BootstrapHoruFieldsPushBlock },
+        { "mountHoruMovingLaser", BootstrapL4 },
     };
 
     private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();
