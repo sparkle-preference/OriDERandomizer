@@ -95,8 +95,9 @@ public static class RandomizerMW {
 
     // reserved AP line:
     //   <coord>|MW|<shadow>,<slot>,<label>|<zone>|<to>;<item>[|<own slot>]
-    // field 6 is present only when the item is ours, and names the manifest
-    // slot it lands in, so contact can grant it without the room round trip
+    // field 6 is present only when the item is ours: it identifies the item
+    // (and keys the location's spent bit) so contact can grant a copy without
+    // the room round trip. It does NOT predict which slot the room will fill.
     public static void AddApLine(int coords, string apField, string ownSlot = null) {
         if (string.IsNullOrEmpty(apField)) {
             return;
@@ -118,8 +119,10 @@ public static class RandomizerMW {
 
     /// <summary>
     /// Contact with a reserved location holding our own item. Grants it now
-    /// rather than waiting for the room to hand it back; the slot bit the
-    /// server sets a few seconds later then finds it already granted.
+    /// rather than waiting for the room to hand it back. Copies are claimed
+    /// lowest-open-slot-first — the same order the room fills them — so the
+    /// delivery for this check lands on a slot that is already granted and
+    /// the tick's bit-diff skips it, however finds interleave.
     /// Returns false when there is nothing to grant here.
     /// </summary>
     public static bool GrantSelfItem(int coords) {
@@ -134,10 +137,7 @@ public static class RandomizerMW {
             return true;
         }
 
-        // the room fills slots lowest-first by item, so a copy found in
-        // another world may have taken the slot this location was promised;
-        // claim the next open copy instead of misreading it as a re-touch
-        var grant = SlotGranted(slot) ? NextUngrantedCopy(slot) : slot;
+        var grant = NextUngrantedCopy(slot);
         MarkSelfConsumed(slot);
         if (grant < 0) {
             // every copy already arrived from the room
@@ -153,9 +153,10 @@ public static class RandomizerMW {
         return true;
     }
 
-    // location-consumed bits, keyed by the location's promised slot. In the
-    // death-preserved save range: a location stays spent through rollbacks,
-    // whichever slot its grant actually landed in.
+    // location-consumed bits, keyed by the location's own-slot field (a
+    // location key, nothing more). In the death-preserved save range: the
+    // location stays spent through death while the granted bits roll back
+    // and the item comes back from the wire redelivery.
     public const int SelfConsumedBase = 1580;
 
     public static bool SelfConsumed(int slot) {
