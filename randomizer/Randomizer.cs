@@ -415,6 +415,7 @@ public static class Randomizer {
         UpdateMessages();
         UpdatePendingWin();
         RandomizerDeathLink.Update();
+        RandomizerTempResourceUI.EnsureRows();
         Tick();
 
         if (GameStateMachine.Instance?.CurrentState == GameStateMachine.State.Prologue) {

@@ -11,7 +11,7 @@ public static class RandomizerSettings {
         WriteSettings();
     }
 
-    public static string LastAddedSetting = "Keystone Door Logic Warnings";
+    public static string LastAddedSetting = "Temp Row Brightness";
 
     public static void ParseSettings() {
         if (!File.Exists("RandomizerSettings.txt")) {
@@ -190,6 +190,11 @@ public static class RandomizerSettings {
         Customization.KeyLockWarnings = new BoolSetting("Keystone Door Logic Warnings", true, "True (default): Warn when touching a keystone door that is not currently in logic, since opening it early could make the seed uncompletable.\nFalse: no warning.");
         Customization.PickupMessageBgColor = new ColorSetting("Pickup Message Background Color", new Color(0f, 0f, 0f, 0.5f), 510f, "Red, Blue, Green, Transparency (0-255 for each): Background color for pickup messages.\nDefault: 0, 0, 0, 255", false);
         Customization.MwPickupMessageBgColor = new ColorSetting("Multiworld Outbound Message Background Color", new Color(64f / 510f, 64f / 510f, 64f / 510f, 255f / 510f), 510f, "Red, Blue, Green, Transparency (0-255 for each): Background color for pickup messages sent to another Player.\nBoth local pickups and pickups received from another player will use the \"Pickup Message Background Color\" color.\nThis is for pickups that you find in your seed and send to another player.\nDefault: 64, 64, 64, 255", false);
+        Customization.DisableTempResourceRows = new BoolSetting("Disable Temporary Resource Rows", false, "True: temporary health and energy draw inline past your normal cells, as older versions did.\nFalse (default): temporary health and energy get their own smaller row above each bar.", false);
+        Customization.TempRowSpacing = new FloatSetting("Temp Row Spacing", 0.8f, "Vertical gap between a HUD bar and its temporary-resource row, in strip heights.", false);
+        Customization.TempRowHorizontalOffset = new FloatSetting("Temp Row Horizontal Offset", 0f, "Horizontal shift of the temporary-resource rows, in strip heights. Positive pushes away from the experience wheel.", false);
+        Customization.TempRowScale = new FloatSetting("Temp Row Scale", 0.7f, "Temporary-resource row size relative to the base bar.", false);
+        Customization.TempRowBrightness = new FloatSetting("Temp Row Brightness", 0.8f, "Brightness of the temporary-resource rows, relative to the base bars.", false);
 
         QOL.AbilityMenuOpacity = new FloatSetting("Ability Menu Opacity", 0.5f, "(0.0-1.0) The opacity of the ability menu when performing a Save Anywhere.", false);
         QOL.CursorLock = new BoolSetting("Cursor Lock", false, "True: Locks the mouse cursor inside the window\nFalse (default): Vanilla behavior (cursor can leave the Ori window in borderless / windowed mode).", false);
@@ -293,6 +298,16 @@ public static class RandomizerSettings {
         public static BoolSetting AlwaysShowDoorHints;
 
         public static BoolSetting KeyLockWarnings;
+
+        public static BoolSetting DisableTempResourceRows;
+
+        public static FloatSetting TempRowSpacing;
+
+        public static FloatSetting TempRowHorizontalOffset;
+
+        public static FloatSetting TempRowScale;
+
+        public static FloatSetting TempRowBrightness;
 
         public static ColorSetting PickupMessageBgColor;
 

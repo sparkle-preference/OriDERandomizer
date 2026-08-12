@@ -336,6 +336,8 @@
 		"randomizer/RandomizerStatsManager.cs",
 		"randomizer/RandomizerSwitch.cs",
 		"randomizer/RandomizerSyncManager.cs",
+		"randomizer/RandomizerTempResourceProvider.cs",
+		"randomizer/RandomizerTempResourceUI.cs",
 		"randomizer/RandomizerText.cs",
 		"randomizer/RandomizerTrackedDataManager.cs",
 		"randomizer/RandomizerUI.cs",
