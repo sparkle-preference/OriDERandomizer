@@ -775,6 +775,30 @@ public class RandomizerBootstrap {
         }
     }
 
+    private static void BootstrapHoruFieldsPushBlock(SceneRoot sceneRoot) {
+        // This changes the push block cutscene so that it only plays when it will not softlock the game.
+        Transform pushRockTrigger = sceneRoot.transform.FindChild("*storySetups/*pushRockTrigger");
+        GenericCollisionTrigger collisionTrigger = pushRockTrigger.gameObject.GetComponent<GenericCollisionTrigger>();
+        Transform storySetups = sceneRoot.transform.FindChild("*storySetups");
+
+        SeinInsideZoneCondition isInZoneCondition = pushRockTrigger.gameObject.AddComponent<SeinInsideZoneCondition>();
+        collisionTrigger.Condition = isInZoneCondition;
+
+        GameObject softlockObject = new GameObject("softlock fix");
+        softlockObject.transform.SetParent(storySetups.transform);
+        // Bounds of where it is safe to play the cutscene.
+        float left = 25;
+        float right = 180;
+        float top = 38;
+        float bottom = -54;
+        softlockObject.transform.localScale = new Vector3(right - left, top - bottom, 0);
+        softlockObject.transform.position = new Vector3((right + left) / 2, (top + bottom) / 2, 0);
+        isInZoneCondition.Zones = new Transform[1];
+        isInZoneCondition.Zones[0] = softlockObject.transform;
+
+        sceneRoot.OnValidate();
+    }
+
     private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>> {
         { "moonGrottoRopeBridge", BootstrapMoonGrottoBridge },
         { "mountHoruHubMid", BootstrapMountHoruHub },
@@ -795,6 +819,7 @@ public class RandomizerBootstrap {
         { "sorrowPassForestB", BootstrapMistyPedestal },
         { "ginsoTreeResurrection", BootstrapGinsoUpperMiniboss },
         { "forlornRuinsC", BootstrapForlornRuinsBridge },
+        { "horuFieldsB", BootstrapHoruFieldsPushBlock },
     };
 
     private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();
