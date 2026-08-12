@@ -398,12 +398,12 @@ public class RandomizerLocationManager {
         }
 
         // key-lock warning mask. KeyTiers seeds charge per-door tiers against
-        // lifetime keystones (item 70); other seeds share the conservative
-        // gate: unspent supply must cover every visible unopened door
+        // lifetime keystones (item 70); other seeds ask the engine: a door is
+        // in logic when its opened side is reachable, which already prices
+        // every still-closed door on the cheapest route there (actually-opened
+        // doors are primed free above)
         var doorMask = 0;
         var ksCollected = Randomizer.Inventory.GetRandomizerItem(70);
-        var ksUnspent = ksCollected - SpentKeystones();
-        var visibleCost = 0;
         foreach (var ksDoor in KeystoneDoors.Values) {
             if ((keystoneDoorsOpened & (1 << ksDoor.Index)) != 0 || !reachable.Contains(ksDoor.Source)) {
                 continue;
@@ -418,16 +418,8 @@ public class RandomizerLocationManager {
                 if (pos < KeyTiers.Length && KeyTiers[pos] > 0 && ksCollected >= KeyTiers[pos]) {
                     doorMask |= 1 << ksDoor.Index;
                 }
-            } else {
-                visibleCost += DoorCosts[pos];
-            }
-        }
-
-        if (KeyTiers == null && ksUnspent >= visibleCost) {
-            foreach (var ksDoor in KeystoneDoors.Values) {
-                if ((keystoneDoorsOpened & (1 << ksDoor.Index)) == 0 && reachable.Contains(ksDoor.Source)) {
-                    doorMask |= 1 << ksDoor.Index;
-                }
+            } else if (reachable.Contains(ksDoor.Destination)) {
+                doorMask |= 1 << ksDoor.Index;
             }
         }
 
