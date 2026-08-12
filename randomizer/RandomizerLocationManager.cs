@@ -525,8 +525,10 @@ public class RandomizerLocationManager {
     /// <summary>
     /// DoorWithSlots.Highlight: doors take one click per key, so this is
     /// advice ahead of the first click, never a block. Quiet for keysanity
-    /// (its doors can't waste keys), quiet once per door, and quiet forever
-    /// on a save that has keyduped (the counters stop meaning anything).
+    /// (its doors can't waste keys), quiet once per door, quiet while the
+    /// player can't pay the door anyway (nothing to waste yet — no latch, so
+    /// it can still fire once they can), and quiet forever on a save that
+    /// has keyduped (the counters stop meaning anything).
     /// </summary>
     public static void WarnIfDoorOutOfLogic(MoonGuid doorGuid) {
         if (!RandomizerSettings.Customization.KeyLockWarnings.Value || Randomizer.Keysanity.IsActive
@@ -545,6 +547,10 @@ public class RandomizerLocationManager {
 
         if (Characters.Sein.Inventory.Keystones + SpentKeystones() > Randomizer.Inventory.GetRandomizerItem(70)) {
             Randomizer.Inventory.SetRandomizerItem(73, 1);
+            return;
+        }
+
+        if (Characters.Sein.Inventory.Keystones < DoorCosts[DoorWirePos[door.Source]]) {
             return;
         }
 
