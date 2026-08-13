@@ -393,8 +393,9 @@ public static class RandomizerMW {
     }
 
     // grants beyond this in one tick get one grouped summary instead of a
-    // message per item (a release can dump dozens of slots at once)
-    public const int BatchMessageThreshold = 3;
+    // message per item (a release can dump dozens of slots at once). Five is
+    // what alt+T holds, so nothing printed individually is unrecoverable.
+    public const int BatchMessageThreshold = 5;
 
     // Archipelago hands one batch over as several ReceivedItems (a room's
     // collect runs once per source world), and the bridge only coalesces
@@ -402,9 +403,9 @@ public static class RandomizerMW {
     // boundary. One quiet tick catches those.
     public const int ApGrantWindowTicks = 1;
 
-    // a handful of messages back to back reads better than a summary, and
-    // alt+T has the last five anyway; only a real dump needs condensing
-    public const int ApBatchMessageThreshold = 4;
+    // same five as above: a handful of messages back to back reads better
+    // than a summary, and alt+T can still fetch every one of them
+    public const int ApBatchMessageThreshold = 5;
 
     private static List<int> pendingSlots = new List<int>();
     private static int windowTicks;
