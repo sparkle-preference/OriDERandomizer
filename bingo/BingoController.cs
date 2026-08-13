@@ -925,22 +925,25 @@ public static class BingoController {
                     }
                 );
 
+                // 2300-2399 is the bingo keep-on-death block (RandomizerInventory
+                // .KeptOnDeath). These used to live scattered through 1500-1599
+                // alongside the randomizer's own stats, which is how DeathLink
+                // came to sit on Ginso Escape Fronkey. Take the next free id here
+                // for any future goal that has to survive dying.
                 MultiBoolGoal.mk(
                     "DieTo",
                     new List<BoolGoal> {
-                        new BoolGoal("Sunstone Lightning", 1598),
-                        new BoolGoal("Lost Grove Laser", 1597),
-                        new BoolGoal("Forlorn Void", 1596),
-                        new BoolGoal("Stomp Rhino", 1595),
-                        new BoolGoal("Horu Fields Acid", 1594),
-                        new BoolGoal("Doorwarp Lava", 1593),
-                        new BoolGoal("Ginso Escape Fronkey", 1592),
-                        new BoolGoal("Blackroot Teleporter Crushers", 1591),
-                        new BoolGoal("NoobSpikes", 1590), // 1589 and 1587 are being used by bonus skill
-                        new BoolGoal("Right Forlorn Laser", 1588),
-                        new BoolGoal("Misty Vertical Lasers", 1586)
-
-                        // 1584 and below are taken
+                        new BoolGoal("Sunstone Lightning", 2310),
+                        new BoolGoal("Lost Grove Laser", 2309),
+                        new BoolGoal("Forlorn Void", 2308),
+                        new BoolGoal("Stomp Rhino", 2307),
+                        new BoolGoal("Horu Fields Acid", 2306),
+                        new BoolGoal("Doorwarp Lava", 2305),
+                        new BoolGoal("Ginso Escape Fronkey", 2304),
+                        new BoolGoal("Blackroot Teleporter Crushers", 2303),
+                        new BoolGoal("NoobSpikes", 2302),
+                        new BoolGoal("Right Forlorn Laser", 2301),
+                        new BoolGoal("Misty Vertical Lasers", 2300)
                     }
                 );
 

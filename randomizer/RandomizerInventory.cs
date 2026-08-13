@@ -39,10 +39,17 @@ public class RandomizerInventory : SaveSerialize {
         randomizerItems.Clear();
     }
 
+    // Ids that survive a death or a reload, in two blocks:
+    //   1500-1599  randomizer stats (playtime, deaths, pickup counts, ...)
+    //   2300-2399  bingo goals that record something that HAPPENED rather than
+    //              something you hold -- dying to a named hazard, mostly.
+    public static bool KeptOnDeath(int code) {
+        return (code >= 1500 && code < 1600) || (code >= 2300 && code < 2400);
+    }
+
     public override void Serialize(Archive ar) {
         if (ar.Reading) {
-            // Preserve stats such as total playtime through deaths and reloads
-            var preserve = randomizerItems.Where(item => item.Key >= 1500 && item.Key < 1600).ToList();
+            var preserve = randomizerItems.Where(item => KeptOnDeath(item.Key)).ToList();
 
             randomizerItems.Clear();
             var count = ar.Serialize(0);

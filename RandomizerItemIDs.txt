@@ -322,11 +322,11 @@ Enhanced mode -- April Fools :)
 1582 - Longest drought
 1583 - Longest drought end time
 
-1586 - (Bingo) Die to Misty Vertical Lasers
 1587 - Warp to Credits Bonus Skill
-1588 - (Bingo) Die to Right Forlorn Lasers
 1589 - Currently Selected Bonus Skill
-1590-1598 - (Bingo) Die to goals
+1590 - (Archipelago) DeathLink deaths
+1591 - (Archipelago) DeathLink linked deaths
+1592 - (Archipelago) DeathLink last seen token
 1599 - Finished Horu Escape
 
 ==== End Persists Through Death Zone ===
@@ -348,5 +348,20 @@ Enhanced mode -- April Fools :)
 1650 - LevelUpKills
 
 2000-2256 - reserved IDs for Sense pickups
+
+==== Begin Persists Through Death Zone (bingo) ===
+2300 - Die to Misty Vertical Lasers
+2301 - Die to Right Forlorn Laser
+2302 - Die to NoobSpikes
+2303 - Die to Blackroot Teleporter Crushers
+2304 - Die to Ginso Escape Fronkey
+2305 - Die to Doorwarp Lava
+2306 - Die to Horu Fields Acid
+2307 - Die to Stomp Rhino
+2308 - Die to Forlorn Void
+2309 - Die to Lost Grove Laser
+2310 - Die to Sunstone Lightning
+
+==== End Persists Through Death Zone (bingo) ===
 
 2500++ - Reserved for bingo
