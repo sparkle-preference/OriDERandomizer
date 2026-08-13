@@ -426,7 +426,7 @@ public static class RandomizerStatsManager {
                 statsPage += "\nReloads:					" + get(Reloads);
                 var altrc = get(AltRCount);
                 if (altrc > 0) {
-                    statsPage += "\nAlt+Rs Used:				" + get(altrc);
+                    statsPage += "\nAlt+Rs Used:				" + altrc;
                     statsPage += "\nTeleporters Used:			" + get(TeleporterCount);
                 } else {
                     statsPage += "\nTimes Warped:				" + get(TeleporterCount);
