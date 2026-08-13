@@ -1,3 +1,4 @@
+Randomizer inventory ids.
 0 - Mega Health*
 1 - Mega Energy*
 2 - Forceably Alt+R*
@@ -15,6 +16,7 @@
 21 - Sunstone Shard
 
 23 - Progressive Mapstone Count
+27 - Skill Tree Progression (count of trees found)
 28 - Warmth Fragment
 
 30 - Bleeding
@@ -25,6 +27,8 @@
 35 - Enable Alt+R
 36 - Underwater Skill Usage
 37 - Jump Upgrade
+38 - Mini Health*
+39 - Mini Energy*
 
 40 - Lose Wall Jump
 41 - Lose Charge Flame
@@ -41,6 +45,7 @@
 70 - Total keystones collected
 71 - Total mapstones collected
 72 - Keystone doors opened (bitfield)
+73 - Keystone door logic warning already shown
 
 80 - Spent AP Counter
 81 - Stomp/Grenade Hint
@@ -49,7 +54,7 @@
 84 - Last AltR x position
 85 - Last AltR y position
 86 - Last Soul Link x position
-86 - Last Soul Link y position
+87 - Last Soul Link y position
 
 
 --- bonus skills
@@ -89,10 +94,10 @@
 212 - Life Efficiency
 213 - Ultra Spirit Magnet
 214 - Energy Efficiency
-215 - Ability Markers
-216 - Spirit Efficiency
-217 - Life Markers
-218 - Energy Markers
+215 - Spirit Efficiency
+216 - Spirit Potency
+217 - Life Regen (Ability)
+218 - Energy Regen (Ability)
 219 - Sense
 220 - Rekindle
 221 - Regroup
@@ -119,10 +124,10 @@
 242 - Remove Life Efficiency
 243 - Remove Ultra Spirit Magnet
 244 - Remove Energy Efficiency
-245 - Remove Ability Markers
-246 - Remove Spirit Efficiency
-247 - Remove Life Markers
-248 - Remove Energy Markers
+245 - Remove Spirit Efficiency
+246 - Remove Spirit Potency
+247 - Remove Life Regen (Ability)
+248 - Remove Energy Regen (Ability)
 249 - Remove Sense
 250 - Remove Rekindle
 251 - Remove Regroup
@@ -215,6 +220,8 @@ Enhanced mode -- April Fools :)
 936 - Have Pickup Bitfield #7
 937 - Have Pickup Bitfield #8
 
+940-947 - (Multiworld) Granted slot bitfields
+
 950 - Finished Ginso escape
 
 1001 - tree field for tracker
@@ -302,6 +309,9 @@ Enhanced mode -- April Fools :)
 
 1570 - Saves
 1571 - sum(shoof)
+1572 - EnemiesKilled
+1573 - ExpGained
+1574 - ExpBonus
 1575 - Max PPM
 1576 - Time of Max PPM
 1577 - Count at Max PPM
@@ -336,9 +346,6 @@ Enhanced mode -- April Fools :)
 1612 - Mapstones
 
 1650 - LevelUpKills
-1651 - EnemiesKilled
-1652 - ExpGained
-1653 - ExpBonus
 
 2000-2256 - reserved IDs for Sense pickups
 
