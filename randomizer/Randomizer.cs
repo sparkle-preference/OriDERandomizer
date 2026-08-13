@@ -832,6 +832,13 @@ public static class Randomizer {
 
     public static void OnGameSerializeLoad() {
         ResetTrackerCount = 0;
+        // DebugMenuB serializes its own copy of this, so a load can drop what the
+        // pickup granted. Only ever turn it on -- the debug menu's own toggle stays
+        // usable as the off switch.
+        if (Characters.Sein && Characters.Sein.Inventory != null && Characters.Sein.Inventory.GetRandomizerItem(1107) > 0) {
+            DebugMenuB.DebugControlsEnabled = true;
+        }
+
         if (Scenes.Manager.CurrentScene?.Scene != "titleScreenSwallowsNest") {
             RandomizerTrackedDataManager.Reset();
             RandomizerTrackedDataManager.UpdateBitfields();

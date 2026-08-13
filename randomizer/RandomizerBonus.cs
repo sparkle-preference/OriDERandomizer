@@ -556,6 +556,14 @@ public static class RandomizerBonus {
                 return;
                 Characters.Sein.Inventory.SetRandomizerItem(ID, 0);
                 return;
+            case 1107:
+                if (!flag) {
+                    Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                    DebugMenuB.DebugControlsEnabled = true;
+                    RandomizerSwitch.PickupMessage("Debug Movement Enabled");
+                }
+
+                return;
             default:
                 if (flag) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);

@@ -240,6 +240,7 @@ Enhanced mode -- April Fools :)
 1104 - Use old Alt-R behavior
 1105 - Don't grant Bashnade hint on forlorn escape complete
 1106 - Forlorn Escape has been started / allow warp into escape
+1107 - Enable Debug Movement (DebugMenuB.DebugControlsEnabled)
 
 
 ==== Begin Persists Through Death Zone ===
