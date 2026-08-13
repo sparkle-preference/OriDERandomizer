@@ -399,10 +399,12 @@ public static class RandomizerMW {
     // Archipelago hands one batch over as several ReceivedItems (a room's
     // collect runs once per source world), and the bridge only coalesces
     // what arrives inside its own window -- the rest straddles the tick
-    // boundary. One quiet tick catches those; anything above one item then
-    // summarises instead of printing a message each.
+    // boundary. One quiet tick catches those.
     public const int ApGrantWindowTicks = 1;
-    public const int ApBatchMessageThreshold = 1;
+
+    // a handful of messages back to back reads better than a summary, and
+    // alt+T has the last five anyway; only a real dump needs condensing
+    public const int ApBatchMessageThreshold = 4;
 
     private static List<int> pendingSlots = new List<int>();
     private static int windowTicks;
