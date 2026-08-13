@@ -73,10 +73,11 @@ Randomizer inventory ids.
 112 - Warp to Credits
 113 - Toggle Bash/Stomp Damage
 115 - Toggle Enhanced Effects
+116 - Mark (prints position/scene/zone)
 
 --- if ID is less than 130, sync will consider it a bonus skill. 
---- IF IT'S ACTUALLY A BONUS SKILL, THINGS WILL BE BAD.
---- DO NOT USE IDS WITHIN 100-130 FOR NONBONUS SKILLS
+--- IF IT'S NOT ACTUALLY A BONUS SKILL, THINGS WILL BE BAD.
+--- DO NOT USE IDS WITHIN 100-130 FOR NONBONUS SKILLS. PLEASE.
 
 
 200 - Quick Flame

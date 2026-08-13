@@ -306,6 +306,14 @@ public static class RandomizerBonusSkill {
                 }
 
                 break;
+            case 116: {
+                var scene = Core.Scenes.Manager.CurrentScene != null ? Core.Scenes.Manager.CurrentScene.Scene : "?";
+                var zone = RandomizerStatsManager.CurrentZone();
+                var pos = Characters.Sein.Position.ToString("F2");
+                BonusSkillText(pos + "\n" + scene + "\n" + zone);
+                Randomizer.log("MARK | scene=" + scene + " | zone=" + zone + " | pos=" + pos);
+                break;
+            }
             default:
                 return;
         }
@@ -566,6 +574,7 @@ public static class RandomizerBonusSkill {
         { 113, "Toggle Bash/Stomp Damage" },
         { 114, "Summon Mom" },
         { 115, "Toggle Enhanced Effects" },
+        { 116, "Mark" },
         { 1587, "Warp to Credits" },
     };
 
