@@ -502,6 +502,17 @@ public static class RandomizerBonusSkill {
 
     public static bool Invincible => IsActive(110);
 
+    // also gates BingoController's death dump
+    public static bool HasMark {
+        get {
+            if (!Characters.Sein || !Characters.Sein.Inventory) {
+                return false;
+            }
+
+            return get(116) > 0;
+        }
+    }
+
     public static float EnergyDrainRate;
 
     public static bool IsActive(int id) {

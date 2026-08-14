@@ -139,6 +139,109 @@ public static class BingoController {
         }
     }
 
+    // Two ways to die to a crushing hazard: its own damage collider hits you (the
+    // hazard is the sender) or it squeezes you into geometry (CapsuleCrushDetector
+    // fires, and the sender is Sein's own detector). Both happen in the same room,
+    // so DieTo goals have to ask about both.
+    public static bool KilledBy(Damage damage, MoonGuid guid) {
+        return OwnerGuid(Sender(damage)) == guid;
+    }
+
+    public static bool CrushedBy(Damage damage, MoonGuid guid) {
+        return KilledBy(damage, guid) || OwnerGuid(CapsuleCrushDetector.CrusherThisFrame()) == guid;
+    }
+
+    public static bool CrushedByAny(Damage damage, HashSet<MoonGuid> guids) {
+        var senderGuid = OwnerGuid(Sender(damage));
+        if (senderGuid != null && guids.Contains(senderGuid)) {
+            return true;
+        }
+
+        var crusherGuid = OwnerGuid(CapsuleCrushDetector.CrusherThisFrame());
+        return crusherGuid != null && guids.Contains(crusherGuid);
+    }
+
+    private static UnityEngine.GameObject Sender(Damage damage) {
+        return damage == null ? null : damage.Sender;
+    }
+
+    // hazards hang their damage collider off the object that holds the guid
+    private static MoonGuid OwnerGuid(UnityEngine.GameObject target) {
+        if (target == null) {
+            return null;
+        }
+
+        var owner = target.transform.FindComponentUpwards<GuidOwner>();
+        return owner == null ? null : owner.MoonGuid;
+    }
+
+    // Dumps everything OnDeath below can key off to randomizer.log, for authoring new
+    // DieTo goals. Runs whether or not a bingo game is active, but only for players
+    // holding Mark -- it is the switch for this as much as it is a bonus skill.
+    public static void DeathDebugLog(Damage damage) {
+        if (!RandomizerBonusSkill.HasMark) {
+            return;
+        }
+
+        try {
+            var line = "DEATH | scene=" + scene() + " | zone=" + RandomizerStatsManager.CurrentZone();
+            line += " | pos=" + (Characters.Sein != null ? Characters.Sein.Position.ToString("F2") : "?");
+            if (damage == null) {
+                Randomizer.log(line + " | no damage");
+                return;
+            }
+
+            line += " | type=" + damage.Type + " | amount=" + damage.Amount;
+            line += " | dmgPos=" + damage.Position.ToString("F2") + " | force=" + damage.Force.ToString("F2");
+            if (damage.Type == DamageType.Crush) {
+                var crusher = CapsuleCrushDetector.CrusherThisFrame();
+                if (crusher == null) {
+                    line += " | crusher=(none)";
+                } else {
+                    var crushOwner = crusher.transform.FindComponentUpwards<GuidOwner>();
+                    line += " | crusher=" + SenderPath(crusher);
+                    line += " | crusherOwner=" + (crushOwner == null ? "(none)" : crushOwner.name + " " + GuidLiteral(crushOwner.MoonGuid));
+                }
+            }
+
+            var sender = damage.Sender;
+            if (sender == null) {
+                Randomizer.log(line + " | sender=(none)");
+                return;
+            }
+
+            line += " | sender=" + SenderPath(sender);
+            var entity = sender.FindComponent<Entity>();
+            if (entity != null) {
+                line += " | entity=" + entity.name + " (" + entity.GetType().Name + ") " + GuidLiteral(entity.MoonGuid);
+            }
+
+            var owner = sender.transform.FindComponentUpwards<GuidOwner>();
+            if (owner != null) {
+                line += " | owner=" + owner.name + " " + GuidLiteral(owner.MoonGuid);
+            }
+
+            Randomizer.log(line);
+        } catch (Exception e) {
+            Randomizer.LogError("DeathDebugLog: " + e.Message);
+        }
+    }
+
+    private static string SenderPath(UnityEngine.GameObject sender) {
+        var path = sender.name;
+        var parent = sender.transform.parent;
+        for (var i = 0; parent != null && i < 6; i++) {
+            path = parent.name + "/" + path;
+            parent = parent.parent;
+        }
+
+        return path;
+    }
+
+    private static string GuidLiteral(MoonGuid guid) {
+        return guid == null ? "(null)" : "new MoonGuid(" + guid.A + ", " + guid.B + ", " + guid.C + ", " + guid.D + ")";
+    }
+
     public static void OnDeath(Damage damage) {
         try {
             if (!Active) {
@@ -188,7 +291,8 @@ public static class BingoController {
 
                     break;
                 case "mangroveFallsDashEscalation":
-                    if (damage.Type == DamageType.Crush) {
+                    // the rolling boulder crushes you in this room too
+                    if (damage.Type == DamageType.Crush && CrushedByAny(damage, BlackrootCrushers)) {
                         MultiBoolGoals["DieTo"]["Blackroot Teleporter Crushers"] = true;
                     }
 
@@ -226,6 +330,42 @@ public static class BingoController {
                 case "mistyWoodsLaserFlipPlatforms":
                     if (damage.Type == DamageType.Laser || damage.Type == DamageType.Lava) {
                         MultiBoolGoals["DieTo"]["Misty Vertical Lasers"] = true;
+                    }
+
+                    break;
+                case "westGladesShaftToBridgeB":
+                    if (KilledBy(damage, Baneling)) {
+                        MultiBoolGoals["DieTo"]["Valley Map Baneling"] = true;
+                    }
+
+                    break;
+                case "mountHoruHubTop":
+                    if (KilledBy(damage, Baneling)) {
+                        MultiBoolGoals["DieTo"]["R1 Door Baneling"] = true;
+                    }
+
+                    break;
+                case "thornfeltSwampE":
+                    if (damage.Type == DamageType.Crush) {
+                        MultiBoolGoals["DieTo"]["Swamp Swim Crushers"] = true;
+                    }
+
+                    break;
+                case "moonGrottoLaserPuzzleB":
+                    if (damage.Type == DamageType.Laser || damage.Type == DamageType.Lava) {
+                        MultiBoolGoals["DieTo"]["Grotto Vault Lasers"] = true;
+                    }
+
+                    break;
+                case "upperGladesSpiderCavernPuzzle":
+                    if (damage.Type == DamageType.Spikes && damage.Amount >= 1000) {
+                        MultiBoolGoals["DieTo"]["Spidersack Spikes"] = true;
+                    }
+
+                    break;
+                case "sorrowPassEntranceA":
+                    if (KilledBy(damage, FastSpitterProjectile)) {
+                        MultiBoolGoals["DieTo"]["Valley Floor Frogs"] = true;
                     }
 
                     break;
@@ -933,6 +1073,12 @@ public static class BingoController {
                 MultiBoolGoal.mk(
                     "DieTo",
                     new List<BoolGoal> {
+                        new BoolGoal("Valley Floor Frogs", 2316),
+                        new BoolGoal("Spidersack Spikes", 2315),
+                        new BoolGoal("Grotto Vault Lasers", 2314),
+                        new BoolGoal("Swamp Swim Crushers", 2313),
+                        new BoolGoal("R1 Door Baneling", 2312),
+                        new BoolGoal("Valley Map Baneling", 2311),
                         new BoolGoal("Sunstone Lightning", 2310),
                         new BoolGoal("Lost Grove Laser", 2309),
                         new BoolGoal("Forlorn Void", 2308),
@@ -1145,6 +1291,14 @@ public static class BingoController {
     public static HashSet<String> ActiveSingleGoals;
     public static Dictionary<String, HashSet<String>> ActiveMultiGoals;
 
+    // moonGrottoStomperBlock B, A, C, D -- named out of order, left to right
+    public static HashSet<MoonGuid> BlackrootCrushers = new HashSet<MoonGuid> {
+        new MoonGuid(1247037020, 1248509864, -1698251626, -993335475),
+        new MoonGuid(-132086394, 1249919678, 940867216, 1786178433),
+        new MoonGuid(-1564500718, 1333488869, -1687922529, -734277818),
+        new MoonGuid(-1058120399, 1246240493, -138703439, 1743524688)
+    };
+
     public static HashSet<MoonGuid> BlackrootLanterns = new HashSet<MoonGuid> {
         new MoonGuid(-247741005, 1196428260, -687048288, -31634124),
         new MoonGuid(1907989719, 1277885764, -201315168, 756894943),
@@ -1302,6 +1456,11 @@ public static class BingoController {
     }
 
     public static bool WsUnsupported;
+
+    // these two live on the prefab, so every instance in the game shares them --
+    // the scene case is what makes the goal local
+    public static MoonGuid Baneling = new MoonGuid(-2068213609, 1298371008, 1615797670, 1107755027);
+    public static MoonGuid FastSpitterProjectile = new MoonGuid(943492445, 1335964604, -502991471, -743897488);
 
     public static MoonGuid StomplessRocks = new MoonGuid(-1118019250, 1080908127, 1929144468, -1515713832);
     public static MoonGuid Drain = new MoonGuid(1711549718, 1225123502, -2036372807, 248162391);
