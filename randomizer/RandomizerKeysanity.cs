@@ -135,13 +135,26 @@ public class RandomizerKeysanity {
 
     private static int apSlot(int coords) => coords <= -2 && coords >= -257 ? -coords - 2 : -1;
 
+    // Archipelago's fill decides where exported keys really are, so the baked
+    // zone is just the pre-export roll: show progress, not a confident wrong
+    // answer. The bridge's reply (real zone, or "Archipelago" for a key held
+    // outside the Ori worlds) lands in ApHints and takes over from there.
+    private string clueArea(RandomizerKeysanityHintInfo rkhi) {
+        var slot = apSlot(rkhi.Coords);
+        if (RandomizerMW.ApGrants && slot >= 0) {
+            return RandomizerMW.ApHintOr(slot, "Hint loading...");
+        }
+
+        return RandomizerMW.ApHintOr(slot, rkhi.Area);
+    }
+
     // Me when I'm using LINQ responsibly (<- me when I lie)
     private string hintsForDoor(int id, int skipCoords = -1) => RandomizerMW.ResolveNames(
         String.Join(
             ", ",
             keyClueMap[id]
                 .Where(rkhi => !(rkhi.Coords == skipCoords || clueResolved(rkhi.Coords))) // only look at hints we still need
-                .GroupBy(rkhi => RandomizerMW.ApHintOr(apSlot(rkhi.Coords), rkhi.Area)) // group them by their areas
+                .GroupBy(rkhi => clueArea(rkhi)) // group them by their areas
                 .OrderBy(grp => $"{4 - grp.Count()}{grp.Key}") // sort by count and then area alphabetically
                 .Select(grp => grp.Count() == 1 ? grp.Key : $"{grp.Key} x{grp.Count()}") // format for display (with x[NUM] for multiples)
                 .ToArray()
