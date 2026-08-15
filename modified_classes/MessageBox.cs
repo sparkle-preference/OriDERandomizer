@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using CatlikeCoding.TextBox;
 using Game;
 using UnityEngine;
@@ -111,17 +113,16 @@ public class MessageBox : MonoBehaviour {
     }
 
     public void RefreshText() {
-        if (m_forceLanguage) {
-            TextBox.SetStyleCollection(LanguageStyles.GetStyle(m_language));
-        } else {
-            TextBox.SetStyleCollection(LanguageStyles.Current);
-        }
+        var styleCollection = m_forceLanguage ? LanguageStyles.GetStyle(m_language) : LanguageStyles.Current;
 
         if (MessageProvider) {
             m_messageDescriptors = MessageProvider.GetMessages().ToArray();
             MessageIndex = Mathf.Clamp(MessageIndex, 0, m_messageDescriptors.Length);
             m_currentMessage = m_messageDescriptors[MessageIndex];
+
             var text = m_currentMessage.Message;
+            ProcessStyleTags(styleCollection, text);
+
             if (text.StartsWith("ALIGNLEFT")) {
                 TextBox.alignment = AlignmentMode.Left;
                 text = text.Substring(9);
@@ -201,6 +202,7 @@ public class MessageBox : MonoBehaviour {
             }
         }
 
+        TextBox.SetStyleCollection(styleCollection);
         TextBox.CreateRendersIfThereAreNone();
         var textRenderers = TextBox.textRenderers;
         for (var i = 0; i < textRenderers.Length; i++) {
@@ -225,6 +227,104 @@ public class MessageBox : MonoBehaviour {
         if (!Application.isPlaying) {
             RemoveMessageFade();
         }
+    }
+
+    private static readonly Regex StyleTagRegex = new(
+        @"(?inx)
+        <style
+                (\s+color=(?<color>[0-9a-f]{6,8}))?
+                (\s+font=(?<font>[a-z]+))?
+                (\s+letterspacing=(?<letter_spacing>[-.0-9]+))?
+                (\s+fontscale=(?<font_scale>[-.0-9]+))?
+                (\s+linescale=(?<line_scale>[-.0-9]+))?
+        >"
+    );
+
+    private void ProcessStyleTags(TextStyleCollection styleCollection, string message) {
+        List<TextStyle> styles = null;
+        Dictionary<string, TextFont> fonts = null;
+
+        foreach (Match match in StyleTagRegex.Matches(message)) {
+            var styleName = match.Groups[0].Value.Substring(1, match.Groups[0].Value.Length - 2);
+
+            if (styles == null) {
+                if (styleCollection.styles.Any(s => s.name == styleName)) {
+                    continue;
+                }
+
+                styles = new List<TextStyle>(styleCollection.styles);
+            }
+
+            if (styles.Any(s => s.name == styleName)) {
+                continue;
+            }
+
+            var style = new TextStyle { name = styleName };
+
+            if (match.Groups["color"] is { Success: true, Value: var colorString }) {
+                if (colorString.Length != 6 && colorString.Length != 8) {
+                    Randomizer.log($"Invalid font color property: \"{colorString}\"");
+                    continue;
+                }
+
+                var r = byte.Parse(colorString.Substring(0, 2), NumberStyles.HexNumber);
+                var g = byte.Parse(colorString.Substring(2, 2), NumberStyles.HexNumber);
+                var b = byte.Parse(colorString.Substring(4, 2), NumberStyles.HexNumber);
+                var a = colorString.Length == 8 ? byte.Parse(colorString.Substring(6, 2), NumberStyles.HexNumber) : (byte)255;
+
+                style.color = new Color32(r, g, b, a);
+                style.hasColor = true;
+            }
+
+            if (match.Groups["font"] is { Success: true, Value: var fontName }) {
+                fonts ??= GetFonts();
+
+                if (!fonts.TryGetValue(fontName, out var textFont)) {
+                    Randomizer.log($"Invalid font: \"{fontName}\". Available: {string.Join(", ", fonts.Keys.Select(n => $"'{n}'").ToArray())}");
+                    continue;
+                }
+
+                style.font = textFont.Font;
+                style.renderer = textFont.Renderer;
+            }
+
+            if (match.Groups["letter_spacing"] is { Success: true, Value: var letterSpacing }) {
+                style.letterSpacing = float.Parse(letterSpacing, CultureInfo.InvariantCulture);
+                style.hasLetterSpacing = true;
+            }
+
+            if (match.Groups["font_scale"] is { Success: true, Value: var fontScale }) {
+                style.fontScale = float.Parse(fontScale, CultureInfo.InvariantCulture);
+                style.hasFontScale = true;
+            }
+
+            if (match.Groups["line_scale"] is { Success: true, Value: var lineScale }) {
+                style.lineScale = float.Parse(lineScale, CultureInfo.InvariantCulture);
+                style.hasLineScale = true;
+            }
+
+            styles.Add(style);
+        }
+
+        if (styles != null) {
+            styleCollection.styles = styles.ToArray();
+            styleCollection.ComputeRendererCount();
+            // Force text box to refresh style collection
+            TextBox.styleCollection = null;
+        }
+    }
+
+    private Dictionary<string, TextFont> GetFonts() {
+        var fonts = new Dictionary<string, TextFont>();
+        foreach (Language lang in Enum.GetValues(typeof(Language))) {
+            foreach (var style in LanguageStyles.GetStyle(lang).styles) {
+                if (style.font != null && !fonts.ContainsKey(style.font.name)) {
+                    fonts.Add(style.font.name, new TextFont(style.font, style.renderer));
+                }
+            }
+        }
+
+        return fonts;
     }
 
     public void OnEnable() {
@@ -347,4 +447,14 @@ public class MessageBox : MonoBehaviour {
     private MessageDescriptor m_currentMessage;
 
     private bool m_hasBackgroundColor;
+
+    private struct TextFont {
+        public BitmapFont Font;
+        public TextRenderer Renderer;
+
+        public TextFont(BitmapFont font, TextRenderer renderer) {
+            Font = font;
+            Renderer = renderer;
+        }
+    }
 }
