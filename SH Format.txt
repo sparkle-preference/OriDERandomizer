@@ -2,6 +2,18 @@
 
 
 
+Slashes
+===
+Slashes ("/") can be used normally inside message pickups.
+If you are using the website, this is always true.
+
+If you are manually editing a seed file, and the message pickup is inside an MU or RP pickup, they must be doubled up.
+Example:
+SH|Up/<icon>v</>
+RP/SH/Up//<icon>v<//>
+
+
+
 Line breaks
 ===
 Line breaks can be inserted by writing "\n".

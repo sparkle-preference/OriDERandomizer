@@ -1322,9 +1322,8 @@ public static class Randomizer {
         if (code == "RP" || code == "MU") {
             // Check the full pickup code + id for sense. This is for sense=MUEC cases. Otherwise processed in the recursion.
             GetSenseFromSeedLine(coords, code, id, area);
-            var pieces = id.Split('/');
-            for (var i = 0; i < pieces.Length; i += 2) {
-                GetDataFromSeedLine(coords, pieces[i], pieces[i + 1], area);
+            foreach (var action in new RandomizerAction(code, id).Decompose()) {
+                GetDataFromSeedLine(coords, action.Action, action.Value.ToString(), area);
             }
 
             return;
