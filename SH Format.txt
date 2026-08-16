@@ -2,6 +2,20 @@
 
 
 
+Flags
+===
+Messages can start with a few flags to change how they are displayed.
+Available flags:
+- "d=<frames>,": Show the message for <frames> frames (60 frames = 1 second). This is the "base duration"; actual duration differs based on randomizer settings and message queue.
+- "s=true,": Disable/hide all pickup messages until this MU or RP pickup was fully processed (or the next, if this is a bare SH), or a multiworld batch message was shown. SH messages are unaffected and always shown.
+- "s=,": Enable pickup messages again, if they were hidden.
+Important: There MUST NOT be any spaces after the commas.
+
+Example: Claim an Energy Cell on a Health Cell pickup
+MU|SH/s=true,Energy Cell/HC/1
+
+
+
 Slashes
 ===
 Slashes ("/") can be used normally inside message pickups.
@@ -66,7 +80,7 @@ Various placeholders can be replaced with their corresponding icons (or letter, 
 
 Message Box settings
 ===
-Some settings of the message box can be changed by putting special text at the start of the message.
+Some settings of the message box can be changed by putting special text at the start of the message (after flags).
 Float values can always be negative.
 
 Available settings (if multiple are specified, they must appear in the order listed here):
