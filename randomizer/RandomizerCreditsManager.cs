@@ -11,7 +11,7 @@ public static class RandomizerCreditsManager {
                 @"ANCHORTOPPARAMS_20_7.5_2_Ori DE Randomizer (" + Randomizer.VERSION + @")
 Developed by:
 Torin  *Eiko*  @Vulajin@
-$d265f27$  #Kirefel#" +
+$d265f27$  #Kirefel# :AsmPrgmC3" +
                 (BingoController.Active ? "\n\nBingo by *Eiko*" : ""),
                 14
             )
@@ -21,7 +21,6 @@ $d265f27$  #Kirefel#" +
             new KeyValuePair<string, int>(
                 @"ANCHORTOPPARAMS_20_7.5_2_Major contributions by:
 DevilSquirrel
-AsmPrgmC3
 Xemsys
 jeflefou
 Melody
