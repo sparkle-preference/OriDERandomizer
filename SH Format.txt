@@ -165,7 +165,7 @@ Available styles:
         - "candara": Default font used for russian language.
     - "letterspacing=float": Additional space between characters. Can be negative to reduce space.
     - "fontscale=float": Font size multiplier. Can be negative (rotates text 180°).
-    - "linescale=float": Line height multiplier. Can be negative. Works in weird and mysterious ways.
+    - "linescale=float": Sets line height to font size * linescale. Line height is not modified regardless of fontscale unless this is specified. Can be negative. Works in weird and mysterious ways.
 
 Styles can be nested.
 For example, "SH|<style font=msPGothic>one <style color=888888>two</> three</>"
