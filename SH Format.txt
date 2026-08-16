@@ -2,6 +2,20 @@
 
 
 
+Flags
+===
+Messages can start with a few flags to change how they are displayed.
+Available flags:
+- "d=<frames>,": Show the message for <frames> frames (60 frames = 1 second). This is the "base duration"; actual duration differs based on randomizer settings and message queue.
+- "s=true,": Disable/hide all pickup messages until this MU or RP pickup was fully processed (or the next, if this is a bare SH), or a multiworld batch message was shown. SH messages are unaffected and always shown.
+- "s=,": Enable pickup messages again, if they were hidden.
+Important: There MUST NOT be any spaces after the commas.
+
+Example: Claim an Energy Cell on a Health Cell pickup
+MU|SH/s=true,Energy Cell/HC/1
+
+
+
 Slashes
 ===
 Slashes ("/") can be used normally inside message pickups.
@@ -66,11 +80,11 @@ Various placeholders can be replaced with their corresponding icons (or letter, 
 
 Message Box settings
 ===
-Some settings of the message box can be changed by putting special text at the start of the message.
+Some settings of the message box can be changed by putting special text at the start of the message (after flags).
 Float values can always be negative.
 
 Available settings (if multiple are specified, they must appear in the order listed here):
-- "ALIGNLEFT" or "ALIGNRIGHT": Aligns the text left/right instead of center. Also moved the textbox a bit.
+- "ALIGNLEFT" or "ALIGNRIGHT": Aligns the text left/right instead of center. Also moves the textbox a bit.
     Messages shown with "Display Multiple Pickup Messages" are by default aligned left.
 - "ANCHORTOP" or "ANCHORBOT": Sets the vertical anchor of the message box to the top/bottom. "ANCHORTOP" for example means that the top edge of the message box will be placed at the specified position of the message box, instead of being centered around it.
 - "ANCHORLEFT" or "ANCHORRIGHT": Sets the horizontal anchor of the message box to the left/right.
@@ -90,7 +104,7 @@ Different parts of the message can use different text styles.
 Text styles are enabled by writing "<the style>" and are disabled again with "</>"
 Available styles:
 - "<icon>": Switch to the icon font. Characters written with the icon font are replaced by icons/images.
-    Identical to "<style font=icons>".
+    Identical to "<style font=icons>" (for english).
     Available icons:
     - "a": Controller Analogue Stick Up
     - "b": Controller Analogue Stick Down
@@ -151,7 +165,7 @@ Available styles:
         - "candara": Default font used for russian language.
     - "letterspacing=float": Additional space between characters. Can be negative to reduce space.
     - "fontscale=float": Font size multiplier. Can be negative (rotates text 180°).
-    - "linescale=float": Line height multiplier. Can be negative. Works in weird and mysterious ways.
+    - "linescale=float": Sets line height to font size * linescale. Line height is not modified regardless of fontscale unless this is specified. Can be negative. Works in weird and mysterious ways.
 
 Styles can be nested.
 For example, "SH|<style font=msPGothic>one <style color=888888>two</> three</>"
