@@ -104,7 +104,7 @@ Different parts of the message can use different text styles.
 Text styles are enabled by writing "<the style>" and are disabled again with "</>"
 Available styles:
 - "<icon>": Switch to the icon font. Characters written with the icon font are replaced by icons/images.
-    Identical to "<style font=icons>".
+    Identical to "<style font=icons>" (for english).
     Available icons:
     - "a": Controller Analogue Stick Up
     - "b": Controller Analogue Stick Down
