@@ -1,0 +1,158 @@
+﻿Features available in messages (SH pickups)
+
+
+
+Slashes
+===
+Slashes ("/") can be used normally inside message pickups.
+If you are using the website, this is always true.
+
+If you are manually editing a seed file, and the message pickup is inside an MU or RP pickup, they must be doubled up.
+Example:
+SH|Up/<icon>v</>
+RP/SH/Up//<icon>v<//>
+
+
+
+Line breaks
+===
+Line breaks can be inserted by writing "\n".
+
+
+
+Colored text
+===
+Some characters cause the text between them to be colored.
+Available characters/colors:
+- #yellow text#
+- *blue text*
+- $green text$
+- @red text@
+
+
+
+Placeholders
+===
+Various placeholders can be replaced with their corresponding icons (or letter, if there's no icon):
+- "[XpBar]", "[Ability Point]": XP Wheel.
+- "[Stick]": Analogue Stick / Arrow Keys
+- "[Up]", "[SaveSlotBackup]": First key bound to "Movement Up".
+- "[Down]": First key bound to "Movement Down".
+- "[Left]": First key bound to "Movement Left".
+- "[Right]": First key bound to "Movement Right".
+- "[Jump]", "[Start]", "[Accept]": First key bound to "Jump".
+- "[Cancel]": First key bound to "Cancel".
+- "[Listen]", "[StructureInteraction]": First key bound to "Spirit Flame".
+- "[Bash]": First key bound to "Bash".
+- "[Glide]": First key bound to "Glide".
+- "[Dash]": First key bound to "Dash".
+- "[LightSpheres]": First key bound to "Grenade".
+- "[Grab]", "[Climb]", "[PickUp]": First key bound to "Grab".
+- "[SoulFlame]", "[Rekindle]": First key bound to "Soul Link".
+- "[Inventory]", "[SkillTree]": First key bound to "Start".
+- "[Map]": First key bound to "Select".
+- "[ChargeJumpCharge]": First key bound to "Charge Jump".
+- "[MapZoom]": First key bound to "Zoom In World Map", and first key bound to "Zoom Out World Map".
+- "[MapLegend]": First key bound to "Legend".
+- "[MapFocus]": First key bound to "Focus".
+- "[CycleLeaderboard]": First key bound to "Menu Previous", and first key bound to "Menu Next".
+- "[CycleFilter]": First key bound to "Filter".
+- "[CycleDifficulty]": First key bound to "Grenade", and first key bound to "Dash".
+- "[SaveSlotCopy]", "[UnlockFullGame]": First key bound to "Copy".
+- "[SaveSlotDelete]": First key bound to "Delete".
+- "[SpiritLightNextLevel]": Spirit Light required for next level.
+
+
+
+Message Box settings
+===
+Some settings of the message box can be changed by putting special text at the start of the message.
+Float values can always be negative.
+
+Available settings (if multiple are specified, they must appear in the order listed here):
+- "ALIGNLEFT" or "ALIGNRIGHT": Aligns the text left/right instead of center. Also moved the textbox a bit.
+    Messages shown with "Display Multiple Pickup Messages" are by default aligned left.
+- "ANCHORTOP" or "ANCHORBOT": Sets the vertical anchor of the message box to the top/bottom. "ANCHORTOP" for example means that the top edge of the message box will be placed at the specified position of the message box, instead of being centered around it.
+- "ANCHORLEFT" or "ANCHORRIGHT": Sets the horizontal anchor of the message box to the left/right.
+- "PADDING_bottom_left_right_top_": Sets the padding of the message box. bottom/left/right/top are float values. This moves the message box around by adding invisible space around it.
+- "PARAMS_maxHeight_maxWidth_tabSize_": All float values, with the following meanings:
+    - maxHeight: Maximum height of the message box. Lines that overflow this height are not shown.
+    - maxWidth: Maximum width of the message box. Lines breaks will be automatically inserted between words to keep the width lower than this value.
+    - tabSize: How far apart tab-stops are. A tab-character in the text will always take up enough space to exactly reach the next tab-stop.
+- "BGCOLOR_red_green_blue_alpha_": Sets the background color for the message box. All values are between 0 and 255. (For "normal" colors. The values are not clamped so alpha values higher than 255 can be used for extra-opaque backgrounds.)
+- "SHOWINFO": Append text showing these properties to the end of the message.
+
+
+
+Text Styles
+===
+Different parts of the message can use different text styles.
+Text styles are enabled by writing "<the style>" and are disabled again with "</>"
+Available styles:
+- "<icon>": Switch to the icon font. Characters written with the icon font are replaced by icons/images.
+    Identical to "<style font=icons>".
+    Available icons:
+    - "a": Controller Analogue Stick Up
+    - "b": Controller Analogue Stick Down
+    - "c": Controller Analogue Stick Left
+    - "d": Controller Analogue Stick Right
+    - "J": Controller Analogue Stick
+    - "e": Controller A
+    - "f": Controller B
+    - "h": Controller X
+    - "i": Controller Y
+    - "k": Controller RT
+    - "m": Controller LT
+    - "g": Controller Menu
+    - "l": Controller Select
+    - "S": Controller RB
+    - "R": Controller LB
+    - "n": Keyboard A
+    - "o": Keyboard B
+    - "p": Keyboard C
+    - "q": Keyboard D
+    - "H": Keyboard E
+    - "N": Keyboard F
+    - "O": Keyboard K
+    - "P": Keyboard L
+    - "I": Keyboard Q
+    - "T": Keyboard R
+    - "u": Keyboard S
+    - "A": Keyboard V
+    - "w": Keyboard W
+    - "x": Keyboard X
+    - "B": Keyboard Z
+    - "v": Keyboard Up Arrow
+    - "r": Keyboard Down Arrow
+    - "s": Keyboard Left Arrow
+    - "t": Keyboard Right Arrow
+    - "Q": Keyboard Arrow Keys
+    - "K": Keyboard WASD Keys
+    - "y": Keyboard ESC
+    - "z": Keyboard Tab
+    - "C": Keyboard Space
+    - "D": Keyboard Enter
+    - "G": Keyboard Ctrl
+    - "L": Keyboard Shift
+    - "M": Keyboard Del
+    - "E": Mouse Left Button
+    - "F": Mouse Right Button
+    - "j": XP Wheel
+
+- "<style>": Change various text properties.
+    Example for big purple text: "<style color=b100e8 fontscale=2>"
+    Available properties (must be specified in the order listed):
+    - "color=rrggbb" or "color=rrggbbaa": Set the text color. rr/gg/bb/aa are two hex digits each.
+    - "font=fontName": Change font. Available fonts:
+        - "sakkalMajalla": Default font for most languages.
+        - "icons": Icon font (used by "<icon>").
+        - "msPGothic": Default font used for japanese language.
+        - "adobeHeitiStdR": Default font used for chinese language.
+        - "candara": Default font used for russian language.
+    - "letterspacing=float": Additional space between characters. Can be negative to reduce space.
+    - "fontscale=float": Font size multiplier. Can be negative (rotates text 180°).
+    - "linescale=float": Line height multiplier. Can be negative. Works in weird and mysterious ways.
+
+Styles can be nested.
+For example, "SH|<style font=msPGothic>one <style color=888888>two</> three</>"
+will result in a message that uses the japanese font for the whole text, but only "two" is grey.
