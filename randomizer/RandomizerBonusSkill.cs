@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Core;
 using Game;
 using UnityEngine;
 
@@ -307,7 +308,7 @@ public static class RandomizerBonusSkill {
 
                 break;
             case 116: {
-                var scene = Core.Scenes.Manager.CurrentScene != null ? Core.Scenes.Manager.CurrentScene.Scene : "?";
+                var scene = Scenes.Manager.CurrentScene != null ? Scenes.Manager.CurrentScene.Scene : "?";
                 var zone = RandomizerStatsManager.CurrentZone();
                 var pos = Characters.Sein.Position.ToString("F2");
                 BonusSkillText(pos + "\n" + scene + "\n" + zone);
@@ -634,8 +635,11 @@ public static class RandomizerBonusSkill {
 
         FoundBonusSkill(1587);
         ActiveBonus = 1587;
-        message += "\nPress " + RandomizerRebinding.BonusToggle.FirstBindName() + " to warp to credits";
-        Randomizer.QueueWinMessage(message);
+        if (!RandomizerSwitch.SilentMode) {
+            message += "\nPress " + RandomizerRebinding.BonusToggle.FirstBindName() + " to warp to credits";
+            Randomizer.QueueWinMessage(message);
+        }
+
         RandomizerStatsManager.WriteStatsFile();
         return true;
     }
