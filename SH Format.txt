@@ -84,7 +84,7 @@ Some settings of the message box can be changed by putting special text at the s
 Float values can always be negative.
 
 Available settings (if multiple are specified, they must appear in the order listed here):
-- "ALIGNLEFT" or "ALIGNRIGHT": Aligns the text left/right instead of center. Also moved the textbox a bit.
+- "ALIGNLEFT" or "ALIGNRIGHT": Aligns the text left/right instead of center. Also moves the textbox a bit.
     Messages shown with "Display Multiple Pickup Messages" are by default aligned left.
 - "ANCHORTOP" or "ANCHORBOT": Sets the vertical anchor of the message box to the top/bottom. "ANCHORTOP" for example means that the top edge of the message box will be placed at the specified position of the message box, instead of being centered around it.
 - "ANCHORLEFT" or "ANCHORRIGHT": Sets the horizontal anchor of the message box to the left/right.
