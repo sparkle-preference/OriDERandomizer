@@ -434,155 +434,164 @@ public static class RandomizerSyncManager {
     }
 
     public static void ProcessTickResponse(string data) {
-        {
-            {
-                var mustRefreshLogic = false;
-                var array = data.Split(',');
-                var bf = int.Parse(array[0]);
-                foreach (var skillInfoLine in SkillInfos) {
-                    if (getBit(bf, skillInfoLine.bit) && !Characters.Sein.PlayerAbilities.HasAbility(skillInfoLine.skill)) {
-                        RandomizerSwitch.GivePickup(new RandomizerAction("SK", $"{skillInfoLine.id}"), 0, false);
-                        mustRefreshLogic = true;
-                    }
+        try {
+            if (Randomizer.CreditsActive) {
+                RandomizerSwitch.SilentMode = true;
+            }
+
+            var mustRefreshLogic = false;
+            var array = data.Split(',');
+            var bf = int.Parse(array[0]);
+            foreach (var skillInfoLine in SkillInfos) {
+                if (getBit(bf, skillInfoLine.bit) && !Characters.Sein.PlayerAbilities.HasAbility(skillInfoLine.skill)) {
+                    RandomizerSwitch.GivePickup(new RandomizerAction("SK", $"{skillInfoLine.id}"), 0, false);
+                    mustRefreshLogic = true;
                 }
+            }
 
-                var bf2 = int.Parse(array[1]);
-                foreach (var eventInfoLine in EventInfos) {
-                    if (getBit(bf2, eventInfoLine.bit) && !eventInfoLine.checker()) {
-                        RandomizerSwitch.GivePickup(new RandomizerAction("EV", $"{eventInfoLine.id}"), 0, false);
-                        mustRefreshLogic = true;
-                    }
+            var bf2 = int.Parse(array[1]);
+            foreach (var eventInfoLine in EventInfos) {
+                if (getBit(bf2, eventInfoLine.bit) && !eventInfoLine.checker()) {
+                    RandomizerSwitch.GivePickup(new RandomizerAction("EV", $"{eventInfoLine.id}"), 0, false);
+                    mustRefreshLogic = true;
                 }
+            }
 
-                var bf4 = int.Parse(array[2]);
-                foreach (var teleportInfoLine in TeleportInfos) {
-                    if (getBit(bf4, teleportInfoLine.bit) && !isTeleporterActivated(teleportInfoLine.id)) {
-                        RandomizerSwitch.GivePickup(new RandomizerAction("TP", $"{teleportInfoLine.id}"), 0, false);
-                        mustRefreshLogic = true;
-                    }
+            var bf4 = int.Parse(array[2]);
+            foreach (var teleportInfoLine in TeleportInfos) {
+                if (getBit(bf4, teleportInfoLine.bit) && !isTeleporterActivated(teleportInfoLine.id)) {
+                    RandomizerSwitch.GivePickup(new RandomizerAction("TP", $"{teleportInfoLine.id}"), 0, false);
+                    mustRefreshLogic = true;
                 }
+            }
 
-                if (array[3] != "") {
-                    var upgrades = array[3].Split(';');
-                    foreach (var rawUpgrade in upgrades) {
-                        var splitpair = rawUpgrade.Split('x');
-                        if (splitpair[0].Contains("_")) {
-                            if (WarpDatas.ContainsKey(splitpair[0])) {
-                                WarpDatas[splitpair[0]].GrantFromNetwork();
-                                continue;
-                            }
-
-                            Randomizer.LogError($"Unknown ?Warp? {rawUpgrade}");
-                        }
-
-                        var id = int.Parse(splitpair[0]);
-                        var cnt = int.Parse(splitpair[1]);
-                        // 900-909: tree progress
-                        if (id >= 900 && id < 910) {
-                            var tree = id - 899;
-                            var treeName = RandomizerTrackedDataManager.Trees[tree];
-                            if (RandomizerTrackedDataManager.SetTree(tree)) {
-                                Randomizer.showHint(RandomizerUI.Message.PickupMessage(treeName + " tree (activated by teammate)"));
-                            }
-                            // 911-921: relic progress
-                        } else if (id >= 911 && id < 922) {
-                            var relicZone = RandomizerTrackedDataManager.Zones[id - 911];
-                            if (RandomizerTrackedDataManager.SetRelic(relicZone)) {
-                                Randomizer.showHint(RandomizerUI.Message.PickupMessage("#" + relicZone + " relic# (found by teammate)", 5f));
-                            }
-                            // 100-129: bonus skills
-                        } else if (id >= 100 && id < 130) {
-                            if (cnt > 0 && RandomizerBonus.UpgradeCount(id) == 0) {
-                                RandomizerBonus.UpgradeID(id);
-                            }
-                            // everything else!
-                        } else if (RandomizerBonus.UpgradeCount(id) < cnt) {
-                            RandomizerBonus.UpgradeID(id);
-                            mustRefreshLogic = true;
-                        } else if (!PickupQueue.Where(p => p.type == "RB" && p.id == splitpair[0]).Any() && RandomizerBonus.UpgradeCount(id) > cnt) {
-                            RandomizerBonus.UpgradeID(-id);
-                            mustRefreshLogic = true;
-                        }
-                    }
-                }
-
-                // signals ride at index 5. In multiworld games the field is
-                // always present (possibly empty) so the slot bitfields can
-                // sit at a fixed index 6; legacy games omit it when empty.
-                if (array.Length > 5 && array[5] != "") {
-                    foreach (var text in array[5].Split('|')) {
-                        if (text == "" || CurrentSignals.Contains(text)) {
+            if (array[3] != "") {
+                var upgrades = array[3].Split(';');
+                foreach (var rawUpgrade in upgrades) {
+                    var splitpair = rawUpgrade.Split('x');
+                    if (splitpair[0].Contains("_")) {
+                        if (WarpDatas.ContainsKey(splitpair[0])) {
+                            WarpDatas[splitpair[0]].GrantFromNetwork();
                             continue;
                         }
 
-                        if (text == "stop") {
-                            RandomizerChaosManager.ClearEffects();
-                        } else if (text.StartsWith("msg:")) {
-                            Randomizer.printInfo(text.Substring(4), 360);
-                        } else if (text.StartsWith("win:")) {
-                            if (!RandomizerBonusSkill.UnlockCreditWarp(text.Substring(4))) {
-                                Randomizer.QueueWinMessage(text.Substring(4));
-                                RandomizerStatsManager.WriteStatsFile();
-                            }
-                        } else if (text.StartsWith("pickup:")) {
-                            var parts = text.Substring(7).Split('|');
-                            RandomizerAction action;
-                            action = new RandomizerAction(parts[0], parts[1]);
-                            RandomizerSwitch.GivePickup(action, 0, false);
-                            mustRefreshLogic = true;
-                        } else if (text.StartsWith("dl:")) {
-                            // archipelago death link: "<token>;<source>"
-                            RandomizerDeathLink.OnSignal(text.Substring(3));
-                        } else if (text.StartsWith("apfrom:")) {
-                            // who found the slots this tick is about to grant;
-                            // the slot field is read further down, after this
-                            RandomizerMW.OnApFromSignal(text.Substring(7));
-                        } else if (text == "spawnChaos") {
-                            Randomizer.ChaosVerbose = true;
-                            RandomizerChaosManager.SpawnEffect();
-                            ChaosTimeoutCounter = 3600;
-                        }
-
-                        if (WsOpen) {
-                            NativeWebSocket.SendText("conf:" + text);
-                        } else if (!wsNoHttp) {
-                            var client = new WebClient();
-                            client.DownloadStringAsync(new Uri(RootUrl + "/callback/" + text));
-                        }
-
-                        // (no transport right now: the confirm is lost, same
-                        // as a failed fire-and-forget GET today — the signal
-                        // lingers server-side until the next seed reload)
-                        CurrentSignals.Add(text);
+                        Randomizer.LogError($"Unknown ?Warp? {rawUpgrade}");
                     }
-                } else {
-                    CurrentSignals.Clear();
-                }
 
-                if (Randomizer.SyncMode == 5 && array.Length > 7) {
-                    // multiworld: player names first, so slot grant messages
-                    // on this same tick can already use them
-                    RandomizerMW.OnNamesField(array[7]);
-                }
-
-                if (Randomizer.SyncMode == 5 && array.Length > 6) {
-                    // multiworld: our slot bitfields (what others found for us)
-                    if (RandomizerMW.OnSlotsField(array[6])) {
+                    var id = int.Parse(splitpair[0]);
+                    var cnt = int.Parse(splitpair[1]);
+                    // 900-909: tree progress
+                    if (id >= 900 && id < 910) {
+                        var tree = id - 899;
+                        var treeName = RandomizerTrackedDataManager.Trees[tree];
+                        if (RandomizerTrackedDataManager.SetTree(tree)) {
+                            Randomizer.showHint(RandomizerUI.Message.PickupMessage(treeName + " tree (activated by teammate)"));
+                        }
+                        // 911-921: relic progress
+                    } else if (id >= 911 && id < 922) {
+                        var relicZone = RandomizerTrackedDataManager.Zones[id - 911];
+                        if (RandomizerTrackedDataManager.SetRelic(relicZone)) {
+                            Randomizer.showHint(RandomizerUI.Message.PickupMessage("#" + relicZone + " relic# (found by teammate)", 5f));
+                        }
+                        // 100-129: bonus skills
+                    } else if (id >= 100 && id < 130) {
+                        if (cnt > 0 && RandomizerBonus.UpgradeCount(id) == 0) {
+                            RandomizerBonus.UpgradeID(id);
+                        }
+                        // everything else!
+                    } else if (RandomizerBonus.UpgradeCount(id) < cnt) {
+                        RandomizerBonus.UpgradeID(id);
+                        mustRefreshLogic = true;
+                    } else if (!PickupQueue.Where(p => p.type == "RB" && p.id == splitpair[0]).Any() && RandomizerBonus.UpgradeCount(id) > cnt) {
+                        RandomizerBonus.UpgradeID(-id);
                         mustRefreshLogic = true;
                     }
                 }
+            }
 
-                if (Randomizer.SyncMode == 5 && array.Length > 8 && array[8] != "") {
-                    // archipelago: hints bought for the slots we asked about.
-                    // Present only once something has been bought, so every
-                    // other multiworld tick still ends at field 7.
-                    RandomizerMW.OnApHintsField(array[8]);
+            // signals ride at index 5. In multiworld games the field is
+            // always present (possibly empty) so the slot bitfields can
+            // sit at a fixed index 6; legacy games omit it when empty.
+            if (array.Length > 5 && array[5] != "") {
+                foreach (var text in array[5].Split('|')) {
+                    if (text == "" || CurrentSignals.Contains(text)) {
+                        continue;
+                    }
+
+                    if (text == "stop") {
+                        RandomizerChaosManager.ClearEffects();
+                    } else if (text.StartsWith("msg:")) {
+                        if (!RandomizerSwitch.SilentMode) {
+                            Randomizer.printInfo(text.Substring(4), 360);
+                        }
+                    } else if (text.StartsWith("win:")) {
+                        if (!RandomizerBonusSkill.UnlockCreditWarp(text.Substring(4))) {
+                            if (!RandomizerSwitch.SilentMode) {
+                                Randomizer.QueueWinMessage(text.Substring(4));
+                            }
+
+                            RandomizerStatsManager.WriteStatsFile();
+                        }
+                    } else if (text.StartsWith("pickup:")) {
+                        var parts = text.Substring(7).Split('|');
+                        RandomizerAction action;
+                        action = new RandomizerAction(parts[0], parts[1]);
+                        RandomizerSwitch.GivePickup(action, 0, false);
+                        mustRefreshLogic = true;
+                    } else if (text.StartsWith("dl:")) {
+                        // archipelago death link: "<token>;<source>"
+                        RandomizerDeathLink.OnSignal(text.Substring(3));
+                    } else if (text.StartsWith("apfrom:")) {
+                        // who found the slots this tick is about to grant;
+                        // the slot field is read further down, after this
+                        RandomizerMW.OnApFromSignal(text.Substring(7));
+                    } else if (text == "spawnChaos") {
+                        Randomizer.ChaosVerbose = true;
+                        RandomizerChaosManager.SpawnEffect();
+                        ChaosTimeoutCounter = 3600;
+                    }
+
+                    if (WsOpen) {
+                        NativeWebSocket.SendText("conf:" + text);
+                    } else if (!wsNoHttp) {
+                        var client = new WebClient();
+                        client.DownloadStringAsync(new Uri(RootUrl + "/callback/" + text));
+                    }
+
+                    // (no transport right now: the confirm is lost, same
+                    // as a failed fire-and-forget GET today — the signal
+                    // lingers server-side until the next seed reload)
+                    CurrentSignals.Add(text);
                 }
+            } else {
+                CurrentSignals.Clear();
+            }
 
-                if (mustRefreshLogic) {
-                    RandomizerLocationManager.UpdateReachable();
+            if (Randomizer.SyncMode == 5 && array.Length > 7) {
+                // multiworld: player names first, so slot grant messages
+                // on this same tick can already use them
+                RandomizerMW.OnNamesField(array[7]);
+            }
+
+            if (Randomizer.SyncMode == 5 && array.Length > 6) {
+                // multiworld: our slot bitfields (what others found for us)
+                if (RandomizerMW.OnSlotsField(array[6])) {
+                    mustRefreshLogic = true;
                 }
             }
+
+            if (Randomizer.SyncMode == 5 && array.Length > 8 && array[8] != "") {
+                // archipelago: hints bought for the slots we asked about.
+                // Present only once something has been bought, so every
+                // other multiworld tick still ends at field 7.
+                RandomizerMW.OnApHintsField(array[8]);
+            }
+
+            if (mustRefreshLogic) {
+                RandomizerLocationManager.UpdateReachable();
+            }
+        } finally {
+            RandomizerSwitch.SilentMode = false;
         }
     }
 
