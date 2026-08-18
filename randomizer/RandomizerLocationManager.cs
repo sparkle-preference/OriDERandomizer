@@ -252,69 +252,37 @@ public class RandomizerLocationManager {
         }
     }
 
-    // websocket areas refresh: the client offers its local hash after
-    // connecting; a server with newer logic answers with the whole file
-    // (areas:<content> frame). Survives the http host's retirement.
-    public static string AreasHash() {
-        try {
-            if (!File.Exists("areas.ori")) {
-                return "none";
-            }
-
-            using (var sha = SHA256.Create()) {
-                var h = sha.ComputeHash(File.ReadAllBytes("areas.ori"));
-                var sb = new StringBuilder();
-                foreach (var b in h) {
-                    sb.Append(b.ToString("x2"));
-                }
-
-                return sb.ToString();
-            }
-        } catch (Exception e) {
-            Randomizer.log($"AreasHash: {e.Message}");
-            return "none";
-        }
-    }
-
-    public static void ApplyAreasUpdate(string content) {
-        new Thread(() => ApplyAreasWorker(content)).Start();
-    }
-
-    private static void ApplyAreasWorker(string content) {
-        try {
-            if (!RandomizerSettings.DevSettings.AreasOri) {
-                return; // flag disables areas worker
-            }
-
-            if (File.Exists("areas.ori")) {
-                File.Move("areas.ori", "areas.ori.old"); // backup
-            }
-
-            File.WriteAllText("areas.ori", content);
-            if (File.Exists("areas.ori.old")) {
-                File.Delete("areas.ori.old");
-            }
-
-            Randomizer.log("ws: areas.ori updated from server, reloading logic");
-            InitializeLogic();
-        } catch (Exception e) {
-            Randomizer.log($"ApplyAreasUpdate: {e}");
-            if (!File.Exists("areas.ori") && File.Exists("areas.ori.old")) {
-                File.Move("areas.ori.old", "areas.ori");
-            }
-        }
-    }
-
     public static void DownloadAreas() {
         if (RandomizerSettings.DevSettings.AreasOri) {
-            var webClient = new QuickWebClient();
             try {
                 if (File.Exists("areas.ori")) {
                     File.Move("areas.ori", "areas.ori.old"); // backup
                 }
 
-                ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
-                webClient.DownloadFile(AreasURL(), "areas.ori");
+                // The logic thread can block, so the sidecar's download is free
+                // here. The session's first TLS request can collide with the
+                // websocket's handshake and fail; a second attempt goes through.
+                var fetched = false;
+                for (var attempt = 0; attempt < 2 && NativeWebSocket.Loaded && NativeWebSocket.HttpAvailable; attempt++) {
+                    var status = NativeWebSocket.HttpDownload(SecureAreasURL(), "areas.ori");
+                    if (status == 200) {
+                        fetched = true;
+                        break;
+                    }
+
+                    Randomizer.log($"areas.ori: sidecar attempt {attempt + 1} gave {status} "
+                        + $"({NativeWebSocket.GetLastHttpError()})");
+                    Thread.Sleep(500);
+                }
+
+                if (!fetched) {
+                    var webClient = new QuickWebClient();
+                    ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
+                    webClient.DownloadFile(AreasURL(), "areas.ori");
+                }
+
+                Randomizer.log($"areas.ori: fetched from {(fetched ? SecureAreasURL() : AreasURL())}");
+
                 if (File.Exists("areas.ori.old")) {
                     File.Delete("areas.ori.old"); // clean backup
                 }
@@ -458,6 +426,9 @@ public class RandomizerLocationManager {
     public static bool HaveDownloadedAreas;
 
     public static string AreasURL() => $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/areas";
+
+    // WsEndpoint is the canonical host; WebEndpoint is the plain-http one
+    public static string SecureAreasURL() => $"https://{RandomizerSettings.DevSettings.WsEndpoint.Value}/netcode/areas";
 
     private static DateTime s_logicLastUpdated = DateTime.MinValue;
 

@@ -4,8 +4,15 @@ The native websocket sidecar the randomizer's netcode uses (the game's
 Mono can't speak modern TLS or websockets). Built from
 [timoschwarzer/dotnet-native-websocket](https://github.com/timoschwarzer/dotnet-native-websocket)
 (MIT) — our changes (thread safety, TLS CA support, connection counters,
-text frames) are PR'd upstream rather than forked here; only the built
-binary lives in this repo.
+text frames, http downloads) are PR'd upstream rather than forked here;
+only the built binary lives in this repo.
+
+It also carries `http_download` / `get_last_http_error`, an HTTPS GET
+straight to a file over the same mbedtls stack, which is how the updater
+fetches the version and the new assembly. The body never crosses the
+interop boundary, and the call blocks, so it runs on its own thread.
+`randomizer/NativeWebSocket.cs` binds those two *optionally*: a wrapper
+paired with an older dll loses the updater but keeps its socket.
 
 Ships inside Assembly-CSharp.dll as an embedded resource named exactly
 `NativeWebSocket.dll`, alongside `cacert.pem` (the Mozilla CA bundle —

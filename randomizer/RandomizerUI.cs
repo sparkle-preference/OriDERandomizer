@@ -257,6 +257,9 @@ public class RandomizerUI : MonoBehaviour {
 
         public static Color VanillaBgColor = new Color(0f, 0f, 0f, 0.5f);
 
+        // dark enough that the white message text stays readable on it
+        public static Color ErrorBgColor = new Color(0.55f, 0.04f, 0.04f, 0.45f);
+
         public string MessageString;
         public Color BgColor;
         public float BaseDuration;

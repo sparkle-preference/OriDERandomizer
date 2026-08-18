@@ -72,7 +72,6 @@ public static class RandomizerSyncManager {
                 wsLoadAttempts = 0;
                 wsFoundUnsupported = false;
                 wsNoHttp = false; // the server re-sends nohttp on connect
-                wsAreasChecked = false;
                 StartWebsocket(url);
             }
         }
@@ -170,14 +169,6 @@ public static class RandomizerSyncManager {
             // retry a failed native load every few seconds (max 3 tries)
             if (!wsDead && wsUrl != null && wsStartedUrl == null && Time.realtimeSinceStartup >= wsNextTry) {
                 StartWebsocket(wsUrl);
-            }
-
-            // once per seed load, offer our areas.ori hash — a server with
-            // newer logic replies with the file (wait for the boot-time
-            // http fetch to settle so we hash the fresh copy)
-            if (WsOpen && !wsAreasChecked && RandomizerLocationManager.HaveDownloadedAreas) {
-                wsAreasChecked = true;
-                NativeWebSocket.SendText("areas:" + RandomizerLocationManager.AreasHash());
             }
 
             // unacked complete: keeps retrying (multiworld releases ride on it)
@@ -345,15 +336,6 @@ public static class RandomizerSyncManager {
             } else if (kind == "nohttp") {
                 wsNoHttp = true;
                 Randomizer.log("ws: server flagged http fallback unavailable; websocket-only mode");
-            } else if (kind == "areas" && sep >= 0) {
-                var body = frame.Substring(sep + 1);
-                // "ok" = our hash matched; anything real is the whole file
-                // (never overwrite with something implausibly small)
-                if (body != "ok" && body.Length > 10000) {
-                    RandomizerLocationManager.ApplyAreasUpdate(body);
-                } else if (body != "ok") {
-                    Randomizer.log($"ws: ignoring suspiciously small areas frame ({body.Length} chars)");
-                }
             } else if (kind == "err" && sep >= 0) {
                 // a server that errs one of our frame kinds predates it:
                 // route that channel back to http
@@ -830,8 +812,6 @@ public static class RandomizerSyncManager {
     private static bool wsFoundUnsupported;
 
     private static bool wsNoHttp;
-
-    private static bool wsAreasChecked;
 
     private static bool completePending;
 

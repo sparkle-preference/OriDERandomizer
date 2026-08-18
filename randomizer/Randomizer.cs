@@ -12,7 +12,7 @@ using Events = Game.Events;
 using Random = System.Random;
 
 public static class Randomizer {
-    public static string VERSION = "4.2.14";
+    public static string VERSION = "4.2.15";
 
     public static void initialize() {
         try {
@@ -42,6 +42,7 @@ public static class Randomizer {
             Shards = false;
             WorldTour = false;
             SeedMeta = "";
+            SeedFormat = MIN_SEED_FORMAT;
             MistySim = new WorldEvents();
             MistySim.MoonGuid = new MoonGuid(1061758509, 1206015992, 824243626, -2026069462);
             TeleportTable = new Hashtable();
@@ -201,8 +202,15 @@ public static class Randomizer {
         Events.Scheduler.OnGameSerializeLoad.Add(OnGameSerializeLoad);
 
         RandomizerSettings.ParseSettings();
+
+        // before the location manager starts the logic thread: extracting the
+        // sidecar reads Unity paths only the main thread may touch
+        NativeWebSocket.Load();
+
         RandomizerLocationManager.Initialize();
         RandomizerUI.Initialize();
+        RandomizerVersionLabel.Initialize();
+        RandomizerUpdater.Initialize();
         RandomizerBootstrap.Initialize();
         Inventory = RandomizerInventory.Initialize();
         Keysanity = new RandomizerKeysanity(Inventory);
@@ -763,9 +771,30 @@ public static class Randomizer {
     }
 
     public static void showSeedInfo() {
+        var problem = SeedFormatProblem;
+        if (problem != null) {
+            log($"seed format {SeedFormat}, this dll reads {MIN_SEED_FORMAT}-{MAX_SEED_FORMAT}");
+            MessageQueue.Enqueue(new RandomizerUI.Message(problem, RandomizerUI.Message.ErrorBgColor, 8f));
+            return;
+        }
+
         var seedInfo = "v" + VERSION;
         seedInfo += "- seed loaded: " + SeedMeta;
         printInfo(seedInfo);
+    }
+
+    public static string SeedFormatProblem {
+        get {
+            if (SeedFormat > MAX_SEED_FORMAT) {
+                return "Error: loaded seed requires a newer DLL.\nPlease update from the title screen.";
+            }
+
+            if (SeedFormat < MIN_SEED_FORMAT) {
+                return "Error: loaded seed is too old for this DLL.\nPlease roll a new seed or inform the author.";
+            }
+
+            return null;
+        }
     }
 
     public static void changeColor() {
@@ -1299,6 +1328,15 @@ public static class Randomizer {
     // seed metadata: "//Key=Value" lines after the flagline, invisible to the
     // pickup parse. Unknown keys are ignored, like unknown flags.
     public static void ParseMetaLine(string meta) {
+        // "// SEED_FORMAT: n" -- seed file layout, not a dll version
+        if (meta.ToLower().StartsWith("seed_format:")) {
+            if (int.TryParse(meta.Substring("seed_format:".Length).Trim(), out var format)) {
+                SeedFormat = format;
+            }
+
+            return;
+        }
+
         if (meta.ToLower().StartsWith("keytiers=")) {
             // per-door thresholds for exported-keystone seeds, positional
             // (0 = door absent); a malformed line just disables tiers
@@ -1536,6 +1574,15 @@ public static class Randomizer {
     public static bool ProgressiveMapStones;
     public static bool ForceTrees;
     public static string SeedMeta;
+
+    // Seed file layout, tracked separately from the dll version: it moves only
+    // when the format stops being readable, in either direction.
+    public const int MIN_SEED_FORMAT = 1;
+
+    public const int MAX_SEED_FORMAT = 1;
+
+    // seeds predating the SEED_FORMAT line are format 1
+    public static int SeedFormat = MIN_SEED_FORMAT;
     public static Hashtable TeleportTable;
     public static WorldEvents MistySim;
     public static bool Returning;

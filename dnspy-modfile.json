@@ -324,6 +324,7 @@
 		"randomizer/RandomizerGoingDirectionCondition.cs",
 		"randomizer/RandomizerHints.cs",
 		"randomizer/RandomizerHotColdItem.cs",
+		"randomizer/RandomizerHttp.cs",
 		"randomizer/RandomizerInventory.cs",
 		"randomizer/RandomizerKeysanity.cs",
 		"randomizer/RandomizerKeysanityHintInfo.cs",
@@ -341,7 +342,10 @@
 		"randomizer/RandomizerTempResourceProvider.cs",
 		"randomizer/RandomizerTempResourceUI.cs",
 		"randomizer/RandomizerText.cs",
+		"randomizer/RandomizerTitleScreen.cs",
+		"randomizer/RandomizerVersionLabel.cs",
 		"randomizer/RandomizerTrackedDataManager.cs",
+		"randomizer/RandomizerUpdater.cs",
 		"randomizer/RandomizerUI.cs",
 		"randomizer/RandomizerWallJumpHintCondition.cs",
 		"randomizer/RandomizerWorldMapIconManager.cs",
@@ -351,6 +355,7 @@
 		"resource_files/hintMessageBackgroundWhite.png",
 		"resource_files/NativeWebSocket.dll",
 		"resource_files/cacert.pem",
-		"resource_files/plant.png"
+		"resource_files/plant.png",
+		"resource_files/menu_text_randomizer.png"
 	]
 }

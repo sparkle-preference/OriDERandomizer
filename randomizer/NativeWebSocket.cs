@@ -67,6 +67,18 @@ public static class NativeWebSocket {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate IntPtr PtrLenFn(out int len);
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int DownloadFn(string url, string caPath, string outPath);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int BeginFn(string method, string url, string caPath, string body, string contentType);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int HandleRetIntFn(int handle);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate IntPtr HandlePtrLenFn(int handle, out int len);
+
     private static VoidFn initialize_network;
     private static VoidFn finalize_network;
     private static StrFn set_url;
@@ -85,6 +97,23 @@ public static class NativeWebSocket {
     private static RetByteFn has_pending_message;
     private static PtrLenFn get_pending_message;
     private static VoidFn pop_pending_message;
+    private static DownloadFn http_download;
+    private static PtrLenFn get_last_http_error;
+    private static BeginFn http_begin;
+    private static HandleRetIntFn http_status;
+    private static HandlePtrLenFn http_response;
+    private static HandlePtrLenFn http_response_error;
+    private static IntFn http_release;
+
+    // false when the extracted sidecar predates the updater; netcode is
+    // unaffected, the update option just stays hidden
+    public static bool HttpAvailable => http_download != null;
+
+    // false when it predates the async request api; callers fall back to
+    // System.Net rather than losing the request
+    public static bool AsyncHttpAvailable => http_begin != null;
+
+    public const int HttpPending = -1;
 
     public static bool Load() {
         if (Loaded) {
@@ -124,6 +153,22 @@ public static class NativeWebSocket {
             has_pending_message = (RetByteFn)Bind(module, "has_pending_message", typeof(RetByteFn));
             get_pending_message = (PtrLenFn)Bind(module, "get_pending_message", typeof(PtrLenFn));
             pop_pending_message = (VoidFn)Bind(module, "pop_pending_message", typeof(VoidFn));
+            // optional, so a wrapper newer than the extracted dll keeps its socket
+            http_download = (DownloadFn)BindOptional(module, "http_download", typeof(DownloadFn));
+            get_last_http_error = (PtrLenFn)BindOptional(module, "get_last_http_error", typeof(PtrLenFn));
+            http_begin = (BeginFn)BindOptional(module, "http_begin", typeof(BeginFn));
+            http_status = (HandleRetIntFn)BindOptional(module, "http_status", typeof(HandleRetIntFn));
+            http_response = (HandlePtrLenFn)BindOptional(module, "http_response", typeof(HandlePtrLenFn));
+            http_response_error = (HandlePtrLenFn)BindOptional(module, "http_response_error", typeof(HandlePtrLenFn));
+            http_release = (IntFn)BindOptional(module, "http_release", typeof(IntFn));
+            if (http_download == null) {
+                Randomizer.log("ws diag: sidecar has no http_download; updater disabled");
+            }
+
+            if (http_begin == null) {
+                Randomizer.log("ws diag: sidecar has no async http; falling back to System.Net");
+            }
+
             initialize_network();
             Randomizer.log("ws diag: exports bound, initialize_network ok");
             Loaded = true;
@@ -132,6 +177,11 @@ public static class NativeWebSocket {
             Randomizer.log($"NativeWebSocket.Load: {e}");
             return false;
         }
+    }
+
+    private static Delegate BindOptional(IntPtr module, string name, Type t) {
+        var fn = GetProcAddress(module, name);
+        return fn == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer(fn, t);
     }
 
     private static Delegate Bind(IntPtr module, string name, Type t) {
@@ -240,6 +290,75 @@ public static class NativeWebSocket {
 
     public static string GetLastError() {
         var ptr = get_last_error(out var length);
+        if (ptr == IntPtr.Zero || length == 0) {
+            return "";
+        }
+
+        var bytes = new byte[length];
+        Marshal.Copy(ptr, bytes, 0, length);
+        return Encoding.UTF8.GetString(bytes);
+    }
+
+    // Blocking, and the body lands in outPath rather than crossing interop.
+    // Returns the HTTP status, or negative if it never got that far.
+    public static int HttpDownload(string url, string outPath) {
+        if (http_download == null) {
+            return -1;
+        }
+
+        return http_download(url, CaPath ?? "", outPath);
+    }
+
+    // Async request handles. Returns 0 if the request could not be started;
+    // poll HttpStatus until it stops returning HttpPending, then read the body
+    // and always HttpRelease.
+    public static int HttpBegin(string method, string url, string body, string contentType) {
+        if (http_begin == null) {
+            return 0;
+        }
+
+        return http_begin(method, url, CaPath ?? "", body ?? "", contentType ?? "");
+    }
+
+    public static int HttpStatus(int handle) {
+        return http_status == null ? 0 : http_status(handle);
+    }
+
+    public static string HttpResponse(int handle) {
+        return ReadHandleString(http_response, handle);
+    }
+
+    public static string HttpResponseError(int handle) {
+        return ReadHandleString(http_response_error, handle);
+    }
+
+    public static void HttpRelease(int handle) {
+        if (http_release != null) {
+            http_release(handle);
+        }
+    }
+
+    private static string ReadHandleString(HandlePtrLenFn fn, int handle) {
+        if (fn == null) {
+            return "";
+        }
+
+        var ptr = fn(handle, out var length);
+        if (ptr == IntPtr.Zero || length == 0) {
+            return "";
+        }
+
+        var bytes = new byte[length];
+        Marshal.Copy(ptr, bytes, 0, length);
+        return Encoding.UTF8.GetString(bytes);
+    }
+
+    public static string GetLastHttpError() {
+        if (get_last_http_error == null) {
+            return "sidecar has no http support";
+        }
+
+        var ptr = get_last_http_error(out var length);
         if (ptr == IntPtr.Zero || length == 0) {
             return "";
         }

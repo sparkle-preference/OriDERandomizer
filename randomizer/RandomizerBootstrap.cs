@@ -114,6 +114,8 @@ public class RandomizerBootstrap {
     }
 
     private static void BootstrapTitleScreen(SceneRoot sceneRoot) {
+        RandomizerTitleScreen.Bootstrap(sceneRoot.transform.FindChild("ui"));
+
         SaveSlotsItemsUI itemsUI = sceneRoot.transform.FindChild("ui").GetComponent<TitleScreenManager>().SaveSlotsScreen.ItemsUI;
         foreach (SaveSlotUI saveSlotUI in new Object[2] { itemsUI.SaveSlotUI, itemsUI.SaveSlotCompletedUI }) {
             saveSlotUI.EasyTextMessageProvider = RandomizerText.DifficultyOverrides.Easy.NameOverride;
