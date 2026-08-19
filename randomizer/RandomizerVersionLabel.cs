@@ -86,6 +86,8 @@ public class RandomizerVersionLabel : MonoBehaviour {
         clone.name = "versionText";
         clone.transform.SetParent(transform, false);
         clone.transform.localScale *= Scale;
+        // the menu path overwrites this, so keep it to restore on the way out
+        m_baseScale = clone.transform.localScale;
 
         // the HUD layer this came from is only drawn by the gui camera, which
         // is disabled outside gameplay
@@ -171,8 +173,11 @@ public class RandomizerVersionLabel : MonoBehaviour {
     private void PlaceAgainstWorld() {
         if (m_label.layer != ArtLayer) {
             SetLayerRecursively(m_label, ArtLayer);
-            m_label.transform.localScale = m_baseScale;
         }
+
+        // set every frame rather than on the way in: whichever path ran last
+        // owns the scale, and guessing wrong is a screen-filling version number
+        m_label.transform.localScale = m_baseScale;
 
         var camera = ActiveCamera();
         if (camera == null) {
