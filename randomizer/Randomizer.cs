@@ -108,7 +108,7 @@ public static class Randomizer {
             EnhancedSeinInSeed = false;
 
             if (SeedFilePath == null) {
-                SeedFilePath = "randomizer.dat";
+                SeedFilePath = DefaultSeedFilePath();
             }
 
             var lastLine = "";
@@ -184,18 +184,32 @@ public static class Randomizer {
                     }
                 } else {
                     printInfo("Error: " + SeedFilePath + " not found");
-                    SeedFilePath = "randomizer.dat";
+                    SeedFilePath = DefaultSeedFilePath();
                 }
             } catch (Exception e) {
                 printInfo($"Error parsing {SeedFilePath} at line {lastLineNum}: {e.Message}", 300);
                 log($"Couldn't parse \"{lastLine}\" (line {lastLineNum} of {SeedFilePath}): {e.Message}");
-                SeedFilePath = "randomizer.dat";
+                SeedFilePath = DefaultSeedFilePath();
             }
 
             RandomizerBonusSkill.Reset();
         } catch (Exception e) {
             log("init: " + e.Message);
         }
+    }
+
+    private static string DefaultSeedFilePath() {
+        var primaryPath = "randomizer.bfr";
+        if (File.Exists(primaryPath)) {
+            return primaryPath;
+        }
+
+        var secondaryPath = "randomizer.dat";
+        if (File.Exists(secondaryPath)) {
+            return secondaryPath;
+        }
+
+        return primaryPath;
     }
 
     public static void InitializeOnce() {
@@ -232,7 +246,7 @@ public static class Randomizer {
 
         var filePath = aFiles[0];
         var fileName = filePath.Substring(filePath.LastIndexOf('\\') + 1);
-        if (fileName.StartsWith("randomizer") && fileName.EndsWith(".dat")) {
+        if (fileName.StartsWith("randomizer") && (fileName.EndsWith(".bfr") || fileName.EndsWith(".dat"))) {
             SeedFilePath = aFiles[0];
             initialize();
             showSeedInfo();
