@@ -83,6 +83,10 @@ public static class RandomizerAutoplayer {
             // coords 0 and not-found-locally: this came from outside the seed,
             // so it claims no location and sends nothing to the server
             RandomizerSwitch.GivePickup(action, 0, false);
+
+            // a dropped item skips the sync tick, which is what otherwise
+            // refreshes logic when an item arrives from outside the seed
+            RandomizerLocationManager.UpdateReachable();
         } catch (Exception e) {
             Randomizer.LogError($"Autoplayer.Drop({content}): {e.Message}");
         }

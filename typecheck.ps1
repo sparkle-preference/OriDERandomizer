@@ -43,11 +43,13 @@ $cmdArgs = @($csc, "-nologo", "-t:library", "-langversion:latest",
 Write-Host "Type-checking $($sources.Count) sources against $($refs.Count) assemblies..."
 $raw = (& dotnet $cmdArgs 2>&1 | Out-String) -split "`r?`n" | Where-Object { $_ -match "error CS" }
 
-# key on file + code + message, so an edit that shifts line numbers does not
-# invalidate the baseline
+# Key on filename + code + message. Line and column are dropped so an edit that
+# shifts them does not invalidate the baseline, and the directory is dropped
+# because csc reports a path relative to its working directory or absolute
+# depending on where it was invoked from.
 function Key($line) {
-    $stripped = $line -replace [regex]::Escape($repo + "\"), ""
-    return $stripped -replace "\(\d+,\d+\)", ""
+    $leaf = $line -replace "^.*[\\/]", ""
+    return $leaf -replace "\(\d+,\d+\)", ""
 }
 
 $baseline = @{}

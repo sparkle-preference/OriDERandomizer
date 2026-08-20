@@ -1,8 +1,9 @@
 # Errors typecheck.ps1 expects. Each is a type that exists only in the modded
 # assembly the modfile produces, so a compile against vanilla cannot see it.
-# Lines are file + error code + message, with line/column stripped.
-randomizer\Randomizer.cs: error CS0246: The type or namespace name 'B83' could not be found (are you missing a using directive or an assembly reference?)
-randomizer\Randomizer.cs: error CS0246: The type or namespace name 'POINT' could not be found (are you missing a using directive or an assembly reference?)
-randomizer\RandomizerLocationManager.cs: error CS0246: The type or namespace name 'Protogen' could not be found (are you missing a using directive or an assembly reference?)
-randomizer\RandomizerLocationManager.cs: error CS0246: The type or namespace name 'AreaGraph' could not be found (are you missing a using directive or an assembly reference?)
-randomizer\RandomizerRebinding.cs: error CS0426: The type name 'ControllerButton' does not exist in the type 'PlayerInputRebinding'
+# Keyed on filename + error code + message; line, column and directory are
+# stripped, so edits and a different working directory both leave these valid.
+Randomizer.cs: error CS0246: The type or namespace name 'B83' could not be found (are you missing a using directive or an assembly reference?)
+Randomizer.cs: error CS0246: The type or namespace name 'POINT' could not be found (are you missing a using directive or an assembly reference?)
+RandomizerLocationManager.cs: error CS0246: The type or namespace name 'Protogen' could not be found (are you missing a using directive or an assembly reference?)
+RandomizerLocationManager.cs: error CS0246: The type or namespace name 'AreaGraph' could not be found (are you missing a using directive or an assembly reference?)
+RandomizerRebinding.cs: error CS0426: The type name 'ControllerButton' does not exist in the type 'PlayerInputRebinding'
