@@ -478,11 +478,11 @@ public static class RandomizerSyncManager {
                         // 100-129: bonus skills
                     } else if (id >= 100 && id < 130) {
                         if (cnt > 0 && RandomizerBonus.UpgradeCount(id) == 0) {
-                            RandomizerBonus.UpgradeID(id);
+                            GrantUpgrade(id);
                         }
                         // everything else!
                     } else if (RandomizerBonus.UpgradeCount(id) < cnt) {
-                        RandomizerBonus.UpgradeID(id);
+                        GrantUpgrade(id);
                         mustRefreshLogic = true;
                     } else if (!PickupQueue.Where(p => p.type == "RB" && p.id == splitpair[0]).Any() && RandomizerBonus.UpgradeCount(id) > cnt) {
                         RandomizerBonus.UpgradeID(-id);
@@ -574,6 +574,17 @@ public static class RandomizerSyncManager {
             }
         } finally {
             RandomizerSwitch.SilentMode = false;
+        }
+    }
+
+    // a teammate's upgrade arrives with no location of its own, and this
+    // path never passes through GivePickup
+    private static void GrantUpgrade(int id) {
+        RandomizerStatsManager.PickupZone = "offworld";
+        try {
+            RandomizerBonus.UpgradeID(id);
+        } finally {
+            RandomizerStatsManager.PickupZone = null;
         }
     }
 

@@ -34,7 +34,8 @@ public static class RandomizerSwitch {
             return;
         }
 
-        Characters.Sein.Level.GainExperience(RandomizerBonus.ExpWithBonuses(Value, true));
+        var earned = RandomizerStatsManager.PickupZone != "offworld";
+        Characters.Sein.Level.GainExperience(RandomizerBonus.ExpWithBonuses(Value, earned));
     }
 
     public static void KeystonePickup() {
@@ -246,6 +247,13 @@ public static class RandomizerSwitch {
     }
 
     public static void GivePickup(RandomizerAction action, int coords, bool found_locally = true) {
+        // outermost wins: an Archipelago self-item grants through the slot
+        // machinery from inside the Give() of the location actually touched
+        var outerZone = RandomizerStatsManager.PickupZone;
+        if (outerZone == null) {
+            RandomizerStatsManager.PickupZone = RandomizerStatsManager.ZoneForPickup(coords);
+        }
+
         try {
             switch (action.Action) {
                 case "RP":
@@ -418,6 +426,8 @@ public static class RandomizerSwitch {
             RandomizerTrackedDataManager.UpdateBitfields();
         } catch (Exception e) {
             Randomizer.LogError($"Give Pickup({action}, {coords}): {e.Message}");
+        } finally {
+            RandomizerStatsManager.PickupZone = outerZone;
         }
 
         if (found_locally && Randomizer.Sync) {

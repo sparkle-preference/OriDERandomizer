@@ -21,6 +21,7 @@ public static class RandomizerStatsManager {
         Offsets.Add("sorrowPass", 10);
         Offsets.Add("mountHoru", 11);
         Offsets.Add("unknown", 12);
+        Offsets.Add("offworld", 13);
         Offsets.Add("total", 0);
 
         ZonePrettyNames = new Dictionary<string, string>();
@@ -36,7 +37,14 @@ public static class RandomizerStatsManager {
         ZonePrettyNames.Add("sorrowPass", "Sorrow");
         ZonePrettyNames.Add("mountHoru", "Horu\t");
         ZonePrettyNames.Add("unknown", "Misc\t");
+        ZonePrettyNames.Add("offworld", "Offworld");
         ZonePrettyNames.Add("total", "Total\t");
+
+        // Location.Zone speaks pretty names; Offsets speaks area identifiers
+        ZoneKeysByPrettyName = new Dictionary<string, string>();
+        foreach (var pair in ZonePrettyNames) {
+            ZoneKeysByPrettyName[pair.Value.Trim()] = pair.Key;
+        }
 
         PickupCounts = new Dictionary<string, int>();
         PickupCounts.Add("sunkenGlades", 28);
@@ -383,6 +391,10 @@ public static class RandomizerStatsManager {
             case 0:
                 statsPage += "ALIGNLEFTANCHORTOPPARAMS_12_14_1_Zone		Deaths	Time			Pickups		PPM";
                 foreach (var zone in Offsets.Keys) {
+                    if (zone == "offworld") {
+                        continue;
+                    }
+
                     var offset = Offsets[zone];
                     var line = ZonePrettyNames[zone];
                     if (zone == "unknown") {
@@ -723,12 +735,43 @@ public static class RandomizerStatsManager {
     }
 
     public static void FoundKeyItem(string itemName) {
+        if (!KeyItemOffsets.ContainsKey(itemName)) {
+            return;
+        }
+
         var offset = KeyItemTime + KeyItemOffsets[itemName];
         if (get(offset) == 0) {
             var time = get(Time);
-            var zone = Offsets[CurrentZone()];
+            var key = PickupZone ?? CurrentZone();
+            var zone = Offsets.ContainsKey(key) ? Offsets[key] : Offsets["unknown"];
             set(offset, time + (zone << 18));
         }
+    }
+
+    // Zone the item being given right now belongs to, held for one GivePickup.
+    // Null means the player found it wherever they are standing.
+    public static string PickupZone;
+
+    public static Dictionary<string, string> ZoneKeysByPrettyName;
+
+    /// <summary>
+    /// The zone a pickup at these coords belongs to, as an Offsets key. A grant
+    /// carries no location of its own -- a multiworld slot is -2..-257, a sync
+    /// or drop grant is 0 -- and neither is anywhere the player has been.
+    /// </summary>
+    public static string ZoneForPickup(int coords) {
+        if (coords == 0 || (coords <= -2 && coords >= -257)) {
+            return "offworld";
+        }
+
+        RandomizerLocationManager.Location loc;
+        if (RandomizerLocationManager.LocationsByKey.TryGetValue(coords, out loc)
+                && loc.Zone != null && ZoneKeysByPrettyName.ContainsKey(loc.Zone)) {
+            return ZoneKeysByPrettyName[loc.Zone];
+        }
+
+        // a progressive mapstone says "Mapstone", and spawn has no location
+        return CurrentZone();
     }
 
     public static int Deaths = 1500;
