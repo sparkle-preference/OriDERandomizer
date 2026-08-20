@@ -92,19 +92,9 @@ public static class RandomizerItems {
     };
 
     // RB 40-49 take a skill away. A log wants Name's "Remove Bash"; the
-    // player wants the red "@Bash Lost!!@" they have always seen, spelling
-    // quirks included.
-    private static readonly Dictionary<string, string> SkillLossTokens = new Dictionary<string, string> {
-        { "40", "Wall Jump" },
-        { "41", "ChargeFlame" },
-        { "42", "DoubleJump" },
-        { "43", "Bash" },
-        { "44", "Stomp" },
-        { "45", "Glide" },
-        { "46", "Climb" },
-        { "47", "Charge Jump" },
-        { "48", "Dash" },
-        { "49", "Grenade" },
+    // player wants the red "@Bash Lost!!@" for the same id.
+    private static readonly HashSet<string> SkillLossIds = new HashSet<string> {
+        "40", "41", "42", "43", "44", "45", "46", "47", "48", "49"
     };
 
     private static readonly HashSet<string> blueStuff = new HashSet<string> { "Water Vein", "Ginso Teleporter", "Clean Water" };
@@ -236,8 +226,9 @@ public static class RandomizerItems {
             return Name(code, (-signed).ToString()) + " Lost!";
         }
 
-        if (code == "RB" && SkillLossTokens.ContainsKey(id)) {
-            return "@" + SkillLossTokens[id] + " Lost!!@";
+        if (code == "RB" && SkillLossIds.Contains(id)) {
+            var skill = Name(code, id);
+            return "@" + (skill.StartsWith("Remove ") ? skill.Substring(7) : skill) + " Lost!!@";
         }
 
         if (code == "TP") {
