@@ -437,7 +437,7 @@ public static class RandomizerSwitch {
     }
 
     public static void LoseHC() {
-        PickupMessage("Health Cell Lost!");
+        PickupMessage(RandomizerItems.Message("HC", "-1"));
         Characters.Sein.Mortality.Health.MaxHealth -= 4;
         if (Characters.Sein.Mortality.Health.Amount > Characters.Sein.Mortality.Health.MaxHealth) {
             Characters.Sein.Mortality.Health.Amount = Characters.Sein.Mortality.Health.MaxHealth;
@@ -445,7 +445,7 @@ public static class RandomizerSwitch {
     }
 
     public static void LoseEC() {
-        PickupMessage("Energy Cell Lost!");
+        PickupMessage(RandomizerItems.Message("EC", "-1"));
         Characters.Sein.Energy.Max--;
         if (Characters.Sein.Energy.Current > Characters.Sein.Energy.Max) {
             Characters.Sein.Energy.Current = Characters.Sein.Energy.Max;
@@ -453,18 +453,18 @@ public static class RandomizerSwitch {
     }
 
     public static void LoseAC() {
-        PickupMessage("Ability Cell Lost!");
+        PickupMessage(RandomizerItems.Message("AC", "-1"));
         Characters.Sein.Level.SkillPoints--;
     }
 
     public static void LoseMS() {
-        PickupMessage("Mapstone Lost!");
+        PickupMessage(RandomizerItems.Message("MS", "-1"));
         Characters.Sein.Inventory.MapStones--;
         Characters.Sein.Inventory.IncRandomizerItem(71, -1);
     }
 
     public static void LoseKS() {
-        PickupMessage("Keystone Lost!");
+        PickupMessage(RandomizerItems.Message("KS", "-1"));
         Characters.Sein.Inventory.Keystones--;
         Characters.Sein.Inventory.IncRandomizerItem(70, -1);
     }

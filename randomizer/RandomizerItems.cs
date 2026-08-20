@@ -213,6 +213,13 @@ public static class RandomizerItems {
     /// belong to the caller, which is what keeps this class game-free.
     /// </summary>
     public static string Message(string code, string id) {
+        // "X Lost!" is what the player wants told to them as it happens; a log
+        // or a map wants Name's third-person "Remove X" instead
+        int signed;
+        if (!string.IsNullOrEmpty(id) && id[0] == '-' && int.TryParse(id, out signed) && signed < 0) {
+            return Name(code, (-signed).ToString()) + " Lost!";
+        }
+
         if (code == "TP") {
             var color = ColorOf(Name(code, id));
             return color + id + " teleporter activated" + color;
