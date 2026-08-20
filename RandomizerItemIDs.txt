@@ -62,17 +62,17 @@ Randomizer inventory ids.
 101 - Polarity Shift
 102 - Gravity Swap
 103 - Extreme Speed
-104 - Roose's Wind
-105 - Respawn Without Dying
+104 - Teleport to Last AltR
+105 - Teleport to Soul Link
 106 - Respec
 107 - Level Explosion
-108 - Toggle Skill Velocity
+108 - Toggle Movement Bonuses
 109 - Timewarp
 110 - Invincibility
 111 - Wither
-112 - Pokeball (unfinished, see backlog)
+112 - Pokeball (unfinished/nonfunctional)
 113 - Toggle Bash/Stomp Damage
-114 - Summon Mom (unfinished, nonfunctional, see backlog)
+114 - Summon Mom (unfinished/nonfunctional)
 115 - Toggle Enhanced Effects
 116 - Mark (prints position/scene/zone)
 
