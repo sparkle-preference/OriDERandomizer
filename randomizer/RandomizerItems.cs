@@ -200,21 +200,4 @@ public static class RandomizerItems {
 
         return ""; // this could have been a poem
     }
-
-    // TEMP F2CHECK -- remove before merge, along with every Verified() call.
-    public static Action<string> ParityLog;
-
-    /// <summary>
-    /// Returns the literal the old code would have printed, logging when
-    /// Message() disagrees. Lets a call site be converted with no change in
-    /// what the player sees until the log comes back clean.
-    /// </summary>
-    public static string Verified(string code, string id, string old) {
-        var mine = Message(code, id);
-        if (mine != old && ParityLog != null) {
-            ParityLog($"F2CHECK PARITY {code}|{id}: old \"{old}\" != new \"{mine}\"");
-        }
-
-        return old;
-    }
 }
