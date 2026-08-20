@@ -25,10 +25,10 @@ public static class RandomizerItems {
         { "31", "Health Leech" }, { "32", "Energy Leech" }, { "33", "Skill Velocity Upgrade" },
         { "34", "Disable Warping" }, { "35", "Enable Warping" }, { "36", "Underwater Skill Usage" },
         { "37", "Jump Upgrade" }, { "38", "Mini Health" }, { "39", "Mini Energy" },
-        { "40", "Wall Jump Lost" }, { "41", "ChargeFlame Lost" }, { "42", "DoubleJump Lost" },
-        { "43", "Bash Lost" }, { "44", "Stomp Lost" }, { "45", "Glide Lost" },
-        { "46", "Climb Lost" }, { "47", "Charge Jump Lost" }, { "48", "Dash Lost" },
-        { "49", "Grenade Lost" }, { "81", "Stomp/Grenade Hint" }, { "200", "Quick Flame" },
+        { "40", "Remove Wall Jump" }, { "41", "Remove Charge Flame" }, { "42", "Remove Double Jump" },
+        { "43", "Remove Bash" }, { "44", "Remove Stomp" }, { "45", "Remove Glide" },
+        { "46", "Remove Climb" }, { "47", "Remove Charge Jump" }, { "48", "Remove Dash" },
+        { "49", "Remove Grenade" }, { "81", "Stomp/Grenade Hint" }, { "200", "Quick Flame" },
         { "201", "Spark Flame" }, { "202", "Charge Flame Burn" }, { "203", "Split Flame" },
         { "204", "Ultra Light Burst" }, { "205", "Cinder Flame" }, { "206", "Ultra Stomp" },
         { "207", "Rapid Flame" }, { "208", "Charge Flame Blast" }, { "209", "Ultra Split Flame" },
@@ -89,6 +89,22 @@ public static class RandomizerItems {
         { 115, "Toggle Enhanced Effects" },
         { 116, "Mark" },
         { 1587, "Warp to Credits" },
+    };
+
+    // RB 40-49 take a skill away. A log wants Name's "Remove Bash"; the
+    // player wants the red "@Bash Lost!!@" they have always seen, spelling
+    // quirks included.
+    private static readonly Dictionary<string, string> SkillLossTokens = new Dictionary<string, string> {
+        { "40", "Wall Jump" },
+        { "41", "ChargeFlame" },
+        { "42", "DoubleJump" },
+        { "43", "Bash" },
+        { "44", "Stomp" },
+        { "45", "Glide" },
+        { "46", "Climb" },
+        { "47", "Charge Jump" },
+        { "48", "Dash" },
+        { "49", "Grenade" },
     };
 
     private static readonly HashSet<string> blueStuff = new HashSet<string> { "Water Vein", "Ginso Teleporter", "Clean Water" };
@@ -218,6 +234,10 @@ public static class RandomizerItems {
         int signed;
         if (!string.IsNullOrEmpty(id) && id[0] == '-' && int.TryParse(id, out signed) && signed < 0) {
             return Name(code, (-signed).ToString()) + " Lost!";
+        }
+
+        if (code == "RB" && SkillLossTokens.ContainsKey(id)) {
+            return "@" + SkillLossTokens[id] + " Lost!!@";
         }
 
         if (code == "TP") {

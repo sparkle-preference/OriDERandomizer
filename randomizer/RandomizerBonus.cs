@@ -341,7 +341,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Wall Jump Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "40"), 240);
                 Characters.Sein.PlayerAbilities.WallJump.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -350,7 +350,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@ChargeFlame Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "41"), 240);
                 Characters.Sein.PlayerAbilities.ChargeFlame.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -359,7 +359,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@DoubleJump Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "42"), 240);
                 Characters.Sein.PlayerAbilities.DoubleJump.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -368,7 +368,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Bash Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "43"), 240);
                 Characters.Sein.PlayerAbilities.Bash.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -377,7 +377,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Stomp Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "44"), 240);
                 Characters.Sein.PlayerAbilities.Stomp.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -386,7 +386,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Glide Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "45"), 240);
                 Characters.Sein.PlayerAbilities.Glide.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -395,7 +395,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Climb Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "46"), 240);
                 Characters.Sein.PlayerAbilities.Climb.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -404,7 +404,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Charge Jump Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "47"), 240);
                 Characters.Sein.PlayerAbilities.ChargeJump.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -413,7 +413,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Dash Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "48"), 240);
                 Characters.Sein.PlayerAbilities.Dash.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -422,7 +422,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Grenade Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "49"), 240);
                 Characters.Sein.PlayerAbilities.Grenade.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
