@@ -22,7 +22,7 @@ public static class RandomizerBonusSkill {
         var active_slot = get(ActiveBonus) >> 2;
         var cur_slot = active_slot;
         if (unlocked.Count == 1) {
-            Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
+            Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + RandomizerItems.BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
             return;
         }
 
@@ -30,7 +30,7 @@ public static class RandomizerBonusSkill {
             cur_slot++;
             if (unlocked.ContainsKey(cur_slot) && get(unlocked[cur_slot]) > 0) {
                 ActiveBonus = unlocked[cur_slot];
-                Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
+                Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + RandomizerItems.BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
                 return;
             }
         }
@@ -39,7 +39,7 @@ public static class RandomizerBonusSkill {
         while (cur_slot < active_slot) {
             if (unlocked.ContainsKey(cur_slot) && get(unlocked[cur_slot]) > 0) {
                 ActiveBonus = unlocked[cur_slot];
-                Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
+                Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + RandomizerItems.BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
                 return;
             }
 
@@ -83,11 +83,11 @@ public static class RandomizerBonusSkill {
             case 109:
                 if (IsActive(ab)) {
                     Deactivate(ab);
-                    BonusSkillText(BonusSkillNames[ab] + " off");
+                    BonusSkillText(RandomizerItems.BonusSkillNames[ab] + " off");
                     EnergyDrainRate -= DrainRates[ab];
                 } else if (Characters.Sein.Energy.Current > 5 * DrainRates[ab]) {
                     Activate(ab);
-                    BonusSkillText(BonusSkillNames[ab] + " on");
+                    BonusSkillText(RandomizerItems.BonusSkillNames[ab] + " on");
                     EnergyDrainRate += DrainRates[ab];
                 } else {
                     UI.SeinUI.ShakeEnergyOrbBar();
@@ -205,12 +205,12 @@ public static class RandomizerBonusSkill {
             case 110:
                 if (IsActive(ab)) {
                     Deactivate(ab);
-                    BonusSkillText(BonusSkillNames[ab] + " off");
+                    BonusSkillText(RandomizerItems.BonusSkillNames[ab] + " off");
                     EnergyDrainRate -= DrainRates[ab];
                 } else if (Characters.Sein.Energy.Current > 1f) {
                     Activate(ab);
                     Characters.Sein.Energy.Spend(0.5f);
-                    BonusSkillText(BonusSkillNames[ab] + " on");
+                    BonusSkillText(RandomizerItems.BonusSkillNames[ab] + " on");
                     EnergyDrainRate += DrainRates[ab];
                 } else {
                     UI.SeinUI.ShakeEnergyOrbBar();
@@ -223,7 +223,7 @@ public static class RandomizerBonusSkill {
                 break;
             case 112:
                 if (CapturedEnemy == null) {
-                    BonusSkillNames[112] = "Pokeball (empty)";
+                    RandomizerItems.BonusSkillNames[112] = "Pokeball (empty)";
                     Characters.Sein.Abilities.SpiritFlameTargetting.UpdateClosestAttackables();
                     foreach (var target in Characters.Sein.Abilities.SpiritFlameTargetting.ClosestAttackables) {
                         var logMessage = target.GetType().ToString();
@@ -250,7 +250,7 @@ public static class RandomizerBonusSkill {
                             CapturedLeft = Characters.Sein.FaceLeft;
                             CapturedEnemy.gameObject.SetActiveRecursively(false);
                             //Events.Scheduler.OnSceneRootDisabled.Remove(new Action<SceneRoot>(CapturedEnemy.OnSceneUnloaded));
-                            BonusSkillNames[112] = "Pokeball (" + CapturedName + ")";
+                            RandomizerItems.BonusSkillNames[112] = "Pokeball (" + CapturedName + ")";
                         }
                     }
                 } else {
@@ -261,7 +261,7 @@ public static class RandomizerBonusSkill {
                     CapturedEnemy.Position = Characters.Sein.Position + CapturedOffset;
                     CapturedEnemy.gameObject.SetActiveRecursively(true);
                     CapturedEnemy = null;
-                    BonusSkillNames[112] = "Pokeball (empty)";
+                    RandomizerItems.BonusSkillNames[112] = "Pokeball (empty)";
                 }
 
                 break;
@@ -374,9 +374,9 @@ public static class RandomizerBonusSkill {
         CapturedLeft = SaveLeft;
         CapturedName = SaveName;
         if (CapturedName != null) {
-            BonusSkillNames[112] = "Pokeball (" + CapturedName + ")";
+            RandomizerItems.BonusSkillNames[112] = "Pokeball (" + CapturedName + ")";
         } else {
-            BonusSkillNames[112] = "Pokeball (empty)";
+            RandomizerItems.BonusSkillNames[112] = "Pokeball (empty)";
         }
 
         UpdateDrain();
@@ -386,14 +386,14 @@ public static class RandomizerBonusSkill {
         var psuedo = ID == 108 || ID == 115 || ID == 1587;
         if (get(ID) > 0) {
             if (!psuedo) {
-                RandomizerSwitch.PickupMessage(BonusSkillNames[ID] + " (duplicate)");
+                RandomizerSwitch.PickupMessage(RandomizerItems.BonusSkillNames[ID] + " (duplicate)");
             }
 
             return;
         }
 
         if (!psuedo) {
-            RandomizerSwitch.PickupMessage("Unlocked Bonus Skill: " + BonusSkillNames[ID]);
+            RandomizerSwitch.PickupMessage("Unlocked Bonus Skill: " + RandomizerItems.BonusSkillNames[ID]);
         }
 
         var offset = 0;
@@ -484,7 +484,7 @@ public static class RandomizerBonusSkill {
     public static Dictionary<int, int> UnlockedBonusSkills {
         get {
             var ubs = new Dictionary<int, int>();
-            foreach (var id in BonusSkillNames.Keys) {
+            foreach (var id in RandomizerItems.BonusSkillNames.Keys) {
                 var val = get(id);
                 if (val % 2 == 1) {
                     if (ubs.ContainsKey(val >> 2)) {
@@ -569,26 +569,6 @@ public static class RandomizerBonusSkill {
     private static int set(int item, int value) {
         return Characters.Sein.Inventory.SetRandomizerItem(item, value);
     }
-
-    public static Dictionary<int, string> BonusSkillNames = new Dictionary<int, string> {
-        { 101, "Polarity Shift" },
-        { 102, "Gravity Swap" },
-        { 103, "Extreme Speed" },
-        { 104, "Teleport to Last AltR" },
-        { 105, "Teleport to Soul Link" },
-        { 106, "Respec" },
-        { 107, "Level Explosion" },
-        { 108, "Toggle Movement Bonuses" },
-        { 109, "Timewarp" },
-        { 110, "Invincibility" },
-        { 111, "Wither" },
-        { 112, "Pokeball" },
-        { 113, "Toggle Bash/Stomp Damage" },
-        { 114, "Summon Mom" },
-        { 115, "Toggle Enhanced Effects" },
-        { 116, "Mark" },
-        { 1587, "Warp to Credits" },
-    };
 
     public static Dictionary<int, float> DrainRates = new Dictionary<int, float> {
         { 102, 0.00112f },

@@ -14,7 +14,7 @@ public static class RandomizerBonus {
             ID = -ID;
         }
 
-        if (RandomizerBonusSkill.BonusSkillNames.ContainsKey(ID)) {
+        if (RandomizerItems.BonusSkillNames.ContainsKey(ID)) {
             RandomizerBonusSkill.FoundBonusSkill(ID);
             return;
         }

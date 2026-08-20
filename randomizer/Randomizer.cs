@@ -79,6 +79,7 @@ public static class Randomizer {
             HotColdSaveId = 2000;
             OpenMode = true;
             OpenWorld = false;
+            RandomizerItems.ParityLog = log;   // TEMP F2CHECK -- remove before merge
             RandomizerColorManager.Initialize();
             RandomizerRebinding.ParseRebinding();
             RandomizerSettings.ParseSettings();
@@ -168,6 +169,16 @@ public static class Randomizer {
                             RandomizerMW.AddApLine(coords, lineParts[2]);
                         }
 
+                        // TEMP F2CHECK -- remove before merge
+                        if (lineParts[1] == "MW") {
+                            var kind = RandomizerMW.IsManifestLine(coords, lineParts[1]) ? "manifest" : "finder";
+                            if (RandomizerItems.Inner(lineParts[2], PlayerCount, out var f2c, out var f2i)) {
+                                F2Check.Add($"{kind} {coords} [{lineParts[2]}] -> {f2c}|{f2i} = \"{RandomizerItems.Name(f2c, f2i)}\"");
+                            } else {
+                                F2Check.Add($"{kind} {coords} [{lineParts[2]}] -> UNREADABLE");
+                            }
+                        }
+
                         GetDataFromSeedLine(coords, lineParts[1], lineParts[2], lineParts[3]);
 
                         if (coords == 2) {
@@ -177,6 +188,16 @@ public static class Randomizer {
                             RandomizerLocationManager.PlacePickup(coords, lineParts[1], lineParts[2], repeatable);
                         }
                     }
+
+                    // TEMP F2CHECK -- remove before merge
+                    log($"F2CHECK seed format {SeedFormat}, players {PlayerCount}, "
+                        + $"{F2Check.Count} cross-world lines, {HotColdItems.Count} sense items, "
+                        + $"{RandomizerMW.Manifest.Count} manifest slots");
+                    foreach (var f2line in F2Check) {
+                        log("F2CHECK " + f2line);
+                    }
+
+                    F2Check.Clear();
 
                     HotColdMaps.Sort();
                     HotColdMapsWithFrags.Sort();
@@ -1305,6 +1326,11 @@ public static class Randomizer {
         // someone else's Bash is still a Bash: sense classifies a cross-world
         // line by the item it carries, not by the MW that wraps it
         if (code == "MW" && RandomizerItems.Inner(id, PlayerCount, out var innerCode, out var innerId)) {
+            // TEMP F2CHECK -- remove before merge
+            if (HotColdTypes.Contains(innerCode) || HotColdTypes.Any(t => (innerCode + innerId).StartsWith(t))) {
+                F2Check.Add($"sense {coords} <- cross-world {innerCode}|{innerId}");
+            }
+
             GetSenseFromSeedLine(coords, innerCode, innerId, area);
             return;
         }
@@ -1605,6 +1631,9 @@ public static class Randomizer {
     // how many worlds this seed was rolled for; 0 when the seed never said.
     // An owner above it on a cross-world line is an Archipelago shadow.
     public static int PlayerCount;
+
+    // TEMP F2CHECK -- remove before merge
+    public static List<string> F2Check = new List<string>();
     public static Hashtable TeleportTable;
     public static WorldEvents MistySim;
     public static bool Returning;

@@ -137,7 +137,7 @@ public static class RandomizerMW {
         if (SlotGranted(slot)) {
             // came back to it after a rollback: the item is already ours
             var name = ApItems.TryGetValue(coords, out var ap) ? ap[1] : "That";
-            RandomizerSwitch.PickupMessage(ColorWrap(name) + " (already collected)");
+            RandomizerSwitch.PickupMessage(RandomizerItems.ColorWrap(name) + " (already collected)");
             return true;
         }
 
@@ -536,35 +536,9 @@ public static class RandomizerMW {
         return true;
     }
 
-    private static Dictionary<string, string> SkillNames = RandomizerItems.SkillNames;
-    private static Dictionary<string, string> EventNames = RandomizerItems.EventNames;
 
     private static string Counted(int n, string singular, string plural, string wrap = "") {
         return $"{wrap}{n} {(n == 1 ? singular : plural)}{wrap}";
-    }
-
-    private static HashSet<string> blueStuff = new HashSet<string> { "Water Vein", "Ginso Teleporter", "Clean Water" };
-    private static HashSet<string> orangeStuff = new HashSet<string> { "Gumon Seal", "Forlorn Teleporter", "Wind Restored" };
-    private static HashSet<string> redStuff = new HashSet<string> { "Sunstone", "Horu Teleporter", "Warmth Returned" };
-
-    public static string ColorWrap(string input) {
-        if (SkillNames.ContainsValue(input)) {
-            return $"${input}$"; // skill names are green
-        }
-
-        if (blueStuff.Contains(input)) {
-            return $"*{input}*"; // blue stuff is blue
-        }
-
-        if (orangeStuff.Contains(input)) {
-            return $"#{input}#"; // orange stuff is orange
-        }
-
-        if (redStuff.Contains(input)) {
-            return $"@{input}@"; // red stuff is red
-        }
-
-        return input; // this could have been a poem
     }
 
     // skills, then world events (+ shards/frags), then teleporters/warps, then a counts line
@@ -586,16 +560,16 @@ public static class RandomizerMW {
 
                 switch (entry.Code) {
                     case "SK":
-                        skills.Add(ColorWrap(SkillNames.ContainsKey(entry.Id) ? SkillNames[entry.Id] : "Unknown Skill " + entry.Id));
+                        skills.Add(RandomizerItems.ColorWrap(RandomizerItems.Name(entry.Code, entry.Id)));
                         break;
                     case "EV":
-                        events.Add(ColorWrap(EventNames.ContainsKey(entry.Id) ? EventNames[entry.Id] : "Unknown Event " + entry.Id));
+                        events.Add(RandomizerItems.ColorWrap(RandomizerItems.Name(entry.Code, entry.Id)));
                         break;
                     case "TP":
-                        travel.Add(ColorWrap(entry.Id + " Teleporter"));
+                        travel.Add(RandomizerItems.ColorWrap(RandomizerItems.Name(entry.Code, entry.Id)));
                         break;
                     case "TW":
-                        travel.Add(entry.Id.Split(',')[0]);
+                        travel.Add(RandomizerItems.Name(entry.Code, entry.Id));
                         break;
                     case "HC": hc++; break;
                     case "EC": ec++; break;
