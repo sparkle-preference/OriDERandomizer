@@ -323,6 +323,7 @@
 		"randomizer/RandomizerExtensions.cs",
 		"randomizer/RandomizerGoingDirectionCondition.cs",
 		"randomizer/RandomizerHints.cs",
+		"randomizer/RandomizerItems.cs",
 		"randomizer/RandomizerHotColdItem.cs",
 		"randomizer/RandomizerHttp.cs",
 		"randomizer/RandomizerInventory.cs",

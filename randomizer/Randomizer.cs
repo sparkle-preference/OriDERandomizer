@@ -43,6 +43,7 @@ public static class Randomizer {
             WorldTour = false;
             SeedMeta = "";
             SeedFormat = MIN_SEED_FORMAT;
+            PlayerCount = 0;
             MistySim = new WorldEvents();
             MistySim.MoonGuid = new MoonGuid(1061758509, 1206015992, 824243626, -2026069462);
             TeleportTable = new Hashtable();
@@ -149,19 +150,24 @@ public static class Randomizer {
                         var lineParts = line.Split('|');
                         int.TryParse(lineParts[0], out var coords);
 
-                        // field 5 is the Archipelago annotation; absent on
-                        // every non-AP seed and on AP seeds downloaded before
-                        // the room was connected
-                        var apField = lineParts.Length > 4 ? lineParts[4] : null;
+                        // a cross-world line names its item differently in
+                        // format 1, and nothing downstream would notice
+                        if (lineParts[1] == "MW" && SeedFormat < 2) {
+                            throw new Exception(
+                                "this seed's multiworld lines are too old - re-download it");
+                        }
 
                         if (RandomizerMW.IsManifestLine(coords, lineParts[1])) {
                             // multiworld slot manifest: what our slots hold,
                             // not a map location
-                            RandomizerMW.AddManifestEntry(coords, lineParts[2], lineParts[3], apField);
+                            RandomizerMW.AddManifestEntry(coords, lineParts[2], lineParts[3]);
                             continue;
                         }
 
-                        RandomizerMW.AddApLine(coords, apField, lineParts.Length > 5 ? lineParts[5] : null);
+                        if (lineParts[1] == "MW") {
+                            RandomizerMW.AddApLine(coords, lineParts[2]);
+                        }
+
                         GetDataFromSeedLine(coords, lineParts[1], lineParts[2], lineParts[3]);
 
                         if (coords == 2) {
@@ -1296,6 +1302,13 @@ public static class Randomizer {
             return;
         }
 
+        // someone else's Bash is still a Bash: sense classifies a cross-world
+        // line by the item it carries, not by the MW that wraps it
+        if (code == "MW" && RandomizerItems.Inner(id, PlayerCount, out var innerCode, out var innerId)) {
+            GetSenseFromSeedLine(coords, innerCode, innerId, area);
+            return;
+        }
+
         if (HotColdTypes.Contains(code) || HotColdTypes.Any(t => (code + id).StartsWith(t))) {
             if (Math.Abs(coords) > 100) {
                 if (!HotColdItems.ContainsKey(coords)) {
@@ -1334,6 +1347,11 @@ public static class Randomizer {
                 SeedFormat = format;
             }
 
+            return;
+        }
+
+        if (meta.ToLower().StartsWith("players:")) {
+            int.TryParse(meta.Substring("players:".Length).Trim(), out PlayerCount);
             return;
         }
 
@@ -1579,10 +1597,14 @@ public static class Randomizer {
     // when the format stops being readable, in either direction.
     public const int MIN_SEED_FORMAT = 1;
 
-    public const int MAX_SEED_FORMAT = 1;
+    public const int MAX_SEED_FORMAT = 2;
 
     // seeds predating the SEED_FORMAT line are format 1
     public static int SeedFormat = MIN_SEED_FORMAT;
+
+    // how many worlds this seed was rolled for; 0 when the seed never said.
+    // An owner above it on a cross-world line is an Archipelago shadow.
+    public static int PlayerCount;
     public static Hashtable TeleportTable;
     public static WorldEvents MistySim;
     public static bool Returning;

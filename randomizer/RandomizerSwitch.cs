@@ -383,7 +383,7 @@ public static class RandomizerSwitch {
                     Characters.Sein.Inventory.SetRandomizerItem(82, 1);
                     break;
                 case "MW":
-                    // MW entries are coord|MW|owner,slot,name -- another
+                    // MW entries are coord|MW|owner,slot,code,id -- another
                     // player's item. Nothing to grant locally: the
                     // found_locally send below tells the server, which flips
                     // the owner's slot bit and their client self-grants.
@@ -401,9 +401,10 @@ public static class RandomizerSwitch {
                         else {
                             RandomizerMW.GrantSelfItem(coords);
                         }
-                    } else if (mwPieces.Length == 3) {
+                    } else if (RandomizerItems.Inner((string)action.Value, Randomizer.PlayerCount, out var mwCode, out var mwId)) {
                         var playerName = int.TryParse(mwPieces[0], out var pid) ? RandomizerMW.PlayerName(pid) : $"Player {mwPieces[0]}";
-                        SentMwPickupMessage($"{playerName}'s {RandomizerMW.ColorWrap(mwPieces[2])}");
+                        var mwItem = RandomizerItems.Name(mwCode, mwId);
+                        SentMwPickupMessage($"{playerName}'s {RandomizerMW.ColorWrap(mwItem)}");
                     } else {
                         SentMwPickupMessage("Unknown Foreign Item");
                     }

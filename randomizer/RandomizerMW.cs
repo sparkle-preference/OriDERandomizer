@@ -94,22 +94,26 @@ public static class RandomizerMW {
     }
 
     // reserved AP line:
-    //   <coord>|MW|<shadow>,<slot>,<label>|<zone>|<to>;<item>[|<own slot>]
-    // field 6 is present only when the item is ours, and names the manifest
-    // slot the bridge will fill for this location's check (the 4.2.12
-    // pairing), so contact can grant it without the room round trip.
-    public static void AddApLine(int coords, string apField, string ownSlot = null) {
-        if (string.IsNullOrEmpty(apField)) {
+    //   <coord>|MW|<shadow>,<slot>,<recipient>,<own slot>,<code>,<id>|<zone>
+    // own slot is -1 until the bridge promises one; when it does, it names the
+    // manifest slot this location's check fills, so contact can grant without
+    // the room round trip. An empty recipient means nobody has scouted it yet.
+    public static void AddApLine(int coords, string value) {
+        var parts = value.Split(new[] { ',' }, 6);
+        if (parts.Length != 6 || !int.TryParse(parts[0], out var owner)) {
             return;
         }
 
-        var parts = apField.Split(new[] { ';' }, 2);
-        if (parts.Length != 2) {
+        if (Randomizer.PlayerCount <= 0 || owner <= Randomizer.PlayerCount) {
+            return;   // a plain cross-world line, not a reserved one
+        }
+
+        if (string.IsNullOrEmpty(parts[2])) {
             return;
         }
 
-        ApItems[coords] = parts;
-        if (!string.IsNullOrEmpty(ownSlot) && int.TryParse(ownSlot, out var slot)) {
+        ApItems[coords] = new[] { parts[2], RandomizerItems.Name(parts[4], parts[5]) };
+        if (int.TryParse(parts[3], out var slot) && slot >= 0) {
             ApSelfSlots[coords] = slot;
         }
     }
@@ -322,23 +326,24 @@ public static class RandomizerMW {
         return SlotGranted(-coords - 2);
     }
 
-    // manifest line: <-(slot+2)>|MW|<finder>,<code>,<id>|<zone>[|<holder>]
-    // (id may itself contain commas, e.g. TW warps, so split at most twice)
-    public static void AddManifestEntry(int coords, string value, string zone, string holder = null) {
+    // manifest line: <-(slot+2)>|MW|<finder>,<holder>,<code>,<id>|<zone>
+    // (id may itself contain commas, e.g. TW warps, so the split is bounded)
+    public static void AddManifestEntry(int coords, string value, string zone) {
         try {
             var slot = -coords - 2;
-            var parts = value.Split(new[] { ',' }, 3);
+            var parts = value.Split(new[] { ',' }, 4);
             var entry = new ManifestEntry();
             entry.Slot = slot;
             entry.Finder = int.Parse(parts[0]);
-            entry.Code = parts[1];
-            entry.Id = parts[2];
+            entry.Code = parts[2];
+            entry.Id = parts[3];
             entry.Zone = zone;
             Manifest[slot] = entry;
 
-            // whose world holds this. Archipelago works it out at download
-            // time and puts it in field 5, because its shadow finder names
-            // nobody; plain multiworld's finder is the answer already.
+            // whose world holds this. Archipelago works it out at download time
+            // and fills the holder in, because its shadow finder names nobody;
+            // plain multiworld's finder is the answer already.
+            var holder = parts[1];
             var who = string.IsNullOrEmpty(holder) ? $"P{entry.Finder}" : holder;
             var clue = string.IsNullOrEmpty(zone) ? who : $"{who} {zone}";
 
@@ -531,14 +536,8 @@ public static class RandomizerMW {
         return true;
     }
 
-    private static Dictionary<string, string> SkillNames = new Dictionary<string, string> {
-        { "0", "Bash" }, { "2", "Charge Flame" }, { "3", "Wall Jump" }, { "4", "Stomp" }, { "5", "Double Jump" },
-        { "8", "Charge Jump" }, { "12", "Climb" }, { "14", "Glide" }, { "50", "Dash" }, { "51", "Grenade" }, { "15", "Spirit Flame" }
-    };
-
-    private static Dictionary<string, string> EventNames = new Dictionary<string, string> {
-        { "0", "Water Vein" }, { "1", "Clean Water" }, { "2", "Gumon Seal" }, { "3", "Wind Restored" }, { "4", "Sunstone" }, { "5", "Warmth Returned" }
-    };
+    private static Dictionary<string, string> SkillNames = RandomizerItems.SkillNames;
+    private static Dictionary<string, string> EventNames = RandomizerItems.EventNames;
 
     private static string Counted(int n, string singular, string plural, string wrap = "") {
         return $"{wrap}{n} {(n == 1 ? singular : plural)}{wrap}";
