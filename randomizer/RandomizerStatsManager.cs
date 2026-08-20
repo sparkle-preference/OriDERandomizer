@@ -334,10 +334,16 @@ public static class RandomizerStatsManager {
             return;
         }
 
-        IncPickup();
+        // the location's own zone, not wherever the player is standing: a
+        // pickup can be collected without being walked to
+        IncPickup(ZoneForPickup(loc));
     }
 
     public static void IncPickup() {
+        IncPickup(CurrentZone());
+    }
+
+    public static void IncPickup(string zoneKey) {
         if (!Active) {
             return;
         }
@@ -359,7 +365,7 @@ public static class RandomizerStatsManager {
                 }
             }
 
-            inc(Pickups + Offsets[CurrentZone()], 1);
+            inc(Pickups + (Offsets.ContainsKey(zoneKey) ? Offsets[zoneKey] : Offsets["unknown"]), 1);
         } catch (Exception e) {
             Randomizer.LogError("IncPickup: " + e.Message);
         }
