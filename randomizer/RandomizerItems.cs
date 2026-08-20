@@ -13,9 +13,61 @@ public static class RandomizerItems {
         { "0", "Water Vein" }, { "1", "Clean Water" }, { "2", "Gumon Seal" }, { "3", "Wind Restored" }, { "4", "Sunstone" }, { "5", "Warmth Returned" }
     };
 
+    // RB names, taken from the messages the client already prints. Ids and
+    // their existence are documented in RandomizerItemIDs.txt.
     private static readonly Dictionary<string, string> UpgradeNames = new Dictionary<string, string> {
-        { "17", "Water Vein Shard" }, { "19", "Gumon Seal Shard" }, { "21", "Sunstone Shard" }, { "28", "Warmth Fragment" },
-        { "1108", "Autoplayer" }, { "1109", "Pickup Drop" }
+        { "17", "Water Vein Shard" }, { "19", "Gumon Seal Shard" }, { "21", "Sunstone Shard" },
+        { "28", "Warmth Fragment" }, { "1108", "Autoplayer" }, { "1109", "Pickup Drop" },
+        { "0", "Mega Health" }, { "1", "Mega Energy" }, { "2", "Go Home" },
+        { "6", "Attack Upgrade" }, { "8", "Explosion Power Upgrade" }, { "9", "Spirit Light Efficiency" },
+        { "10", "Extra Air Dash" }, { "11", "Charge Dash Efficiency" }, { "12", "Extra Double Jump" },
+        { "13", "Health Regeneration" }, { "15", "Energy Regeneration" }, { "30", "Bleeding" },
+        { "31", "Health Leech" }, { "32", "Energy Leech" }, { "33", "Skill Velocity Upgrade" },
+        { "34", "Return to start disabled" }, { "35", "Return to start enabled" }, { "36", "Underwater Skill Usage" },
+        { "37", "Jump Upgrade" }, { "38", "Mini Health" }, { "39", "Mini Energy" },
+        { "40", "Wall Jump Lost" }, { "41", "ChargeFlame Lost" }, { "42", "DoubleJump Lost" },
+        { "43", "Bash Lost" }, { "44", "Stomp Lost" }, { "45", "Glide Lost" },
+        { "46", "Climb Lost" }, { "47", "Charge Jump Lost" }, { "48", "Dash Lost" },
+        { "49", "Grenade Lost" }, { "81", "Stomp/Grenade Hint" }, { "200", "Quick Flame" },
+        { "201", "Spark Flame" }, { "202", "Charge Flame Burn" }, { "203", "Split Flame" },
+        { "204", "Ultra Light Burst" }, { "205", "Cinder Flame" }, { "206", "Ultra Stomp" },
+        { "207", "Rapid Flame" }, { "208", "Charge Flame Blast" }, { "209", "Ultra Split Flame" },
+        { "210", "Spirit Magnet" }, { "211", "Map Markers" }, { "212", "Life Efficiency" },
+        { "213", "Ultra Spirit Magnet" }, { "214", "Energy Efficiency" }, { "215", "Ability Markers" },
+        { "216", "Spirit Efficiency" }, { "217", "Life Markers" }, { "218", "Energy Markers" },
+        { "219", "Sense" }, { "220", "Rekindle" }, { "221", "Regroup" },
+        { "222", "Charge Flame Efficiency" }, { "223", "Air Dash" }, { "224", "Ultra Soul Link" },
+        { "225", "Charge Dash" }, { "226", "Water Breath" }, { "227", "Soul Link Efficiency" },
+        { "228", "Triple Jump" }, { "229", "Ultra Defense" }, { "230", "Remove Quick Flame" },
+        { "231", "Remove Spark Flame" }, { "232", "Remove Charge Flame Burn" }, { "233", "Remove Split Flame" },
+        { "234", "Remove Ultra Light Burst" }, { "235", "Remove Cinder Flame" }, { "236", "Remove Ultra Stomp" },
+        { "237", "Remove Rapid Flame" }, { "238", "Remove Charge Flame Blast" }, { "239", "Remove Ultra Split Flame" },
+        { "240", "Remove Spirit Magnet" }, { "241", "Remove Map Markers" }, { "242", "Remove Life Efficiency" },
+        { "243", "Remove Ultra Spirit Magnet" }, { "244", "Remove Energy Efficiency" }, { "245", "Remove Ability Markers" },
+        { "246", "Remove Spirit Efficiency" }, { "247", "Remove Life Markers" }, { "248", "Remove Energy Markers" },
+        { "249", "Remove Sense" }, { "250", "Remove Rekindle" }, { "251", "Remove Regroup" },
+        { "252", "Remove Charge Flame Efficiency" }, { "253", "Remove Air Dash" }, { "254", "Remove Ultra Soul Link" },
+        { "255", "Remove Charge Dash" }, { "256", "Remove Water Breath" }, { "257", "Remove Soul Link Efficiency" },
+        { "258", "Remove Triple Jump" }, { "259", "Remove Ultra Defense" }, { "300", "Glades Pool Keystone" },
+        { "301", "Lower Spirit Caverns Keystone" }, { "302", "Grotto Keystone" }, { "303", "Swamp Keystone" },
+        { "304", "Upper Spirit Caverns Keystone" }, { "305", "Lower Ginso Keystone" }, { "306", "Upper Ginso Keystone" },
+        { "307", "Misty Keystone" }, { "308", "Forlorn Keystone" }, { "309", "Lower Sorrow Keystone" },
+        { "310", "Mid Sorrow Keystone" }, { "311", "Upper Sorrow Keystone" }, { "313", "Glades Pool Door Hint" },
+        { "314", "Lower Spirit Caverns Door Hint" }, { "315", "Grotto Door Hint" }, { "316", "Swamp Door Hint" },
+        { "317", "Upper Spirit Caverns Door Hint" }, { "318", "Lower Ginso Door Hint" }, { "319", "Upper Ginso Door Hint" },
+        { "320", "Misty Door Hint" }, { "321", "Forlorn Door Hint" }, { "322", "Lower Sorrow Door Hint" },
+        { "323", "Mid Sorrow Door Hint" }, { "324", "Upper Sorrow Door Hint" }, { "410", "Enhanced Spirit Flame" },
+        { "411", "Enhanced Wall Jump" }, { "412", "Enhanced Charge Flame" }, { "413", "Enhanced Double Jump" },
+        { "414", "Enhanced Bash" }, { "415", "Enhanced Stomp" }, { "416", "Enhanced Glide" },
+        { "417", "Enhanced Climb" }, { "418", "Enhanced Charge Jump" }, { "419", "Enhanced Dash" },
+        { "420", "Enhanced Grenade" }, { "422", "Enhanced Clean Water" }, { "900", "Wall Jump Tree" },
+        { "901", "Charge Flame Tree" }, { "902", "Double Jump Tree" }, { "903", "Bash Tree" },
+        { "904", "Stomp Tree" }, { "905", "Glide Tree" }, { "906", "Climb Tree" },
+        { "907", "Charge Jump Tree" }, { "908", "Grenade Tree" }, { "909", "Dash Tree" },
+        { "911", "Glades Relic" }, { "912", "Grove Relic" }, { "913", "Grotto Relic" },
+        { "914", "Blackroot Relic" }, { "915", "Swamp Relic" }, { "916", "Ginso Relic" },
+        { "917", "Valley Relic" }, { "918", "Misty Relic" }, { "919", "Forlorn Relic" },
+        { "920", "Sorrow Relic" }, { "921", "Horu Relic" }, { "1100", "Enable Frag-Sense variant" }
     };
 
     // 112 is rewritten as the Pokeball's contents change, so this is live state
