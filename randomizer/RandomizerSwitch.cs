@@ -50,7 +50,7 @@ public static class RandomizerSwitch {
     }
 
     public static void MapStonePickup() {
-        PickupMessage(RandomizerItems.Verified("MS", "", "Map Stone"));
+        PickupMessage(RandomizerItems.Message("MS", ""));
         Characters.Sein.Inventory.MapStones++;
         Characters.Sein.Inventory.IncRandomizerItem(71, 1);
     }

@@ -295,11 +295,11 @@ public static class RandomizerBonus {
                 break;
             case 34:
                 Characters.Sein.Inventory.SetRandomizerItem(34, 1);
-                RandomizerSwitch.PickupMessage("Return to start disabled!");
+                RandomizerSwitch.PickupMessage("Warps Disabled!");
                 break;
             case 35:
                 Characters.Sein.Inventory.SetRandomizerItem(34, 0);
-                RandomizerSwitch.PickupMessage("Return to start enabled!");
+                RandomizerSwitch.PickupMessage("Warps Enabled!");
                 break;
             case 36:
                 RandomizerSwitch.PickupMessage("Underwater Skill Usage");
@@ -840,7 +840,7 @@ public static class RandomizerBonus {
         { 15, "Energy Regeneration" },
         { 12, "Extra Double Jump" },
         { 33, "Skill Velocity Upgrade" },
-        { 37, "Jumpgrade" },
+        { 37, "Jump Upgrade" },
         { 31, "Health Leech" },
         { 32, "Energy Leech" },
         { 36, "Underwater Skill Usage" },
@@ -875,10 +875,10 @@ public static class RandomizerBonus {
         new Ability("Life Efficiency", p => p.HealthEfficiency),
         new Ability("Ultra Spirit Magnet", p => p.UltraMagnet),
         new Ability("Energy Efficiency", p => p.EnergyEfficiency),
-        new Ability("Ability Markers", p => p.AbilityMarkers),
-        new Ability("Spirit Efficiency", p => p.SoulEfficiency),
-        new Ability("Life Markers", p => p.HealthMarkers),
-        new Ability("Energy Markers", p => p.EnergyMarkers),
+        new Ability("Spirit Efficiency", p => p.AbilityMarkers),
+        new Ability("Spirit Potency", p => p.SoulEfficiency),
+        new Ability("Life Regen (Ability)", p => p.HealthMarkers),
+        new Ability("Energy Regen (Ability)", p => p.EnergyMarkers),
         new Ability("Sense", p => p.Sense),
         new Ability("Rekindle", p => p.Rekindle),
         new Ability("Regroup", p => p.Regroup),
