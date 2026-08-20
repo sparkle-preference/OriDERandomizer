@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 // Naming items and reading cross-world lines; must stay free of game types.
 public static class RandomizerItems {
@@ -122,9 +124,54 @@ public static class RandomizerItems {
         return true;
     }
 
+    /// <summary>Multipickup value -> its parts. "//" is a literal slash, and an
+    /// odd trailing piece is dropped, matching RandomizerAction.Decompose.</summary>
+    private static List<string[]> MultiParts(string value) {
+        var parts = new List<string[]>();
+        string first = null;
+        var cur = new StringBuilder();
+        for (var i = 0; i < (value ?? "").Length; i++) {
+            if (value[i] != '/') {
+                cur.Append(value[i]);
+            } else if (i < value.Length - 1 && value[i + 1] == '/') {
+                cur.Append('/');
+                i++;
+            } else if (first == null) {
+                first = cur.ToString();
+                cur.Length = 0;
+            } else {
+                parts.Add(new[] { first, cur.ToString() });
+                first = null;
+                cur.Length = 0;
+            }
+        }
+
+        if (first != null) {
+            parts.Add(new[] { first, cur.ToString() });
+        }
+
+        return parts;
+    }
+
     /// <summary>The one place a code and an id become something a player reads.</summary>
     public static string Name(string code, string id) {
+        // a negative id removes one instead of granting it; "Remove X" is the
+        // wording the server and the RB table already use
+        int signed;
+        if (!string.IsNullOrEmpty(id) && id[0] == '-' && int.TryParse(id, out signed) && signed < 0) {
+            return "Remove " + Name(code, (-signed).ToString());
+        }
+
         switch (code) {
+            case "MU":
+            case "RP": {
+                var names = MultiParts(id).Select(p => Name(p[0], p[1])).ToArray();
+                var joined = string.Join(", ", names);
+                return code == "RP" ? "Repeatable: " + joined : joined;
+            }
+
+            case "SH":
+                return "Message: " + id;
             case "SK":
                 return SkillNames.ContainsKey(id) ? SkillNames[id] : "Unknown Skill " + id;
             case "EV":
