@@ -564,6 +564,20 @@ public static class RandomizerBonus {
                 }
 
                 return;
+            case RandomizerAutoplayer.AutoplayId:
+                if (!flag) {
+                    Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                    RandomizerSwitch.PickupMessage("Autoplayer Enabled");
+                }
+
+                return;
+            case RandomizerAutoplayer.DropFileId:
+                if (!flag) {
+                    Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                    RandomizerSwitch.PickupMessage("Pickup Drop Enabled");
+                }
+
+                return;
             default:
                 if (flag) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);

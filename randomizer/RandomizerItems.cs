@@ -13,8 +13,9 @@ public static class RandomizerItems {
         { "0", "Water Vein" }, { "1", "Clean Water" }, { "2", "Gumon Seal" }, { "3", "Wind Restored" }, { "4", "Sunstone" }, { "5", "Warmth Returned" }
     };
 
-    private static readonly Dictionary<string, string> ShardNames = new Dictionary<string, string> {
-        { "17", "Water Vein Shard" }, { "19", "Gumon Seal Shard" }, { "21", "Sunstone Shard" }, { "28", "Warmth Fragment" }
+    private static readonly Dictionary<string, string> UpgradeNames = new Dictionary<string, string> {
+        { "17", "Water Vein Shard" }, { "19", "Gumon Seal Shard" }, { "21", "Sunstone Shard" }, { "28", "Warmth Fragment" },
+        { "1108", "Autoplayer" }, { "1109", "Pickup Drop" }
     };
 
     // 112 is rewritten as the Pokeball's contents change, so this is live state
@@ -97,8 +98,8 @@ public static class RandomizerItems {
             case "EX":
                 return id + " Experience";
             case "RB":
-                if (ShardNames.ContainsKey(id)) {
-                    return ShardNames[id];
+                if (UpgradeNames.ContainsKey(id)) {
+                    return UpgradeNames[id];
                 }
 
                 int bonus;

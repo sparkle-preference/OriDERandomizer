@@ -79,6 +79,7 @@ public static class Randomizer {
             HotColdSaveId = 2000;
             OpenMode = true;
             OpenWorld = false;
+            RandomizerAutoplayer.Reset();
             RandomizerItems.ParityLog = log;   // TEMP F2CHECK -- remove before merge
             RandomizerColorManager.Initialize();
             RandomizerRebinding.ParseRebinding();
@@ -1051,6 +1052,7 @@ public static class Randomizer {
                 }
 
                 BingoController.Tick();
+                RandomizerAutoplayer.Tick();
                 if (ResetVolume == 1) {
                     ResetVolume = 0;
                     GameSettings.Instance.SoundEffectsVolume = CachedVolume;
