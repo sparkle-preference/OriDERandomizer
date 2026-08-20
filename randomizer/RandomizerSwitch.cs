@@ -247,8 +247,7 @@ public static class RandomizerSwitch {
     }
 
     public static void GivePickup(RandomizerAction action, int coords, bool found_locally = true) {
-        // outermost wins: an Archipelago self-item grants through the slot
-        // machinery from inside the Give() of the location actually touched
+        // Reentrant: a nested grant keeps the outermost pickup's zone.
         var outerZone = RandomizerStatsManager.PickupZone;
         if (outerZone == null) {
             RandomizerStatsManager.PickupZone = RandomizerStatsManager.ZoneForPickup(coords);

@@ -95,9 +95,7 @@ public static class RandomizerMW {
 
     // reserved AP line:
     //   <coord>|MW|<shadow>,<slot>,<recipient>,<own slot>,<code>,<id>|<zone>
-    // own slot is -1 until the bridge promises one; when it does, it names the
-    // manifest slot this location's check fills, so contact can grant without
-    // the room round trip. An empty recipient means nobody has scouted it yet.
+    // own slot -1 means unpromised; an empty recipient means nobody scouted it yet.
     public static void AddApLine(int coords, string value) {
         var parts = value.Split(new[] { ',' }, 6);
         if (parts.Length != 6 || !int.TryParse(parts[0], out var owner)) {
@@ -340,9 +338,7 @@ public static class RandomizerMW {
             entry.Zone = zone;
             Manifest[slot] = entry;
 
-            // whose world holds this. Archipelago works it out at download time
-            // and fills the holder in, because its shadow finder names nobody;
-            // plain multiworld's finder is the answer already.
+            // holder is empty in plain multiworld, where the finder already is whose world it is
             var holder = parts[1];
             var who = string.IsNullOrEmpty(holder) ? $"P{entry.Finder}" : holder;
             var clue = string.IsNullOrEmpty(zone) ? who : $"{who} {zone}";

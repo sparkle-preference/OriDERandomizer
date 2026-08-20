@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-// Naming an item, and reading one off a cross-world seed line. Deliberately
-// free of any game dependency so it can be exercised on its own.
+// Naming items and reading cross-world lines; must stay free of game types.
 public static class RandomizerItems {
     public static readonly Dictionary<string, string> SkillNames = new Dictionary<string, string> {
         { "0", "Bash" }, { "2", "Charge Flame" }, { "3", "Wall Jump" }, { "4", "Stomp" }, { "5", "Double Jump" },
@@ -13,8 +12,7 @@ public static class RandomizerItems {
         { "0", "Water Vein" }, { "1", "Clean Water" }, { "2", "Gumon Seal" }, { "3", "Wind Restored" }, { "4", "Sunstone" }, { "5", "Warmth Returned" }
     };
 
-    // RB names, taken from the messages the client already prints. Ids and
-    // their existence are documented in RandomizerItemIDs.txt.
+    // RB names; the ids and what they mean live in RandomizerItemIDs.txt.
     private static readonly Dictionary<string, string> UpgradeNames = new Dictionary<string, string> {
         { "17", "Water Vein Shard" }, { "19", "Gumon Seal Shard" }, { "21", "Sunstone Shard" },
         { "28", "Warmth Fragment" }, { "1108", "Autoplayer" }, { "1109", "Pickup Drop" },

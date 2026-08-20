@@ -2,9 +2,8 @@
 #
 #   powershell -ExecutionPolicy Bypass -File build.ps1 [-DnSpy <path>] [-TimeoutSeconds 180]
 #
-# dnSpy cannot be trusted to exit: some versions throw while closing themselves
-# after a successful save and sit on a modal dialog forever. So the dll's
-# timestamp is the signal, not the process, and dnSpy is killed either way.
+# The dll's timestamp is the completion signal, not process exit: dnSpy has wedged
+# on a modal dialog rather than closing, in both directions, across versions.
 
 param(
     [string]$DnSpy = $(if ($env:DNSPY) { $env:DNSPY } else { "E:\dnspy-fork\dnSpy.exe" }),
@@ -49,9 +48,7 @@ Write-Host "Building with $DnSpy"
 $proc = Start-Process -FilePath $DnSpy -PassThru -RedirectStandardOutput $log -RedirectStandardError $err `
     -ArgumentList "--modfile:dnspy-modfile.json", "--runModfile", "--closeAfterModfile:success,failure"
 
-# The timestamp changes when dnSpy CREATES the file, not when it finishes
-# writing it, so killing on that alone truncates the dll to zero bytes. Wait
-# until the handle is released and the size has stopped moving.
+# dnSpy stamps the dll on create, not on finish, so a bare timestamp check catches it half-written.
 function Test-Released($path) {
     try {
         $fs = [IO.File]::Open($path, "Open", "Write", "None")
@@ -60,7 +57,6 @@ function Test-Released($path) {
     } catch { return $false }
 }
 
-# whichever comes first: it exits, or it finishes the dll and then wedges
 $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 $rewritten = $false
 $lastSize = -1

@@ -577,8 +577,7 @@ public static class RandomizerSyncManager {
         }
     }
 
-    // a teammate's upgrade arrives with no location of its own, and this
-    // path never passes through GivePickup
+    // a teammate's upgrade has no location and never passes through GivePickup
     private static void GrantUpgrade(int id) {
         RandomizerStatsManager.PickupZone = "offworld";
         try {

@@ -3,10 +3,8 @@ using System.IO;
 using System.Linq;
 using Game;
 
-// Two ways to drive a build with nobody at the controls, each held as an item
-// so a seed can hand it out at spawn. Autoplay takes one reachable location a
-// second; the drop file grants whatever a process outside the game leaves in
-// it. Both run off the once-a-second half of Randomizer.Tick.
+// Two items that drive the game with nobody at the controls, off the
+// once-a-second half of Randomizer.Tick. Neither is in the item pool.
 public static class RandomizerAutoplayer {
     public const int AutoplayId = 1108;
 
@@ -43,8 +41,7 @@ public static class RandomizerAutoplayer {
             return;
         }
 
-        // Touched, not Collected: a repeatable location never reports itself
-        // collected, so it would be picked forever
+        // Touched, not Collected: a repeatable never reports collected and would be picked forever
         var open = RandomizerLocationManager.LocationsByKey.Values
             .Where(loc => loc.Reachable && !loc.Touched && loc.Pickup != null)
             .ToList();
@@ -93,12 +90,10 @@ public static class RandomizerAutoplayer {
             var action = new RandomizerAction(content.Substring(0, bar), content.Substring(bar + 1));
             Randomizer.log($"Autoplayer: dropped {action}");
 
-            // coords 0 and not-found-locally: this came from outside the seed,
-            // so it claims no location and sends nothing to the server
+            // coords 0, not found locally: claims no location and sends nothing to the server
             RandomizerSwitch.GivePickup(action, 0, false);
 
-            // a dropped item skips the sync tick, which is what otherwise
-            // refreshes logic when an item arrives from outside the seed
+            // drops skip the sync tick that would otherwise refresh logic
             RandomizerLocationManager.UpdateReachable();
         } catch (Exception e) {
             Randomizer.LogError($"Autoplayer.Drop({content}): {e.Message}");

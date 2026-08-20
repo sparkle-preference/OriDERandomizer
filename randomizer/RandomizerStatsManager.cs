@@ -754,17 +754,13 @@ public static class RandomizerStatsManager {
         }
     }
 
-    // Zone the item being given right now belongs to, held for one GivePickup.
-    // Null means the player found it wherever they are standing.
+    // Zone of the item being granted, held for one GivePickup; null means wherever the player stands.
     public static string PickupZone;
 
     public static Dictionary<string, string> ZoneKeysByPrettyName;
 
-    /// <summary>
-    /// The zone a pickup at these coords belongs to, as an Offsets key. A grant
-    /// carries no location of its own -- a multiworld slot is -2..-257, a sync
-    /// or drop grant is 0 -- and neither is anywhere the player has been.
-    /// </summary>
+    /// <summary>Zone a pickup at these coords belongs to, as an Offsets key;
+    /// a manifest slot (-2..-257) or a grant (0) is offworld.</summary>
     public static string ZoneForPickup(int coords) {
         if (coords == 0 || (coords <= -2 && coords >= -257)) {
             return "offworld";

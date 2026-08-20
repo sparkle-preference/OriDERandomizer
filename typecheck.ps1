@@ -1,14 +1,8 @@
-# Type-checks randomizer/*.cs against the game's own assemblies.
-#
-# build.bat cannot report a compile error: dnSpy raises a GUI dialog that
-# --closeAfterModfile never closes, so the build hangs instead of failing and
-# the errors are only ever visible in that dialog. Run this first.
+# Type-checks randomizer/*.cs against the game's own assemblies, without dnSpy.
 #
 #   powershell -ExecutionPolicy Bypass -File typecheck.ps1
 #
-# Five errors are expected and listed in typecheck-baseline.txt: types that
-# exist only in the modded assembly the modfile builds, which this compile has
-# no reference to. Anything outside that baseline is a real error.
+# Errors in typecheck-baseline.txt are expected; anything outside it is real.
 
 $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -26,9 +20,7 @@ if (-not (Test-Path (Join-Path $managed "Assembly-CSharp.dll"))) {
     exit 2
 }
 
-# Vanilla Assembly-CSharp supplies the game types these sources call into. An
-# already-modded copy beside it must be skipped: it carries the randomizer
-# classes too, and each one then collides with its own source.
+# A modded Assembly-CSharp beside the vanilla one must be skipped: its randomizer types collide with these sources.
 $refs = Get-ChildItem -Path $managed -Filter *.dll |
     Where-Object { $_.Name -notlike "*.rando.*" } |
     ForEach-Object { "-r:" + $_.FullName }
@@ -43,10 +35,7 @@ $cmdArgs = @($csc, "-nologo", "-t:library", "-langversion:latest",
 Write-Host "Type-checking $($sources.Count) sources against $($refs.Count) assemblies..."
 $raw = (& dotnet $cmdArgs 2>&1 | Out-String) -split "`r?`n" | Where-Object { $_ -match "error CS" }
 
-# Key on filename + code + message. Line and column are dropped so an edit that
-# shifts them does not invalidate the baseline, and the directory is dropped
-# because csc reports a path relative to its working directory or absolute
-# depending on where it was invoked from.
+# Baseline key is filename + code + message; line, column and directory shift with edits and invocation.
 function Key($line) {
     $leaf = $line -replace "^.*[\\/]", ""
     return $leaf -replace "\(\d+,\d+\)", ""

@@ -151,8 +151,7 @@ public static class Randomizer {
                         var lineParts = line.Split('|');
                         int.TryParse(lineParts[0], out var coords);
 
-                        // a cross-world line names its item differently in
-                        // format 1, and nothing downstream would notice
+                        // MW lines are only readable under format 2; a format 1 one mis-parses silently
                         if (lineParts[1] == "MW" && SeedFormat < 2) {
                             throw new Exception(
                                 "this seed's multiworld lines are too old - re-download it");
@@ -1098,8 +1097,7 @@ public static class Randomizer {
                         RandomizerTrackedDataManager.UpdateBitfields();
                         RandomizerColorManager.UpdateHotColdTarget();
 
-                        // inside the suspended/scene guard: granting during a
-                        // cutscene or a scene load is not a thing a player can do
+                        // grant only where a player could: not suspended, not mid-scene-load
                         RandomizerAutoplayer.Tick();
                         if (Characters.Sein.Position.y > 935f && Inventory.FinishedGinsoEscape && Scenes.Manager.CurrentScene.Scene == "ginsoTreeWaterRisingEnd") {
                             if (SafeIsBashing) {
@@ -1307,8 +1305,7 @@ public static class Randomizer {
             return;
         }
 
-        // someone else's Bash is still a Bash: sense classifies a cross-world
-        // line by the item it carries, not by the MW that wraps it
+        // sense classifies a cross-world line by the item it carries, not by the MW wrapper
         if (code == "MW" && RandomizerItems.Inner(id, PlayerCount, out var innerCode, out var innerId)) {
             GetSenseFromSeedLine(coords, innerCode, innerId, area);
             return;
@@ -1607,8 +1604,7 @@ public static class Randomizer {
     // seeds predating the SEED_FORMAT line are format 1
     public static int SeedFormat = MIN_SEED_FORMAT;
 
-    // how many worlds this seed was rolled for; 0 when the seed never said.
-    // An owner above it on a cross-world line is an Archipelago shadow.
+    // worlds this seed was rolled for; 0 means the seed never said
     public static int PlayerCount;
 
     public static Hashtable TeleportTable;

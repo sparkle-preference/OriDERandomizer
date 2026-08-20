@@ -1,7 +1,5 @@
-# Errors typecheck.ps1 expects. Each is a type that exists only in the modded
-# assembly the modfile produces, so a compile against vanilla cannot see it.
-# Keyed on filename + error code + message; line, column and directory are
-# stripped, so edits and a different working directory both leave these valid.
+# Errors typecheck.ps1 expects: types that exist only in the modded assembly.
+# Keyed on filename + error code + message; line, column and directory are stripped.
 Randomizer.cs: error CS0246: The type or namespace name 'B83' could not be found (are you missing a using directive or an assembly reference?)
 Randomizer.cs: error CS0246: The type or namespace name 'POINT' could not be found (are you missing a using directive or an assembly reference?)
 RandomizerLocationManager.cs: error CS0246: The type or namespace name 'Protogen' could not be found (are you missing a using directive or an assembly reference?)
