@@ -704,7 +704,7 @@ public static class RandomizerStatsManager {
 
     public static void FoundMapstone() {
         inc(Pickups, 1);
-        inc(Pickups + 12, 1);
+        inc(Pickups + 12, 1);   // Offsets["unknown"], the Misc pseudo-zone: a progressive turn-in belongs to no zone
     }
 
     public static void OnExp(int expGained, int expBonus) {
