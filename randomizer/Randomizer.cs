@@ -12,7 +12,7 @@ using Events = Game.Events;
 using Random = System.Random;
 
 public static class Randomizer {
-    public static string VERSION = "4.2.17";
+    public static string VERSION = "4.3.0";
 
     public static void initialize() {
         try {
