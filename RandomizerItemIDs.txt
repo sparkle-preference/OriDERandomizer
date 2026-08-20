@@ -72,6 +72,7 @@ Randomizer inventory ids.
 111 - Wither
 112 - Warp to Credits
 113 - Toggle Bash/Stomp Damage
+114 - Summon Mom
 115 - Toggle Enhanced Effects
 116 - Mark (prints position/scene/zone)
 
@@ -241,6 +242,8 @@ Enhanced mode -- April Fools :)
 1105 - Don't grant Bashnade hint on forlorn escape complete
 1106 - Forlorn Escape has been started / allow warp into escape
 1107 - Enable Debug Movement (DebugMenuB.DebugControlsEnabled)
+1108 - Enable Autoplayer (collects one in-logic location per second)
+1109 - Enable Pickup Drop (grants and deletes pickup.tmp)
 
 
 ==== Begin Persists Through Death Zone ===
