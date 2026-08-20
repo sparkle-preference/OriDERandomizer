@@ -24,12 +24,18 @@ public static class RandomizerAutoplayer {
     }
 
     private static bool Holding(int id) {
-        return Characters.Sein && Characters.Sein.Inventory.GetRandomizerItem(id) > 0;
+        return Characters.Sein && Characters.Sein.Inventory != null
+            && Characters.Sein.Inventory.GetRandomizerItem(id) > 0;
     }
 
     public static void Tick() {
-        Drop();
-        Autoplay();
+        try {
+            Drop();
+            Autoplay();
+        } catch (Exception e) {
+            // this is test scaffolding; it must never cost the caller its tick
+            Randomizer.LogError("Autoplayer: " + e.Message);
+        }
     }
 
     private static void Autoplay() {
@@ -65,9 +71,16 @@ public static class RandomizerAutoplayer {
         string content;
         try {
             content = File.ReadAllText(DropFile).Trim();
-            File.Delete(DropFile);   // deleted before granting, so a throw cannot loop
         } catch (Exception e) {
-            Randomizer.LogError("Autoplayer.Drop: " + e.Message);
+            Randomizer.LogError("Autoplayer.Drop read: " + e.Message);
+            return;
+        }
+
+        try {
+            File.Delete(DropFile);
+        } catch (Exception e) {
+            // granting anyway would re-grant every second until the file goes away
+            Randomizer.LogError("Autoplayer.Drop could not delete " + DropFile + ": " + e.Message);
             return;
         }
 

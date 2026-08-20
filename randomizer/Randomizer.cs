@@ -1052,7 +1052,6 @@ public static class Randomizer {
                 }
 
                 BingoController.Tick();
-                RandomizerAutoplayer.Tick();
                 if (ResetVolume == 1) {
                     ResetVolume = 0;
                     GameSettings.Instance.SoundEffectsVolume = CachedVolume;
@@ -1119,6 +1118,10 @@ public static class Randomizer {
 
                         RandomizerTrackedDataManager.UpdateBitfields();
                         RandomizerColorManager.UpdateHotColdTarget();
+
+                        // inside the suspended/scene guard: granting during a
+                        // cutscene or a scene load is not a thing a player can do
+                        RandomizerAutoplayer.Tick();
                         if (Characters.Sein.Position.y > 935f && Inventory.FinishedGinsoEscape && Scenes.Manager.CurrentScene.Scene == "ginsoTreeWaterRisingEnd") {
                             if (SafeIsBashing) {
                                 Characters.Sein.Abilities.Bash.BashGameComplete(0f);
