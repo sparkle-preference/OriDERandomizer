@@ -109,7 +109,7 @@ public static class Randomizer {
             EnhancedMode = false;
             EnhancedSeinInSeed = false;
 
-            if (SeedFilePath == null) {
+            if (SeedFilePath == null || IsDefaultSeedFilePath(SeedFilePath)) {
                 SeedFilePath = DefaultSeedFilePath();
             }
 
@@ -202,6 +202,10 @@ public static class Randomizer {
         } catch (Exception e) {
             log("init: " + e.Message);
         }
+    }
+
+    private static bool IsDefaultSeedFilePath(string path) {
+        return path is "randomizer.bfr" or "randomizer.dat";
     }
 
     private static string DefaultSeedFilePath() {
