@@ -258,6 +258,10 @@ public class SaveSceneManager : MonoBehaviour {
 
     private Dictionary<MoonGuid, Archive> m_saveCache = new Dictionary<MoonGuid, Archive>();
 
+    [NonSerialized] public Action<SceneRoot> bootstrapHook;
+
+    [NonSerialized] public SceneRoot sceneRoot;
+
     [Serializable]
     public class SaveId {
         public ISerializable Save {
@@ -269,8 +273,4 @@ public class SaveSceneManager : MonoBehaviour {
 
         public Object SaveObject;
     }
-
-    public Action<SceneRoot> bootstrapHook;
-
-    public SceneRoot sceneRoot;
 }
