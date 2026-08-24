@@ -46,6 +46,10 @@ public class RandomizerBootstrap {
         if (RandomizerEnhancedMode.WaterBootstrapScenes.ContainsKey(sceneRoot.name)) {
             RandomizerEnhancedMode.BootstrapSceneWater(sceneRoot);
         }
+
+        if (sceneRoot.name == Randomizer.SpawnScene) {
+            BootstrapRandomSpawnTeleportLocation(sceneRoot);
+        }
     }
 
     private static void BootstrapSceneAfterSerialize(SceneRoot sceneRoot) {
@@ -239,7 +243,6 @@ public class RandomizerBootstrap {
             sequence.Actions.Add(action);
             var action2 = sceneRoot.transform.FindChild("*spiritTreeStorySetup/container/actionSequences/04. returnCameraToPlayerActionSequence/10. Deactivate *seinAbilityRestrictZones").GetComponent<ActionMethod>();
             sequence.Actions.Add(action2);
-            sceneRoot.OnValidate();
         }
     }
 
@@ -462,52 +465,89 @@ public class RandomizerBootstrap {
     }
 
     private static void BootstrapSunkenGladesRunaway(SceneRoot sceneRoot) {
-        // This checks if it is a non-default spawn. TODO replace this with something tidier later.
-        if (!Randomizer.SpawnWith.Contains("WS")) {
+        // This is the start of random spawn. This removes a bunch, but a bunch is recreated at the random spawn scene.
+        if (Randomizer.SpawnScene == null) {
             return;
         }
-
-        var wsLocation = Randomizer.SpawnWith.IndexOf("WS");
-        var offset = 2;
-        if (Randomizer.SpawnWith.Contains("WS/")) {
-            offset = 3;
-        }
-
-        var pieces = Randomizer.SpawnWith.Substring(wsLocation + offset).Split(',');
-        int.TryParse(pieces[0], out var warpX);
-        int.TryParse(pieces[1], out var warpY);
-        var position = new Vector3(warpX, warpY, 0);
-        // This only takes a position, and loads scenes at that position. Doesn't require the metadata.
-        // Definitely not as nice as adding a load to the action sequence, but significantly easier.
-        Scenes.Manager.AdditivelyLoadScenesAtPosition(position, true, false, true);
-
         var actionSequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        var original_list = new List<ActionMethod>(actionSequence.Actions);
-        // Remove from "09. Wait 4 seconds" and onwards.
-        actionSequence.Actions.RemoveRange(8, 9);
+        List<ActionMethod> original_list = new List<ActionMethod>(actionSequence.Actions);
+        // Remove everything after "09. Wait 4 seconds".
+        actionSequence.Actions.RemoveRange(9, 8);
+        // Make it load our desired target scene immediately.
+        var loadAction = actionSequence.gameObject.AddComponent<RandomizerLoadSceneAtPositionAction>();
+        loadAction.MoonGuid = new MoonGuid(312294723, 1208247507, -1126220927, 892221029);
+        loadAction.Position = Randomizer.SpawnPosition;
+        actionSequence.Actions.Insert(0, loadAction);
+        // Make it swap scene faster. 4s to 1s, other 3s added to other scene.
+        var waitAction = (WaitAction)actionSequence.Actions[9];
+        waitAction.Duration = 1f;
         // Hide letterboxes
         actionSequence.Actions.Add(original_list[11]);
-        // Show UI
-        actionSequence.Actions.Add(original_list[15]);
-        // Unlock player input
-        actionSequence.Actions.Add(original_list[10]);
+        // Set the trigger for our new spawn location.
+        var stringTrigger = actionSequence.gameObject.AddComponent<RegisterStringTriggerAction>();
+        stringTrigger.MoonGuid = new MoonGuid(-1155166006, 1231229756, -1377750093, -1595379638);
+        stringTrigger.String = "RandomSpawnStart";
+        actionSequence.Actions.Add(stringTrigger);
         // Warp
         var setPosition = actionSequence.gameObject.AddComponent<SetCharacterPosition>();
-        setPosition.transform.position = position;
+        setPosition.MoonGuid = new MoonGuid(2033807637, 1102752838, 351348109, 1564353675);
+        setPosition.transform.position = Randomizer.SpawnPosition;
         setPosition.Position = setPosition.transform;
-        SetGuidAndSave(sceneRoot, setPosition, new MoonGuid(2033807637, 1102752838, 351348109, 1564353675));
         actionSequence.Actions.Add(setPosition);
-        // create checkpoint -- should be immediately after warp.
-        actionSequence.Actions.Add(original_list[14]);
-        // Wait 4 seconds
-        actionSequence.Actions.Add(original_list[8]);
-        // wait 3.3 sceonds
-        actionSequence.Actions.Add(original_list[12]);
-        // play sound
-        actionSequence.Actions.Add(original_list[13]);
-        // Set user status action.
-        actionSequence.Actions.Add(original_list[16]);
-        sceneRoot.OnValidate();
+        // Set camera.
+        var cameraAction = actionSequence.gameObject.AddComponent<RandomizerMoveCameraAction>();
+        cameraAction.MoonGuid = new MoonGuid(364836396, 1208058425, -863601485, -145251505);
+        cameraAction.Position = Randomizer.SpawnPosition;
+        actionSequence.Actions.Add(cameraAction);
+        // Remove the fade out.
+        actionSequence.Actions.RemoveAt(4);
+    }
+
+    private static void BootstrapRandomSpawnTeleportLocation(SceneRoot sceneRoot) {
+        // Most of this is recreating timings and actions that were originally in SunkenGladesRunaway.
+        var sequenceObject = new GameObject("randomSpawnSequence");
+        sequenceObject.transform.parent = sceneRoot.transform;
+        // Create the sequence and make it triggered by the new spawn sequence.
+        var sequence = sequenceObject.AddComponent<ActionSequence>();
+        sequence.MoonGuid = new MoonGuid(-575420461, 1101990088, 178133408, 2022995693);
+        var trigger = sequenceObject.AddComponent<TriggerByString>();
+        trigger.MoonGuid = new MoonGuid(596688283, 1150590864, 217824902, 525971548);
+        trigger.Data = new TriggerByString.StringTriggerData { String = "RandomSpawnStart", TriggerEvent = TriggerByString.TriggerEvent.Always };
+        trigger.TriggerOnce = true;
+        trigger.ActionToRun = sequence;
+        // This is the point where in any great magician's act we pull back the curtain! (Hopefully no one peeked and saw glades.)
+        var fadeOut = sequenceObject.AddComponent<FaderBFadeOutAction>();
+        fadeOut.MoonGuid = new MoonGuid(60245356, 1204775850, 1483324304, -1342617812);
+        fadeOut.Duration = 4;
+        sequence.Actions.Add(fadeOut);
+        // Wait 3 seconds of the 4 total.
+        var waitAction = sequenceObject.AddComponent<WaitAction>();
+        waitAction.MoonGuid = new MoonGuid(-1216854977, 1204243132, 2020710590, 1091515233);
+        waitAction.Duration = 3f;
+        sequence.Actions.Add(waitAction);
+        // Unlock player input.
+        var inputLockAction = sequenceObject.AddComponent<LockPlayerInputManualAction>();
+        inputLockAction.MoonGuid = new MoonGuid(-803450664, 1167049334, 1107280285, 72641712);
+        inputLockAction.ShouldLock = false;
+        sequence.Actions.Add(inputLockAction);
+        // Wait 3.3 seconds.
+        var waitObject = new GameObject("WaitAction2");
+        waitObject.transform.parent = sequenceObject.transform;
+        var waitAction2 = waitObject.gameObject.AddComponent<WaitAction>();
+        waitAction2.MoonGuid = new MoonGuid(-1491006181, 1224537196, 1919780772, 1173563805);
+        waitAction2.Duration = 3.3f;
+        sequence.Actions.Add(waitAction2);
+        // Show UI.
+        var showAction = sequenceObject.AddComponent<ShowSeinUIAction>();
+        showAction.MoonGuid = new MoonGuid(1954200174, 1280244692, -1636812609, 1089206021);
+        showAction.ShouldShow = true;
+        sequence.Actions.Add(showAction);
+        // Create Checkpoint.
+        var checkpointAction = sequenceObject.AddComponent<CreateCheckpointAction>();
+        checkpointAction.MoonGuid = new MoonGuid(-960421049, 1184624848, 1067937201, 1937397131);
+        checkpointAction.RespawnPosition = new Vector2(0, 0);
+        checkpointAction.SaveToDisk = true;
+        sequence.Actions.Add(checkpointAction);
     }
 
     private static void BootstrapWallJumpTreeHint(SceneRoot sceneRoot) {
@@ -777,39 +817,35 @@ public class RandomizerBootstrap {
 
     private static void BootstrapHoruFieldsPushBlock(SceneRoot sceneRoot) {
         // This changes the push block cutscene so that it only plays when it will not softlock the game.
-        Transform pushRockTrigger = sceneRoot.transform.FindChild("*storySetups/*pushRockTrigger");
-        GenericCollisionTrigger collisionTrigger = pushRockTrigger.gameObject.GetComponent<GenericCollisionTrigger>();
-        Transform storySetups = sceneRoot.transform.FindChild("*storySetups");
+        var pushRockTrigger = sceneRoot.transform.FindChild("*storySetups/*pushRockTrigger");
+        var collisionTrigger = pushRockTrigger.gameObject.GetComponent<GenericCollisionTrigger>();
+        var storySetups = sceneRoot.transform.FindChild("*storySetups");
 
-        SeinInsideZoneCondition isInZoneCondition = pushRockTrigger.gameObject.AddComponent<SeinInsideZoneCondition>();
+        var isInZoneCondition = pushRockTrigger.gameObject.AddComponent<SeinInsideZoneCondition>();
         collisionTrigger.Condition = isInZoneCondition;
 
-        GameObject softlockObject = new GameObject("softlock fix");
+        var softlockObject = new GameObject("softlock fix");
         softlockObject.transform.SetParent(storySetups.transform);
         // Bounds of where it is safe to play the cutscene.
-        float left = 25;
-        float right = 180;
-        float top = 38;
-        float bottom = -54;
+        var left = 25f;
+        var right = 180f;
+        var top = 38f;
+        var bottom = -54f;
         softlockObject.transform.localScale = new Vector3(right - left, top - bottom, 0);
         softlockObject.transform.position = new Vector3((right + left) / 2, (top + bottom) / 2, 0);
         isInZoneCondition.Zones = new Transform[1];
         isInZoneCondition.Zones[0] = softlockObject.transform;
-
-        sceneRoot.OnValidate();
     }
 
-    private static void BootstrapL4(SceneRoot sceneRoot)
-    {
+    private static void BootstrapL4(SceneRoot sceneRoot) {
         // This disables the rocks that block off access to HoruL4ChaseExp to prevent softlocks.
-        Transform rocks = sceneRoot.transform.FindChild("*waveSetup/timeline/blockingRock");
-        ActionSequence lavaSequence = sceneRoot.transform.FindChild("*waveSetup/simpleStompPost/baseAction").GetComponent<ActionSequence>();
-        Transform deactivateExample = lavaSequence.transform.FindChild("24. Deactivate waveGroup");
-        Transform deactivateRocks = CloneObject(sceneRoot, deactivateExample, "25. Deactivate Rocks");
-        ActivateAction deactivateRocksAction = deactivateRocks.GetComponent<ActivateAction>();
+        var rocks = sceneRoot.transform.FindChild("*waveSetup/timeline/blockingRock");
+        var lavaSequence = sceneRoot.transform.FindChild("*waveSetup/simpleStompPost/baseAction").GetComponent<ActionSequence>();
+        var deactivateExample = lavaSequence.transform.FindChild("24. Deactivate waveGroup");
+        var deactivateRocks = CloneObject(sceneRoot, deactivateExample, "25. Deactivate Rocks");
+        var deactivateRocksAction = deactivateRocks.GetComponent<ActivateAction>();
         deactivateRocksAction.Target = rocks.gameObject;
         lavaSequence.Actions.Add(deactivateRocksAction);
-        sceneRoot.OnValidate();
     }
 
     private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>> {
