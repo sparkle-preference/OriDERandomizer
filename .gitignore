@@ -36,3 +36,7 @@ seed_gen/*.csv
 
 # local build script (dnSpy path is machine-specific)
 /build.bat
+
+# dotnet format / msbuild scratch
+/obj/
+/bin/

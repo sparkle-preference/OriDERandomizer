@@ -259,23 +259,25 @@ public class RandomizerLocationManager {
                     File.Move("areas.ori", "areas.ori.old"); // backup
                 }
 
-                // The logic thread can block, so the sidecar's download is free
-                // here. The session's first TLS request can collide with the
-                // websocket's handshake and fail; a second attempt goes through.
+                // the scheme picks the engine, as everywhere else: the sidecar
+                // owns TLS, the game's own client can only do plain http
                 var fetched = false;
-                for (var attempt = 0; attempt < 2 && NativeWebSocket.Loaded && NativeWebSocket.HttpAvailable; attempt++) {
-                    var status = NativeWebSocket.HttpDownload(SecureAreasURL(), "areas.ori");
-                    if (status == 200) {
-                        fetched = true;
-                        break;
+                if (AreasURL().StartsWith("https://")) {
+                    // The logic thread can block, so the sidecar's download is free
+                    // here. The session's first TLS request can collide with the
+                    // websocket's handshake and fail; a second attempt goes through.
+                    for (var attempt = 0; attempt < 2 && NativeWebSocket.Loaded && NativeWebSocket.HttpAvailable; attempt++) {
+                        var status = NativeWebSocket.HttpDownload(AreasURL(), "areas.ori");
+                        if (status == 200) {
+                            fetched = true;
+                            break;
+                        }
+
+                        Randomizer.log($"areas.ori: sidecar attempt {attempt + 1} gave {status} "
+                            + $"({NativeWebSocket.GetLastHttpError()})");
+                        Thread.Sleep(500);
                     }
-
-                    Randomizer.log($"areas.ori: sidecar attempt {attempt + 1} gave {status} "
-                        + $"({NativeWebSocket.GetLastHttpError()})");
-                    Thread.Sleep(500);
-                }
-
-                if (!fetched && !AreasURL().StartsWith("https://")) {
+                } else {
                     var webClient = new QuickWebClient();
                     ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
                     webClient.DownloadFile(AreasURL(), "areas.ori");
@@ -293,7 +295,7 @@ public class RandomizerLocationManager {
                     return;
                 }
 
-                Randomizer.log($"areas.ori: fetched from {SecureAreasURL()}");
+                Randomizer.log($"areas.ori: fetched from {AreasURL()}");
 
                 if (File.Exists("areas.ori.old")) {
                     File.Delete("areas.ori.old"); // clean backup
@@ -438,9 +440,6 @@ public class RandomizerLocationManager {
     public static bool HaveDownloadedAreas;
 
     public static string AreasURL() => $"{RandomizerSyncManager.WebBase()}/netcode/areas";
-
-    // WsEndpoint is the canonical host; WebEndpoint is the plain-http one
-    public static string SecureAreasURL() => $"{RandomizerSyncManager.WsBase().Replace("wss://", "https://").Replace("ws://", "http://")}/netcode/areas";
 
     private static DateTime s_logicLastUpdated = DateTime.MinValue;
 
