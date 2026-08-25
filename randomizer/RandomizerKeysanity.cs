@@ -106,7 +106,7 @@ public class RandomizerKeysanity {
             }
 
             var count = inventory.GetRandomizerItem(id);
-            if (count == countForDoor(id)) {
+            if (count >= countForDoor(id)) {
                 return $"${hintMap[id]} {count}/{count}\n(Openable!)$";
             }
 
@@ -186,7 +186,7 @@ public class RandomizerKeysanity {
 
     private string GetProgress(int id, bool printKeystone) {
         if (hintMap.TryGetValue(id, out var baseHint)) {
-            var canOpen = inventory.GetRandomizerItem(id) - countForDoor(id) == 0;
+            var canOpen = inventory.GetRandomizerItem(id) >= countForDoor(id);
             var hint = $"{baseHint}{(printKeystone ? " Keystone " : " ")}({inventory.GetRandomizerItem(id)}/{countForDoor(id)})";
             if (canOpen) {
                 return $"${hint}$";
