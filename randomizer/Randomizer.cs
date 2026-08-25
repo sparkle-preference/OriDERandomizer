@@ -132,9 +132,9 @@ public static class Randomizer {
                         // 4.3 seeds carry no baked goals; the server is asked over
                         // the goals: channel. A legacy file that still ends with one
                         // loads as before
-                        var lastLine = allLines[allLines.Count - 1];
-                        if (lastLine.StartsWith("Goals")) {
-                            BingoController.Init(lastLine);
+                        var goalsLine = allLines[allLines.Count - 1];
+                        if (goalsLine.StartsWith("Goals")) {
+                            BingoController.Init(goalsLine);
                             allLines.RemoveAt(allLines.Count - 1);
                         } else {
                             BingoController.Init(null);
