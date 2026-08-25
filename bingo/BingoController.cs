@@ -55,6 +55,9 @@ public static class BingoController {
 
             if (UpdateTimer > 0) {
                 UpdateTimer--;
+            } else if (!GoalsLoaded) {
+                UpdateTimer = 3;
+                AskGoals();
             } else {
                 PostUpdate();
             }
@@ -985,10 +988,15 @@ public static class BingoController {
 
             var idParts = Randomizer.SyncId.Split('.');
             UpdateUrl = $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/game/{idParts[0]}/player/{idParts[1]}/bingo";
+            GoalsUrl = $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/game/{idParts[0]}/player/{idParts[1]}/goals";
             WsUnsupported = false; // fresh seed, fresh chance (server may have upgraded)
+            GoalsWsUnsupported = false;
+            GoalsGone = false;
             if (!Active) {
                 UpdateClient = new WebClient();
                 UpdateClient.UploadValuesCompleted += PostCallback;
+                GoalsClient = new WebClient();
+                GoalsClient.DownloadStringCompleted += GoalsFetched;
                 SingleLocListeners = new Dictionary<int, List<SingleLocListener>>();
                 SingleItemListeners = new Dictionary<string, SingleItemListener>();
                 SingleSceneListeners = new Dictionary<string, SingleSceneListener>();
@@ -1240,9 +1248,61 @@ public static class BingoController {
                 Active = true;
             }
 
-            SetActiveGoals(goalLine.Substring(6));
+            GoalsLoaded = false;
+            if (goalLine != null) {
+                SetActiveGoals(goalLine.Substring(6));
+                GoalsLoaded = true;
+            }
         } catch (Exception e) {
             Randomizer.LogError("BingoController.Init: " + e.Message + " " + e.StackTrace);
+        }
+    }
+
+    public static void LoadGoals(string goalLine) {
+        if (!Active) {
+            return;
+        }
+
+        try {
+            SetActiveGoals(goalLine.StartsWith("Goals") ? goalLine.Substring(6) : goalLine);
+            GoalsLoaded = true;
+        } catch (Exception e) {
+            Randomizer.LogError("BingoController.LoadGoals: " + e.Message);
+        }
+    }
+
+    public static void AskGoals() {
+        if (GoalsGone) {
+            return;
+        }
+
+        if (RandomizerSyncManager.WsOpen && !GoalsWsUnsupported) {
+            NativeWebSocket.SendText("goals:");
+        } else if (!RandomizerSyncManager.WsNoHttp && !GoalsClient.IsBusy) {
+            GoalsClient.DownloadStringAsync(new Uri(GoalsUrl));
+        }
+    }
+
+    private static void GoalsFetched(object sender, DownloadStringCompletedEventArgs e) {
+        if (e.Error != null) {
+            // 404 = no board for this player; anything else retries on the timer
+            if (e.Error.Message.Contains("404")) {
+                GoalsGone = true;
+            }
+
+            return;
+        }
+
+        LoadGoals(e.Result);
+    }
+
+    // the server err'd a goals frame: 404 means no board, no status means it
+    // predates the channel entirely -- that fetch goes http
+    public static void OnGoalsErr(string what) {
+        if (what.Contains("404")) {
+            GoalsGone = true;
+        } else {
+            GoalsWsUnsupported = true;
         }
     }
 
@@ -1456,6 +1516,11 @@ public static class BingoController {
     }
 
     public static bool WsUnsupported;
+    public static bool GoalsWsUnsupported;
+    public static bool GoalsLoaded;
+    public static bool GoalsGone;
+    public static string GoalsUrl;
+    public static WebClient GoalsClient;
 
     // these two live on the prefab, so every instance in the game shares them --
     // the scene case is what makes the goal local

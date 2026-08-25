@@ -72,6 +72,7 @@ public static class RandomizerSyncManager {
                 wsLoadAttempts = 0;
                 wsFoundUnsupported = false;
                 wsNoHttp = false; // the server re-sends nohttp on connect
+                wsWasOpen = false;
                 StartWebsocket(url);
             }
         }
@@ -185,6 +186,12 @@ public static class RandomizerSyncManager {
                     ProcessFrame(frame);
                 }
             }
+
+            if (WsOpen && !wsWasOpen && BingoController.Active) {
+                NativeWebSocket.SendText("goals:");
+            }
+
+            wsWasOpen = WsOpen;
 
             tslu += Time.deltaTime;
             if (tslu < PERIOD) {
@@ -330,6 +337,8 @@ public static class RandomizerSyncManager {
                 OnFoundAck(frame.Substring(sep + 1));
             } else if (kind == "bingoack" && sep >= 0) {
                 BingoController.OnBingoAck(frame.Substring(sep + 1));
+            } else if (kind == "goals" && sep >= 0) {
+                BingoController.LoadGoals(frame.Substring(sep + 1));
             } else if (kind == "completeack") {
                 // no Sein guard: this arrives during credits
                 completePending = false;
@@ -346,6 +355,8 @@ public static class RandomizerSyncManager {
                         wsFoundToken = 0;
                         webClient.DownloadStringAsync(SendingPickup.GetURL());
                     }
+                } else if (what.StartsWith("goals")) {
+                    BingoController.OnGoalsErr(what);
                 } else if (what.StartsWith("bingo")) {
                     BingoController.OnBingoErr();
                 }
@@ -820,6 +831,7 @@ public static class RandomizerSyncManager {
     private static int wsFoundAttempts;
 
     private static bool wsFoundUnsupported;
+    private static bool wsWasOpen;
 
     private static bool wsNoHttp;
 
