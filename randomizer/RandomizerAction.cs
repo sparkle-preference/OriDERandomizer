@@ -79,9 +79,9 @@ public class RandomizerAction {
             String.Join(
                 "/",
                 actions.Select(act => {
-                        var escapedValue = act.Value.ToString().Replace("/", "//");
-                        return $"{act.Action}/{escapedValue}";
-                    }
+                    var escapedValue = act.Value.ToString().Replace("/", "//");
+                    return $"{act.Action}/{escapedValue}";
+                }
                 ).ToArray()
             )
         );
