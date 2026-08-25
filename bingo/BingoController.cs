@@ -29,6 +29,7 @@ public static class BingoController {
                 return;
             }
 
+            PollSidecar();
             if (Characters.Sein.Inventory.Keystones > IntGoals["UnspentKeystones"].Value) {
                 IntGoals["UnspentKeystones"].Value = Characters.Sein.Inventory.Keystones;
             }
@@ -987,11 +988,16 @@ public static class BingoController {
             }
 
             var idParts = Randomizer.SyncId.Split('.');
-            UpdateUrl = $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/game/{idParts[0]}/player/{idParts[1]}/bingo";
-            GoalsUrl = $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/game/{idParts[0]}/player/{idParts[1]}/goals";
+            UpdateUrl = $"{RandomizerSyncManager.WebBase()}/netcode/game/{idParts[0]}/player/{idParts[1]}/bingo";
+            GoalsUrl = $"{RandomizerSyncManager.WebBase()}/netcode/game/{idParts[0]}/player/{idParts[1]}/goals";
             WsUnsupported = false; // fresh seed, fresh chance (server may have upgraded)
             GoalsWsUnsupported = false;
             GoalsGone = false;
+            // a reload moves the urls; in-flight replies from the old game die here
+            RandomizerSyncManager.SidecarForget(updateHandle);
+            RandomizerSyncManager.SidecarForget(goalsHandle);
+            updateHandle = 0;
+            goalsHandle = 0;
             if (!Active) {
                 UpdateClient = new WebClient();
                 UpdateClient.UploadValuesCompleted += PostCallback;
@@ -1278,8 +1284,40 @@ public static class BingoController {
 
         if (RandomizerSyncManager.WsOpen && !GoalsWsUnsupported) {
             NativeWebSocket.SendText("goals:");
-        } else if (!RandomizerSyncManager.WsNoHttp && !GoalsClient.IsBusy) {
+        } else if (!RandomizerSyncManager.WsNoHttp && RandomizerSyncManager.UseSidecarHttp) {
+            if (goalsHandle == 0) {
+                goalsHandle = NativeWebSocket.HttpBegin("GET", GoalsUrl, null, null);
+            }
+        } else if (!RandomizerSyncManager.WsNoHttp && !RandomizerSyncManager.SecureNetcode && !GoalsClient.IsBusy) {
             GoalsClient.DownloadStringAsync(new Uri(GoalsUrl));
+        }
+    }
+
+    // completions for the sidecar's bingo and goals requests, at tick cadence
+    private static void PollSidecar() {
+        if (updateHandle != 0) {
+            var status = NativeWebSocket.HttpStatus(updateHandle);
+            if (status != NativeWebSocket.HttpPending) {
+                NativeWebSocket.HttpRelease(updateHandle);
+                updateHandle = 0;
+                if (status >= 300 || status <= 0) {
+                    UpdateTimer = Math.Min(1, UpdateTimer);
+                }
+            }
+        }
+
+        if (goalsHandle != 0) {
+            var status = NativeWebSocket.HttpStatus(goalsHandle);
+            if (status != NativeWebSocket.HttpPending) {
+                var body = status == 200 ? NativeWebSocket.HttpResponse(goalsHandle) : null;
+                NativeWebSocket.HttpRelease(goalsHandle);
+                goalsHandle = 0;
+                if (body != null) {
+                    LoadGoals(body);
+                } else if (status == 404) {
+                    GoalsGone = true;
+                }
+            }
         }
     }
 
@@ -1482,7 +1520,16 @@ public static class BingoController {
         if (RandomizerSyncManager.WsOpen && !WsUnsupported && json.Length < 30000) {
             NativeWebSocket.SendText("bingo:bingoData=" + Uri.EscapeDataString(json) + "&version=" + Randomizer.VERSION);
             UpdateTimer = 15;
-        } else if (!RandomizerSyncManager.WsNoHttp && !UpdateClient.IsBusy) {
+        } else if (!RandomizerSyncManager.WsNoHttp && RandomizerSyncManager.UseSidecarHttp) {
+            if (updateHandle == 0) {
+                updateHandle = NativeWebSocket.HttpBegin("POST", UpdateUrl,
+                    "bingoData=" + RandomizerSyncManager.EscapeLong(json) + "&version=" + Randomizer.VERSION,
+                    RandomizerSyncManager.FormType);
+                UpdateTimer = updateHandle == 0 ? 3 : 15;
+            } else {
+                UpdateTimer = 3;
+            }
+        } else if (!RandomizerSyncManager.WsNoHttp && !RandomizerSyncManager.SecureNetcode && !UpdateClient.IsBusy) {
             var values = new NameValueCollection();
             values["bingoData"] = json;
             values["version"] = Randomizer.VERSION;
@@ -1521,6 +1568,8 @@ public static class BingoController {
     public static bool GoalsGone;
     public static string GoalsUrl;
     public static WebClient GoalsClient;
+    private static int updateHandle;
+    private static int goalsHandle;
 
     // these two live on the prefab, so every instance in the game shares them --
     // the scene case is what makes the goal local

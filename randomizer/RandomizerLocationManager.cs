@@ -275,13 +275,25 @@ public class RandomizerLocationManager {
                     Thread.Sleep(500);
                 }
 
-                if (!fetched) {
+                if (!fetched && !AreasURL().StartsWith("https://")) {
                     var webClient = new QuickWebClient();
                     ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
                     webClient.DownloadFile(AreasURL(), "areas.ori");
+                    fetched = true;
                 }
 
-                Randomizer.log($"areas.ori: fetched from {(fetched ? SecureAreasURL() : AreasURL())}");
+                if (!fetched) {
+                    // no lane could serve it: keep what we had rather than
+                    // leaving the install with no logic file at all
+                    Randomizer.LogError("areas.ori: no transport could fetch it; keeping the existing file");
+                    if (File.Exists("areas.ori.old")) {
+                        File.Move("areas.ori.old", "areas.ori");
+                    }
+
+                    return;
+                }
+
+                Randomizer.log($"areas.ori: fetched from {SecureAreasURL()}");
 
                 if (File.Exists("areas.ori.old")) {
                     File.Delete("areas.ori.old"); // clean backup
@@ -425,10 +437,10 @@ public class RandomizerLocationManager {
 
     public static bool HaveDownloadedAreas;
 
-    public static string AreasURL() => $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/areas";
+    public static string AreasURL() => $"{RandomizerSyncManager.WebBase()}/netcode/areas";
 
     // WsEndpoint is the canonical host; WebEndpoint is the plain-http one
-    public static string SecureAreasURL() => $"https://{RandomizerSettings.DevSettings.WsEndpoint.Value}/netcode/areas";
+    public static string SecureAreasURL() => $"{RandomizerSyncManager.WsBase().Replace("wss://", "https://").Replace("ws://", "http://")}/netcode/areas";
 
     private static DateTime s_logicLastUpdated = DateTime.MinValue;
 

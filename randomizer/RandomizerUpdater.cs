@@ -118,7 +118,14 @@ public class RandomizerUpdater : MonoBehaviour {
     private static string Host {
         get {
             var endpoint = RandomizerSettings.DevSettings.WsEndpoint;
-            return endpoint == null ? "orirando.com" : endpoint.Value;
+            if (endpoint == null) {
+                return "bf.orirando.com";
+            }
+
+            // the setting carries a scheme since 4.3; the updater builds its own
+            var v = endpoint.Value;
+            var at = v.IndexOf("://");
+            return (at >= 0 ? v.Substring(at + 3) : v).TrimEnd('/');
         }
     }
 
