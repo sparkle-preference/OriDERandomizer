@@ -494,11 +494,6 @@ public class RandomizerBootstrap {
         setPosition.transform.position = Randomizer.SpawnPosition;
         setPosition.Position = setPosition.transform;
         actionSequence.Actions.Add(setPosition);
-        // Set camera.
-        var cameraAction = actionSequence.gameObject.AddComponent<RandomizerMoveCameraAction>();
-        cameraAction.MoonGuid = new MoonGuid(364836396, 1208058425, -863601485, -145251505);
-        cameraAction.Position = Randomizer.SpawnPosition;
-        actionSequence.Actions.Add(cameraAction);
         // Remove the fade out.
         actionSequence.Actions.RemoveAt(4);
     }
@@ -515,6 +510,11 @@ public class RandomizerBootstrap {
         trigger.Data = new TriggerByString.StringTriggerData { String = "RandomSpawnStart", TriggerEvent = TriggerByString.TriggerEvent.Always };
         trigger.TriggerOnce = true;
         trigger.ActionToRun = sequence;
+        // Move the camera to ori. This is done here and not in default spawn scene so that camera bounds are calculated correctly.
+        var cameraAction = sequence.gameObject.AddComponent<RandomizerMoveCameraAction>();
+        cameraAction.MoonGuid = new MoonGuid(364836396, 1208058425, -863601485, -145251505);
+        cameraAction.Position = Randomizer.SpawnPosition;
+        sequence.Actions.Add(cameraAction);
         // This is the point where in any great magician's act we pull back the curtain! (Hopefully no one peeked and saw glades.)
         var fadeOut = sequenceObject.AddComponent<FaderBFadeOutAction>();
         fadeOut.MoonGuid = new MoonGuid(60245356, 1204775850, 1483324304, -1342617812);
