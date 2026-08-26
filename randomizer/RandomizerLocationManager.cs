@@ -263,9 +263,8 @@ public class RandomizerLocationManager {
                 // owns TLS, the game's own client can only do plain http
                 var fetched = false;
                 if (AreasURL().StartsWith("https://")) {
-                    // The logic thread can block, so the sidecar's download is free
-                    // here. The session's first TLS request can collide with the
-                    // websocket's handshake and fail; a second attempt goes through.
+                    // The logic thread can block, so the sidecar's download is free here.
+                    // A first TLS request can lose a race with the ws handshake: two tries.
                     for (var attempt = 0; attempt < 2 && NativeWebSocket.Loaded && NativeWebSocket.HttpAvailable; attempt++) {
                         var status = NativeWebSocket.HttpDownload(AreasURL(), "areas.ori");
                         if (status == 200) {

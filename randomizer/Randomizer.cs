@@ -129,9 +129,8 @@ public static class Randomizer {
                     var doBingo = ParseFlags(s, flags);
                     if (doBingo) {
                         Message = "Good luck on your bingo!";
-                        // 4.3 seeds carry no baked goals; the server is asked over
-                        // the goals: channel. A legacy file that still ends with one
-                        // loads as before
+                        // 4.3 seeds carry no baked goals; the server answers over the
+                        // goals: channel, and a legacy file ending in one still loads
                         var goalsLine = allLines[allLines.Count - 1];
                         if (goalsLine.StartsWith("Goals")) {
                             BingoController.Init(goalsLine);
