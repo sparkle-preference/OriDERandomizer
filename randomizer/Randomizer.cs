@@ -110,6 +110,7 @@ public static class Randomizer {
             EnhancedSeinInSeed = false;
             SpawnPosition = new Vector3(0, 0, 0);
             SpawnScene = null;
+            ShouldHideGladesStart = false;
 
             if (SeedFilePath == null || IsDefaultSeedFilePath(SeedFilePath)) {
                 SeedFilePath = DefaultSeedFilePath();
@@ -1627,6 +1628,7 @@ public static class Randomizer {
 
         SpawnPosition = new Vector3(warpX, warpY, 0);
         SpawnScene = Core.Scenes.Manager.GetSceneNameAtPosition(SpawnPosition);
+        ShouldHideGladesStart = true;
     }
 
     public static bool SafeIsBashing => (Characters.Sein.Abilities.Bash && Characters.Sein.Abilities.Bash.IsBashing) || false;
@@ -1789,4 +1791,6 @@ public static class Randomizer {
     public static Vector3 SpawnPosition;
 
     public static string SpawnScene;
+    
+    public static bool ShouldHideGladesStart;
 }
