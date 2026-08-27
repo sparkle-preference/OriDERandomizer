@@ -108,6 +108,9 @@ public static class Randomizer {
             RandomizerDeathLink.Reset();
             EnhancedMode = false;
             EnhancedSeinInSeed = false;
+            SpawnPosition = new Vector3(0, 0, 0);
+            SpawnScene = null;
+            ShouldHideGladesStart = false;
 
             if (SeedFilePath == null || IsDefaultSeedFilePath(SeedFilePath)) {
                 SeedFilePath = DefaultSeedFilePath();
@@ -179,6 +182,7 @@ public static class Randomizer {
 
                         if (coords == 2) {
                             SpawnWith = lineParts[1] + lineParts[2];
+                            GetSpawnInformation();
                         } else if (lineParts[1] != "EN") {
                             var repeatable = lineParts[1] == "RP";
                             RandomizerLocationManager.PlacePickup(coords, lineParts[1], lineParts[2], repeatable);
@@ -1603,6 +1607,30 @@ public static class Randomizer {
         RandomizerLocationManager.UpdateReachable();
     }
 
+    public static void GetSpawnInformation() {
+        if (!Randomizer.SpawnWith.Contains("WS")) {
+            return;
+        }
+        if (Core.Scenes.Manager is null) {
+            return;
+        }
+        var wsLocation = Randomizer.SpawnWith.IndexOf("WS");
+        var wsLength = 2;
+        if (Randomizer.SpawnWith.Contains("WS/")) {
+            wsLength = 3;
+        }
+        string[] pieces = Randomizer.SpawnWith.Substring(wsLocation + wsLength).Split(',');
+        int warpX;
+        int warpY;
+        if ((pieces.Length < 2) || !int.TryParse(pieces[0], out warpX) || !int.TryParse(pieces[1], out warpY)) {
+            return;
+        }
+
+        SpawnPosition = new Vector3(warpX, warpY, 0);
+        SpawnScene = Core.Scenes.Manager.GetSceneNameAtPosition(SpawnPosition);
+        ShouldHideGladesStart = true;
+    }
+
     public static bool SafeIsBashing => (Characters.Sein.Abilities.Bash && Characters.Sein.Abilities.Bash.IsBashing) || false;
 
     public static RandomizerInventory Inventory { get; private set; }
@@ -1759,4 +1787,10 @@ public static class Randomizer {
     public static bool EnhancedMode;
 
     public static bool EnhancedSeinInSeed;
+
+    public static Vector3 SpawnPosition;
+
+    public static string SpawnScene;
+    
+    public static bool ShouldHideGladesStart;
 }
