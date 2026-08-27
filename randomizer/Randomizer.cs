@@ -1791,6 +1791,6 @@ public static class Randomizer {
     public static Vector3 SpawnPosition;
 
     public static string SpawnScene;
-    
+
     public static bool ShouldHideGladesStart;
 }
