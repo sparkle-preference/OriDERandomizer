@@ -8,5 +8,8 @@ public class ControlsSettingsScreen : CustomSettingsScreen {
         AddToggle(RandomizerSettings.Controls.WallChargeMouseAim, "Toggles whether wall Charge Jump aiming should follow the mouse cursor.");
         AddToggle(RandomizerSettings.Controls.InvertClimb, "Toggles whether Climb ([Climb]) should be inverted. If enabled, hold [Climb] to stop climbing.");
         AddToggle(RandomizerSettings.Controls.SlowClimbVault, "Toggles the slow climb vault effect, making it easier to land on narrow edges after using Climb.");
+        AddToggle(RandomizerSettings.Controls.LongerBashAimTime, "Gives about three times as long to aim a Bash.");
+        AddEnum(RandomizerSettings.Controls.GrenadeJump, "Auto grenade jumps on one bind. Manual is the vanilla two-input version.");
+        AddEnum(RandomizerSettings.Controls.Autofire, "Hold or toggle Spirit Flame to fire continuously, or Off for vanilla.");
     }
 }

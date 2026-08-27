@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 // Title screen branding: lifts the vanilla logo and hangs a "Randomizer"
 // wordmark under the Definitive Edition banner.
@@ -71,36 +71,17 @@ public class RandomizerTitleScreen {
     // atlas rect baked in. The hint background's variant maps a whole texture,
     // so borrow that material. Stock shaders are stripped from this build.
     private static Transform BuildWordmark(Transform banner, Transform parent, float width, float height) {
-        var texture = WordmarkTexture;
-        if (texture == null) {
-            return null;
-        }
-
         var bannerRenderer = banner.GetComponent<Renderer>();
         if (bannerRenderer == null) {
             Randomizer.log("title screen: banner has no renderer to match, skipping branding");
             return null;
         }
 
-        var material = WholeTextureMaterial();
-        if (material == null) {
+        var wordmark = RandomizerQuad.Build("randomizerWordmark", "menu_text_randomizer.png", bannerRenderer);
+        if (wordmark == null) {
             Randomizer.log("title screen: no material that maps a whole texture, skipping branding");
             return null;
         }
-
-        material.SetTexture("_MainTex", texture);
-        material.SetColor("_Color", Color.white);
-
-        var wordmark = new GameObject("randomizerWordmark");
-        wordmark.layer = banner.gameObject.layer;
-        wordmark.AddComponent<MeshFilter>().mesh = UnitQuad();
-
-        var renderer = wordmark.AddComponent<MeshRenderer>();
-        renderer.sharedMaterial = material;
-        renderer.castShadows = false;
-        renderer.receiveShadows = false;
-        renderer.sortingLayerID = bannerRenderer.sortingLayerID;
-        renderer.sortingOrder = bannerRenderer.sortingOrder;
 
         var placed = wordmark.transform;
         placed.SetParent(parent, false);
@@ -109,47 +90,7 @@ public class RandomizerTitleScreen {
         return placed;
     }
 
-    private static Material WholeTextureMaterial() {
-        var controller = Game.UI.MessageController;
-        var hintMessage = controller == null ? null : controller.HintMessage;
-        if (hintMessage == null) {
-            return null;
-        }
 
-        var background = hintMessage.transform.FindChild("background/hintMessageBackground");
-        if (background == null) {
-            return null;
-        }
-
-        var renderer = background.GetComponent<Renderer>();
-        if (renderer == null || renderer.sharedMaterial == null) {
-            return null;
-        }
-
-        return new Material(renderer.sharedMaterial);
-    }
-
-    // 1x1 quad centred on its origin, UVs spanning the whole texture
-    private static Mesh UnitQuad() {
-        var mesh = new Mesh();
-        mesh.vertices = new Vector3[4] {
-            new Vector3(-0.5f, -0.5f, 0f),
-            new Vector3(0.5f, -0.5f, 0f),
-            new Vector3(0.5f, 0.5f, 0f),
-            new Vector3(-0.5f, 0.5f, 0f)
-        };
-        mesh.uv = new Vector2[4] {
-            new Vector2(0f, 0f),
-            new Vector2(1f, 0f),
-            new Vector2(1f, 1f),
-            new Vector2(0f, 1f)
-        };
-        mesh.colors = new Color[4] { Color.white, Color.white, Color.white, Color.white };
-        mesh.triangles = new int[6] { 0, 1, 2, 0, 2, 3 };
-        mesh.RecalculateNormals();
-        mesh.RecalculateBounds();
-        return mesh;
-    }
 
     // local-space size of a mesh quad, scale included
     private static Vector3 MeshSize(Transform obj) {
@@ -166,21 +107,5 @@ public class RandomizerTitleScreen {
         );
     }
 
-    private static Texture2D WordmarkTexture {
-        get {
-            if (_wordmarkTexture == null) {
-                var bytes = RandomizerResources.ReadResource("menu_text_randomizer.png");
-                if (bytes == null) {
-                    return null;
-                }
 
-                _wordmarkTexture = new Texture2D(0, 0);
-                _wordmarkTexture.LoadImage(bytes);
-            }
-
-            return _wordmarkTexture;
-        }
-    }
-
-    private static Texture2D _wordmarkTexture;
 }

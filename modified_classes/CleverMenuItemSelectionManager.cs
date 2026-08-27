@@ -107,6 +107,12 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         SuspensionManager.Unregister(this);
     }
 
+    // A row the scroll window is hiding is still somewhere the selection may go; the
+    // window follows it there.
+    private static bool Navigable(CleverMenuItem item) {
+        return item.IsActivated || RandomizerScrollHide.Hiding(item);
+    }
+
     public void MoveSelection(bool forward) {
         var num = Index;
         var num2 = 0;
@@ -116,7 +122,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
                 if (num2++ > MenuItems.Count) {
                     goto IL_43;
                 }
-            } while (!MenuItems[num].IsActivated);
+            } while (!Navigable(MenuItems[num]));
 
             goto IL_93;
             IL_43:
@@ -127,7 +133,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
                 if (num2++ > MenuItems.Count) {
                     goto IL_8C;
                 }
-            } while (!MenuItems[num].IsActivated);
+            } while (!Navigable(MenuItems[num]));
 
             goto IL_93;
             IL_8C:
@@ -139,7 +145,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
             return;
         }
 
-        if (MenuItems[num].IsActivated) {
+        if (Navigable(MenuItems[num])) {
             SetCurrentItem(num);
         }
     }
@@ -512,6 +518,10 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         cleverMenuItem.ApplyColors();
         MenuItems.Insert(index, cleverMenuItem);
         layout.AddItem(cleverMenuItem, index);
+        // a fresh clone carries whatever opacity the prefab was left at, and only the first
+        // highlight-and-leave used to fix it; prime it the way panel rows are primed
+        cleverMenuItem.SetOpacity(1f);
+        cleverMenuItem.OnUnhighlight();
     }
 
     public const float HOLD_DELAY = 0.4f;

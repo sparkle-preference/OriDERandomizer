@@ -6,13 +6,22 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase {
     public override bool IsVisible {
         get => SelectionManager.IsVisible;
         set {
-            if (SelectionManager.FadeAnimator && SelectionManager.FadeAnimator.FinalOpacity < 0.05f && !value) {
+            // Hiding on a fade leaves the outgoing screen on top of the incoming one for a
+            // few frames. Opt a group in and its screens leave at once; the fade in stays.
+            var alreadyGone = SelectionManager.FadeAnimator && SelectionManager.FadeAnimator.FinalOpacity < 0.05f;
+            if (!value && (HideImmediately || alreadyGone)) {
                 SelectionManager.SetVisibleImmediate(false);
             } else {
                 SelectionManager.SetVisible(value);
             }
         }
     }
+
+    // off by default: this class lays out the inventory and the map as well
+    public bool HideImmediately;
+
+    // a nav column that dims behind the panel it opened reads as disabled
+    public bool StayLit;
 
     public override bool CanBeEntered => !CanBeEnteredCondition || CanBeEnteredCondition.Validate(null);
 
@@ -109,11 +118,18 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase {
     }
 
     public void OnMenuItemChange() {
-        foreach (var cleverMenuItemGroupItem in Options) {
-            if (SelectionManager.CurrentMenuItem == cleverMenuItemGroupItem.MenuItem && ExpandOnHighlight) {
-                cleverMenuItemGroupItem.ItemGroup.IsVisible = true;
-            } else {
-                cleverMenuItemGroupItem.ItemGroup.IsVisible = false;
+        // Hide first, then show. One pass in list order shows the incoming screen before
+        // the outgoing one goes if it happens to sit earlier in Options, and the two
+        // overlap for a frame.
+        foreach (var going in Options) {
+            if (SelectionManager.CurrentMenuItem != going.MenuItem || !ExpandOnHighlight) {
+                going.ItemGroup.IsVisible = false;
+            }
+        }
+
+        foreach (var arriving in Options) {
+            if (SelectionManager.CurrentMenuItem == arriving.MenuItem && ExpandOnHighlight) {
+                arriving.ItemGroup.IsVisible = true;
             }
         }
 
@@ -144,8 +160,16 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase {
     }
 
     public void OnMenuItemPressed() {
-        foreach (var cleverMenuItemGroupItem in Options) {
-            cleverMenuItemGroupItem.ItemGroup.IsVisible = SelectionManager.CurrentMenuItem == cleverMenuItemGroupItem.MenuItem;
+        foreach (var going in Options) {
+            if (SelectionManager.CurrentMenuItem != going.MenuItem) {
+                going.ItemGroup.IsVisible = false;
+            }
+        }
+
+        foreach (var arriving in Options) {
+            if (SelectionManager.CurrentMenuItem == arriving.MenuItem) {
+                arriving.ItemGroup.IsVisible = true;
+            }
         }
 
         foreach (var cleverMenuItemGroupItem2 in Options) {
@@ -164,7 +188,7 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase {
             return;
         }
 
-        if (IsActive) {
+        if (IsActive || StayLit) {
             HighlightAnimator.Initialize();
             HighlightAnimator.AnimatorDriver.ContinueForward();
         } else {

@@ -9,12 +9,19 @@ public class OptionsScreen : MenuScreen, ISuspendable {
         SuspensionManager.Register(this);
         var navigation = Navigation;
         navigation.OnBackPressedCallback = (Action)Delegate.Combine(navigation.OnBackPressedCallback, new Action(OnBackPressed));
-        AddSubscreen<ControlsSettingsScreen>("CONTROL OPTIONS", 2);
-        AddSubscreen<AccessibilitySettingsScreen>("ACCESSIBILITY", 3);
-        AddSubscreen<KeybindsScreen>("KEYBINDS", 4);
-        AddSubscreen<MenuKeybindsScreen>("MENU KEYBINDS", 5);
+        // Vanilla leaves SETTINGS, CONTROLS, LEADERBOARDS. Dropping leaderboards puts
+        // CONTROLS last, so inserting after SETTINGS lands everything in order.
+        var root = GetComponent<CleverMenuItemGroup>();
+        // subscreens swap here, and a fading exit overlaps the one arriving
+        root.HideImmediately = true;
+        root.StayLit = true;
+        RemoveSubscreen(2);
+        AddSubscreen<ControlsSettingsScreen>("CONTROL OPTIONS", 1);
+        AddSubscreen<AccessibilitySettingsScreen>("ACCESSIBILITY", 2);
+        AddSubscreen<RandoUiScreen>("RANDO UI", 3);
+        AddSubscreen<RandoOptionsScreen>("RANDO OPTIONS", 4);
+        AddSubscreen<KeybindsScreen>("KEYBINDS", 5);
         AddSubscreen<ControllerBindsScreen>("CONTROLLER BINDS", 6);
-        AddSubscreen<ControllerMenuBindsScreen>("CONTROLLER MENU BINDS", 7);
     }
 
     public void OnDestroy() {
@@ -61,6 +68,26 @@ public class OptionsScreen : MenuScreen, ISuspendable {
     }
 
     public bool IsSuspended { get; set; }
+
+    // The screen object stays, so Steam's leaderboard code keeps its references; only the
+    // way in goes. Put it to sleep first: the group deactivates its screens in Awake, and
+    // one dropped from Options before that runs would otherwise stay awake and polling.
+    public void RemoveSubscreen(int index) {
+        var item = Navigation.MenuItems[index];
+        var group = GetComponent<CleverMenuItemGroup>();
+        var option = group.Options.Find(o => o.MenuItem == item);
+        if (option != null && option.ItemGroup != null) {
+            option.ItemGroup.IsActive = false;
+            option.ItemGroup.gameObject.SetActive(false);
+        }
+
+        group.Options.Remove(option);
+        Navigation.MenuItems.RemoveAt(index);
+        var layout = Navigation.transform.FindChild("mainMenuUI").GetComponent<CleverMenuItemLayout>();
+        layout.MenuItems.Remove(item);
+        Destroy(item.gameObject);
+        layout.Sort();
+    }
 
     public void AddSubscreen<TController>(string label, int index) where TController : MonoBehaviour {
         Navigation.AddMenuItem(label, index, Navigation.transform.FindChild("mainMenuUI").GetComponent<CleverMenuItemLayout>(), delegate { });
