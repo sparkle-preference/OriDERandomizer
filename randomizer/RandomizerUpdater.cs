@@ -132,9 +132,21 @@ public class RandomizerUpdater : MonoBehaviour {
     private static void CheckThread() {
         try {
             var scratch = Path.Combine(Path.GetTempPath(), "orirando_version.txt");
-            var status = NativeWebSocket.HttpDownload($"https://{Host}/version/latest", scratch);
+
+            // A first TLS request can lose a race with the ws handshake: two tries.
+            var status = 0;
+            for (var attempt = 0; attempt < 2; attempt++) {
+                status = NativeWebSocket.HttpDownload($"https://{Host}/version/latest", scratch);
+                if (status == 200) {
+                    break;
+                }
+
+                Log($"updater: version check attempt {attempt + 1} gave {status} "
+                    + $"({NativeWebSocket.GetLastHttpError()})");
+                Thread.Sleep(500);
+            }
+
             if (status != 200) {
-                Log($"updater: version check got {status} ({NativeWebSocket.GetLastHttpError()})");
                 return;
             }
 
