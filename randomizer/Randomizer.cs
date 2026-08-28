@@ -456,6 +456,7 @@ public static class Randomizer {
     }
 
     public static void Update() {
+        RandomizerGhost.Update();
         UpdateMessages();
         UpdatePendingWin();
         RandomizerDeathLink.Update();

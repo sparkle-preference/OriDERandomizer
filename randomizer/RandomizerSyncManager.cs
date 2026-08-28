@@ -192,6 +192,10 @@ public static class RandomizerSyncManager {
                 NativeWebSocket.SendText("goals:");
             }
 
+            if (WsOpen != wsWasOpen) {
+                RandomizerGhostSignal.Apply();
+            }
+
             wsWasOpen = WsOpen;
             PumpSidecar();
 
@@ -485,6 +489,10 @@ public static class RandomizerSyncManager {
                 BingoController.OnBingoAck(frame.Substring(sep + 1));
             } else if (kind == "goals" && sep >= 0) {
                 BingoController.LoadGoals(frame.Substring(sep + 1));
+            } else if (kind == "ghosts" && sep >= 0) {
+                RandomizerGhostSignal.OnRoster(frame.Substring(sep + 1));
+            } else if (kind == "ghost" && sep >= 0) {
+                RandomizerGhostSignal.OnDescription(frame.Substring(sep + 1));
             } else if (kind == "completeack") {
                 // no Sein guard: this arrives during credits
                 completePending = false;

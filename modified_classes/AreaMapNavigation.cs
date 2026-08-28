@@ -286,6 +286,17 @@ public class AreaMapNavigation : MonoBehaviour {
                 }
             }
 
+            // Peers are considered last and win ties: the thing that moves is the thing you meant.
+            if (RandomizerGhostMap.Hover(cursorPositionWorld, ref candidateDistance, out var peerAt, out var peerName)) {
+                var peerPosition = WorldToMapPosition(peerAt);
+                peerPosition.y -= offset * 0.6f;
+                AreaMapUI.Instance.RandomizerTooltip.transform.position = peerPosition;
+                AreaMapUI.Instance.RandomizerTooltip.transform.localScale = textScale;
+                AreaMapUI.Instance.RandomizerTooltip.OverrideText = peerName;
+                AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(true);
+                return;
+            }
+
             if (candidate == null) {
                 AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(false);
                 return;

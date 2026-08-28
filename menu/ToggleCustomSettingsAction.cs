@@ -25,6 +25,7 @@ public class ToggleCustomSettingsAction : MonoBehaviour {
         PlaySound(IsEnabled);
         Setting.Value = IsEnabled;
         RandomizerSettings.SetDirty();
+        RandomizerSettings.Announce();
     }
 
     public void SetSetting(bool enabled) {

@@ -40,3 +40,6 @@ seed_gen/*.csv
 # dotnet format / msbuild scratch
 /obj/
 /bin/
+
+# perl -pi leaves these behind
+*.bak

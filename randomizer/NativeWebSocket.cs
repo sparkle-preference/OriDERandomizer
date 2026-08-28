@@ -79,6 +79,15 @@ public static class NativeWebSocket {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate IntPtr HandlePtrLenFn(int handle, out int len);
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int RtcCreateFn(int offerer, string iceServers);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int RtcRemoteFn(int handle, string type, string sdp);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int RtcSendFn(int handle, byte[] data, int length);
+
     private static VoidFn initialize_network;
     private static VoidFn finalize_network;
     private static StrFn set_url;
@@ -104,10 +113,28 @@ public static class NativeWebSocket {
     private static HandlePtrLenFn http_response;
     private static HandlePtrLenFn http_response_error;
     private static IntFn http_release;
+    private static RtcCreateFn rtc_create;
+    private static RtcRemoteFn rtc_set_remote;
+    private static HandleRetIntFn rtc_local_ready;
+    private static HandlePtrLenFn rtc_local_description;
+    private static HandlePtrLenFn rtc_local_type;
+    private static HandleRetIntFn rtc_state;
+    private static HandleRetIntFn rtc_is_open;
+    private static RtcSendFn rtc_send;
+    private static HandleRetIntFn rtc_has_message;
+    private static HandlePtrLenFn rtc_get_message;
+    private static IntFn rtc_pop_message;
+    private static IntFn rtc_close;
+    private static IntFn rtc_release;
+    private static PtrLenFn rtc_last_error;
 
     // false when the extracted sidecar predates the updater; netcode is
     // unaffected, the update option just stays hidden
     public static bool HttpAvailable => http_download != null;
+
+    // false when it predates data channels; ghost multiplayer stays off and
+    // everything else carries on
+    public static bool RtcAvailable => rtc_create != null;
 
     // false when it predates the async request api; callers fall back to
     // System.Net rather than losing the request
@@ -161,6 +188,25 @@ public static class NativeWebSocket {
             http_response = (HandlePtrLenFn)BindOptional(module, "http_response", typeof(HandlePtrLenFn));
             http_response_error = (HandlePtrLenFn)BindOptional(module, "http_response_error", typeof(HandlePtrLenFn));
             http_release = (IntFn)BindOptional(module, "http_release", typeof(IntFn));
+            // also optional: a mod newer than the extracted sidecar keeps everything else
+            rtc_create = (RtcCreateFn)BindOptional(module, "rtc_create", typeof(RtcCreateFn));
+            rtc_set_remote = (RtcRemoteFn)BindOptional(module, "rtc_set_remote", typeof(RtcRemoteFn));
+            rtc_local_ready = (HandleRetIntFn)BindOptional(module, "rtc_local_ready", typeof(HandleRetIntFn));
+            rtc_local_description = (HandlePtrLenFn)BindOptional(module, "rtc_local_description", typeof(HandlePtrLenFn));
+            rtc_local_type = (HandlePtrLenFn)BindOptional(module, "rtc_local_type", typeof(HandlePtrLenFn));
+            rtc_state = (HandleRetIntFn)BindOptional(module, "rtc_state", typeof(HandleRetIntFn));
+            rtc_is_open = (HandleRetIntFn)BindOptional(module, "rtc_is_open", typeof(HandleRetIntFn));
+            rtc_send = (RtcSendFn)BindOptional(module, "rtc_send", typeof(RtcSendFn));
+            rtc_has_message = (HandleRetIntFn)BindOptional(module, "rtc_has_message", typeof(HandleRetIntFn));
+            rtc_get_message = (HandlePtrLenFn)BindOptional(module, "rtc_get_message", typeof(HandlePtrLenFn));
+            rtc_pop_message = (IntFn)BindOptional(module, "rtc_pop_message", typeof(IntFn));
+            rtc_close = (IntFn)BindOptional(module, "rtc_close", typeof(IntFn));
+            rtc_release = (IntFn)BindOptional(module, "rtc_release", typeof(IntFn));
+            rtc_last_error = (PtrLenFn)BindOptional(module, "rtc_last_error", typeof(PtrLenFn));
+            if (rtc_create == null) {
+                Randomizer.log("ws diag: sidecar has no data channels; ghost multiplayer disabled");
+            }
+
             if (http_download == null) {
                 Randomizer.log("ws diag: sidecar has no http_download; updater disabled");
             }
@@ -382,6 +428,100 @@ public static class NativeWebSocket {
         var bytes = new byte[length];
         Marshal.Copy(ptr, bytes, 0, length);
         pop_pending_message();
+        return Encoding.UTF8.GetString(bytes);
+    }
+
+    // Peer connections. Signalling is non-trickle: create, poll RtcLocalReady, hand the one
+    // description to the far side through the website, feed back what it answers. Always
+    // RtcRelease -- the native side holds a peer connection and its threads until you do.
+    public enum RtcState {
+        New = 0,
+        Connecting = 1,
+        Connected = 2,
+        Disconnected = 3,
+        Failed = 4,
+        Closed = 5,
+    }
+
+    // Returns 0 if a peer could not be created. The offerer opens the data channel; the
+    // answerer waits for it to arrive.
+    public static int RtcCreate(bool offerer, string iceServers) {
+        return rtc_create == null ? 0 : rtc_create(offerer ? 1 : 0, iceServers ?? "");
+    }
+
+    public static bool RtcLocalReady(int handle) {
+        return rtc_local_ready != null && rtc_local_ready(handle) != 0;
+    }
+
+    public static string RtcLocalDescription(int handle) {
+        return ReadHandleString(rtc_local_description, handle);
+    }
+
+    public static string RtcLocalType(int handle) {
+        return ReadHandleString(rtc_local_type, handle);
+    }
+
+    public static int RtcSetRemote(int handle, string type, string sdp) {
+        return rtc_set_remote == null ? -1 : rtc_set_remote(handle, type ?? "", sdp ?? "");
+    }
+
+    public static RtcState RtcGetState(int handle) {
+        return rtc_state == null ? RtcState.Failed : (RtcState)rtc_state(handle);
+    }
+
+    public static bool RtcIsOpen(int handle) {
+        return rtc_is_open != null && rtc_is_open(handle) != 0;
+    }
+
+    public static int RtcSend(int handle, byte[] data, int length) {
+        return rtc_send == null || data == null ? -1 : rtc_send(handle, data, length);
+    }
+
+    public static bool RtcHasMessage(int handle) {
+        return rtc_has_message != null && rtc_has_message(handle) != 0;
+    }
+
+    // Returns null when the queue is empty. Binary, because motion packets are.
+    public static byte[] RtcGetMessage(int handle) {
+        if (rtc_get_message == null) {
+            return null;
+        }
+
+        var ptr = rtc_get_message(handle, out var length);
+        if (ptr == IntPtr.Zero || length == 0) {
+            return null;
+        }
+
+        var bytes = new byte[length];
+        Marshal.Copy(ptr, bytes, 0, length);
+        rtc_pop_message(handle);
+        return bytes;
+    }
+
+    public static void RtcClose(int handle) {
+        if (rtc_close != null) {
+            rtc_close(handle);
+        }
+    }
+
+    public static void RtcRelease(int handle) {
+        if (rtc_release != null) {
+            rtc_release(handle);
+        }
+    }
+
+    public static string RtcLastError() {
+        if (rtc_last_error == null) {
+            return "sidecar has no data channels";
+        }
+
+        var ptr = rtc_last_error(out var length);
+        if (ptr == IntPtr.Zero || length == 0) {
+            return "";
+        }
+
+        var bytes = new byte[length];
+        Marshal.Copy(ptr, bytes, 0, length);
         return Encoding.UTF8.GetString(bytes);
     }
 }

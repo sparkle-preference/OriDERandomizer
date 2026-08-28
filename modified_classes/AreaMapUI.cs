@@ -115,6 +115,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
         DebugNavigation.Advance();
         UpdatePlayerPositionMarker();
         UpdateSoulFlamePositionMarker();
+        RandomizerGhostMap.Update(this);
         UpdateCurrentArea();
 
         if (!GameMapUI.Instance.ShowingObjective) {
