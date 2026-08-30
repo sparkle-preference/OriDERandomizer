@@ -13,6 +13,9 @@ using Events = Sein.World.Events;
 public static class RandomizerSyncManager {
     public static void Initialize() {
         tslu = 0;
+        Answered = Time.realtimeSinceStartup;
+        Refused = false;
+        Warned = false;
         webClient = new WebClient();
         webClient.DownloadStringCompleted += RetryOnFail;
         getClient = new WebClient();
@@ -197,6 +200,7 @@ public static class RandomizerSyncManager {
             }
 
             wsWasOpen = WsOpen;
+            Silent();
             PumpSidecar();
 
             tslu += Time.deltaTime;
@@ -515,6 +519,10 @@ public static class RandomizerSyncManager {
                     BingoController.OnBingoErr();
                 }
 
+                if (what.StartsWith("tick")) {
+                    Refused = true;
+                }
+
                 Randomizer.log("ws: server err frame: " + what);
             } else {
                 Randomizer.LogError("ProcessFrame: unknown frame kind: " + kind);
@@ -581,6 +589,7 @@ public static class RandomizerSyncManager {
     }
 
     public static void ProcessTickResponse(string data) {
+        Answered = Time.realtimeSinceStartup;
         try {
             if (Randomizer.CreditsActive) {
                 RandomizerSwitch.SilentMode = true;
@@ -848,6 +857,22 @@ public static class RandomizerSyncManager {
         }
     }
 
+    // A sync seed whose server never answers is silently solo: pickups do not reach anyone and
+    // nothing on screen says so. Said once, after long enough that a slow start cannot trigger it.
+    private const float SilenceLimit = 30f;
+
+    private static void Silent() {
+        if (Warned || !Randomizer.Sync || Answered <= 0f ||
+                Time.realtimeSinceStartup - Answered < SilenceLimit) {
+            return;
+        }
+
+        Warned = true;
+        Randomizer.printInfo(Refused
+            ? "@Not syncing@: the server does not know this game. Check your Netcode URLs."
+            : "@Not syncing@: no reply from the server. Check your Netcode URLs.", 480);
+    }
+
     public static void FoundTP(string identifier) {
         if (!Randomizer.Sync) {
             return;
@@ -970,6 +995,13 @@ public static class RandomizerSyncManager {
             Randomizer.log($"websocket: giving up after {NativeWebSocket.GetErrorCount()} failures ({NativeWebSocket.GetLastError()}); using http");
         }
     }
+
+    // set when a sync seed loads, so the silence is measured from the game rather than boot
+    public static float Answered;
+
+    private static bool Refused;
+
+    private static bool Warned;
 
     private static string wsStartedUrl;
 

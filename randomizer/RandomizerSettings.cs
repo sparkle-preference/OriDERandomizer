@@ -202,6 +202,7 @@ public static class RandomizerSettings {
         Customization.ColdColor = new ColorSetting("Cold Color", new Color(0f, 0.5f, 0.5f, 0.5f), HeadroomScale, "Red, Blue, Green, Transparency (0-255 for each): The color Ori turns when Sensing an item at max range.");
         Customization.HotColor = new ColorSetting("Hot Color", new Color(0.5f, 0.1666667f, 0f, 0.5f), HeadroomScale, "Red, Blue, Green, Transparency (0-255 for each): The color Ori turns when Sensing an item at range 0.");
         Customization.DiscoSense = new BoolSetting("Disco Sense", false, "True: Ignore sense colors, and instead speed up the color.txt rotation when sense is active.\nFalse (default): colors.txt rotation is overwritten by Sense colors.", false);
+        Customization.MapWarpHold = new FloatSetting("Map Warp Hold", 1f, "(0.1-3.0, Default=0.7): How long [ActionButtonA] must be held on a Spirit Well in the map to warp there.");
         Customization.ShowOtherPlayers = new BoolSetting("Show Other Players", true, "True (default): the other players in your game appear as translucent ghosts, and as markers on the map.\nFalse: they are not shown to you, and your position is not shared with them. The two go together -- there is no setting that lets you watch without being watched.", true);
         Customization.MultiplePickupMessages = new BoolSetting("Display Multiple Pickup Messages", false, "True: Shows up to 5 pickup messages at once on the left side of the screen. Hold [[Replay Message]] to show more.\nFalse (default): New pickup messages display one at a time at the top center of the screen.", false);
         Customization.AlwaysShowLastFivePickups = new BoolSetting("Always Show Last Five Pickup Messages", false, "True: Always show the last 5 pickup messages. Only works if Display Multiple Pickups is set to True.\nFalse (default): Only show pickups when found or on pressing [[Replay Message]].", false);
@@ -315,6 +316,8 @@ public static class RandomizerSettings {
         public static BoolSetting DiscoSense;
 
         public static BoolSetting ShowOtherPlayers;
+
+        public static FloatSetting MapWarpHold;
 
         public static BoolSetting MultiplePickupMessages;
 

@@ -65,6 +65,17 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
             RandomizerTooltip.OverrideText = "Unknown";
         }
 
+        if (WarpPrompt == null) {
+            var obj = Instantiate(transform.FindChild("legend/player").gameObject);
+            obj.transform.parent = transform.FindChild("legend");
+            WarpPrompt = obj.GetComponent<MessageBox>();
+            WarpPrompt.MessageProvider = null;
+            WarpPrompt.OverrideText = "Unknown";
+            WarpPrompt.gameObject.SetActive(false);
+        }
+
+        RandomizerMapWarp.Preload(this);
+
         if (KeysanityDoorTooltips.Count == 0) {
             for (var i = 0; i < 12; i++) {
                 var obj = Instantiate(transform.FindChild("legend/player").gameObject);
@@ -108,6 +119,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
         }
 
         if (!GameMapUI.Instance.IsVisible) {
+            RandomizerMapWarp.Closed();
             return;
         }
 
@@ -116,6 +128,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
         UpdatePlayerPositionMarker();
         UpdateSoulFlamePositionMarker();
         RandomizerGhostMap.Update(this);
+        RandomizerMapWarp.Icons(this);
         UpdateCurrentArea();
 
         if (!GameMapUI.Instance.ShowingObjective) {
@@ -133,6 +146,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
         if (GameMapTransitionManager.Instance.InAreaMapMode) {
             if (Input.Legend.OnPressed) {
                 AreaMapLegend.Toggle();
+                RandomizerMapWarp.Labels();
             }
 
             if (RandomizerRebinding.ToggleMapMode.OnPressed) {
@@ -222,6 +236,8 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
     public Vector3 PlayerPositionOffset;
 
     [NonSerialized] public MessageBox RandomizerTooltip;
+
+    [NonSerialized] public MessageBox WarpPrompt;
 
     [NonSerialized] public List<MessageBox> KeysanityDoorTooltips = new List<MessageBox>();
 }

@@ -58,7 +58,14 @@ public static class RandomizerGhostSignal {
             DropAll();
         }
 
-        Randomizer.log("ghost signal: " + (want ? "joined" : "left"));
+        // A flapping socket rejoins on every reconnect, which is correct and not worth saying.
+        // Only a change of mind -- the setting, or a sidecar that cannot do this at all -- is.
+        var mind = NativeWebSocket.RtcAvailable &&
+            RandomizerSettings.Customization.ShowOtherPlayers.Value;
+        if (mind != Minded) {
+            Minded = mind;
+            Randomizer.log("ghost signal: " + (mind ? "joined" : "left"));
+        }
     }
 
     // "ghosts:<host>:<pids>" -- who is here and who offers. Arrives on every change, so this
@@ -341,6 +348,8 @@ public static class RandomizerGhostSignal {
     private static readonly List<Link> Links = new List<Link>();
 
     private static readonly byte[] Buffer = new byte[RandomizerGhostPacket.MaxSize];
+
+    private static bool Minded;
 
     private static int Host;
 

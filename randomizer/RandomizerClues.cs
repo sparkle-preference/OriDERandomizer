@@ -17,8 +17,7 @@ public static class RandomizerClues {
     }
 
     // index 0: WV, 1: GS, 2: SS. Ori reveals a clue once you hold the key or
-    // have lit enough trees; that moment is also when an AP hint is worth
-    // buying, so the predicate has exactly one home.
+    // have lit enough trees.
     public static bool Revealed(int i) {
         if (i == 0 && Keys.GinsoTree) {
             return true;
@@ -42,8 +41,19 @@ public static class RandomizerClues {
             : -1;
     }
 
+    public static bool Held(int i) {
+        return i == 0 ? Keys.GinsoTree : (i == 1 ? Keys.ForlornRuins : Keys.MountHoru);
+    }
+
     public static string ClueFor(int i) {
-        return RandomizerMW.ApHintOr(SlotFor(i), Clues[RevealOrder[i] - 1]);
+        var slot = SlotFor(i);
+        // An exported key's baked zone is only the pre-export roll, so it is not worth showing
+        // once the key is in hand and no hint will be bought to correct it.
+        if (Held(i) && slot >= 0 && !RandomizerMW.HasApHint(slot)) {
+            return "Archipelago";
+        }
+
+        return RandomizerMW.ApHintOr(slot, Clues[RevealOrder[i] - 1]);
     }
 
     public static void WantHints(List<int> needed) {
@@ -52,7 +62,9 @@ public static class RandomizerClues {
         }
 
         for (var i = 0; i < 3; i++) {
-            if (Revealed(i)) {
+            // Holding the key reveals the clue too, but then it describes a place you have
+            // already been: hint points spent there buy nothing.
+            if (Revealed(i) && !Held(i)) {
                 RandomizerMW.WantHint(needed, SlotFor(i));
             }
         }

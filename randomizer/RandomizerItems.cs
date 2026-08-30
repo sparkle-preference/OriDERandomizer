@@ -240,8 +240,13 @@ public static class RandomizerItems {
     }
 
     public static string ColorWrap(string input) {
-        var color = ColorOf(input);
-        return color + input + color;
+        return ColorWrapAs(input, input);
+    }
+
+    // the colour belongs to the item; what is written may be shorter than its name
+    public static string ColorWrapAs(string name, string shown) {
+        var color = ColorOf(name);
+        return color + shown + color;
     }
 
     private static string ColorOf(string name) {

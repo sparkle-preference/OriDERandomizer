@@ -234,12 +234,12 @@ public static class RandomizerMW {
     // the bought hint for a manifest slot, or the clue baked at seed parse.
     // Every display site reads through here, so a seed with no AP hints shows
     // exactly what it always showed.
-    public static string ApHintOr(int slot, string baked) {
-        if (slot >= 0 && ApHints.TryGetValue(slot, out var text) && text != "") {
-            return text;
-        }
+    public static bool HasApHint(int slot) {
+        return slot >= 0 && ApHints.TryGetValue(slot, out var text) && text != "";
+    }
 
-        return baked;
+    public static string ApHintOr(int slot, string baked) {
+        return HasApHint(slot) ? ApHints[slot] : baked;
     }
 
     public static void WantHint(List<int> needed, int slot) {
@@ -537,12 +537,52 @@ public static class RandomizerMW {
         return $"{wrap}{n} {(n == 1 ? singular : plural)}{wrap}";
     }
 
-    // skills, then world events (+ shards/frags), then teleporters/warps, then a counts line
+    private static readonly string[] DungeonWells = { "Ginso", "Forlorn", "Horu" };
+
+    // The three dungeons first, in the order the game opens them, then the rest as they arrived.
+    // Every teleporter is named "<id> Teleporter", so the id alone is the short form, and the
+    // colour still has to be looked up from the full name.
+    private static List<string> Wells(List<string> ids) {
+        var order = new List<string>();
+        foreach (var want in DungeonWells) {
+            if (ids.Contains(want)) {
+                order.Add(want);
+            }
+        }
+
+        foreach (var id in ids) {
+            if (!order.Contains(id)) {
+                order.Add(id);
+            }
+        }
+
+        var shown = new List<string>();
+        foreach (var id in order) {
+            shown.Add(RandomizerItems.ColorWrapAs(id + " Teleporter", id));
+        }
+
+        return shown;
+    }
+
+    // "Warp to X" is the seed's own name for it; under a Warps: heading the prefix is noise
+    private static List<string> Warps(List<string> names) {
+        var shown = new List<string>();
+        foreach (var name in names) {
+            shown.Add(name.StartsWith("Warp to ") ? name.Substring(8) : name);
+        }
+
+        return shown;
+    }
+
+    // skills, then world events (+ shards/frags), then teleporters, warps, then a counts line
     private static void ShowBatchMessage(List<ManifestEntry> entries) {
         try {
             var skills = new List<string>();
             var events = new List<string>();
-            var travel = new List<string>();
+            var wells = new List<string>();
+            var warps = new List<string>();
+            // event ids are already the order the game hands them out in
+            var worldEvents = new string[6];
             int hc = 0, ec = 0, ac = 0, ks = 0, ms = 0, exp = 0, rb = 0, wvs = 0, gss = 0, sss = 0, wfg = 0, other = 0;
             var finders = new HashSet<string>();
             var anySelf = false;
@@ -559,13 +599,19 @@ public static class RandomizerMW {
                         skills.Add(RandomizerItems.ColorWrap(RandomizerItems.Name(entry.Code, entry.Id)));
                         break;
                     case "EV":
-                        events.Add(RandomizerItems.ColorWrap(RandomizerItems.Name(entry.Code, entry.Id)));
+                        int world;
+                        if (int.TryParse(entry.Id, out world) && world >= 0 && world < worldEvents.Length) {
+                            worldEvents[world] = RandomizerItems.ColorWrap(RandomizerItems.Name(entry.Code, entry.Id));
+                        } else {
+                            events.Add(RandomizerItems.ColorWrap(RandomizerItems.Name(entry.Code, entry.Id)));
+                        }
+
                         break;
                     case "TP":
-                        travel.Add(RandomizerItems.ColorWrap(RandomizerItems.Name(entry.Code, entry.Id)));
+                        wells.Add(entry.Id);
                         break;
                     case "TW":
-                        travel.Add(RandomizerItems.Name(entry.Code, entry.Id));
+                        warps.Add(RandomizerItems.Name(entry.Code, entry.Id));
                         break;
                     case "HC": hc++; break;
                     case "EC": ec++; break;
@@ -596,6 +642,13 @@ public static class RandomizerMW {
                 }
             }
 
+            // ahead of the shards, which are progress towards the same events
+            for (var i = worldEvents.Length - 1; i >= 0; i--) {
+                if (worldEvents[i] != null) {
+                    events.Insert(0, worldEvents[i]);
+                }
+            }
+
             if (wvs > 0) {
                 events.Add(Counted(wvs, "Water Vein Shard", "Water Vein Shards", "*"));
             }
@@ -621,8 +674,12 @@ public static class RandomizerMW {
                 lines.Add(string.Join(", ", events.ToArray()));
             }
 
-            if (travel.Count > 0) {
-                lines.Add(string.Join(", ", travel.ToArray()));
+            if (wells.Count > 0) {
+                lines.Add("Teleporters: " + string.Join(", ", Wells(wells).ToArray()));
+            }
+
+            if (warps.Count > 0) {
+                lines.Add("Warps: " + string.Join(", ", Warps(warps).ToArray()));
             }
 
             var counts = new List<string>();
@@ -676,7 +733,13 @@ public static class RandomizerMW {
                 var header = finderNames.Count > 0
                     ? $"Received from {string.Join(", ", finderNames.ToArray())}:\n"
                     : "Received:\n";
-                RandomizerSwitch.PickupMessage(header + string.Join("\n", lines.ToArray()), 480);
+                // Anchored to the top so a tall list grows downwards; centred, it grows off the
+                // top of the screen and the first thing lost is who sent it. A release can be
+                // hundreds of items, so it also gets a second per ten to read -- up to a point.
+                var frames = 480 + 60 * (entries.Count / 10);
+                RandomizerSwitch.PickupMessage(
+                    "ANCHORTOP" + header + string.Join("\n", lines.ToArray()),
+                    frames > 1800 ? 1800 : frames);
             }
         } catch (Exception e) {
             Randomizer.LogError("MW.ShowBatchMessage: " + e.Message);

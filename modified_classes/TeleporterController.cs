@@ -158,16 +158,19 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public static void Activate(string identifier, bool natural) {
-        if (natural) {
-            RandomizerSyncManager.FoundTP(identifier);
-        }
-
-        BingoController.OnActivateTeleporter(identifier);
+        // The teleporter is activated before anyone is told, because telling can fail: a server
+        // that rejects the frame or a bingo board that never loaded must not cost a warp point.
         foreach (var gameMapTeleporter in Instance.Teleporters) {
             if (gameMapTeleporter.Identifier == identifier) {
                 gameMapTeleporter.Activated = true;
             }
         }
+
+        if (natural) {
+            RandomizerSyncManager.FoundTP(identifier);
+        }
+
+        BingoController.OnActivateTeleporter(identifier);
     }
 
     public static void Activate(string identifier) {

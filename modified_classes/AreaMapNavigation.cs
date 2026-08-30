@@ -248,6 +248,13 @@ public class AreaMapNavigation : MonoBehaviour {
             var offset = .45f * (float)Math.Pow(zoomScaleFactor, 1.5f); // it's kind of a dumb story
             var textScale = new Vector3(0.3f * zoomScaleFactor, 0.3f * zoomScaleFactor, 0.3f); // but they work well i prommy
 
+            // A spirit well takes the cursor from whatever sits under it: it is the one thing
+            // on this map you can act on, and its prompt has to win to be reachable at all.
+            if (RandomizerMapWarp.Update(m_areaMapUi, this, cursorPositionWorld, textScale, offset)) {
+                AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(false);
+                return;
+            }
+
             foreach (RuntimeGameWorldArea runtimeArea in GameWorld.Instance.RuntimeAreas) {
                 foreach (var runtimeIcon in runtimeArea.Icons) {
                     if (!runtimeIcon.IsVisible(m_areaMapUi) || runtimeIcon.Icon == WorldMapIconType.Invisible) {
@@ -319,7 +326,7 @@ public class AreaMapNavigation : MonoBehaviour {
 
             AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(true);
         } catch (Exception e) {
-            Randomizer.log("HandleRandomizerTooltip: " + e.Message);
+            Randomizer.log("HandleRandomizerTooltip: " + e);
         }
     }
 

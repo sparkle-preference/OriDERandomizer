@@ -475,11 +475,14 @@ public static class BingoController {
     }
 
     public static void OnActivateTeleporter(string identifier) {
-        if (!Active || !MultiBoolGoals["ActivateTeleporter"].Subgoals.ContainsKey(identifier)) {
+        // Active can be set before the board arrives, and it may never arrive at all
+        MultiBoolGoal goal;
+        if (!Active || !MultiBoolGoals.TryGetValue("ActivateTeleporter", out goal) ||
+                !goal.Subgoals.ContainsKey(identifier)) {
             return;
         }
 
-        MultiBoolGoals["ActivateTeleporter"][identifier] = true;
+        goal[identifier] = true;
     }
 
     // index = bit position in the journey bitfields, and (+1) the LastTouched value,

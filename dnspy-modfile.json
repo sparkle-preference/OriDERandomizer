@@ -333,6 +333,7 @@
 		"randomizer/RandomizerGhostNet.cs",
 		"randomizer/RandomizerGhostSignal.cs",
 		"randomizer/RandomizerGhostMap.cs",
+		"randomizer/RandomizerMapWarp.cs",
 		"randomizer/RandomizerGhostAnimations.cs",
 		"randomizer/RandomizerGhostPacket.cs",
 		"randomizer/RandomizerGhostSource.cs",

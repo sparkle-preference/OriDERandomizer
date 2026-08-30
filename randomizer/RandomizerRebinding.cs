@@ -199,6 +199,7 @@ public static class RandomizerRebinding {
         { "Color Shift", "LeftAlt+C, RightAlt+C" },
         { "Double Bash", "Grenade" },
         { "Toggle Map Mode", "Grenade" },
+        { "Map Warp", "Glide" },
         { "Grenade Jump", "Grenade+Jump" },
         { "Show Bonuses", "LeftAlt+B, RightAlt+B" },
         { "Bonus Switch", "LeftAlt+Q, RightAlt+Q" },
@@ -233,6 +234,7 @@ public static class RandomizerRebinding {
     public static BindSet DoubleBash = new BindSet(new List<SingleBind>());
     public static BindSet FreeGrenadeJump = new BindSet(new List<SingleBind>());
     public static BindSet ToggleMapMode = new BindSet(new List<SingleBind>());
+    public static BindSet MapWarp = new BindSet(new List<SingleBind>());
     public static BindSet ShowBonuses = new BindSet(new List<SingleBind>());
     public static BindSet BonusSwitch = new BindSet(new List<SingleBind>());
     public static BindSet BonusToggle = new BindSet(new List<SingleBind>());
@@ -263,6 +265,7 @@ public static class RandomizerRebinding {
         { "Double Bash", DoubleBash },
         { "Grenade Jump", FreeGrenadeJump },
         { "Toggle Map Mode", ToggleMapMode },
+        { "Map Warp", MapWarp },
         { "Show Bonuses", ShowBonuses },
         { "Bonus Switch", BonusSwitch },
         { "Bonus Toggle", BonusToggle },
@@ -409,6 +412,17 @@ public static class RandomizerRebinding {
         }
 
         public bool HasBind() => Binds.Count > 0;
+
+        // IsPressed below reports the edge. A hold wants to know it is still down.
+        public bool Held() {
+            foreach (var bind in Binds) {
+                if (bind.Pressed) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         public bool IsPressed() {
             foreach (var bind in Binds) {
