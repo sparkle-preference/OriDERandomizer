@@ -68,16 +68,16 @@ public class OrbSpawner : MonoBehaviour {
         }
 
         if (DifficultyController.Instance.Difficulty == DifficultyMode.Easy) {
-            if (!SpawnLoot()) {
-                SpawnLoot();
+            if (!SpawnLoot(0)) {
+                SpawnLoot(1);
             }
         } else {
-            SpawnLoot();
+            SpawnLoot(0);
         }
     }
 
-    private bool SpawnLoot() {
-        var num = FixedRandom.ValueFromPosition(transform.position);
+    private bool SpawnLoot(int attempt) {
+        var num = FixedRandom.ValueFromPosition(transform.position + new Vector3(attempt, 0, 0));
         if (LootSettings.EnergyShardChance <= 0.5f && LootSettings.HeartChance <= 0.5f && !LootOnHard && DifficultyController.Instance.Difficulty == DifficultyMode.Hard) {
             return false;
         }
