@@ -28,6 +28,9 @@ public static class RandomizerMapWarp {
     // seed with far more locations than any real one has.
     private const int MostLabels = 400;
 
+    // below this the icon is gone rather than merely faint
+    private const float Vanished = 0.02f;
+
     // How bright a well you have not lit is drawn. Absolute, not a share: these icons sit at
     // 0.5 already, and the map fade drives the same channel, so a ceiling is what sticks.
     private const float LockedAlpha = 0.125f;
@@ -378,16 +381,40 @@ public static class RandomizerMapWarp {
             }
 
             foreach (var icon in area.Icons) {
-                if (icon == null || icon.Icon != WorldMapIconType.SavePedestal) {
+                if (icon == null) {
+                    continue;
+                }
+
+                var alpha = 1f;
+                if (icon.Icon == WorldMapIconType.SavePedestal) {
+                    alpha = Open(icon.Position) ? 1f : LockedAlpha;
+                } else if (RandomizerLocationManager.LocationsByWorldMapGuid.TryGetValue(
+                        icon.Guid, out var loc) && Spent(loc)) {
+                    alpha = RandomizerSettings.Customization.TouchedVisibility.Value;
+                }
+
+                if (alpha >= 0.99f) {
                     continue;
                 }
 
                 var lit = IconObject.GetValue(icon) as GameObject;
                 if (lit != null) {
-                    Paint(lit, Open(icon.Position) ? 1f : LockedAlpha);
+                    Paint(lit, alpha);
                 }
             }
         }
+    }
+
+    // Touched but not collected: the slot is already granted, so going back for it gives nothing.
+    public static bool Spent(RandomizerLocationManager.Location loc) {
+        return loc != null && loc.Touched && !loc.Collected;
+    }
+
+    // At the bottom of the slider it is not drawn at all, since an invisible icon is still a
+    // thing the cursor can catch on.
+    public static bool Hidden(RandomizerLocationManager.Location loc) {
+        return Spent(loc) &&
+            RandomizerSettings.Customization.TouchedVisibility.Value <= Vanished;
     }
 
     // Wells sit on their own scenery, so a loose match is enough to tell which one an icon is.

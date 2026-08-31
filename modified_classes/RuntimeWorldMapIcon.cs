@@ -23,7 +23,7 @@ public class RuntimeWorldMapIcon {
         // show randomizer pickup icons only if they're reachable and not yet collected
         if (RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.InLogic && RandomizerLocationManager.LocationsByWorldMapGuid.ContainsKey(Guid)) {
             var loc = RandomizerLocationManager.LocationsByWorldMapGuid[Guid];
-            return loc.Reachable && !loc.Collected;
+            return loc.Reachable && !loc.Collected && !RandomizerMapWarp.Hidden(loc);
         }
 
         // There are two Ginso Trees, with apparently different Guids. This is the second one that doesn't get automatically turned off.
@@ -34,7 +34,7 @@ public class RuntimeWorldMapIcon {
         // This will remove already collected ones from the map.
         if (RandomizerLocationManager.LocationsByWorldMapGuid.ContainsKey(Guid)) {
             var loc = RandomizerLocationManager.LocationsByWorldMapGuid[Guid];
-            return !loc.Collected;
+            return !loc.Collected && !RandomizerMapWarp.Hidden(loc);
         }
 
         return true;
