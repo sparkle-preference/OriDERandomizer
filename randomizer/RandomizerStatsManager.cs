@@ -413,32 +413,18 @@ public static class RandomizerStatsManager {
     }
 
     // A line for one milestone: what it was, when, and where. Key items and goal-mode
-    // milestones are the same shape, so they share this.
+    // milestones are the same shape, so they share this. One tab per column: the
+    // tab stops are the columns, so label width never moves the rest of the row.
     private static string Stamped(string label, int id, out int time) {
-        var line = label + ":";
-        if (line.Length < 10) {
-            line += "\t\t";
-        } else if (line.Length < 16) {
-            line += "\t";
-        }
-
-        line += "\t";
         var raw = get(id);
         time = -1;
-        if (raw > 0) {
-            time = raw % (1 << 18);
-            var zoneName = ZonePrettyNames[Offsets.First(x => x.Value == raw >> 18).Key].Trim();
-            line += FormatTime(time);
-            if (FormatTime(time).Length < 4) {
-                line += "\t";
-            }
-
-            line += "\t\t" + zoneName;
-        } else {
-            line += "   N/A\t\tUnknown";
+        if (raw <= 0) {
+            return label + ":\tN/A\tUnknown";
         }
 
-        return line;
+        time = raw % (1 << 18);
+        var zoneName = ZonePrettyNames[Offsets.First(x => x.Value == raw >> 18).Key].Trim();
+        return label + ":\t" + FormatTime(time) + "\t" + zoneName;
     }
 
     private static void Collect(SortedDictionary<int, List<string>> into, string label, int id) {
@@ -449,6 +435,116 @@ public static class RandomizerStatsManager {
         }
 
         into[time].Add(line);
+    }
+
+    // The milestone pages, assembled from time-sorted rows. On screen the row count
+    // picks the font: sixteen rows fit at full size, and past that the whole table
+    // shrinks to match, down to a floor past which the unfound stop being listed.
+    private static string MilestoneTable(string header, SortedDictionary<int, List<string>> byTime,
+            bool forFile, string emptyLine) {
+        List<string> unfound;
+        if (byTime.ContainsKey(-1)) {
+            unfound = byTime[-1];
+            byTime.Remove(-1);
+        } else {
+            unfound = new List<string>();
+        }
+
+        var rows = new List<string>();
+        foreach (var lines in byTime.Values) {
+            foreach (var line in lines) {
+                rows.Add(line);
+            }
+        }
+
+        if (forFile) {
+            rows.AddRange(unfound);
+            return header + "\n" + string.Join("\n", rows.ToArray());
+        }
+
+        if (rows.Count + unfound.Count + 1 <= MaxShrunkRows) {
+            rows.AddRange(unfound);
+        } else if (rows.Count == 0) {
+            rows.Add(emptyLine);
+        }
+
+        var total = rows.Count + 1;
+        var scale = total <= ScreenRows ? 1f
+            : Math.Max(0.6f, (float)ScreenRows / total);
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        // the tab stops shrink with the font, or a small table floats in a wide box
+        var prefix = "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_17.5_"
+            + (7f * scale).ToString("0.##", inv) + "_";
+        if (scale < 1f) {
+            prefix += "<style fontscale=" + scale.ToString("0.##", inv)
+                + " linescale=" + scale.ToString("0.##", inv) + ">";
+        }
+
+        return prefix + header + "\n" + string.Join("\n", rows.ToArray());
+    }
+
+    // One goal row: found shows when and where; unfound shows the place it is
+    // waiting, since every row on this page is something the run must collect.
+    private static string GoalRow(string label, int id, string nativeZone) {
+        int time;
+        var line = Stamped(label, id, out time);
+        return time >= 0 ? line : label + ":\t---\t" + nativeZone;
+    }
+
+    // The goals page: a checklist in world order, sectioned by goal mode. Past a
+    // screenful it lays the checklist out in two columns rather than shrinking.
+    private static string GoalScreenTable() {
+        var rows = new List<string>();
+        if (Randomizer.ForceTrees) {
+            rows.Add("Trees");
+            foreach (var tree in RandomizerTrackedDataManager.Trees) {
+                rows.Add(GoalRow(tree.Value, TreeTime + tree.Key, TreeZones[tree.Key]));
+            }
+        }
+
+        if (Randomizer.WorldTour) {
+            rows.Add("Relics");
+            var relicRows = 0;
+            foreach (var relic in RandomizerTrackedDataManager.RelicFound) {
+                // a light seed holds relics in only some zones; the rest are not goals
+                if (!Randomizer.RelicZoneLookup.ContainsValue(relic.Key) && get(RelicTime + relic.Value) == 0) {
+                    continue;
+                }
+
+                rows.Add(GoalRow(relic.Key, RelicTime + relic.Value, relic.Key));
+                relicRows++;
+            }
+
+            // a WorldTour seed can hold no relics at all; a bare header would just confuse
+            if (relicRows == 0) {
+                rows.RemoveAt(rows.Count - 1);
+            }
+        }
+
+        if (Randomizer.ForceMaps) {
+            rows.Add("Maps");
+            foreach (var pedestal in RandomizerTrackedDataManager.MapBitsByArea) {
+                var zone = ZonePrettyNames[pedestal.Key].Trim();
+                rows.Add(GoalRow(zone, MapstoneTime + pedestal.Value, zone));
+            }
+        }
+
+        if (rows.Count + 1 <= ScreenRows) {
+            return "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_17.5_5.5_Goal\tFound At\tZone\n"
+                + string.Join("\n", rows.ToArray());
+        }
+
+        var half = (rows.Count + 1) / 2;
+        var lines = new List<string>();
+        for (var i = 0; i < half; i++) {
+            var left = rows[i];
+            // a plain section label spans no columns, so pad it out to the right half
+            var pad = left.Contains("\t") ? "\t" : "\t\t\t";
+            lines.Add(half + i < rows.Count ? left + pad + rows[half + i] : left);
+        }
+
+        return "ALIGNLEFTANCHORTOPPADDING_0_2.5_0_0_PARAMS_16_33_5.5_Goal\tFound At\tZone\tGoal\tFound At\tZone\n"
+            + string.Join("\n", lines.ToArray());
     }
 
     public static string GetStatsPage(int page, bool forFile) {
@@ -540,39 +636,9 @@ public static class RandomizerStatsManager {
                 statsPage += "\nLongest time without dying:	" + FormatTime(Math.Max(get(TSLD_max), get(TSLD)), false);
                 break;
             case 2:
-                statsPage += "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_12_1_Item				Found At		Zone";
                 var linesByTime = new SortedDictionary<int, List<string>>();
                 foreach (var item in KeyItemOffsets.Keys) {
-                    var line = item + ":";
-                    if (line.Length < 10) {
-                        line += "\t\t";
-                    } else if (line.Length < 16) {
-                        line += "\t";
-                    }
-
-                    line += "\t";
-                    var offset = KeyItemTime + KeyItemOffsets[item];
-                    var raw = get(offset);
-                    var time = -1;
-                    if (raw > 0) {
-                        time = raw % (1 << 18);
-                        var zoneOffset = raw >> 18;
-                        var zoneName = ZonePrettyNames[Offsets.First(x => x.Value == zoneOffset).Key].Trim();
-                        line += FormatTime(time);
-                        if (FormatTime(time).Length < 4) {
-                            line += "\t";
-                        }
-
-                        line += "\t\t" + zoneName;
-                    } else {
-                        line += "   N/A\t\tUnknown";
-                    }
-
-                    if (!linesByTime.ContainsKey(time)) {
-                        linesByTime[time] = new List<string>();
-                    }
-
-                    linesByTime[time].Add(line);
+                    Collect(linesByTime, item, KeyItemTime + KeyItemOffsets[item]);
                 }
 
                 // Teleporters, shortened to fit beside the key items. Three are hidden on screen
@@ -588,80 +654,46 @@ public static class RandomizerStatsManager {
                     Collect(linesByTime, RandomizerMapWarp.ShortName(id) + " TP", TeleporterTime + i);
                 }
 
-                List<string> last;
-                if (linesByTime.ContainsKey(-1)) {
-                    last = linesByTime[-1];
-                    linesByTime.Remove(-1);
-                } else {
-                    last = new List<string>();
-                }
-
-                foreach (var lines in linesByTime.Values) {
-                    foreach (var line in lines) {
-                        statsPage += "\n" + line;
-                    }
-                }
-
-                // The page used to be sixteen key items and had room to say what was still
-                // missing. With teleporters on it that no longer fits, so on screen the
-                // unfound simply go unmentioned. The file still lists them.
-                if (forFile || linesByTime.Count + last.Count <= ScreenRows) {
-                    foreach (var line in last) {
-                        statsPage += "\n" + line;
-                    }
-                }
-
+                statsPage = MilestoneTable("Item\tFound At\tZone", linesByTime, forFile,
+                    "Nothing yet! Key items and teleporters land here as you find them.");
                 break;
             case 3:
-                statsPage += "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_12_1_Goal				Found At		Zone";
-                var goals = new SortedDictionary<int, List<string>>();
-                if (Randomizer.ForceTrees) {
-                    foreach (var tree in RandomizerTrackedDataManager.Trees) {
-                        Collect(goals, tree.Value + " Tree", TreeTime + tree.Key);
-                    }
-                }
-
-                if (Randomizer.WorldTour) {
-                    foreach (var relic in RandomizerTrackedDataManager.RelicFound) {
-                        Collect(goals, relic.Key + " Relic", RelicTime + relic.Value);
-                    }
-                }
-
-                if (Randomizer.ForceMaps) {
-                    foreach (var pedestal in RandomizerTrackedDataManager.MapBitsByArea) {
-                        Collect(goals, ZonePrettyNames[pedestal.Key].Trim() + " Map",
-                            MapstoneTime + pedestal.Value);
-                    }
-                }
-
-                // Fragments are the one thing the screen never shows: there can be any number of
-                // them, and a wall of them would bury the milestones that are actually rare.
                 if (forFile) {
+                    var goals = new SortedDictionary<int, List<string>>();
+                    if (Randomizer.ForceTrees) {
+                        foreach (var tree in RandomizerTrackedDataManager.Trees) {
+                            Collect(goals, tree.Value + " Tree", TreeTime + tree.Key);
+                        }
+                    }
+
+                    if (Randomizer.WorldTour) {
+                        foreach (var relic in RandomizerTrackedDataManager.RelicFound) {
+                            if (!Randomizer.RelicZoneLookup.ContainsValue(relic.Key) && get(RelicTime + relic.Value) == 0) {
+                                continue;
+                            }
+
+                            Collect(goals, relic.Key + " Relic", RelicTime + relic.Value);
+                        }
+                    }
+
+                    if (Randomizer.ForceMaps) {
+                        foreach (var pedestal in RandomizerTrackedDataManager.MapBitsByArea) {
+                            Collect(goals, ZonePrettyNames[pedestal.Key].Trim() + " Map",
+                                MapstoneTime + pedestal.Value);
+                        }
+                    }
+
+                    // Fragments are the one thing the screen never shows: there can be any number
+                    // of them, and a wall of them would bury the milestones that are actually rare.
                     for (var i = 0; i < get(FragCount); i++) {
                         Collect(goals, "Fragment " + (i + 1), FragFirst + i);
                     }
+
+                    statsPage = MilestoneTable("Goal\tFound At\tZone", goals, true, "");
+                    break;
                 }
 
-                List<string> unfound;
-                if (goals.ContainsKey(-1)) {
-                    unfound = goals[-1];
-                    goals.Remove(-1);
-                } else {
-                    unfound = new List<string>();
-                }
-
-                foreach (var lines in goals.Values) {
-                    foreach (var line in lines) {
-                        statsPage += "\n" + line;
-                    }
-                }
-
-                if (forFile || goals.Count + unfound.Count <= ScreenRows) {
-                    foreach (var line in unfound) {
-                        statsPage += "\n" + line;
-                    }
-                }
-
+                statsPage = GoalScreenTable();
                 break;
         }
 
@@ -792,10 +824,10 @@ public static class RandomizerStatsManager {
                 miscPart += paddedLine + "\n";
             }
 
-            var keyItemPart = Columned(GetStatsPage(2, true).Substring(49));
+            var keyItemPart = Columned(GetStatsPage(2, true));
             var goalPart = "";
             if (HasGoalPage || get(FragCount) > 0) {
-                goalPart = "\n" + Columned(GetStatsPage(3, true).Substring(49));
+                goalPart = "\n" + Columned(GetStatsPage(3, true));
             }
 
             var statsFile = flagLine + "\n\n" + zonePart + miscPart + "\n" + keyItemPart + goalPart;
@@ -1049,6 +1081,17 @@ public static class RandomizerStatsManager {
 
     // What the old key-item page held, and so how many lines fit on screen.
     public const int ScreenRows = 16;
+
+    // the shrink floor: past this many rows the unfound go unlisted instead
+    public const int MaxShrunkRows = 26;
+
+    // where each tree stands, per RandomizerLocationData; keys follow
+    // RandomizerTrackedDataManager.Trees
+    public static Dictionary<int, string> TreeZones = new Dictionary<int, string> {
+        { 0, "Glades" }, { 1, "Glades" }, { 2, "Grove" }, { 3, "Grotto" },
+        { 4, "Ginso" }, { 5, "Swamp" }, { 6, "Valley" }, { 7, "Misty" },
+        { 8, "Sorrow" }, { 9, "Blackroot" }, { 10, "Blackroot" },
+    };
 
     // Bingo has its own board and goal mode none has nothing to say, so neither gets a page.
     public static bool HasGoalPage {
