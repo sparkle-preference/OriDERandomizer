@@ -1115,7 +1115,7 @@ public static class BingoController {
                     new List<BoolGoal> {
                         new BoolLocGoal("Ginso Tree", 2530, 5480952),
                         new BoolSceneGoal("Forlorn Ruins", 2531, "forlornRuinsNestC"),
-                        new BoolGoal("Mount Horu", 1599)
+                        new BoolGoal("Mount Horu", 4099)
                     }
                 );
 

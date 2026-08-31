@@ -448,8 +448,8 @@ public static class RandomizerBonusSkill {
     }
 
     public static int ActiveBonus {
-        get => get(1589);
-        set => set(1589, value);
+        get => get(4089);
+        set => set(4089, value);
     }
 
     public static int LevelExplosionCooldown;

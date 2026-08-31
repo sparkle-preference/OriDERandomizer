@@ -776,36 +776,63 @@ public static class RandomizerStatsManager {
         return CurrentZone();
     }
 
-    public static int Deaths = 1500;
+    // Stats used to live in 1500-1599, a hundred slots with no room to grow. They are the same
+    // values at the same offsets, 2500 higher, and a save written before the move is copied across
+    // the first time it is loaded. Total time is the sentinel: any played seed has one.
+    public static void MoveOldBlock() {
+        if (Characters.Sein == null || Characters.Sein.Inventory == null) {
+            return;
+        }
 
-    public static int DSLS = 1515;
-    public static int TSLD = 1516;
-    public static int TSLDOS = 1517;
-    public static int PSLDOS = 1518;
+        var inventory = Characters.Sein.Inventory;
+        if (inventory.GetRandomizerItem(Time) != 0 || inventory.GetRandomizerItem(1520) == 0) {
+            return;
+        }
 
-    public static int Time = 1520;
+        // 1587 stays behind: it is Credit Warp's pickup id, shared with the server's
+        // pickup table and baked into seeds, so it is not ours to renumber.
+        var carried = 0;
+        for (var id = 1500; id < 1600; id++) {
+            var was = inventory.GetRandomizerItem(id);
+            if (was != 0) {
+                inventory.SetRandomizerItem(id + 2500, was);
+                carried++;
+            }
+        }
 
-    public static int DSLS_max = 1535;
-    public static int TSLD_max = 1536;
-    public static int TSLDOS_max = 1537;
-    public static int PSLDOS_max = 1538;
-    public static int KeyItemTime = 1540;
+        Randomizer.log("stats: carried " + carried + " values up from the old block");
+    }
+
+    public static int Deaths = 4000;
+
+    public static int DSLS = 4015;
+    public static int TSLD = 4016;
+    public static int TSLDOS = 4017;
+    public static int PSLDOS = 4018;
+
+    public static int Time = 4020;
+
+    public static int DSLS_max = 4035;
+    public static int TSLD_max = 4036;
+    public static int TSLDOS_max = 4037;
+    public static int PSLDOS_max = 4038;
+    public static int KeyItemTime = 4040;
 
 
-    public static int Saves = 1570;
-    public static int shoof_sum = 1571;
-    public static int EnemiesKilled = 1572;
-    public static int ExpGained = 1573;
-    public static int ExpBonus = 1574;
-    public static int PPM_max = 1575;
-    public static int PPM_max_time = 1576;
-    public static int PPM_max_count = 1577;
-    public static int Reloads = 1578;
-    public static int AltRCount = 1579;
-    public static int TeleporterCount = 1580;
-    public static int Drought = 1581;
-    public static int Drought_max = 1582;
-    public static int Drought_max_end = 1583;
+    public static int Saves = 4070;
+    public static int shoof_sum = 4071;
+    public static int EnemiesKilled = 4072;
+    public static int ExpGained = 4073;
+    public static int ExpBonus = 4074;
+    public static int PPM_max = 4075;
+    public static int PPM_max_time = 4076;
+    public static int PPM_max_count = 4077;
+    public static int Reloads = 4078;
+    public static int AltRCount = 4079;
+    public static int TeleporterCount = 4080;
+    public static int Drought = 4081;
+    public static int Drought_max = 4082;
+    public static int Drought_max_end = 4083;
 
     public static int Pickups = 1600;
     public static int LevelUpKills = 1650;

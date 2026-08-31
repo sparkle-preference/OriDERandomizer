@@ -19,9 +19,9 @@ using UnityEngine;
 // death can never bounce back out as an outgoing one.
 public static class RandomizerDeathLink {
     // preserved-range save items (see RandomizerInventory.Serialize)
-    public const int Deaths = 1590;
-    public const int LinkedDeaths = 1591;
-    public const int LastToken = 1592;
+    public const int Deaths = 4090;
+    public const int LinkedDeaths = 4091;
+    public const int LastToken = 4092;
 
     public static bool Enabled;
 

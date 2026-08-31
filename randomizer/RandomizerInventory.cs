@@ -39,12 +39,17 @@ public class RandomizerInventory : SaveSerialize {
         randomizerItems.Clear();
     }
 
-    // Ids that survive a death or a reload, in two blocks:
-    //   1500-1599  randomizer stats (playtime, deaths, pickup counts, ...)
+    // Ids that survive a death or a reload:
+    //   4000-9999  stats, and anything else recording that something happened. Roomy on
+    //              purpose: warmth fragments take one slot each from 4501 with no fixed end.
     //   2300-2399  bingo goals that record something that HAPPENED rather than
     //              something you hold -- dying to a named hazard, mostly.
+    //   1500-1599  where the first block used to live. Kept so a save written before the
+    //              move still has its values to copy up, and because pickup 1587 (Credit
+    //              Warp) is a seed-level id that cannot move off it.
     public static bool KeptOnDeath(int code) {
-        return (code >= 1500 && code < 1600) || (code >= 2300 && code < 2400);
+        return (code >= 1500 && code < 1600) || (code >= 2300 && code < 2400)
+            || (code >= 4000 && code < 10000);
     }
 
     public override void Serialize(Archive ar) {

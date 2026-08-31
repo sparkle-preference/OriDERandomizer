@@ -224,7 +224,7 @@ public static class RandomizerSyncManager {
                 nvc["y"] = pos.y.ToString();
                 nvc["version"] = Randomizer.VERSION;
                 for (var i = 0; i < 8; i++) {
-                    nvc["seen_" + i] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(1560 + i));
+                    nvc["seen_" + i] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(SeenBase + i));
                     nvc["have_" + i] = fixInt(Characters.Sein.Inventory.GetRandomizerItem(930 + i));
                 }
 
@@ -965,7 +965,7 @@ public static class RandomizerSyncManager {
         sb.Append("&y=").Append(pos.y.ToString());
         sb.Append("&version=").Append(Uri.EscapeDataString(Randomizer.VERSION));
         for (var i = 0; i < 8; i++) {
-            sb.Append("&seen_").Append(i).Append('=').Append(fixInt(Characters.Sein.Inventory.GetRandomizerItem(1560 + i)));
+            sb.Append("&seen_").Append(i).Append('=').Append(fixInt(Characters.Sein.Inventory.GetRandomizerItem(SeenBase + i)));
             sb.Append("&have_").Append(i).Append('=').Append(fixInt(Characters.Sein.Inventory.GetRandomizerItem(930 + i)));
         }
 
@@ -1007,6 +1007,9 @@ public static class RandomizerSyncManager {
     private static bool Refused;
 
     private static bool Warned;
+
+    // Which coords have been seen, eight bitfields. Sent by name, so only the slots moved.
+    public const int SeenBase = 4060;
 
     private static string wsStartedUrl;
 

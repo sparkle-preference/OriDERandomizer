@@ -898,6 +898,7 @@ public static class Randomizer {
 
     public static void OnGameSerializeLoad() {
         ResetTrackerCount = 0;
+        RandomizerStatsManager.MoveOldBlock();
         // DebugMenuB serializes its own copy of this, so a load can drop what the
         // pickup granted. Only ever turn it on -- the debug menu's own toggle stays
         // usable as the off switch.
@@ -1481,7 +1482,7 @@ public static class Randomizer {
             return false;
         }
 
-        var locID = 1560 + RandomizerTrackedDataManager.CoordsMap[coord] / 32;
+        var locID = RandomizerSyncManager.SeenBase + RandomizerTrackedDataManager.CoordsMap[coord] / 32;
         return 0 != (get(locID) >> (RandomizerTrackedDataManager.CoordsMap[coord] % 32)) % 2;
     }
 
@@ -1507,7 +1508,7 @@ public static class Randomizer {
             return;
         }
 
-        var locID = 1560 + RandomizerTrackedDataManager.CoordsMap[coord] / 32;
+        var locID = RandomizerSyncManager.SeenBase + RandomizerTrackedDataManager.CoordsMap[coord] / 32;
         var offset = RandomizerTrackedDataManager.CoordsMap[coord] % 32;
         var current = get(locID);
         // set Seen
