@@ -382,8 +382,19 @@ public static class RandomizerBonusSkill {
         UpdateDrain();
     }
 
+    // Credit Warp's pickup id is 1587, which is in the old stats block -- a single id nothing
+    // else shares, kept alive through death for no reason but its address. Seeds still say 1587
+    // because that is the server's pickup table; what the save remembers is 4087.
+    public const int LegacyCreditWarp = 1587;
+
+    public const int CreditWarp = 4087;
+
     public static void FoundBonusSkill(int ID) {
-        var psuedo = ID == 108 || ID == 115 || ID == 1587;
+        if (ID == LegacyCreditWarp) {
+            ID = CreditWarp;
+        }
+
+        var psuedo = ID == 108 || ID == 115 || ID == CreditWarp;
         if (get(ID) > 0) {
             if (!psuedo) {
                 RandomizerSwitch.PickupMessage(RandomizerItems.BonusSkillNames[ID] + " (duplicate)");
@@ -609,12 +620,12 @@ public static class RandomizerBonusSkill {
     }
 
     public static bool UnlockCreditWarp(string message) {
-        if (get(1587) > 0) {
+        if (get(CreditWarp) > 0) {
             return false;
         }
 
-        FoundBonusSkill(1587);
-        ActiveBonus = 1587;
+        FoundBonusSkill(CreditWarp);
+        ActiveBonus = CreditWarp;
         if (!RandomizerSwitch.SilentMode) {
             message += "\nPress " + RandomizerRebinding.BonusToggle.FirstBindName() + " to warp to credits";
             Randomizer.QueueWinMessage(message);

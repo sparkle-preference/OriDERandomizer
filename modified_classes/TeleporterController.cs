@@ -166,6 +166,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
             }
         }
 
+        RandomizerStatsManager.TeleporterActivated(identifier);
         if (natural) {
             RandomizerSyncManager.FoundTP(identifier);
         }

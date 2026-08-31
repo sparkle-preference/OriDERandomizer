@@ -233,6 +233,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
+                RandomizerStatsManager.FragmentFound();
                 RandomizerSwitch.PickupMessage(string.Concat("@Warmth Fragment (", WarmthFrags().ToString(), "/", Randomizer.fragKeyFinish, ")@"), 300);
                 break;
             case 29:

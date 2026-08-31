@@ -84,15 +84,20 @@ Winners:	Team StoryTime (Dedew and Covert_Muffin)
         // Credits.Add(new KeyValuePair<string, int>("In memory of Grandma Irine", 5));
 
         try {
-            Credits.Add(new KeyValuePair<string, int>(RandomizerStatsManager.GetStatsPage(0), 45));
-            Credits.Add(new KeyValuePair<string, int>(RandomizerStatsManager.GetStatsPage(1), 45));
-            Credits.Add(new KeyValuePair<string, int>(RandomizerStatsManager.GetStatsPage(2), 45));
+            // A goal mode adds a page, so every page gets shorter rather than the roll longer.
+            // Without one, nothing has changed and the old pacing stands.
+            var pages = RandomizerStatsManager.PageCount;
+            var each = pages > 3 ? 35 : 45;
+            for (var page = 0; page < pages; page++) {
+                Credits.Add(new KeyValuePair<string, int>(
+                    RandomizerStatsManager.GetStatsPage(page), each));
+            }
             Credits.Add(
                 new KeyValuePair<string, int>(
                     @"ANCHORTOPPARAMS_20_12_2_Thanks for playing!
 Website: orirando.com
 Join the Ori community: orirando.com/discord",
-                    50
+                    pages > 3 ? 45 : 50
                 )
             );
         } catch (Exception e) {

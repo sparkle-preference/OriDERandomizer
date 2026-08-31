@@ -1082,31 +1082,31 @@ public static class BingoController {
                     }
                 );
 
-                // 2300-2399 is the bingo keep-on-death block (RandomizerInventory
-                // .KeptOnDeath). These used to live scattered through 1500-1599
-                // alongside the randomizer's own stats, which is how DeathLink
-                // came to sit on Ginso Escape Fronkey. Take the next free id here
-                // for any future goal that has to survive dying.
+                // 7000-7099 is the bingo end of the keep-on-death range
+                // (RandomizerInventory.KeptOnDeath). These lived at 2300-2399 before 5.0,
+                // and in 1500-1599 alongside the stats before that, which is how DeathLink
+                // came to sit on Ginso Escape Fronkey. Take the next free id here for any
+                // future goal that has to survive dying.
                 MultiBoolGoal.mk(
                     "DieTo",
                     new List<BoolGoal> {
-                        new BoolGoal("Valley Floor Frogs", 2316),
-                        new BoolGoal("Spidersack Spikes", 2315),
-                        new BoolGoal("Grotto Vault Lasers", 2314),
-                        new BoolGoal("Swamp Swim Crushers", 2313),
-                        new BoolGoal("R1 Door Baneling", 2312),
-                        new BoolGoal("Valley Map Baneling", 2311),
-                        new BoolGoal("Sunstone Lightning", 2310),
-                        new BoolGoal("Lost Grove Laser", 2309),
-                        new BoolGoal("Forlorn Void", 2308),
-                        new BoolGoal("Stomp Rhino", 2307),
-                        new BoolGoal("Horu Fields Acid", 2306),
-                        new BoolGoal("Doorwarp Lava", 2305),
-                        new BoolGoal("Ginso Escape Fronkey", 2304),
-                        new BoolGoal("Blackroot Teleporter Crushers", 2303),
-                        new BoolGoal("NoobSpikes", 2302),
-                        new BoolGoal("Right Forlorn Laser", 2301),
-                        new BoolGoal("Misty Vertical Lasers", 2300)
+                        new BoolGoal("Valley Floor Frogs", 7016),
+                        new BoolGoal("Spidersack Spikes", 7015),
+                        new BoolGoal("Grotto Vault Lasers", 7014),
+                        new BoolGoal("Swamp Swim Crushers", 7013),
+                        new BoolGoal("R1 Door Baneling", 7012),
+                        new BoolGoal("Valley Map Baneling", 7011),
+                        new BoolGoal("Sunstone Lightning", 7010),
+                        new BoolGoal("Lost Grove Laser", 7009),
+                        new BoolGoal("Forlorn Void", 7008),
+                        new BoolGoal("Stomp Rhino", 7007),
+                        new BoolGoal("Horu Fields Acid", 7006),
+                        new BoolGoal("Doorwarp Lava", 7005),
+                        new BoolGoal("Ginso Escape Fronkey", 7004),
+                        new BoolGoal("Blackroot Teleporter Crushers", 7003),
+                        new BoolGoal("NoobSpikes", 7002),
+                        new BoolGoal("Right Forlorn Laser", 7001),
+                        new BoolGoal("Misty Vertical Lasers", 7000)
                     }
                 );
 

@@ -392,6 +392,66 @@ public static class RandomizerStatsManager {
     }
 
     public static string GetStatsPage(int page) {
+        return GetStatsPage(page, false);
+    }
+
+    // Glades unless the seed moves you. A spawn item holding a teleporter and then a warp is
+    // what says you start somewhere else, and the teleporter it holds is the one you start on.
+    // TP values are TeleportTable keys ("Glades"), not identifiers, hence the hop.
+    public static string SpawnTeleporter() {
+        var spawn = Randomizer.SpawnWith ?? "";
+        var tp = spawn.IndexOf("TP");
+        var ws = spawn.IndexOf("WS");
+        if (tp < 0 || ws < tp) {
+            return "sunkenGlades";
+        }
+
+        var named = spawn.Substring(tp + 2, ws - tp - 2).Trim('/');
+        return Randomizer.TeleportTable.ContainsKey(named)
+            ? Randomizer.TeleportTable[named].ToString()
+            : "sunkenGlades";
+    }
+
+    // A line for one milestone: what it was, when, and where. Key items and goal-mode
+    // milestones are the same shape, so they share this.
+    private static string Stamped(string label, int id, out int time) {
+        var line = label + ":";
+        if (line.Length < 10) {
+            line += "\t\t";
+        } else if (line.Length < 16) {
+            line += "\t";
+        }
+
+        line += "\t";
+        var raw = get(id);
+        time = -1;
+        if (raw > 0) {
+            time = raw % (1 << 18);
+            var zoneName = ZonePrettyNames[Offsets.First(x => x.Value == raw >> 18).Key].Trim();
+            line += FormatTime(time);
+            if (FormatTime(time).Length < 4) {
+                line += "\t";
+            }
+
+            line += "\t\t" + zoneName;
+        } else {
+            line += "   N/A\t\tUnknown";
+        }
+
+        return line;
+    }
+
+    private static void Collect(SortedDictionary<int, List<string>> into, string label, int id) {
+        int time;
+        var line = Stamped(label, id, out time);
+        if (!into.ContainsKey(time)) {
+            into[time] = new List<string>();
+        }
+
+        into[time].Add(line);
+    }
+
+    public static string GetStatsPage(int page, bool forFile) {
         var statsPage = "";
         switch (page) {
             case 0:
@@ -515,6 +575,19 @@ public static class RandomizerStatsManager {
                     linesByTime[time].Add(line);
                 }
 
+                // Teleporters, shortened to fit beside the key items. Three are hidden on screen
+                // and kept in the file: the spawn one is not something you went and got, and
+                // Horu Fields and Lost Grove are noise on a list this long.
+                var spawnTp = SpawnTeleporter();
+                for (var i = 0; i < BingoController.Teleporters.Length; i++) {
+                    var id = BingoController.Teleporters[i];
+                    if (!forFile && (id == "horuFields" || id == "mangroveB" || id == spawnTp)) {
+                        continue;
+                    }
+
+                    Collect(linesByTime, RandomizerMapWarp.ShortName(id) + " TP", TeleporterTime + i);
+                }
+
                 List<string> last;
                 if (linesByTime.ContainsKey(-1)) {
                     last = linesByTime[-1];
@@ -529,8 +602,64 @@ public static class RandomizerStatsManager {
                     }
                 }
 
-                foreach (var line in last) {
-                    statsPage += "\n" + line;
+                // The page used to be sixteen key items and had room to say what was still
+                // missing. With teleporters on it that no longer fits, so on screen the
+                // unfound simply go unmentioned. The file still lists them.
+                if (forFile || linesByTime.Count + last.Count <= ScreenRows) {
+                    foreach (var line in last) {
+                        statsPage += "\n" + line;
+                    }
+                }
+
+                break;
+            case 3:
+                statsPage += "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_12_1_Goal				Found At		Zone";
+                var goals = new SortedDictionary<int, List<string>>();
+                if (Randomizer.ForceTrees) {
+                    foreach (var tree in RandomizerTrackedDataManager.Trees) {
+                        Collect(goals, tree.Value + " Tree", TreeTime + tree.Key);
+                    }
+                }
+
+                if (Randomizer.WorldTour) {
+                    foreach (var relic in RandomizerTrackedDataManager.RelicFound) {
+                        Collect(goals, relic.Key + " Relic", RelicTime + relic.Value);
+                    }
+                }
+
+                if (Randomizer.ForceMaps) {
+                    foreach (var pedestal in RandomizerTrackedDataManager.MapBitsByArea) {
+                        Collect(goals, ZonePrettyNames[pedestal.Key].Trim() + " Map",
+                            MapstoneTime + pedestal.Value);
+                    }
+                }
+
+                // Fragments are the one thing the screen never shows: there can be any number of
+                // them, and a wall of them would bury the milestones that are actually rare.
+                if (forFile) {
+                    for (var i = 0; i < get(FragCount); i++) {
+                        Collect(goals, "Fragment " + (i + 1), FragFirst + i);
+                    }
+                }
+
+                List<string> unfound;
+                if (goals.ContainsKey(-1)) {
+                    unfound = goals[-1];
+                    goals.Remove(-1);
+                } else {
+                    unfound = new List<string>();
+                }
+
+                foreach (var lines in goals.Values) {
+                    foreach (var line in lines) {
+                        statsPage += "\n" + line;
+                    }
+                }
+
+                if (forFile || goals.Count + unfound.Count <= ScreenRows) {
+                    foreach (var line in unfound) {
+                        statsPage += "\n" + line;
+                    }
                 }
 
                 break;
@@ -563,6 +692,49 @@ public static class RandomizerStatsManager {
         WriteStatsFile();
     }
 
+
+    // Squares a tab-separated block up into columns. Written for the key items; the goal
+    // milestones are the same three columns, so they get it too.
+    private static string Columned(string part) {
+        part = part.Replace("   ", "");
+        part = Regex.Replace(part, "\t+", "\t");
+        var lines = new List<string>(part.Split('\n'));
+        var spacing = new List<int> { 0, 0, 0, 0 };
+        foreach (var line in lines) {
+            var col = 0;
+            var lastStart = 0;
+            for (var i = 0; i < line.Length; i++) {
+                if (line[i] == '\t') {
+                    var width = i - lastStart + 2;
+                    if (spacing[col] < width) {
+                        spacing[col] = width;
+                    }
+
+                    col++;
+                    lastStart = i;
+                }
+            }
+        }
+
+        var squared = "";
+        foreach (var line in lines) {
+            var col = 0;
+            var paddedLine = "";
+            foreach (var linePart in line.Split('\t')) {
+                var lpc = linePart;
+                while (lpc.Length < spacing[col]) {
+                    lpc += " ";
+                }
+
+                paddedLine += lpc;
+                col++;
+            }
+
+            squared += paddedLine + "\n";
+        }
+
+        return squared;
+    }
 
     public static void WriteStatsFile() {
         try {
@@ -620,45 +792,13 @@ public static class RandomizerStatsManager {
                 miscPart += paddedLine + "\n";
             }
 
-            var keyItemPart = GetStatsPage(2).Substring(49);
-            keyItemPart = keyItemPart.Replace("   ", "");
-            keyItemPart = Regex.Replace(keyItemPart, "\t+", "\t");
-            var keyItemLines = new List<string>(keyItemPart.Split('\n'));
-            var keyItemSpacing = new List<int> { 0, 0, 0, 0 };
-            foreach (var line in keyItemLines) {
-                var col = 0;
-                var lastStart = 0;
-                for (var i = 0; i < line.Length; i++) {
-                    if (line[i] == '\t') {
-                        var spacing = i - lastStart + 2;
-                        if (keyItemSpacing[col] < spacing) {
-                            keyItemSpacing[col] = spacing;
-                        }
-
-                        col++;
-                        lastStart = i;
-                    }
-                }
+            var keyItemPart = Columned(GetStatsPage(2, true).Substring(49));
+            var goalPart = "";
+            if (HasGoalPage || get(FragCount) > 0) {
+                goalPart = "\n" + Columned(GetStatsPage(3, true).Substring(49));
             }
 
-            keyItemPart = "";
-            foreach (var line in keyItemLines) {
-                var col = 0;
-                var paddedLine = "";
-                foreach (var linePart in line.Split('\t')) {
-                    var lpc = linePart;
-                    while (lpc.Length < keyItemSpacing[col]) {
-                        lpc += " ";
-                    }
-
-                    paddedLine += lpc;
-                    col++;
-                }
-
-                keyItemPart += paddedLine + "\n";
-            }
-
-            var statsFile = flagLine + "\n\n" + zonePart + miscPart + "\n" + keyItemPart;
+            var statsFile = flagLine + "\n\n" + zonePart + miscPart + "\n" + keyItemPart + goalPart;
             statsFile = statsFile.Replace("\n", "\r\n");
             File.WriteAllText("stats.txt", statsFile);
         } catch (Exception e) {
@@ -779,6 +919,56 @@ public static class RandomizerStatsManager {
     // Stats used to live in 1500-1599, a hundred slots with no room to grow. They are the same
     // values at the same offsets, 2500 higher, and a save written before the move is copied across
     // the first time it is loaded. Total time is the sentinel: any played seed has one.
+    // Stamps one milestone id with the current time and zone, once. Mirrors KeyItemFound.
+    private static void Mark(int id) {
+        if (Characters.Sein == null || Characters.Sein.Inventory == null || get(id) != 0) {
+            return;
+        }
+
+        var key = PickupZone ?? CurrentZone();
+        var zone = Offsets.ContainsKey(key) ? Offsets[key] : Offsets["unknown"];
+        set(id, get(Time) + (zone << 18));
+    }
+
+    public static void TeleporterActivated(string identifier) {
+        var index = System.Array.IndexOf(BingoController.Teleporters, identifier);
+        if (index >= 0) {
+            Mark(TeleporterTime + index);
+        }
+    }
+
+    public static void TreeActivated(int treeNum) {
+        Mark(TreeTime + treeNum);
+    }
+
+    public static void RelicFound(string zone) {
+        int bit;
+        if (RandomizerTrackedDataManager.RelicFound.TryGetValue(zone, out bit)) {
+            Mark(RelicTime + bit);
+        }
+    }
+
+    public static void MapstoneTurnedIn(int mapNum) {
+        Mark(MapstoneTime + mapNum);
+    }
+
+    // Fragments have no fixed count, so they are stamped in the order they turn up. The held
+    // count is the high-water mark: only a fragment that pushes it higher takes a new slot.
+    public static void FragmentFound() {
+        if (Characters.Sein == null || Characters.Sein.Inventory == null) {
+            return;
+        }
+
+        var held = RandomizerBonus.WarmthFrags();
+        var recorded = get(FragCount);
+        if (held <= recorded) {
+            return;
+        }
+
+        Mark(FragFirst + recorded);
+        set(FragCount, recorded + 1);
+    }
+
     public static void MoveOldBlock() {
         if (Characters.Sein == null || Characters.Sein.Inventory == null) {
             return;
@@ -802,6 +992,24 @@ public static class RandomizerStatsManager {
 
         Randomizer.log("stats: carried " + carried + " values up from the old block");
     }
+
+    // Goal-mode milestones. One id each, holding when and where the same way key items do:
+    // the id says which thing, the packed zone says where you were standing for it. Which
+    // matters more than it sounds -- co-op can hand you a Wall Jump tree while you are in Horu.
+    public static int TeleporterTime = 4100;   // + BingoController.Teleporters index
+
+    public static int TreeTime = 4120;         // + RandomizerTrackedDataManager.Trees key
+
+    public static int RelicTime = 4140;        // + RandomizerTrackedDataManager.RelicFound bit
+
+    public static int MapstoneTime = 4160;     // + RandomizerTrackedDataManager.MapBitsByArea bit
+
+    // How many warmth fragments have been found, doubling as the cursor into the slots below.
+    // Taken from the count actually held, so a fragment re-collected after a death restores a
+    // number already recorded and moves nothing.
+    public static int FragCount = 4500;
+
+    public static int FragFirst = 4501;
 
     public static int Deaths = 4000;
 
@@ -838,7 +1046,21 @@ public static class RandomizerStatsManager {
     public static int LevelUpKills = 1650;
 
     public static int CurrentPage;
-    public static int PageCount = 3;
+
+    // What the old key-item page held, and so how many lines fit on screen.
+    public const int ScreenRows = 16;
+
+    // Bingo has its own board and goal mode none has nothing to say, so neither gets a page.
+    public static bool HasGoalPage {
+        get {
+            return (Randomizer.ForceTrees || Randomizer.WorldTour || Randomizer.ForceMaps)
+                && !BingoController.Active;
+        }
+    }
+
+    public static int PageCount {
+        get { return HasGoalPage ? 4 : 3; }
+    }
     public static int CachedTime;
     public static bool Active;
     public static bool WriteFromCache;

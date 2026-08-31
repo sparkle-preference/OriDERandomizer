@@ -294,6 +294,17 @@ public static class RandomizerMapWarp {
         { "blackroot", "Blackroot" }
     };
 
+    // The short name the map's tooltip uses, for callers holding only an identifier.
+    public static string ShortName(string id) {
+        string name;
+        if (WellNames.TryGetValue(id ?? "", out name)) {
+            return name;
+        }
+
+        var zones = RandomizerStatsManager.ZonePrettyNames;
+        return zones != null && zones.TryGetValue(id ?? "", out name) ? name.Trim() : id;
+    }
+
     private static string Name(GameMapTeleporter well) {
         var id = well.Identifier ?? "";
         string name;

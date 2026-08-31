@@ -89,6 +89,7 @@ public static class RandomizerItems {
         { 115, "Toggle Enhanced Effects" },
         { 116, "Mark" },
         { 1587, "Warp to Credits" },
+        { 4087, "Warp to Credits" },
     };
 
     // RB 40-49 take a skill away. A log wants Name's "Remove Bash"; the
