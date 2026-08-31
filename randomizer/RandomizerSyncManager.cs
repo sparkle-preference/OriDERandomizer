@@ -738,6 +738,11 @@ public static class RandomizerSyncManager {
                 }
             }
 
+            // trailing and optional: a server that does not send it leaves Released alone
+            if (array.Length > 9) {
+                RandomizerMW.OnReleasedField(array[9]);
+            }
+
             if (Randomizer.SyncMode == 5 && array.Length > 8 && array[8] != "") {
                 // archipelago: hints bought for the slots we asked about.
                 // Present only once something has been bought, so every

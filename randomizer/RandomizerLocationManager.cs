@@ -635,7 +635,7 @@ public class RandomizerLocationManager {
         // give, so the in-logic filter should stop showing it even after a
         // death rolled the coord bit back
         public bool Touched => Collected || Repeatable && Randomizer.HaveCoord(Key)
-            || RandomizerMW.SelfItemCollected(Key);
+            || RandomizerMW.SelfItemCollected(Key) || RandomizerMW.ReleasedAway(Pickup);
 
         public MoonGuid MoonGuid;
 

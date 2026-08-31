@@ -315,6 +315,45 @@ public static class RandomizerMW {
         }
     }
 
+    // --- release ---
+    //
+    // tick field 9: "1" once this world has been released. Finishing hands every item in it that
+    // belonged to someone else to its owner, so those locations have nothing left to give even
+    // though their coord bit is unset. Read from the server every tick rather than remembered,
+    // because being released is the server's fact: a save scummed back past the credits would
+    // otherwise forget it while the world stays released.
+    public static bool Released;
+
+    public static void OnReleasedField(string field) {
+        Released = field.Trim() == "1";
+    }
+
+    // Our own items are not part of a release -- whether the room hands them back is its own
+    // policy, which SelfItemCollected already answers. Only somebody else's is spent by this.
+    public static bool ReleasedAway(RandomizerAction pickup) {
+        if (!Released || pickup == null || pickup.Action != "MW") {
+            return false;
+        }
+
+        var parts = pickup.ValAsStr().Split(',');
+        int owner;
+        return parts.Length > 0 && int.TryParse(parts[0], out owner) && owner != Us;
+    }
+
+    // "<game>.<player>" -- the player half is who we are on the wire.
+    private static int Us {
+        get {
+            var id = Randomizer.SyncId;
+            if (string.IsNullOrEmpty(id)) {
+                return 0;
+            }
+
+            var parts = id.Split('.');
+            int pid;
+            return parts.Length > 1 && int.TryParse(parts[1], out pid) ? pid : 0;
+        }
+    }
+
     public static bool IsManifestLine(int coords, string code) {
         return code == "MW" && coords <= -2 && coords >= -257;
     }
