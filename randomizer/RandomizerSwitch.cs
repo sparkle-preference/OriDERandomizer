@@ -372,6 +372,15 @@ public static class RandomizerSwitch {
                     break;
                 case "NO":
                     break;
+                case "RI":
+                    // slot=value, written raw and silently; the test bench's pen
+                    var ri = ((string)action.Value).Split('=');
+                    int riSlot, riVal;
+                    if (ri.Length == 2 && int.TryParse(ri[0], out riSlot) && int.TryParse(ri[1], out riVal)) {
+                        Characters.Sein.Inventory.SetRandomizerItem(riSlot, riVal);
+                    }
+
+                    break;
                 case "TW":
                     // TW entries are coord|TW|name,x,y
                     var pieces2 = ((string)action.Value).Split(',');
@@ -419,7 +428,11 @@ public static class RandomizerSwitch {
                     break;
             }
 
-            BingoController.OnItem(action, coords);
+            // pickups typed into pickup.tmp are bench input, not gameplay
+            if (!FromFile) {
+                BingoController.OnItem(action, coords);
+            }
+
             RandomizerTrackedDataManager.UpdateBitfields();
         } catch (Exception e) {
             Randomizer.LogError($"Give Pickup({action}, {coords}): {e.Message}");
@@ -428,7 +441,9 @@ public static class RandomizerSwitch {
         }
 
         if (found_locally && Randomizer.Sync) {
-            RandomizerSyncManager.FoundPickup(action, coords);
+            // the wire hears NO|1 for an RI: servers must not learn invented slot ids
+            var wire = action.Action == "RI" ? new RandomizerAction("NO", "1") : action;
+            RandomizerSyncManager.FoundPickup(wire, coords);
         }
 
         if (found_locally) {
@@ -471,6 +486,9 @@ public static class RandomizerSwitch {
 
 
     public static bool SilentMode;
+
+    // true only while Autoplayer.Drop grants from pickup.tmp; bingo looks away
+    public static bool FromFile;
 
     // when set, appended to every pickup message; RandomizerMW uses it to
     // render multiworld grants as "[pickup] from Player N" in one line

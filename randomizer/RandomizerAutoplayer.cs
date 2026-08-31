@@ -91,7 +91,12 @@ public static class RandomizerAutoplayer {
             Randomizer.log($"Autoplayer: dropped {action}");
 
             // coords 0, not found locally: claims no location and sends nothing to the server
-            RandomizerSwitch.GivePickup(action, 0, false);
+            RandomizerSwitch.FromFile = true;
+            try {
+                RandomizerSwitch.GivePickup(action, 0, false);
+            } finally {
+                RandomizerSwitch.FromFile = false;
+            }
 
             // drops skip the sync tick that would otherwise refresh logic
             RandomizerLocationManager.UpdateReachable();

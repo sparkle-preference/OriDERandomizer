@@ -11,7 +11,8 @@ public static class RandomizerSettings {
         WriteSettings();
     }
 
-    public static string LastAddedSetting = "Show Other Players";
+    // move this with every new setting, or existing installs take the nag path on update
+    public static string LastAddedSetting = "Touched Pickup Visibility";
 
     // The "//" in https:// is not a comment. Cutting there left every url setting as a bare
     // scheme, which then failed the has-a-scheme test and silently reverted to the default --

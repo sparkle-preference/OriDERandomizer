@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 
 public class RandomizerAction {
-    public static List<string> StringValPickupTypes = new List<string> { "TP", "SH", "NO", "WT", "MU", "HN", "WP", "RP", "WS", "TW", "NB", "MW" };
+    public static List<string> StringValPickupTypes = new List<string> { "TP", "SH", "NO", "WT", "MU", "HN", "WP", "RP", "WS", "TW", "NB", "MW", "RI" };
 
     public RandomizerAction(string action, object value) {
         Action = action;

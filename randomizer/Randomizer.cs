@@ -26,8 +26,6 @@ public static class Randomizer {
             SyncId = "";
             ForceMaps = false;
             SyncMode = 4;
-            StringKeyPickupTypes = new List<string> { "TP", "SH", "NO", "WT", "MU", "HN", "WP", "RP", "WS", "TW", "NB" };
-
             RandomizerChaosManager.initialize();
             DamageModifier = 1f;
             GridFactor = 4.0;
@@ -1019,6 +1017,12 @@ public static class Randomizer {
             return;
         }
 
+        // before the UI exists a message can only brick the boot; the log keeps it
+        if (MessageQueue == null || MessageProvider == null) {
+            log(text);
+            return;
+        }
+
         if (immediate) {
             MessageProvider.SetMessage(text);
             if (mute) {
@@ -1677,7 +1681,6 @@ public static class Randomizer {
     public static bool Sync;
     public static string SyncId;
     public static int SyncMode;
-    public static List<string> StringKeyPickupTypes;
     public static bool ForceMaps;
     public static bool Entrance;
     public static Hashtable DoorTable;
