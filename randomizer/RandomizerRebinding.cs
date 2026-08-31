@@ -212,6 +212,7 @@ public static class RandomizerRebinding {
         { "List Relics", "LeftAlt+Alpha4, RightAlt+Alpha4" },
         { "Show Stats", "LeftAlt+Alpha5, RightAlt+Alpha5" },
         { "Show Keysanity Progress", "LeftAlt+K, RightAlt+K" },
+        { "Grant Test Pickup", "" },
         { "Bonus 1", "" },
         { "Bonus 2", "" },
         { "Bonus 3", "" },
@@ -246,6 +247,7 @@ public static class RandomizerRebinding {
     public static BindSet ListTeleporters = new BindSet(new List<SingleBind>());
     public static BindSet ShowStats = new BindSet(new List<SingleBind>());
     public static BindSet ShowKeysanityProgress = new BindSet(new List<SingleBind>());
+    public static BindSet GrantTestPickup = new BindSet(new List<SingleBind>());
     public static BindSet Bonus1 = new BindSet(new List<SingleBind>());
     public static BindSet Bonus2 = new BindSet(new List<SingleBind>());
     public static BindSet Bonus3 = new BindSet(new List<SingleBind>());
@@ -277,6 +279,7 @@ public static class RandomizerRebinding {
         { "List Teleporters", ListTeleporters },
         { "Show Stats", ShowStats },
         { "Show Keysanity Progress", ShowKeysanityProgress },
+        { "Grant Test Pickup", GrantTestPickup },
         { "Bonus 1", Bonus1 },
         { "Bonus 2", Bonus2 },
         { "Bonus 3", Bonus3 },

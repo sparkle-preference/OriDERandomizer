@@ -52,6 +52,8 @@ public static class RandomizerMW {
     public static bool ApGrants;
 
     public static void Reset() {
+        // a room that never sends tick field 9 must not inherit the last room's release
+        Released = false;
         Manifest.Clear();
         warnedSlots.Clear();
         PlayerNames.Clear();

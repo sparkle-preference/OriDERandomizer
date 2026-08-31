@@ -8,9 +8,9 @@ using UnityEngine;
 // OUT: two counters on the 1 Hz tick (field `dl=<total>.<linked>`), which the
 // server diffs. A counter rather than an event because it is idempotent under
 // a dropped tick, needs no ack channel, and one second of granularity turns a
-// death storm into one death for the room. Both live in save items 1500-1599,
-// the range RandomizerInventory preserves through death and reload, so they
-// never roll back out from under the server's last-seen value.
+// death storm into one death for the room. Both live in the save-item range
+// RandomizerInventory preserves through death and reload, so they never roll
+// back out from under the server's last-seen value.
 //
 // IN: the `dl:<token>;<source>` tick signal. The kill is queued and applied
 // on a stable frame -- dying inside a cutscene or a load is not a death, it

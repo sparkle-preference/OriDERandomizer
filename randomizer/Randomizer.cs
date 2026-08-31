@@ -552,6 +552,11 @@ public static class Randomizer {
         }
 
         if (Characters.Sein) {
+            if (RandomizerRebinding.GrantTestPickup.IsPressed()) {
+                RandomizerAutoplayer.GrantTestPickup();
+                return;
+            }
+
             if (RandomizerRebinding.ShowStats.IsPressed()) {
                 RandomizerStatsManager.ShowStats(10);
                 if (BingoController.Active) {

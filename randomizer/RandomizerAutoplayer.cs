@@ -10,8 +10,10 @@ public static class RandomizerAutoplayer {
 
     public const int DropFileId = 1109;
 
-    // relative, so it lands beside randomizer.dat in the rando directory
+    // relative, so they land beside randomizer.dat in the rando directory
     public const string DropFile = "pickup.tmp";
+
+    public const string TestPickupFile = "test_pickup.txt";
 
     private static readonly Random rng = new Random();
 
@@ -58,6 +60,43 @@ public static class RandomizerAutoplayer {
         var pick = open[rng.Next(open.Count)];
         Randomizer.log($"Autoplayer: {pick.Name} ({pick.Zone}) holds {pick.Pickup}, {open.Count} reachable");
         pick.Give();
+    }
+
+    // The Grant Test Pickup bind: gives whatever pickup test_pickup.txt holds,
+    // off the books like a Drop. The file stays put; a keypress cannot loop.
+    public static void GrantTestPickup() {
+        if (!File.Exists(TestPickupFile)) {
+            return;
+        }
+
+        string content;
+        try {
+            content = File.ReadAllText(TestPickupFile).Replace("\r\n", "\n").Trim();
+        } catch (Exception e) {
+            Randomizer.LogError("Autoplayer.GrantTestPickup read: " + e.Message);
+            return;
+        }
+
+        var bar = content.IndexOf('|');
+        if (bar < 1) {
+            return;
+        }
+
+        try {
+            var action = new RandomizerAction(content.Substring(0, bar), content.Substring(bar + 1));
+            Randomizer.log($"Autoplayer: test pickup {action}");
+
+            RandomizerSwitch.FromFile = true;
+            try {
+                RandomizerSwitch.GivePickup(action, 0, false);
+            } finally {
+                RandomizerSwitch.FromFile = false;
+            }
+
+            RandomizerLocationManager.UpdateReachable();
+        } catch (Exception e) {
+            Randomizer.LogError($"Autoplayer.GrantTestPickup({content}): {e.Message}");
+        }
     }
 
     private static void Drop() {

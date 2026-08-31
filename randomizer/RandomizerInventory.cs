@@ -47,9 +47,18 @@ public class RandomizerInventory : SaveSerialize {
         return code >= 4000 && code < 10000;
     }
 
+    // Which slot the in-memory preserved values belong to, stored as slot+1 so an absent
+    // stamp claims nothing. Sits just past the preserved range so it cannot vouch for itself.
+    private const int SlotStamp = 10000;
+
     public override void Serialize(Archive ar) {
         if (ar.Reading) {
-            var preserve = randomizerItems.Where(item => KeptOnDeath(item.Key)).ToList();
+            // preserved values follow their save slot: on any other slot's load they are
+            // another game's memory, and what the file says stands
+            var slot = SaveSlotsManager.CurrentSlotIndex + 1;
+            var preserve = GetRandomizerItem(SlotStamp) == slot
+                ? randomizerItems.Where(item => KeptOnDeath(item.Key)).ToList()
+                : new List<KeyValuePair<int, int>>();
 
             randomizerItems.Clear();
             var count = ar.Serialize(0);
@@ -60,7 +69,10 @@ public class RandomizerInventory : SaveSerialize {
             foreach (var kvp in preserve) {
                 randomizerItems[kvp.Key] = kvp.Value;
             }
+
+            randomizerItems[SlotStamp] = slot;
         } else {
+            randomizerItems[SlotStamp] = SaveSlotsManager.CurrentSlotIndex + 1;
             ar.Serialize(randomizerItems.Count);
             foreach (var kvp in randomizerItems) {
                 ar.Serialize(kvp.Key);

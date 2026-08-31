@@ -415,16 +415,25 @@ public static class RandomizerStatsManager {
     // A line for one milestone: what it was, when, and where. Key items and goal-mode
     // milestones are the same shape, so they share this. One tab per column: the
     // tab stops are the columns, so label width never moves the rest of the row.
+    // Labels are padded to 20 chars so every one spans exactly two stops at tab
+    // size 2.1 (glyphs run ~0.22 units, spaces ~0.11, so the padded widths land
+    // between one and two stops for the whole label set).
     private static string Stamped(string label, int id, out int time) {
+        var l = label + ":";
+        while (l.Length < 20) {
+            l += " ";
+        }
+
+        l += "\t";
         var raw = get(id);
         time = -1;
         if (raw <= 0) {
-            return label + ":\tN/A\tUnknown";
+            return l + "N/A\tUnknown";
         }
 
         time = raw % (1 << 18);
         var zoneName = ZonePrettyNames[Offsets.First(x => x.Value == raw >> 18).Key].Trim();
-        return label + ":\t" + FormatTime(time) + "\t" + zoneName;
+        return l + FormatTime(time) + "\t" + zoneName;
     }
 
     private static void Collect(SortedDictionary<int, List<string>> into, string label, int id) {
@@ -462,89 +471,107 @@ public static class RandomizerStatsManager {
             return header + "\n" + string.Join("\n", rows.ToArray());
         }
 
-        if (rows.Count + unfound.Count + 1 <= MaxShrunkRows) {
-            rows.AddRange(unfound);
-        } else if (rows.Count == 0) {
+        // found rows always stay; unfound rows fill what is left of a screenful,
+        // culled from the front of the display order as finds push in
+        var excess = rows.Count + unfound.Count - ScreenRows;
+        if (excess > 0) {
+            unfound.RemoveRange(0, Math.Min(excess, unfound.Count));
+        }
+
+        rows.AddRange(unfound);
+        if (rows.Count == 0) {
             rows.Add(emptyLine);
         }
 
         var total = rows.Count + 1;
-        var scale = total <= ScreenRows ? 1f
-            : Math.Max(0.6f, (float)ScreenRows / total);
+        // the leading rides tighter than the font (0.8 at rest, 16/total past a
+        // screenful), and the font only follows two rows later at full shrink
+        var lineScale = Math.Min(0.8f, Math.Max(0.6f, (float)ScreenRows / total));
+        var fontScale = Math.Min(1f, Math.Max(0.6f, (ScreenRows + 2f) / total));
         var inv = System.Globalization.CultureInfo.InvariantCulture;
-        // the tab stops shrink with the font, or a small table floats in a wide box
-        var prefix = "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_17.5_"
-            + (7f * scale).ToString("0.##", inv) + "_";
-        if (scale < 1f) {
-            prefix += "<style fontscale=" + scale.ToString("0.##", inv)
-                + " linescale=" + scale.ToString("0.##", inv) + ">";
+        // stops anchor at the box origin, so the left padding is exactly one stop
+        // and everything (padding, width, stops) shrinks with the font together
+        var prefix = "ALIGNLEFTANCHORTOPPADDING_0_" + (2.1f * fontScale).ToString("0.##", inv)
+            + "_0_0_PARAMS_16_" + (10.3f * fontScale + 0.5f).ToString("0.##", inv) + "_"
+            + (2.1f * fontScale).ToString("0.##", inv) + "_";
+        if (lineScale < 1f) {
+            prefix += "<style fontscale=" + fontScale.ToString("0.##", inv)
+                + " linescale=" + lineScale.ToString("0.##", inv) + ">";
         }
 
         return prefix + header + "\n" + string.Join("\n", rows.ToArray());
     }
 
-    // One goal row: found shows when and where; unfound shows the place it is
-    // waiting, since every row on this page is something the run must collect.
-    private static string GoalRow(string label, int id, string nativeZone) {
-        int time;
-        var line = Stamped(label, id, out time);
-        return time >= 0 ? line : label + ":\t---\t" + nativeZone;
+    // One goal cell: the goal and when it landed, or --- while it waits.
+    private static string GoalCell(string label, int id) {
+        var raw = get(id);
+        return label + ":\t" + (raw > 0 ? FormatTime(raw % (1 << 18)) : "---");
     }
 
-    // The goals page: a checklist in world order, sectioned by goal mode. Past a
-    // screenful it lays the checklist out in two columns rather than shrinking.
+    // The goals page: one [name, found at] column pair per active goal mode,
+    // side by side. Every group is a screenful or less, so nothing shrinks.
     private static string GoalScreenTable() {
-        var rows = new List<string>();
+        var groups = new List<List<string>>();
         if (Randomizer.ForceTrees) {
-            rows.Add("Trees");
+            var g = new List<string> { "Tree\tFound At" };
             foreach (var tree in RandomizerTrackedDataManager.Trees) {
-                rows.Add(GoalRow(tree.Value, TreeTime + tree.Key, TreeZones[tree.Key]));
+                g.Add(GoalCell(tree.Value, TreeTime + tree.Key));
             }
+
+            groups.Add(g);
         }
 
         if (Randomizer.WorldTour) {
-            rows.Add("Relics");
-            var relicRows = 0;
+            var g = new List<string> { "Relic\tFound At" };
             foreach (var relic in RandomizerTrackedDataManager.RelicFound) {
                 // a light seed holds relics in only some zones; the rest are not goals
                 if (!Randomizer.RelicZoneLookup.ContainsValue(relic.Key) && get(RelicTime + relic.Value) == 0) {
                     continue;
                 }
 
-                rows.Add(GoalRow(relic.Key, RelicTime + relic.Value, relic.Key));
-                relicRows++;
+                g.Add(GoalCell(relic.Key, RelicTime + relic.Value));
             }
 
             // a WorldTour seed can hold no relics at all; a bare header would just confuse
-            if (relicRows == 0) {
-                rows.RemoveAt(rows.Count - 1);
+            if (g.Count > 1) {
+                groups.Add(g);
             }
         }
 
         if (Randomizer.ForceMaps) {
-            rows.Add("Maps");
+            var g = new List<string> { "Map\tFound At" };
             foreach (var pedestal in RandomizerTrackedDataManager.MapBitsByArea) {
-                var zone = ZonePrettyNames[pedestal.Key].Trim();
-                rows.Add(GoalRow(zone, MapstoneTime + pedestal.Value, zone));
+                g.Add(GoalCell(ZonePrettyNames[pedestal.Key].Trim(), MapstoneTime + pedestal.Value));
             }
+
+            groups.Add(g);
         }
 
-        if (rows.Count + 1 <= ScreenRows) {
-            return "ALIGNLEFTANCHORTOPPADDING_0_2_0_0_PARAMS_16_17.5_5.5_Goal\tFound At\tZone\n"
-                + string.Join("\n", rows.ToArray());
+        var height = 0;
+        foreach (var g in groups) {
+            height = Math.Max(height, g.Count);
         }
 
-        var half = (rows.Count + 1) / 2;
         var lines = new List<string>();
-        for (var i = 0; i < half; i++) {
-            var left = rows[i];
-            // a plain section label spans no columns, so pad it out to the right half
-            var pad = left.Contains("\t") ? "\t" : "\t\t\t";
-            lines.Add(half + i < rows.Count ? left + pad + rows[half + i] : left);
+        for (var i = 0; i < height; i++) {
+            var line = "";
+            for (var gi = 0; gi < groups.Count; gi++) {
+                // an exhausted group still advances its two stops for the next one
+                line += i < groups[gi].Count ? groups[gi][i] : "\t";
+                if (gi < groups.Count - 1) {
+                    line += "\t";
+                }
+            }
+
+            lines.Add(line);
         }
 
-        return "ALIGNLEFTANCHORTOPPADDING_0_2.5_0_0_PARAMS_16_33_5.5_Goal\tFound At\tZone\tGoal\tFound At\tZone\n"
-            + string.Join("\n", lines.ToArray());
+        // stops anchor at the box origin: left padding is one stop, and a group is
+        // a name stop plus a time stop, so the pitch is two stops of 3
+        var width = groups.Count * 6f + 3f;
+        return "ALIGNLEFTANCHORTOPPADDING_0_3_0_0_PARAMS_16_"
+            + width.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)
+            + "_3_" + string.Join("\n", lines.ToArray());
     }
 
     public static string GetStatsPage(int page, bool forFile) {
@@ -651,10 +678,17 @@ public static class RandomizerStatsManager {
                         continue;
                     }
 
-                    Collect(linesByTime, RandomizerMapWarp.ShortName(id) + " TP", TeleporterTime + i);
+                    // on screen a teleporter earns its row by being found
+                    if (!forFile && get(TeleporterTime + i) <= 0) {
+                        continue;
+                    }
+
+                    // the well by the Spirit Tree is the Grove teleporter to a player
+                    var tpName = id == "spiritTree" ? "Grove" : RandomizerMapWarp.ShortName(id);
+                    Collect(linesByTime, tpName + " TP", TeleporterTime + i);
                 }
 
-                statsPage = MilestoneTable("Item\tFound At\tZone", linesByTime, forFile,
+                statsPage = MilestoneTable("Item                \tFound At\tZone", linesByTime, forFile,
                     "Nothing yet! Key items and teleporters land here as you find them.");
                 break;
             case 3:
@@ -1083,15 +1117,7 @@ public static class RandomizerStatsManager {
     public const int ScreenRows = 16;
 
     // the shrink floor: past this many rows the unfound go unlisted instead
-    public const int MaxShrunkRows = 26;
 
-    // where each tree stands, per RandomizerLocationData; keys follow
-    // RandomizerTrackedDataManager.Trees
-    public static Dictionary<int, string> TreeZones = new Dictionary<int, string> {
-        { 0, "Glades" }, { 1, "Glades" }, { 2, "Grove" }, { 3, "Grotto" },
-        { 4, "Ginso" }, { 5, "Swamp" }, { 6, "Valley" }, { 7, "Misty" },
-        { 8, "Sorrow" }, { 9, "Blackroot" }, { 10, "Blackroot" },
-    };
 
     // Bingo has its own board and goal mode none has nothing to say, so neither gets a page.
     public static bool HasGoalPage {
