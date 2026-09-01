@@ -239,7 +239,9 @@ public class AreaMapNavigation : MonoBehaviour {
 
     public void HandleRandomizerTooltip() {
         try {
-            Vector2 cursorPositionWorld = MapToWorldPosition(Input.CursorPositionUI);
+            // on a pad the pointer is the scroll centre, same as the well hover
+            Vector2 cursorPositionWorld = RandomizerMapWarp.Pointing()
+                ? MapToWorldPosition(Input.CursorPositionUI) : ScrollPosition;
             RuntimeWorldMapIcon candidate = null;
             string candidateArea = null;
             var candidateDistance = Mathf.Infinity;
@@ -326,9 +328,16 @@ public class AreaMapNavigation : MonoBehaviour {
 
             AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(true);
         } catch (Exception e) {
-            Randomizer.log("HandleRandomizerTooltip: " + e);
+            // once and decomposed, so a per-frame throw cannot flood the log or hide its type
+            if (!TooltipComplained) {
+                TooltipComplained = true;
+                Randomizer.log("HandleRandomizerTooltip: " + e.GetType().FullName + ": "
+                    + e.Message + "\n" + e.StackTrace);
+            }
         }
     }
+
+    private static bool TooltipComplained;
 
     public Transform MapPivot;
 

@@ -12,6 +12,8 @@ public static class RandomizerMapWarp {
     // reach, because a well takes the hover from every pickup sitting under it.
     private const float Reach = 6f;
 
+    private const float PadReach = 25f;
+
     // Ring radius in map units: the icons are children of MapPivot, so sizing from its scale is
     // what keeps the ring proportional to them at every zoom.
     private const float RingSpan = 7.04f;
@@ -64,8 +66,8 @@ public static class RandomizerMapWarp {
 
     private static bool Inner(AreaMapUI map, AreaMapNavigation navigation, Vector2 cursor,
             Vector3 textScale, float offset) {
-        List(map, navigation, textScale, offset);
         var found = Nearest(Pointing() ? cursor : navigation.ScrollPosition);
+        List(map, navigation, textScale, offset, found);
         if (found == null) {
             Clear();
             return false;
@@ -127,7 +129,7 @@ public static class RandomizerMapWarp {
     }
 
     private static void List(AreaMapUI map, AreaMapNavigation navigation, Vector3 textScale,
-            float offset) {
+            float offset, GameMapTeleporter hovered) {
         if (!Listing) {
             Blank(0);
             return;
@@ -137,7 +139,8 @@ public static class RandomizerMapWarp {
         var controller = TeleporterController.Instance;
         if (controller != null && controller.Teleporters != null) {
             foreach (var well in controller.Teleporters) {
-                if (well == null) {
+                // the hovered well already wears Say's label
+                if (well == null || well == hovered) {
                     continue;
                 }
 
@@ -218,7 +221,7 @@ public static class RandomizerMapWarp {
 
     // A pad has no cursor to point with, so what it is pointing at is whatever the map is
     // centred on. The scheme is the game's own answer to this, and the one Bash aiming uses.
-    private static bool Pointing() {
+    public static bool Pointing() {
         return GameSettings.Instance == null ||
             GameSettings.Instance.CurrentControlScheme == ControlScheme.KeyboardAndMouse;
     }
@@ -236,7 +239,8 @@ public static class RandomizerMapWarp {
             return null;
         }
 
-        var nearest = Reach;
+        // the scroll centre is a blunter pointer than a mouse, so it reaches further
+        var nearest = Pointing() ? Reach : PadReach;
         GameMapTeleporter found = null;
         foreach (var well in controller.Teleporters) {
             if (well == null) {
@@ -283,7 +287,7 @@ public static class RandomizerMapWarp {
         { "mangroveFalls", "Blackroot" },
         { "mangroveB", "Lost Grove" },
         { "horuFields", "Horu Fields" },
-        { "spiritTree", "Spirit Tree" },
+        { "spiritTree", "Grove" },
         { "grove", "Grove" },
         { "grotto", "Grotto" },
         { "ginso", "Ginso" },
