@@ -56,6 +56,17 @@ public static class RandomizerBonus {
         }
 
         switch (ID) {
+            // A pickup that kills you: practice death boxes are made of these. Straight to
+            // OnKill, because damage can be refused or scaled to nothing and a death box
+            // that sometimes does not kill is worse than no death box.
+            case 3:
+                if (Characters.Sein != null && Characters.Sein.Mortality != null) {
+                    Characters.Sein.Mortality.DamageReciever.OnKill(
+                        new Damage(9000f, Vector2.zero, Characters.Sein.Position,
+                            DamageType.Lava, Characters.Sein.GameObject));
+                }
+
+                return;
             case 0:
                 if (!flag) {
                     Characters.Sein.Mortality.Health.SetAmount(Characters.Sein.Mortality.Health.MaxHealth + 20);

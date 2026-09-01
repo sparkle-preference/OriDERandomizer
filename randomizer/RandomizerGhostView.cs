@@ -66,7 +66,7 @@ public class RandomizerGhostView {
             // one line a ghost, so a QA pass can tell "the effect is broken" from "it never fired"
             Randomizer.log("ghost " + Label + ": used " + Used.Aura + " auras, " + Used.Arrow +
                 " arrows, " + Used.Aim + " aim lines, " + Used.WallArrow + " wall arrows, " +
-                Used.Burst + " bursts");
+                Used.Burst + " bursts, " + Used.Link + " links");
         }
 
         Used = new Counts();
@@ -75,6 +75,7 @@ public class RandomizerGhostView {
         Drop(ref ArrowObject);
         Drop(ref AimObject);
         Drop(ref WallObject);
+        Drop(ref LinkObject);
         GhostTransform = null;
         GhostAnimator = null;
         ArrowPivot = null;
@@ -180,6 +181,7 @@ public class RandomizerGhostView {
         Arrow(from.BashAngle, from.BashTarget);
         AimLine(from.GrenadeAim);
         WallArrow(from.WallAim);
+        SoulLink(from.SoulLink);
     }
 
     private static Vector3 VelocityAt(List<Sample> samples, int index) {
@@ -406,6 +408,44 @@ public class RandomizerGhostView {
         WallObject.transform.eulerAngles = new Vector3(0f, 0f, angle);
     }
 
+    // Their link stands where they put it, so a death reads as a return to it. The marker is the
+    // game's own prefab: its animators run, its gameplay component goes.
+    private void SoulLink(Vector2 at) {
+        if (float.IsNaN(at.x)) {
+            Drop(ref LinkObject);
+            return;
+        }
+
+        var where = new Vector3(at.x, at.y, 0f);
+        if (LinkObject == null) {
+            var flame = RandomizerGhost.Flamer();
+            if (flame == null || flame.CheckpointMarker == null) {
+                return;
+            }
+
+            Used.Link++;
+            LinkObject = (GameObject)Object.Instantiate(flame.CheckpointMarker, where, Quaternion.identity);
+            LinkObject.name = "ghostSoulLink";
+            foreach (var marker in LinkObject.GetComponentsInChildren<SoulFlame>(true)) {
+                Object.Destroy(marker);
+            }
+
+            foreach (var animator in LinkObject.GetComponentsInChildren<BaseAnimator>(true)) {
+                if (animator.GetType().Name.StartsWith("UberPost")) {
+                    Object.DestroyImmediate(animator);
+                } else if (animator.AnimatorDriver != null) {
+                    animator.AnimatorDriver.RestartForward();
+                }
+            }
+
+            RandomizerGhost.Quiet(LinkObject);
+            RandomizerGhost.Recolour(LinkObject);
+            RandomizerGhost.Dim(LinkObject, RandomizerGhost.LinkAlpha);
+        }
+
+        LinkObject.transform.position = where;
+    }
+
     // Called only where a clip begins, so it does not need to guard against repeats.
     private void Effects(Sample sample, Vector3 velocity) {
         if (GhostTransform == null) {
@@ -528,6 +568,7 @@ public class RandomizerGhostView {
         public int Aim;
         public int Burst;
         public int WallArrow;
+        public int Link;
     }
 
     private Counts Used;
@@ -569,4 +610,6 @@ public class RandomizerGhostView {
     private bool Warned;
 
     private GameObject WallObject;
+
+    private GameObject LinkObject;
 }

@@ -440,7 +440,8 @@ public static class RandomizerSwitch {
             RandomizerStatsManager.PickupZone = outerZone;
         }
 
-        if (found_locally && Randomizer.Sync) {
+        // a location the seed never filled in arrives here null, past the catch above
+        if (found_locally && Randomizer.Sync && action != null) {
             // the wire hears NO|1 for an RI: servers must not learn invented slot ids
             var wire = action.Action == "RI" ? new RandomizerAction("NO", "1") : action;
             RandomizerSyncManager.FoundPickup(wire, coords);

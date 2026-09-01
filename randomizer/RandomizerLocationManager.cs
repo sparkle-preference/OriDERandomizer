@@ -581,6 +581,15 @@ public class RandomizerLocationManager {
                 return;
             }
 
+            // A practice segment places its own pickups and counts them itself. Nothing
+            // below this line belongs to a practice run: not bingo, not normal stats, not
+            // the logic thread, and an unplaced location is empty rather than an error.
+            if (PracticeController.Active) {
+                PracticeController.GiveAt(Key);
+                Randomizer.OnCoord(Key);
+                return;
+            }
+
             switch (Type) {
                 case LocationType.Map:
                     RandomizerTrackedDataManager.SetMapstone(SpecialIndex);

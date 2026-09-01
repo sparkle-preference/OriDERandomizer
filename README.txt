@@ -24,6 +24,7 @@ Alt+C:              Toggle color shifting
 Alt+K:              Toggle Chaos Mode
 Alt+V:              Within Chaos Mode, toggle messages
 Alt+F:              Within Chaos Mode, force an effect to spawn
+Alt+S:              Save the current game as a practice segment (see Practice Mode.txt)
 Grenade:            Double bash
 
 The double bash bind exists to create parity between playing randomizer on controller and keyboard+mouse. If any of the binds specified are held when a bash ends, a double bash will automatically occur. To also make any of the binds specified end a bash on their own, add "Tap" as a bind for the double bash function.

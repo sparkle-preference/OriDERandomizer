@@ -256,6 +256,7 @@ public static class Randomizer {
     }
 
     public static void OnApplicationQuit() {
+        FlushLog();
         UnityDragAndDropHook.UninstallHook();
     }
 
@@ -436,11 +437,35 @@ public static class Randomizer {
         }
     }
 
+    // Lines are buffered and written once a second rather than one file open,
+    // write, flush and close per line. The logic thread logs too, hence the lock.
+    private static readonly List<string> pendingLog = new List<string>();
+
+    private static readonly object logGate = new object();
+
     public static void log(string message) {
-        var streamWriter = File.AppendText("randomizer.log");
-        streamWriter.WriteLine(DateTime.Now + ": " + message);
-        streamWriter.Flush();
-        streamWriter.Dispose();
+        lock (logGate) {
+            pendingLog.Add(DateTime.Now + ": " + message);
+        }
+    }
+
+    public static void FlushLog() {
+        string[] lines;
+        lock (logGate) {
+            if (pendingLog.Count == 0) {
+                return;
+            }
+
+            lines = pendingLog.ToArray();
+            pendingLog.Clear();
+        }
+
+        try {
+            File.AppendAllText("randomizer.log",
+                string.Join(Environment.NewLine, lines) + Environment.NewLine);
+        } catch (Exception) {
+            // a log line is never worth taking the game down for
+        }
     }
 
     public static bool WindRestored() {
@@ -454,6 +479,9 @@ public static class Randomizer {
     }
 
     public static void Update() {
+        PracticeController.Tick();
+        PracticeSelect.Tick();
+        PracticeServer.Tick();
         RandomizerGhost.Update();
         UpdateMessages();
         UpdatePendingWin();
@@ -554,6 +582,27 @@ public static class Randomizer {
         if (Characters.Sein) {
             if (RandomizerRebinding.GrantTestPickup.IsPressed()) {
                 RandomizerAutoplayer.GrantTestPickup();
+                return;
+            }
+
+            // the bench entry point until the practice file select exists
+            if (RandomizerRebinding.StartPracticeDebug.IsPressed()) {
+                PracticeController.BeginDebug();
+                return;
+            }
+
+            if (RandomizerRebinding.OpenPracticeMenu.IsPressed()) {
+                PracticeMenu.Open();
+                return;
+            }
+
+            if (RandomizerRebinding.CreatePracticeSegment.IsPressed()) {
+                PracticeEditor.Create();
+                return;
+            }
+
+            if (RandomizerRebinding.OpenPracticeEditorPage.IsPressed()) {
+                PracticeServer.Open();
                 return;
             }
 
@@ -1050,6 +1099,7 @@ public static class Randomizer {
 
     public static void LogError(string errorText) {
         log(errorText);
+        FlushLog();
         PrintImmediately(errorText, 15, false, false, true);
     }
 
@@ -1091,6 +1141,7 @@ public static class Randomizer {
                 }
 
                 RandomizerStatsManager.IncTime();
+                FlushLog();
                 if (Scenes.Manager.CurrentScene != null) {
                     var scene = Scenes.Manager.CurrentScene.Scene;
                     if (scene == "thornfeltSwampActTwoStart" && NeedGinsoEscapeCleanup) {
@@ -1140,6 +1191,11 @@ public static class Randomizer {
 
                         // grant only where a player could: not suspended, not mid-scene-load
                         RandomizerAutoplayer.Tick();
+                        // a warp it just dropped has unloaded the scene the checks below read
+                        if (Scenes.Manager.CurrentScene == null) {
+                            return;
+                        }
+
                         if (Characters.Sein.Position.y > 935f && Inventory.FinishedGinsoEscape && Scenes.Manager.CurrentScene.Scene == "ginsoTreeWaterRisingEnd") {
                             if (SafeIsBashing) {
                                 Characters.Sein.Abilities.Bash.BashGameComplete(0f);
@@ -1179,7 +1235,8 @@ public static class Randomizer {
                         }
                     }
 
-                    if (RandomizerSyncManager.NetworkFree) {
+                    // the controller is gone for a moment around a warp
+                    if (RandomizerSyncManager.NetworkFree && TeleporterController.Instance != null) {
                         foreach (var gameMapTP in TeleporterController.Instance.Teleporters) {
                             if (gameMapTP.Activated) {
                                 continue;
@@ -1213,6 +1270,7 @@ public static class Randomizer {
             }
         } catch (Exception e2) {
             LogError("Tick: " + e2.Message);
+            log("Tick: " + e2);
         }
     }
 

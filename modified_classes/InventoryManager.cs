@@ -6,6 +6,7 @@ using UnityEngine;
 
 public class InventoryManager : MenuScreen {
     public override void Show() {
+        PracticeMenu.OnPauseShown(this);
         NavigationManager.SetVisible(true);
         NavigationManager.SetIndexToFirst();
     }
@@ -15,6 +16,7 @@ public class InventoryManager : MenuScreen {
     }
 
     public override void ShowImmediate() {
+        PracticeMenu.OnPauseShown(this);
         NavigationManager.SetVisibleImmediate(true);
         NavigationManager.SetIndexToFirst();
     }

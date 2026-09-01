@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 using Sample = RandomizerGhost.Sample;
@@ -5,20 +7,21 @@ using Sample = RandomizerGhost.Sample;
 // The motion packet, versioned from the first byte. Little-endian, written by hand rather than
 // with BitConverter so the layout is the same wherever it runs.
 //
-//   u8   version        u16  clipId        optional, per flags:
-//   u8   playerId       u8   clipTime        u8  bashAngle
-//   u16  seq            u8   flags           f32 bashTargetX, bashTargetY
-//   f32  t              u8   roll            f32 aimX, aimY
-//   f32  x, y                                u8  wallAngle
+//   u8   version        u16  clipId        u8   flags2      optional, per flags:
+//   u8   playerId       u8   clipTime                         u8  bashAngle
+//   u16  seq            u8   flags                            f32 bashTargetX, bashTargetY
+//   f32  t              u8   roll                             f32 aimX, aimY
+//   f32  x, y                                                 u8  wallAngle
+//                                                             f32 soulX, soulY   (flags2)
 //
-// 21 bytes for ordinary movement, 39 with every optional field present. Position stays float32:
+// 22 bytes for ordinary movement, 48 with every optional field present. Position stays float32:
 // the world spans roughly 9,700 x 12,700 units, so a naive fixed-point i16 does not fit at a
 // useful precision, and a scene-relative origin is a real design with real bugs in it for about
 // four bytes. Take it later, behind the version byte, with a profile that says it mattered.
 public static class RandomizerGhostPacket {
     public const byte Version = 1;
 
-    public const int MaxSize = 39;
+    public const int MaxSize = 48;
 
     private const int FaceLeft = 1 << 0;
     private const int Charging = 1 << 1;
@@ -28,6 +31,8 @@ public static class RandomizerGhostPacket {
     private const int WallAiming = 1 << 5;
     private const int Triple = 1 << 6;
     private const int Dead = 1 << 7;
+
+    private const int SoulLinked = 1 << 0;
 
     // Ori's sprite mirrors by turning 180 degrees about Y rather than by a negative scale --
     // Transform.lossyScale cannot report a mirror, which is why the recording never shows one.
@@ -45,6 +50,9 @@ public static class RandomizerGhostPacket {
         if (sample.Triple) { flags |= Triple; }
         if (sample.Died) { flags |= Dead; }
 
+        var flags2 = 0;
+        if (!float.IsNaN(sample.SoulLink.x)) { flags2 |= SoulLinked; }
+
         var at = 0;
         into[at++] = Version;
         into[at++] = playerId;
@@ -56,6 +64,7 @@ public static class RandomizerGhostPacket {
         into[at++] = Fraction(sample.AnimationTime, RandomizerGhost.Duration(sample.Animation));
         into[at++] = (byte)flags;
         into[at++] = Degrees(Roll(sample.Rotation, faceLeft));
+        into[at++] = (byte)flags2;
 
         if ((flags & Bashing) != 0) {
             into[at++] = Degrees(sample.BashAngle);
@@ -75,6 +84,11 @@ public static class RandomizerGhostPacket {
             into[at++] = Degrees(sample.WallAim);
         }
 
+        if ((flags2 & SoulLinked) != 0) {
+            at = F32(into, at, sample.SoulLink.x);
+            at = F32(into, at, sample.SoulLink.y);
+        }
+
         return at;
     }
 
@@ -84,7 +98,7 @@ public static class RandomizerGhostPacket {
         sample = new Sample();
         playerId = 0;
         seq = 0;
-        if (length < 21 || from[0] != Version) {
+        if (length < 22 || from[0] != Version) {
             return false;
         }
 
@@ -101,6 +115,7 @@ public static class RandomizerGhostPacket {
         var clipTime = from[at++];
         var flags = from[at++];
         var roll = from[at++] * 360f / 256f;
+        var flags2 = from[at++];
 
         sample.Animation = RandomizerGhostAnimations.NameOf(clip) ?? "";
         sample.AnimationTime = clipTime / 255f * RandomizerGhost.Duration(sample.Animation);
@@ -129,7 +144,65 @@ public static class RandomizerGhostPacket {
         }
 
         sample.WallAim = (flags & WallAiming) != 0 && at < length ? from[at++] * 360f / 256f : float.NaN;
+
+        sample.SoulLink = new Vector2(float.NaN, float.NaN);
+        if ((flags2 & SoulLinked) != 0 && at + 8 <= length) {
+            var sx = Float(from, ref at);
+            var sy = Float(from, ref at);
+            sample.SoulLink = new Vector2(sx, sy);
+        }
+
         return true;
+    }
+
+    // A .ghost file: u8 version, u32 sample count, f32 seconds, then every packet behind a u8
+    // length. The packets are the wire format, so a file ghost costs the same precision.
+    public const byte FileVersion = 1;
+
+    public static byte[] Pack(List<Sample> samples) {
+        var buffer = new byte[MaxSize];
+        var head = new byte[9];
+        head[0] = FileVersion;
+        U32(head, 1, (uint)samples.Count);
+        F32(head, 5, RandomizerGhost.Length(samples));
+        using (var stream = new MemoryStream()) {
+            stream.Write(head, 0, head.Length);
+            for (var i = 0; i < samples.Count; i++) {
+                var length = Encode(buffer, samples[i], 0, (ushort)i);
+                stream.WriteByte((byte)length);
+                stream.Write(buffer, 0, length);
+            }
+
+            return stream.ToArray();
+        }
+    }
+
+    // Empty for anything unreadable; a truncated file keeps the samples before the cut.
+    public static List<Sample> Unpack(byte[] data) {
+        var samples = new List<Sample>();
+        if (data == null || data.Length < 9 || data[0] != FileVersion) {
+            return samples;
+        }
+
+        var packet = new byte[MaxSize];
+        var at = 9;
+        while (at < data.Length) {
+            int length = data[at++];
+            if (length == 0 || length > MaxSize || at + length > data.Length) {
+                break;
+            }
+
+            System.Array.Copy(data, at, packet, 0, length);
+            at += length;
+            Sample sample;
+            byte who;
+            ushort seq;
+            if (Decode(packet, length, out sample, out who, out seq)) {
+                samples.Add(sample);
+            }
+        }
+
+        return samples;
     }
 
     // The mirror is a rotation, so it has to come back out before the roll underneath it means
@@ -151,6 +224,14 @@ public static class RandomizerGhostPacket {
         into[at] = (byte)(value & 0xFF);
         into[at + 1] = (byte)(value >> 8);
         return at + 2;
+    }
+
+    private static int U32(byte[] into, int at, uint value) {
+        into[at] = (byte)(value & 0xFF);
+        into[at + 1] = (byte)((value >> 8) & 0xFF);
+        into[at + 2] = (byte)((value >> 16) & 0xFF);
+        into[at + 3] = (byte)((value >> 24) & 0xFF);
+        return at + 4;
     }
 
     private static int F32(byte[] into, int at, float value) {

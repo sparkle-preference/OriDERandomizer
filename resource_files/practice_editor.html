@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Practice segment editor</title>
+<link rel="stylesheet" href="/leaflet.css">
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; background: #14181d; color: #e6e9ee; margin: 0; padding: 20px 24px 70px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 24px 0 8px; color: #9fc6ff; text-transform: uppercase; letter-spacing: .08em; }
+  .muted { color: #8b95a3; }
+  section { background: #1c2229; border: 1px solid #2b333d; border-radius: 6px; padding: 12px 16px; margin-bottom: 14px; }
+  .row { margin: 6px 0; }
+  label { display: inline-block; margin: 4px 14px 4px 0; }
+  input[type=text], input[type=number], select { background: #0f1317; color: #e6e9ee; border: 1px solid #3a4553; border-radius: 4px; padding: 4px 6px; }
+  input[type=number] { width: 66px; }
+  td .pick { min-width: 240px; }
+  input[type=color] { vertical-align: middle; }
+  button { background: #2f6fd6; color: #fff; border: 0; border-radius: 4px; padding: 6px 12px; cursor: pointer; margin-right: 6px; }
+  button.quiet { background: #3a4553; }
+  button.danger { background: #8b2f2f; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #2b333d; vertical-align: top; }
+  th { color: #8b95a3; font-weight: normal; }
+  tr.flash td { background: #2f4f7a; transition: background 1.5s; }
+  .chips span { display: inline-block; background: #2b333d; border-radius: 12px; padding: 2px 10px; margin: 2px 4px 2px 0; }
+  .chips span b { cursor: pointer; margin-left: 6px; color: #ff9a9a; }
+  .mapgrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 14px; }
+  #map { height: 460px; background: #121212; border: 1px solid #2b333d; border-radius: 4px; }
+  .leaflet-container { font: inherit; }
+  .leaflet-tooltip { background: #0f1317; color: #e6e9ee; border: 1px solid #3a4553; }
+  #status { position: fixed; bottom: 0; left: 0; right: 0; background: #0f1317; padding: 10px 24px; border-top: 1px solid #2b333d; }
+  .ok { color: #8fe3a0; } .bad { color: #ff9a9a; }
+  .variant, .group { border: 1px dashed #3a4553; border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
+  details summary { cursor: pointer; color: #9fc6ff; }
+  /* the pickup picker: chips and a typed search over the site's item groups */
+  .pick { position: relative; display: inline-block; vertical-align: middle; min-width: 340px; max-width: 100%; background: #0f1317; border: 1px solid #3a4553; border-radius: 4px; padding: 2px 4px; }
+  .pick .chip { display: inline-block; background: #2b333d; border-radius: 12px; padding: 1px 8px; margin: 2px 4px 2px 0; cursor: pointer; }
+  .pick .chip b { margin-left: 6px; color: #ff9a9a; }
+  .pick input { border: 0; background: transparent; color: inherit; min-width: 180px; padding: 3px 4px; outline: none; }
+  .pick .menu { display: none; position: absolute; z-index: 1000; left: 0; right: 0; top: 100%; max-height: 280px; overflow: auto; background: #1c2229; border: 1px solid #3a4553; border-radius: 4px; }
+  .pick .menu.open { display: block; }
+  .pick .grp { color: #8b95a3; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 5px 8px 2px; }
+  .pick .opt { padding: 3px 12px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pick .opt.hi, .pick .opt:hover { background: #2f6fd6; }
+  .pick .opt small { color: #b8c2cf; margin-left: 8px; }
+</style>
+</head>
+<body>
+<h1>Practice segment editor</h1>
+<div class="muted" id="path">Talking to the game…</div>
+
+<details style="margin: 10px 0">
+  <summary>How this works</summary>
+  <div class="muted" style="margin-top:6px; max-width: 900px">
+    A segment is a save file plus rules. In the game, <b>EDIT BOXES</b> on the practice pause freezes the world so you can draw boxes with the mouse:
+    <b>1</b> goal, <b>2</b> death, <b>3</b> hint, <b>Z</b> undo, <b>X</b> delete under the cursor, <b>WASD</b> pans, <b>Enter</b> saves and restarts the attempt.
+    Everything else is edited here and sent back with <b>Save to game</b>: names, hint text, what ends the run, which pickups a shuffle scatters where, and variants,
+    which share the start and the end but bring their own loadout and boxes.
+    To put an item in a box, draw it as a hint box in the game, then set its type to <i>item</i> in the Boxes table and choose what it gives.
+    Pick locations from the zone and location lists or click them on the map; they go to whatever <i>locations go to</i> says.
+    A run ends when every part of the end condition holds at once.
+  </div>
+</details>
+
+<section id="segmentSection">
+  <h2>Segment</h2>
+  <label>Name <input type="text" id="name" size="40"></label>
+  <label>Timing
+    <select id="mode"><option value="best">best time (ghosts on)</option><option value="average">average time (no ghosts)</option></select>
+  </label>
+  <label>Ghost shown
+    <select id="showGhost"><option value="">pinned, else fastest</option><option value="fastest">fastest</option><option value="pinned">pinned</option><option value="recent">most recent</option><option value="none">none</option></select>
+  </label>
+  <label><input type="checkbox" id="qtm"> quit to menu keeps the run (vanilla pause menu)</label>
+</section>
+
+<section>
+  <h2>End condition <span class="muted">(everything set must hold)</span></h2>
+  <div class="row">Goal box <span id="goalBox" class="muted">none</span> <button class="quiet" id="clearGoal">clear</button> <span class="muted">draw one in the game with the 1 key</span></div>
+  <div class="row">Items held <span id="endItems"></span></div>
+  <div class="row">Pickup count <input type="number" id="count" min="0" placeholder="any"> <span class="muted">blank for none</span></div>
+  <div class="row">Locations <span id="locChips" class="chips"></span> <button class="quiet" id="pickEnd">pick</button></div>
+</section>
+
+<section>
+  <h2>Locations</h2>
+  <div class="mapgrid">
+    <div id="map"></div>
+    <div>
+      <div class="row">Locations go to <select id="locTarget"></select></div>
+      <div class="row">Zone <select id="zone"></select></div>
+      <div class="row">Location <select id="loc"></select> <button class="quiet" id="addLoc">add</button></div>
+      <div class="row"><input type="text" id="locSearch" placeholder="search every zone" size="26"> <span class="muted">dims the map to the matches</span></div>
+      <div class="row muted">Or click a marker. Clicking a box jumps to its row.</div>
+      <div id="targetChips" class="chips"></div>
+      <div id="tileStatus" class="muted"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Boxes</h2>
+  <table id="boxes"><thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>text / item</th><th>colour</th><th>repeat</th><th></th></tr></thead><tbody></tbody></table>
+  <button class="quiet" id="addBox">add box</button>
+  <div class="muted">Drawn boxes appear here after a save in the game. An item box gives its pickup once, or every time with repeat.</div>
+</section>
+
+<section>
+  <h2>Shuffle groups</h2>
+  <div id="groups"></div>
+  <button class="quiet" id="addGroup">add group</button>
+  <div class="muted">Each attempt scatters the group's pickups over as many of its locations, chosen fresh.</div>
+</section>
+
+<section>
+  <h2>Ghosts <span class="muted" id="ghostVariant"></span></h2>
+  <div id="ghosts" class="muted">none</div>
+  <button class="quiet" id="pinGhost">pin the most recent run</button>
+  <div class="muted">A pinned run is raced instead of the fastest until it is removed.</div>
+</section>
+
+<section>
+  <h2>Variants</h2>
+  <div id="variants"></div>
+  <button class="quiet" id="addVariant">add variant</button>
+  <div class="muted">A segment with variants always runs one of them: they share the start and the end condition, and each keeps its own loadout, boxes, history and ghosts.</div>
+</section>
+
+<div id="status">
+  <button id="save">Save to game</button>
+  <button class="quiet" id="reload">Reload from game</button>
+  <span id="message" class="muted"></span>
+</div>
+
+<script src="/leaflet.js"></script>
+<script>
+(function () {
+  var state = { segment: null, variants: {}, catalog: null, map: null, markers: {}, shapes: [], target: 'end', playing: '' };
+  var $ = function (id) { return document.getElementById(id); };
+  var say = function (text, cls) { var m = $('message'); m.textContent = text; m.className = cls || 'muted'; };
+
+  function api(url, opts) {
+    return fetch(url, Object.assign({ cache: 'no-store' }, opts || {})).then(function (r) {
+      return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || r.status); return j; });
+    });
+  }
+
+  function load() {
+    say('Loading…');
+    return api('/api/catalog').then(function (c) { state.catalog = c; return api('/api/segment'); }).then(function (s) {
+      if (!s.session) { $('path').textContent = 'No practice session is running. Start one from the PRACTICE menu, then reload.'; say(''); return; }
+      $('path').textContent = s.path + (s.variant ? '  (playing variant ' + s.variant + ')' : '');
+      state.segment = s.segment; state.variants = s.variants || {}; state.playing = s.variant || '';
+      render(); say('Loaded.', 'ok');
+      return loadGhosts();
+    }).catch(function (e) { say('Could not reach the game: ' + e.message, 'bad'); });
+  }
+
+  function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : Math.round(n * 10) / 10; }
+
+  // ---- pickups: the site's item table and names ---------------------------------
+  var GROUPS = {
+    "Skills": [
+      { label: "Bash", value: "SK|0" }, { label: "Charge Flame", value: "SK|2" }, { label: "Wall Jump", value: "SK|3" },
+      { label: "Stomp", value: "SK|4" }, { label: "Double Jump", value: "SK|5" }, { label: "Charge Jump", value: "SK|8" },
+      { label: "Climb", value: "SK|12" }, { label: "Glide", value: "SK|14" }, { label: "Spirit Flame", value: "SK|15" },
+      { label: "Dash", value: "SK|50" }, { label: "Grenade", value: "SK|51" }
+    ],
+    "Cells/Stones": [
+      { label: "Health Cell", value: "HC|1" }, { label: "Energy Cell", value: "EC|1" }, { label: "Ability Cell", value: "AC|1" },
+      { label: "Keystone", value: "KS|1" }, { label: "Mapstone", value: "MS|1" }
+    ],
+    "Teleporters": [
+      { label: "Grotto TP", value: "TP|Grotto" }, { label: "Grove TP", value: "TP|Grove" }, { label: "Forlorn TP", value: "TP|Forlorn" },
+      { label: "Valley TP", value: "TP|Valley" }, { label: "Sorrow TP", value: "TP|Sorrow" }, { label: "Swamp TP", value: "TP|Swamp" },
+      { label: "Ginso TP", value: "TP|Ginso" }, { label: "Horu TP", value: "TP|Horu" }, { label: "Blackroot TP", value: "TP|Blackroot" }
+    ],
+    "Events": [
+      { label: "Water Vein", value: "EV|0" }, { label: "Clean Water", value: "EV|1" }, { label: "Gumon Seal", value: "EV|2" },
+      { label: "Wind Restored", value: "EV|3" }, { label: "Sunstone", value: "EV|4" }, { label: "Warmth Returned", value: "EV|5" }
+    ],
+    "Upgrades": [
+      { label: "Mega Health", value: "RB|0", desc: "Restores health to full, then grants 5 temporary health." },
+      { label: "Mega Energy", value: "RB|1", desc: "Restores energy to full, then grants 5 temporary energy." },
+      { label: "Mini Health", value: "RB|38", desc: "Restores health to full, then grants 1 temporary health. Stacks." },
+      { label: "Mini Energy", value: "RB|39", desc: "Restores energy to full, then grants 1 temporary energy. Stacks." },
+      { label: "Attack Upgrade", value: "RB|6", desc: "Increases Spirit Flame's damage and maximum number of targets by 1. Stacks." },
+      { label: "Spirit Light Efficiency", value: "RB|9", desc: "Doubles all incoming experience." },
+      { label: "Extra Air Dash", value: "RB|10", desc: "Grants a second Air Dash." },
+      { label: "Charge Dash Efficiency", value: "RB|11", desc: "Reduces the cost of Charge Dash to .5 energy." },
+      { label: "Extra Double Jump", value: "RB|12", desc: "Grants an extra Double Jump. Stacks." },
+      { label: "Health Regeneration", value: "RB|13", desc: "Restores 1 health per 60 seconds. Stacks." },
+      { label: "Energy Regeneration", value: "RB|15", desc: "Restores 1 energy per 60 seconds. Stacks." },
+      { label: "Water Vein Shard", value: "RB|17" }, { label: "Gumon Seal Shard", value: "RB|19" }, { label: "Sunstone Shard", value: "RB|21" },
+      { label: "Warmth Fragment", value: "RB|28" },
+      { label: "Bleeding", value: "RB|30", desc: "Removes 1 health per 60 seconds. Stacks." },
+      { label: "Health Drain", value: "RB|31", desc: "Restores health equal to 5% of the damage dealt." },
+      { label: "Energy Drain", value: "RB|32", desc: "Restores energy equal to 5% of the damage dealt." },
+      { label: "Skill Velocity Upgrade", value: "RB|33", desc: "Faster Dash, Bash, Stomp, Climb and Charge Jump. Stacks." },
+      { label: "Disable Alt+R", value: "RB|34" }, { label: "Enable Alt+R", value: "RB|35" },
+      { label: "Underwater Skill Usage", value: "RB|36", desc: "Dash and Grenade work underwater." },
+      { label: "Jump Upgrade", value: "RB|37", desc: "Higher jumps, wall jumps and double jumps. Stacks." },
+      { label: "Remove Wall Jump", value: "RB|40" }, { label: "Remove Charge Flame", value: "RB|41" }, { label: "Remove Double Jump", value: "RB|42" },
+      { label: "Remove Bash", value: "RB|43" }, { label: "Remove Stomp", value: "RB|44" }, { label: "Remove Glide", value: "RB|45" },
+      { label: "Remove Climb", value: "RB|46" }, { label: "Remove Charge Jump", value: "RB|47" }, { label: "Remove Dash", value: "RB|48" },
+      { label: "Remove Grenade", value: "RB|49" }, { label: "Stompnade Hint", value: "RB|81" }, { label: "Enable Frag Sense", value: "RB|1100" },
+      { label: "Polarity Shift", value: "RB|101", desc: "On use: swap health and energy." },
+      { label: "Gravity Swap", value: "RB|102", desc: "Toggle: inverts gravity." },
+      { label: "Extreme Speed", value: "RB|103", desc: "Toggle: much faster horizontal speed." },
+      { label: "Teleport: Last AltR", value: "RB|104" }, { label: "Teleport: Soul Link", value: "RB|105" }, { label: "Respec", value: "RB|106" },
+      { label: "Level Explosion", value: "RB|107" }, { label: "Timewarp", value: "RB|109" }, { label: "Invincibility", value: "RB|110" },
+      { label: "Wither", value: "RB|111", desc: "On use: kills Ori." }, { label: "Bash/Stomp Damage", value: "RB|113" },
+      { label: "Quick Flame", value: "RB|200" }, { label: "Spark Flame", value: "RB|201" }, { label: "Charge Flame Burn", value: "RB|202" },
+      { label: "Split Flame", value: "RB|203" }, { label: "Ultra Light Burst", value: "RB|204" }, { label: "Cinder Flame", value: "RB|205" },
+      { label: "Ultra Stomp", value: "RB|206" }, { label: "Rapid Flame", value: "RB|207" }, { label: "Charge Flame Blast", value: "RB|208" },
+      { label: "Ultra Split Flame", value: "RB|209" }, { label: "Spirit Magnet", value: "RB|210" }, { label: "Map Markers", value: "RB|211" },
+      { label: "Life Efficiency", value: "RB|212" }, { label: "Ultra Spirit Magnet", value: "RB|213" }, { label: "Energy Efficiency", value: "RB|214" },
+      { label: "Spirit Efficiency", value: "RB|215" }, { label: "Spirit Potency", value: "RB|216" }, { label: "Life Regen (Ability)", value: "RB|217" },
+      { label: "Energy Regen (Ability)", value: "RB|218" }, { label: "Sense", value: "RB|219" }, { label: "Rekindle", value: "RB|220" },
+      { label: "Regroup", value: "RB|221" }, { label: "Charge Flame Efficiency", value: "RB|222" }, { label: "Air Dash", value: "RB|223" },
+      { label: "Ultra Soul Link", value: "RB|224" }, { label: "Charge Dash", value: "RB|225" }, { label: "Water Breath", value: "RB|226" },
+      { label: "Soul Link Efficiency", value: "RB|227" }, { label: "Triple Jump", value: "RB|228" }, { label: "Ultra Defense", value: "RB|229" },
+      { label: "Remove Quick Flame", value: "RB|230" }, { label: "Remove Spark Flame", value: "RB|231" }, { label: "Remove Charge Flame Burn", value: "RB|232" },
+      { label: "Remove Split Flame", value: "RB|233" }, { label: "Remove Ultra Light Burst", value: "RB|234" }, { label: "Remove Cinder Flame", value: "RB|235" },
+      { label: "Remove Ultra Stomp", value: "RB|236" }, { label: "Remove Rapid Flame", value: "RB|237" }, { label: "Remove Charge Flame Blast", value: "RB|238" },
+      { label: "Remove Ultra Split Flame", value: "RB|239" }, { label: "Remove Spirit Magnet", value: "RB|240" }, { label: "Remove Map Markers", value: "RB|241" },
+      { label: "Remove Life Efficiency", value: "RB|242" }, { label: "Remove Ultra Spirit Magnet", value: "RB|243" }, { label: "Remove Energy Efficiency", value: "RB|244" },
+      { label: "Remove Spirit Efficiency", value: "RB|245" }, { label: "Remove Spirit Potency", value: "RB|246" }, { label: "Remove Life Regen (Ability)", value: "RB|247" },
+      { label: "Remove Energy Regen (Ability)", value: "RB|248" }, { label: "Remove Sense", value: "RB|249" }, { label: "Remove Rekindle", value: "RB|250" },
+      { label: "Remove Regroup", value: "RB|251" }, { label: "Remove Charge Flame Efficiency", value: "RB|252" }, { label: "Remove Air Dash", value: "RB|253" },
+      { label: "Remove Ultra Soul Link", value: "RB|254" }, { label: "Remove Charge Dash", value: "RB|255" }, { label: "Remove Water Breath", value: "RB|256" },
+      { label: "Remove Soul Link Efficiency", value: "RB|257" }, { label: "Remove Triple Jump", value: "RB|258" }, { label: "Remove Ultra Defense", value: "RB|259" }
+    ],
+    // typed in: picking one loads it into the box for editing
+    "Misc": [
+      { label: "15 Experience", value: "EX|15", edit: true },
+      { label: 'Print "Your text here"', value: "SH|Your text here", edit: true },
+      { label: "Warp to 0,0", value: "WP|0,0", edit: true },
+      { label: "Warp (forced) to 0,0", value: "WP|0,0,force", edit: true },
+      { label: "Warp to 0,0 and save", value: "WS|0,0", edit: true }
+    ]
+  };
+  var LABELS = {};
+  Object.keys(GROUPS).forEach(function (g) { GROUPS[g].forEach(function (o) { if (!o.edit) LABELS[o.value] = o.label; }); });
+
+  function decompose(code, id) {
+    if (code === 'NO' && id === '1') return [];
+    if (code !== 'MU' && code !== 'RP' && code !== 'RG') return [[code, id]];
+    if (!id) return [];
+    var parts = [], first = null, part = '';
+    for (var i = 0; i < id.length; i++) {
+      var c = id[i];
+      if (c === '/') {
+        if (i < id.length - 1 && id[i + 1] === '/') { part += '/'; i++; }
+        else if (first === null) { first = part; part = ''; }
+        else { parts.push([first, part]); first = null; part = ''; }
+      } else part += c;
+    }
+    if (first !== null) parts.push([first, part]);
+    return parts;
+  }
+
+  function pickupName(code, id) {
+    id = String(id == null ? '' : id);
+    if (LABELS[code + '|' + id]) return LABELS[code + '|' + id];
+    switch (code) {
+      case 'MU': case 'RP': case 'RG':
+        var names = decompose(code, id).map(function (p) { return pickupName(p[0], p[1]); });
+        return (code === 'RP' ? 'Repeatable: ' : code === 'RG' ? 'One of: ' : '') + names.join(', ');
+      case 'TP': return id + ' TP';
+      case 'EX': return id + ' Experience';
+      case 'HC': return 'Health Cell'; case 'AC': return 'Ability Cell'; case 'EC': return 'Energy Cell';
+      case 'KS': return 'Keystone'; case 'MS': return 'Mapstone';
+      case 'SH': return 'Print "' + id + '"';
+      case 'WT': return id === '*' ? 'Random Relic' : 'Relic: ' + id;
+      case 'WS': case 'WP':
+        if (id === '*') return 'Random Warp';
+        var forced = /,force$/.test(id);
+        return 'Warp' + (forced ? ' (forced)' : '') + ' to ' + id.replace(/,force$/, '') + (code === 'WS' ? ' and save' : '');
+      case 'NO': return 'Nothing';
+      default: return code + '|' + id;
+    }
+  }
+  function nameOf(str) { if (!str) return ''; var bar = str.indexOf('|'); return bar < 0 ? str : pickupName(str.slice(0, bar), str.slice(bar + 1)); }
+  function splitCode(str) { if (!str) return []; var bar = str.indexOf('|'); if (bar < 0) return [str]; return decompose(str.slice(0, bar), str.slice(bar + 1)).map(function (p) { return p[0] + '|' + p[1]; }); }
+  function joinCodes(list) {
+    if (!list.length) return '';
+    if (list.length === 1) return list[0];
+    return 'MU|' + list.map(function (v) { return v.replace(/\//g, '//'); }).join('/').replace(/\|/g, '/');
+  }
+  function validCode(text) { return /^[A-Za-z]{2}\|.+$/.test(text.trim()); }
+
+  // A picker over the item groups with typed search and free-form codes, holding a
+  // list of codes; cfg.get() reads it, cfg.set(list) stores it.
+  function pickSelect(cfg) {
+    var root = document.createElement('span'); root.className = 'pick';
+    var chips = document.createElement('span');
+    var input = document.createElement('input'); input.type = 'text'; input.placeholder = cfg.placeholder || 'type to search items';
+    var menu = document.createElement('div'); menu.className = 'menu';
+    root.appendChild(chips); root.appendChild(input); root.appendChild(menu);
+    var hi = -1, shown = [];
+
+    function list() { return cfg.get() || []; }
+    function commit(l) { cfg.set(l); drawChips(); }
+    function drawChips() {
+      chips.innerHTML = '';
+      list().forEach(function (v, i) {
+        var s = document.createElement('span'); s.className = 'chip'; s.textContent = nameOf(v); s.title = v;
+        var b = document.createElement('b'); b.textContent = '×';
+        b.onclick = function (ev) { ev.stopPropagation(); var l = list().slice(); l.splice(i, 1); commit(l); };
+        s.onclick = function () { var l = list().slice(); l.splice(i, 1); commit(l); input.value = v; input.focus(); open(); };
+        s.appendChild(b); chips.appendChild(s);
+      });
+    }
+    function add(value) { var l = list().slice(); l.push(value); commit(l); input.value = ''; close(); input.focus(); }
+    function open() {
+      var q = input.value.trim().toLowerCase();
+      menu.innerHTML = ''; shown = []; hi = -1;
+      (cfg.groups || Object.keys(GROUPS)).forEach(function (g) {
+        var hits = GROUPS[g].filter(function (o) { return !q || o.label.toLowerCase().indexOf(q) >= 0 || o.value.toLowerCase().indexOf(q) >= 0; });
+        if (!hits.length) return;
+        var h = document.createElement('div'); h.className = 'grp'; h.textContent = g; menu.appendChild(h);
+        hits.forEach(function (o) {
+          var d = document.createElement('div'); d.className = 'opt'; d.textContent = o.label;
+          var code = document.createElement('small'); code.textContent = o.value; d.appendChild(code);
+          if (o.desc) d.title = o.desc;
+          d.onmousedown = function (ev) { ev.preventDefault(); choose(o); };
+          menu.appendChild(d); shown.push({ el: d, opt: o });
+        });
+      });
+      if (q && validCode(input.value) && !cfg.groups) {
+        var h2 = document.createElement('div'); h2.className = 'grp'; h2.textContent = 'as typed'; menu.appendChild(h2);
+        var d2 = document.createElement('div'); d2.className = 'opt'; d2.textContent = nameOf(input.value.trim());
+        var o2 = { label: input.value.trim(), value: input.value.trim() };
+        d2.onmousedown = function (ev) { ev.preventDefault(); choose(o2); };
+        menu.appendChild(d2); shown.push({ el: d2, opt: o2 });
+      }
+      menu.classList.toggle('open', shown.length > 0);
+    }
+    function close() { menu.classList.remove('open'); hi = -1; }
+    function choose(o) { if (o.edit) { input.value = o.value; open(); } else add(o.value); }
+    function highlight(n) {
+      if (!shown.length) return;
+      hi = (n + shown.length) % shown.length;
+      shown.forEach(function (s, i) { s.el.classList.toggle('hi', i === hi); });
+      shown[hi].el.scrollIntoView({ block: 'nearest' });
+    }
+    input.onfocus = open;
+    input.oninput = open;
+    input.onblur = function () { setTimeout(close, 120); };
+    input.onkeydown = function (ev) {
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); if (!menu.classList.contains('open')) open(); highlight(hi + 1); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); highlight(hi - 1); }
+      else if (ev.key === 'Enter') {
+        ev.preventDefault();
+        if (hi >= 0 && shown[hi]) choose(shown[hi].opt);
+        else if (validCode(input.value)) add(input.value.trim());
+        else if (shown.length === 1) choose(shown[0].opt);
+      }
+      else if (ev.key === 'Escape') close();
+      else if (ev.key === 'Backspace' && input.value === '' && list().length) { var l = list().slice(); l.pop(); commit(l); }
+    };
+    root.onclick = function () { input.focus(); };
+    drawChips();
+    return root;
+  }
+
+  // ---- the map -----------------------------------------------------------------
+  // the site's projection: two teleporters pin game units to map pixels
+  function gameCrs() {
+    var swampT = { x: 493.719818, y: -74.31961 }, gladesT = { x: 109.90181, y: -257.681549 };
+    var swampM = { x: 15258, y: 9587 }, gladesM = { x: 11897, y: 11185 };
+    var map1 = gladesM, map2 = swampM, game1 = gladesT, game2 = swampT;
+    var mapRight = 20480, mapBottom = 14592, tile = 256, maxZoom = 7;
+    var gameLeft = game2.x - ((map2.x / (map2.x - map1.x)) * (game2.x - game1.x));
+    var gameTop = game2.y - ((map2.y / (map2.y - map1.y)) * (game2.y - game1.y));
+    var gameRight = mapRight / map1.x * (game1.x - gameLeft) + gameLeft;
+    var gameBottom = mapBottom / map1.y * (game1.y - gameTop) + gameTop;
+    var tileX = (Math.pow(2, maxZoom) * tile) / mapRight * (gameRight - gameLeft);
+    var tileY = (Math.pow(2, maxZoom) * tile) / mapBottom * (gameBottom - gameTop);
+    var scaleX = tile / tileX, scaleY = tile / tileY;
+    var originX = (0 - gameLeft) / (game1.x - gameLeft) * map1.x / Math.pow(2, maxZoom);
+    var originY = (0 + gameTop) / (gameTop - game1.y) * map1.y / Math.pow(2, maxZoom);
+    return L.extend({}, L.CRS.Simple, { transformation: new L.Transformation(scaleX + 0.0001, originX + 0, scaleY - 0.0005, originY - 0.2) });
+  }
+
+  function initMap() {
+    if (state.map || typeof L === 'undefined') return;
+    var map = L.map('map', { crs: gameCrs(), zoomControl: true, minZoom: 2, maxZoom: 7, attributionControl: false });
+    L.tileLayer('/tiles/{z}/{x}/{y}.png', { noWrap: true, maxNativeZoom: 6, maxZoom: 7, tileSize: 256, bounds: [[-500, -400], [700, 800]] }).addTo(map);
+    map.setView([-240, 120], 5);
+    state.map = map;
+    var zoneColour = {};
+    var palette = ['#7fd1ff', '#ffb36b', '#9be37f', '#ff8fb1', '#e0c26b', '#c59bff', '#6bf0dc', '#ff7f7f', '#b8b8ff', '#ffd27f'];
+    state.catalog.locations.forEach(function (loc) {
+      if (!(loc.zone in zoneColour)) zoneColour[loc.zone] = palette[Object.keys(zoneColour).length % palette.length];
+      var m = L.circleMarker([loc.y, loc.x], { radius: 5, weight: 1, color: '#000', fillColor: zoneColour[loc.zone], fillOpacity: 0.9 }).addTo(map);
+      m.bindTooltip(loc.name + ' (' + loc.zone + ')', { direction: 'top', offset: [0, -6] });
+      m.on('click', function () { toggleLocation(loc.key); });
+      state.markers[loc.key] = m;
+    });
+    map.on('mousemove', function (ev) { $('tileStatus').title = 'x ' + ev.latlng.lng.toFixed(1) + '  y ' + ev.latlng.lat.toFixed(1); });
+    pollTiles();
+  }
+
+  function pollTiles() {
+    api('/api/tiles').then(function (t) {
+      var el = $('tileStatus');
+      if (t.total && t.have < t.total) { el.textContent = 'map: ' + t.have + '/' + t.total + ' tiles cached' + (t.running ? '…' : ''); if (t.running) setTimeout(pollTiles, 3000); }
+      else if (t.note && t.note !== 'map cached') el.textContent = t.note;
+      else el.textContent = 'map cached for offline use';
+    }).catch(function () {});
+  }
+
+  function currentList() {
+    if (state.target === 'end') { var end = state.segment.end = state.segment.end || {}; return end.locations = end.locations || []; }
+    var g = (state.segment.shuffle || [])[parseInt(state.target, 10)]; if (!g) return [];
+    return g.among = g.among || [];
+  }
+
+  function toggleLocation(key) {
+    var list = currentList(); var i = list.indexOf(key);
+    if (i >= 0) list.splice(i, 1); else list.push(key);
+    render();
+  }
+
+  function matches(loc) {
+    var q = $('locSearch').value.trim().toLowerCase();
+    return !q || (loc.name + ' ' + loc.zone + ' ' + loc.type).toLowerCase().indexOf(q) >= 0;
+  }
+
+  function styleMarkers() {
+    var end = (state.segment.end || {}).locations || [];
+    var groups = state.segment.shuffle || [];
+    state.catalog.locations.forEach(function (loc) {
+      var m = state.markers[loc.key]; if (!m) return;
+      var inEnd = end.indexOf(loc.key) >= 0, inGroup = groups.some(function (g) { return (g.among || []).indexOf(loc.key) >= 0; });
+      var dim = matches(loc) ? 1 : 0.15;
+      m.setStyle({ radius: inEnd || inGroup ? 8 : 5, color: inEnd ? '#8fe3a0' : (inGroup ? '#ffd27f' : '#000'), weight: inEnd || inGroup ? 3 : 1, opacity: dim, fillOpacity: 0.9 * dim });
+    });
+    state.shapes.forEach(function (s) { state.map.removeLayer(s); }); state.shapes = [];
+    var draw = function (b, colour, label, rowId) {
+      if (!b || b.length !== 4) return;
+      var r = L.rectangle([[b[1], b[0]], [b[3], b[2]]], { color: colour, weight: 2, fillOpacity: 0.15 }).addTo(state.map);
+      r.bindTooltip(label, { sticky: true });
+      if (rowId) r.on('click', function () { jumpTo(rowId); });
+      state.shapes.push(r);
+    };
+    draw((state.segment.end || {}).box, '#8fe3a0', 'goal box');
+    var colourOf = function (b, own) { return b.type === 'death' ? '#ff6b6b' : (b.type === 'hint' ? '#ffffff' : (own ? '#c59bff' : (b.color || '#40c0ff'))); };
+    (state.segment.boxes || []).forEach(function (b, i) { draw(b.box, colourOf(b, false), boxLabel(b) + ' · shared', 'box-shared-' + i); });
+    Object.keys(state.variants).forEach(function (id) {
+      (state.variants[id].boxes || []).forEach(function (b, i) { draw(b.box, colourOf(b, true), boxLabel(b) + ' · variant ' + id, 'box-' + id + '-' + i); });
+    });
+  }
+  function boxLabel(b) { return b.type === 'raw' ? 'item box: ' + (nameOf(b.give) || 'nothing yet') : (b.type || 'raw') + ' box' + (b.type === 'hint' && b.text ? ': ' + b.text : ''); }
+  function jumpTo(rowId) {
+    var row = document.getElementById(rowId); if (!row) return;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600);
+  }
+
+  // ---- rendering ---------------------------------------------------------------
+  function render() {
+    var seg = state.segment;
+    $('name').value = seg.name || '';
+    var timing = seg.timing || {};
+    $('mode').value = timing.mode === 'average' ? 'average' : 'best';
+    $('showGhost').value = timing.showGhost || '';
+    $('qtm').checked = !!seg.qtm_enabled;
+    var end = seg.end = seg.end || {};
+    $('goalBox').textContent = end.box && end.box.length === 4 ? end.box.join(', ') : 'none';
+    $('count').value = typeof end.count === 'number' ? end.count : '';
+    var items = $('endItems'); items.innerHTML = '';
+    // the game checks skills and events, nothing else
+    items.appendChild(pickSelect({ get: function () { return end.items || []; }, set: function (l) { end.items = l; }, placeholder: 'skills and events the run must hold', groups: ['Skills', 'Events'] }));
+    renderTargets();
+    renderChips($('locChips'), end.locations || [], locName);
+    renderLocationPicker();
+    renderBoxes($('boxes').querySelector('tbody'), seg.boxes || [], 'shared');
+    renderGroups();
+    renderVariants();
+    initMap();
+    if (state.map) styleMarkers();
+  }
+
+  function renderChips(el, list, nameFor) {
+    el.innerHTML = '';
+    list.forEach(function (id) {
+      var s = document.createElement('span'); s.textContent = nameFor(id);
+      var b = document.createElement('b'); b.textContent = '×'; b.onclick = function () { var l = list.indexOf(id); if (l >= 0) list.splice(l, 1); render(); };
+      s.appendChild(b); el.appendChild(s);
+    });
+  }
+
+  function locName(key) {
+    var locs = state.catalog.locations;
+    for (var i = 0; i < locs.length; i++) if (locs[i].key === key) return locs[i].name + ' (' + locs[i].zone + ')';
+    return String(key);
+  }
+
+  function renderTargets() {
+    var sel = $('locTarget'); var keep = state.target; sel.innerHTML = '';
+    var add = function (v, t) { var o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+    add('end', 'the end condition');
+    (state.segment.shuffle || []).forEach(function (g, i) { add(String(i), 'shuffle group ' + (i + 1)); });
+    sel.value = keep; if (sel.value !== keep) { state.target = 'end'; sel.value = 'end'; }
+    sel.onchange = function () { state.target = sel.value; render(); };
+  }
+
+  // zone then location, in the catalog's order; a search spans every zone
+  function renderLocationPicker() {
+    var zones = [], byZone = {};
+    state.catalog.locations.forEach(function (loc) { if (!byZone[loc.zone]) { byZone[loc.zone] = []; zones.push(loc.zone); } byZone[loc.zone].push(loc); });
+    var zone = $('zone'), keepZone = zone.value; zone.innerHTML = '';
+    zones.forEach(function (z) { var o = document.createElement('option'); o.value = z; o.textContent = z; zone.appendChild(o); });
+    zone.value = keepZone; if (!zone.value) zone.value = zones[0] || '';
+    var q = $('locSearch').value.trim();
+    zone.disabled = !!q;
+    var locSel = $('loc'), keepLoc = locSel.value; locSel.innerHTML = '';
+    var pool = q ? state.catalog.locations.filter(matches) : (byZone[zone.value] || []);
+    var chosen = currentList();
+    pool.forEach(function (loc) {
+      var o = document.createElement('option'); o.value = String(loc.key);
+      o.textContent = loc.name + '  (' + loc.x + ', ' + loc.y + ')' + (q ? '  ' + loc.zone : '') + (chosen.indexOf(loc.key) >= 0 ? '  ✓' : '');
+      locSel.appendChild(o);
+    });
+    locSel.value = keepLoc; if (!locSel.value && pool.length) locSel.value = String(pool[0].key);
+    zone.onchange = function () { renderLocationPicker(); };
+    locSel.onchange = function () { var m = state.markers[parseInt(locSel.value, 10)]; if (m) m.openTooltip(); };
+    renderChips($('targetChips'), chosen, locName);
+  }
+  $('addLoc').onclick = function () { var key = parseInt($('loc').value, 10); if (isNaN(key)) return; var list = currentList(); if (list.indexOf(key) < 0) list.push(key); render(); };
+  $('locSearch').oninput = function () { renderLocationPicker(); if (state.map) styleMarkers(); };
+  $('pickEnd').onclick = function () { state.target = 'end'; render(); $('map').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+
+  function renderBoxes(tbody, boxes, owner) {
+    tbody.innerHTML = '';
+    boxes.forEach(function (b, i) {
+      var tr = document.createElement('tr'); tr.id = 'box-' + owner + '-' + i;
+      var types = { death: 'death', hint: 'hint', raw: 'item' };
+      var typeSel = document.createElement('select');
+      Object.keys(types).forEach(function (k) { var op = document.createElement('option'); op.value = k; op.textContent = types[k]; typeSel.appendChild(op); });
+      typeSel.value = b.type in types ? b.type : 'raw';
+      typeSel.onchange = function () { b.type = typeSel.value; render(); };
+      tr.appendChild(td(typeSel));
+      var coords = b.box && b.box.length === 4 ? b.box : [0, 0, 0, 0];
+      b.box = coords;
+      for (var k = 0; k < 4; k++) (function (k) { tr.appendChild(td(numInput(coords[k], function (v) { coords[k] = v; styleMarkers(); }))); })(k);
+      if (b.type === 'hint') {
+        var text = document.createElement('input'); text.type = 'text'; text.size = 28; text.value = b.text || ''; text.placeholder = 'hint text';
+        text.onchange = function () { b.text = text.value; styleMarkers(); };
+        tr.appendChild(td(text));
+      } else if (b.type === 'death') {
+        var none = document.createElement('span'); none.className = 'muted'; none.textContent = '—';
+        tr.appendChild(td(none));
+      } else {
+        tr.appendChild(td(pickSelect({ get: function () { return splitCode(b.give); }, set: function (l) { b.give = joinCodes(l); styleMarkers(); }, placeholder: 'what the box gives' })));
+      }
+      var colour = document.createElement('input'); colour.type = 'color'; colour.value = b.color || '#40c0ff'; colour.disabled = b.type !== 'raw';
+      colour.onchange = function () { b.color = colour.value; };
+      tr.appendChild(td(colour));
+      var rep = document.createElement('input'); rep.type = 'checkbox'; rep.checked = !!b.repeat; rep.onchange = function () { b.repeat = rep.checked; };
+      tr.appendChild(td(rep));
+      var del = document.createElement('button'); del.className = 'danger'; del.textContent = 'remove'; del.onclick = function () { boxes.splice(i, 1); render(); };
+      tr.appendChild(td(del));
+      tbody.appendChild(tr);
+    });
+  }
+
+  function td(child) { var c = document.createElement('td'); c.appendChild(child); return c; }
+  function numInput(v, on) { var n = document.createElement('input'); n.type = 'number'; n.step = '0.1'; n.value = v; n.onchange = function () { on(num(n.value)); }; return n; }
+
+  function renderGroups() {
+    var root = $('groups'); root.innerHTML = '';
+    var groups = state.segment.shuffle || [];
+    groups.forEach(function (g, i) {
+      var box = document.createElement('div'); box.className = 'group';
+      var head = document.createElement('div'); head.className = 'row'; head.textContent = 'Group ' + (i + 1) + '  gives ';
+      head.appendChild(pickSelect({ get: function () { return g.give || []; }, set: function (l) { g.give = l; }, placeholder: 'pickups to scatter' }));
+      var pick = document.createElement('button'); pick.className = 'quiet'; pick.textContent = 'pick locations'; pick.style.marginLeft = '8px';
+      pick.onclick = function () { state.target = String(i); render(); $('map').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+      head.appendChild(pick);
+      var del = document.createElement('button'); del.className = 'danger'; del.textContent = 'remove'; del.onclick = function () { groups.splice(i, 1); if (state.target !== 'end') state.target = 'end'; render(); };
+      head.appendChild(del);
+      box.appendChild(head);
+      var chips = document.createElement('div'); chips.className = 'chips';
+      renderChips(chips, g.among || (g.among = []), locName);
+      box.appendChild(chips);
+      var note = document.createElement('div'); note.className = 'muted'; note.textContent = (g.give || []).length + ' pickup(s) over ' + (g.among || []).length + ' location(s)';
+      box.appendChild(note);
+      root.appendChild(box);
+    });
+  }
+
+  function loadGhosts() {
+    return api('/api/ghosts').then(function (g) {
+      $('ghostVariant').textContent = state.playing ? '(variant ' + state.playing + ')' : '';
+      var root = $('ghosts'); root.innerHTML = '';
+      if (!g.ghosts.length) { root.textContent = 'no ghosts stored yet'; return; }
+      g.ghosts.forEach(function (gh) {
+        var row = document.createElement('div');
+        row.appendChild(document.createTextNode(gh.slot + ': ' + (gh.seconds != null ? gh.seconds.toFixed(2) + ' s, ' + gh.samples + ' samples' : gh.bytes + ' bytes') + ' '));
+        var del = document.createElement('button'); del.className = 'danger'; del.textContent = 'remove';
+        del.onclick = function () { api('/api/ghost/' + encodeURIComponent(gh.slot), { method: 'DELETE' }).then(loadGhosts).then(function () { say('Ghost ' + gh.slot + ' removed.', 'ok'); }).catch(function (e) { say(e.message, 'bad'); }); };
+        row.appendChild(del); root.appendChild(row);
+      });
+    }).catch(function (e) { $('ghosts').textContent = e.message; });
+  }
+  $('pinGhost').onclick = function () { api('/api/ghost/pin', { method: 'POST' }).then(loadGhosts).then(function () { say('Pinned the most recent run.', 'ok'); }).catch(function (e) { say(e.message, 'bad'); }); };
+
+  function renderVariants() {
+    var root = $('variants'); root.innerHTML = '';
+    Object.keys(state.variants).forEach(function (id) {
+      var v = state.variants[id];
+      var box = document.createElement('div'); box.className = 'variant';
+      var head = document.createElement('div');
+      head.appendChild(document.createTextNode('Variant ' + id + (id === state.playing ? ' (running) ' : '  ') + ' name '));
+      var name = document.createElement('input'); name.type = 'text'; name.size = 30; name.value = v.name || ''; name.onchange = function () { v.name = name.value; };
+      head.appendChild(name);
+      if (id !== state.playing) {
+        var del = document.createElement('button'); del.className = 'danger'; del.textContent = 'remove variant'; del.style.marginLeft = '8px';
+        del.onclick = function () { if (!confirm('Remove variant ' + id + ' with its history and ghosts?')) return; api('/api/variant/' + encodeURIComponent(id), { method: 'DELETE' }).then(load).then(function () { say('Variant ' + id + ' removed.', 'ok'); }).catch(function (e) { say(e.message, 'bad'); }); };
+        head.appendChild(del);
+      }
+      box.appendChild(head);
+      var inv = document.createElement('div'); inv.className = 'row'; inv.appendChild(document.createTextNode('Starting items '));
+      inv.appendChild(pickSelect({ get: function () { return v.inventory || []; }, set: function (l) { v.inventory = l; }, placeholder: 'given at the start' }));
+      box.appendChild(inv);
+      var h = document.createElement('div'); h.className = 'muted'; h.style.marginTop = '6px'; h.textContent = 'Boxes only this variant has'; box.appendChild(h);
+      var table = document.createElement('table');
+      table.innerHTML = '<thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>text / item</th><th>colour</th><th>repeat</th><th></th></tr></thead><tbody></tbody>';
+      renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id);
+      box.appendChild(table);
+      var add = document.createElement('button'); add.className = 'quiet'; add.textContent = 'add box'; add.style.marginTop = '6px'; add.onclick = function () { v.boxes.push({ box: [0, 0, 0, 0], type: 'death' }); render(); };
+      box.appendChild(add);
+      root.appendChild(box);
+    });
+  }
+
+  $('addBox').onclick = function () { (state.segment.boxes = state.segment.boxes || []).push({ box: [0, 0, 0, 0], type: 'death' }); render(); };
+  $('addGroup').onclick = function () { (state.segment.shuffle = state.segment.shuffle || []).push({ give: [], among: [] }); state.target = String(state.segment.shuffle.length - 1); render(); };
+  $('addVariant').onclick = function () {
+    var name = prompt('Variant name'); if (!name) return;
+    var id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'variant';
+    while (state.variants[id]) id += '-2';
+    state.variants[id] = { name: name, inventory: [], boxes: [] };
+    render();
+  };
+  $('clearGoal').onclick = function () { if (state.segment.end) delete state.segment.end.box; render(); };
+
+  function collect() {
+    var seg = state.segment;
+    seg.version = seg.version || 1;
+    seg.name = $('name').value;
+    seg.timing = seg.timing || {};
+    seg.timing.mode = $('mode').value;
+    if ($('showGhost').value) seg.timing.showGhost = $('showGhost').value; else delete seg.timing.showGhost;
+    if ($('qtm').checked) seg.qtm_enabled = true; else delete seg.qtm_enabled;
+    seg.end = seg.end || {};
+    var count = $('count').value.trim();
+    if (count === '') delete seg.end.count; else seg.end.count = parseInt(count, 10);
+    ['items', 'locations'].forEach(function (k) { if (seg.end[k] && seg.end[k].length === 0) delete seg.end[k]; });
+    (seg.boxes || []).forEach(tidy);
+    if (seg.shuffle && seg.shuffle.length === 0) delete seg.shuffle;
+    Object.keys(state.variants).forEach(function (id) { (state.variants[id].boxes || []).forEach(tidy); });
+    return { segment: seg, variants: state.variants };
+  }
+  function tidy(b) { if (b.type !== 'raw') { delete b.give; delete b.color; } if (b.type !== 'hint') delete b.text; if (!b.repeat) delete b.repeat; }
+
+  $('save').onclick = function () {
+    say('Saving…');
+    api('/api/segment', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(collect()) })
+      .then(function () { return load(); })
+      .then(function () { say('Saved. A running attempt uses the new rules now; a changed start needs a retry.', 'ok'); })
+      .catch(function (e) { say('Save failed: ' + e.message, 'bad'); });
+  };
+  $('reload').onclick = load;
+  load();
+})();
+</script>
+</body>
+</html>

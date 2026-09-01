@@ -26,6 +26,8 @@ public static class RandomizerGhost {
         public float WallAim;
         public bool Triple;
         public bool Died;
+        // where their soul link stands; NaN when there is none
+        public Vector2 SoulLink;
     }
 
     public static void Update() {
@@ -107,6 +109,17 @@ public static class RandomizerGhost {
         }
 
         return true;
+    }
+
+    public static void Remove(IGhostSource source) {
+        var i = Sources.IndexOf(source);
+        if (i < 0) {
+            return;
+        }
+
+        Shown[i].Despawn();
+        Shown.RemoveAt(i);
+        Sources.RemoveAt(i);
     }
 
     private static void Clear() {
@@ -266,7 +279,7 @@ public static class RandomizerGhost {
         }
     }
 
-    private static bool Capture(float at, out Sample sample) {
+    internal static bool Capture(float at, out Sample sample) {
         sample = new Sample();
         var sprite = Downed() ? null : Sprite();
         if (sprite == null) {
@@ -289,6 +302,7 @@ public static class RandomizerGhost {
             GrenadeAim = Aim(clip == null ? null : clip.name),
             WallAim = WallArrowAim(clip == null ? null : clip.name),
             Triple = OnLastAirJump(),
+            SoulLink = SoulLinkAt(),
             Time = at,
             Position = sprite.position,
             Rotation = sprite.rotation,
@@ -476,6 +490,29 @@ public static class RandomizerGhost {
         }
 
         return GrenadeState;
+    }
+
+    // the placed flame only; a spirit well is a respawn point but not a soul link
+    private static Vector2 SoulLinkAt() {
+        try {
+            var flame = Flamer();
+            if (flame == null || !flame.SoulFlameExists) {
+                return new Vector2(float.NaN, float.NaN);
+            }
+
+            var at = flame.SoulFlamePosition;
+            return new Vector2(at.x, at.y);
+        } catch (System.Exception) {
+            return new Vector2(float.NaN, float.NaN);
+        }
+    }
+
+    internal static SeinSoulFlame Flamer() {
+        if (FlameState == null) {
+            FlameState = Ability<SeinSoulFlame>();
+        }
+
+        return FlameState;
     }
 
     internal static SeinChargeJumpCharging Charger() {
@@ -718,6 +755,7 @@ public static class RandomizerGhost {
         var worstRotation = 0f;
         var worstClipTime = 0f;
         var wrongNames = 0;
+        var wrongLinks = 0;
         var headerFaults = 0;
         var bytes = 0;
 
@@ -743,13 +781,18 @@ public static class RandomizerGhost {
             if (back.Animation != (sample.Animation ?? "")) {
                 wrongNames++;
             }
+
+            if (float.IsNaN(back.SoulLink.x) != float.IsNaN(sample.SoulLink.x) ||
+                    (!float.IsNaN(sample.SoulLink.x) && (back.SoulLink - sample.SoulLink).magnitude > 0.001f)) {
+                wrongLinks++;
+            }
         }
 
         Randomizer.log("ghost codec: " + samples.Count + " samples, " +
             (bytes / (float)samples.Count).ToString("F1") + " bytes mean; worst position " +
             worstPosition.ToString("F4") + ", worst rotation " + worstRotation.ToString("F2") +
             " deg, worst clip time " + worstClipTime.ToString("F4") + "s; " + wrongNames +
-            " names wrong, " + headerFaults + " headers wrong; table " +
+            " names wrong, " + wrongLinks + " links wrong, " + headerFaults + " headers wrong; table " +
             RandomizerGhostAnimations.Names.Length + " clips, hash " +
             RandomizerGhostAnimations.Hash.ToString("X8"));
     }
@@ -774,7 +817,8 @@ public static class RandomizerGhost {
                         sample.Charge.ToString(), F(sample.BashAngle),
                         F(sample.BashTarget.x), F(sample.BashTarget.y),
                         F(sample.GrenadeAim.x), F(sample.GrenadeAim.y), F(sample.WallAim),
-                        sample.Triple ? "1" : "0"
+                        sample.Triple ? "1" : "0",
+                        F(sample.SoulLink.x), F(sample.SoulLink.y)
                     }));
                 }
             }
@@ -796,6 +840,8 @@ public static class RandomizerGhost {
                     continue;
                 }
 
+                // a take from before the bash target was written has the aim two columns earlier
+                var aim = parts.Length > 20 ? 17 : 15;
                 Ghost.Add(new Sample {
                     Time = P(parts[0]),
                     Position = new Vector3(P(parts[1]), P(parts[2]), P(parts[3])),
@@ -805,14 +851,16 @@ public static class RandomizerGhost {
                     AnimationTime = parts.Length > 12 ? P(parts[12]) : 0f,
                     Charge = parts.Length > 13 ? (int)P(parts[13]) : 0,
                     BashAngle = parts.Length > 14 ? P(parts[14]) : float.NaN,
-                    GrenadeAim = parts.Length > 16
+                    BashTarget = parts.Length > 20
                         ? new Vector2(P(parts[15]), P(parts[16]))
                         : new Vector2(float.NaN, float.NaN),
-                    WallAim = parts.Length > 17 ? P(parts[17]) : float.NaN,
-                    Triple = parts.Length > 18 && parts[18] == "1",
-                    // appended after the format settled, so older takes simply lack them
-                    BashTarget = parts.Length > 20
-                        ? new Vector2(P(parts[19]), P(parts[20]))
+                    GrenadeAim = parts.Length > aim + 1
+                        ? new Vector2(P(parts[aim]), P(parts[aim + 1]))
+                        : new Vector2(float.NaN, float.NaN),
+                    WallAim = parts.Length > aim + 2 ? P(parts[aim + 2]) : float.NaN,
+                    Triple = parts.Length > aim + 3 && parts[aim + 3] == "1",
+                    SoulLink = parts.Length > 22
+                        ? new Vector2(P(parts[21]), P(parts[22]))
                         : new Vector2(float.NaN, float.NaN)
                 });
             }
@@ -855,6 +903,8 @@ public static class RandomizerGhost {
     private static float RecordStart;
 
     private static SeinChargeJumpCharging ChargeState;
+
+    private static SeinSoulFlame FlameState;
 
     private static SeinGrenadeAttack GrenadeState;
 
@@ -907,6 +957,8 @@ public static class RandomizerGhost {
     internal const float WallArrowAlpha = 0.5f;
 
     internal const float WallArrowScale = 0.85f;
+
+    internal const float LinkAlpha = 0.5f;
 
     internal const float StompBurstAlpha = 0.5f;
 

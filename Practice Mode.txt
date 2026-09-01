@@ -1,0 +1,103 @@
+Practicing a stretch of the game (practice mode)
+
+
+
+What it is
+===
+A segment is a save file plus rules: where the attempt ends, boxes that kill, hint or give items, an optional loadout, and variants of the same segment with different loadouts or boxes.
+Segments are .bfrp files in the practice folder next to the game (practice/ by default), one per segment. They are safe to copy, rename and share.
+PRACTICE on the title menu lists them. You race a clock, and a ghost of one of your earlier attempts if you have one.
+
+
+
+Making a segment
+===
+In a normal game, get to the spot you want to practice from and press Alt+S. The current state is saved as a new segment, named after the area and the time.
+From the title menu choose PRACTICE, pick the new segment, and start it.
+Pause and choose EDIT PRACTICE SEGMENT. The world freezes and you draw boxes with the mouse.
+
+Editor keys:
+1 / 2 / 3           Goal, death or hint tool
+Drag                Draw a box
+Z                   Undo the last box
+X                   Delete the box under the cursor
+WASD                Pan the camera
+4                   Open the segment editor page in a browser
+Enter               Save and restart the attempt
+
+Everything else is on the segment editor page, which opens in your browser the first time you edit: the name, what ends the run, hint text, item boxes, shuffle groups, variants and ghosts.
+Save to game writes it back, and a running attempt uses the new rules at once.
+The page's map downloads the world map tiles once (about 20 MB) into the practice folder.
+
+
+
+Rules
+===
+The end condition is any combination of a goal box, skills or events held, a pickup count, and locations collected. Every part that is set must hold at once.
+
+Available boxes:
+- "goal": Ends the attempt, together with the rest of the end condition.
+- "death": Kills Ori. The respawn is the last checkpoint and the clock keeps running.
+- "hint": Shows its text when entered.
+- "item": Gives a pickup when entered, once, or every time with repeat.
+
+Shuffle groups scatter a set of pickups over a set of locations, chosen fresh each attempt.
+Example: 3 keystones over 5 spots puts them in a different 3 of the 5 every attempt.
+
+Variants share the start and the end condition and bring their own loadout, boxes, history and ghosts. A segment with variants always runs one of them.
+Example: one variant starts with Charge Jump and another with Double Jump, and each keeps its own best time.
+
+
+
+Running a segment
+===
+PRACTICE on the title menu lists your segments. Up and Down pick a variant, Space starts.
+After a three second countdown the clock runs in real time through everything: pauses, deaths, quitting to the menu.
+Every run is kept in the segment's history.
+
+The pause menu during an attempt:
+RESUME
+RETRY                       Start the attempt over
+EXIT TO PRACTICE MENU       Back to the segment list
+EDIT PRACTICE SEGMENT       Freeze the world and draw boxes
+
+Finishing shows the time against your best (your average, in average mode), the average over every run, and the attempt's deaths, quits and time in menus.
+The menu there: RETRY, PIN THIS RUN'S GHOST, EXIT TO PRACTICE MENU.
+
+
+
+Ghosts
+===
+A ghost replays a past attempt alongside you.
+Each variant keeps its fastest and its most recent run, and a pinned one if you pin it at the finish screen or on the page.
+The segment says which one is shown (the pinned run if there is one, else the fastest, by default) and the Practice Ghost setting overrides that.
+Average mode records no ghosts.
+
+
+
+Quit to menu
+===
+A segment can allow quitting to the menu mid-attempt ("quit to menu keeps the run" on the page), for practicing your menuing the way you would in a real run.
+Its pause menu is the normal one, and the practice pause is on the Practice Menu bind instead.
+While the run is parked the title menu shows CONTINUE PRACTICE and EXIT PRACTICE SESSION, and Escape there asks whether to end it.
+
+
+
+Settings and binds
+===
+RandomizerSettings.txt:
+- "Practice Folder": Where segments are kept. A folder name inside the game folder, or a full path. Default: practice
+- "Practice Ghost": Which ghost to race. Segment (whatever the segment says), Fastest, Pinned, Recent or None. Default: Segment
+- "Practice Timer": The clock in the top right during an attempt. Default: True
+
+RandomizerRebinding.txt:
+Alt+S               Create Practice Segment
+(unbound)           Practice Menu: the practice pause, for quit-to-menu segments
+(unbound)           Open Practice Editor Page: the page, from anywhere in a session
+
+
+
+Files
+===
+A .bfrp is a zip: segment.json (the rules), save.sav (the start), variants/<id>/segment.json, and runs.csv and ghosts/ per variant.
+The page is the reference for what segment.json can say.

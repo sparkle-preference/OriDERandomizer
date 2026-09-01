@@ -70,7 +70,10 @@ public class SaveSlotsManager : MonoBehaviour {
 
     public static void PrepareSlots() {
         Instance.SaveSlots.Clear();
-        for (var i = 0; i < 50; i++) {
+        // the practice slots sit past the fifty this normally walks, and only a
+        // running session has any business knowing they are there
+        var last = PracticeController.Active ? PracticeController.LastSlot + 1 : 50;
+        for (var i = 0; i < last; i++) {
             if (GameController.Instance.SaveGameController.SaveExists(i)) {
                 var saveFilePath = GameController.Instance.SaveGameController.GetSaveFilePath(i);
                 using (var binaryReader = new BinaryReader(File.Open(saveFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))) {

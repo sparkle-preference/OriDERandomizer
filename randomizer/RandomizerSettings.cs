@@ -12,7 +12,7 @@ public static class RandomizerSettings {
     }
 
     // move this with every new setting, or existing installs take the nag path on update
-    public static string LastAddedSetting = "Touched Pickup Visibility";
+    public static string LastAddedSetting = "Practice Timer";
 
     // The "//" in https:// is not a comment. Cutting there left every url setting as a bare
     // scheme, which then failed the has-a-scheme test and silently reverted to the default --
@@ -225,6 +225,10 @@ public static class RandomizerSettings {
         QOL.AbilityMenuOpacity = new FloatSetting("Ability Menu Opacity", 0.5f, "(0.0-1.0) The opacity of the ability menu when performing a Save Anywhere.", false);
         QOL.CursorLock = new BoolSetting("Cursor Lock", false, "True: Locks the mouse cursor inside the window\nFalse (default): Vanilla behavior (cursor can leave the Ori window in borderless / windowed mode).", false);
 
+        Practice.Folder = new StringSetting("Practice Folder", "practice", "Where practice segments (.bfrp files) are kept: a folder name inside the game folder, or a full path.", false);
+        Practice.Ghost = new EnumSetting<PracticeGhost>("Practice Ghost", PracticeGhost.Segment, "Which ghost to race in practice mode.\nSegment (default): whatever the segment says, which is the pinned run if there is one and the fastest otherwise.\nFastest, Pinned, Recent: always that one. None: no ghost.", false);
+        Practice.Timer = new BoolSetting("Practice Timer", true, "Show the running clock, and the time to beat, in the top right during a practice run.", false);
+
         Game.DefaultDifficulty = new EnumSetting<Difficulty>("Default Difficulty", Difficulty.Relaxing, "(Relaxing (default), Challenging, Punishing, OneLife): The default difficulty on new file selection.", false);
 
         Accessibility.ApplySoundCompression = new BoolSetting("Apply Sound Compression", false, "True: Caps sound from getting too loud (relevant when e.g. charge jumping very echo-y areas, like Spirit Caverns).\nFalse (default): Vanilla behavior.", false);
@@ -360,6 +364,21 @@ public static class RandomizerSettings {
         public static BoolSetting CursorLock;
     }
 
+    public static class Practice {
+        public static StringSetting Folder;
+
+        public static EnumSetting<PracticeGhost> Ghost;
+        public static BoolSetting Timer;
+    }
+
+    public enum PracticeGhost {
+        Segment,
+        Fastest,
+        Pinned,
+        Recent,
+        None
+    }
+
     public static class Game {
         public static EnumSetting<Difficulty> DefaultDifficulty;
     }
@@ -472,6 +491,17 @@ public static class RandomizerSettings {
         }
 
         public override string ValidValues() => "A url, protocol included";
+    }
+
+    public class StringSetting : Setting<String> {
+        public StringSetting(string name, string defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
+        }
+
+        public override void Parse(string value) {
+            Value = string.IsNullOrEmpty(value) ? Default : value.Trim();
+        }
+
+        public override string ValidValues() => "Text";
     }
 
     public class ColorSetting : Setting<Color> {

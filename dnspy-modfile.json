@@ -87,6 +87,7 @@
 		"SaveSceneManager",
 		"SaveSlotBackupsManager",
 		"SaveSlotsItemsUI",
+		"SaveSlotsUI",
 		"SaveSlotsManager",
 		"ScenesManager",
 		"SeinAbilityCondition",
@@ -246,6 +247,7 @@
 		"modified_classes/SaveSceneManager.cs",
 		"modified_classes/SaveSlotBackupsManager.cs",
 		"modified_classes/SaveSlotsItemsUI.cs",
+		"modified_classes/SaveSlotsUI.cs",
 		"modified_classes/SaveSlotsManager.cs",
 		"modified_classes/ScenesManager.cs",
 		"modified_classes/SeinAbilityCondition.cs",
@@ -371,6 +373,17 @@
 		"randomizer/RandomizerUI.cs",
 		"randomizer/RandomizerWallJumpHintCondition.cs",
 		"randomizer/RandomizerWorldMapIconManager.cs",
+		"randomizer/ZipStore.cs",
+		"randomizer/JsonValue.cs",
+		"randomizer/PracticeController.cs",
+		"randomizer/PracticeSegment.cs",
+		"randomizer/PracticeBoxView.cs",
+		"randomizer/PracticeSelect.cs",
+		"randomizer/PracticeMenu.cs",
+		"randomizer/PracticeEditor.cs",
+		"randomizer/PracticeServer.cs",
+		"randomizer/PracticeHud.cs",
+		"randomizer/BfrpFile.cs",
 		"randomizer/RandomizerWorldMapIconType.cs"
 	],
 	"resourceFiles": [
@@ -382,6 +395,9 @@
 		"resource_files/color_reticle.png",
 		"resource_files/scrollbar_track.png",
 		"resource_files/scrollbar_thumb.png",
-		"resource_files/menu_text_randomizer.png"
+		"resource_files/menu_text_randomizer.png",
+		"resource_files/practice_editor.html",
+		"resource_files/leaflet.js",
+		"resource_files/leaflet.css"
 	]
 }

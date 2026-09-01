@@ -53,12 +53,15 @@ public class RandomizerInventory : SaveSerialize {
 
     public override void Serialize(Archive ar) {
         if (ar.Reading) {
-            // preserved values follow their save slot: on any other slot's load they are
-            // another game's memory, and what the file says stands
+            // A practice run owns its stat block until it ends: it survives every load,
+            // slot swap and file copy the session makes, and nothing else is worth keeping.
             var slot = SaveSlotsManager.CurrentSlotIndex + 1;
-            var preserve = GetRandomizerItem(SlotStamp) == slot
-                ? randomizerItems.Where(item => KeptOnDeath(item.Key)).ToList()
-                : new List<KeyValuePair<int, int>>();
+            var preserve = PracticeController.Active
+                ? randomizerItems.Where(item => item.Key >= PracticeController.FirstStat
+                    && item.Key <= PracticeController.LastStat).ToList()
+                : GetRandomizerItem(SlotStamp) == slot
+                    ? randomizerItems.Where(item => KeptOnDeath(item.Key)).ToList()
+                    : new List<KeyValuePair<int, int>>();
 
             randomizerItems.Clear();
             var count = ar.Serialize(0);
