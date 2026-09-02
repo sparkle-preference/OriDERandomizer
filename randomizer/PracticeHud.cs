@@ -20,14 +20,16 @@ public static class PracticeHud {
     private static string reference = "";
 
     // UI camera units, the anchored edge of each box: the clock's top right corner in
-    // the screen's, the tally's top centre under the finish screen's rows
+    // the screen's, the tally's top centre in the finish screen's left column
     private static readonly Vector3 ClockAt = new Vector3(6.9f, 3.8f, 0f);
 
-    private static readonly Vector3 TallyAt = new Vector3(0f, -1.35f, 0f);
+    private static readonly Vector3 TallyAt = new Vector3(-4.2f, 2.4f, 0f);
 
     public static void Tick() {
+        // the finish screen's tally has the time; the clock would say it a second time
         var wanted = PracticeController.Active && RandomizerSettings.Practice.Timer.Value
             && PracticeController.Current != PracticeController.Phase.Editing
+            && PracticeController.Current != PracticeController.Phase.Finished
             && GameController.Instance != null && !GameController.Instance.GameInTitleScreen;
         if (!wanted) {
             HideClock();
@@ -35,7 +37,7 @@ public static class PracticeHud {
         }
 
         if (clock == null) {
-            clockObj = Make("practiceClock", AlignmentMode.Right, HorizontalAnchorMode.Right, ClockAt, out clock);
+            clockObj = Make("practiceClock", AlignmentMode.Right, HorizontalAnchorMode.Right, ClockAt, true, out clock);
             shown = null;
         }
 
@@ -69,7 +71,7 @@ public static class PracticeHud {
 
     public static void ShowTally(string text) {
         HideTally();
-        tallyObj = Make("practiceTally", AlignmentMode.Center, HorizontalAnchorMode.Center, TallyAt, out tally);
+        tallyObj = Make("practiceTally", AlignmentMode.Center, HorizontalAnchorMode.Center, TallyAt, false, out tally);
         if (tally != null) {
             tally.SetMessage(new MessageDescriptor(text));
         }
@@ -99,7 +101,7 @@ public static class PracticeHud {
         obj = null;
     }
 
-    private static GameObject Make(string name, AlignmentMode align, HorizontalAnchorMode anchor, Vector3 at, out MessageBox box) {
+    private static GameObject Make(string name, AlignmentMode align, HorizontalAnchorMode anchor, Vector3 at, bool background, out MessageBox box) {
         box = null;
         var prefab = UI.MessageController == null ? null : UI.MessageController.HintMessage;
         if (prefab == null) {
@@ -137,6 +139,13 @@ public static class PracticeHud {
         box.TextBox.horizontalAnchor = anchor;
         box.TextBox.verticalAnchor = VerticalAnchorMode.Top;
         box.SetWaitDuration(float.PositiveInfinity);
+        if (!background) {
+            var plate = box.Visibility.transform.FindChild("background");
+            if (plate != null) {
+                plate.gameObject.SetActive(false);
+            }
+        }
+
         // shown whole at once: a menu's suspension would hold a fade at nothing
         box.Visibility.TransitionInDuration = 0.001f;
         box.transform.position = at;

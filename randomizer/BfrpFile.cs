@@ -56,12 +56,70 @@ public class BfrpFile {
         get { return zip.Get(SaveEntry); }
     }
 
-    public byte[] Placements {
-        get { return zip.Get(PlacementsEntry); }
+    // --- placements.bfr, the root's or a variant's: seed lines and box lines ---
+
+    public List<string> PlacementLines(string variant) {
+        var lines = new List<string>();
+        var raw = zip.Get(Where(variant, PlacementsEntry));
+        if (raw == null) {
+            return lines;
+        }
+
+        foreach (var line in Encoding.UTF8.GetString(raw).Split('\n')) {
+            var trimmed = line.Trim();
+            if (trimmed != "") {
+                lines.Add(trimmed);
+            }
+        }
+
+        return lines;
     }
 
-    public void SetPlacements(byte[] data) {
-        zip.Set(PlacementsEntry, data);
+    public void SetPlacementLines(string variant, List<string> lines) {
+        var entry = Where(variant, PlacementsEntry);
+        if (lines.Count == 0) {
+            if (zip.Has(entry)) {
+                zip.Remove(entry);
+            }
+
+            return;
+        }
+
+        zip.Set(entry, Encoding.UTF8.GetBytes(string.Join("\n", lines.ToArray()) + "\n"));
+    }
+
+    // a bad box line is reported and skipped, never fatal to the file
+    public List<RandomizerBox> Boxes(string variant) {
+        var boxes = new List<RandomizerBox>();
+        foreach (var line in PlacementLines(variant)) {
+            if (!RandomizerBox.IsLine(line)) {
+                continue;
+            }
+
+            try {
+                boxes.Add(RandomizerBox.Parse(line));
+            } catch (Exception e) {
+                Randomizer.LogError("practice: " + Path + ": " + e.Message + " in '" + line + "'");
+            }
+        }
+
+        return boxes;
+    }
+
+    // the box lines replaced, everything else in the file kept as it was
+    public void SetBoxes(string variant, List<RandomizerBox> boxes) {
+        var lines = new List<string>();
+        foreach (var line in PlacementLines(variant)) {
+            if (!RandomizerBox.IsLine(line)) {
+                lines.Add(line);
+            }
+        }
+
+        foreach (var box in boxes) {
+            lines.Add(box.ToLine());
+        }
+
+        SetPlacementLines(variant, lines);
     }
 
     // --- variants ---

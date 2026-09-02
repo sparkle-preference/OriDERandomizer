@@ -81,7 +81,9 @@ public static class PracticeController {
     public static void Begin(BfrpFile file, string variant, bool fromTitle) {
         File = file;
         File.Variant = variant;
-        Segment = PracticeSegment.Parse(file.Segment, file.VariantSegment(variant));
+        Segment = PracticeSegment.Parse(file, variant);
+        RandomizerBoxes.Use(Segment.Boxes);
+        Placements = PracticeSegment.ResolvePlacements(file, variant);
         ResetGhosts();
         PracticeEditor.Stop();
         // the phase is set first: the save machinery only admits the practice slots
@@ -89,6 +91,9 @@ public static class PracticeController {
         Current = Phase.Countdown;
         PracticeHud.HideTally();
         PracticeHud.Refresh();
+        // a warp still in flight from the last attempt would drag Ori off the start
+        Randomizer.Warping = 0;
+        Randomizer.Returning = false;
         SeedSlots(!fromTitle);
         if (!fromTitle) {
             Suspend();
@@ -165,7 +170,7 @@ public static class PracticeController {
     }
 
     public static void End() {
-        PracticeBoxView.Detach();
+        RandomizerBoxes.Use(null);
         ResetGhosts();
         PracticeEditor.Stop();
         PracticeServer.SessionEnded();
@@ -326,8 +331,9 @@ public static class PracticeController {
                     Inc(Attempts, 1);
                 }
 
+                // the base save may carry a seed's taken boxes; this attempt's start untaken
+                RandomizerBoxes.ClearConsumed();
                 GrantStartingItems();
-                PracticeBoxView.Attach();
                 return;
             }
 
@@ -383,8 +389,6 @@ public static class PracticeController {
             return;
         }
 
-        // the camera can be replaced mid-session, and the boxes ride on it
-        PracticeBoxView.Attach();
         Vector2 at = Characters.Sein.Position;
         Segment.Check(at);
         if (Segment.Met(at)) {
@@ -446,12 +450,15 @@ public static class PracticeController {
 
         // a hint would be hidden by the finish screen opening; a box of our own is not
         PracticeHud.Refresh();
+        LastTally = line;
         PracticeHud.ShowTally(line);
         PracticeMenu.Open();
     }
 
-    // the time and the comparison, for the finish screen's top row
+    // the time and the comparison, and the finish screen's whole tally
     public static string LastResult;
+
+    public static string LastTally;
 
     private static bool Fading() {
         var fader = Game.UI.Fader;
@@ -622,6 +629,16 @@ public static class PracticeController {
 
     public static void OnDeath() {
         Inc(Deaths, 1);
+    }
+
+    // the boxes were edited: read again, and the new set takes the floor
+    public static void Reparse() {
+        if (File == null) {
+            return;
+        }
+
+        Segment = PracticeSegment.Parse(File, File.Variant);
+        RandomizerBoxes.Use(Segment.Boxes);
     }
 
     public static void OnPickup() {

@@ -147,12 +147,18 @@ public static class Randomizer {
                         RandomizerClues.initialize();
                     }
 
+                    RandomizerBoxes.Seed.Clear();
                     foreach (var line in allLines.Skip(1)) {
                         lastLine = line;
                         lastLineNum += 1;
 
                         if (line.StartsWith("//")) {
                             ParseMetaLine(line.Substring(2).Trim());
+                            continue;
+                        }
+
+                        if (RandomizerBox.IsLine(line)) {
+                            RandomizerBoxes.Seed.Add(RandomizerBox.Parse(line));
                             continue;
                         }
 
@@ -187,6 +193,7 @@ public static class Randomizer {
                         }
                     }
 
+                    RandomizerBoxes.SeedLoaded();
                     HotColdMaps.Sort();
                     HotColdMapsWithFrags.Sort();
                     if (CluesMode) {
@@ -482,6 +489,7 @@ public static class Randomizer {
         PracticeController.Tick();
         PracticeSelect.Tick();
         PracticeServer.Tick();
+        RandomizerBoxes.Tick();
         RandomizerGhost.Update();
         UpdateMessages();
         UpdatePendingWin();
@@ -941,6 +949,7 @@ public static class Randomizer {
         RandomizerBonusSkill.OnDeath();
         RandomizerStatsManager.OnDeath();
         RandomizerDeathLink.OnDeath();
+        PracticeController.OnDeath();
 
         if (IsUsingRandomizerTeleportAnywhere) {
             TeleporterController.Instance.CancelTeleport();

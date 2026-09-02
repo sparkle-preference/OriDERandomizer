@@ -491,14 +491,71 @@ public static class PracticeServer {
         reply.Set("path", JsonValue.Of(file.Path));
         reply.Set("variant", JsonValue.Of(file.Variant ?? ""));
         reply.Set("editing", JsonValue.Of(PracticeEditor.Active));
-        reply.Set("segment", file.Segment);
+        reply.Set("segment", WithBoxes(file, ""));
         var variants = JsonValue.NewObject();
         foreach (var id in file.Variants) {
-            variants.Set(id, file.VariantSegment(id));
+            variants.Set(id, WithBoxes(file, id));
         }
 
         reply.Set("variants", variants);
         return reply.Serialize(false);
+    }
+
+    // The page's shape of a segment: the json with its boxes as an array on it and
+    // the goal as end.box. A copy, so the page never reads a tree the editor changes.
+    private static JsonValue WithBoxes(BfrpFile file, string variant) {
+        var json = variant == "" ? file.Segment : file.VariantSegment(variant);
+        var copy = Copy(json, "boxes", "end");
+        var end = Copy(json["end"], "box");
+        var list = JsonValue.NewArray();
+        foreach (var box in file.Boxes(variant)) {
+            if (box.Type == RandomizerBox.Kind.Goal) {
+                end.Set("box", box.ToJson()["box"]);
+            } else {
+                list.Add(box.ToJson());
+            }
+        }
+
+        if (variant == "") {
+            copy.Set("end", end);
+        }
+
+        copy.Set("boxes", list);
+        return copy;
+    }
+
+    private static JsonValue Copy(JsonValue json, params string[] except) {
+        var copy = JsonValue.NewObject();
+        if (!json.IsObject) {
+            return copy;
+        }
+
+        foreach (var key in json.Keys) {
+            if (Array.IndexOf(except, key) < 0) {
+                copy.Set(key, json[key]);
+            }
+        }
+
+        return copy;
+    }
+
+    // the page's boxes as lines; the goal first, from end.box
+    private static List<RandomizerBox> TakeBoxes(JsonValue json, bool goal) {
+        var boxes = new List<RandomizerBox>();
+        var corners = json["end"]["box"];
+        if (goal && corners.IsArray && corners.Count == 4) {
+            var line = JsonValue.NewObject();
+            line.Set("type", JsonValue.Of("goal"));
+            line.Set("box", corners);
+            boxes.Add(RandomizerBox.FromJson(line));
+        }
+
+        var list = json["boxes"];
+        for (var i = 0; i < list.Count; i++) {
+            boxes.Add(RandomizerBox.FromJson(list[i]));
+        }
+
+        return boxes;
     }
 
     // The page's copy replaces the file's, is written out, and a live session runs the
@@ -515,18 +572,22 @@ public static class PracticeServer {
             throw new Exception("segment must be an object");
         }
 
-        file.Segment = segment;
+        file.SetBoxes("", TakeBoxes(segment, true));
+        var stored = Copy(segment, "boxes", "end");
+        stored.Set("end", Copy(segment["end"], "box"));
+        file.Segment = stored;
         var variants = incoming["variants"];
         if (variants.IsObject) {
             foreach (var id in variants.Keys) {
                 if (variants[id].IsObject) {
-                    file.SetVariantSegment(id, variants[id]);
+                    file.SetBoxes(id, TakeBoxes(variants[id], false));
+                    file.SetVariantSegment(id, Copy(variants[id], "boxes"));
                 }
             }
         }
 
         file.Save();
-        PracticeController.Segment = PracticeSegment.Parse(file.Segment, file.VariantSegment(file.Variant));
+        PracticeController.Reparse();
         Randomizer.log("practice: segment saved from the editor page");
         return "{\"ok\":true}";
     }

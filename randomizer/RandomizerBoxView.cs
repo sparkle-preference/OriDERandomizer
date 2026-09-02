@@ -1,21 +1,18 @@
 using Game;
 using UnityEngine;
 
-// Draws a segment's boxes over the finished frame: filled world-space quads
-// with a brighter edge. It runs as the camera's last image effect so the
-// post-process (motion blur, bloom, grading) never touches them; nothing in
-// this game is a Unity sprite, so there is no renderer to borrow instead.
-public class PracticeBoxView : MonoBehaviour {
-    private static PracticeBoxView instance;
+// Draws the boxes in force over the finished frame: filled world-space quads with a
+// brighter edge. It runs as the camera's last image effect so the post-process
+// (motion blur, bloom, grading) never touches them; nothing in this game is a Unity
+// sprite, so there is no renderer to borrow instead.
+public class RandomizerBoxView : MonoBehaviour {
+    private static RandomizerBoxView instance;
 
     private static Material paint;
 
     private Camera cam;
 
     private const float EdgeWidth = 0.25f;
-
-    // a box that grants something unseen still has to be findable while testing
-    private static readonly Color Unpainted = new Color(1f, 1f, 1f, 0.1f);
 
     private static readonly Color DraftFill = new Color(1f, 1f, 0.6f, 0.15f);
 
@@ -36,24 +33,17 @@ public class PracticeBoxView : MonoBehaviour {
             Destroy(instance);
         }
 
-        instance = camera.gameObject.AddComponent<PracticeBoxView>();
-    }
-
-    public static void Detach() {
-        if (instance != null) {
-            Destroy(instance);
-            instance = null;
-        }
+        instance = camera.gameObject.AddComponent<RandomizerBoxView>();
     }
 
     // Image effects run in component order, and a component added at runtime
     // is last, so source here is the frame after every game effect.
     public void OnRenderImage(RenderTexture source, RenderTexture destination) {
         Graphics.Blit(source, destination);
-        var segment = PracticeController.Segment;
+        var boxes = RandomizerBoxes.Active;
+        var draft = PracticeEditor.Draft;
         // drawn after the UI camera, so a menu would sit under them
-        if (!PracticeController.Active || segment == null || Characters.Sein == null
-                || Game.UI.MainMenuVisible || !Ready()) {
+        if ((boxes.Count == 0 && !draft.HasValue) || Characters.Sein == null || Game.UI.MainMenuVisible || !Ready()) {
             return;
         }
 
@@ -67,34 +57,31 @@ public class PracticeBoxView : MonoBehaviour {
         GL.modelview = cam.worldToCameraMatrix;
         paint.SetPass(0);
         GL.Begin(GL.QUADS);
-        foreach (var box in segment.Boxes) {
-            if (box.Spent) {
+        foreach (var box in boxes) {
+            if (!box.Paint.HasValue || box.Consumed) {
                 continue;
             }
 
-            var colour = box.Paint.HasValue ? box.Paint.Value : Unpainted;
+            var colour = box.Paint.Value;
             var edge = new Color(colour.r, colour.g, colour.b, Mathf.Min(1f, colour.a + 0.45f));
-            var area = box.Area;
-            Fill(area.xMin, area.yMin, area.xMax, area.yMax, colour);
-            Fill(area.xMin, area.yMin, area.xMax, area.yMin + EdgeWidth, edge);
-            Fill(area.xMin, area.yMax - EdgeWidth, area.xMax, area.yMax, edge);
-            Fill(area.xMin, area.yMin, area.xMin + EdgeWidth, area.yMax, edge);
-            Fill(area.xMax - EdgeWidth, area.yMin, area.xMax, area.yMax, edge);
+            Outline(box.Area, colour, edge);
         }
 
         // the box being drawn, in the editor
-        var draft = PracticeEditor.Draft;
         if (draft.HasValue) {
-            var area = draft.Value;
-            Fill(area.xMin, area.yMin, area.xMax, area.yMax, DraftFill);
-            Fill(area.xMin, area.yMin, area.xMax, area.yMin + EdgeWidth, DraftEdge);
-            Fill(area.xMin, area.yMax - EdgeWidth, area.xMax, area.yMax, DraftEdge);
-            Fill(area.xMin, area.yMin, area.xMin + EdgeWidth, area.yMax, DraftEdge);
-            Fill(area.xMax - EdgeWidth, area.yMin, area.xMax, area.yMax, DraftEdge);
+            Outline(draft.Value, DraftFill, DraftEdge);
         }
 
         GL.End();
         GL.PopMatrix();
+    }
+
+    private static void Outline(Rect area, Color fill, Color edge) {
+        Fill(area.xMin, area.yMin, area.xMax, area.yMax, fill);
+        Fill(area.xMin, area.yMin, area.xMax, area.yMin + EdgeWidth, edge);
+        Fill(area.xMin, area.yMax - EdgeWidth, area.xMax, area.yMax, edge);
+        Fill(area.xMin, area.yMin, area.xMin + EdgeWidth, area.yMax, edge);
+        Fill(area.xMax - EdgeWidth, area.yMin, area.xMax, area.yMax, edge);
     }
 
     private static void Fill(float x1, float y1, float x2, float y2, Color colour) {
@@ -113,7 +100,7 @@ public class PracticeBoxView : MonoBehaviour {
 
         var shader = Shader.Find("Hidden/Internal-Colored");
         if (shader == null) {
-            Randomizer.LogError("practice: no colour shader, boxes will not draw");
+            Randomizer.LogError("boxes: no colour shader, they will not draw");
             return false;
         }
 

@@ -7,28 +7,37 @@
 <style>
   body { font: 14px/1.4 system-ui, sans-serif; background: #14181d; color: #e6e9ee; margin: 0; padding: 20px 24px 70px; }
   h1 { font-size: 20px; margin: 0 0 4px; }
-  h2 { font-size: 15px; margin: 24px 0 8px; color: #9fc6ff; text-transform: uppercase; letter-spacing: .08em; }
+  h2 { font-size: 15px; margin: 0 0 10px; color: #9fc6ff; text-transform: uppercase; letter-spacing: .08em; }
   .muted { color: #8b95a3; }
-  section { background: #1c2229; border: 1px solid #2b333d; border-radius: 6px; padding: 12px 16px; margin-bottom: 14px; }
+  section { background: #1c2229; border: 1px solid #2b333d; border-radius: 6px; padding: 14px 16px; margin-bottom: 14px; min-width: 0; }
+  /* a wide page: two sections to a row, the map row on its own */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .cols section { margin-bottom: 0; }
+  .cols + .cols, .cols + section, section + .cols { margin-top: 14px; }
+  @media (max-width: 1300px) { .cols { grid-template-columns: 1fr; } }
   .row { margin: 6px 0; }
   label { display: inline-block; margin: 4px 14px 4px 0; }
   input[type=text], input[type=number], select { background: #0f1317; color: #e6e9ee; border: 1px solid #3a4553; border-radius: 4px; padding: 4px 6px; }
   input[type=number] { width: 66px; }
-  td .pick { min-width: 240px; }
   input[type=color] { vertical-align: middle; }
   button { background: #2f6fd6; color: #fff; border: 0; border-radius: 4px; padding: 6px 12px; cursor: pointer; margin-right: 6px; }
   button.quiet { background: #3a4553; }
   button.danger { background: #8b2f2f; }
+  button.on { background: #2f9e6a; }
+  button:disabled { opacity: .45; cursor: default; }
   table { border-collapse: collapse; width: 100%; }
   th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #2b333d; vertical-align: top; }
   th { color: #8b95a3; font-weight: normal; }
+  td .pick { min-width: 240px; }
   tr.flash td { background: #2f4f7a; transition: background 1.5s; }
   .chips span { display: inline-block; background: #2b333d; border-radius: 12px; padding: 2px 10px; margin: 2px 4px 2px 0; }
   .chips span b { cursor: pointer; margin-left: 6px; color: #ff9a9a; }
   .mapgrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 14px; }
-  #map { height: 460px; background: #121212; border: 1px solid #2b333d; border-radius: 4px; }
+  #map { height: 520px; background: #121212; border: 1px solid #2b333d; border-radius: 4px; }
+  #map.editing { cursor: move; }
   .leaflet-container { font: inherit; }
   .leaflet-tooltip { background: #0f1317; color: #e6e9ee; border: 1px solid #3a4553; }
+  .handle { width: 10px; height: 10px; background: #fff; border: 1px solid #000; border-radius: 2px; }
   #status { position: fixed; bottom: 0; left: 0; right: 0; background: #0f1317; padding: 10px 24px; border-top: 1px solid #2b333d; }
   .ok { color: #8fe3a0; } .bad { color: #ff9a9a; }
   .variant, .group { border: 1px dashed #3a4553; border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
@@ -53,38 +62,42 @@
 <details style="margin: 10px 0">
   <summary>How this works</summary>
   <div class="muted" style="margin-top:6px; max-width: 900px">
-    A segment is a save file plus rules. In the game, <b>EDIT BOXES</b> on the practice pause freezes the world so you can draw boxes with the mouse:
-    <b>1</b> goal, <b>2</b> death, <b>3</b> hint, <b>Z</b> undo, <b>X</b> delete under the cursor, <b>WASD</b> pans, <b>Enter</b> saves and restarts the attempt.
-    Everything else is edited here and sent back with <b>Save to game</b>: names, hint text, what ends the run, which pickups a shuffle scatters where, and variants,
+    A segment is a save file plus rules. In the game, <b>EDIT PRACTICE SEGMENT</b> on the practice pause freezes the world so you can draw boxes with the mouse:
+    <b>1</b> goal, <b>2</b> kill, <b>3</b> hint, <b>4</b> solid (a block Ori can stand on, climb and wall jump off), <b>Z</b> undo, <b>X</b> delete under the cursor, <b>WASD</b> pans, <b>5</b> opens this page, <b>Enter</b> saves and restarts the attempt.
+    Everything else is edited here and sent back with <b>Save to game</b>: names, what boxes give, what ends the run, which pickups a shuffle scatters where, and variants,
     which share the start and the end but bring their own loadout and boxes.
-    To put an item in a box, draw it as a hint box in the game, then set its type to <i>item</i> in the Boxes table and choose what it gives.
+    A hint is an item box that gives a message (<i>SH|text</i>); change what it gives in the Boxes table to make it any pickup. An item box gives once and a repeat item box every time.
+    Boxes are lines in the segment's placements.bfr, the same lines a seed can carry.
     Pick locations from the zone and location lists or click them on the map; they go to whatever <i>locations go to</i> says.
+    With <i>edit boxes on the map</i> on, drag a box to move it and its corners to resize it.
     A run ends when every part of the end condition holds at once.
   </div>
 </details>
 
+<div class="cols">
 <section id="segmentSection">
   <h2>Segment</h2>
-  <label>Name <input type="text" id="name" size="40"></label>
-  <label>Timing
+  <div class="row"><label>Name <input type="text" id="name" size="40"></label></div>
+  <div class="row"><label>Timing
     <select id="mode"><option value="best">best time (ghosts on)</option><option value="average">average time (no ghosts)</option></select>
   </label>
   <label>Ghost shown
     <select id="showGhost"><option value="">pinned, else fastest</option><option value="fastest">fastest</option><option value="pinned">pinned</option><option value="recent">most recent</option><option value="none">none</option></select>
-  </label>
-  <label><input type="checkbox" id="qtm"> quit to menu keeps the run (vanilla pause menu)</label>
+  </label></div>
+  <div class="row"><label><input type="checkbox" id="qtm"> quit to menu keeps the run (vanilla pause menu)</label></div>
 </section>
 
 <section>
   <h2>End condition <span class="muted">(everything set must hold)</span></h2>
-  <div class="row">Goal box <span id="goalBox" class="muted">none</span> <button class="quiet" id="clearGoal">clear</button> <span class="muted">draw one in the game with the 1 key</span></div>
+  <div class="row">Goal box <span id="goalBox" class="muted">none</span> <span class="muted">— edit it in the Boxes table, or draw one in the game with the 1 key</span></div>
   <div class="row">Items held <span id="endItems"></span></div>
   <div class="row">Pickup count <input type="number" id="count" min="0" placeholder="any"> <span class="muted">blank for none</span></div>
   <div class="row">Locations <span id="locChips" class="chips"></span> <button class="quiet" id="pickEnd">pick</button></div>
 </section>
+</div>
 
 <section>
-  <h2>Locations</h2>
+  <h2>Locations and boxes</h2>
   <div class="mapgrid">
     <div id="map"></div>
     <div>
@@ -94,16 +107,18 @@
       <div class="row"><input type="text" id="locSearch" placeholder="search every zone" size="26"> <span class="muted">dims the map to the matches</span></div>
       <div class="row muted">Or click a marker. Clicking a box jumps to its row.</div>
       <div id="targetChips" class="chips"></div>
+      <div class="row" style="margin-top:14px"><button class="quiet" id="editBoxes">edit boxes on the map</button> <span class="muted">drag a box to move it, a corner to resize it</span></div>
       <div id="tileStatus" class="muted"></div>
     </div>
   </div>
 </section>
 
+<div class="cols">
 <section>
   <h2>Boxes</h2>
-  <table id="boxes"><thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>text / item</th><th>colour</th><th>repeat</th><th></th></tr></thead><tbody></tbody></table>
-  <button class="quiet" id="addBox">add box</button>
-  <div class="muted">Drawn boxes appear here after a save in the game. An item box gives its pickup once, or every time with repeat.</div>
+  <table id="boxes"><thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th>colour</th><th>hidden</th><th></th></tr></thead><tbody></tbody></table>
+  <div class="row"><button class="quiet" id="addBox">add box</button> <button class="quiet" id="addGoal">add goal box</button></div>
+  <div class="muted">Drawn boxes appear here after a save in the game. An item box gives its pickup once, a repeat item box every time, a solid box is a block in the world, and a hidden box works unseen. The goal box is part of the end condition.</div>
 </section>
 
 <section>
@@ -112,11 +127,13 @@
   <button class="quiet" id="addGroup">add group</button>
   <div class="muted">Each attempt scatters the group's pickups over as many of its locations, chosen fresh.</div>
 </section>
+</div>
 
+<div class="cols">
 <section>
   <h2>Ghosts <span class="muted" id="ghostVariant"></span></h2>
   <div id="ghosts" class="muted">none</div>
-  <button class="quiet" id="pinGhost">pin the most recent run</button>
+  <div class="row"><button class="quiet" id="pinGhost">pin the most recent run</button></div>
   <div class="muted">A pinned run is raced instead of the fastest until it is removed.</div>
 </section>
 
@@ -126,6 +143,7 @@
   <button class="quiet" id="addVariant">add variant</button>
   <div class="muted">A segment with variants always runs one of them: they share the start and the end condition, and each keeps its own loadout, boxes, history and ghosts.</div>
 </section>
+</div>
 
 <div id="status">
   <button id="save">Save to game</button>
@@ -136,7 +154,7 @@
 <script src="/leaflet.js"></script>
 <script>
 (function () {
-  var state = { segment: null, variants: {}, catalog: null, map: null, markers: {}, shapes: [], target: 'end', playing: '' };
+  var state = { segment: null, variants: {}, catalog: null, map: null, markers: {}, shapes: [], target: 'end', playing: '', editing: false, ghosts: [] };
   var $ = function (id) { return document.getElementById(id); };
   var say = function (text, cls) { var m = $('message'); m.textContent = text; m.className = cls || 'muted'; };
 
@@ -398,7 +416,7 @@
       if (!(loc.zone in zoneColour)) zoneColour[loc.zone] = palette[Object.keys(zoneColour).length % palette.length];
       var m = L.circleMarker([loc.y, loc.x], { radius: 5, weight: 1, color: '#000', fillColor: zoneColour[loc.zone], fillOpacity: 0.9 }).addTo(map);
       m.bindTooltip(loc.name + ' (' + loc.zone + ')', { direction: 'top', offset: [0, -6] });
-      m.on('click', function () { toggleLocation(loc.key); });
+      m.on('click', function () { if (!state.editing) toggleLocation(loc.key); });
       state.markers[loc.key] = m;
     });
     map.on('mousemove', function (ev) { $('tileStatus').title = 'x ' + ev.latlng.lng.toFixed(1) + '  y ' + ev.latlng.lat.toFixed(1); });
@@ -431,36 +449,102 @@
     return !q || (loc.name + ' ' + loc.zone + ' ' + loc.type).toLowerCase().indexOf(q) >= 0;
   }
 
+  var DEFAULT_COLOUR = { goal: '#8fe3a0', kill: '#ff6b6b', solid: '#9aa0aa', item: '#40c0ff', ritem: '#7fd8ff' };
+  // colours travel as rrggbb; none is an invisible box
+  function hidden(b) { return b.color === 'none' || b.color === '0'; }
+  function colourOf(b) { return b.color && !hidden(b) ? '#' + b.color.replace('#', '').slice(0, 6) : (DEFAULT_COLOUR[b.type] || DEFAULT_COLOUR.item); }
+  function boxLabel(b) { return b.type === 'item' || b.type === 'ritem' ? (b.type === 'ritem' ? 'repeat item box: ' : 'item box: ') + (nameOf(b.give) || 'nothing yet') : (b.type || 'kill') + ' box'; }
+
+  // every box on the map, with where it lives: the goal, the shared list, each variant's
+  function allBoxes() {
+    var out = [];
+    var end = state.segment.end || {};
+    if (end.box && end.box.length === 4) out.push({ b: { type: 'goal', box: end.box }, label: 'goal box', rowId: 'box-shared-goal', owner: 'shared' });
+    (state.segment.boxes || []).forEach(function (b, i) { out.push({ b: b, label: boxLabel(b) + ' · shared', rowId: 'box-shared-' + i, owner: 'shared' }); });
+    Object.keys(state.variants).forEach(function (id) {
+      (state.variants[id].boxes || []).forEach(function (b, i) { out.push({ b: b, label: boxLabel(b) + ' · variant ' + id, rowId: 'box-' + id + '-' + i, owner: id }); });
+    });
+    return out;
+  }
+
   function styleMarkers() {
     var end = (state.segment.end || {}).locations || [];
     var groups = state.segment.shuffle || [];
     state.catalog.locations.forEach(function (loc) {
       var m = state.markers[loc.key]; if (!m) return;
       var inEnd = end.indexOf(loc.key) >= 0, inGroup = groups.some(function (g) { return (g.among || []).indexOf(loc.key) >= 0; });
-      var dim = matches(loc) ? 1 : 0.15;
+      var dim = (matches(loc) ? 1 : 0.15) * (state.editing ? 0.5 : 1);
       m.setStyle({ radius: inEnd || inGroup ? 8 : 5, color: inEnd ? '#8fe3a0' : (inGroup ? '#ffd27f' : '#000'), weight: inEnd || inGroup ? 3 : 1, opacity: dim, fillOpacity: 0.9 * dim });
     });
-    state.shapes.forEach(function (s) { state.map.removeLayer(s); }); state.shapes = [];
-    var draw = function (b, colour, label, rowId) {
-      if (!b || b.length !== 4) return;
-      var r = L.rectangle([[b[1], b[0]], [b[3], b[2]]], { color: colour, weight: 2, fillOpacity: 0.15 }).addTo(state.map);
-      r.bindTooltip(label, { sticky: true });
-      if (rowId) r.on('click', function () { jumpTo(rowId); });
-      state.shapes.push(r);
-    };
-    draw((state.segment.end || {}).box, '#8fe3a0', 'goal box');
-    var colourOf = function (b, own) { return b.type === 'death' ? '#ff6b6b' : (b.type === 'hint' ? '#ffffff' : (own ? '#c59bff' : (b.color || '#40c0ff'))); };
-    (state.segment.boxes || []).forEach(function (b, i) { draw(b.box, colourOf(b, false), boxLabel(b) + ' · shared', 'box-shared-' + i); });
-    Object.keys(state.variants).forEach(function (id) {
-      (state.variants[id].boxes || []).forEach(function (b, i) { draw(b.box, colourOf(b, true), boxLabel(b) + ' · variant ' + id, 'box-' + id + '-' + i); });
+    state.shapes.forEach(function (s) { s.layers.forEach(function (l) { state.map.removeLayer(l); }); }); state.shapes = [];
+    allBoxes().forEach(function (entry) {
+      var b = entry.b.box; if (!b || b.length !== 4) return;
+      var colour = entry.owner !== 'shared' && !entry.b.color ? '#c59bff' : colourOf(entry.b);
+      var r = L.rectangle(bounds(b), { color: colour, weight: 2, fillOpacity: state.editing ? 0.3 : 0.15, dashArray: hidden(entry.b) ? '4 4' : null }).addTo(state.map);
+      r.bindTooltip(entry.label, { sticky: true });
+      var shape = { entry: entry, layers: [r] };
+      if (state.editing) attachEditing(shape, r);
+      else r.on('click', function () { jumpTo(entry.rowId); });
+      state.shapes.push(shape);
     });
   }
-  function boxLabel(b) { return b.type === 'raw' ? 'item box: ' + (nameOf(b.give) || 'nothing yet') : (b.type || 'raw') + ' box' + (b.type === 'hint' && b.text ? ': ' + b.text : ''); }
+  function bounds(b) { return [[Math.min(b[1], b[3]), Math.min(b[0], b[2])], [Math.max(b[1], b[3]), Math.max(b[0], b[2])]]; }
   function jumpTo(rowId) {
     var row = document.getElementById(rowId); if (!row) return;
     row.scrollIntoView({ behavior: 'smooth', block: 'center' });
     row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600);
   }
+
+  // Dragging a box moves it, dragging a corner handle resizes it; the numbers land in
+  // the table when the mouse lets go.
+  function attachEditing(shape, rect) {
+    var b = shape.entry.b.box;
+    var map = state.map;
+    function normalise() {
+      var x1 = num(Math.min(b[0], b[2])), x2 = num(Math.max(b[0], b[2])), y1 = num(Math.min(b[1], b[3])), y2 = num(Math.max(b[1], b[3]));
+      b[0] = x1; b[1] = y1; b[2] = x2; b[3] = y2;
+    }
+    function redraw() { rect.setBounds(bounds(b)); shape.layers.slice(1).forEach(function (h, k) { h.setLatLng(cornerLatLng(k)); }); }
+    function cornerLatLng(k) { var xs = [b[0], b[2], b[2], b[0]], ys = [b[1], b[1], b[3], b[3]]; return [ys[k], xs[k]]; }
+    for (var k = 0; k < 4; k++) (function (k) {
+      var h = L.marker(cornerLatLng(k), { draggable: true, icon: L.divIcon({ className: 'handle', iconSize: [10, 10] }) }).addTo(map);
+      h.on('drag', function (ev) {
+        var p = ev.target.getLatLng();
+        if (k === 0) { b[0] = p.lng; b[1] = p.lat; } else if (k === 1) { b[2] = p.lng; b[1] = p.lat; }
+        else if (k === 2) { b[2] = p.lng; b[3] = p.lat; } else { b[0] = p.lng; b[3] = p.lat; }
+        rect.setBounds(bounds(b));
+      });
+      h.on('dragend', function () { normalise(); render(); });
+      shape.layers.push(h);
+    })(k);
+    var start = null, from = null;
+    rect.on('mousedown', function (ev) {
+      L.DomEvent.stop(ev);
+      map.dragging.disable();
+      start = ev.latlng; from = b.slice();
+      map.on('mousemove', move); map.on('mouseup', stop);
+      L.DomEvent.on(document, 'mouseup', stop);
+    });
+    function move(ev) {
+      if (!start) return;
+      var dx = ev.latlng.lng - start.lng, dy = ev.latlng.lat - start.lat;
+      b[0] = from[0] + dx; b[2] = from[2] + dx; b[1] = from[1] + dy; b[3] = from[3] + dy;
+      redraw();
+    }
+    function stop() {
+      if (!start) return;
+      start = null; map.off('mousemove', move); map.off('mouseup', stop); L.DomEvent.off(document, 'mouseup', stop);
+      map.dragging.enable();
+      normalise(); render();
+    }
+  }
+  $('editBoxes').onclick = function () {
+    state.editing = !state.editing;
+    $('editBoxes').classList.toggle('on', state.editing);
+    $('editBoxes').textContent = state.editing ? 'done editing boxes' : 'edit boxes on the map';
+    $('map').classList.toggle('editing', state.editing);
+    if (state.map) styleMarkers();
+  };
 
   // ---- rendering ---------------------------------------------------------------
   function render() {
@@ -479,7 +563,8 @@
     renderTargets();
     renderChips($('locChips'), end.locations || [], locName);
     renderLocationPicker();
-    renderBoxes($('boxes').querySelector('tbody'), seg.boxes || [], 'shared');
+    renderBoxes($('boxes').querySelector('tbody'), seg.boxes || (seg.boxes = []), 'shared', true);
+    $('addGoal').style.display = end.box && end.box.length === 4 ? 'none' : '';
     renderGroups();
     renderVariants();
     initMap();
@@ -536,34 +621,47 @@
   $('locSearch').oninput = function () { renderLocationPicker(); if (state.map) styleMarkers(); };
   $('pickEnd').onclick = function () { state.target = 'end'; render(); $('map').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
-  function renderBoxes(tbody, boxes, owner) {
+  // the shared table leads with the goal box, which is really the end condition's
+  function renderBoxes(tbody, boxes, owner, withGoal) {
     tbody.innerHTML = '';
+    var end = state.segment.end || {};
+    if (withGoal && end.box && end.box.length === 4) {
+      var tr0 = document.createElement('tr'); tr0.id = 'box-shared-goal';
+      var goalType = document.createElement('select'); var op0 = document.createElement('option'); op0.textContent = 'goal'; goalType.appendChild(op0); goalType.disabled = true;
+      tr0.appendChild(td(goalType));
+      for (var g = 0; g < 4; g++) (function (g) { tr0.appendChild(td(numInput(end.box[g], function (v) { end.box[g] = v; styleMarkers(); $('goalBox').textContent = end.box.join(', '); }))); })(g);
+      var ends = document.createElement('span'); ends.className = 'muted'; ends.textContent = 'ends the run'; tr0.appendChild(td(ends));
+      tr0.appendChild(td(document.createElement('span'))); tr0.appendChild(td(document.createElement('span')));
+      var clear = document.createElement('button'); clear.className = 'danger'; clear.textContent = 'remove'; clear.onclick = function () { delete end.box; render(); };
+      tr0.appendChild(td(clear));
+      tbody.appendChild(tr0);
+    }
     boxes.forEach(function (b, i) {
       var tr = document.createElement('tr'); tr.id = 'box-' + owner + '-' + i;
-      var types = { death: 'death', hint: 'hint', raw: 'item' };
+      var types = { kill: 'kill', item: 'item', ritem: 'repeat item', solid: 'solid' };
       var typeSel = document.createElement('select');
       Object.keys(types).forEach(function (k) { var op = document.createElement('option'); op.value = k; op.textContent = types[k]; typeSel.appendChild(op); });
-      typeSel.value = b.type in types ? b.type : 'raw';
+      if (!(b.type in types)) b.type = 'kill';
+      typeSel.value = b.type;
       typeSel.onchange = function () { b.type = typeSel.value; render(); };
       tr.appendChild(td(typeSel));
       var coords = b.box && b.box.length === 4 ? b.box : [0, 0, 0, 0];
       b.box = coords;
       for (var k = 0; k < 4; k++) (function (k) { tr.appendChild(td(numInput(coords[k], function (v) { coords[k] = v; styleMarkers(); }))); })(k);
-      if (b.type === 'hint') {
-        var text = document.createElement('input'); text.type = 'text'; text.size = 28; text.value = b.text || ''; text.placeholder = 'hint text';
-        text.onchange = function () { b.text = text.value; styleMarkers(); };
-        tr.appendChild(td(text));
-      } else if (b.type === 'death') {
-        var none = document.createElement('span'); none.className = 'muted'; none.textContent = '—';
+      if (b.type === 'kill' || b.type === 'solid') {
+        var none = document.createElement('span'); none.className = 'muted'; none.textContent = b.type === 'solid' ? 'stand on it, climb it, jump off it' : 'kills Ori';
         tr.appendChild(td(none));
       } else {
-        tr.appendChild(td(pickSelect({ get: function () { return splitCode(b.give); }, set: function (l) { b.give = joinCodes(l); styleMarkers(); }, placeholder: 'what the box gives' })));
+        tr.appendChild(td(pickSelect({ get: function () { return splitCode(b.give); }, set: function (l) { b.give = joinCodes(l); styleMarkers(); }, placeholder: 'what it gives; a message is SH|text' })));
       }
-      var colour = document.createElement('input'); colour.type = 'color'; colour.value = b.color || '#40c0ff'; colour.disabled = b.type !== 'raw';
-      colour.onchange = function () { b.color = colour.value; };
+      // any box can wear its own colour; the type's is the default
+      var colour = document.createElement('input'); colour.type = 'color'; colour.value = colourOf(b); colour.disabled = hidden(b); colour.title = b.color ? 'own colour' : 'the default for a ' + types[b.type] + ' box';
+      colour.onchange = function () { b.color = colour.value.replace('#', ''); styleMarkers(); };
       tr.appendChild(td(colour));
-      var rep = document.createElement('input'); rep.type = 'checkbox'; rep.checked = !!b.repeat; rep.onchange = function () { b.repeat = rep.checked; };
-      tr.appendChild(td(rep));
+      // invisible: it still works, nobody sees it
+      var hide = document.createElement('input'); hide.type = 'checkbox'; hide.checked = hidden(b);
+      hide.onchange = function () { if (hide.checked) b.color = 'none'; else delete b.color; render(); };
+      tr.appendChild(td(hide));
       var del = document.createElement('button'); del.className = 'danger'; del.textContent = 'remove'; del.onclick = function () { boxes.splice(i, 1); render(); };
       tr.appendChild(td(del));
       tbody.appendChild(tr);
@@ -597,10 +695,13 @@
 
   function loadGhosts() {
     return api('/api/ghosts').then(function (g) {
+      state.ghosts = g.ghosts || [];
       $('ghostVariant').textContent = state.playing ? '(variant ' + state.playing + ')' : '';
       var root = $('ghosts'); root.innerHTML = '';
-      if (!g.ghosts.length) { root.textContent = 'no ghosts stored yet'; return; }
-      g.ghosts.forEach(function (gh) {
+      // pinning copies the most recent run, so there has to be one
+      $('pinGhost').disabled = !state.ghosts.some(function (gh) { return gh.slot === 'recent'; });
+      if (!state.ghosts.length) { root.textContent = 'no ghosts stored yet'; return; }
+      state.ghosts.forEach(function (gh) {
         var row = document.createElement('div');
         row.appendChild(document.createTextNode(gh.slot + ': ' + (gh.seconds != null ? gh.seconds.toFixed(2) + ' s, ' + gh.samples + ' samples' : gh.bytes + ' bytes') + ' '));
         var del = document.createElement('button'); del.className = 'danger'; del.textContent = 'remove';
@@ -631,16 +732,22 @@
       box.appendChild(inv);
       var h = document.createElement('div'); h.className = 'muted'; h.style.marginTop = '6px'; h.textContent = 'Boxes only this variant has'; box.appendChild(h);
       var table = document.createElement('table');
-      table.innerHTML = '<thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>text / item</th><th>colour</th><th>repeat</th><th></th></tr></thead><tbody></tbody>';
-      renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id);
+      table.innerHTML = '<thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th>colour</th><th>hidden</th><th></th></tr></thead><tbody></tbody>';
+      renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id, false);
       box.appendChild(table);
-      var add = document.createElement('button'); add.className = 'quiet'; add.textContent = 'add box'; add.style.marginTop = '6px'; add.onclick = function () { v.boxes.push({ box: [0, 0, 0, 0], type: 'death' }); render(); };
+      var add = document.createElement('button'); add.className = 'quiet'; add.textContent = 'add box'; add.style.marginTop = '6px'; add.onclick = function () { v.boxes.push(freshBox('kill')); render(); };
       box.appendChild(add);
       root.appendChild(box);
     });
   }
 
-  $('addBox').onclick = function () { (state.segment.boxes = state.segment.boxes || []).push({ box: [0, 0, 0, 0], type: 'death' }); render(); };
+  // a new box lands where the map is looking, so it can be dragged into place
+  function freshBox(type) {
+    var c = state.map ? state.map.getCenter() : { lng: 0, lat: 0 };
+    return { box: [num(c.lng - 2), num(c.lat - 2), num(c.lng + 2), num(c.lat + 2)], type: type };
+  }
+  $('addBox').onclick = function () { (state.segment.boxes = state.segment.boxes || []).push(freshBox('kill')); render(); };
+  $('addGoal').onclick = function () { var end = state.segment.end = state.segment.end || {}; end.box = freshBox('goal').box; render(); };
   $('addGroup').onclick = function () { (state.segment.shuffle = state.segment.shuffle || []).push({ give: [], among: [] }); state.target = String(state.segment.shuffle.length - 1); render(); };
   $('addVariant').onclick = function () {
     var name = prompt('Variant name'); if (!name) return;
@@ -649,7 +756,6 @@
     state.variants[id] = { name: name, inventory: [], boxes: [] };
     render();
   };
-  $('clearGoal').onclick = function () { if (state.segment.end) delete state.segment.end.box; render(); };
 
   function collect() {
     var seg = state.segment;
@@ -664,11 +770,12 @@
     if (count === '') delete seg.end.count; else seg.end.count = parseInt(count, 10);
     ['items', 'locations'].forEach(function (k) { if (seg.end[k] && seg.end[k].length === 0) delete seg.end[k]; });
     (seg.boxes || []).forEach(tidy);
+    if (seg.boxes && seg.boxes.length === 0) delete seg.boxes;
     if (seg.shuffle && seg.shuffle.length === 0) delete seg.shuffle;
     Object.keys(state.variants).forEach(function (id) { (state.variants[id].boxes || []).forEach(tidy); });
     return { segment: seg, variants: state.variants };
   }
-  function tidy(b) { if (b.type !== 'raw') { delete b.give; delete b.color; } if (b.type !== 'hint') delete b.text; if (!b.repeat) delete b.repeat; }
+  function tidy(b) { if (b.type === 'kill' || b.type === 'solid') delete b.give; delete b.text; delete b.repeat; }
 
   $('save').onclick = function () {
     say('Saving…');

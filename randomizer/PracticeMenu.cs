@@ -114,18 +114,21 @@ public static class PracticeMenu {
 
         if (finished) {
             var pin = Take(manager, "skip", Pin, false);
-            Label(pin, "PIN THIS RUN'S GHOST");
+            Label(pin, "PIN GHOST");
             pinItem = pin == null ? null : pin.Item;
-            // the top row reads the result rather than offering to resume; its press is
-            // taken away, since the run is over
-            var result = Take(manager, "continue", null, false);
-            Label(result, (PracticeController.LastResult ?? "finished").ToUpperInvariant());
+            // the run is over: the skill wheel's column is the tally's now
+            HideColumn(screen);
+            PracticeHud.ShowTally(PracticeController.LastTally ?? "");
         }
 
-        // what is left is help and options, which a run keeps out of reach
-        foreach (var item in manager.MenuItems) {
-            if (item != null && item.gameObject.activeSelf && !Taken(item) && item.gameObject.name != "continue") {
-                Hide(item);
+        // What is left is help and options, which a run keeps out of reach; a finished
+        // run has no Resume either. The layout lists the rows, the manager everything.
+        var layout = manager.GetComponentInChildren<CleverMenuItemLayout>(true);
+        if (layout != null) {
+            foreach (var item in layout.MenuItems) {
+                if (item != null && item.gameObject.activeSelf && !Taken(item) && (finished || item.gameObject.name != "continue")) {
+                    Hide(item);
+                }
             }
         }
 
@@ -133,6 +136,33 @@ public static class PracticeMenu {
         Arrange(manager, finished ? null : Find(manager, "skip"));
         Relayout(manager);
     }
+
+    // the tally is the finish screen's; Back takes both away until the screen is back
+    public static void OnPauseHidden() {
+        if (PracticeController.Current == PracticeController.Phase.Finished) {
+            PracticeHud.HideTally();
+        }
+    }
+
+    private static readonly List<GameObject> hiddenObjects = new List<GameObject>();
+
+    // the left third of the screen, and the skill wheel's items wherever they sit
+    private static void HideColumn(InventoryManager screen) {
+        foreach (Transform child in screen.transform) {
+            if (child.gameObject.activeSelf && child.position.x < -2f) {
+                hiddenObjects.Add(child.gameObject);
+                child.gameObject.SetActive(false);
+            }
+        }
+
+        foreach (var item in screen.GetComponentsInChildren<InventoryAbilityItem>(true)) {
+            if (item.gameObject.activeSelf) {
+                hiddenObjects.Add(item.gameObject);
+                item.gameObject.SetActive(false);
+            }
+        }
+    }
+
 
     private static List<CleverMenuItem> layoutOrder;
 
@@ -158,6 +188,7 @@ public static class PracticeMenu {
 
         var edges = new List<CleverMenuItemSelectionManager.NavigationData>();
         CleverMenuItem above = null;
+        CleverMenuItem first = null;
         foreach (var item in layout.MenuItems) {
             if (item == null || !item.IsVisible || !item.gameObject.activeSelf) {
                 continue;
@@ -168,11 +199,32 @@ public static class PracticeMenu {
                 edges.Add(new CleverMenuItemSelectionManager.NavigationData { From = item, To = above });
             }
 
+            if (first == null) {
+                first = item;
+            }
+
             above = item;
         }
 
         manager.Navigation = edges;
+        // The screen picks its opening row as the first activated one in the manager's
+        // list, which is not the layout's order; the top visible row goes first there.
+        if (first != null && manager.MenuItems.Count > 0 && manager.MenuItems[0] != first) {
+            if (managerOrder == null) {
+                managerOrder = new List<CleverMenuItem>(manager.MenuItems);
+            }
+
+            manager.MenuItems.Remove(first);
+            manager.MenuItems.Insert(0, first);
+        }
+
+        var current = manager.CurrentMenuItem;
+        if (first != null && (current == null || !current.IsVisible || !current.gameObject.activeSelf)) {
+            manager.SetCurrentMenuItem(first);
+        }
     }
+
+    private static List<CleverMenuItem> managerOrder;
 
     private static void Unarrange(CleverMenuItemSelectionManager manager) {
         if (layoutOrder == null) {
@@ -186,6 +238,12 @@ public static class PracticeMenu {
         }
 
         manager.Navigation = navigation;
+        if (managerOrder != null) {
+            manager.MenuItems.Clear();
+            manager.MenuItems.AddRange(managerOrder);
+            managerOrder = null;
+        }
+
         layoutOrder = null;
         navigation = null;
     }
@@ -209,6 +267,8 @@ public static class PracticeMenu {
         row.Activated = item.Activated;
         row.Hidden = item.gameObject.AddComponent<PracticeHiddenCondition>();
         item.Visible = row.Hidden;
+        // the screen's own SetIndexToFirst skips a row that is not activated
+        item.Activated = row.Hidden;
         dressed.Add(row);
     }
 
@@ -284,6 +344,13 @@ public static class PracticeMenu {
             }
         }
 
+        foreach (var hidden in hiddenObjects) {
+            if (hidden != null) {
+                hidden.SetActive(true);
+            }
+        }
+
+        hiddenObjects.Clear();
         Unarrange(screen.NavigationManager);
         if (dressed.Count > 0) {
             Relayout(screen.NavigationManager);

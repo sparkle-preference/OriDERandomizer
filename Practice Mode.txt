@@ -17,12 +17,12 @@ From the title menu choose PRACTICE, pick the new segment, and start it.
 Pause and choose EDIT PRACTICE SEGMENT. The world freezes and you draw boxes with the mouse.
 
 Editor keys:
-1 / 2 / 3           Goal, death or hint tool
+1 / 2 / 3 / 4       Goal, kill, hint or solid tool
 Drag                Draw a box
 Z                   Undo the last box
 X                   Delete the box under the cursor
 WASD                Pan the camera
-4                   Open the segment editor page in a browser
+5                   Open the segment editor page in a browser
 Enter               Save and restart the attempt
 
 Everything else is on the segment editor page, which opens in your browser the first time you edit: the name, what ends the run, hint text, item boxes, shuffle groups, variants and ghosts.
@@ -37,9 +37,11 @@ The end condition is any combination of a goal box, skills or events held, a pic
 
 Available boxes:
 - "goal": Ends the attempt, together with the rest of the end condition.
-- "death": Kills Ori. The respawn is the last checkpoint and the clock keeps running.
-- "hint": Shows its text when entered.
-- "item": Gives a pickup when entered, once, or every time with repeat.
+- "kill": Kills Ori. The respawn is the last checkpoint and the clock keeps running.
+- "item": Gives a pickup once. A message (SH|text) is a hint. A death gives back whatever was taken since the last checkpoint, box and all.
+- "ritem": Gives its pickup on every entry.
+- "solid": A block in the world. Ori stands on it, climbs it and wall jumps off it like any wall.
+Boxes are lines in the segment's placements.bfr, and a seed can carry the same lines; the format is at the end of this file.
 
 Shuffle groups scatter a set of pickups over a set of locations, chosen fresh each attempt.
 Example: 3 keystones over 5 spots puts them in a different 3 of the 5 every attempt.
@@ -99,5 +101,34 @@ Alt+S               Create Practice Segment
 
 Files
 ===
-A .bfrp is a zip: segment.json (the rules), save.sav (the start), variants/<id>/segment.json, and runs.csv and ghosts/ per variant.
+A .bfrp is a zip: segment.json (the rules), save.sav (the start), placements.bfr (the boxes, and what the locations hold), variants/<id>/segment.json and placements.bfr, and runs.csv and ghosts/ per variant.
 The page is the reference for what segment.json can say.
+
+
+
+Box lines
+===
+A box is one line, wherever seed lines go: a seed file, or a segment's placements.bfr.
+BX|<type>|x1,y1,x2,y2|<colour>|<payload>
+The line is split on "|" at most four times, so a payload keeps its own pipes. Corners are game units, in either order.
+
+Example: a kill box
+BX|kill|213,-242.7,221,-202.7
+
+Example: a message every time Ori enters
+BX|ritem|170,-240,175,-230||SH|jump here
+
+Example: a red block to stand on
+BX|solid|185,-206,195,-204|ff6b6b
+
+Types:
+- "kill": Kills Ori.
+- "solid": A block in the world. Ori stands on it, climbs it and wall jumps off it like any wall.
+- "item": Gives its payload once. The box remembers being taken in the save, so a death gives back whatever was taken since the last checkpoint, box and all.
+- "ritem": Gives its payload on every entry.
+- "goal": Ends a practice attempt. Ignored in a seed.
+
+Colour: "rrggbb" or "rrggbbaa", the alpha being the fill's. Empty is the type's own colour. "none" or "0" is an invisible box, which still does its job.
+
+Payload: a pickup, the way a seed line writes one: SK|5, RB|0, EX|100, SH|text, MU|SK/5/EX/100. Only "item" and "ritem" take one.
+Boxes are not locations: nothing they give is reported, counted in stats or tracked as found. It is simply given.

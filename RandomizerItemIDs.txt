@@ -354,6 +354,8 @@ Enhanced mode -- April Fools :)
 
 1650 - LevelUpKills
 
+1900-1999 - Box bitfields: which one-shot item boxes (BX lines) were taken, a bit each in file order
+
 2000-2256 - reserved IDs for Sense pickups
 
 ==== Begin Persists Through Death Zone (bingo) ===

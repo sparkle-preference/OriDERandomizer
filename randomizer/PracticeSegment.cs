@@ -3,28 +3,12 @@ using System.Collections.Generic;
 using Game;
 using UnityEngine;
 
-// The parts of segment.json that act during a run: the boxes you can walk
-// into, and the condition that ends the attempt. Parsed once at Begin, then
-// checked against Ori's position every frame.
+// The parts of a container that act during a run: its boxes, the condition that
+// ends the attempt, a variant's loadout, and what the locations hold. Parsed at
+// Begin, the boxes again whenever they are edited, and checked against Ori's
+// position every frame.
 public class PracticeSegment {
-    public class Box {
-        public Rect Area;
-
-        public RandomizerAction Give;
-
-        public bool Repeat;
-
-        public bool Goal;
-
-        public Color? Paint;
-
-        // repeatable boxes re-arm on exit; one-shot boxes never fire twice
-        public bool Inside;
-
-        public bool Spent;
-    }
-
-    public List<Box> Boxes = new List<Box>();
+    public List<RandomizerBox> Boxes = new List<RandomizerBox>();
 
     public Rect? GoalArea;
 
@@ -38,29 +22,37 @@ public class PracticeSegment {
         get { return GoalArea.HasValue || EndItems.Count > 0 || EndLocations.Count > 0 || EndCount >= 0; }
     }
 
-    // What a variant adds to its segment: its own items to start with, its own
-    // boxes on top of the shared ones, and an end condition that replaces the
-    // shared one outright rather than adding clauses to it.
+    // What a variant adds to its segment: its own items to start with and its own
+    // boxes on top of the shared ones. The ending is shared.
     public List<RandomizerAction> StartingItems = new List<RandomizerAction>();
 
-    // Variants share the segment's ending: they differ by what you start with
-    // and what stands in the way, not by what counts as done.
-    public static PracticeSegment Parse(JsonValue json, JsonValue variant) {
-        var seg = Parse(json);
-        if (!variant.IsObject) {
-            return seg;
+    // the pause menu stays the game's own, and Exit keeps the session, when this is set
+    public bool QuitToMenu;
+
+    // The shared boxes, then the variant's; the goal is the first goal box among them.
+    public static PracticeSegment Parse(BfrpFile file, string variant) {
+        var seg = Parse(file.Segment);
+        seg.Boxes.AddRange(file.Boxes(""));
+        var json = file.VariantSegment(variant);
+        if (json.IsObject) {
+            if (json["end"].IsObject) {
+                Randomizer.LogError("practice: variants share the segment's end condition; ignoring this one's");
+            }
+
+            seg.Boxes.AddRange(file.Boxes(variant));
+            var items = json["inventory"];
+            for (var i = 0; i < items.Count; i++) {
+                var action = Action(items[i]);
+                if (action != null) {
+                    seg.StartingItems.Add(action);
+                }
+            }
         }
 
-        if (variant["end"].IsObject) {
-            Randomizer.LogError("practice: variants share the segment's end condition; ignoring this one's");
-        }
-
-        seg.Boxes.AddRange(Parse(variant).Boxes);
-        var items = variant["inventory"];
-        for (var i = 0; i < items.Count; i++) {
-            var action = Action(items[i]);
-            if (action != null) {
-                seg.StartingItems.Add(action);
+        foreach (var box in seg.Boxes) {
+            if (box.Type == RandomizerBox.Kind.Goal) {
+                seg.GoalArea = box.Area;
+                break;
             }
         }
 
@@ -81,24 +73,11 @@ public class PracticeSegment {
         return new RandomizerAction(value.Str.Substring(0, bar), value.Str.Substring(bar + 1));
     }
 
-    // the pause menu stays the game's own, and Exit keeps the session, when this is set
-    public bool QuitToMenu;
-
     public static PracticeSegment Parse(JsonValue json) {
         var seg = new PracticeSegment();
         seg.QuitToMenu = json["qtm_enabled"].IsBool && json["qtm_enabled"].Flag;
         var end = json["end"];
         if (end.IsObject) {
-            if (end["box"].IsArray && end["box"].Count == 4) {
-                seg.GoalArea = ToRect(end["box"]);
-                var goal = new Box();
-                goal.Area = seg.GoalArea.Value;
-                goal.Goal = true;
-                goal.Repeat = true;
-                goal.Paint = new Color(0.2f, 0.9f, 0.35f, 0.25f);
-                seg.Boxes.Add(goal);
-            }
-
             for (var i = 0; i < end["items"].Count; i++) {
                 seg.EndItems.Add(end["items"][i].Str);
             }
@@ -119,91 +98,63 @@ public class PracticeSegment {
             }
         }
 
-        var boxes = json["boxes"];
-        for (var i = 0; i < boxes.Count; i++) {
-            var b = boxes[i];
-            if (!b["box"].IsArray || b["box"].Count != 4) {
-                continue;
-            }
-
-            var box = new Box();
-            box.Area = ToRect(b["box"]);
-            box.Repeat = b["repeat"].IsBool && b["repeat"].Flag;
-            var type = b["type"].IsString ? b["type"].Str : "raw";
-            if (type == "death") {
-                box.Give = new RandomizerAction("RB", "3");
-                box.Repeat = true;
-                box.Paint = new Color(0.9f, 0.2f, 0.2f, 0.25f);
-            } else if (type == "hint") {
-                box.Give = new RandomizerAction("SH", b["text"].IsString ? b["text"].Str : "");
-            } else {
-                if (!b["give"].IsString) {
-                    continue;
-                }
-
-                var bar = b["give"].Str.IndexOf('|');
-                if (bar < 1) {
-                    continue;
-                }
-
-                box.Give = new RandomizerAction(b["give"].Str.Substring(0, bar),
-                    b["give"].Str.Substring(bar + 1));
-                box.Paint = ToColor(b["color"]);
-            }
-
-            seg.Boxes.Add(box);
-        }
-
         return seg;
     }
 
-    private static Rect ToRect(JsonValue box) {
-        var x1 = (float)box[0].Num;
-        var y1 = (float)box[1].Num;
-        var x2 = (float)box[2].Num;
-        var y2 = (float)box[3].Num;
-        return new Rect(Math.Min(x1, x2), Math.Min(y1, y2), Math.Abs(x2 - x1), Math.Abs(y2 - y1));
-    }
+    // What the attempt's locations hold: the placement lines, shared then the
+    // variant's, and then each shuffle group's pickups scattered over its
+    // locations, chosen fresh.
+    public static Dictionary<int, RandomizerAction> ResolvePlacements(BfrpFile file, string variant) {
+        var table = new Dictionary<int, RandomizerAction>();
+        var lines = file.PlacementLines("");
+        lines.AddRange(file.PlacementLines(variant));
+        foreach (var line in lines) {
+            if (RandomizerBox.IsLine(line) || line.StartsWith("//")) {
+                continue;
+            }
 
-    // #rrggbb or #rrggbbaa; anything else means the box is not drawn
-    private static Color? ToColor(JsonValue value) {
-        if (!value.IsString) {
-            return null;
+            var parts = line.Split('|');
+            int coord;
+            if (parts.Length < 3 || !int.TryParse(parts[0], out coord)) {
+                Randomizer.LogError("practice: '" + line + "' is not a placement");
+                continue;
+            }
+
+            table[coord] = new RandomizerAction(parts[1], parts[2]);
         }
 
-        var hex = value.Str.TrimStart('#');
-        if (hex.Length != 6 && hex.Length != 8) {
-            return null;
-        }
-
-        try {
-            var r = Convert.ToInt32(hex.Substring(0, 2), 16) / 255f;
-            var g = Convert.ToInt32(hex.Substring(2, 2), 16) / 255f;
-            var b = Convert.ToInt32(hex.Substring(4, 2), 16) / 255f;
-            var a = hex.Length == 8 ? Convert.ToInt32(hex.Substring(6, 2), 16) / 255f : 0.25f;
-            return new Color(r, g, b, a);
-        } catch (Exception) {
-            return null;
-        }
-    }
-
-    // Boxes fire on entry. A repeatable one re-arms once Ori leaves it, which
-    // is what keeps a death box from killing the respawn it just caused.
-    public void Check(Vector2 at) {
-        foreach (var box in Boxes) {
-            var inside = box.Area.Contains(at);
-            if (inside && !box.Inside && !box.Spent) {
-                if (!box.Repeat) {
-                    box.Spent = true;
-                }
-
-                if (box.Give != null) {
-                    RandomizerSwitch.GivePickup(box.Give, 0, false);
+        var random = new System.Random();
+        var groups = file.Segment["shuffle"];
+        for (var g = 0; g < groups.Count; g++) {
+            var give = groups[g]["give"];
+            var among = groups[g]["among"];
+            var spots = new List<int>();
+            for (var i = 0; i < among.Count; i++) {
+                if (among[i].IsNumber) {
+                    spots.Add((int)among[i].Num);
                 }
             }
 
-            box.Inside = inside;
+            for (var i = spots.Count - 1; i > 0; i--) {
+                var j = random.Next(i + 1);
+                var swap = spots[i];
+                spots[i] = spots[j];
+                spots[j] = swap;
+            }
+
+            for (var i = 0; i < give.Count && i < spots.Count; i++) {
+                var action = Action(give[i]);
+                if (action != null) {
+                    table[spots[i]] = action;
+                }
+            }
         }
+
+        return table;
+    }
+
+    public void Check(Vector2 at) {
+        RandomizerBoxes.Check(at, Boxes);
     }
 
     // Every clause present must hold at once; a goal box is only satisfied

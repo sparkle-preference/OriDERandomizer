@@ -12,6 +12,7 @@ public class InventoryManager : MenuScreen {
     }
 
     public override void Hide() {
+        PracticeMenu.OnPauseHidden();
         NavigationManager.SetVisible(false);
     }
 
@@ -22,6 +23,7 @@ public class InventoryManager : MenuScreen {
     }
 
     public override void HideImmediate() {
+        PracticeMenu.OnPauseHidden();
         NavigationManager.SetVisibleImmediate(false);
     }
 

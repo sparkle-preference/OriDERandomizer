@@ -17,19 +17,15 @@ public static class PracticeEditor {
 
     private static bool dragging;
 
-    private static string tool = "death";
+    private static string tool = "kill";
 
     // with a variant running its own list takes the boxes, unless V says the shared one
     private static bool toVariant = true;
 
-    private enum Placed {
-        Nothing,
-        Goal,
-        Shared,
-        Variant
-    }
+    // what Z takes back: the box just placed, and whose list it went to
+    private static RandomizerBox lastBox;
 
-    private static Placed last;
+    private static string lastTarget;
 
     private const float PanSpeed = 24f;
 
@@ -48,7 +44,7 @@ public static class PracticeEditor {
         Active = true;
         Draft = null;
         dragging = false;
-        last = Placed.Nothing;
+        lastBox = null;
         // the server first, so the help can say where the page is
         PracticeServer.OpenOnce();
         Help();
@@ -86,10 +82,12 @@ public static class PracticeEditor {
         if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha1) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad1)) {
             Tool("goal");
         } else if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha2) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad2)) {
-            Tool("death");
+            Tool("kill");
         } else if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha3) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad3)) {
             Tool("hint");
         } else if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha4) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad4)) {
+            Tool("solid");
+        } else if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha5) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad5)) {
             PracticeServer.Open();
         } else if (UnityEngine.Input.GetKeyDown(KeyCode.V)) {
             toVariant = !toVariant;
@@ -141,9 +139,9 @@ public static class PracticeEditor {
         var where = !HasVariant ? "" : "\n"
             + (TargetVariant ? "boxes go to this variant" : "boxes go to the shared list") + "   V switches";
         Randomizer.printInfo("EDITING - drag to draw a " + tool + " box" + where + "\n"
-            + "1 goal   2 death   3 hint   Z undo   X delete under cursor\n"
+            + "1 goal   2 kill   3 hint   4 solid   Z undo   X delete under cursor\n"
             + "WASD pan   Enter save and retry\n"
-            + "4 open the segment editor in a browser" + (PracticeServer.Running ? "   " + PracticeServer.Url : ""), 1800);
+            + "5 open the segment editor in a browser" + (PracticeServer.Running ? "   " + PracticeServer.Url : ""), 1800);
     }
 
     // WASD walks the camera's own root, which the frozen chase leaves alone
@@ -162,10 +160,40 @@ public static class PracticeEditor {
             return;
         }
 
-        cameras.Transform.position += move.normalized * PanSpeed * Time.unscaledDeltaTime;
+        var from = cameras.Transform.position;
+        var step = move.normalized * PanSpeed * Time.unscaledDeltaTime;
+        var to = from + step;
+        // past the loaded scenes there is nothing to draw on, so the pan slides along their edge
+        if (!Loaded(to)) {
+            to = new Vector3(from.x + step.x, from.y, from.z);
+            if (!Loaded(to)) {
+                to = new Vector3(from.x, from.y + step.y, from.z);
+                if (!Loaded(to)) {
+                    return;
+                }
+            }
+        }
+
+        cameras.Transform.position = to;
         if (cameras.Controller != null) {
             cameras.Controller.UpdateCamera();
         }
+    }
+
+    private static bool Loaded(Vector3 at) {
+        var manager = Core.Scenes.Manager;
+        if (manager == null) {
+            return true;
+        }
+
+        var point = new Vector2(at.x, at.y);
+        foreach (var scene in manager.ActiveScenes) {
+            if (scene != null && scene.MetaData != null && scene.IsLoadingComplete && scene.MetaData.SceneBounds.Contains(point)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static Vector2 World(Vector2 cursor) {
@@ -184,151 +212,78 @@ public static class PracticeEditor {
         return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
     }
 
-    private static JsonValue Corners(Rect area) {
-        var corners = JsonValue.NewArray();
-        corners.Add(JsonValue.Of(Math.Round(area.xMin, 1)));
-        corners.Add(JsonValue.Of(Math.Round(area.yMin, 1)));
-        corners.Add(JsonValue.Of(Math.Round(area.xMax, 1)));
-        corners.Add(JsonValue.Of(Math.Round(area.yMax, 1)));
-        return corners;
-    }
-
-    private static Rect Area(JsonValue corners) {
-        return Between(
-            new Vector2((float)corners[0].Num, (float)corners[1].Num),
-            new Vector2((float)corners[2].Num, (float)corners[3].Num));
-    }
-
-    // The goal is the end condition's box, always shared; everything else joins the
-    // variant's list or the shared one.
+    // The goal is always shared and there is one; everything else joins the variant's
+    // list or the shared one. A hint is an item box that prints, until the page says
+    // what it gives.
     private static void Commit(Rect area) {
         var file = PracticeController.File;
+        var box = new RandomizerBox();
+        box.Area = area;
+        var target = "";
         if (tool == "goal") {
-            var end = file.Segment["end"];
-            if (!end.IsObject) {
-                end = JsonValue.NewObject();
-                file.Segment.Set("end", end);
-            }
-
-            end.Set("box", Corners(area));
-            last = Placed.Goal;
+            box.Type = RandomizerBox.Kind.Goal;
         } else {
-            var box = JsonValue.NewObject();
-            box.Set("box", Corners(area));
-            box.Set("type", JsonValue.Of(tool));
-            if (tool == "hint") {
-                box.Set("text", JsonValue.Of("hint"));
-            }
-
-            if (TargetVariant) {
-                var json = Variant();
-                Boxes(json).Add(box);
-                file.SetVariantSegment(file.Variant, json);
-                last = Placed.Variant;
+            target = TargetVariant ? file.Variant : "";
+            if (tool == "kill") {
+                box.Type = RandomizerBox.Kind.Kill;
+                box.Give = new RandomizerAction("RB", "3");
+            } else if (tool == "solid") {
+                box.Type = RandomizerBox.Kind.Solid;
             } else {
-                Boxes(file.Segment).Add(box);
-                last = Placed.Shared;
+                box.Type = RandomizerBox.Kind.Item;
+                box.Give = new RandomizerAction("SH", "hint");
             }
         }
 
-        Reparse();
-    }
-
-    // the variant's json is parsed fresh each time, so a change has to be written back
-    private static JsonValue Variant() {
-        var json = PracticeController.File.VariantSegment(PracticeController.File.Variant);
-        return json.IsObject ? json : JsonValue.NewObject();
-    }
-
-    private static JsonValue Boxes(JsonValue json) {
-        var boxes = json["boxes"];
-        if (!boxes.IsArray) {
-            boxes = JsonValue.NewArray();
-            json.Set("boxes", boxes);
+        box.SetColour("");
+        var boxes = file.Boxes(target);
+        if (box.Type == RandomizerBox.Kind.Goal) {
+            boxes.RemoveAll(b => b.Type == RandomizerBox.Kind.Goal);
         }
 
-        return boxes;
+        boxes.Add(box);
+        file.SetBoxes(target, boxes);
+        lastBox = box;
+        lastTarget = target;
+        PracticeController.Reparse();
     }
 
     private static void Undo() {
-        var file = PracticeController.File;
-        if (last == Placed.Goal) {
-            if (file.Segment["end"].IsObject) {
-                file.Segment["end"].Set("box", JsonValue.Null());
-            }
-        } else if (last == Placed.Variant && HasVariant) {
-            var json = Variant();
-            var boxes = json["boxes"];
-            if (boxes.IsArray && boxes.Count > 0) {
-                json.Set("boxes", Without(boxes, boxes.Count - 1));
-                file.SetVariantSegment(file.Variant, json);
-            }
-        } else if (last == Placed.Shared) {
-            var boxes = file.Segment["boxes"];
-            if (boxes.IsArray && boxes.Count > 0) {
-                file.Segment.Set("boxes", Without(boxes, boxes.Count - 1));
-            }
-        }
-
-        last = Placed.Nothing;
-        Reparse();
-    }
-
-    // the variant's boxes first, then the shared ones, then the goal
-    private static void DeleteUnderCursor() {
-        var file = PracticeController.File;
-        var at = World(Core.Input.CursorPosition);
-        if (HasVariant) {
-            var json = Variant();
-            var index = Under(json["boxes"], at);
-            if (index >= 0) {
-                json.Set("boxes", Without(json["boxes"], index));
-                file.SetVariantSegment(file.Variant, json);
-                Reparse();
-                return;
-            }
-        }
-
-        var shared = Under(file.Segment["boxes"], at);
-        if (shared >= 0) {
-            file.Segment.Set("boxes", Without(file.Segment["boxes"], shared));
-            Reparse();
+        if (lastBox == null) {
             return;
         }
 
-        var goal = file.Segment["end"]["box"];
-        if (goal.IsArray && goal.Count == 4 && Area(goal).Contains(at)) {
-            file.Segment["end"].Set("box", JsonValue.Null());
-            Reparse();
-        }
-    }
-
-    private static int Under(JsonValue boxes, Vector2 at) {
-        for (var i = boxes.Count - 1; i >= 0; i--) {
-            var corners = boxes[i]["box"];
-            if (corners.IsArray && corners.Count == 4 && Area(corners).Contains(at)) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    private static JsonValue Without(JsonValue boxes, int index) {
-        var kept = JsonValue.NewArray();
-        for (var i = 0; i < boxes.Count; i++) {
-            if (i != index) {
-                kept.Add(boxes[i]);
-            }
-        }
-
-        return kept;
-    }
-
-    // the drawn boxes are the live ones, so the file's json is what the session runs
-    private static void Reparse() {
         var file = PracticeController.File;
-        PracticeController.Segment = PracticeSegment.Parse(file.Segment, file.VariantSegment(file.Variant));
+        var boxes = file.Boxes(lastTarget);
+        var line = lastBox.ToLine();
+        for (var i = boxes.Count - 1; i >= 0; i--) {
+            if (boxes[i].ToLine() == line) {
+                boxes.RemoveAt(i);
+                break;
+            }
+        }
+
+        file.SetBoxes(lastTarget, boxes);
+        lastBox = null;
+        PracticeController.Reparse();
+    }
+
+    // the variant's boxes first, then the shared ones, the goal among them
+    private static void DeleteUnderCursor() {
+        var file = PracticeController.File;
+        var at = World(Core.Input.CursorPosition);
+        var targets = HasVariant ? new[] { file.Variant, "" } : new[] { "" };
+        foreach (var target in targets) {
+            var boxes = file.Boxes(target);
+            for (var i = boxes.Count - 1; i >= 0; i--) {
+                if (boxes[i].Area.Contains(at)) {
+                    boxes.RemoveAt(i);
+                    file.SetBoxes(target, boxes);
+                    PracticeController.Reparse();
+                    return;
+                }
+            }
+        }
     }
 
     // From a normal game: the current state becomes a new segment's save, and the
