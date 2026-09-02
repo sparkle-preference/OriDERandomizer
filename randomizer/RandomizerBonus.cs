@@ -67,6 +67,21 @@ public static class RandomizerBonus {
                 }
 
                 return;
+            // Double jumps and air dashes back, as if Ori had landed; nothing is kept.
+            case 4:
+                if (Characters.Sein != null) {
+                    if (Characters.Sein.Abilities.DoubleJump != null) {
+                        Characters.Sein.Abilities.DoubleJump.ResetDoubleJump();
+                    }
+
+                    if (Characters.Sein.Abilities.Dash != null) {
+                        Characters.Sein.Abilities.Dash.ResetDashLimit();
+                    }
+
+                    RandomizerSwitch.PickupMessage("Air Refresh");
+                }
+
+                return;
             case 0:
                 if (!flag) {
                     Characters.Sein.Mortality.Health.SetAmount(Characters.Sein.Mortality.Health.MaxHealth + 20);

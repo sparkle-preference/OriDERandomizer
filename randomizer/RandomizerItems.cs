@@ -19,7 +19,7 @@ public static class RandomizerItems {
         { "17", "Water Vein Shard" }, { "19", "Gumon Seal Shard" }, { "21", "Sunstone Shard" },
         { "28", "Warmth Fragment" }, { "1108", "Autoplayer" }, { "1109", "Pickup Drop" },
         { "0", "Mega Health" }, { "1", "Mega Energy" }, { "2", "Go Home" },
-        { "3", "Kill Ori" },
+        { "3", "Kill Ori" }, { "4", "Air Refresh" },
         { "6", "Attack Upgrade" }, { "8", "Explosion Power Upgrade" }, { "9", "Spirit Light Efficiency" },
         { "10", "Extra Air Dash" }, { "11", "Charge Dash Efficiency" }, { "12", "Extra Double Jump" },
         { "13", "Health Regeneration" }, { "15", "Energy Regeneration" }, { "30", "Bleeding" },

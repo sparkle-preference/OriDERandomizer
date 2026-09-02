@@ -2,6 +2,8 @@ Randomizer inventory ids.
 0 - Mega Health*
 1 - Mega Energy*
 2 - Forceably Alt+R*
+3 - Kill Ori*
+4 - Air Refresh* (double jumps and air dashes back, as if Ori had landed)
 
 6 - Attack Upgrade
 8 - Explosion Power Upgrade (deprecated)
