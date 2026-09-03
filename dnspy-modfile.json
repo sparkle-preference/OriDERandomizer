@@ -407,6 +407,13 @@
 		"resource_files/skill_spirit_efficiency.png",
 		"resource_files/skill_spirit_potency.png",
 		"resource_files/skill_sense.png",
+		"resource_files/sense_cleanwater.png",
+		"resource_files/sense_gumonseal.png",
+		"resource_files/sense_sunstone.png",
+		"resource_files/sense_warmth.png",
+		"resource_files/sense_watervein.png",
+		"resource_files/sense_windrestored.png",
+		"resource_files/skill_sense_cave.png",
 		"resource_files/leaflet.js",
 		"resource_files/leaflet.css"
 	]

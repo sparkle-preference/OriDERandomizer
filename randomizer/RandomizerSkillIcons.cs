@@ -14,6 +14,15 @@ public static class RandomizerSkillIcons {
         { AbilityType.Sense, "skill_sense.png" }
     };
 
+    // Sense's icon is a cave with something sensed inside it. The inside is drawn from one
+    // of these, picked fresh every time the tree opens.
+    private const string SenseCave = "skill_sense_cave.png";
+
+    private static readonly string[] SenseFinds = {
+        "sense_warmth.png", "sense_watervein.png", "sense_gumonseal.png",
+        "sense_sunstone.png", "sense_cleanwater.png", "sense_windrestored.png"
+    };
+
     public static void Apply(SkillTreeManager tree) {
         try {
             foreach (var lane in new[] { tree.EnergyLane, tree.UtilityLane, tree.CombatLane }) {
@@ -28,10 +37,14 @@ public static class RandomizerSkillIcons {
                         continue;
                     }
 
-                    var texture = Load(resource);
+                    var texture = skill.Ability == AbilityType.Sense ? ComposeSense() : Load(resource);
                     var vanilla = skill.Icon.sharedMaterial.mainTexture;
                     if (texture != null && vanilla != null && texture != vanilla) {
                         Replace(tree, vanilla, texture);
+                        if (skill.Ability == AbilityType.Sense) {
+                            RetireSenseComposite(vanilla);
+                            senseComposite = texture;
+                        }
                     }
                 }
             }
@@ -39,6 +52,61 @@ public static class RandomizerSkillIcons {
             Randomizer.LogError("skill icons: " + e);
         }
     }
+
+    // Cave plus one find, composited on the CPU: both layers are full-canvas PNGs already in
+    // position, and LoadImage leaves them readable. The cave draws OVER the find, so a symbol
+    // that overruns the opening is trimmed by the cave rather than pasted on top of it.
+    private static Texture2D ComposeSense() {
+        var cave = Load(SenseCave);
+        var find = Load(SenseFinds[UnityEngine.Random.Range(0, SenseFinds.Length)]);
+        if (cave == null || find == null
+            || cave.width != find.width || cave.height != find.height) {
+            return Load("skill_sense.png");
+        }
+
+        var top = cave.GetPixels32();
+        var under = find.GetPixels32();
+        for (var i = 0; i < under.Length; i++) {
+            under[i] = Over(top[i], under[i]);
+        }
+
+        var made = new Texture2D(cave.width, cave.height, TextureFormat.ARGB32, true);
+        made.SetPixels32(under);
+        made.Apply();
+        made.wrapMode = TextureWrapMode.Clamp;
+        made.name = "sense " + find.name;
+        return made;
+    }
+
+    private static Color32 Over(Color32 src, Color32 dst) {
+        if (src.a == 255 || dst.a == 0) {
+            return src;
+        }
+
+        if (src.a == 0) {
+            return dst;
+        }
+
+        var sa = src.a / 255f;
+        var da = dst.a / 255f * (1f - sa);
+        var a = sa + da;
+        return new Color32(
+            (byte)((src.r * sa + dst.r * da) / a),
+            (byte)((src.g * sa + dst.g * da) / a),
+            (byte)((src.b * sa + dst.b * da) / a),
+            (byte)(a * 255f));
+    }
+
+    // The composites are made per menu open, so the one being replaced has to go with it.
+    private static void RetireSenseComposite(Texture replaced) {
+        if (senseComposite != null && senseComposite == replaced) {
+            UnityEngine.Object.Destroy(senseComposite);
+        }
+
+        senseComposite = null;
+    }
+
+    private static Texture2D senseComposite;
 
     private static Texture2D Load(string resource) {
         Texture2D texture;

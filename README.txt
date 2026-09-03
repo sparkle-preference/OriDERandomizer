@@ -15,7 +15,7 @@ https://orirando.com/discord        Ask a person
 Setup:
 
 Install with the Rando App from https://orirando.com/app, or by hand: put Assembly-CSharp.dll in Steam/steamapps/common/Ori DE/oriDE_Data/Managed.
-Generate a seed at https://orirando.com and put the downloaded randomizer.dat next to OriDE.exe.
+Generate a seed at https://orirando.com and put the downloaded randomizer.bfr next to OriDE.exe.
 
 The randomizer only works with Ori and the Blind Forest: Definitive Edition on PC. The Windows Store version cannot be modded.
 

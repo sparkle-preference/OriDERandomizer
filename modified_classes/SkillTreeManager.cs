@@ -31,6 +31,7 @@ public class SkillTreeManager : MenuScreen {
     }
 
     public override void ShowImmediate() {
+        RandomizerSkillIcons.Apply(this);
         NavigationManager.SetVisibleImmediate(true);
         OnMenuItemChange();
     }
@@ -40,6 +41,7 @@ public class SkillTreeManager : MenuScreen {
     }
 
     public override void Show() {
+        RandomizerSkillIcons.Apply(this);
         NavigationManager.SetVisible(true);
         OnMenuItemChange();
     }

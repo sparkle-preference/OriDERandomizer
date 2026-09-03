@@ -252,8 +252,7 @@ public static class Randomizer {
             return secondaryPath;
         }
 
-        // change to primaryPath once the website provides .bfr files
-        return secondaryPath;
+        return primaryPath;
     }
 
     public static void InitializeOnce() {
