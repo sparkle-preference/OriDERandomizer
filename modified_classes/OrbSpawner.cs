@@ -67,12 +67,12 @@ public class OrbSpawner : MonoBehaviour {
             num++;
         }
 
-        if (DifficultyController.Instance.Difficulty == DifficultyMode.Easy) {
-            if (!SpawnLoot(0)) {
-                SpawnLoot(1);
-            }
-        } else {
-            SpawnLoot(0);
+        // Relaxed and Drop Efficiency each buy one retry on a roll that dropped nothing;
+        // holding both is the same as holding either.
+        var retry = DifficultyController.Instance.Difficulty == DifficultyMode.Easy
+            || (Characters.Sein && Characters.Sein.PlayerAbilities.MapMarkers.HasAbility);
+        if (!SpawnLoot(0) && retry) {
+            SpawnLoot(1);
         }
     }
 

@@ -19,6 +19,7 @@ public class SkillTreeManager : MenuScreen {
         }
 
         UpdateRequirementsText();
+        RandomizerSkillIcons.Apply(this);
     }
 
     public void OnBackPressed() {

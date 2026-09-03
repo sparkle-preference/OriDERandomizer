@@ -80,7 +80,7 @@ public static class RandomizerText {
             new AbilityTextOverrides(null, "Allows Ori to Charge Dash ([ChargeJumpCharge]) to attack enemies or break blue plants and walls")
         }, {
             AbilityType.MapMarkers,
-            new AbilityTextOverrides("Maphacks", "Reveal the entire world map")
+            new AbilityTextOverrides("Drop Efficiency", "Enemies and plants are more likely to drop Health and Energy")
         }, {
             AbilityType.HealthEfficiency,
             new AbilityTextOverrides("Health Efficiency", "Health pickups will restore twice as much Health")

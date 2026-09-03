@@ -358,6 +358,7 @@
 		"randomizer/RandomizerRebinding.cs",
 		"randomizer/RandomizerQuad.cs",
 		"randomizer/RandomizerResources.cs",
+		"randomizer/RandomizerSkillIcons.cs",
 		"randomizer/RandomizerScrollHide.cs",
 		"randomizer/RandomizerSettings.cs",
 		"randomizer/RandomizerStatsManager.cs",
@@ -399,6 +400,12 @@
 		"resource_files/scrollbar_thumb.png",
 		"resource_files/menu_text_randomizer.png",
 		"resource_files/practice_editor.html",
+		"resource_files/skill_drop_efficiency.png",
+		"resource_files/skill_health_recovery.png",
+		"resource_files/skill_energy_recovery.png",
+		"resource_files/skill_spirit_efficiency.png",
+		"resource_files/skill_spirit_potency.png",
+		"resource_files/skill_sense.png",
 		"resource_files/leaflet.js",
 		"resource_files/leaflet.css"
 	]
