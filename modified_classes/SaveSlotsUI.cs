@@ -166,11 +166,23 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
     // Unity's focus message misses a plain tab-out of this borderless window
     private static bool WindowInFront {
         get {
-            uint pid;
-            GetWindowThreadProcessId(GetForegroundWindow(), out pid);
-            return pid == s_pid;
+            if (!s_askOs) {
+                return true;
+            }
+
+            try {
+                uint pid;
+                GetWindowThreadProcessId(GetForegroundWindow(), out pid);
+                return pid == s_pid;
+            } catch (Exception e) {
+                s_askOs = false;
+                Randomizer.log("save select: no window focus check here, " + e.Message);
+                return true;
+            }
         }
     }
+
+    private static bool s_askOs = true;
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
