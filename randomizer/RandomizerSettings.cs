@@ -267,7 +267,6 @@ public static class RandomizerSettings {
         DevSettings.NetcodeHost = new HostSetting("Netcode Host", Randomizer.NETCODE_HOST, "The server the netcode talks to: a host name, no protocol (https and wss are implied).\nChanging this breaks netcode.", false, true);
         DevSettings.PlainHttp = new BoolSetting("Netcode Plain HTTP", false, "True: talk http and ws to the Netcode Host instead of https and wss, for a local server.\nFalse (default): TLS.", false, true);
         DevSettings.BuiltinHost = new StringSetting("Built-in Netcode Host", Randomizer.NETCODE_HOST, "Where this dll pointed when it was built. Not a setting: when a newer dll points somewhere else,\nNetcode Host is moved there, whatever it was set to, and this line follows.", false);
-        DevSettings.DisableWebsocket = new BoolSetting("Disable Websocket", false, "True: never use the websocket netcode transport; poll over http like older versions.\nFalse (default): use the websocket when available, falling back to http.", false, true);
     }
 
     // 0-255 is the "normal" range and lands at half intensity, leaving room above 255 to
@@ -425,7 +424,6 @@ public static class RandomizerSettings {
         public static HostSetting NetcodeHost;
         public static BoolSetting PlainHttp;
         public static StringSetting BuiltinHost;
-        public static BoolSetting DisableWebsocket;
     }
 
     public abstract class SettingBase {

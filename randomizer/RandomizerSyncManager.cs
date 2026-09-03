@@ -77,16 +77,6 @@ public static class RandomizerSyncManager {
     public static void StartWebsocket(string url) {
         try {
             wsNextTry = Time.realtimeSinceStartup + 3f;
-            var disable = RandomizerSettings.DevSettings.DisableWebsocket;
-            if (disable != null && disable.Value) {
-                wsDead = true;
-                return;
-            }
-
-            if (disable == null) {
-                Randomizer.log("ws diag: DisableWebsocket setting missing (RandomizerSettings not fully merged?); continuing");
-            }
-
             if (wsStartedUrl == url) {
                 return;
             }
