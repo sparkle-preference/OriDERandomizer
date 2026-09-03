@@ -199,7 +199,7 @@ public static class RandomizerRebinding {
         { "Color Shift", "LeftAlt+C, RightAlt+C" },
         { "Double Bash", "Grenade" },
         { "Toggle Map Mode", "Grenade" },
-        { "Map Warp", "Dash" },
+        { "Map Warp", "Bash" },
         { "Grenade Jump", "Grenade+Jump" },
         { "Show Bonuses", "LeftAlt+B, RightAlt+B" },
         { "Bonus Switch", "LeftAlt+Q, RightAlt+Q" },
