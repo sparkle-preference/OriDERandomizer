@@ -217,7 +217,7 @@ public static class RandomizerSettings {
         Controls.GrenadeAimSpeed = new FloatSetting("Grenade Aim Speed", 1.0f, "(Default 1.0 - higher numbers are faster): The speed at which controller/wsad inputs move the Grenade target.");
         Controls.InvertSwim = new BoolSetting("Invert Swim", false, "True: Ori swims fast by default, and slows down while pressing [Jump].\nFalse (default): Vanilla behavior (hold [Jump] to swim faster).");
         Controls.InvertClimb = new BoolSetting("Invert Climb", false, "True: Ori Climbs on walls by default, and lets go when holding [Climb]\nFalse (default): Vanilla behavior (hold [Climb] to Climb).");
-        Controls.GrenadeJump = new EnumSetting<GrenadeJumpMode>("Grenade Jump Mode", GrenadeJumpMode.Auto, "Auto (default): Grenade Jump by pressing [[Grenade Jump]] (Default [LightSpheres]+[Jump]).\nManual: Vanilla behavior (Grenade Jump by using Grenade, then Jump 1 frame later).");
+        Controls.GrenadeJump = new EnumSetting<GrenadeJumpMode>("Grenade Jump Mode", GrenadeJumpMode.Auto, "Auto (default): Grenade Jump by pressing [[Grenade Jump]] (Default [LightSpheres]+[Jump]).\nManual: Vanilla behavior (Grenade Jump by by pressing [Grenade], then [Jump] 1 frame later).");
         Controls.WallChargeMouseAim = new BoolSetting("Wall Charge Mouse Aim", true, "True (default): On Keyboard+Mouse, allows aiming Wall Charge Jumps with the mouse.\nFalse: Vanilla behavior.");
         Controls.SwimmingMouseAim = new BoolSetting("Swimming Mouse Aim", false, "True: On Keyboard+Mouse, Ori will swim towards the mouse cursor.\nFalse (default): Vanilla behavior.");
         Controls.SlowClimbVault = new BoolSetting("Slow Climb Vault", true, "True (default): slightly slows Climb vaults, making it easier to land on small vertical platforms with Climb.\nFalse: Vanilla behavior.");
@@ -226,10 +226,10 @@ public static class RandomizerSettings {
 
         Customization.ColdColor = new ColorSetting("Cold Color", new Color(0f, 0.5f, 0.5f, 0.5f), HeadroomScale, "Red, Blue, Green, Transparency (0-255 for each): The color Ori turns when Sensing an item at max range.");
         Customization.HotColor = new ColorSetting("Hot Color", new Color(0.5f, 0.1666667f, 0f, 0.5f), HeadroomScale, "Red, Blue, Green, Transparency (0-255 for each): The color Ori turns when Sensing an item at range 0.");
-        Customization.DiscoSense = new BoolSetting("Disco Sense", false, "True: Ignore sense colors, and instead speed up the color.txt rotation when sense is active.\nFalse (default): colors.txt rotation is overwritten by Sense colors.", false);
-        Customization.TouchedVisibility = new FloatSetting("Touched Pickup Visibility", 0.5f, "(0.0-1.0, Default=0.5): How much of a pickup that has nothing left to give is still drawn on the map. 0 hides them.");
-        Customization.MapWarpHold = new FloatSetting("Map Warp Hold", 1f, "(0.1-3.0, Default=1.0): How long [[Map Warp]] must be held on a Spirit Well in the map to warp there.");
-        Customization.ShowOtherPlayers = new BoolSetting("Show Other Players", true, "True (default): the other players in your game appear as translucent ghosts, and as markers on the map.\nFalse: they are not shown to you, and your position is not shared with them. The two go together -- there is no setting that lets you watch without being watched.", true);
+        Customization.DiscoSense = new BoolSetting("Disco Sense", false, "True: Ignore sense colors, and instead speed up the Color.txt rotation when sense is active (if you have one).\nFalse (default): Color.txt rotation is overwritten by Sense colors.", false);
+        Customization.TouchedVisibility = new FloatSetting("Touched Pickup Visibility", 0.5f, "(0.0-1.0, Default=0.5): Transparency for pickup icons that have been touched but are not currently collected (usually because they were lost on death). Set to 0 to hide completely.");
+        Customization.MapWarpHold = new FloatSetting("Map Warp Hold", 1f, "(0.1-3.0, Default=1.0): How long [[Map Warp]] must be held to start a warp on the area map.");
+        Customization.ShowOtherPlayers = new BoolSetting("Show Other Players", true, "True (default): In multiplayer games, other players show up as translucent ghosts when on the same screen and are marked on the map.\nFalse: disables this functionality.", true);
         Customization.MultiplePickupMessages = new BoolSetting("Display Multiple Pickup Messages", false, "True: Shows up to 5 pickup messages at once on the left side of the screen. Hold [[Replay Message]] to show more.\nFalse (default): New pickup messages display one at a time at the top center of the screen.", false);
         Customization.AlwaysShowLastFivePickups = new BoolSetting("Always Show Last Five Pickup Messages", false, "True: Always show the last 5 pickup messages. Only works if Display Multiple Pickups is set to True.\nFalse (default): Only show pickups when found or on pressing [[Replay Message]].", false);
         Customization.WarpTeleporterColor = new ColorSetting("Warp Teleporter Color", new Color(202f / 255f, 57f / 255f, 243f / 255f, 1f), FullScale, "Red, Blue, Green, Transparency (0-255 for each): The color that Warp-created Teleporters are on the map.");
@@ -250,8 +250,8 @@ public static class RandomizerSettings {
         QOL.CursorLock = new BoolSetting("Cursor Lock", false, "True: Locks the mouse cursor inside the window\nFalse (default): Vanilla behavior (cursor can leave the Ori window in borderless / windowed mode).", false);
 
         Practice.Folder = new StringSetting("Practice Folder", "practice", "Where practice segments (.bfrp files) are kept: a folder name inside the game folder, or a full path.", false);
-        Practice.Ghost = new EnumSetting<PracticeGhost>("Practice Ghost", PracticeGhost.Segment, "Which ghost to race in practice mode.\nSegment (default): whatever the segment says, which is the pinned run if there is one and the fastest otherwise.\nFastest, Pinned, Recent: always that one. None: no ghost.", false);
-        Practice.Timer = new BoolSetting("Practice Timer", true, "Show the running clock, and the time to beat, in the top right during a practice run.", false);
+        Practice.Ghost = new EnumSetting<PracticeGhost>("Practice Ghost", PracticeGhost.Segment, "Which ghost to race in practice mode.\nSegment (default): Pinned run if there is one; fastest otherwise.\nFastest, Pinned, Recent: always that one. None: no ghosts in practice mode.", false);
+        Practice.Timer = new BoolSetting("Practice Timer", true, "Show time elapsed and the time to beat in the top right during a practice run.", false);
 
         Game.DefaultDifficulty = new EnumSetting<Difficulty>("Default Difficulty", Difficulty.Relaxing, "(Relaxing (default), Challenging, Punishing, OneLife): The default difficulty on new file selection.", false);
 
@@ -264,9 +264,9 @@ public static class RandomizerSettings {
 
         DevSettings.AreasOri = new BoolSetting("Keep Areas.Ori Updated", true, "Update areas.ori from the server. Set to False to disable for local development.", false, true);
         DevSettings.BlackrootOrbRoomClimbAssist = new BoolSetting("Blackroot Orb Room Climb Assist", true, "", false, true);
-        DevSettings.NetcodeHost = new HostSetting("Netcode Host", Randomizer.NETCODE_HOST, "The server the netcode talks to: a host name, no protocol (https and wss are implied).\nChanging this breaks netcode.", false, true);
-        DevSettings.PlainHttp = new BoolSetting("Netcode Plain HTTP", false, "True: talk http and ws to the Netcode Host instead of https and wss, for a local server.\nFalse (default): TLS.", false, true);
-        DevSettings.BuiltinHost = new StringSetting("Built-in Netcode Host", Randomizer.NETCODE_HOST, "Where this dll pointed when it was built. Not a setting: when a newer dll points somewhere else,\nNetcode Host is moved there, whatever it was set to, and this line follows.", false);
+        DevSettings.NetcodeHost = new HostSetting("Netcode Host", Randomizer.NETCODE_HOST, "The server root address for netcode functionality (without the protocol prefix).", false, true);
+        DevSettings.PlainHttp = new BoolSetting("Netcode Plain HTTP", false, "True: connect to the server without encryption (only do this if you're locally hosting! it won't work on the actual site!)\nFalse (default): TLS.", false, true);
+        DevSettings.BuiltinHost = new StringSetting("Built-in Netcode Host", Randomizer.NETCODE_HOST, "Where this dll pointed when it was built. (Not an actual setting. Don't change it.)", false);
     }
 
     // 0-255 is the "normal" range and lands at half intensity, leaving room above 255 to
