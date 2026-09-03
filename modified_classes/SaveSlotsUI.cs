@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Core;
 using UnityEngine;
 
@@ -162,6 +163,23 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
         SuspensionManager.Register(this);
     }
 
+    // Unity's focus message misses a plain tab-out of this borderless window
+    private static bool WindowInFront {
+        get {
+            uint pid;
+            GetWindowThreadProcessId(GetForegroundWindow(), out pid);
+            return pid == s_pid;
+        }
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
+
+    private static readonly uint s_pid = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+
     public void RefreshSlots() {
         ItemsUI.Refresh();
         ClampCurrentItemIndex();
@@ -272,6 +290,16 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
             SetCurrentItemAndScroll(CurrentSlotIndex + 1);
         }
 
+        // all four read every frame, so a plain bind's edge is spent under its shifted one
+        var back10 = RandomizerRebinding.SaveSelectBack10.IsPressed();
+        var back3 = RandomizerRebinding.SaveSelectBack3.IsPressed();
+        var forward10 = RandomizerRebinding.SaveSelectForward10.IsPressed();
+        var forward3 = RandomizerRebinding.SaveSelectForward3.IsPressed();
+        var jump = back10 ? -10 : back3 ? -3 : forward10 ? 10 : forward3 ? 3 : 0;
+        if (jump != 0) {
+            SetCurrentItemAndScroll(Mathf.Clamp(CurrentSlotIndex + jump, 0, Items.Count - 1));
+        }
+
         if (Core.Input.CursorMoved) {
             var saveSlotUnderCursor = SaveSlotUnderCursor;
             if (saveSlotUnderCursor && saveSlotUnderCursor != CurrentSaveSlot) {
@@ -279,7 +307,9 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
             }
         }
 
-        if (GameSettings.Instance.CurrentControlScheme != 0 && GameController.IsFocused && CursorController.IsVisible) {
+        // GameController.IsFocused is pinned so the game runs unfocused, and an unfocused
+        // window keeps its last cursor position: the edge hover asks the OS who is in front
+        if (GameSettings.Instance.CurrentControlScheme != 0 && WindowInFront && CursorController.IsVisible) {
             if (Core.Input.CursorPosition.x < 0.05f && Core.Input.CursorPosition.x >= 0f) {
                 ItemsUI.TargetScroll -= Time.deltaTime * 3f;
                 CursorController.ResetIdleTime();

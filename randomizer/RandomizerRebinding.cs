@@ -217,6 +217,10 @@ public static class RandomizerRebinding {
         { "Practice Menu", "" },
         { "Create Practice Segment", "LeftAlt+S, RightAlt+S" },
         { "Open Practice Editor Page", "" },
+        { "Save Select Back 3", "PageUp" },
+        { "Save Select Forward 3", "PageDown" },
+        { "Save Select Back 10", "LeftShift+PageUp, RightShift+PageUp" },
+        { "Save Select Forward 10", "LeftShift+PageDown, RightShift+PageDown" },
         { "Bonus 1", "" },
         { "Bonus 2", "" },
         { "Bonus 3", "" },
@@ -257,6 +261,10 @@ public static class RandomizerRebinding {
     public static BindSet OpenPracticeMenu = new BindSet(new List<SingleBind>());
     public static BindSet CreatePracticeSegment = new BindSet(new List<SingleBind>());
     public static BindSet OpenPracticeEditorPage = new BindSet(new List<SingleBind>());
+    public static BindSet SaveSelectBack3 = new BindSet(new List<SingleBind>());
+    public static BindSet SaveSelectForward3 = new BindSet(new List<SingleBind>());
+    public static BindSet SaveSelectBack10 = new BindSet(new List<SingleBind>());
+    public static BindSet SaveSelectForward10 = new BindSet(new List<SingleBind>());
     public static BindSet Bonus1 = new BindSet(new List<SingleBind>());
     public static BindSet Bonus2 = new BindSet(new List<SingleBind>());
     public static BindSet Bonus3 = new BindSet(new List<SingleBind>());
@@ -293,6 +301,10 @@ public static class RandomizerRebinding {
         { "Practice Menu", OpenPracticeMenu },
         { "Create Practice Segment", CreatePracticeSegment },
         { "Open Practice Editor Page", OpenPracticeEditorPage },
+        { "Save Select Back 3", SaveSelectBack3 },
+        { "Save Select Forward 3", SaveSelectForward3 },
+        { "Save Select Back 10", SaveSelectBack10 },
+        { "Save Select Forward 10", SaveSelectForward10 },
         { "Bonus 1", Bonus1 },
         { "Bonus 2", Bonus2 },
         { "Bonus 3", Bonus3 },
