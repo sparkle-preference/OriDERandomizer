@@ -125,6 +125,15 @@ public static class Randomizer {
             var lastLine = "";
             var lastLineNum = -1;
             try {
+                // TODO: delete after 10-02-2026
+                if (File.Exists(SeedFilePath) && RandomizerLeague.RefusesFile(SeedFilePath)) {
+                    log("league: refusing to load " + SeedFilePath + " on a beta build");
+                    MessageQueue.Enqueue(new RandomizerUI.Message(
+                        RandomizerLeague.Refusal, RandomizerUI.Message.ErrorBgColor, 12f));
+                    RandomizerBonusSkill.Reset();
+                    return;
+                }
+
                 if (File.Exists(SeedFilePath)) {
                     var allLines = File.ReadAllLines(SeedFilePath).ToList();
 
@@ -136,7 +145,6 @@ public static class Randomizer {
                     var flags = flagLine[0].Split(',');
                     SeedMeta = allLines[0];
                     var doBingo = ParseFlags(s, flags);
-                    CheckLeagueSeed(flags);
                     if (doBingo) {
                         Message = "Good luck on your bingo!";
                         // 4.3 seeds carry no baked goals; the server answers over the
@@ -887,35 +895,6 @@ public static class Randomizer {
         var seedInfo = "v" + DisplayVersion;
         seedInfo += "- seed loaded: " + SeedMeta;
         printInfo(seedInfo);
-
-        // TODO: delete after 10-02-2026
-        if (LeagueSeedWarning != null) {
-            MessageQueue.Enqueue(new RandomizerUI.Message(LeagueSeedWarning, RandomizerUI.Message.ErrorBgColor, 6f));
-        }
-    }
-
-    // TODO: delete after 10-02-2026
-    // A league seed is an untracked Master seed on the Competitive pool. Other seeds
-    // match, so this asks rather than refuses, and nothing stops the seed loading.
-    public static string LeagueSeedWarning;
-
-    // TODO: delete after 10-02-2026 -- the season ends then, and so does this
-    private static readonly DateTime LeagueEnds = new DateTime(2026, 10, 2);
-
-    // TODO: delete after 10-02-2026
-    private static void CheckLeagueSeed(string[] flags) {
-        LeagueSeedWarning = null;
-        if (!IsBeta || Sync || flags.Length == 0 || DateTime.Today > LeagueEnds) {
-            return;
-        }
-
-        var tokens = flags.Select(f => f.Trim().ToLower()).ToList();
-        if (tokens[0] != "master" || !tokens.Contains("pool=competitive")) {
-            return;
-        }
-
-        LeagueSeedWarning = "@Warning:@ your seed is using the ORL S 12 settings.\n"
-            + "ORL rules require submissions be played on the live DLL (orirando.com/dll).";
     }
 
     public static string SeedFormatProblem {

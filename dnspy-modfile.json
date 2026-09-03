@@ -343,6 +343,7 @@
 		"randomizer/RandomizerHints.cs",
 		"randomizer/RandomizerAutoplayer.cs",
 		"randomizer/RandomizerItems.cs",
+		"randomizer/RandomizerLeague.cs",
 		"randomizer/RandomizerHotColdItem.cs",
 		"randomizer/RandomizerHttp.cs",
 		"randomizer/RandomizerInventory.cs",
