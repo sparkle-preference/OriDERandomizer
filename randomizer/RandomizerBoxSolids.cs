@@ -24,10 +24,8 @@ public static class RandomizerBoxSolids {
             return;
         }
 
-        // The layer of the ground Ori stands on, so the physics treats these the same
-        // way; remembered once seen, since the first frame after a load has no contact
-        // yet and a box on the wrong layer is a box Ori falls through. Not "platform":
-        // that is the drop-through layer, switched off under Ori at will.
+        // The layer of the ground Ori stands on, remembered once seen: the first frame after
+        // a load has no contact yet. Not "platform", the drop-through layer.
         var ground = sein.PlatformBehaviour.PlatformMovementListOfColliders.GroundCollider;
         if (IsTerrain(ground)) {
             groundLayer = ground.gameObject.layer;

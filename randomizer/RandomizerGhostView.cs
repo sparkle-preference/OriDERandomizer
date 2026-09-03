@@ -30,9 +30,8 @@ public class RandomizerGhostView {
         GhostObject = Object.Instantiate(sprite.gameObject);
         GhostObject.name = "randomizerGhost";
         GhostObject.transform.parent = null;
-        // Instantiate keeps the original's local transform but drops its parent, so the sprite's
-        // offset within Ori becomes a world position near the origin. Seat it on the live Ori
-        // instead, or it spends its first frame across the map from wherever it belongs.
+        // Instantiate keeps the local transform but drops the parent, so the sprite's offset
+        // within Ori would become a world position near the origin; seat it on the live Ori
         GhostObject.transform.position = sprite.position;
         GhostObject.transform.rotation = sprite.rotation;
         Object.DontDestroyOnLoad(GhostObject);
@@ -82,9 +81,8 @@ public class RandomizerGhostView {
         AimRenderer = null;
     }
 
-    // Hiding is SetActive rather than switching renderers off: it also stops the animator, which
-    // is most of what a distant ghost costs. Transforms still apply to an inactive object, so
-    // Tick keeps it in the right place and it does not snap when it comes back.
+    // Hiding is SetActive, which also stops the animator, most of what a distant ghost costs;
+    // transforms still apply to an inactive object, so it does not snap when it comes back.
     public void Cull(bool hidden) {
         if (GhostObject == null || Hidden == hidden) {
             return;
@@ -127,9 +125,8 @@ public class RandomizerGhostView {
         }
 
         var at = source.At;
-        // A live source trims old samples out from under the cursor, so it can end up past the
-        // end or ahead of the time we want. Walking back to the start is correct but must not
-        // replay every effect on the way -- those already happened.
+        // a live source trims old samples out from under the cursor; walking back to the start
+        // must not replay every effect on the way
         var reseek = false;
         if (Cursor > samples.Count - 2 || samples[Cursor].Time > at) {
             Cursor = 0;
@@ -161,9 +158,8 @@ public class RandomizerGhostView {
                 (to.Position - from.Position).magnitude.ToString("F1") + " unit warp");
         }
 
-        // Facing is a 180 degree turn about Y, so slerping through a direction change takes the
-        // sprite edge-on and the ghost squashes flat for a frame. Ordinary rotation never
-        // approaches this, so any large step is a flip and is cut rather than swept.
+        // facing is a 180 degree turn about Y: slerping through it takes the sprite edge-on, so
+        // any large step is a flip and is cut rather than swept
         var flip = Quaternion.Angle(from.Rotation, to.Rotation) > RandomizerGhost.FlipAngle;
         GhostTransform.position = warp ? from.Position : Vector3.Lerp(from.Position, to.Position, t);
         GhostTransform.rotation = warp || flip
@@ -194,9 +190,8 @@ public class RandomizerGhostView {
             : (samples[index + 1].Position - samples[index].Position) / span;
     }
 
-    // The clone animates itself, but nothing tells it what Ori was doing, so it idles through
-    // the whole run. Driving both the clip and the time into it is what makes the ghost move
-    // like a player rather than slide along in a running pose.
+    // The clone animates itself but nothing tells it what Ori was doing; driving the clip and
+    // the time into it is what keeps the ghost from sliding along in one pose.
     private void Pose(Sample from) {
         if (GhostAnimator == null || string.IsNullOrEmpty(from.Animation)) {
             return;
@@ -324,9 +319,8 @@ public class RandomizerGhostView {
             AimRenderer = AimObject.AddComponent<LineRenderer>();
             AimRenderer.material = new Material(source.LineRenderer.sharedMaterial);
             AimRenderer.SetWidth(RandomizerGhost.AimWidth, RandomizerGhost.AimWidth);
-            // a bare GameObject's renderer lands on the default sorting layer at order zero,
-            // which in this game is behind the scenery. Borrow the real line's place in the
-            // stack along with its material.
+            // the default sorting layer at order zero is behind the scenery here; borrow the
+            // real line's place in the stack along with its material
             AimRenderer.sortingLayerID = source.LineRenderer.sortingLayerID;
             AimRenderer.sortingOrder = source.LineRenderer.sortingOrder;
             AimObject.layer = source.LineRenderer.gameObject.layer;
@@ -334,9 +328,8 @@ public class RandomizerGhostView {
             RandomizerGhost.Dim(AimObject, RandomizerGhost.AimAlpha);
         }
 
-        // Read fresh every frame rather than cached at creation. These come from *our* trajectory
-        // object, not the sender's, and if it has not been initialised yet LinePoints is near
-        // zero -- which drew a two-point stub instead of an arc and read as "a tiny line".
+        // read every frame: these come from our own trajectory object, whose LinePoints is
+        // near zero until it has initialised
         var live = RandomizerGhost.Grenader();
         var shape = live == null ? null : live.Trajectory;
         var gravity = shape == null ? 0f : shape.Gravity;
@@ -390,9 +383,8 @@ public class RandomizerGhostView {
 
             Used.WallArrow++;
             WallObject = (GameObject)Object.Instantiate(wall.Arrow.gameObject);
-            // the arrow is a child of Ori and renders at its parent's scale. Unparented, its
-            // localScale is all it has left, so it comes out about 3.4 times too small -- the
-            // exact inverse of what parenting the aura did.
+            // the arrow renders at its parent's scale; unparented, its localScale alone leaves
+            // it about 3.4 times too small
             WallObject.transform.localScale =
                 wall.Arrow.transform.lossyScale * RandomizerGhost.WallArrowScale;
             // same reasoning as the aim line: keep the drawing, drop everything that thinks it
@@ -492,9 +484,8 @@ public class RandomizerGhostView {
         // OnPoolSpawned only reaches IPooled. What fades and scales these in are BaseAnimators,
         // and a fresh clone's driver sits where the prefab left it -- for a fade, invisible.
         foreach (var animator in spawned.GetComponentsInChildren<BaseAnimator>(true)) {
-            // UberPost* animators drive the game's full-screen post stack, so one in a clone
-            // paints over the whole screen rather than over itself. Destroy is deferred to the
-            // end of the frame, which is too late to stop a driver we are about to start.
+            // UberPost* animators drive the full-screen post stack, so a clone's would paint the
+            // whole screen; Destroy lands at end of frame, too late for a driver about to start
             if (animator.GetType().Name.StartsWith("UberPost")) {
                 Object.DestroyImmediate(animator);
                 continue;
@@ -530,9 +521,8 @@ public class RandomizerGhostView {
             renderer.transform.localScale *= RandomizerGhost.EffectSpan / span;
         }
 
-        // A grab pass samples the whole screen and redraws it, which is how the shockwave
-        // covers everything regardless of where the effect sits. Nothing here is worth keeping
-        // once that is gone, so the whole child goes.
+        // a grab pass redraws the whole screen wherever the effect sits; nothing else in the
+        // child is worth keeping, so the whole child goes
         foreach (var grab in spawned.GetComponentsInChildren<UberShaderBlockGrabPass>(true)) {
             if (grab.gameObject == spawned) {
                 Object.DestroyImmediate(grab);
@@ -555,9 +545,8 @@ public class RandomizerGhostView {
             Object.Destroy(rumble);
         }
 
-        // Only the sound comes out. Spawned through the pool the game's own animators run the
-        // show, and the fader-stripping and renderer-forcing that a hand-rolled Instantiate
-        // needed are now the things getting in their way.
+        // only the sound comes out: spawned through the pool, the game's own animators run
+        // the show
         RandomizerGhost.Hush(spawned);
         RandomizerGhost.Dim(spawned, alpha);
     }

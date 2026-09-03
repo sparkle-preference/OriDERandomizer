@@ -1,12 +1,8 @@
 using UnityEngine;
 
-// Proves the data channel path end to end without a website or a second machine: two peers in
-// this process, the offer and answer handed straight across, a packet sent and checked. ICE
-// finds host candidates on the local interfaces, so it needs no STUN and no internet.
-//
-// It is a state machine rather than a blocking call because gathering takes a moment, and it
-// runs from Update like everything else here. This is the scaffolding the real transport grows
-// out of -- the same exports, driven by the website instead of by itself.
+// A loopback self-test of the data channel: two peers in this process, the offer and answer
+// handed straight across, a packet sent and checked. ICE finds host candidates locally (no
+// STUN, no internet); a state machine driven from Update, since gathering takes a moment.
 public static class RandomizerGhostNet {
     private enum Step {
         Idle,

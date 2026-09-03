@@ -1,14 +1,9 @@
 using System.Collections.Generic;
 
-// The shared clip table the wire format indexes into. Clips are ScriptableObjects resolved by
-// name, and which ones a runtime sweep finds depends on what the game has loaded, so an index
-// into a live sweep is not stable between two clients. This list is fixed at build time and
-// every client carries the same one; Hash goes in the handshake so a mismatch is detectable
-// rather than silently animating a peer wrongly.
-//
-// Regenerate with Dev on: the ghost sweep writes ghost-animations.txt beside the seed, and that
-// file is this array. A name missing from it encodes as Unknown, which renders but does not
-// animate -- a sliding Ori beats a wrong one.
+// The shared clip table the wire format indexes into, fixed at build time because a runtime
+// sweep depends on what the game has loaded; Hash goes in the handshake so a mismatch is
+// detectable. Regenerate with Dev on: the ghost sweep writes ghost-animations.txt beside the
+// seed. A name missing here encodes as Unknown, which renders but does not animate.
 public static class RandomizerGhostAnimations {
     public const int Unknown = 0xFFFF;
 

@@ -74,10 +74,9 @@ public static class PracticeController {
         Begin(file, variant, false);
     }
 
-    // A segment with variants has no plain run: one of them is always the
-    // attempt, and it brings its own boxes, end condition, items and history.
-    // From the title screen the game's own load sequence does the loading, and
-    // the world is frozen once it has finished rather than before it starts.
+    // A segment with variants has no plain run: one of them is always the attempt, with
+    // its own boxes, end condition, items and history. From the title screen the game's
+    // own load sequence loads, and the world freezes once it has finished.
     public static void Begin(BfrpFile file, string variant, bool fromTitle) {
         File = file;
         File.Variant = variant;
@@ -315,9 +314,8 @@ public static class PracticeController {
         var dt = Time.unscaledDeltaTime * 1000.0;
         PracticeHud.Tick();
         if (Current == Phase.Countdown) {
-            // PerformLoad returns before it has finished: the checkpoint restore that
-            // actually moves Ori is deferred to a later frame. Touching the save before
-            // then races it, which loses the start position and doubles the respawn.
+            // PerformLoad's checkpoint restore lands on a later frame; touching the save
+            // before then loses the start position and doubles the respawn.
             if (GameController.Instance.IsLoadingGame || InstantLoadScenesController.Instance.LockFinishingLoading) {
                 return;
             }

@@ -15,9 +15,7 @@ using Sample = RandomizerGhost.Sample;
 //                                                             f32 soulX, soulY   (flags2)
 //
 // 22 bytes for ordinary movement, 48 with every optional field present. Position stays float32:
-// the world spans roughly 9,700 x 12,700 units, so a naive fixed-point i16 does not fit at a
-// useful precision, and a scene-relative origin is a real design with real bugs in it for about
-// four bytes. Take it later, behind the version byte, with a profile that says it mattered.
+// the world spans roughly 9,700 x 12,700 units, too wide for i16 at a useful precision.
 public static class RandomizerGhostPacket {
     public const byte Version = 1;
 
@@ -68,9 +66,8 @@ public static class RandomizerGhostPacket {
 
         if ((flags & Bashing) != 0) {
             into[at++] = Degrees(sample.BashAngle);
-            // the arrow belongs on the thing being bashed, which is not where Ori is. Sent as
-            // full floats rather than an offset: it rides only on bash packets, and the design
-            // rule is not to quantise a position before a profile says it mattered.
+            // the arrow belongs on the thing being bashed, not on Ori; full floats, since it
+            // rides only on bash packets
             at = F32(into, at, sample.BashTarget.x);
             at = F32(into, at, sample.BashTarget.y);
         }

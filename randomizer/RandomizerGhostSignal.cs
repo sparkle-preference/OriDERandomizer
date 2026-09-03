@@ -28,9 +28,8 @@ public static class RandomizerGhostSignal {
         public LiveGhostSource Remote;
     }
 
-    // How long to let a peer sit in connecting before assuming the handshake was lost. A dead
-    // link is otherwise permanent: the roster still lists the player, so nothing re-offers, and
-    // only restarting the game clears it.
+    // How long a peer may sit in connecting before the handshake counts as lost; the roster
+    // still lists the player, so nothing else would ever re-offer.
     private const float RetryAfter = 15f;
 
     private const string IceServers = "stun:stun.l.google.com:19302";
@@ -39,9 +38,8 @@ public static class RandomizerGhostSignal {
 
     public static bool Joined { get; private set; }
 
-    // Told, not polled. The setting moves only on a settings reload or a menu toggle, and the
-    // roster it feeds lives on the socket -- so a socket that closes takes participation with it,
-    // and a new one has never been told.
+    // Told, not polled: the roster lives on the socket, so a socket that closes takes
+    // participation with it and a new one has never been told.
     public static void Apply() {
         var want = RandomizerSyncManager.WsOpen && NativeWebSocket.RtcAvailable &&
             RandomizerSettings.Customization.ShowOtherPlayers.Value;
@@ -114,9 +112,7 @@ public static class RandomizerGhostSignal {
 
     // "ghost:<from>:<type>|<b64>" -- one description from one player.
     public static void OnDescription(string body) {
-        // Every rejection below used to be a silent return, which is the worst possible
-        // behaviour for the one frame the whole handshake depends on: the far side waits
-        // forever and this side never says it threw the thing away.
+        // every rejection below is logged: a silent drop leaves the far side waiting forever
         var sep = body.IndexOf(':');
         if (sep < 0) {
             Randomizer.log("ghost signal: description with no sender, dropped");
@@ -193,9 +189,8 @@ public static class RandomizerGhostSignal {
         for (var i = Links.Count - 1; i >= 0; i--) {
             var link = Links[i];
 
-            // A channel that was open and is not any more will never be mentioned again: the
-            // roster only speaks when it changes, so a peer that restarts inside one keeps its
-            // place in the list and nothing ever re-offers.
+            // the roster only speaks when it changes, so a peer that restarts keeps its place
+            // in the list and nothing would ever re-offer
             if (link.Announced && !NativeWebSocket.RtcIsOpen(link.Handle)) {
                 var was = link.PlayerId;
                 var host = link.Offering;
@@ -210,9 +205,8 @@ public static class RandomizerGhostSignal {
                 continue;
             }
 
-            // A handshake can be lost in either direction and neither side is told. Only the
-            // offerer can restart one, so only the offerer retries; the answerer's link is
-            // replaced when the next offer arrives.
+            // a lost handshake tells neither side; only the offerer can restart one, and the
+            // answerer's link is replaced when the next offer arrives
             if (!link.Announced && now - link.Since > RetryAfter) {
                 var pid = link.PlayerId;
                 var attempt = link.Attempt + 1;
@@ -252,9 +246,8 @@ public static class RandomizerGhostSignal {
                 Randomizer.log("ghost signal: channel open to " + link.PlayerId);
             }
 
-            // A peer that went quiet long enough gets retired off screen, but its channel is
-            // still open -- so the first packet back has to bring the ghost with it, or they
-            // stay invisible until somebody rejoins by hand.
+            // a peer retired for silence still has its channel, so the first packet back has
+            // to bring the ghost with it
             if (link.Announced && NativeWebSocket.RtcHasMessage(link.Handle) &&
                     (link.Remote == null || !RandomizerGhost.Showing(link.Remote))) {
                 link.Remote = new LiveGhostSource("p" + link.PlayerId, link.PlayerId,

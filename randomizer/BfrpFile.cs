@@ -123,11 +123,8 @@ public class BfrpFile {
     }
 
     // --- variants ---
-    //
-    // A segment with variants has no plain run: every attempt belongs to one of
-    // them. They share this file's save (so they share a start) and its global
-    // boxes, and each keeps its own json, run history and ghosts under
-    // variants/<id>/.
+    // Every attempt belongs to one. They share this file's save and global boxes, and
+    // each keeps its own json, run history and ghosts under variants/<id>/.
     public List<string> Variants {
         get {
             var found = new List<string>();

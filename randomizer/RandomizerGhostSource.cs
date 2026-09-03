@@ -54,9 +54,8 @@ public class RecordedGhostSource : IGhostSource {
     private readonly float Started;
 }
 
-// A real peer. Samples arrive decoded from the wire, on the sender's clock rather than ours, so
-// an offset between the two is followed packet by packet. No clock sync protocol: being wrong by
-// a constant is invisible, and being wrong by a *varying* amount is what looks like stutter.
+// A real peer: samples arrive on the sender's clock, so the offset to ours is followed packet
+// by packet. Being wrong by a constant is invisible; varying is what looks like stutter.
 public class LiveGhostSource : IGhostSource {
     public LiveGhostSource(string label, int who, float delay) {
         Name = label;
@@ -67,9 +66,8 @@ public class LiveGhostSource : IGhostSource {
 
     public List<Sample> Samples { get { return Received; } }
 
-    // Their clock, estimated, minus the interpolation delay. Offset is theirs-minus-ours, so it
-    // is *added*: subtracting it lands 2x the clock difference in the past, which reads as a
-    // huge lag one way and as no interpolation at all the other.
+    // Their clock, estimated, minus the interpolation delay. Offset is theirs-minus-ours, so
+    // it is added; subtracting lands twice the clock difference in the past.
     public float At { get { return Time.time + Offset - Delay; } }
 
     // A peer is finished when it is retired for silence, which the coordinator decides.

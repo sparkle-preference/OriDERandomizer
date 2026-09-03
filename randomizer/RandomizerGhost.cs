@@ -35,9 +35,8 @@ public static class RandomizerGhost {
             Record();
         }
 
-        // Unity catches a throw out of Update at the MonoBehaviour boundary and writes it to
-        // Player.log, so a per-frame exception here silently stops everything below it and
-        // leaves randomizer.log looking healthy. Say so once instead.
+        // a throw out of Update goes to Player.log and silently stops everything below it;
+        // say so once in randomizer.log instead
         try {
             RandomizerGhostNet.Update();
             RandomizerGhostSignal.Update();
@@ -71,9 +70,8 @@ public static class RandomizerGhost {
                 continue;
             }
 
-            // A stalled peer holds its pose rather than being extrapolated forward, which the
-            // cursor does on its own by running out of samples. All that is left is to say so
-            // visually: full opacity while it might still come back, then a fade, then gone.
+            // a stalled peer holds its pose (the cursor runs out of samples): full opacity
+            // while it might come back, then a fade, then gone
             view.Tick(source);
             view.Fade(silence <= Retire ? 1f : 1f - (silence - Retire) / FadeTime);
             view.Cull(here != null &&
@@ -316,9 +314,8 @@ public static class RandomizerGhost {
         return true;
     }
 
-    // Death switches Ori off; it does not destroy it. A disabled transform is not a null one,
-    // so Sprite() keeps handing back a corpse and the ghost runs on the spot until the reload
-    // finally takes Sein with it. Ask whether Ori is on its feet, not whether it exists.
+    // Death switches Ori off without destroying it, so Sprite() keeps handing back a corpse;
+    // ask whether Ori is on its feet, not whether it exists.
     private const float DeathHold = 5f;
 
     private static bool Downed() {
@@ -354,9 +351,8 @@ public static class RandomizerGhost {
         return true;
     }
 
-    // What Ori's own death spawns, kept from the last local death because that lookup is the
-    // game's own and cannot be wrong. Before anyone here has died there is nothing kept, so ask
-    // the provider the same way with an ordinary enemy death.
+    // What Ori's own death spawns, kept from the last local death; before one has happened,
+    // the provider is asked the same way with an ordinary enemy death.
     internal static GameObject DeathEffect() {
         if (DeathPrefab != null) {
             return DeathPrefab;
@@ -427,9 +423,8 @@ public static class RandomizerGhost {
     // The counter the game tests is private and stays where the jump left it until Ori lands,
     // so any time in the clip gives the same answer. ExtraJumpsAvailable is the max, not the rest.
     private static bool OnLastAirJump() {
-        // FindObjectsOfTypeAll hands back prefabs and half-wired instances too, and these
-        // properties reach through Sein for state that is not always there. A skill flag is
-        // never worth throwing over: sampling has to survive anywhere in the game.
+        // FindObjectsOfTypeAll hands back prefabs and half-wired instances too; a skill flag
+        // is never worth throwing over, sampling has to survive anywhere in the game
         try {
             var ability = Ability<SeinDoubleJump>();
             if (ability == null || ability.ExtraJumpsAvailable != 2) {
@@ -447,9 +442,8 @@ public static class RandomizerGhost {
         }
     }
 
-    // SeinWallChargeJump's own IsCharged and CanChargeJump reach through Sein.Abilities, which
-    // is half empty here, so asking them would throw. The arrow's transform says the same thing
-    // without touching anything: its animator runs backwards when the aim goes away.
+    // IsCharged and CanChargeJump throw here (Sein.Abilities is half empty); the arrow's
+    // animator says the same thing, running backwards when the aim goes away.
     private static float WallArrowAim(string animation) {
         try {
             return WallArrowAimInner(animation);
@@ -465,9 +459,8 @@ public static class RandomizerGhost {
             return float.NaN;
         }
 
-        // CurrentTime is how far the arrow has faded in, and it sits at zero until the aim
-        // actually starts. IsReversed only says which way it is heading, which is false from
-        // boot and would have shown the arrow for the whole run.
+        // CurrentTime is how far the arrow has faded in, zero until the aim starts; IsReversed
+        // is false from boot and only says which way it is heading
         var driver = wall.Arrow.AnimatorDriver;
         if (driver == null || driver.CurrentTime <= 0.01f || !wall.Arrow.gameObject.activeInHierarchy) {
             return float.NaN;
@@ -563,9 +556,8 @@ public static class RandomizerGhost {
             Object.Destroy(behaviour);
         }
 
-        // the renderer count is the tell for a clone that spawns and shows nothing: if what
-        // draws lives outside the object being cloned, the copy comes out empty. Said once per
-        // prefab -- a crowd of ghosts clones the same handful over and over.
+        // a clone whose drawing lives outside the cloned object comes out empty: the renderer
+        // count is the tell, said once per prefab
         if (Cloned.Add(target.name)) {
             Randomizer.log("ghost: cloned " + target.name + " with " +
                 target.GetComponentsInChildren<Renderer>(true).Length + " renderers, stripped " +
@@ -573,9 +565,8 @@ public static class RandomizerGhost {
         }
     }
 
-    // Two things a cloned effect should not bring with it. A fader decides on its own schedule
-    // whether the renderers are on, and will switch off what Paint just switched on. And a
-    // ghost should not be audible; the burst carries its own SoundSource.
+    // A cloned effect leaves two things behind: its fader, which would switch off what Paint
+    // switched on, and its SoundSource, since a ghost is silent.
     internal static void Hush(GameObject target) {
         foreach (var sound in target.GetComponentsInChildren<SoundSource>(true)) {
             Object.Destroy(sound);
@@ -613,9 +604,8 @@ public static class RandomizerGhost {
 
     internal static void Paint(GameObject target, Color colour) {
         foreach (var renderer in target.GetComponentsInChildren<Renderer>(true)) {
-            // TransparencyAnimator switches renderers off outright when it fades something out,
-            // not just down to zero alpha. A clone taken while hidden arrives with its renderers
-            // disabled, and destroying its fader means nothing ever turns them back on.
+            // TransparencyAnimator switches renderers off when it fades out, so a clone taken
+            // while hidden arrives dark and nothing turns it back on once the fader is gone
             renderer.enabled = true;
             var material = renderer.material;
             if (material == null) {
@@ -746,9 +736,8 @@ public static class RandomizerGhost {
         return sprite == null ? DefaultScale : sprite.lossyScale;
     }
 
-    // With Dev on, the first ghost of a session round-trips its whole recording through the
-    // packet codec. There is no test harness in this dll, so the check rides along with the
-    // thing it checks and reports the worst error each lossy field introduced.
+    // With Dev on, the first ghost of a session round-trips its recording through the packet
+    // codec and reports the worst error each lossy field introduced.
     private static void CheckCodec(List<Sample> samples) {
         var buffer = new byte[RandomizerGhostPacket.MaxSize];
         var worstPosition = 0f;
@@ -970,9 +959,8 @@ public static class RandomizerGhost {
     // emergency: it wants to read as something that happened, not something happening to you.
     internal const float DeathBurstAlpha = 0.5f;
 
-    // How wide a ghost's effect may be, in world units. The camera sees about twenty, and the
-    // death effect's glows are authored at up to a hundred and fifty -- lighting the whole screen
-    // rather than a place in it. Dimming cannot help: their animators rewrite colour every frame.
+    // How wide a ghost's effect may be, in world units: the camera sees about twenty and the
+    // death glows are authored at up to 150; dimming cannot help, their animators rewrite colour.
     internal const float EffectSpan = 12f;
 
     internal const float Tick = 1f / 60f;

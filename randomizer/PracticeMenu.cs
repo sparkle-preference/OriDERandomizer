@@ -4,12 +4,10 @@ using fsm;
 using Game;
 using UnityEngine;
 
-// The pause menu (the inventory screen) dressed for a session: its Difficulty row
-// becomes Retry, its cutscene Skip row becomes Pin once a run has finished, Continue
-// goes with it, and Exit reads as the way back to the chooser. Rows are re-dressed
-// rather than added: the screen navigates by a cage of edges, and a new row would have
-// none. A segment that allows quitting to the menu keeps the vanilla screen for the
-// player's muscle memory and reaches this one by its keybind. Undressed on every show.
+// The pause menu (the inventory screen) dressed for a session, undressed on every show:
+// Difficulty becomes Retry, the cutscene Skip row becomes Pin once a run has finished,
+// Exit leads back to the chooser. Rows are re-dressed, never added: the screen navigates
+// by a cage of edges. Where quitting is allowed the vanilla screen stays; a keybind opens this.
 public static class PracticeMenu {
     private class Row {
         public CleverMenuItem Item;
