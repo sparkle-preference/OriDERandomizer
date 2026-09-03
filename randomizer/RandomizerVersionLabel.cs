@@ -116,7 +116,7 @@ public class RandomizerVersionLabel : MonoBehaviour {
         m_textBox.horizontalAnchor = HorizontalAnchorMode.Right;
         m_textBox.verticalAnchor = VerticalAnchorMode.Bottom;
         m_textBox.CreateRendersIfThereAreNone();
-        m_textBox.SetText("v" + Randomizer.VERSION);
+        m_textBox.SetText("v" + Randomizer.DisplayVersion);
         m_textBox.RenderText();
 
         // a clone never runs MessageBoxVisibility, so it keeps the prefab's

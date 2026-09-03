@@ -8,7 +8,7 @@ public static class RandomizerCreditsManager {
         Credits = new List<KeyValuePair<string, int>>();
         Credits.Add(
             new KeyValuePair<string, int>(
-                @"ANCHORTOPPARAMS_20_7.5_2_Ori DE Randomizer (" + Randomizer.VERSION + @")
+                @"ANCHORTOPPARAMS_20_7.5_2_Ori DE Randomizer (" + Randomizer.DisplayVersion + @")
 Developed by:
 Torin  *Eiko*  @Vulajin@
 $d265f27$  #Kirefel# :AsmPrgmC3" +

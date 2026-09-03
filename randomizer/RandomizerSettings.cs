@@ -12,17 +12,10 @@ public static class RandomizerSettings {
     }
 
     // move this with every new setting, or existing installs take the nag path on update
-    public static string LastAddedSetting = "Practice Timer";
+    public static string LastAddedSetting = "Built-in Netcode Host";
 
-    // The "//" in https:// is not a comment. Cutting there left every url setting as a bare
-    // scheme, which then failed the has-a-scheme test and silently reverted to the default --
-    // invisible for as long as the default was where you wanted to point.
     private static string StripComment(string line) {
         var at = line.IndexOf("//");
-        while (at > 0 && line[at - 1] == ':') {
-            at = line.IndexOf("//", at + 2);
-        }
-
         return at < 0 ? line : line.Substring(0, at);
     }
 
@@ -67,17 +60,11 @@ public static class RandomizerSettings {
                     value = "Uncollected";
                 }
 
-                // pre-4.3 netcode urls were bare hosts on retiring domains;
-                // Parse swaps the new default in, this persists it
-                if ((setting == "Root Netcode URL" || setting == "Websocket Netcode URL")
-                        && !value.Contains("://")) {
-                    dirty = true;
-                }
-
                 ParseSettingLine(setting, value);
                 unseenSettings.Remove(setting);
             }
 
+            var firstSight = unseenSettings.Contains(DevSettings.BuiltinHost.Name);
             foreach (var missing in unseenSettings) {
                 All[missing].Reset();
                 writeList.Add(missing);
@@ -86,6 +73,7 @@ public static class RandomizerSettings {
                 }
             }
 
+            MoveNetcodeHost(firstSight);
             if (writeList.Count > 0 && !dirty) {
                 var writeText = "";
                 var nagList = new List<string>();
@@ -98,7 +86,7 @@ public static class RandomizerSettings {
                 }
 
                 if (nagList.Count > 0) {
-                    Randomizer.printInfo("Default settings written for: " + String.Join(", ", nagList.ToArray()), 120 + 60 * nagList.Count);
+                    Notice("Default settings written for: " + String.Join(", ", nagList.ToArray()), 120 + 60 * nagList.Count);
                 }
 
                 File.AppendAllText("RandomizerSettings.txt", writeText);
@@ -107,6 +95,14 @@ public static class RandomizerSettings {
             CurrentFilter = Customization.DefaultMapFilter.Value;
             if (dirty) {
                 WriteSettings();
+            }
+
+            if (Randomizer.MessageQueue != null) {
+                foreach (var notice in pendingNotices) {
+                    Randomizer.printInfo(notice.Key, notice.Value);
+                }
+
+                pendingNotices.Clear();
             }
 
             Announce();
@@ -122,9 +118,37 @@ public static class RandomizerSettings {
             }
         } catch (Exception) {
             All[setting].Reset();
-            Randomizer.printInfo("@" + setting + ": failed to parse value '" + value + "'. Using default value: '" + All[setting].ToString() + "'@", 240);
+            Notice("@" + setting + ": failed to parse value '" + value + "'. Using default value: '" + All[setting].ToString() + "'@", 240);
         }
     }
+
+    // A dll built for another host moves the live host along, whatever it was set to:
+    // once per host change, in either direction.
+    private static void MoveNetcodeHost(bool firstSight) {
+        var builtin = DevSettings.BuiltinHost;
+        var host = DevSettings.NetcodeHost;
+        if (!firstSight && builtin.IsDefault()) {
+            return;
+        }
+
+        var detail = firstSight ? "first run with a built-in host" : $"was {host.Value}, built-in host was {builtin.Value}";
+        Randomizer.log($"netcode host: now {host.Default} ({detail})");
+        if (Dev.Value && (firstSight || host.Value != builtin.Value)) {
+            Notice($"Netcode host is now {host.Default} ({detail})", 600);
+        }
+
+        host.Reset();
+        builtin.Reset();
+        dirty = true;
+    }
+
+    // The boot-time parse runs before the message queue exists, and initialize() makes a
+    // fresh queue anyway, so notices wait for the next parse that can show them.
+    private static void Notice(string message, int frames) {
+        pendingNotices.Add(new KeyValuePair<string, int>(message, frames));
+    }
+
+    private static readonly List<KeyValuePair<string, int>> pendingNotices = new List<KeyValuePair<string, int>>();
 
     public static void WriteSettings() {
         if (!dirty) {
@@ -240,8 +264,9 @@ public static class RandomizerSettings {
 
         DevSettings.AreasOri = new BoolSetting("Keep Areas.Ori Updated", true, "Update areas.ori from the server. Set to False to disable for local development.", false, true);
         DevSettings.BlackrootOrbRoomClimbAssist = new BoolSetting("Blackroot Orb Room Climb Assist", true, "", false, true);
-        DevSettings.WebEndpoint = new UrlSetting("Root Netcode URL", "https://bf.orirando.com", "The base URL for http netcode, protocol included (https:// goes through the sidecar's TLS,\nhttp:// through the game itself -- local dev only). Changing this breaks netcode.", false, true);
-        DevSettings.WsEndpoint = new UrlSetting("Websocket Netcode URL", "wss://bf.orirando.com", "The base URL the websocket netcode connects to, protocol included (wss:// or ws://).\nChanging this breaks netcode.", false, true);
+        DevSettings.NetcodeHost = new HostSetting("Netcode Host", Randomizer.NETCODE_HOST, "The server the netcode talks to: a host name, no protocol (https and wss are implied).\nChanging this breaks netcode.", false, true);
+        DevSettings.PlainHttp = new BoolSetting("Netcode Plain HTTP", false, "True: talk http and ws to the Netcode Host instead of https and wss, for a local server.\nFalse (default): TLS.", false, true);
+        DevSettings.BuiltinHost = new StringSetting("Built-in Netcode Host", Randomizer.NETCODE_HOST, "Where this dll pointed when it was built. Not a setting: when a newer dll points somewhere else,\nNetcode Host is moved there, whatever it was set to, and this line follows.", false);
         DevSettings.DisableWebsocket = new BoolSetting("Disable Websocket", false, "True: never use the websocket netcode transport; poll over http like older versions.\nFalse (default): use the websocket when available, falling back to http.", false, true);
     }
 
@@ -397,8 +422,9 @@ public static class RandomizerSettings {
     public static class DevSettings {
         public static BoolSetting AreasOri;
         public static BoolSetting BlackrootOrbRoomClimbAssist;
-        public static UrlSetting WebEndpoint;
-        public static UrlSetting WsEndpoint;
+        public static HostSetting NetcodeHost;
+        public static BoolSetting PlainHttp;
+        public static StringSetting BuiltinHost;
         public static BoolSetting DisableWebsocket;
     }
 
@@ -475,22 +501,23 @@ public static class RandomizerSettings {
         public override string ValidValues() => "A decimal number";
     }
 
-    public class UrlSetting : Setting<String> {
-        public UrlSetting(string name, string defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
+    public class HostSetting : Setting<String> {
+        public HostSetting(string name, string defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
         }
 
+        // host or host:port; anything else falls back to the default with the usual nag
         public override void Parse(string value) {
-            // pre-4.3 values were bare hosts pointing at retiring domains; the
-            // protocol doubles as the one-time migration marker
-            if (value == null || !value.Contains("://")) {
-                Value = Default;
-                return;
+            var parts = (value ?? "").Trim().TrimEnd('/').Split(':');
+            int port;
+            if (parts.Length > 2 || Uri.CheckHostName(parts[0]) == UriHostNameType.Unknown
+                    || (parts.Length == 2 && !int.TryParse(parts[1], out port))) {
+                throw new FormatException("expected host or host:port");
             }
 
-            Value = value.TrimEnd('/');
+            Value = string.Join(":", parts);
         }
 
-        public override string ValidValues() => "A url, protocol included";
+        public override string ValidValues() => "A host name (host or host:port), no protocol";
     }
 
     public class StringSetting : Setting<String> {

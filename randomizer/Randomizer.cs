@@ -14,6 +14,12 @@ using Random = System.Random;
 public static class Randomizer {
     public static string VERSION = "4.9.0";
 
+    // the netcode host this build points at; changing it moves every install (RandomizerSettings)
+    public static string NETCODE_HOST = "bfbeta.eiko.blue";
+
+    // 4.9.x is the 5.0 beta: numeric on the wire, 5.beta.x on screen
+    public static string DisplayVersion => VERSION.StartsWith("4.9.") ? "5.beta." + VERSION.Substring(4) : VERSION;
+
     public static void initialize() {
         try {
             OHKO = false;
@@ -875,7 +881,7 @@ public static class Randomizer {
             return;
         }
 
-        var seedInfo = "v" + VERSION;
+        var seedInfo = "v" + DisplayVersion;
         seedInfo += "- seed loaded: " + SeedMeta;
         printInfo(seedInfo);
     }

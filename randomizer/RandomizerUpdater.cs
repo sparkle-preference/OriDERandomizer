@@ -115,20 +115,6 @@ public class RandomizerUpdater : MonoBehaviour {
         thread.Start();
     }
 
-    private static string Host {
-        get {
-            var endpoint = RandomizerSettings.DevSettings.WsEndpoint;
-            if (endpoint == null) {
-                return "bf.orirando.com";
-            }
-
-            // the setting carries a scheme since 4.3; the updater builds its own
-            var v = endpoint.Value;
-            var at = v.IndexOf("://");
-            return (at >= 0 ? v.Substring(at + 3) : v).TrimEnd('/');
-        }
-    }
-
     private static void CheckThread() {
         try {
             var scratch = Path.Combine(Path.GetTempPath(), "orirando_version.txt");
@@ -136,7 +122,7 @@ public class RandomizerUpdater : MonoBehaviour {
             // A first TLS request can lose a race with the ws handshake: two tries.
             var status = 0;
             for (var attempt = 0; attempt < 2; attempt++) {
-                status = NativeWebSocket.HttpDownload($"https://{Host}/version/latest", scratch);
+                status = NativeWebSocket.HttpDownload($"{RandomizerSyncManager.WebBase()}/version/latest", scratch);
                 if (status == 200) {
                     break;
                 }
@@ -175,7 +161,7 @@ public class RandomizerUpdater : MonoBehaviour {
     private void UpdateThread() {
         try {
             var staged = ManagedDll + ".new";
-            var status = NativeWebSocket.HttpDownload($"https://{Host}/dll", staged);
+            var status = NativeWebSocket.HttpDownload($"{RandomizerSyncManager.WebBase()}/dll", staged);
             if (status != 200) {
                 Fail($"download failed ({status}: {NativeWebSocket.GetLastHttpError()})");
                 return;

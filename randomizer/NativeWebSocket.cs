@@ -136,8 +136,7 @@ public static class NativeWebSocket {
     // everything else carries on
     public static bool RtcAvailable => rtc_create != null;
 
-    // false when it predates the async request api; callers fall back to
-    // System.Net rather than losing the request
+    // false when it predates the async request api: no http lane without it
     public static bool AsyncHttpAvailable => http_begin != null;
 
     public const int HttpPending = -1;

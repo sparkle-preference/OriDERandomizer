@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -240,18 +239,6 @@ public class RandomizerLocationManager {
         LogicThread.Start();
     }
 
-    // logic init waits on this download, and once the plain-http host is
-    // retired the endpoint may black-hole instead of refusing — a capped
-    // timeout keeps the worst case at a 5s one-time delay before falling
-    // back to the shipped areas.ori
-    private class QuickWebClient : WebClient {
-        protected override WebRequest GetWebRequest(Uri address) {
-            var req = base.GetWebRequest(address);
-            req.Timeout = 5000;
-            return req;
-        }
-    }
-
     public static void DownloadAreas() {
         if (RandomizerSettings.DevSettings.AreasOri) {
             try {
@@ -259,28 +246,19 @@ public class RandomizerLocationManager {
                     File.Move("areas.ori", "areas.ori.old"); // backup
                 }
 
-                // the scheme picks the engine, as everywhere else: the sidecar
-                // owns TLS, the game's own client can only do plain http
+                // The logic thread can block, so the sidecar's download is free here.
+                // A first TLS request can lose a race with the ws handshake: two tries.
                 var fetched = false;
-                if (AreasURL().StartsWith("https://")) {
-                    // The logic thread can block, so the sidecar's download is free here.
-                    // A first TLS request can lose a race with the ws handshake: two tries.
-                    for (var attempt = 0; attempt < 2 && NativeWebSocket.Loaded && NativeWebSocket.HttpAvailable; attempt++) {
-                        var status = NativeWebSocket.HttpDownload(AreasURL(), "areas.ori");
-                        if (status == 200) {
-                            fetched = true;
-                            break;
-                        }
-
-                        Randomizer.log($"areas.ori: sidecar attempt {attempt + 1} gave {status} "
-                            + $"({NativeWebSocket.GetLastHttpError()})");
-                        Thread.Sleep(500);
+                for (var attempt = 0; attempt < 2 && NativeWebSocket.Loaded && NativeWebSocket.HttpAvailable; attempt++) {
+                    var status = NativeWebSocket.HttpDownload(AreasURL(), "areas.ori");
+                    if (status == 200) {
+                        fetched = true;
+                        break;
                     }
-                } else {
-                    var webClient = new QuickWebClient();
-                    ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
-                    webClient.DownloadFile(AreasURL(), "areas.ori");
-                    fetched = true;
+
+                    Randomizer.log($"areas.ori: sidecar attempt {attempt + 1} gave {status} "
+                        + $"({NativeWebSocket.GetLastHttpError()})");
+                    Thread.Sleep(500);
                 }
 
                 if (!fetched) {

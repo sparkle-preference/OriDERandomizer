@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
-using System.Net;
 using Core;
 using Game;
 using Sein.World;
@@ -977,12 +975,6 @@ public static class BingoController {
         }
     }
 
-    public static void PostCallback(object sender, UploadValuesCompletedEventArgs e) {
-        if ((e.Cancelled || e.Error != null) && e.Error.GetType().Name == "WebException") {
-            UpdateTimer = Math.Min(1, UpdateTimer);
-        }
-    }
-
     public static void Init(string goalLine) {
         try {
             if (!Randomizer.SyncId.Contains(".")) {
@@ -1002,10 +994,6 @@ public static class BingoController {
             updateHandle = 0;
             goalsHandle = 0;
             if (!Active) {
-                UpdateClient = new WebClient();
-                UpdateClient.UploadValuesCompleted += PostCallback;
-                GoalsClient = new WebClient();
-                GoalsClient.DownloadStringCompleted += GoalsFetched;
                 SingleLocListeners = new Dictionary<int, List<SingleLocListener>>();
                 SingleItemListeners = new Dictionary<string, SingleItemListener>();
                 SingleSceneListeners = new Dictionary<string, SingleSceneListener>();
@@ -1287,12 +1275,8 @@ public static class BingoController {
 
         if (RandomizerSyncManager.WsOpen && !GoalsWsUnsupported) {
             NativeWebSocket.SendText("goals:");
-        } else if (!RandomizerSyncManager.WsNoHttp && RandomizerSyncManager.UseSidecarHttp) {
-            if (goalsHandle == 0) {
-                goalsHandle = NativeWebSocket.HttpBegin("GET", GoalsUrl, null, null);
-            }
-        } else if (!RandomizerSyncManager.WsNoHttp && !RandomizerSyncManager.SecureNetcode && !GoalsClient.IsBusy) {
-            GoalsClient.DownloadStringAsync(new Uri(GoalsUrl));
+        } else if (RandomizerSyncManager.HttpLaneOpen && goalsHandle == 0) {
+            goalsHandle = NativeWebSocket.HttpBegin("GET", GoalsUrl, null, null);
         }
     }
 
@@ -1322,19 +1306,6 @@ public static class BingoController {
                 }
             }
         }
-    }
-
-    private static void GoalsFetched(object sender, DownloadStringCompletedEventArgs e) {
-        if (e.Error != null) {
-            // 404 = no board for this player; anything else retries on the timer
-            if (e.Error.Message.Contains("404")) {
-                GoalsGone = true;
-            }
-
-            return;
-        }
-
-        LoadGoals(e.Result);
     }
 
     // the server err'd a goals frame: 404 means no board, no status means it
@@ -1523,7 +1494,7 @@ public static class BingoController {
         if (RandomizerSyncManager.WsOpen && !WsUnsupported && json.Length < 30000) {
             NativeWebSocket.SendText("bingo:bingoData=" + Uri.EscapeDataString(json) + "&version=" + Randomizer.VERSION);
             UpdateTimer = 15;
-        } else if (!RandomizerSyncManager.WsNoHttp && RandomizerSyncManager.UseSidecarHttp) {
+        } else if (RandomizerSyncManager.HttpLaneOpen) {
             if (updateHandle == 0) {
                 updateHandle = NativeWebSocket.HttpBegin("POST", UpdateUrl,
                     "bingoData=" + RandomizerSyncManager.EscapeLong(json) + "&version=" + Randomizer.VERSION,
@@ -1532,12 +1503,6 @@ public static class BingoController {
             } else {
                 UpdateTimer = 3;
             }
-        } else if (!RandomizerSyncManager.WsNoHttp && !RandomizerSyncManager.SecureNetcode && !UpdateClient.IsBusy) {
-            var values = new NameValueCollection();
-            values["bingoData"] = json;
-            values["version"] = Randomizer.VERSION;
-            UpdateClient.UploadValuesAsync(new Uri(UpdateUrl), values);
-            UpdateTimer = 15;
         } else {
             // no transport right now (fallback routes gone, socket mid-
             // reconnect): try again shortly — the next send carries the
@@ -1546,7 +1511,7 @@ public static class BingoController {
         }
     }
 
-    // mirrors PostCallback: a failed update retries fast. A LOST frame
+    // a failed update retries fast, like the http door. A LOST frame
     // (no ack at all) just waits out the 15s cadence — every update is a
     // full durable snapshot, so nothing is ever missing for long.
     public static void OnBingoAck(string status) {
@@ -1570,7 +1535,6 @@ public static class BingoController {
     public static bool GoalsLoaded;
     public static bool GoalsGone;
     public static string GoalsUrl;
-    public static WebClient GoalsClient;
     private static int updateHandle;
     private static int goalsHandle;
 
@@ -1599,7 +1563,6 @@ public static class BingoController {
     }
 
     public static int UpdateTimer = 15;
-    public static WebClient UpdateClient;
     public static string UpdateUrl;
     public static bool Active;
     public static int CoreSkipTimeout;
