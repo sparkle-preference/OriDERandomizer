@@ -17,10 +17,10 @@ public static class Randomizer {
     // the netcode host this build points at; changing it moves every install (RandomizerSettings)
     public static string NETCODE_HOST = "bfbeta.eiko.blue";
 
-    // 4.9.x is the 5.0 beta: numeric on the wire, 5.beta.x on screen
+    // 4.9.x is the 5.0 beta: numeric on the wire, "5.0 beta vN" on screen
     public static bool IsBeta => VERSION.StartsWith("4.9.");
 
-    public static string DisplayVersion => IsBeta ? "5.beta." + VERSION.Substring(4) : VERSION;
+    public static string DisplayVersion => IsBeta ? "5.0 beta v" + VERSION.Substring(4) : VERSION;
 
     public static void initialize() {
         try {
