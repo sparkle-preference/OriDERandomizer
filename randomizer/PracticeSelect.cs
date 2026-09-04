@@ -255,7 +255,21 @@ public static class PracticeSelect {
 
     public static void Shown(SaveSlotsUI screen) {
         Legend(screen, !Choosing);
+        if (Choosing) {
+            Rewind(screen);
+        }
     }
+
+    // The screen keeps the saves' scroll position; a short segment list seen from slot 7 looks empty.
+    private static void Rewind(SaveSlotsUI screen) {
+        if (savedIndex < 0) {
+            savedIndex = screen.CurrentSlotIndex;
+        }
+
+        screen.SetCurrentItemAndScroll(0);
+    }
+
+    private static int savedIndex = -1;
 
     public static void Hidden(SaveSlotsUI screen) {
         if (!Choosing) {
@@ -268,6 +282,10 @@ public static class PracticeSelect {
         Legend(screen, true);
         SaveSlotsManager.PrepareSlots();
         screen.ItemsUI.Refresh();
+        if (savedIndex >= 0) {
+            screen.SetCurrentItemAndScroll(savedIndex);
+            savedIndex = -1;
+        }
     }
 
     // copy and delete mean nothing on a segment card, and the backups row is the variants

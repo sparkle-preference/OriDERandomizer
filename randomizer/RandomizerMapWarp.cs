@@ -294,6 +294,9 @@ public static class RandomizerMapWarp {
         { "horu", "Horu" },
         { "valley", "Valley" },
         { "sorrow", "Sorrow" },
+        // the game's own well ids are crossed: Sorrow's well is valleyOfTheWind, as in TeleportTable
+        { "valleyOfTheWind", "Sorrow" },
+        { "sorrowPass", "Valley" },
         { "glades", "Glades" },
         { "blackroot", "Blackroot" }
     };
@@ -420,9 +423,9 @@ public static class RandomizerMapWarp {
         }
     }
 
-    // Touched but not collected: the slot is already granted, so going back for it gives nothing.
+    // Already granted: an icon still on the map for it (the world forgot on death, or it repeats) gives nothing.
     public static bool Spent(RandomizerLocationManager.Location loc) {
-        return loc != null && loc.Touched && !loc.Collected;
+        return loc != null && loc.Touched;
     }
 
     // The slider's word, except that the Uncollected filter never loses a touched icon

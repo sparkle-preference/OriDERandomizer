@@ -23,6 +23,8 @@ public static class RandomizerSkillIcons {
         "sense_sunstone.png", "sense_cleanwater.png", "sense_windrestored.png"
     };
 
+    // The tree is rebuilt with vanilla meshes on every open; the materials are shared assets
+    // that keep whatever art was last set. Each pass has to recognise both.
     public static void Apply(SkillTreeManager tree) {
         try {
             foreach (var lane in new[] { tree.EnergyLane, tree.UtilityLane, tree.CombatLane }) {
@@ -38,14 +40,14 @@ public static class RandomizerSkillIcons {
                     }
 
                     var texture = skill.Ability == AbilityType.Sense ? ComposeSense() : Load(resource);
-                    var vanilla = skill.Icon.sharedMaterial.mainTexture;
-                    if (texture != null && vanilla != null && texture != vanilla) {
-                        Replace(tree, vanilla, texture);
-                        if (skill.Ability == AbilityType.Sense) {
-                            RetireSenseComposite(vanilla);
-                            senseComposite = texture;
-                        }
+                    if (texture == null) {
+                        continue;
                     }
+
+                    Texture earlier;
+                    shown.TryGetValue(skill.Ability, out earlier);
+                    Replace(tree, texture, skill.Icon.sharedMaterial.mainTexture, earlier);
+                    shown[skill.Ability] = texture;
                 }
             }
         } catch (Exception e) {
@@ -53,12 +55,21 @@ public static class RandomizerSkillIcons {
         }
     }
 
+    private static readonly Dictionary<AbilityType, Texture> shown = new Dictionary<AbilityType, Texture>();
+
     // Cave plus one find, composited on the CPU: both layers are full-canvas PNGs already in
     // position, and LoadImage leaves them readable. The cave draws OVER the find, so a symbol
     // that overruns the opening is trimmed by the cave rather than pasted on top of it.
+    // One composite per find, kept: a material may still be showing the last one.
     private static Texture2D ComposeSense() {
+        var name = SenseFinds[UnityEngine.Random.Range(0, SenseFinds.Length)];
+        Texture2D made;
+        if (composites.TryGetValue(name, out made) && made != null) {
+            return made;
+        }
+
         var cave = Load(SenseCave);
-        var find = Load(SenseFinds[UnityEngine.Random.Range(0, SenseFinds.Length)]);
+        var find = Load(name);
         if (cave == null || find == null
             || cave.width != find.width || cave.height != find.height) {
             return Load("skill_sense.png");
@@ -70,13 +81,16 @@ public static class RandomizerSkillIcons {
             under[i] = Over(top[i], under[i]);
         }
 
-        var made = new Texture2D(cave.width, cave.height, TextureFormat.ARGB32, true);
+        made = new Texture2D(cave.width, cave.height, TextureFormat.ARGB32, true);
         made.SetPixels32(under);
         made.Apply();
         made.wrapMode = TextureWrapMode.Clamp;
-        made.name = "sense " + find.name;
+        made.name = "sense " + name;
+        composites[name] = made;
         return made;
     }
+
+    private static readonly Dictionary<string, Texture2D> composites = new Dictionary<string, Texture2D>();
 
     private static Color32 Over(Color32 src, Color32 dst) {
         if (src.a == 255 || dst.a == 0) {
@@ -96,17 +110,6 @@ public static class RandomizerSkillIcons {
             (byte)((src.b * sa + dst.b * da) / a),
             (byte)(a * 255f));
     }
-
-    // The composites are made per menu open, so the one being replaced has to go with it.
-    private static void RetireSenseComposite(Texture replaced) {
-        if (senseComposite != null && senseComposite == replaced) {
-            UnityEngine.Object.Destroy(senseComposite);
-        }
-
-        senseComposite = null;
-    }
-
-    private static Texture2D senseComposite;
 
     private static Texture2D Load(string resource) {
         Texture2D texture;
@@ -130,24 +133,37 @@ public static class RandomizerSkillIcons {
     // A node's art is drawn by several renderers with their own materials: the node itself,
     // the large hover art, and LearntSkillGlow once the node is earned. They share the
     // texture, so matching on it is what reaches all three.
-    private static void Replace(SkillTreeManager tree, Texture vanilla, Texture replacement) {
+    private static void Replace(SkillTreeManager tree, Texture replacement, params Texture[] matches) {
         foreach (var renderer in tree.GetComponentsInChildren<Renderer>(true)) {
-            Retexture(renderer, vanilla, replacement);
+            Retexture(renderer, replacement, matches);
         }
 
         if (tree.LargeIcon != null) {
             foreach (var renderer in tree.LargeIcon.GetComponentsInChildren<Renderer>(true)) {
-                Retexture(renderer, vanilla, replacement);
+                Retexture(renderer, replacement, matches);
             }
         }
     }
 
-    private static void Retexture(Renderer renderer, Texture vanilla, Texture replacement) {
-        if (renderer.sharedMaterial == null || renderer.sharedMaterial.mainTexture != vanilla) {
+    private static void Retexture(Renderer renderer, Texture replacement, Texture[] matches) {
+        var material = renderer.sharedMaterial;
+        if (material == null) {
             return;
         }
 
-        renderer.sharedMaterial.mainTexture = replacement;
+        var current = material.mainTexture;
+        var ours = current == replacement;
+        foreach (var match in matches) {
+            if (match != null && current == match) {
+                ours = true;
+            }
+        }
+
+        if (!ours) {
+            return;
+        }
+
+        material.mainTexture = replacement;
         Quadify(renderer.GetComponent<MeshFilter>());
     }
 

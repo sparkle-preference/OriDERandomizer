@@ -178,6 +178,7 @@ public static class PracticeMenu {
         if (layoutOrder == null) {
             layoutOrder = new List<CleverMenuItem>(layout.MenuItems);
             navigation = manager.Navigation;
+            arranged = manager;
         }
 
         if (bottom != null && layout.MenuItems.Remove(bottom)) {
@@ -224,8 +225,19 @@ public static class PracticeMenu {
 
     private static List<CleverMenuItem> managerOrder;
 
+    private static CleverMenuItemSelectionManager arranged;
+
     private static void Unarrange(CleverMenuItemSelectionManager manager) {
         if (layoutOrder == null) {
+            return;
+        }
+
+        // a screen rebuilt since the arrangement would inherit a dead one's rows and edges
+        if (manager != arranged) {
+            layoutOrder = null;
+            navigation = null;
+            managerOrder = null;
+            arranged = null;
             return;
         }
 
@@ -355,6 +367,18 @@ public static class PracticeMenu {
         }
 
         dressed.Clear();
+        pinItem = null;
+        exitRequested = false;
+    }
+
+    // The screen is rebuilt with each game; nothing remembered from the last one fits the next.
+    public static void Forget() {
+        dressed.Clear();
+        hiddenObjects.Clear();
+        layoutOrder = null;
+        navigation = null;
+        managerOrder = null;
+        arranged = null;
         pinItem = null;
         exitRequested = false;
     }

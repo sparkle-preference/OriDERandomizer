@@ -63,6 +63,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
             RandomizerTooltip = obj.GetComponent<MessageBox>();
             RandomizerTooltip.MessageProvider = null;
             RandomizerTooltip.OverrideText = "Unknown";
+            RandomizerTooltip.gameObject.SetActive(false);
         }
 
         if (WarpPrompt == null) {
@@ -83,6 +84,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
                 var doorTTip = obj.GetComponent<MessageBox>();
                 doorTTip.MessageProvider = null;
                 doorTTip.OverrideText = "Unknown";
+                doorTTip.gameObject.SetActive(false);
                 KeysanityDoorTooltips.Add(doorTTip);
             }
         }

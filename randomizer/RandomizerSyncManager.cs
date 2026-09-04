@@ -119,6 +119,15 @@ public static class RandomizerSyncManager {
 
     public static void Update() {
         try {
+            // silence is measured in ticking time: a menu or a tab-out stops the ticks the
+            // server would have answered, and must not read as the server going quiet
+            var now = Time.realtimeSinceStartup;
+            if (now - lastTick > TickGap && Answered > 0f) {
+                Answered = now;
+            }
+
+            lastTick = now;
+
             // pickups wait in the queue until a transport exists (with the
             // http fallback gone, that means until the socket reconnects)
             if (SendingPickup == null && PickupQueue.Count > 0
@@ -838,6 +847,10 @@ public static class RandomizerSyncManager {
 
     // set when a sync seed loads, so the silence is measured from the game rather than boot
     public static float Answered;
+
+    private static float lastTick;
+
+    private const float TickGap = 2f;
 
     private static bool Refused;
 

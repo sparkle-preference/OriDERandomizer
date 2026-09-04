@@ -295,6 +295,13 @@ public class AreaMapNavigation : MonoBehaviour {
                 }
             }
 
+            // hints not placed this frame would otherwise sit on the legend row
+            for (var i = doorCount; i < AreaMapUI.Instance.KeysanityDoorTooltips.Count; i++) {
+                if (AreaMapUI.Instance.KeysanityDoorTooltips[i].gameObject.activeSelf) {
+                    AreaMapUI.Instance.KeysanityDoorTooltips[i].gameObject.SetActive(false);
+                }
+            }
+
             // Peers are considered last and win ties: the thing that moves is the thing you meant.
             if (RandomizerGhostMap.Hover(cursorPositionWorld, ref candidateDistance, out var peerAt, out var peerName)) {
                 var peerPosition = WorldToMapPosition(peerAt);

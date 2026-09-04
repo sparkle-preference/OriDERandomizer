@@ -113,6 +113,7 @@ public class InventoryManager : MenuScreen {
     }
 
     public void OnDestroy() {
+        PracticeMenu.Forget();
         if (Instance == this) {
             Instance = null;
         }
