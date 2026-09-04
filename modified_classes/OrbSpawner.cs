@@ -67,27 +67,40 @@ public class OrbSpawner : MonoBehaviour {
             num++;
         }
 
-        // Relaxed and Drop Efficiency each buy one retry on a roll that dropped nothing;
-        // holding both is the same as holding either.
-        var retry = DifficultyController.Instance.Difficulty == DifficultyMode.Easy
-            || (Characters.Sein && Characters.Sein.PlayerAbilities.MapMarkers.HasAbility);
-        if (!SpawnLoot(0) && retry) {
-            SpawnLoot(1);
+        if (DifficultyController.Instance.Difficulty == DifficultyMode.Easy) {
+            if (!SpawnLoot(0)) {
+                SpawnLoot(1);
+            }
+        } else {
+            SpawnLoot(0);
         }
     }
 
     private bool SpawnLoot(int attempt) {
+        var heartChance = LootSettings.HeartChance;
+        var energyChance = LootSettings.EnergyShardChance;
+
+        if (Characters.Sein && Characters.Sein.PlayerAbilities.MapMarkers.HasAbility) {
+            heartChance *= 1.5f;
+            energyChance *= 1.5f;
+
+            if (heartChance + energyChance is var sum and > 1f) {
+                heartChance /= sum;
+                energyChance /= sum;
+            }
+        }
+
         var num = FixedRandom.ValueFromPosition(transform.position + new Vector3(attempt, 0, 0));
         if (LootSettings.EnergyShardChance <= 0.5f && LootSettings.HeartChance <= 0.5f && !LootOnHard && DifficultyController.Instance.Difficulty == DifficultyMode.Hard) {
             return false;
         }
 
-        if (num < LootSettings.HeartChance) {
+        if (num < heartChance) {
             OrbSpawnerManager.Instance.Spawn(OrbSpawnerManager.ItemType.Health, m_transform.position, Vector2.zero, DropPickup.State.Hover);
             return true;
         }
 
-        if (num < LootSettings.HeartChance + LootSettings.EnergyShardChance && Characters.Sein.Energy.EnergyActive) {
+        if (num < heartChance + energyChance && Characters.Sein.Energy.EnergyActive) {
             OrbSpawnerManager.Instance.Spawn(OrbSpawnerManager.ItemType.Energy, m_transform.position, Vector2.zero, DropPickup.State.Hover);
             return true;
         }
