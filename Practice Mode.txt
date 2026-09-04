@@ -12,7 +12,7 @@ PRACTICE on the title menu lists them. You race a clock, and a ghost of one of y
 
 Making a segment
 ===
-In a normal game, get to the spot you want to practice from and press Alt+S. The current state is saved as a new segment, named after the area and the time.
+In a normal game, get to the spot you want to practice from and press Alt+M. The current state is saved as a new segment, named after the area and the time.
 From the title menu choose PRACTICE, pick the new segment, and start it.
 Pause and choose EDIT PRACTICE SEGMENT. The world freezes and you draw boxes with the mouse.
 
@@ -93,7 +93,7 @@ RandomizerSettings.txt:
 - "Practice Timer": The clock in the top right during an attempt. Default: True
 
 RandomizerRebinding.txt:
-Alt+S               Create Practice Segment
+Alt+M               Create Practice Segment
 (unbound)           Practice Menu: the practice pause, for quit-to-menu segments
 (unbound)           Open Practice Editor Page: the page, from anywhere in a session
 

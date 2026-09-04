@@ -34,7 +34,7 @@ Alt+B               Bonus item inventory
 Alt+Q               Cycle the active bonus item
 Alt+1 - Alt+5       Trees, map altars, teleporters, relics, run stats
 Alt+C               Toggle color shifting
-Alt+S               Save the current game as a practice segment
+Alt+M               Save the current game as a practice segment
 Alt+V / Alt+F       Chaos mode: toggle messages / force an effect
 PgUp / PgDn         Save select: jump three slots (with Shift, ten)
 Bash (held)         On the world map, warp to the spirit well under the cursor
