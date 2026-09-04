@@ -405,7 +405,7 @@ public static class RandomizerMapWarp {
                     alpha = Open(icon.Position) ? 1f : LockedAlpha;
                 } else if (RandomizerLocationManager.LocationsByWorldMapGuid.TryGetValue(
                         icon.Guid, out var loc) && Spent(loc)) {
-                    alpha = RandomizerSettings.Customization.TouchedVisibility.Value;
+                    alpha = TouchedAlpha();
                 }
 
                 if (alpha >= 0.99f) {
@@ -425,11 +425,20 @@ public static class RandomizerMapWarp {
         return loc != null && loc.Touched && !loc.Collected;
     }
 
+    // The slider's word, except that the Uncollected filter never loses a touched icon
+    // entirely: a slider left at zero is more often a mistake than a wish.
+    private static float TouchedAlpha() {
+        var alpha = RandomizerSettings.Customization.TouchedVisibility.Value;
+        return RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.Uncollected
+            ? Mathf.Max(alpha, FailSafeAlpha) : alpha;
+    }
+
+    private const float FailSafeAlpha = 0.1f;
+
     // At the bottom of the slider it is not drawn at all, since an invisible icon is still a
     // thing the cursor can catch on.
     public static bool Hidden(RandomizerLocationManager.Location loc) {
-        return Spent(loc) &&
-            RandomizerSettings.Customization.TouchedVisibility.Value <= Vanished;
+        return Spent(loc) && TouchedAlpha() <= Vanished;
     }
 
     // Wells sit on their own scenery, so a loose match is enough to tell which one an icon is.
