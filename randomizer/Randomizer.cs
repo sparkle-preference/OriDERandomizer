@@ -893,6 +893,11 @@ public static class Randomizer {
 
         var seedInfo = "v" + DisplayVersion;
         seedInfo += "- seed loaded: " + SeedMeta;
+        // both default files present and nothing handed in: say which one won
+        if (IsDefaultSeedFilePath(SeedFilePath) && File.Exists("randomizer.bfr") && File.Exists("randomizer.dat")) {
+            seedInfo = SeedFilePath + " - " + seedInfo;
+        }
+
         printInfo(seedInfo);
     }
 
