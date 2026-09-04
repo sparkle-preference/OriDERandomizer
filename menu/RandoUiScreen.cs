@@ -1,6 +1,7 @@
 public class RandoUiScreen : CustomSettingsScreen {
     public override void InitScreen() {
         AddToggle(RandomizerSettings.Customization.DiscoSense, "Speeds up the Color.txt rotation while Sense is active (faster = closer).");
+        AddToggle(RandomizerSettings.Customization.RainbowDash, "Enhance your dashes (cosmetically) with sparkles and rainbows.");
         AddToggle(RandomizerSettings.Customization.MultiplePickupMessages, "Shows up to five pickup messages at once down the left, instead of one at a time in the center.");
         AddToggle(RandomizerSettings.Customization.AlwaysShowLastFivePickups, "Keeps the last five pickup messages on screen (requires Display Multiple Pickup Messages).");
 

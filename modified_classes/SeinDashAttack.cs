@@ -185,7 +185,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
         }
 
         m_sein.Animation.Play(dashAnimation, 154, KeepDashAnimationPlaying);
-        if (RainbowDashActivated) {
+        if (RainbowDash) {
             ((GameObject)InstantiateUtility.Instantiate(DashFollowRainbowEffect, m_sein.Position, Quaternion.identity)).transform.parent = m_sein.Transform;
         }
 
@@ -194,7 +194,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
 
     public void PerformDash() {
         m_chargeDashAtTarget = false;
-        var dashSound = !RainbowDashActivated ? DashSound : RainbowDashSound;
+        var dashSound = !RainbowDash ? DashSound : RainbowDashSound;
         var isGliding = m_sein.Controller.IsGliding;
         PerformDash(!isGliding ? DashAnimation : GlideDashAnimation, dashSound);
         ChangeState(State.Dashing);
@@ -204,7 +204,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
 
     public void PerformWallDash() {
         m_chargeDashAtTarget = false;
-        var dashSound = !RainbowDashActivated ? DashSound : RainbowDashSound;
+        var dashSound = !RainbowDash ? DashSound : RainbowDashSound;
         PerformDash(DashAnimation, dashSound);
         ChangeState(State.Dashing);
         UpdateDashing();
@@ -234,7 +234,7 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
             m_chargeDashAtTarget = false;
         }
 
-        var dashSound = !RainbowDashActivated ? ChargeDashSound : RainbowDashSound;
+        var dashSound = !RainbowDash ? ChargeDashSound : RainbowDashSound;
         PerformDash(ChargeDashAnimation, dashSound);
         if (m_chargeDashAtTarget) {
             SpriteRotation = Mathf.Atan2(m_chargeDashDirection.y, m_chargeDashDirection.x) * 57.29578f - (!m_faceLeft ? 0 : 180);
@@ -578,6 +578,11 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
 
     public SoundProvider RainbowDashSound;
 
+    // the vanilla swamp cheat still writes this field from code we do not ship
+    public static bool RainbowDashActivated;
+
+    private static bool RainbowDash => RainbowDashActivated || RandomizerSettings.Customization.RainbowDash.Value;
+
     public SoundProvider DashIntoWallSound;
 
     public GameObject ExplosionEffect;
@@ -624,7 +629,6 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
 
     private bool m_isOnGround;
 
-    public static bool RainbowDashActivated;
 
     private bool m_hasDashed;
 
