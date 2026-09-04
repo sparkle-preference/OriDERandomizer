@@ -12,7 +12,7 @@ using Events = Game.Events;
 using Random = System.Random;
 
 public static class Randomizer {
-    public static string VERSION = "4.9.0";
+    public static string VERSION = "4.9.1";
 
     // the netcode host this build points at; changing it moves every install (RandomizerSettings)
     public static string NETCODE_HOST = "bfbeta.eiko.blue";
@@ -255,9 +255,29 @@ public static class Randomizer {
         return primaryPath;
     }
 
+    // The beta rewrites these on its first run; keep a copy of what 4.2 left, once.
+    private static void BackupPreBetaFiles() {
+        if (!IsBeta) {
+            return;
+        }
+
+        foreach (var path in new[] { "RandomizerSettings.txt", "RandomizerRebinding.txt", PlayerInputRebinding.KeyRebindingFile }) {
+            var backup = path + ".pre5.0beta.backup";
+            try {
+                if (File.Exists(path) && !File.Exists(backup)) {
+                    File.Copy(path, backup);
+                    log($"backed up {path} to {backup}");
+                }
+            } catch (Exception e) {
+                log($"backup of {path} failed: {e.Message}");
+            }
+        }
+    }
+
     public static void InitializeOnce() {
         Events.Scheduler.OnGameSerializeLoad.Add(OnGameSerializeLoad);
 
+        BackupPreBetaFiles();
         RandomizerSettings.ParseSettings();
 
         // before the location manager starts the logic thread: extracting the

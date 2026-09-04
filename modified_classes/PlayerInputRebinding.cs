@@ -56,7 +56,7 @@ public class PlayerInputRebinding {
         }
     }
 
-    private static string KeyRebindingFile => Path.Combine(OutputFolder.PlayerDataFolderPath, keyRebindingFileName);
+    public static string KeyRebindingFile => Path.Combine(OutputFolder.PlayerDataFolderPath, keyRebindingFileName);
 
     public static void GetKeyRebindSettingsFromFile() {
         try {

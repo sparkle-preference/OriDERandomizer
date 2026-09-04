@@ -215,7 +215,7 @@ public static class RandomizerRebinding {
         { "Grant Test Pickup", "" },
         { "Start Practice Debug", "" },
         { "Practice Menu", "" },
-        { "Create Practice Segment", "LeftAlt+S, RightAlt+S" },
+        { "Create Practice Segment", "LeftAlt+M, RightAlt+M" },
         { "Open Practice Editor Page", "" },
         { "Save Select Back 3", "PageUp" },
         { "Save Select Forward 3", "PageDown" },
