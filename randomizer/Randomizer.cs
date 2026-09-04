@@ -534,6 +534,7 @@ public static class Randomizer {
         Tick();
 
         if (GameStateMachine.Instance?.CurrentState == GameStateMachine.State.Prologue) {
+            RandomizerHints.TryShowPrologueHint();
             return;
         }
 

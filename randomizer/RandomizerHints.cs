@@ -1,51 +1,85 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Game;
 
 public static class RandomizerHints {
     public delegate String StringMaker();
 
-    public static List<StringMaker> NewPlayerTips = new List<StringMaker> {
-        () => $"If you're unable to proceed, Warp ({RandomizerRebinding.ReturnToStart.FirstBindName()}) elsewhere and come back later",
-        () => "*Charge Flame*, *Grenade*, and the #Charge Dash Ability# can all break open *Blue* #Walls#, #Floors#, and #Petrified Plants#. Collectively, these are known as *Blue Breakage*",
-        () => "*Stomp* has a shockwave can break some #Walls# from the side",
-        () => "Some enemies are immune to some spikes, allowing them to be lured surprising distances",
-        () => "The *Blue* Ability Tree is by far the most important when playing Ori Rando",
-        () => "The @Red@ Ability Tree is rarely worth investing in. (*Stomp*, *Charge Jump*, and #Charge Dash# are extremely effective against enemies)",
-        () => $"You can Warp ({RandomizerRebinding.ReturnToStart.FirstBindName()}) to avoid damage from enemies, poison water, or spikes",
-        () => $"You can Warp ({RandomizerRebinding.ReturnToStart.FirstBindName()}) out of #Kuro's Nest# to avoid getting chased",
-        () => $"Hold {RandomizerRebinding.DoubleBash.FirstBindName()} while Bashing to *Double Bash*.",
-
-        // common to both (may refactor how this is done)
-        () => "Extra Double Jump lets you jump an additional time in the air.\nRequires *Double Jump*; stacks with #Triple Jump# in the *Blue* #Ability Tree#\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
-        () => "Extra Air Dash lets you dash an additional time in the air.\nRequires *Dash* and #Air Dash# in the *Blue* #Ability Tree#\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
+    // Shown to everybody. Kept apart so the two lists cannot drift, which they had.
+    private static readonly List<StringMaker> CommonTips = new List<StringMaker> {
+        () => "Extra Double Jump lets you jump an additional time in the air.\nIt requires $Double Jump$ and stacks with #Triple Jump# in the *Blue* Ability Tree\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
+        () => "Extra Air Dash lets you dash an additional time in the air.\nIt requires $Dash$ and the ability #Air Dash#\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
         () => "Health Regeneration restores your Health slowly over time\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
         () => "Energy Regeneration restores your Energy slowly over time\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
+        () => "Charge Dash Efficiency halves the Energy cost of #Charge Dash#\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
+        () => "Spirit Light Efficiency grants 100% increased experience from all sources.\nIt stacks (additively) with #Spirit Efficiency# and #Spirit Potency#\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
         () => "Join the Ori community at orirando.com/discord",
-        () => "Use the *Logic Helper* map filter to check which pickups are currently in logic",
+        () => "Use the Logic Helper map filter to check which pickups are currently in logic",
         () => "Some enemies are immune to some spikes, allowing them to be lured surprising distances",
         () => "The top of the Ginso escape will always teleport you to Thornfelt Swamp",
-        () => "Tips can be disabled using RandomizerSettings.txt",
+        () => "Tired of seeing these tips while you warp?\nOpen Settings -> Rando UI -> Warping Tips -> Disabled",
+        () => "Warping is the perfect time to stretch your hands. Try it now!",
+        () => BingoController.Active ? "Every bingo square has help text explaining how it works in detail!\nView it by clicking the ? in the bottom left of the square" : null
     };
+
+    public static List<StringMaker> NewPlayerTips = new List<StringMaker> {
+        () => "If you're unable to proceed, Warp ([[Warp]]) elsewhere and come back later",
+        () => "*Charge Flame*, *Grenade*, and #Charge Dash# can all break open Blue Walls, Floors, and Petrified Plants. Collectively, these are known as Blue Breakage",
+        () => "*Stomp* has a shockwave that can break some Walls from the side",
+        () => "The *Blue* Ability Tree is by far the most important when playing Ori Rando",
+        () => "The @Red@ Ability Tree is rarely worth investing in. (*Stomp*, *Charge Jump*, and #Charge Dash# are extremely effective against enemies)",
+        () => "You can Warp ([[Warp]]) to avoid damage from enemies, poison water, or spikes",
+        () => "You can Warp ([[Warp]]) out of #Kuro's Nest# to avoid getting chased",
+        () => "Hold [[Double Bash]] while Bashing to *Double Bash*.",
+        () => "In addition to Skills and World Events, #Sense# will also help you find some teleporters! (Valley, Sorrow, and all three dungeons.)",
+        () => "Warmth Returned is the only pickup in the game that has no effect",
+        () => "After picking up the upper Blackroot orb, you can immediately put it down and go back across the lower path instead of waiting for the platforms above,\nor even warp back to Sunken Glades! The orb will come find Ori anywhere in upper Blackroot",
+        () => "There are mapstone pedestals in every zone except Ginso and Misty",
+        () => "Rekindle can be used to skip some cutscenes, including the ones in Swamp where Gumo shuts a door in your face and activates deadly lasers",
+        () => "Despite its name, the Swamp Teleporter is actually more useful for accessing Hollow Grove and the Ginso Tree",
+        () => "Despite the name, #Charge Dash# doesn't actually have a charge time. Or a cooldown. Nyooooooom! (It does require $Dash$, though.)",
+        () => "Turning in mapstones at mapstone pedestals grants pickups based on how many you've turned in, not where you do it",
+        () => "The item pool contains two extra mapstones, just in case",
+        () => "The #Forlorn# Escape grants a pickup right at the start. (Sometimes it's $Glide$!)\nYou can warp out and come back to finish the escape later, so it's worth starting if you can reach it, even if you can't finish it with what you have",
+        () => "Every death is a lesson!\n(Sometimes the lessons are things like \"I should save more\" and \"That frog deals FIVE damage???\")",
+        () => "The vanilla Glide location is considered a skill tree by the randomizer, even though it is actually a feather",
+
+    }.Concat(CommonTips).ToList();
 
     public static HashSet<int> SeenNPTs = new HashSet<int>();
 
     public static List<StringMaker> MiscTips = new List<StringMaker> {
-        () => "Extra Double Jump lets you jump an additional time in the air.\nRequires *Double Jump*; stacks with #Triple Jump# in the *Blue* #Ability Tree#\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
-        () => "Extra Air Dash lets you dash an additional time in the air.\nRequires *Dash* and #Air Dash# in the *Blue* #Ability Tree#\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
-        () => "Health Regeneration restores your Health slowly over time\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
-        () => "Energy Regeneration restores your Energy slowly over time\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
-        () => "Once you've cleared the fog in #Misty Woods#\nyou can change the layout by interacting with the orb pedestal",
-        () => "If you start the #Forlorn# escape and Warp away immediately,\nyou can retry it later by returning to the start room and jumping.\nBe sure not to Warp out halfway through!",
-        () => "Join the Ori community at orirando.com/discord",
-        () => "Use the *Logic Helper* map filter to check which pickups are currently in logic",
-        () => "Some enemies are immune to some spikes, allowing them to be lured surprising distances",
-        () => "The top of the Ginso escape will always teleport you to Thornfelt Swamp",
-        () => "Tips can be disabled using RandomizerSettings.txt",
+        () => "Once you've cleared the fog in Misty Woods, you can change the layout by interacting with the orb pedestal",
         () => "Report bugs and discuss upcoming rando features in the *dev* discord (orirando.com/discord/dev)",
+        () => "The Wilhelm scream frog in upper Valley only spawns if you have the @Sunstone@",
+        () => "You can press [[Save Select Back 10]] and [[Save Select Forward 10]] to rapidly scroll through the file select menu",
+        () => "While she does talk a lot, Enhanced Sein also gives unique hints in some locations",
+        () => SuggestBingo() ? "Looking to spice up your randomizer experience? Try bingo!" : null,
+    }.Concat(CommonTips).ToList();
+
+    public static List<StringMaker> EncouragementTips = new List<StringMaker> {
+        () => "You've got this!",
+        () => "Every in-logic check brings you one step closer to your next piece of progression.",
+        () => "Remember: the seed is more afraid of you than you are of it.",
+        () => "Never give up! Trust your instincts!"
     };
 
+    // I personally think it's very funny that this will trigger for the odd-numbered leagues
+    private static bool SuggestBingo() {
+        if (BingoController.Active) {
+            return false;
+        }
+
+        var flags = (Randomizer.SeedMeta ?? "").Split('|')[0].ToLower();
+        return flags.Contains("standard") && flags.Contains("clues")
+            && flags.Contains("forcetrees") && flags.Contains("pool=competitive");
+    }
+
     public static HashSet<int> SeenMiscs = new HashSet<int>();
+
+    public static HashSet<int> SeenEncouragement = new HashSet<int>();
 
     private static Random hintRandom = new Random();
 
@@ -61,36 +95,74 @@ public static class RandomizerHints {
         }
     }
 
+    // Tell players they can skip the prologue, just in case.
+    public static void TryShowPrologueHint() {
+        try {
+            if (shownPrologueHint
+                || RandomizerSettings.Customization.HintLevel.Value == RandomizerSettings.HintLevels.Disabled) {
+                return;
+            }
+
+            var naru = Characters.Naru;
+            if (naru == null || naru.Controller == null
+                || naru.Controller.IsSuspended || naru.Controller.LockedInput) {
+                return;
+            }
+
+            shownPrologueHint = true;
+            Randomizer.Print("You can skip the prologue from the pause menu ([Inventory]).", 8, false, false, false, true);
+        } catch (Exception e) {
+            Randomizer.LogError($"TryShowPrologueHint: {e.Message}");
+        }
+    }
+
+    private static bool shownPrologueHint;
+    private static int encouragementChance = 0;
+
     public static void ShowTip() {
         var hl = RandomizerSettings.Customization.HintLevel.Value;
         if (hl == RandomizerSettings.HintLevels.Disabled) {
             return;
         }
+        // one more percent per loading screen until it lands, then back to never
+        if (hintRandom.Next(0, 100) < encouragementChance++) {
+            encouragementChance = 0;
+            ShowFrom(EncouragementTips, SeenEncouragement);
+            return;
+        }
 
         if (hl == RandomizerSettings.HintLevels.Experienced) {
-            if (SeenMiscs.Count == MiscTips.Count) {
-                SeenMiscs.Clear();
-            }
-
-            var h = hintRandom.Next(MiscTips.Count);
-            while (SeenMiscs.Contains(h)) {
-                h = (h + 1) % MiscTips.Count;
-            }
-
-            Randomizer.Print(MiscTips[h](), 9, false, false, false, true);
-            SeenMiscs.Add(h);
+            ShowFrom(MiscTips, SeenMiscs);
         } else {
-            if (SeenNPTs.Count == NewPlayerTips.Count) {
-                SeenNPTs.Clear();
+            ShowFrom(NewPlayerTips, SeenNPTs);
+        }
+    }
+
+
+    // A tip that does not apply to this seed returns null, so the walk continues past it
+    // rather than showing an empty box. Unshown tips get marked as seen so that a hint
+    // not valid for the current situation can't sit unseen and prevent the refresh.
+    private static void ShowFrom(List<StringMaker> tips, HashSet<int> seen) {
+        if (seen.Count >= tips.Count) {
+            seen.Clear();
+        }
+
+        var start = hintRandom.Next(tips.Count);
+        for (var i = 0; i < tips.Count; i++) {
+            var h = (start + i) % tips.Count;
+            if (seen.Contains(h)) {
+                continue;
             }
 
-            var h = hintRandom.Next(NewPlayerTips.Count);
-            while (SeenNPTs.Contains(h)) {
-                h = (h + 1) % NewPlayerTips.Count;
+            var text = tips[h]();
+            seen.Add(h);
+
+            if (string.IsNullOrEmpty(text)) {
+                continue;
             }
 
-            Randomizer.Print(NewPlayerTips[h](), 9, false, false, false, true);
-            SeenNPTs.Add(h);
+            Randomizer.Print(text, 9, false, false, false, true);
+            return;
         }
     }
 }

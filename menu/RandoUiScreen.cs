@@ -9,8 +9,7 @@ public class RandoUiScreen : CustomSettingsScreen {
                 "Customize the hints that display while Ori is teleporting.",
                 "Warping Tips");
 
-        // the two previews sit mid-screen, where the background is brightest and a
-        // translucent message background is easiest to judge
+        // the two previews sit mid-screen, where the background is brightest and a translucent message background is easiest to judge
         AddColor(RandomizerSettings.Customization.PickupMessageBgColor, "Background color for normal pickup messages.", null, true);
         AddColor(RandomizerSettings.Customization.MwPickupMessageBgColor, "Background for pickup messages when the pickup belongs to another player.", "Multiworld Message Background", true);
 

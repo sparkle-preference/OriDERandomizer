@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using Input = Core.Input;
 
@@ -187,6 +188,28 @@ public static class RandomizerRebinding {
         { "Start", Input.Start },
         { "Select", Input.Select }
     };
+
+    public static BindSet BindNamed(string name) {
+        BindSet bind;
+        return rebindMap.TryGetValue(name.Trim(), out bind) ? bind : null;
+    }
+
+    // "[[Map Warp]]" -> the keys bound to it, the way the game resolves "[Jump]". Run before
+    // the game's own parser, so a rando bind that is itself a game action -- Double Bash
+    // defaults to Grenade -- resolves to "[Grenade]" and then picks up the button glyph.
+    // An unknown name is left alone rather than blanked: a typo should be visible.
+    public static string ResolveBindNames(string text) {
+        if (String.IsNullOrEmpty(text) || text.IndexOf("[[") < 0) {
+            return text;
+        }
+
+        return bindPattern.Replace(text, match => {
+            var bind = BindNamed(match.Groups[1].Value);
+            return bind == null ? match.Value : bind.FirstBindName();
+        });
+    }
+
+    private static readonly Regex bindPattern = new Regex(@"\[\[([^\[\]]+)\]\]");
 
     public static Dictionary<string, string> DefaultBinds = new Dictionary<string, string> {
         { "Replay Message", "LeftAlt+T, RightAlt+T" },
@@ -431,13 +454,46 @@ public static class RandomizerRebinding {
 
         public override string ToString() => String.Join(", ", Binds.Select(binds => binds.RawStr()).ToArray());
 
+        // Both sides of a modifier are usually bound to the same thing, and which one the
+        // player reaches for is not information: "Alt+R" beats "LeftAlt+R". Only collapses
+        // when the mirrored bind is actually there, so a deliberately one-sided bind still
+        // says which side. Display only -- the file keeps every bind spelled out.
         public string FirstBindName() {
-            if (HasBind()) {
-                return Binds[0].ToString();
+            if (!HasBind()) {
+                return "<NO BIND>";
             }
 
-            return "<NO BIND>";
+            var original = Binds[0].Inputs.Select(input => input.ToString()).ToList();
+            var others = Binds.Skip(1)
+                .Select(bind => bind.Inputs.Select(input => input.ToString()).ToList()).ToList();
+            var shown = new List<string>(original);
+
+            for (var i = 0; i < original.Count; i++) {
+                string mirror;
+                if (!sidedModifiers.TryGetValue(original[i], out mirror)) {
+                    continue;
+                }
+
+                // mirror the original, not what earlier passes already collapsed
+                var wanted = new List<string>(original);
+                wanted[i] = mirror;
+                if (others.Any(other => other.SequenceEqual(wanted))) {
+                    shown[i] = original[i].StartsWith("Left")
+                        ? original[i].Substring("Left".Length)
+                        : original[i].Substring("Right".Length);
+                }
+            }
+
+            return String.Join("+", shown.ToArray());
         }
+
+        private static readonly Dictionary<string, string> sidedModifiers = new Dictionary<string, string> {
+            { "LeftAlt", "RightAlt" }, { "RightAlt", "LeftAlt" },
+            { "LeftShift", "RightShift" }, { "RightShift", "LeftShift" },
+            { "LeftControl", "RightControl" }, { "RightControl", "LeftControl" },
+            { "LeftCommand", "RightCommand" }, { "RightCommand", "LeftCommand" },
+            { "LeftWindows", "RightWindows" }, { "RightWindows", "LeftWindows" },
+        };
 
         public bool HasBind() => Binds.Count > 0;
 
