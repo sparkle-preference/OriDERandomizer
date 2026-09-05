@@ -403,24 +403,16 @@ public static class RandomizerMW {
                 }
             }
 
-            // the Forlorn escape names where Stomp and Grenade went, and an
-            // exported one has no local SK line to read that from. The zone
-            // only moves when field 5 answered it: plain multiworld keeps the
-            // "MIA" it has always printed.
+            // the Forlorn escape names where Stomp and Grenade went, and one in
+            // another world has no local SK line to read that from. The clue names
+            // that world, the same way the key and door clues below do.
             if (entry.Code == "SK" && (entry.Id == "4" || entry.Id == "51")) {
-                var stomp = entry.Id == "4";
-                if (stomp) {
+                if (entry.Id == "4") {
                     Randomizer.StompSlot = slot;
+                    Randomizer.StompZone = clue;
                 } else {
                     Randomizer.GrenadeSlot = slot;
-                }
-
-                if (!string.IsNullOrEmpty(holder)) {
-                    if (stomp) {
-                        Randomizer.StompZone = clue;
-                    } else {
-                        Randomizer.GrenadeZone = clue;
-                    }
+                    Randomizer.GrenadeZone = clue;
                 }
             }
 
