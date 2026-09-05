@@ -286,7 +286,9 @@ public static class RandomizerBonusSkill {
 
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 break;
-            case 1587:
+            // the id moved; a stored ActiveBonus can still be the old one
+            case LegacyCreditWarp:
+            case CreditWarp:
                 if (!Characters.Sein.Controller.CanMove || !Characters.Sein.Active) {
                     return;
                 }
