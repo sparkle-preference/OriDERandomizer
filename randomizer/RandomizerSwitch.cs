@@ -18,14 +18,13 @@ public static class RandomizerSwitch {
 
     public static void MaxEnergyContainerPickup() {
         PickupMessage(RandomizerItems.Message("EC", ""));
-        if (Characters.Sein.Energy.Max == 0f) {
+        var energy = Characters.Sein.Energy;
+        if (energy.Max == 0f) {
             Characters.Sein.SoulFlame.FillSoulFlameBar();
         }
 
-        Characters.Sein.Energy.Max += 1.0f;
-        if (Characters.Sein.Energy.Current < Characters.Sein.Energy.Max) {
-            Characters.Sein.Energy.Current = Characters.Sein.Energy.Max;
-        }
+        energy.Max += 1.0f;
+        energy.Current = Mathf.Max(energy.Current + 1.0f, energy.Max);
     }
 
     public static void ExpOrbPickup(int Value, int coords) {
@@ -454,18 +453,18 @@ public static class RandomizerSwitch {
 
     public static void LoseHC() {
         PickupMessage(RandomizerItems.Message("HC", "-1"));
-        Characters.Sein.Mortality.Health.MaxHealth -= 4;
-        if (Characters.Sein.Mortality.Health.Amount > Characters.Sein.Mortality.Health.MaxHealth) {
-            Characters.Sein.Mortality.Health.Amount = Characters.Sein.Mortality.Health.MaxHealth;
-        }
+        var health = Characters.Sein.Mortality.Health;
+        var overflow = Mathf.Max(health.Amount - health.MaxHealth, 0f);
+        health.MaxHealth -= 4;
+        health.Amount = Mathf.Min(health.Amount, health.MaxHealth + overflow);
     }
 
     public static void LoseEC() {
         PickupMessage(RandomizerItems.Message("EC", "-1"));
-        Characters.Sein.Energy.Max--;
-        if (Characters.Sein.Energy.Current > Characters.Sein.Energy.Max) {
-            Characters.Sein.Energy.Current = Characters.Sein.Energy.Max;
-        }
+        var energy = Characters.Sein.Energy;
+        var overflow = Mathf.Max(energy.Current - energy.Max, 0f);
+        energy.Max--;
+        energy.Current = Mathf.Min(energy.Current, energy.Max + overflow);
     }
 
     public static void LoseAC() {
