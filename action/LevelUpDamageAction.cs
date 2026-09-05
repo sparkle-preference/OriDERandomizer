@@ -32,7 +32,7 @@ public class LevelUpDamageAction : ActionMethod, ISuspendable {
             var attackables = Targets.Attackables;
             for (var i = 0; i < attackables.Count; i++) {
                 var attackable = attackables[i];
-                if (!InstantiateUtility.IsDestroyed(attackable as Component)) {
+                if (!InstantiateUtility.IsDestroyed(attackable as Component) && !TeleporterController.IsTeleporting) {
                     if (attackable.CanBeLevelUpBlasted()) {
                         if (!m_attackables.Contains(attackable)) {
                             if (Vector3.Distance(transform.position, attackable.Position) <= num) {
