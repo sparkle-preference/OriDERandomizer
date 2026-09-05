@@ -4,7 +4,9 @@ using UnityEngine;
 
 public class LevelUpDamageAction : ActionMethod, ISuspendable {
     public override void Perform(IContext context) {
-        m_active = true;
+        if (!TeleporterController.IsTeleporting) {
+            m_active = true;
+        }
     }
 
     public override void Awake() {
@@ -30,7 +32,7 @@ public class LevelUpDamageAction : ActionMethod, ISuspendable {
             var attackables = Targets.Attackables;
             for (var i = 0; i < attackables.Count; i++) {
                 var attackable = attackables[i];
-                if (!InstantiateUtility.IsDestroyed(attackable as Component) && !TeleporterController.IsTeleporting) {
+                if (!InstantiateUtility.IsDestroyed(attackable as Component)) {
                     if (attackable.CanBeLevelUpBlasted()) {
                         if (!m_attackables.Contains(attackable)) {
                             if (Vector3.Distance(transform.position, attackable.Position) <= num) {

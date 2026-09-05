@@ -368,7 +368,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
                 return false;
             }
 
-            return Instance.m_isTeleporting;
+            return Instance.m_isTeleporting || Instance.m_isBlooming;
         }
     }
 
