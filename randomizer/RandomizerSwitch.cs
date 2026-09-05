@@ -372,13 +372,10 @@ public static class RandomizerSwitch {
                 case "NO":
                     break;
                 case "RI":
-                    // slot=value, written raw and silently; the test bench's pen
-                    var ri = ((string)action.Value).Split('=');
-                    int riSlot, riVal;
-                    if (ri.Length == 2 && int.TryParse(ri[0], out riSlot) && int.TryParse(ri[1], out riVal)) {
-                        Characters.Sein.Inventory.SetRandomizerItem(riSlot, riVal);
-                    }
-
+                    RandomizerInventory.Apply((string)action.Value);
+                    break;
+                case "BM":
+                    RandomizerBoxes.Modify((string)action.Value);
                     break;
                 case "TW":
                     // TW entries are coord|TW|name,x,y
@@ -441,8 +438,11 @@ public static class RandomizerSwitch {
 
         // a location the seed never filled in arrives here null, past the catch above
         if (found_locally && Randomizer.Sync && action != null) {
-            // the wire hears NO|1 for an RI: servers must not learn invented slot ids
-            var wire = action.Action == "RI" ? new RandomizerAction("NO", "1") : action;
+            // the wire hears NO|1 for a seed writing its own slots or boxes: servers
+            // must not learn invented slot ids
+            var wire = action.Action == "RI" || action.Action == "BM"
+                ? new RandomizerAction("NO", "1")
+                : action;
             RandomizerSyncManager.FoundPickup(wire, coords);
         }
 

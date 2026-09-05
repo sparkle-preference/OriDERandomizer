@@ -330,7 +330,7 @@ public static class PracticeController {
                 }
 
                 // the base save may carry a seed's taken boxes; this attempt's start untaken
-                RandomizerBoxes.ClearConsumed();
+                RandomizerBoxes.ClearOff();
                 GrantStartingItems();
                 return;
             }

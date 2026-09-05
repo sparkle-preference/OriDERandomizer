@@ -188,7 +188,7 @@ public class MessageBox : MonoBehaviour {
                 }
             }
 
-            text = RandomizerRebinding.ResolveBindNames(text);
+            text = RandomizerInventory.ResolveSlots(RandomizerRebinding.ResolveBindNames(text));
             if (FormatText) {
                 text = MessageParserUtility.ProcessString(text);
                 TextBox.SetText(text);
@@ -196,7 +196,7 @@ public class MessageBox : MonoBehaviour {
                 TextBox.SetText(text);
             }
         } else if (OverrideText != string.Empty) {
-            var overrideText = RandomizerRebinding.ResolveBindNames(OverrideText);
+            var overrideText = RandomizerInventory.ResolveSlots(RandomizerRebinding.ResolveBindNames(OverrideText));
             if (FormatText) {
                 TextBox.SetText(MessageParserUtility.ProcessString(overrideText));
             } else {

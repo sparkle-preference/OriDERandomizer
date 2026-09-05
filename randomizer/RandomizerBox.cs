@@ -8,14 +8,16 @@ using UnityEngine;
 //   BX|<type>|x1,y1,x2,y2|<colour>|<payload>
 // split on | at most four times, so a payload keeps its own pipes. Types: goal (ends a
 // practice attempt), kill, solid (ground and walls), item (gives once), ritem (gives on
-// every entry). An empty colour is the type's; none or 0 is invisible.
+// every entry), none (a deleted box, holding its place). An empty colour is the type's;
+// none or 0 is invisible.
 public class RandomizerBox {
     public enum Kind {
         Goal,
         Kill,
         Solid,
         Item,
-        RepeatItem
+        RepeatItem,
+        None
     }
 
     public Kind Type;
@@ -38,14 +40,15 @@ public class RandomizerBox {
 
     public const string Prefix = "BX|";
 
-    private static readonly string[] Names = { "goal", "kill", "solid", "item", "ritem" };
+    private static readonly string[] Names = { "goal", "kill", "solid", "item", "ritem", "none" };
 
     private static readonly Color[] Defaults = {
         new Color(0.2f, 0.9f, 0.35f, 0.25f),
         new Color(0.9f, 0.2f, 0.2f, 0.25f),
         new Color(0.55f, 0.58f, 0.62f, 0.55f),
         new Color(0.25f, 0.75f, 1f, 0.25f),
-        new Color(0.5f, 0.85f, 1f, 0.25f)
+        new Color(0.5f, 0.85f, 1f, 0.25f),
+        new Color(0f, 0f, 0f, 0f)
     };
 
     public static bool IsLine(string line) {
@@ -56,8 +59,10 @@ public class RandomizerBox {
         get { return Names[(int)Type]; }
     }
 
-    public bool Consumed {
-        get { return Type == Kind.Item && Bit >= 0 && RandomizerBoxes.IsConsumed(Bit); }
+    // A box that has had its turn: an item box taken, or anything switched off with
+    // BM. Not drawn, not fired, and no collider if it was solid.
+    public bool Off {
+        get { return Bit >= 0 && RandomizerBoxes.IsOff(Bit); }
     }
 
     public static RandomizerBox Parse(string line) {
@@ -135,6 +140,11 @@ public class RandomizerBox {
     // rrggbb or rrggbbaa; a bad value falls back to the type's colour, out loud
     public void SetColour(string text) {
         Colour = text ?? "";
+        if (Type == Kind.None) {
+            Paint = null;
+            return;
+        }
+
         if (Colour == "") {
             Paint = Defaults[(int)Type];
             return;
@@ -211,7 +221,7 @@ public class RandomizerBox {
 }
 
 // The boxes in force: a seed's, or a practice segment's while one runs. Entry fires
-// the box; a one-shot item box remembers being taken in the inventory, RB 1900-1999
+// the box; a one-shot item box remembers being taken in the inventory, RB 1700-1999
 // as bitfields, so a checkpoint restore takes the memory back with the item.
 public static class RandomizerBoxes {
     public static readonly List<RandomizerBox> Seed = new List<RandomizerBox>();
@@ -221,16 +231,25 @@ public static class RandomizerBoxes {
     // bumped on every change of set, for the colliders to rebuild
     public static int Version;
 
-    public const int FirstBitId = 1900;
+    public const int FirstBitId = 1700;
 
     public const int LastBitId = 1999;
+
+    public const int Capacity = (LastBitId - FirstBitId + 1) * 32;
 
     public static void Use(List<RandomizerBox> boxes) {
         Active = boxes ?? Seed;
         var bit = 0;
         foreach (var box in Active) {
-            box.Bit = box.Type == RandomizerBox.Kind.Item ? bit++ : -1;
+            box.Bit = bit < Capacity ? bit : -1;
+            bit++;
             box.Inside = false;
+        }
+
+        // past Capacity a box has nowhere to remember being off, so it stays on
+        if (bit > Capacity) {
+            Randomizer.LogError("seed has " + bit + " boxes; only the first " + Capacity
+                + " can be taken once or switched off, the rest are always on");
         }
 
         Version++;
@@ -243,7 +262,7 @@ public static class RandomizerBoxes {
         }
     }
 
-    public static bool IsConsumed(int bit) {
+    public static bool IsOff(int bit) {
         var id = FirstBitId + bit / 32;
         if (id > LastBitId || Characters.Sein == null) {
             return false;
@@ -252,17 +271,48 @@ public static class RandomizerBoxes {
         return (Characters.Sein.Inventory.GetRandomizerItem(id) & (1 << (bit % 32))) != 0;
     }
 
-    private static void MarkConsumed(int bit) {
+    // Version so the solid colliders notice; nothing else watches a single box.
+    public static void SetOff(int bit, bool off) {
         var id = FirstBitId + bit / 32;
-        if (id > LastBitId || Characters.Sein == null) {
+        if (bit < 0 || id > LastBitId || Characters.Sein == null) {
             return;
         }
 
+        var mask = 1 << (bit % 32);
         var value = Characters.Sein.Inventory.GetRandomizerItem(id);
-        Characters.Sein.Inventory.SetRandomizerItem(id, value | (1 << (bit % 32)));
+        var next = off ? value | mask : value & ~mask;
+        if (next != value) {
+            Characters.Sein.Inventory.SetRandomizerItem(id, next);
+            Version++;
+        }
     }
 
-    public static void ClearConsumed() {
+    // BM|n switches a box off or on by its place in the seed's box lines; =1 and =0
+    // say which, and ={slot} is on when that slot holds anything but zero
+    public static void Modify(string value) {
+        var parts = (value ?? "").Split('=');
+        int which;
+        if (!int.TryParse(parts[0].Trim(), out which) || which < 0 || which >= Active.Count) {
+            Randomizer.LogError("BM|" + value + ": this seed has no box " + parts[0].Trim());
+            return;
+        }
+
+        var bit = Active[which].Bit;
+        if (parts.Length < 2) {
+            SetOff(bit, !IsOff(bit));
+            return;
+        }
+
+        int on;
+        if (!RandomizerInventory.Value(parts[1], out on)) {
+            Randomizer.LogError("BM|" + value + ": after = comes 1, 0 or {slot}");
+            return;
+        }
+
+        SetOff(bit, on == 0);
+    }
+
+    public static void ClearOff() {
         if (Characters.Sein == null) {
             return;
         }
@@ -270,6 +320,7 @@ public static class RandomizerBoxes {
         for (var id = FirstBitId; id <= LastBitId; id++) {
             if (Characters.Sein.Inventory.GetRandomizerItem(id) != 0) {
                 Characters.Sein.Inventory.SetRandomizerItem(id, 0);
+                Version++;
             }
         }
     }
@@ -279,14 +330,15 @@ public static class RandomizerBoxes {
     // reported, counted or tracked, only given.
     public static void Check(Vector2 at, List<RandomizerBox> boxes) {
         foreach (var box in boxes) {
-            if (box.Type == RandomizerBox.Kind.Goal || box.Type == RandomizerBox.Kind.Solid) {
+            if (box.Type == RandomizerBox.Kind.Goal || box.Type == RandomizerBox.Kind.Solid
+                    || box.Type == RandomizerBox.Kind.None) {
                 continue;
             }
 
             var inside = box.Area.Contains(at);
-            if (inside && !box.Inside && !box.Consumed) {
+            if (inside && !box.Inside && !box.Off) {
                 if (box.Type == RandomizerBox.Kind.Item) {
-                    MarkConsumed(box.Bit);
+                    SetOff(box.Bit, true);
                 }
 
                 if (box.Give != null) {

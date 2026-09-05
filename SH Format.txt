@@ -45,6 +45,15 @@ Available characters/colors:
 
 
 
+Slot values
+===
+{n} is replaced with whatever save slot n holds, so a message can read a counter a
+seed keeps for itself. RandomizerItemIDs.txt lists the slots; 8000-8999 and anything
+from 20000 up are free for a seed's own use, the difference being that 8000-8999
+survives a death. RI and BM take the same {n} on the right of an =.
+- "You have found {8000} of them." -> "You have found 3 of them."
+
+
 Placeholders
 ===
 Various placeholders can be replaced with their corresponding icons (or letter, if there's no icon):

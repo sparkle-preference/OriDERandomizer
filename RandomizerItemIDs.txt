@@ -224,7 +224,7 @@ Enhanced mode -- April Fools :)
 936 - Have Pickup Bitfield #7
 937 - Have Pickup Bitfield #8
 
-940-947 - (Multiworld) Granted slot bitfields
+940-947 - (Multiworld) Granted slot bitfields. Must stay outside the preserved range
 
 950 - Finished Ginso escape
 
@@ -248,96 +248,6 @@ Enhanced mode -- April Fools :)
 1109 - Enable Pickup Drop (grants and deletes pickup.tmp)
 
 
-==== Begin Persists Through Death Zone ===
-1500 - Deaths
-1501 - Deaths in Glades
-1502 - Deaths in Grove
-1503 - Deaths in Grotto
-1504 - Deaths in Blackroot
-1505 - Deaths in Swamp
-1506 - Deaths in Ginso
-1507 - Deaths in Valley
-1508 - Deaths in Misty
-1509 - Deaths in Forlorn
-1510 - Deaths in Sorrow
-1511 - Deaths in Horu
-1512 - Deaths in Final Escape
-
-1515 - Deaths since last save
-1516 - Time since last death
-1517 - Time since last death or save
-1518 - Pickups since last death or save
-
-1520 - Time spent everywhere
-1521 - Time spent in Glades
-1522 - Time spent in Grove
-1523 - Time spent in Grotto
-1524 - Time spent in Blackroot
-1525 - Time spent in Swamp
-1526 - Time spent in Ginso
-1527 - Time spent in Valley
-1528 - Time spent in Misty
-1529 - Time spent in Forlorn
-1530 - Time spent in Sorrow
-1531 - Time spent in Horu
-1532 - Time spent in Final Escape
-1533 - Time spent (misc)
-
-1535 - Most deaths at one save
-1536 - Longest time between deaths 
-1537 - Most time lost to death
-1538 - Most pickups lost to death
-
-1540 - Wall Jump Time+Zone
-1541 - Charge Flame Time+Zone
-1542 - Double Jump Time+Zone
-1543 - Bash Time+Zone
-1544 - Stomp Time+Zone
-1545 - Glide Time+Zone
-1546 - Climb Time+Zone
-1547 - Charge Jump Time+Zone
-1548 - Dash Time+Zone
-1549 - Grenade Time+Zone
-1550 - Water Vein Time+Zone
-1551 - Clean Water Time+Zone
-1552 - Gumon Seal Time+Zone
-1553 - Wind Restored Time+Zone
-1554 - Sunstone Time+Zone
-1555 - Warmth Returned Time+Zone
-
-1560 - Seen Pickup Bitfield #1
-1561 - Seen Pickup Bitfield #2
-1562 - Seen Pickup Bitfield #3
-1563 - Seen Pickup Bitfield #4
-1564 - Seen Pickup Bitfield #5
-1565 - Seen Pickup Bitfield #6
-1566 - Seen Pickup Bitfield #7
-1567 - Seen Pickup Bitfield #8
-
-1570 - Saves
-1571 - sum(shoof)
-1572 - EnemiesKilled
-1573 - ExpGained
-1574 - ExpBonus
-1575 - Max PPM
-1576 - Time of Max PPM
-1577 - Count at Max PPM
-1578 - Reloads
-1579 - Alt+R Count
-1580 - Teleporter Count
-1581 - Time since last pickup
-1582 - Longest drought
-1583 - Longest drought end time
-
-1587 - Warp to Credits Bonus Skill
-1589 - Currently Selected Bonus Skill
-1590 - (Archipelago) DeathLink deaths
-1591 - (Archipelago) DeathLink linked deaths
-1592 - (Archipelago) DeathLink last seen token
-1599 - Finished Horu Escape
-
-==== End Persists Through Death Zone ===
-
 1600 - Pickups found everywhere
 1601 - Pickups found in Glades
 1602 - Pickups found in Grove
@@ -354,23 +264,143 @@ Enhanced mode -- April Fools :)
 
 1650 - LevelUpKills
 
-1900-1999 - Box bitfields: which one-shot item boxes (BX lines) were taken, a bit each in file order
+1651-1699 - unused
+
+1700-1999 - Box bitfields: which one-shot item boxes (BX lines) were taken, a bit each in file order
 
 2000-2256 - reserved IDs for Sense pickups
 
-==== Begin Persists Through Death Zone (bingo) ===
-2300 - Die to Misty Vertical Lasers
-2301 - Die to Right Forlorn Laser
-2302 - Die to NoobSpikes
-2303 - Die to Blackroot Teleporter Crushers
-2304 - Die to Ginso Escape Fronkey
-2305 - Die to Doorwarp Lava
-2306 - Die to Horu Fields Acid
-2307 - Die to Stomp Rhino
-2308 - Die to Forlorn Void
-2309 - Die to Lost Grove Laser
-2310 - Die to Sunstone Lightning
+2500-2625 - Bingo goals
+2626 - Bingo last touched square
+2627-2638 - Bingo journey bitfields, one per origin well
 
-==== End Persists Through Death Zone (bingo) ===
+==== Begin Persists Through Death Zone ===
+4000 - Deaths everywhere
+4001 - Deaths in Glades
+4002 - Deaths in Grove
+4003 - Deaths in Grotto
+4004 - Deaths in Blackroot
+4005 - Deaths in Swamp
+4006 - Deaths in Ginso
+4007 - Deaths in Valley
+4008 - Deaths in Misty
+4009 - Deaths in Forlorn
+4010 - Deaths in Sorrow
+4011 - Deaths in Horu
+4012 - Deaths in an unknown zone
+4013 - Deaths offworld
 
-2500++ - Reserved for bingo
+4015 - Deaths since last save
+4016 - Time since last death
+4017 - Time since last death or save
+4018 - Pickups since last death or save
+
+4020 - Time spent everywhere
+4021 - Time spent in Glades
+4022 - Time spent in Grove
+4023 - Time spent in Grotto
+4024 - Time spent in Blackroot
+4025 - Time spent in Swamp
+4026 - Time spent in Ginso
+4027 - Time spent in Valley
+4028 - Time spent in Misty
+4029 - Time spent in Forlorn
+4030 - Time spent in Sorrow
+4031 - Time spent in Horu
+4032 - Time spent in an unknown zone
+4033 - Time spent offworld
+
+4035 - Most deaths at one save
+4036 - Longest time between deaths
+4037 - Most time lost to death
+4038 - Most pickups lost to death
+
+4040 - Wall Jump Time+Zone
+4041 - Charge Flame Time+Zone
+4042 - Double Jump Time+Zone
+4043 - Bash Time+Zone
+4044 - Stomp Time+Zone
+4045 - Glide Time+Zone
+4046 - Climb Time+Zone
+4047 - Charge Jump Time+Zone
+4048 - Dash Time+Zone
+4049 - Grenade Time+Zone
+4050 - Water Vein Time+Zone
+4051 - Clean Water Time+Zone
+4052 - Gumon Seal Time+Zone
+4053 - Wind Restored Time+Zone
+4054 - Sunstone Time+Zone
+4055 - Warmth Returned Time+Zone
+
+4060 - Seen Pickup Bitfield #1
+4061 - Seen Pickup Bitfield #2
+4062 - Seen Pickup Bitfield #3
+4063 - Seen Pickup Bitfield #4
+4064 - Seen Pickup Bitfield #5
+4065 - Seen Pickup Bitfield #6
+4066 - Seen Pickup Bitfield #7
+4067 - Seen Pickup Bitfield #8
+
+4070 - Saves
+4071 - sum(shoof)
+4072 - EnemiesKilled
+4073 - ExpGained
+4074 - ExpBonus
+4075 - Max PPM
+4076 - Time of Max PPM
+4077 - Count at Max PPM
+4078 - Reloads
+4079 - Alt+R Count
+4080 - Teleporter Count
+4081 - Time since last pickup
+4082 - Longest drought
+4083 - Longest drought end time
+
+4087 - Warp to Credits Bonus Skill (1587 is the pickup code for it)
+
+4090 - (Archipelago) DeathLink deaths
+4091 - (Archipelago) DeathLink linked deaths
+4092 - (Archipelago) DeathLink last seen token
+
+4099 - Finished Horu Escape
+
+4100 - Teleporter Time + teleporter index
+4120 - Tree Time + tree key
+4140 - Relic Time + relic bit
+4160 - Mapstone Time + pedestal bit
+
+4500 - Warmth fragment count
+4501 - Warmth fragments, one each, no fixed end
+
+7000 - Die to Misty Vertical Lasers
+7001 - Die to Right Forlorn Laser
+7002 - Die to NoobSpikes
+7003 - Die to Blackroot Teleporter Crushers
+7004 - Die to Ginso Escape Fronkey
+7005 - Die to Doorwarp Lava
+7006 - Die to Horu Fields Acid
+7007 - Die to Stomp Rhino
+7008 - Die to Forlorn Void
+7009 - Die to Lost Grove Laser
+7010 - Die to Sunstone Lightning
+7011 - Die to Valley Map Baneling
+7012 - Die to R1 Door Baneling
+7013 - Die to Swamp Swim Crushers
+7014 - Die to Grotto Vault Lasers
+7015 - Die to Spidersack Spikes
+7016 - Die to Valley Floor Frogs
+
+8000-8999 - free for a seed's own use, via RI and {n}. Inside this zone, so a
+            counter kept here survives death; 20000+ and below 4000 do not
+
+==== End Persists Through Death Zone ===
+
+10000 - Slot stamp: which save slot the preserved values belong to, as slot+1
+
+10001-10999 - Practice run stat block
+
+11000-19999 - unused, reserved for the randomizer
+
+20000+ - free for a seed's own use, via RI and {n}. No end, and nothing here is the
+         randomizer's. Outside the preserved range, so a counter here resets on
+         death -- 8000-8999 is the version that survives one

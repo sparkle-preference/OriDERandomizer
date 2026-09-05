@@ -41,7 +41,7 @@ public static class RandomizerBoxSolids {
         built = RandomizerBoxes.Version;
         var layer = groundLayer;
         foreach (var box in RandomizerBoxes.Active) {
-            if (box.Type != RandomizerBox.Kind.Solid) {
+            if (box.Type != RandomizerBox.Kind.Solid || box.Off) {
                 continue;
             }
 

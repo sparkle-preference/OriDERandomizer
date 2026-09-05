@@ -16,9 +16,11 @@ using Game;
 // items to rollbacks.
 public static class RandomizerMW {
     // save item ids 940-947 hold the granted-slots bitfields (8 x 32 bits).
-    // NOTE: must stay OUTSIDE 1500-1599, which RandomizerInventory preserves
-    // through death/reload -- granted bits have to roll back with the save.
+    // NOTE: must stay OUTSIDE the range RandomizerInventory preserves through
+    // death/reload -- granted bits have to roll back with the save.
     public const int GrantedSlotsBase = 940;
+
+    public const int GrantedSlotsLast = 947;
 
     public class ManifestEntry {
         public int Slot;

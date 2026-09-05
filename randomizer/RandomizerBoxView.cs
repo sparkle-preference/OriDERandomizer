@@ -58,7 +58,7 @@ public class RandomizerBoxView : MonoBehaviour {
         paint.SetPass(0);
         GL.Begin(GL.QUADS);
         foreach (var box in boxes) {
-            if (!box.Paint.HasValue || box.Consumed) {
+            if (!box.Paint.HasValue || box.Off) {
                 continue;
             }
 
