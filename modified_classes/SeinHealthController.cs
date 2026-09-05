@@ -44,6 +44,8 @@ public class SeinHealthController : SaveSerialize, ISeinReceiver {
 
     public void GainMaxHeartContainer() {
         MaxHealth += 4;
+        Amount += 4;
+        VisualMaxAmount += 4;
         RestoreAllHealth();
     }
 
