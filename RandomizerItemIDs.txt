@@ -224,7 +224,7 @@ Enhanced mode -- April Fools :)
 936 - Have Pickup Bitfield #7
 937 - Have Pickup Bitfield #8
 
-940-947 - (Multiworld) Granted slot bitfields. Must stay outside the preserved range
+940-947 - (Multiworld) Granted slot bitfields
 
 950 - Finished Ginso escape
 
@@ -264,15 +264,14 @@ Enhanced mode -- April Fools :)
 
 1650 - LevelUpKills
 
-1651-1699 - unused
 
-1700-1999 - Box bitfields: which one-shot item boxes (BX lines) were taken, a bit each in file order
+1700-1999 - Box bitfields: which one-shot item boxes (BX lines) were taken, in file order, as bitfields
 
 2000-2256 - reserved IDs for Sense pickups
 
 2500-2625 - Bingo goals
 2626 - Bingo last touched square
-2627-2638 - Bingo journey bitfields, one per origin well
+2627-2638 - Bingo journey bitfields by origin well
 
 ==== Begin Persists Through Death Zone ===
 4000 - Deaths everywhere
@@ -287,8 +286,6 @@ Enhanced mode -- April Fools :)
 4009 - Deaths in Forlorn
 4010 - Deaths in Sorrow
 4011 - Deaths in Horu
-4012 - Deaths in an unknown zone
-4013 - Deaths offworld
 
 4015 - Deaths since last save
 4016 - Time since last death
@@ -307,8 +304,6 @@ Enhanced mode -- April Fools :)
 4029 - Time spent in Forlorn
 4030 - Time spent in Sorrow
 4031 - Time spent in Horu
-4032 - Time spent in an unknown zone
-4033 - Time spent offworld
 
 4035 - Most deaths at one save
 4036 - Longest time between deaths
@@ -356,7 +351,7 @@ Enhanced mode -- April Fools :)
 4082 - Longest drought
 4083 - Longest drought end time
 
-4087 - Warp to Credits Bonus Skill (1587 is the pickup code for it)
+4087 - Warp to Credits Bonus Skill (was 1587)
 
 4090 - (Archipelago) DeathLink deaths
 4091 - (Archipelago) DeathLink linked deaths
@@ -372,26 +367,25 @@ Enhanced mode -- April Fools :)
 4500 - Warmth fragment count
 4501 - Warmth fragments, one each, no fixed end
 
-7000 - Die to Misty Vertical Lasers
-7001 - Die to Right Forlorn Laser
-7002 - Die to NoobSpikes
-7003 - Die to Blackroot Teleporter Crushers
-7004 - Die to Ginso Escape Fronkey
-7005 - Die to Doorwarp Lava
-7006 - Die to Horu Fields Acid
-7007 - Die to Stomp Rhino
-7008 - Die to Forlorn Void
-7009 - Die to Lost Grove Laser
-7010 - Die to Sunstone Lightning
-7011 - Die to Valley Map Baneling
-7012 - Die to R1 Door Baneling
-7013 - Die to Swamp Swim Crushers
-7014 - Die to Grotto Vault Lasers
-7015 - Die to Spidersack Spikes
-7016 - Die to Valley Floor Frogs
+7000 - Died to Misty Vertical Lasers
+7001 - Died to Right Forlorn Laser
+7002 - Died to NoobSpikes
+7003 - Died to Blackroot Teleporter Crushers
+7004 - Died to Ginso Escape Fronkey
+7005 - Died to Doorwarp Lava
+7006 - Died to Horu Fields Acid
+7007 - Died to Stomp Rhino
+7008 - Died to Forlorn Void
+7009 - Died to Lost Grove Laser
+7010 - Died to Sunstone Lightning
+7011 - Died to Valley Map Baneling
+7012 - Died to R1 Door Baneling
+7013 - Died to Swamp Swim Crushers
+7014 - Died to Grotto Vault Lasers
+7015 - Died to Spidersack Spikes
+7016 - Died to Valley Floor Frogs
 
-8000-8999 - free for a seed's own use, via RI and {n}. Inside this zone, so a
-            counter kept here survives death; 20000+ and below 4000 do not
+8000-8999 - plando-reserved ID range (persists through death)
 
 ==== End Persists Through Death Zone ===
 
@@ -401,6 +395,4 @@ Enhanced mode -- April Fools :)
 
 11000-19999 - unused, reserved for the randomizer
 
-20000+ - free for a seed's own use, via RI and {n}. No end, and nothing here is the
-         randomizer's. Outside the preserved range, so a counter here resets on
-         death -- 8000-8999 is the version that survives one
+20000+ - plando-reserved ID range. currently uncapped
