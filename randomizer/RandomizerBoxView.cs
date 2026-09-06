@@ -1,10 +1,8 @@
 using Game;
 using UnityEngine;
 
-// Draws the boxes in force over the finished frame: filled world-space quads with a
-// brighter edge. It runs as the camera's last image effect so the post-process
-// (motion blur, bloom, grading) never touches them; nothing in this game is a Unity
-// sprite, so there is no renderer to borrow instead.
+// Draws the boxes in force: filled world-space quads with a brighter edge. Nothing in
+// this game is a Unity sprite, so there is no renderer to borrow instead.
 public class RandomizerBoxView : MonoBehaviour {
     private static RandomizerBoxView instance;
 
@@ -36,13 +34,12 @@ public class RandomizerBoxView : MonoBehaviour {
         instance = camera.gameObject.AddComponent<RandomizerBoxView>();
     }
 
-    // Image effects run in component order, and a component added at runtime
-    // is last, so source here is the frame after every game effect.
-    public void OnRenderImage(RenderTexture source, RenderTexture destination) {
-        Graphics.Blit(source, destination);
+    // Before the camera's image effects, so the HUD and message boxes sit over the
+    // boxes rather than under them. The post-process chain runs over them as a result.
+    public void OnPostRender() {
         var boxes = RandomizerBoxes.Active;
         var draft = PracticeEditor.Draft;
-        // drawn after the UI camera, so a menu would sit under them
+        // kept from the old seam: a no-op if this one puts the menu on top by itself
         if ((boxes.Count == 0 && !draft.HasValue) || Characters.Sein == null || Game.UI.MainMenuVisible || !Ready()) {
             return;
         }
@@ -51,7 +48,6 @@ public class RandomizerBoxView : MonoBehaviour {
             cam = GetComponent<Camera>();
         }
 
-        RenderTexture.active = destination;
         GL.PushMatrix();
         GL.LoadProjectionMatrix(cam.projectionMatrix);
         GL.modelview = cam.worldToCameraMatrix;
