@@ -272,10 +272,10 @@ public static class RandomizerSettings {
 
     // 0-255 is the "normal" range and lands at half intensity, leaving room above 255 to
     // over-saturate. The seed format's BGCOLOR string documents the same headroom, so a
-    // message colour written in a seed and one written here mean the same thing.
+    // message color written in a seed and one written here mean the same thing.
     public const float HeadroomScale = 510f;
 
-    // a plain colour, full intensity at 255
+    // a plain color, full intensity at 255
     public const float FullScale = 255f;
 
     public static Dictionary<string, SettingBase> All = new Dictionary<string, SettingBase>();

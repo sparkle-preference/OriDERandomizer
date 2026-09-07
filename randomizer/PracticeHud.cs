@@ -20,7 +20,7 @@ public static class PracticeHud {
     private static string reference = "";
 
     // UI camera units, the anchored edge of each box: the clock's top right corner in
-    // the screen's, the tally's top centre in the finish screen's left column
+    // the screen's, the tally's top center in the finish screen's left column
     private static readonly Vector3 ClockAt = new Vector3(6.9f, 3.8f, 0f);
 
     private static readonly Vector3 TallyAt = new Vector3(-4.2f, 2.4f, 0f);

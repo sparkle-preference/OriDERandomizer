@@ -37,9 +37,9 @@ public class RandomizerGhostView {
         Object.DontDestroyOnLoad(GhostObject);
 
         // the clone would otherwise keep taking orders from the live Ori it was copied from
-        foreach (var behaviour in GhostObject.GetComponentsInChildren<MonoBehaviour>(true)) {
-            if (behaviour != null && RandomizerGhost.Detach.Contains(behaviour.GetType().Name)) {
-                Object.Destroy(behaviour);
+        foreach (var behavior in GhostObject.GetComponentsInChildren<MonoBehaviour>(true)) {
+            if (behavior != null && RandomizerGhost.Detach.Contains(behavior.GetType().Name)) {
+                Object.Destroy(behavior);
             }
         }
 
@@ -287,7 +287,7 @@ public class RandomizerGhostView {
             }
 
             RandomizerGhost.Quiet(ArrowObject);
-            RandomizerGhost.Recolour(ArrowObject);
+            RandomizerGhost.Recolor(ArrowObject);
         }
 
         ArrowObject.transform.position = float.IsNaN(target.x)
@@ -324,7 +324,7 @@ public class RandomizerGhostView {
             AimRenderer.sortingLayerID = source.LineRenderer.sortingLayerID;
             AimRenderer.sortingOrder = source.LineRenderer.sortingOrder;
             AimObject.layer = source.LineRenderer.gameObject.layer;
-            RandomizerGhost.Recolour(AimObject);
+            RandomizerGhost.Recolor(AimObject);
             RandomizerGhost.Dim(AimObject, RandomizerGhost.AimAlpha);
         }
 
@@ -392,7 +392,7 @@ public class RandomizerGhostView {
             RandomizerGhost.Strip(WallObject, null);
             RandomizerGhost.Quiet(WallObject);
             WallObject.SetActive(true);
-            RandomizerGhost.Recolour(WallObject);
+            RandomizerGhost.Recolor(WallObject);
             RandomizerGhost.Dim(WallObject, RandomizerGhost.WallArrowAlpha);
         }
 
@@ -431,7 +431,7 @@ public class RandomizerGhostView {
             }
 
             RandomizerGhost.Quiet(LinkObject);
-            RandomizerGhost.Recolour(LinkObject);
+            RandomizerGhost.Recolor(LinkObject);
             RandomizerGhost.Dim(LinkObject, RandomizerGhost.LinkAlpha);
         }
 
@@ -474,8 +474,8 @@ public class RandomizerGhostView {
         // A private clone, never a pooled one: everything below mutates what it is handed, and
         // a pooled object goes back damaged. OnPoolSpawned is what starts these, so call it here.
         var spawned = (GameObject)Object.Instantiate(prefab, at, facing);
-        foreach (var behaviour in spawned.GetComponentsInChildren<MonoBehaviour>(true)) {
-            var pooled = behaviour as IPooled;
+        foreach (var behavior in spawned.GetComponentsInChildren<MonoBehaviour>(true)) {
+            var pooled = behavior as IPooled;
             if (pooled != null) {
                 pooled.OnPoolSpawned();
             }

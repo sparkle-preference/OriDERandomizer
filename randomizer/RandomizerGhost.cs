@@ -79,7 +79,7 @@ public static class RandomizerGhost {
         }
     }
 
-    // Keyed on the player, never on arrival order: the same player has to be the same colour on
+    // Keyed on the player, never on arrival order: the same player has to be the same color on
     // everyone's screen, and arrival order differs per client. Player zero is your own replay.
     private static Color Shade(IGhostSource source) {
         var id = source.PlayerId;
@@ -542,18 +542,18 @@ public static class RandomizerGhost {
     // input or spawns things will happily go on doing so for a ghost. Only `keep` survives.
     internal static void Strip(GameObject target, string keep) {
         var removed = new List<string>();
-        foreach (var behaviour in target.GetComponentsInChildren<MonoBehaviour>(true)) {
-            if (behaviour == null) {
+        foreach (var behavior in target.GetComponentsInChildren<MonoBehaviour>(true)) {
+            if (behavior == null) {
                 continue;
             }
 
-            var name = behaviour.GetType().Name;
+            var name = behavior.GetType().Name;
             if (name == keep) {
                 continue;
             }
 
             removed.Add(name);
-            Object.Destroy(behaviour);
+            Object.Destroy(behavior);
         }
 
         // a clone whose drawing lives outside the cloned object comes out empty: the renderer
@@ -588,21 +588,21 @@ public static class RandomizerGhost {
         }
     }
 
-    private static Color Scale(Color colour, float factor) {
-        return new Color(colour.r * factor, colour.g * factor, colour.b * factor, colour.a * factor);
+    private static Color Scale(Color color, float factor) {
+        return new Color(color.r * factor, color.g * factor, color.b * factor, color.a * factor);
     }
 
-    internal static void Recolour(GameObject target) {
+    internal static void Recolor(GameObject target) {
         Paint(target, EffectTint);
     }
 
     // TransparencyAnimator drives opacity through whichever of these its Mode selects, so a
     // clone repainted on _Color alone can still be sitting at whatever alpha its fader left it.
-    private static readonly string[] ColourProperties = {
+    private static readonly string[] ColorProperties = {
         "_Color", "_TintColor", "_MaskDissolveColor", "_AdditiveLayerColor"
     };
 
-    internal static void Paint(GameObject target, Color colour) {
+    internal static void Paint(GameObject target, Color color) {
         foreach (var renderer in target.GetComponentsInChildren<Renderer>(true)) {
             // TransparencyAnimator switches renderers off when it fades out, so a clone taken
             // while hidden arrives dark and nothing turns it back on once the fader is gone
@@ -612,16 +612,16 @@ public static class RandomizerGhost {
                 continue;
             }
 
-            foreach (var property in ColourProperties) {
+            foreach (var property in ColorProperties) {
                 if (material.HasProperty(property)) {
-                    material.SetColor(property, colour);
+                    material.SetColor(property, color);
                 }
             }
         }
     }
 
-    // Multiplied rather than replaced: these effects are a dozen pieces with their own colours.
-    // Colour scales along with alpha because additive blending never consults the alpha channel.
+    // Multiplied rather than replaced: these effects are a dozen pieces with their own colors.
+    // Color scales along with alpha because additive blending never consults the alpha channel.
     internal static void Dim(GameObject target, float factor) {
         foreach (var renderer in target.GetComponentsInChildren<Renderer>(true)) {
             var material = renderer.material;
@@ -629,13 +629,13 @@ public static class RandomizerGhost {
                 continue;
             }
 
-            foreach (var property in ColourProperties) {
+            foreach (var property in ColorProperties) {
                 if (!material.HasProperty(property)) {
                     continue;
                 }
 
-                var colour = material.GetColor(property);
-                material.SetColor(property, Scale(colour, factor));
+                var color = material.GetColor(property);
+                material.SetColor(property, Scale(color, factor));
             }
         }
 
@@ -960,7 +960,7 @@ public static class RandomizerGhost {
     internal const float DeathBurstAlpha = 0.5f;
 
     // How wide a ghost's effect may be, in world units: the camera sees about twenty and the
-    // death glows are authored at up to 150; dimming cannot help, their animators rewrite colour.
+    // death glows are authored at up to 150; dimming cannot help, their animators rewrite color.
     internal const float EffectSpan = 12f;
 
     internal const float Tick = 1f / 60f;
@@ -990,7 +990,7 @@ public static class RandomizerGhost {
         new Color(1.00f, 0.83f, 0.00f, 0.35f)    // 15 pika
     };
 
-    // effects take the colour but keep their own alpha; dimming a faint effect erases it
+    // effects take the color but keep their own alpha; dimming a faint effect erases it
     internal static readonly Color EffectTint = new Color(0.55f, 0.8f, 1f, 1f);
 
     // the aura is a big bloom and reads far stronger than the rest of the ghost

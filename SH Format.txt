@@ -178,7 +178,7 @@ Available styles:
 
 Styles can be nested.
 For example, "SH|<style font=msPGothic>one <style color=888888>two</> three</>"
-will result in a message that uses the japanese font for the whole text, but only "two" is grey.
+will result in a message that uses the japanese font for the whole text, but only "two" is gray.
 
 
 

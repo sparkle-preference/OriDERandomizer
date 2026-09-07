@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Edits a colour in place on a settings row: up/down picks a channel, left/right moves it,
+// Edits a color in place on a settings row: up/down picks a channel, left/right moves it,
 // Enter commits, Backspace restores the default. Shaped after KeybindControl, including
 // its two-frame wait -- the key that opened the editor is still down on the first frame.
 //
@@ -156,10 +156,10 @@ public class ColorControl : MonoBehaviour {
             return false;
         }
 
-        var centre = wheel.position;
+        var center = wheel.position;
         var radius = 0.5f * wheel.lossyScale.x;
-        var dx = cursor.x - centre.x;
-        var dy = cursor.y - centre.y;
+        var dx = cursor.x - center.x;
+        var dy = cursor.y - center.y;
         var distance = Mathf.Sqrt(dx * dx + dy * dy);
         if (radius <= 0f || distance > radius) {
             return false;
@@ -183,7 +183,7 @@ public class ColorControl : MonoBehaviour {
         var disc = RandomizerQuad.Build("colorWheel", "color_wheel.png", order);
         var mark = RandomizerQuad.Build("colorReticle", "color_reticle.png", order);
         if (disc == null || mark == null) {
-            Randomizer.log("colour picker: wheel art did not load, numbers only");
+            Randomizer.log("color picker: wheel art did not load, numbers only");
             return;
         }
 
@@ -206,7 +206,7 @@ public class ColorControl : MonoBehaviour {
 
         float h, s, v;
         Color.RGBToHSV(setting.Value, out h, out s, out v);
-        // A drag keeps the value it finds, so a dark colour stays dark -- but a disc drawn
+        // A drag keeps the value it finds, so a dark color stays dark -- but a disc drawn
         // at full brightness hides that. Dim it to what it is actually offering.
         var lit = Mathf.Max(v, 0.15f);
         var discRenderer = wheel.GetComponent<Renderer>();
@@ -269,8 +269,8 @@ public class ColorControl : MonoBehaviour {
         Paint();
     }
 
-    // Every bar is repainted from the live colour, so each channel's gradient shows what
-    // moving THAT channel does to THIS colour rather than a generic black-to-red ramp.
+    // Every bar is repainted from the live color, so each channel's gradient shows what
+    // moving THAT channel does to THIS color rather than a generic black-to-red ramp.
     private void Paint() {
         var v = setting.Value;
         if (asMessage && swatch != null) {
@@ -315,7 +315,7 @@ public class ColorControl : MonoBehaviour {
                     } else {
                         var swept = WithChannel(v, c, (x - LabelW) / (float)span);
                         // only the alpha bar is about transparency; drawing the other three
-                        // through the colour's own alpha just checks every gradient
+                        // through the color's own alpha just checks every gradient
                         col = c == 3 ? Over(swept, Checker(x, y))
                                      : new Color(swept.r, swept.g, swept.b, 1f);
                         var d = Mathf.Abs(x - mark);
@@ -395,7 +395,7 @@ public class ColorControl : MonoBehaviour {
         return new Color(i == 0 ? v : c.r, i == 1 ? v : c.g, i == 2 ? v : c.b, i == 3 ? v : c.a);
     }
 
-    // a mid-grey check, so a transparent or near-black colour still reads as something
+    // a mid-gray check, so a transparent or near-black color still reads as something
     private static Color Checker(int x, int y) {
         var on = ((x / 4) + (y / 4)) % 2 == 0;
         return on ? new Color(0.62f, 0.62f, 0.64f) : new Color(0.42f, 0.42f, 0.45f);

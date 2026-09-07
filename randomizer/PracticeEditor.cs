@@ -5,7 +5,7 @@ using UnityEngine;
 
 // The in-engine half of the segment editor: boxes drawn with the mouse over the frozen
 // world, the camera panned with WASD, written back into the container's segment.json.
-// Names, hint text and colours are the companion page's job. Creating a segment from a
+// Names, hint text and colors are the companion page's job. Creating a segment from a
 // normal game snapshots the current save into a new container in the practice folder.
 public static class PracticeEditor {
     public static bool Active;
@@ -235,7 +235,7 @@ public static class PracticeEditor {
             }
         }
 
-        box.SetColour("");
+        box.SetColor("");
         var boxes = file.Boxes(target);
         if (box.Type == RandomizerBox.Kind.Goal) {
             boxes.RemoveAll(b => b.Type == RandomizerBox.Kind.Goal);

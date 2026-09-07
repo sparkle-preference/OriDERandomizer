@@ -58,9 +58,9 @@ public class RandomizerBoxView : MonoBehaviour {
                 continue;
             }
 
-            var colour = box.Paint.Value;
-            var edge = new Color(colour.r, colour.g, colour.b, Mathf.Min(1f, colour.a + 0.45f));
-            Outline(box.Area, colour, edge);
+            var color = box.Paint.Value;
+            var edge = new Color(color.r, color.g, color.b, Mathf.Min(1f, color.a + 0.45f));
+            Outline(box.Area, color, edge);
         }
 
         // the box being drawn, in the editor
@@ -80,8 +80,8 @@ public class RandomizerBoxView : MonoBehaviour {
         Fill(area.xMax - EdgeWidth, area.yMin, area.xMax, area.yMax, edge);
     }
 
-    private static void Fill(float x1, float y1, float x2, float y2, Color colour) {
-        GL.Color(colour);
+    private static void Fill(float x1, float y1, float x2, float y2, Color color) {
+        GL.Color(color);
         GL.Vertex3(x1, y1, 0f);
         GL.Vertex3(x2, y1, 0f);
         GL.Vertex3(x2, y2, 0f);
@@ -96,7 +96,7 @@ public class RandomizerBoxView : MonoBehaviour {
 
         var shader = Shader.Find("Hidden/Internal-Colored");
         if (shader == null) {
-            Randomizer.LogError("boxes: no colour shader, they will not draw");
+            Randomizer.LogError("boxes: no color shader, they will not draw");
             return false;
         }
 

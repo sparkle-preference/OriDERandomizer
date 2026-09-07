@@ -576,7 +576,7 @@ public static class RandomizerMW {
 
     // The three dungeons first, in the order the game opens them, then the rest as they arrived.
     // Every teleporter is named "<id> Teleporter", so the id alone is the short form, and the
-    // colour still has to be looked up from the full name.
+    // color still has to be looked up from the full name.
     private static List<string> Wells(List<string> ids) {
         var order = new List<string>();
         foreach (var want in DungeonWells) {

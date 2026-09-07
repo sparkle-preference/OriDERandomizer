@@ -18,7 +18,7 @@ public static class RandomizerMapWarp {
     // what keeps the ring proportional to them at every zoom.
     private const float RingSpan = 7.04f;
 
-    // a warp icon, and its drop onto the ring's centre, as shares of the ring and of itself
+    // a warp icon, and its drop onto the ring's center, as shares of the ring and of itself
     private const float PinShare = 0.75f;
 
     private const float PinDrop = 0.15f;
@@ -191,16 +191,16 @@ public static class RandomizerMapWarp {
     }
 
     private static void Blank(int keep) {
-        for (var i = keep; i < Labelled.Count; i++) {
-            if (Labelled[i] != null && Labelled[i].gameObject.activeSelf) {
-                Labelled[i].gameObject.SetActive(false);
+        for (var i = keep; i < Labeled.Count; i++) {
+            if (Labeled[i] != null && Labeled[i].gameObject.activeSelf) {
+                Labeled[i].gameObject.SetActive(false);
             }
         }
     }
 
     // Cloned from the same legend entry the map's other randomizer labels come from.
     private static MessageBox Label(int index, AreaMapUI map) {
-        while (Labelled.Count <= index) {
+        while (Labeled.Count <= index) {
             var legend = map.transform.FindChild("legend");
             var source = legend == null ? null : legend.FindChild("player");
             if (source == null) {
@@ -213,10 +213,10 @@ public static class RandomizerMapWarp {
             box.MessageProvider = null;
             box.OverrideText = "";
             box.gameObject.SetActive(false);
-            Labelled.Add(box);
+            Labeled.Add(box);
         }
 
-        return Labelled[index];
+        return Labeled[index];
     }
 
     // A pad has no cursor to point with, so what it is pointing at is whatever the map is
@@ -239,7 +239,7 @@ public static class RandomizerMapWarp {
             return null;
         }
 
-        // the scroll centre is a blunter pointer than a mouse, so it reaches further
+        // the scroll center is a blunter pointer than a mouse, so it reaches further
         var nearest = Pointing() ? Reach : PadReach;
         GameMapTeleporter found = null;
         foreach (var well in controller.Teleporters) {
@@ -460,7 +460,7 @@ public static class RandomizerMapWarp {
         return true;
     }
 
-    // Written every frame rather than on a change: the map's own fade drives these same colours
+    // Written every frame rather than on a change: the map's own fade drives these same colors
     // while it opens, and a value set once would be painted over.
     private static void Paint(GameObject icon, float alpha) {
         List<Material> paints;
@@ -492,9 +492,9 @@ public static class RandomizerMapWarp {
                 continue;
             }
 
-            var colour = paints[i].GetColor(keys[i]);
-            if (colour.a > alpha + 0.01f) {
-                paints[i].SetColor(keys[i], new Color(colour.r, colour.g, colour.b, alpha));
+            var color = paints[i].GetColor(keys[i]);
+            if (color.a > alpha + 0.01f) {
+                paints[i].SetColor(keys[i], new Color(color.r, color.g, color.b, alpha));
             }
         }
     }
@@ -602,7 +602,7 @@ public static class RandomizerMapWarp {
         }
 
         RandomizerGhost.Quiet(SoulObject);
-        // Enabled and made opaque, but not repainted: the widget is many colours and flattening it
+        // Enabled and made opaque, but not repainted: the widget is many colors and flattening it
         // to one tint throws away the thing worth having. Its fader is gone with Quiet, and what
         // the fader left behind is invisible, so only the alpha is overruled.
         Opaque(SoulObject);
@@ -673,7 +673,7 @@ public static class RandomizerMapWarp {
 
             foreach (var name in Alphas) {
                 if (material.HasProperty(name)) {
-                    // kept so the fade multiplies the widget's colours rather than flattening them
+                    // kept so the fade multiplies the widget's colors rather than flattening them
                     SoulPaints.Add(material);
                     SoulKeys.Add(name);
                 }
@@ -683,8 +683,8 @@ public static class RandomizerMapWarp {
 
     private static void Tint(float alpha) {
         for (var i = 0; i < SoulPaints.Count; i++) {
-            var colour = SoulPaints[i].GetColor(SoulKeys[i]);
-            SoulPaints[i].SetColor(SoulKeys[i], new Color(colour.r, colour.g, colour.b, alpha));
+            var color = SoulPaints[i].GetColor(SoulKeys[i]);
+            SoulPaints[i].SetColor(SoulKeys[i], new Color(color.r, color.g, color.b, alpha));
         }
     }
 
@@ -796,7 +796,7 @@ public static class RandomizerMapWarp {
 
     private static bool Listing;
 
-    private static readonly List<MessageBox> Labelled = new List<MessageBox>();
+    private static readonly List<MessageBox> Labeled = new List<MessageBox>();
 
     private static bool Sounding;
 

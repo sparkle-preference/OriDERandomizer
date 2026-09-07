@@ -20,7 +20,7 @@ public interface IGhostSource {
     // a peer that has gone quiet is the only thing that makes this grow.
     float Silence { get; }
 
-    // The multiworld player this ghost is, which is what its colour comes from. Zero means
+    // The multiworld player this ghost is, which is what its color comes from. Zero means
     // nobody -- your own replay -- and takes the practice blue instead.
     int PlayerId { get; }
 

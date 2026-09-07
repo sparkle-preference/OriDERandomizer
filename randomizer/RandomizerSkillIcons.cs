@@ -24,7 +24,7 @@ public static class RandomizerSkillIcons {
     };
 
     // The tree is rebuilt with vanilla meshes on every open; the materials are shared assets
-    // that keep whatever art was last set. Each pass has to recognise both.
+    // that keep whatever art was last set. Each pass has to recognize both.
     public static void Apply(SkillTreeManager tree) {
         try {
             foreach (var lane in new[] { tree.EnergyLane, tree.UtilityLane, tree.CombatLane }) {
@@ -184,7 +184,7 @@ public static class RandomizerSkillIcons {
             new Vector3(bounds.min.x, bounds.max.y, 0f)
         };
         mesh.uv = new[] { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f) };
-        // the shader multiplies by vertex colour, and an unset array is not white
+        // the shader multiplies by vertex color, and an unset array is not white
         mesh.colors = new[] { Color.white, Color.white, Color.white, Color.white };
         mesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
         mesh.RecalculateNormals();

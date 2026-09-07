@@ -220,7 +220,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             placed = swatch.transform;
             placed.SetParent(cleverMenuItem.transform, false);
             // a message background gets a wider tile: it is previewing a message, and a
-            // square reads as a colour chip rather than as the thing it will look like
+            // square reads as a color chip rather than as the thing it will look like
             var wide = asMessage ? MessageSwatchWidth : 1f;
             var width = SwatchSize * wide;
             placed.localScale = new Vector3(width, SwatchSize * 0.55f, 1f);
@@ -493,7 +493,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // the message art fades in over this fraction of its quad's width
     public float SwatchMargin = 0.162f;
 
-    // tall enough to read, short enough that two colour rows do not touch
+    // tall enough to read, short enough that two color rows do not touch
     public float SwatchSize = 0.62f;
 
     public float MessageSwatchWidth = 4.4f;

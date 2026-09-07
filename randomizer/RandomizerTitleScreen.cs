@@ -7,7 +7,7 @@ public class RandomizerTitleScreen {
     // -- the visible brushstroke is about half its width.
     private const float WidthFactor = 0.47f;
 
-    // wordmark centre below the banner centre
+    // wordmark center below the banner center
     private const float DropFactor = 0.34f;
 
     // how far the lockup rises; more than this clips off the top

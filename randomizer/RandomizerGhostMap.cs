@@ -69,7 +69,7 @@ public static class RandomizerGhostMap {
             // markers fade with the map rather than on their own schedule
             TransparencyAnimator.Register(made.transform);
             Icons.Add(made);
-            // an unset colour, so the first Paint always happens
+            // an unset color, so the first Paint always happens
             Painted.Add(new Color(-1f, -1f, -1f, -1f));
         }
 

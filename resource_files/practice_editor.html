@@ -116,7 +116,7 @@
 <div class="cols">
 <section>
   <h2>Boxes</h2>
-  <table id="boxes"><thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th>colour</th><th>hidden</th><th></th></tr></thead><tbody></tbody></table>
+  <table id="boxes"><thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th>color</th><th>hidden</th><th></th></tr></thead><tbody></tbody></table>
   <div class="row"><button class="quiet" id="addBox">add box</button> <button class="quiet" id="addGoal">add goal box</button></div>
   <div class="muted">Drawn boxes appear here after a save in the game. An item box gives its pickup once, a repeat item box every time, a solid box is a block in the world, and a hidden box works unseen. The goal box is part of the end condition.</div>
 </section>
@@ -410,11 +410,11 @@
     L.tileLayer('/tiles/{z}/{x}/{y}.png', { noWrap: true, maxNativeZoom: 6, maxZoom: 7, tileSize: 256, bounds: [[-500, -400], [700, 800]] }).addTo(map);
     map.setView([-240, 120], 5);
     state.map = map;
-    var zoneColour = {};
+    var zoneColor = {};
     var palette = ['#7fd1ff', '#ffb36b', '#9be37f', '#ff8fb1', '#e0c26b', '#c59bff', '#6bf0dc', '#ff7f7f', '#b8b8ff', '#ffd27f'];
     state.catalog.locations.forEach(function (loc) {
-      if (!(loc.zone in zoneColour)) zoneColour[loc.zone] = palette[Object.keys(zoneColour).length % palette.length];
-      var m = L.circleMarker([loc.y, loc.x], { radius: 5, weight: 1, color: '#000', fillColor: zoneColour[loc.zone], fillOpacity: 0.9 }).addTo(map);
+      if (!(loc.zone in zoneColor)) zoneColor[loc.zone] = palette[Object.keys(zoneColor).length % palette.length];
+      var m = L.circleMarker([loc.y, loc.x], { radius: 5, weight: 1, color: '#000', fillColor: zoneColor[loc.zone], fillOpacity: 0.9 }).addTo(map);
       m.bindTooltip(loc.name + ' (' + loc.zone + ')', { direction: 'top', offset: [0, -6] });
       m.on('click', function () { if (!state.editing) toggleLocation(loc.key); });
       state.markers[loc.key] = m;
@@ -450,9 +450,9 @@
   }
 
   var DEFAULT_COLOUR = { goal: '#8fe3a0', kill: '#ff6b6b', solid: '#9aa0aa', item: '#40c0ff', ritem: '#7fd8ff' };
-  // colours travel as rrggbb; none is an invisible box
+  // colors travel as rrggbb; none is an invisible box
   function hidden(b) { return b.color === 'none' || b.color === '0'; }
-  function colourOf(b) { return b.color && !hidden(b) ? '#' + b.color.replace('#', '').slice(0, 6) : (DEFAULT_COLOUR[b.type] || DEFAULT_COLOUR.item); }
+  function colorOf(b) { return b.color && !hidden(b) ? '#' + b.color.replace('#', '').slice(0, 6) : (DEFAULT_COLOUR[b.type] || DEFAULT_COLOUR.item); }
   function boxLabel(b) { return b.type === 'item' || b.type === 'ritem' ? (b.type === 'ritem' ? 'repeat item box: ' : 'item box: ') + (nameOf(b.give) || 'nothing yet') : (b.type || 'kill') + ' box'; }
 
   // every box on the map, with where it lives: the goal, the shared list, each variant's
@@ -479,8 +479,8 @@
     state.shapes.forEach(function (s) { s.layers.forEach(function (l) { state.map.removeLayer(l); }); }); state.shapes = [];
     allBoxes().forEach(function (entry) {
       var b = entry.b.box; if (!b || b.length !== 4) return;
-      var colour = entry.owner !== 'shared' && !entry.b.color ? '#c59bff' : colourOf(entry.b);
-      var r = L.rectangle(bounds(b), { color: colour, weight: 2, fillOpacity: state.editing ? 0.3 : 0.15, dashArray: hidden(entry.b) ? '4 4' : null }).addTo(state.map);
+      var color = entry.owner !== 'shared' && !entry.b.color ? '#c59bff' : colorOf(entry.b);
+      var r = L.rectangle(bounds(b), { color: color, weight: 2, fillOpacity: state.editing ? 0.3 : 0.15, dashArray: hidden(entry.b) ? '4 4' : null }).addTo(state.map);
       r.bindTooltip(entry.label, { sticky: true });
       var shape = { entry: entry, layers: [r] };
       if (state.editing) attachEditing(shape, r);
@@ -500,7 +500,7 @@
   function attachEditing(shape, rect) {
     var b = shape.entry.b.box;
     var map = state.map;
-    function normalise() {
+    function normalize() {
       var x1 = num(Math.min(b[0], b[2])), x2 = num(Math.max(b[0], b[2])), y1 = num(Math.min(b[1], b[3])), y2 = num(Math.max(b[1], b[3]));
       b[0] = x1; b[1] = y1; b[2] = x2; b[3] = y2;
     }
@@ -514,7 +514,7 @@
         else if (k === 2) { b[2] = p.lng; b[3] = p.lat; } else { b[0] = p.lng; b[3] = p.lat; }
         rect.setBounds(bounds(b));
       });
-      h.on('dragend', function () { normalise(); render(); });
+      h.on('dragend', function () { normalize(); render(); });
       shape.layers.push(h);
     })(k);
     var start = null, from = null;
@@ -535,7 +535,7 @@
       if (!start) return;
       start = null; map.off('mousemove', move); map.off('mouseup', stop); L.DomEvent.off(document, 'mouseup', stop);
       map.dragging.enable();
-      normalise(); render();
+      normalize(); render();
     }
   }
   $('editBoxes').onclick = function () {
@@ -654,10 +654,10 @@
       } else {
         tr.appendChild(td(pickSelect({ get: function () { return splitCode(b.give); }, set: function (l) { b.give = joinCodes(l); styleMarkers(); }, placeholder: 'what it gives; a message is SH|text' })));
       }
-      // any box can wear its own colour; the type's is the default
-      var colour = document.createElement('input'); colour.type = 'color'; colour.value = colourOf(b); colour.disabled = hidden(b); colour.title = b.color ? 'own colour' : 'the default for a ' + types[b.type] + ' box';
-      colour.onchange = function () { b.color = colour.value.replace('#', ''); styleMarkers(); };
-      tr.appendChild(td(colour));
+      // any box can wear its own color; the type's is the default
+      var color = document.createElement('input'); color.type = 'color'; color.value = colorOf(b); color.disabled = hidden(b); color.title = b.color ? 'own color' : 'the default for a ' + types[b.type] + ' box';
+      color.onchange = function () { b.color = color.value.replace('#', ''); styleMarkers(); };
+      tr.appendChild(td(color));
       // invisible: it still works, nobody sees it
       var hide = document.createElement('input'); hide.type = 'checkbox'; hide.checked = hidden(b);
       hide.onchange = function () { if (hide.checked) b.color = 'none'; else delete b.color; render(); };
@@ -732,7 +732,7 @@
       box.appendChild(inv);
       var h = document.createElement('div'); h.className = 'muted'; h.style.marginTop = '6px'; h.textContent = 'Boxes only this variant has'; box.appendChild(h);
       var table = document.createElement('table');
-      table.innerHTML = '<thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th>colour</th><th>hidden</th><th></th></tr></thead><tbody></tbody>';
+      table.innerHTML = '<thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th>color</th><th>hidden</th><th></th></tr></thead><tbody></tbody>';
       renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id, false);
       box.appendChild(table);
       var add = document.createElement('button'); add.className = 'quiet'; add.textContent = 'add box'; add.style.marginTop = '6px'; add.onclick = function () { v.boxes.push(freshBox('kill')); render(); };

@@ -10,6 +10,6 @@ public class RandoOptionsScreen : CustomSettingsScreen {
         AddEnum(RandomizerSettings.Game.DefaultDifficulty, "Default difficulty on file creation.");
         AddColor(RandomizerSettings.Customization.HotColor, "Ori's color when Sensing an item at point-blank range.");
         AddColor(RandomizerSettings.Customization.ColdColor, "Ori's color when Sensing an item at max range.");
-        AddColor(RandomizerSettings.Customization.WarpTeleporterColor, "Colour of Warp-created teleporters on the map.");
+        AddColor(RandomizerSettings.Customization.WarpTeleporterColor, "Color of Warp-created teleporters on the map.");
     }
 }

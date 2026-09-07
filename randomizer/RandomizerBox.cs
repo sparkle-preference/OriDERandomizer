@@ -5,10 +5,10 @@ using Game;
 using UnityEngine;
 
 // A box in the world, one .bfr line, read wherever seed lines are:
-//   BX|<type>|x1,y1,x2,y2|<colour>|<payload>
+//   BX|<type>|x1,y1,x2,y2|<color>|<payload>
 // split on | at most four times, so a payload keeps its own pipes. Types: goal (ends a
 // practice attempt), kill, solid (ground and walls), item (gives once), ritem (gives on
-// every entry), none (a deleted box, holding its place). An empty colour is the type's;
+// every entry), none (a deleted box, holding its place). An empty color is the type's;
 // none or 0 is invisible.
 public class RandomizerBox {
     public enum Kind {
@@ -24,8 +24,8 @@ public class RandomizerBox {
 
     public Rect Area;
 
-    // the colour field as written, so a line survives a round trip unchanged
-    public string Colour = "";
+    // the color field as written, so a line survives a round trip unchanged
+    public string Color = "";
 
     // null is invisible
     public Color? Paint;
@@ -68,7 +68,7 @@ public class RandomizerBox {
     public static RandomizerBox Parse(string line) {
         var fields = line.Trim().Split(new[] { '|' }, 5);
         if (fields.Length < 3 || fields[0] != "BX") {
-            throw new FormatException("a box line is BX|type|x1,y1,x2,y2|colour|payload");
+            throw new FormatException("a box line is BX|type|x1,y1,x2,y2|color|payload");
         }
 
         var box = new RandomizerBox();
@@ -91,7 +91,7 @@ public class RandomizerBox {
         }
 
         box.Area = Between(c[0], c[1], c[2], c[3]);
-        box.SetColour(fields.Length > 3 ? fields[3].Trim() : "");
+        box.SetColor(fields.Length > 3 ? fields[3].Trim() : "");
         var payload = fields.Length > 4 ? fields[4].Trim() : "";
         if (box.Type == Kind.Item || box.Type == Kind.RepeatItem) {
             var bar = payload.IndexOf('|');
@@ -110,8 +110,8 @@ public class RandomizerBox {
     public string ToLine() {
         var line = Prefix + Name + "|" + Corners();
         var payload = Type == Kind.Item || Type == Kind.RepeatItem ? Payload : "";
-        if (Colour != "" || payload != "") {
-            line += "|" + Colour;
+        if (Color != "" || payload != "") {
+            line += "|" + Color;
         }
 
         if (payload != "") {
@@ -137,26 +137,26 @@ public class RandomizerBox {
         return new Rect(Math.Min(x1, x2), Math.Min(y1, y2), Math.Abs(x2 - x1), Math.Abs(y2 - y1));
     }
 
-    // rrggbb or rrggbbaa; a bad value falls back to the type's colour, out loud
-    public void SetColour(string text) {
-        Colour = text ?? "";
+    // rrggbb or rrggbbaa; a bad value falls back to the type's color, out loud
+    public void SetColor(string text) {
+        Color = text ?? "";
         if (Type == Kind.None) {
             Paint = null;
             return;
         }
 
-        if (Colour == "") {
+        if (Color == "") {
             Paint = Defaults[(int)Type];
             return;
         }
 
-        var lower = Colour.ToLowerInvariant();
+        var lower = Color.ToLowerInvariant();
         if (lower == "none" || lower == "0") {
             Paint = null;
             return;
         }
 
-        var hex = Colour.TrimStart('#');
+        var hex = Color.TrimStart('#');
         try {
             if (hex.Length != 6 && hex.Length != 8) {
                 throw new FormatException();
@@ -168,8 +168,8 @@ public class RandomizerBox {
             var a = hex.Length == 8 ? Convert.ToInt32(hex.Substring(6, 2), 16) / 255f : Defaults[(int)Type].a;
             Paint = new Color(r, g, b, a);
         } catch (Exception) {
-            Randomizer.LogError("box colour '" + Colour + "' is not rrggbb, rrggbbaa or none");
-            Colour = "";
+            Randomizer.LogError("box color '" + Color + "' is not rrggbb, rrggbbaa or none");
+            Color = "";
             Paint = Defaults[(int)Type];
         }
     }
@@ -185,8 +185,8 @@ public class RandomizerBox {
         corners.Add(JsonValue.Of(Math.Round(Area.xMax, 1)));
         corners.Add(JsonValue.Of(Math.Round(Area.yMax, 1)));
         json.Set("box", corners);
-        if (Colour != "") {
-            json.Set("color", JsonValue.Of(Colour));
+        if (Color != "") {
+            json.Set("color", JsonValue.Of(Color));
         }
 
         if (Give != null && Type != Kind.Kill) {
@@ -206,10 +206,10 @@ public class RandomizerBox {
         var line = Prefix + type + "|" + string.Join(",", new[] {
             Num((float)corners[0].Num), Num((float)corners[1].Num), Num((float)corners[2].Num), Num((float)corners[3].Num)
         });
-        var colour = json["color"].IsString ? json["color"].Str.TrimStart('#') : "";
+        var color = json["color"].IsString ? json["color"].Str.TrimStart('#') : "";
         var give = json["give"].IsString ? json["give"].Str : "";
-        if (colour != "" || give != "") {
-            line += "|" + colour;
+        if (color != "" || give != "") {
+            line += "|" + color;
         }
 
         if (give != "") {

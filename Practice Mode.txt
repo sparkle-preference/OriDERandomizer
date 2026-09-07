@@ -109,7 +109,7 @@ The page is the reference for what segment.json can say.
 Box lines
 ===
 A box is one line, wherever seed lines go: a seed file, or a segment's placements.bfr.
-BX|<type>|x1,y1,x2,y2|<colour>|<payload>
+BX|<type>|x1,y1,x2,y2|<color>|<payload>
 The line is split on "|" at most four times, so a payload keeps its own pipes. Corners are game units, in either order.
 
 Example: a kill box
@@ -128,7 +128,7 @@ Types:
 - "ritem": Gives its payload on every entry.
 - "goal": Ends a practice attempt. Ignored in a seed.
 
-Colour: "rrggbb" or "rrggbbaa", the alpha being the fill's. Empty is the type's own colour. "none" or "0" is an invisible box, which still does its job.
+Color: "rrggbb" or "rrggbbaa", the alpha being the fill's. Empty is the type's own color. "none" or "0" is an invisible box, which still does its job.
 
 Payload: a pickup, the way a seed line writes one: SK|5, RB|0, EX|100, SH|text, MU|SK/5/EX/100. Only "item" and "ritem" take one.
 Boxes are not locations: nothing they give is reported, counted in stats or tracked as found. It is simply given.
