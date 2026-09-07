@@ -246,6 +246,18 @@ public static class RandomizerSwitch {
     }
 
     public static void GivePickup(RandomizerAction action, int coords, bool found_locally = true) {
+        // a location the seed never filled in: nothing to grant, still counts as collected
+        if (action == null) {
+            var name = RandomizerLocationManager.LocationsByKey.TryGetValue(coords, out var location) ? location.Name : coords.ToString();
+            Randomizer.log($"No Pickup in seed at {name}");
+            Randomizer.PrintImmediately($"No Pickup in seed at {name}", 5, false, false, true);
+            if (found_locally) {
+                Randomizer.OnCoord(coords);
+            }
+
+            return;
+        }
+
         // Reentrant: a nested grant keeps the outermost pickup's zone.
         var outerZone = RandomizerStatsManager.PickupZone;
         if (outerZone == null) {
@@ -436,8 +448,7 @@ public static class RandomizerSwitch {
             RandomizerStatsManager.PickupZone = outerZone;
         }
 
-        // a location the seed never filled in arrives here null, past the catch above
-        if (found_locally && Randomizer.Sync && action != null) {
+        if (found_locally && Randomizer.Sync) {
             // the wire hears NO|1 for a seed writing its own slots or boxes: servers
             // must not learn invented slot ids
             var wire = action.Action == "RI" || action.Action == "BM"
