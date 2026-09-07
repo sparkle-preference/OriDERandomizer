@@ -92,8 +92,43 @@ public class RandomizerInventory : SaveSerialize {
         Characters.Sein.Inventory.SetRandomizerItem(id, value);
     }
 
-    // a plain number, or {n} for whatever slot n holds
+    // a plain number, {n} for whatever slot n holds, or (a OP b): 1 when the comparison
+    // holds and 0 when it does not, a and b each a number or {n}, OP one of == != < > <= >=
     public static bool Value(string text, out int value) {
+        text = (text ?? "").Trim();
+        if (text.Length > 2 && text[0] == '(' && text[text.Length - 1] == ')') {
+            return Comparison(text.Substring(1, text.Length - 2), out value);
+        }
+
+        return Operand(text, out value);
+    }
+
+    // two-character operators first, so <= is not read as < followed by junk
+    private static readonly string[] Comparators = { "==", "!=", "<=", ">=", "<", ">" };
+
+    private static bool Comparison(string text, out int value) {
+        value = 0;
+        foreach (var op in Comparators) {
+            var at = text.IndexOf(op);
+            if (at < 0) {
+                continue;
+            }
+
+            int left, right;
+            if (!Operand(text.Substring(0, at), out left) || !Operand(text.Substring(at + op.Length), out right)) {
+                return false;
+            }
+
+            var holds = op == "==" ? left == right : op == "!=" ? left != right : op == "<=" ? left <= right
+                : op == ">=" ? left >= right : op == "<" ? left < right : left > right;
+            value = holds ? 1 : 0;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool Operand(string text, out int value) {
         text = (text ?? "").Trim();
         if (text.Length > 2 && text[0] == '{' && text[text.Length - 1] == '}') {
             int id;

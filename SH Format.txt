@@ -53,6 +53,13 @@ from 20000 up are free for a seed's own use, the difference being that 8000-8999
 survives a death. RI and BM take the same {n} on the right of an =.
 - "You have found {8000} of them." -> "You have found 3 of them."
 
+RI and BM also take a comparison in parentheses on the right of an =: (a OP b) is 1
+when it holds and 0 when it does not, a and b each a number or {n}, OP one of
+== != < > <= >=. No arithmetic, and the parentheses are required.
+- BM|4=(5=={8000}) -> box 4 on while slot 8000 holds 5, off otherwise
+- BM|4=({8000}>={8001}) -> box 4 on while slot 8000 is at least slot 8001
+- RI|8002=({8000}!=0) -> slot 8002 becomes 1 or 0
+
 
 Placeholders
 ===

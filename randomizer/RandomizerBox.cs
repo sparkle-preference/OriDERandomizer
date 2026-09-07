@@ -288,24 +288,27 @@ public static class RandomizerBoxes {
     }
 
     // BM|n switches a box off or on by its place in the seed's box lines; =1 and =0
-    // say which, and ={slot} is on when that slot holds anything but zero
+    // say which, ={slot} is on when that slot holds anything but zero, and =(a OP b)
+    // is on when the comparison holds (RandomizerInventory.Value)
     public static void Modify(string value) {
-        var parts = (value ?? "").Split('=');
+        value = value ?? "";
+        var eq = value.IndexOf('=');
+        var name = (eq < 0 ? value : value.Substring(0, eq)).Trim();
         int which;
-        if (!int.TryParse(parts[0].Trim(), out which) || which < 0 || which >= Active.Count) {
-            Randomizer.LogError("BM|" + value + ": this seed has no box " + parts[0].Trim());
+        if (!int.TryParse(name, out which) || which < 0 || which >= Active.Count) {
+            Randomizer.LogError("BM|" + value + ": this seed has no box " + name);
             return;
         }
 
         var bit = Active[which].Bit;
-        if (parts.Length < 2) {
+        if (eq < 0) {
             SetOff(bit, !IsOff(bit));
             return;
         }
 
         int on;
-        if (!RandomizerInventory.Value(parts[1], out on)) {
-            Randomizer.LogError("BM|" + value + ": after = comes 1, 0 or {slot}");
+        if (!RandomizerInventory.Value(value.Substring(eq + 1), out on)) {
+            Randomizer.LogError("BM|" + value + ": after = comes 1, 0, {slot} or (a OP b)");
             return;
         }
 
