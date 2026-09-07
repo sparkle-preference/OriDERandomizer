@@ -161,6 +161,7 @@
 		"action/ShowWorldMapObjectiveAction.cs",
 		"action/WorldMapSetObjectiveTextAction.cs",
 		"bingo/BingoController.cs",
+		"bingo/BingoEnemyKinds.cs",
 		"contrib/B83.Win32.cs",
 		"menu/AccessibilitySettingsScreen.cs",
 		"menu/ColorControl.cs",

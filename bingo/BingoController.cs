@@ -132,6 +132,8 @@ public static class BingoController {
                 IntGoals["KillEnemies"].Value++;
             }
 
+            OnDefeat(entity);
+
             if (SingleGuidSwitchListeners.ContainsKey(entity.MoonGuid)) {
                 SingleGuidSwitchListeners[entity.MoonGuid].Handle();
             }
@@ -497,6 +499,25 @@ public static class BingoController {
         return from + "-" + to;
     }
 
+    public const int DefeatBaseId = 2639; // one bitfield per enemy kind, bits = zones: 2639-2650
+
+    public static string DefeatKey(string kind, string zone) {
+        return kind + "-" + zone;
+    }
+
+    // a kill counts for the zone Ori is standing in, the one the stats page gives
+    public static void OnDefeat(Entity entity) {
+        var kind = BingoEnemyKinds.KindOf(entity);
+        if (kind == null || !MultiBoolGoals.ContainsKey("Defeat")) {
+            return;
+        }
+
+        var zone = RandomizerStatsManager.CurrentZone(true);
+        if (RandomizerTrackedDataManager.Zones.ContainsValue(zone)) {
+            MultiBoolGoals["Defeat"][DefeatKey(kind, zone)] = true;
+        }
+    }
+
     public static int TeleporterIndex(string identifier) {
         return Array.IndexOf(Teleporters, identifier);
     }
@@ -850,24 +871,10 @@ public static class BingoController {
         }
     }
 
-    // Every ordered pair of spirit wells. Only completed journeys are serialized:
-    // 132 subgoals would otherwise ride along on every update, and the server reads
-    // a missing subgoal as incomplete.
-    public class JourneyGoal : MultiBoolGoal {
-        public JourneyGoal(string name, List<BoolGoal> subgoals) : base(name, subgoals) {
-        }
-
-        public static void mk() {
-            var pairs = new List<BoolGoal>();
-            for (var from = 0; from < Teleporters.Length; from++)
-                for (var to = 0; to < Teleporters.Length; to++) {
-                    if (from != to) {
-                        pairs.Add(new BitfieldBoolGoal(JourneyKey(Teleporters[from], Teleporters[to]), JourneyBaseId + from, to));
-                    }
-                }
-
-            var goal = new JourneyGoal("Journey", pairs);
-            MultiBoolGoals[goal.Name] = goal;
+    // Only completed subgoals are serialized: a hundred-odd subgoals would otherwise ride
+    // along on every update, and the server reads a missing subgoal as incomplete.
+    public class SparseMultiBoolGoal : MultiBoolGoal {
+        public SparseMultiBoolGoal(string name, List<BoolGoal> subgoals) : base(name, subgoals) {
         }
 
         public override string ToJson() {
@@ -883,6 +890,44 @@ public static class BingoController {
             }
 
             return jsonStr.TrimEnd(',') + "}, \"total\": " + count + "}";
+        }
+    }
+
+    // Every ordered pair of spirit wells.
+    public class JourneyGoal : SparseMultiBoolGoal {
+        public JourneyGoal(string name, List<BoolGoal> subgoals) : base(name, subgoals) {
+        }
+
+        public static void mk() {
+            var pairs = new List<BoolGoal>();
+            for (var from = 0; from < Teleporters.Length; from++)
+                for (var to = 0; to < Teleporters.Length; to++) {
+                    if (from != to) {
+                        pairs.Add(new BitfieldBoolGoal(JourneyKey(Teleporters[from], Teleporters[to]), JourneyBaseId + from, to));
+                    }
+                }
+
+            var goal = new JourneyGoal("Journey", pairs);
+            MultiBoolGoals[goal.Name] = goal;
+        }
+    }
+
+    // One bit per (enemy kind, zone): the kind picks the item, the zone the bit. The
+    // server draws both card shapes from these same keys.
+    public class DefeatGoal : SparseMultiBoolGoal {
+        public DefeatGoal(string name, List<BoolGoal> subgoals) : base(name, subgoals) {
+        }
+
+        public static void mk() {
+            var pairs = new List<BoolGoal>();
+            for (var kind = 0; kind < BingoEnemyKinds.Kinds.Length; kind++) {
+                foreach (var zone in RandomizerTrackedDataManager.Zones) {
+                    pairs.Add(new BitfieldBoolGoal(DefeatKey(BingoEnemyKinds.Kinds[kind], zone.Value), DefeatBaseId + kind, zone.Key));
+                }
+            }
+
+            var goal = new DefeatGoal("Defeat", pairs);
+            MultiBoolGoals[goal.Name] = goal;
         }
     }
 
@@ -1126,6 +1171,7 @@ public static class BingoController {
                 );
 
                 JourneyGoal.mk();
+                DefeatGoal.mk();
 
                 MultiBoolGoal.mk(
                     "EnterArea",

@@ -272,6 +272,7 @@ Enhanced mode -- April Fools :)
 2500-2625 - Bingo goals
 2626 - Bingo last touched square
 2627-2638 - Bingo journey bitfields by origin well
+2639-2650 - Bingo defeat bitfields by enemy kind (BingoEnemyKinds.Kinds order), bits = zones (RandomizerTrackedDataManager.Zones order)
 
 ==== Begin Persists Through Death Zone ===
 4000 - Deaths everywhere
