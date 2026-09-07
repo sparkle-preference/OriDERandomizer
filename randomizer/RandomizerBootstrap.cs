@@ -848,6 +848,48 @@ public class RandomizerBootstrap {
         lavaSequence.Actions.Add(deactivateRocksAction);
     }
 
+    // a RespawnTime of 0 is how vanilla spells "never"; the usual enemy gets a minute off screen
+    private static void GiveRespawnTime<T>(Transform root, float seconds) where T : RespawningPlaceholder {
+        foreach (var placeholder in root.GetComponentsInChildren<T>(true)) {
+            placeholder.RespawnTime = seconds;
+        }
+    }
+
+    private static void BootstrapForlornApproach(SceneRoot sceneRoot) {
+        var enemies = sceneRoot.transform.FindChild("enemies");
+        GiveRespawnTime<AcidSlugEnemyPlaceholder>(enemies, 60f);
+        GiveRespawnTime<ShootingSpiderPlaceholder>(enemies, 60f);
+    }
+
+    private static void BootstrapValleyBashCave(SceneRoot sceneRoot) {
+        GiveRespawnTime<AcidSlugEnemyPlaceholder>(sceneRoot.transform.FindChild("enemies"), 60f);
+    }
+
+    private static void BootstrapBlackrootTeleporterFronkey(SceneRoot sceneRoot) {
+        sceneRoot.transform.FindChild("enemies/enemiesByDifficulty/target/jumperEnemyPlaceholder").GetComponent<JumperEnemyPlaceholder>().RespawnOnTimeout = true;
+    }
+
+    // Vanilla switches this fronkey off for good once the floor breaks; now he only slows down.
+    private static void BootstrapSpiritTreeFronkey(SceneRoot sceneRoot) {
+        var floor = sceneRoot.transform.FindChild("stompableFloorSunkenGlades/stompableFloorA").GetComponent<StompableFloor>();
+        var deathSequence = floor.transform.FindChild("*deathSequence").GetComponent<ActionSequence>();
+        deathSequence.Actions.Remove(deathSequence.transform.FindChild("03. Deactivate jumpingSootEnemyPlaceholder").GetComponent<ActionMethod>());
+        floor.DamageReciever.OnDeathEvent.Add(delegate { SetSpiritTreeFronkeyRespawn(sceneRoot, true); });
+    }
+
+    // a checkpoint can put the floor back, so this runs after every serialize
+    private static void BootstrapSpiritTreeFronkeyAfterSerialize(SceneRoot sceneRoot) {
+        var floor = sceneRoot.transform.FindChild("stompableFloorSunkenGlades/stompableFloorA").GetComponent<StompableFloor>();
+        SetSpiritTreeFronkeyRespawn(sceneRoot, floor.DamageReciever.NoHealthLeft);
+    }
+
+    // quick and on screen while the floor puzzle wants him, the usual off-screen minute after
+    private static void SetSpiritTreeFronkeyRespawn(SceneRoot sceneRoot, bool floorBroken) {
+        var fronkey = sceneRoot.transform.FindChild("enemies/jumperEnemyPlaceholder").GetComponent<JumperEnemyPlaceholder>();
+        fronkey.RespawnOnScreen = !floorBroken;
+        fronkey.RespawnTime = floorBroken ? 60f : 7f;
+    }
+
     private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>> {
         { "moonGrottoRopeBridge", BootstrapMoonGrottoBridge },
         { "mountHoruHubMid", BootstrapMountHoruHub },
@@ -870,6 +912,10 @@ public class RandomizerBootstrap {
         { "forlornRuinsC", BootstrapForlornRuinsBridge },
         { "horuFieldsB", BootstrapHoruFieldsPushBlock },
         { "mountHoruMovingLaser", BootstrapL4 },
+        { "forlornRuinsKuroHideStreamlined", BootstrapForlornApproach },
+        { "westGladesBashCave", BootstrapValleyBashCave },
+        { "mangroveFallsDashEscalation", BootstrapBlackrootTeleporterFronkey },
+        { "upperGladesSwarmIntroduction", BootstrapSpiritTreeFronkey },
     };
 
     private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();
@@ -884,6 +930,7 @@ public class RandomizerBootstrap {
         { "moonGrottoEnemyPuzzle", BootstrapMoonGrottoMiniboss },
         { "sunkenGladesOriRoom", BootstrapSeinRoomWall },
         { "ginsoTreePuzzles", BootstrapGinsoLowerMiniboss },
+        { "upperGladesSwarmIntroduction", BootstrapSpiritTreeFronkeyAfterSerialize },
     };
 
     private static List<string> s_bootstrappedScenesAfterSerialize = new List<string>();
