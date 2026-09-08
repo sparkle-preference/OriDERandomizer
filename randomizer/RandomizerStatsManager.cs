@@ -175,6 +175,8 @@ public static class RandomizerStatsManager {
         SceneToZone.Add("valleyOfTheWindGetChargeJump", "sorrowPass");
         SceneToZone.Add("valleyOfTheWindIcePuzzle", "sorrowPass");
         SceneToZone.Add("valleyOfTheWindHubL", "sorrowPass");
+        // no area cage covers the hub's right half, so without this a kill there has no zone
+        SceneToZone.Add("valleyOfTheWindHubR", "sorrowPass");
         SceneToZone.Add("valleyOfTheWindWideLeft", "sorrowPass");
         SceneToZone.Add("valleyOfTheWindGauntlet", "sorrowPass");
         SceneToZone.Add("valleyOfTheWindLaserShaft", "sorrowPass");
