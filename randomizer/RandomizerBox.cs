@@ -283,6 +283,16 @@ public static class RandomizerBoxes {
         var next = off ? value | mask : value & ~mask;
         if (next != value) {
             Characters.Sein.Inventory.SetRandomizerItem(id, next);
+            if (!off) {
+                // Check only fires on entry, and a box that was off while Ori stood in it is
+                // already marked entered; forget that so switching it on lands under their feet
+                foreach (var box in Active) {
+                    if (box.Bit == bit) {
+                        box.Inside = false;
+                    }
+                }
+            }
+
             Version++;
         }
     }

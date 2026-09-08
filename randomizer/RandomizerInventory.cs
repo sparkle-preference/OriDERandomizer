@@ -141,17 +141,17 @@ public class RandomizerInventory : SaveSerialize {
         return int.TryParse(text, out value);
     }
 
-    // RI: slot=value, slot+=value, slot-=value, the value being a number or {n}
+    // RI: slot=value, or slot+=value with any of + - * / %, the value being a number or {n}
     public static void Apply(string text) {
         var eq = (text ?? "").IndexOf('=');
         if (eq < 1) {
-            Randomizer.LogError("RI|" + text + ": a slot write is n=v, n+=v or n-=v");
+            Randomizer.LogError("RI|" + text + ": a slot write is n=v, n+=v, n-=v, n*=v, n/=v or n%=v");
             return;
         }
 
         var left = text.Substring(0, eq).Trim();
         var op = left.Length > 0 ? left[left.Length - 1] : '=';
-        if (op == '+' || op == '-') {
+        if (Operators.IndexOf(op) >= 0) {
             left = left.Substring(0, left.Length - 1).Trim();
         } else {
             op = '=';
@@ -159,12 +159,32 @@ public class RandomizerInventory : SaveSerialize {
 
         int id, value;
         if (!int.TryParse(left, out id) || !Value(text.Substring(eq + 1), out value)) {
-            Randomizer.LogError("RI|" + text + ": a slot write is n=v, n+=v or n-=v");
+            Randomizer.LogError("RI|" + text + ": a slot write is n=v, n+=v, n-=v, n*=v, n/=v or n%=v");
             return;
         }
 
-        Write(id, op == '+' ? Read(id) + value : op == '-' ? Read(id) - value : value);
+        if (op == '=') {
+            Write(id, value);
+            return;
+        }
+
+        var was = Read(id);
+        // both would throw out of the pickup rather than write a slot
+        if ((op == '/' || op == '%') && (value == 0 || (was == int.MinValue && value == -1))) {
+            Randomizer.LogError("RI|" + text + (value == 0 ? ": division by zero" : ": that result is too big for a slot"));
+            return;
+        }
+
+        switch (op) {
+            case '+': Write(id, was + value); break;
+            case '-': Write(id, was - value); break;
+            case '*': Write(id, was * value); break;
+            case '/': Write(id, was / value); break;
+            case '%': Write(id, was % value); break;
+        }
     }
+
+    private const string Operators = "+-*/%";
 
     private static readonly Regex SlotRef = new Regex(@"\{(-?\d+)\}");
 
