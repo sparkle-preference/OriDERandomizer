@@ -866,7 +866,10 @@ public class RandomizerBootstrap {
     }
 
     private static void BootstrapBlackrootTeleporterFronkey(SceneRoot sceneRoot) {
-        sceneRoot.transform.FindChild("enemies/enemiesByDifficulty/target/jumperEnemyPlaceholder").GetComponent<JumperEnemyPlaceholder>().RespawnOnTimeout = true;
+        var enemies = sceneRoot.transform.FindChild("enemies/enemiesByDifficulty");
+        // the gate leaves him out of Relaxed, and logic that counts on him has to hold there too
+        enemies.GetComponent<DifficultyCondition>().Easy = true;
+        enemies.FindChild("target/jumperEnemyPlaceholder").GetComponent<JumperEnemyPlaceholder>().RespawnOnTimeout = true;
     }
 
     // Vanilla switches this fronkey off for good once the floor breaks; now he only slows down.
