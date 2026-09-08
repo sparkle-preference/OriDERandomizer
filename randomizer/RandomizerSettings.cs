@@ -248,6 +248,7 @@ public static class RandomizerSettings {
         Customization.TempRowBrightness = new FloatSetting("Temp Row Brightness", 0.8f, "Brightness of the temporary-resource rows, relative to the base bars.", false);
 
         QOL.AbilityMenuOpacity = new FloatSetting("Ability Menu Opacity", 0.5f, "(0.0-1.0) The opacity of the ability menu when performing a Save Anywhere.", false);
+        QOL.PauseMenuOpacity = new FloatSetting("Pause Menu Opacity", 1.0f, "(0.0-1.0) The opacity of the pause menu.", false);
         QOL.CursorLock = new BoolSetting("Cursor Lock", false, "True: Locks the mouse cursor inside the window\nFalse (default): Vanilla behavior (cursor can leave the Ori window in borderless / windowed mode).", false);
 
         Practice.Folder = new StringSetting("Practice Folder", "practice", "Where practice segments (.bfrp files) are kept: a folder name inside the game folder, or a full path.", false);
@@ -387,6 +388,8 @@ public static class RandomizerSettings {
 
     public static class QOL {
         public static FloatSetting AbilityMenuOpacity;
+
+        public static FloatSetting PauseMenuOpacity;
 
         public static BoolSetting CursorLock;
     }

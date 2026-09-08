@@ -549,6 +549,12 @@ public static class Randomizer {
             }
         }
 
+        // parent opacity multiplies the menu's own fade, so 1.0 leaves the pause menu alone
+        var pauseMenu = InventoryManager.Instance;
+        if (pauseMenu != null && pauseMenu.NavigationManager.IsVisible && pauseMenu.NavigationManager.FadeAnimator) {
+            pauseMenu.NavigationManager.FadeAnimator.SetParentOpacity(RandomizerSettings.QOL.PauseMenuOpacity);
+        }
+
         if (Characters.Sein && !Characters.Sein.IsSuspended) {
             RandomizerBonus.Update();
             if (!ColorShift) {
