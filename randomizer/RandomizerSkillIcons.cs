@@ -27,6 +27,7 @@ public static class RandomizerSkillIcons {
     // that keep whatever art was last set. Each pass has to recognize both.
     public static void Apply(SkillTreeManager tree) {
         try {
+            var rect = CommonRect(tree);
             foreach (var lane in new[] { tree.EnergyLane, tree.UtilityLane, tree.CombatLane }) {
                 if (lane == null || lane.Skills == null) {
                     continue;
@@ -46,7 +47,7 @@ public static class RandomizerSkillIcons {
 
                     Texture earlier;
                     shown.TryGetValue(skill.Ability, out earlier);
-                    Replace(tree, texture, skill.Icon.sharedMaterial.mainTexture, earlier);
+                    Replace(tree, texture, rect, skill.Icon.sharedMaterial.mainTexture, earlier);
                     shown[skill.Ability] = texture;
                 }
             }
@@ -56,6 +57,38 @@ public static class RandomizerSkillIcons {
     }
 
     private static readonly Dictionary<AbilityType, Texture> shown = new Dictionary<AbilityType, Texture>();
+
+    // One rect for every icon we replace. The vanilla meshes are traced per ability and their
+    // bounds differ, so art shared between two nodes only lines up once they agree on a rect.
+    private static Bounds CommonRect(SkillTreeManager tree) {
+        var rect = new Bounds();
+        var found = false;
+        foreach (var lane in new[] { tree.EnergyLane, tree.UtilityLane, tree.CombatLane }) {
+            if (lane == null || lane.Skills == null) {
+                continue;
+            }
+
+            foreach (var skill in lane.Skills) {
+                if (skill == null || skill.Icon == null || !Art.ContainsKey(skill.Ability)) {
+                    continue;
+                }
+
+                var filter = skill.Icon.GetComponent<MeshFilter>();
+                if (filter == null || filter.sharedMesh == null) {
+                    continue;
+                }
+
+                if (found) {
+                    rect.Encapsulate(filter.sharedMesh.bounds);
+                } else {
+                    rect = filter.sharedMesh.bounds;
+                    found = true;
+                }
+            }
+        }
+
+        return rect;
+    }
 
     // Cave plus one find, composited on the CPU: both layers are full-canvas PNGs already in
     // position, and LoadImage leaves them readable. The cave draws OVER the find, so a symbol
@@ -133,19 +166,19 @@ public static class RandomizerSkillIcons {
     // A node's art is drawn by several renderers with their own materials: the node itself,
     // the large hover art, and LearntSkillGlow once the node is earned. They share the
     // texture, so matching on it is what reaches all three.
-    private static void Replace(SkillTreeManager tree, Texture replacement, params Texture[] matches) {
+    private static void Replace(SkillTreeManager tree, Texture replacement, Bounds rect, params Texture[] matches) {
         foreach (var renderer in tree.GetComponentsInChildren<Renderer>(true)) {
-            Retexture(renderer, replacement, matches);
+            Retexture(renderer, replacement, rect, matches);
         }
 
         if (tree.LargeIcon != null) {
             foreach (var renderer in tree.LargeIcon.GetComponentsInChildren<Renderer>(true)) {
-                Retexture(renderer, replacement, matches);
+                Retexture(renderer, replacement, rect, matches);
             }
         }
     }
 
-    private static void Retexture(Renderer renderer, Texture replacement, Texture[] matches) {
+    private static void Retexture(Renderer renderer, Texture replacement, Bounds rect, Texture[] matches) {
         var material = renderer.sharedMaterial;
         if (material == null) {
             return;
@@ -164,18 +197,22 @@ public static class RandomizerSkillIcons {
         }
 
         material.mainTexture = replacement;
-        Quadify(renderer.GetComponent<MeshFilter>());
+        Quadify(renderer.GetComponent<MeshFilter>(), rect);
     }
 
     // Each icon is drawn on a mesh traced to the shape of its own art -- 400-500 verts, not a
-    // quad -- so replacement art would be clipped to the vanilla silhouette. A quad over the
-    // same bounds lets the texture's own alpha be the shape.
-    private static void Quadify(MeshFilter filter) {
-        if (filter == null || filter.sharedMesh == null || filter.sharedMesh.name == QuadName) {
+    // quad -- so replacement art would be clipped to the vanilla silhouette. One shared quad
+    // lets the texture's own alpha be the shape, at a rect every replaced icon agrees on.
+    private static void Quadify(MeshFilter filter, Bounds bounds) {
+        if (filter == null || filter.sharedMesh == null) {
             return;
         }
 
-        var bounds = filter.sharedMesh.bounds;
+        if (quad != null && quadRect == bounds) {
+            filter.sharedMesh = quad;
+            return;
+        }
+
         var mesh = new Mesh { name = QuadName };
         mesh.vertices = new[] {
             new Vector3(bounds.min.x, bounds.min.y, 0f),
@@ -189,8 +226,13 @@ public static class RandomizerSkillIcons {
         mesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
+        quad = mesh;
+        quadRect = bounds;
         filter.sharedMesh = mesh;
     }
+
+    private static Mesh quad;
+    private static Bounds quadRect;
 
     private const string QuadName = "RandomizerIconQuad";
 
