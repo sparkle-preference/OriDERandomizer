@@ -893,6 +893,15 @@ public class RandomizerBootstrap {
         fronkey.RespawnTime = floorBroken ? 60f : 7f;
     }
 
+    // the VanillaRespawns seed flag leaves these enemies as shipped
+    private static Action<SceneRoot> UnlessVanillaRespawns(Action<SceneRoot> bootstrap) {
+        return sceneRoot => {
+            if (!Randomizer.VanillaRespawns) {
+                bootstrap(sceneRoot);
+            }
+        };
+    }
+
     private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>> {
         { "moonGrottoRopeBridge", BootstrapMoonGrottoBridge },
         { "mountHoruHubMid", BootstrapMountHoruHub },
@@ -915,10 +924,10 @@ public class RandomizerBootstrap {
         { "forlornRuinsC", BootstrapForlornRuinsBridge },
         { "horuFieldsB", BootstrapHoruFieldsPushBlock },
         { "mountHoruMovingLaser", BootstrapL4 },
-        { "forlornRuinsKuroHideStreamlined", BootstrapForlornApproach },
-        { "westGladesBashCave", BootstrapValleyBashCave },
-        { "mangroveFallsDashEscalation", BootstrapBlackrootTeleporterFronkey },
-        { "upperGladesSwarmIntroduction", BootstrapSpiritTreeFronkey },
+        { "forlornRuinsKuroHideStreamlined", UnlessVanillaRespawns(BootstrapForlornApproach) },
+        { "westGladesBashCave", UnlessVanillaRespawns(BootstrapValleyBashCave) },
+        { "mangroveFallsDashEscalation", UnlessVanillaRespawns(BootstrapBlackrootTeleporterFronkey) },
+        { "upperGladesSwarmIntroduction", UnlessVanillaRespawns(BootstrapSpiritTreeFronkey) },
     };
 
     private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();
@@ -933,7 +942,7 @@ public class RandomizerBootstrap {
         { "moonGrottoEnemyPuzzle", BootstrapMoonGrottoMiniboss },
         { "sunkenGladesOriRoom", BootstrapSeinRoomWall },
         { "ginsoTreePuzzles", BootstrapGinsoLowerMiniboss },
-        { "upperGladesSwarmIntroduction", BootstrapSpiritTreeFronkeyAfterSerialize },
+        { "upperGladesSwarmIntroduction", UnlessVanillaRespawns(BootstrapSpiritTreeFronkeyAfterSerialize) },
     };
 
     private static List<string> s_bootstrappedScenesAfterSerialize = new List<string>();

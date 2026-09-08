@@ -114,6 +114,7 @@ public static class Randomizer {
             RandomizerDeathLink.Reset();
             EnhancedMode = false;
             EnhancedSeinInSeed = false;
+            VanillaRespawns = false;
             SpawnPosition = new Vector3(0, 0, 0);
             SpawnScene = null;
             ShouldHideGladesStart = false;
@@ -1439,6 +1440,8 @@ public static class Randomizer {
                 Keysanity.IsActive = true;
             } else if (flag == "enhanced") {
                 EnhancedMode = true;
+            } else if (flag == "vanillarespawns") {
+                VanillaRespawns = true;
             }
 
             if (flag == "seintalks") {
@@ -1906,6 +1909,8 @@ public static class Randomizer {
     public static bool EnhancedMode;
 
     public static bool EnhancedSeinInSeed;
+
+    public static bool VanillaRespawns;
 
     public static Vector3 SpawnPosition;
 
