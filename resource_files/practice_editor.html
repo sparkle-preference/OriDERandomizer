@@ -15,20 +15,30 @@
   .cols section { margin-bottom: 0; }
   .cols + .cols, .cols + section, section + .cols { margin-top: 14px; }
   @media (max-width: 1300px) { .cols { grid-template-columns: 1fr; } }
+  /* the box list grows without limit, so everything else shares the other column */
+  .stack { display: grid; gap: 14px; align-content: start; min-width: 0; }
   .row { margin: 6px 0; }
   label { display: inline-block; margin: 4px 14px 4px 0; }
   input[type=text], input[type=number], select { background: #0f1317; color: #e6e9ee; border: 1px solid #3a4553; border-radius: 4px; padding: 4px 6px; }
   input[type=number] { width: 66px; }
+  #boxes input[type=number], .variant input[type=number] { width: 54px; -moz-appearance: textfield; }
+  #boxes input[type=number]::-webkit-inner-spin-button, .variant input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=color] { vertical-align: middle; }
   button { background: #2f6fd6; color: #fff; border: 0; border-radius: 4px; padding: 6px 12px; cursor: pointer; margin-right: 6px; }
   button.quiet { background: #3a4553; }
   button.danger { background: #8b2f2f; }
   button.on { background: #2f9e6a; }
+  button.icon { padding: 4px 7px; line-height: 1; }
+  button.icon svg { width: 13px; height: 13px; fill: currentColor; display: block; }
   button:disabled { opacity: .45; cursor: default; }
   table { border-collapse: collapse; width: 100%; }
   th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #2b333d; vertical-align: top; }
   th { color: #8b95a3; font-weight: normal; }
-  td .pick { min-width: 240px; }
+  td .pick { min-width: 190px; }
+  /* nine columns in half a page: let it scroll rather than push into the next one */
+  #boxes, .variant table { min-width: 0; }
+  .boxwrap { overflow-x: auto; }
+  tr.goal td { background: #184323; }
   tr.flash td { background: #2f4f7a; transition: background 1.5s; }
   .chips span { display: inline-block; background: #2b333d; border-radius: 12px; padding: 2px 10px; margin: 2px 4px 2px 0; }
   .chips span b { cursor: pointer; margin-left: 6px; color: #ff9a9a; }
@@ -43,10 +53,11 @@
   .variant, .group { border: 1px dashed #3a4553; border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
   details summary { cursor: pointer; color: #9fc6ff; }
   /* the pickup picker: chips and a typed search over the site's item groups */
-  .pick { position: relative; display: inline-block; vertical-align: middle; min-width: 340px; max-width: 100%; background: #0f1317; border: 1px solid #3a4553; border-radius: 4px; padding: 2px 4px; }
+  .pick { position: relative; display: flex; flex-wrap: wrap; align-items: center; vertical-align: middle; min-width: 340px; max-width: 100%; background: #0f1317; border: 1px solid #3a4553; border-radius: 4px; padding: 2px 4px; }
+  .pick > span { min-width: 0; }
   .pick .chip { display: inline-block; background: #2b333d; border-radius: 12px; padding: 1px 8px; margin: 2px 4px 2px 0; cursor: pointer; }
   .pick .chip b { margin-left: 6px; color: #ff9a9a; }
-  .pick input { border: 0; background: transparent; color: inherit; min-width: 180px; padding: 3px 4px; outline: none; }
+  .pick input { border: 0; background: transparent; color: inherit; flex: 1 1 60px; min-width: 60px; padding: 3px 4px; outline: none; }
   .pick .menu { display: none; position: absolute; z-index: 1000; left: 0; right: 0; top: 100%; max-height: 280px; overflow: auto; background: #1c2229; border: 1px solid #3a4553; border-radius: 4px; }
   .pick .menu.open { display: block; }
   .pick .grp { color: #8b95a3; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 5px 8px 2px; }
@@ -116,25 +127,17 @@
 <div class="cols">
 <section>
   <h2>Boxes</h2>
-  <table id="boxes"><thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th>color</th><th>hidden</th><th></th></tr></thead><tbody></tbody></table>
   <div class="row"><button class="quiet" id="addBox">add box</button> <button class="quiet" id="addGoal">add goal box</button></div>
   <div class="muted">Drawn boxes appear here after a save in the game. An item box gives its pickup once, a repeat item box every time, a solid box is a block in the world, and a hidden box works unseen. The goal box is part of the end condition.</div>
+  <div class="boxwrap"><table id="boxes"><thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th></th><th></th><th></th></tr></thead><tbody></tbody></table></div>
 </section>
 
+<div class="stack">
 <section>
   <h2>Shuffle groups</h2>
   <div id="groups"></div>
   <button class="quiet" id="addGroup">add group</button>
   <div class="muted">Each attempt scatters the group's pickups over as many of its locations, chosen fresh.</div>
-</section>
-</div>
-
-<div class="cols">
-<section>
-  <h2>Ghosts <span class="muted" id="ghostVariant"></span></h2>
-  <div id="ghosts" class="muted">none</div>
-  <div class="row"><button class="quiet" id="pinGhost">pin the most recent run</button></div>
-  <div class="muted">A pinned run is raced instead of the fastest until it is removed.</div>
 </section>
 
 <section>
@@ -143,6 +146,14 @@
   <button class="quiet" id="addVariant">add variant</button>
   <div class="muted">A segment with variants always runs one of them: they share the start and the end condition, and each keeps its own loadout, boxes, history and ghosts.</div>
 </section>
+
+<section>
+  <h2>Ghosts <span class="muted" id="ghostVariant"></span></h2>
+  <div id="ghosts" class="muted">none</div>
+  <div class="row"><button class="quiet" id="pinGhost">pin the most recent run</button></div>
+  <div class="muted">A pinned run is raced instead of the fastest until it is removed.</div>
+</section>
+</div>
 </div>
 
 <div id="status">
@@ -331,6 +342,7 @@
         s.onclick = function () { var l = list().slice(); l.splice(i, 1); commit(l); input.value = v; input.focus(); open(); };
         s.appendChild(b); chips.appendChild(s);
       });
+      input.placeholder = list().length ? '' : (cfg.placeholder || 'type to search items');
     }
     function add(value) { var l = list().slice(); l.push(value); commit(l); input.value = ''; close(); input.focus(); }
     function open() {
@@ -467,7 +479,39 @@
     return out;
   }
 
-  function styleMarkers() {
+  function styleMarkers() { styleLocations(); rebuildShapes(); }
+
+  // A box that moved or changed colour touches its own layers. Rebuilding every shape
+  // means tearing down and recreating a rectangle, a tooltip and four drag handles for
+  // every box on the map, which is a lot of work to move one number.
+  function shapeFor(coords) {
+    for (var i = 0; i < state.shapes.length; i++)
+      if (state.shapes[i].entry.b.box === coords) return state.shapes[i];
+    return null;
+  }
+  function moveBox(coords) {
+    var s = shapeFor(coords);
+    if (!s) return rebuildShapes();
+    if (s.redraw) s.redraw(); else s.layers[0].setBounds(bounds(coords));
+  }
+  // a drag already knows its box: those four inputs are the whole table update
+  function syncRow(entry) {
+    var row = document.getElementById(entry.rowId); if (!row) return;
+    var inputs = row.querySelectorAll('input[type=number]'), b = entry.b.box;
+    for (var k = 0; k < 4 && k < inputs.length; k++) inputs[k].value = b[k];
+    if (entry.rowId === 'box-shared-goal') $('goalBox').textContent = b.join(', ');
+  }
+  function recolorBox(coords) {
+    var s = shapeFor(coords);
+    if (!s) return rebuildShapes();
+    s.layers[0].setStyle({ color: boxColor(s.entry), dashArray: hidden(s.entry.b) ? '4 4' : null });
+  }
+  // a variant's box wears the variant colour unless it was given one of its own
+  function boxColor(entry) {
+    return entry.owner !== 'shared' && !entry.b.color ? '#c59bff' : colorOf(entry.b);
+  }
+
+  function styleLocations() {
     var end = (state.segment.end || {}).locations || [];
     var groups = state.segment.shuffle || [];
     state.catalog.locations.forEach(function (loc) {
@@ -476,10 +520,13 @@
       var dim = (matches(loc) ? 1 : 0.15) * (state.editing ? 0.5 : 1);
       m.setStyle({ radius: inEnd || inGroup ? 8 : 5, color: inEnd ? '#8fe3a0' : (inGroup ? '#ffd27f' : '#000'), weight: inEnd || inGroup ? 3 : 1, opacity: dim, fillOpacity: 0.9 * dim });
     });
+  }
+
+  function rebuildShapes() {
     state.shapes.forEach(function (s) { s.layers.forEach(function (l) { state.map.removeLayer(l); }); }); state.shapes = [];
     allBoxes().forEach(function (entry) {
       var b = entry.b.box; if (!b || b.length !== 4) return;
-      var color = entry.owner !== 'shared' && !entry.b.color ? '#c59bff' : colorOf(entry.b);
+      var color = boxColor(entry);
       var r = L.rectangle(bounds(b), { color: color, weight: 2, fillOpacity: state.editing ? 0.3 : 0.15, dashArray: hidden(entry.b) ? '4 4' : null }).addTo(state.map);
       r.bindTooltip(entry.label, { sticky: true });
       var shape = { entry: entry, layers: [r] };
@@ -505,6 +552,7 @@
       b[0] = x1; b[1] = y1; b[2] = x2; b[3] = y2;
     }
     function redraw() { rect.setBounds(bounds(b)); shape.layers.slice(1).forEach(function (h, k) { h.setLatLng(cornerLatLng(k)); }); }
+    shape.redraw = redraw;   // so a number typed in the table moves this box and nothing else
     function cornerLatLng(k) { var xs = [b[0], b[2], b[2], b[0]], ys = [b[1], b[1], b[3], b[3]]; return [ys[k], xs[k]]; }
     for (var k = 0; k < 4; k++) (function (k) {
       var h = L.marker(cornerLatLng(k), { draggable: true, icon: L.divIcon({ className: 'handle', iconSize: [10, 10] }) }).addTo(map);
@@ -514,7 +562,7 @@
         else if (k === 2) { b[2] = p.lng; b[3] = p.lat; } else { b[0] = p.lng; b[3] = p.lat; }
         rect.setBounds(bounds(b));
       });
-      h.on('dragend', function () { normalize(); render(); });
+      h.on('dragend', function () { normalize(); redraw(); syncRow(shape.entry); });
       shape.layers.push(h);
     })(k);
     var start = null, from = null;
@@ -535,7 +583,7 @@
       if (!start) return;
       start = null; map.off('mousemove', move); map.off('mouseup', stop); L.DomEvent.off(document, 'mouseup', stop);
       map.dragging.enable();
-      normalize(); render();
+      normalize(); redraw(); syncRow(shape.entry);
     }
   }
   $('editBoxes').onclick = function () {
@@ -618,25 +666,31 @@
     renderChips($('targetChips'), chosen, locName);
   }
   $('addLoc').onclick = function () { var key = parseInt($('loc').value, 10); if (isNaN(key)) return; var list = currentList(); if (list.indexOf(key) < 0) list.push(key); render(); };
-  $('locSearch').oninput = function () { renderLocationPicker(); if (state.map) styleMarkers(); };
+  // per keystroke: the boxes have not moved, only which locations are dimmed
+  $('locSearch').oninput = function () { renderLocationPicker(); if (state.map) styleLocations(); };
   $('pickEnd').onclick = function () { state.target = 'end'; render(); $('map').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
   // the shared table leads with the goal box, which is really the end condition's
+  var EYE = '<svg viewBox="0 0 576 512"><path d="M572.52 241.4C518.29 135.59 410.93 64 288 64S57.68 135.64 3.48 241.41a32.35 32.35 0 0 0 0 29.19C57.71 376.41 165.07 448 288 448s230.32-71.64 284.52-177.41a32.35 32.35 0 0 0 0-29.19zM288 400a144 144 0 1 1 144-144 143.93 143.93 0 0 1-144 144zm0-240a95.31 95.31 0 0 0-25.31 3.79 47.85 47.85 0 0 1-66.9 66.9A95.78 95.78 0 1 0 288 160z"/></svg>';
+  var EYE_OFF = '<svg viewBox="0 0 640 512"><path d="M320 400c-75.85 0-137.25-58.71-142.9-133.11L72.2 185.82c-13.79 17.3-26.48 35.59-36.72 55.59a32.35 32.35 0 0 0 0 29.19C89.71 376.41 197.07 448 320 448c26.91 0 52.87-4 77.89-10.46L346 397.39a144.13 144.13 0 0 1-26 2.61zm313.82 58.1l-110.55-85.44a331.25 331.25 0 0 0 81.25-102.07 32.35 32.35 0 0 0 0-29.19C550.29 135.59 442.93 64 320 64a308.15 308.15 0 0 0-147.32 37.7L45.46 3.37A16 16 0 0 0 23 6.18L3.37 31.45A16 16 0 0 0 6.18 53.9l588.36 454.73a16 16 0 0 0 22.46-2.81l19.64-25.27a16 16 0 0 0-2.82-22.45zm-183.72-142l-39.3-30.38A94.75 94.75 0 0 0 416 256a94.76 94.76 0 0 0-121.31-92.21A47.65 47.65 0 0 1 304 192a46.64 46.64 0 0 1-1.54 10l-73.61-56.89A142.31 142.31 0 0 1 320 112a143.92 143.92 0 0 1 144 144c0 21.63-5.29 41.79-13.9 60.11z"/></svg>';
+
   function renderBoxes(tbody, boxes, owner, withGoal) {
     tbody.innerHTML = '';
     var end = state.segment.end || {};
     if (withGoal && end.box && end.box.length === 4) {
-      var tr0 = document.createElement('tr'); tr0.id = 'box-shared-goal';
+      var tr0 = document.createElement('tr'); tr0.id = 'box-shared-goal'; tr0.className = 'goal';
       var goalType = document.createElement('select'); var op0 = document.createElement('option'); op0.textContent = 'goal'; goalType.appendChild(op0); goalType.disabled = true;
       tr0.appendChild(td(goalType));
-      for (var g = 0; g < 4; g++) (function (g) { tr0.appendChild(td(numInput(end.box[g], function (v) { end.box[g] = v; styleMarkers(); $('goalBox').textContent = end.box.join(', '); }))); })(g);
+      for (var g = 0; g < 4; g++) (function (g) { tr0.appendChild(td(numInput(end.box[g], function (v) { end.box[g] = v; moveBox(end.box); $('goalBox').textContent = end.box.join(', '); }))); })(g);
       var ends = document.createElement('span'); ends.className = 'muted'; ends.textContent = 'ends the run'; tr0.appendChild(td(ends));
       tr0.appendChild(td(document.createElement('span'))); tr0.appendChild(td(document.createElement('span')));
-      var clear = document.createElement('button'); clear.className = 'danger'; clear.textContent = 'remove'; clear.onclick = function () { delete end.box; render(); };
+      var clear = document.createElement('button'); clear.className = 'danger icon'; clear.innerHTML = '&times;'; clear.title = 'Remove the goal box';
+      clear.onclick = function () { delete end.box; render(); };
       tr0.appendChild(td(clear));
       tbody.appendChild(tr0);
     }
-    boxes.forEach(function (b, i) {
+    boxes.map(function (b, i) { return [b, i]; }).reverse().forEach(function (pair) {
+      var b = pair[0], i = pair[1];
       var tr = document.createElement('tr'); tr.id = 'box-' + owner + '-' + i;
       var types = { kill: 'kill', item: 'item', ritem: 'repeat item', solid: 'solid' };
       var typeSel = document.createElement('select');
@@ -647,22 +701,29 @@
       tr.appendChild(td(typeSel));
       var coords = b.box && b.box.length === 4 ? b.box : [0, 0, 0, 0];
       b.box = coords;
-      for (var k = 0; k < 4; k++) (function (k) { tr.appendChild(td(numInput(coords[k], function (v) { coords[k] = v; styleMarkers(); }))); })(k);
+      for (var k = 0; k < 4; k++) (function (k) { tr.appendChild(td(numInput(coords[k], function (v) { coords[k] = v; moveBox(coords); }))); })(k);
       if (b.type === 'kill' || b.type === 'solid') {
         var none = document.createElement('span'); none.className = 'muted'; none.textContent = b.type === 'solid' ? 'stand on it, climb it, jump off it' : 'kills Ori';
         tr.appendChild(td(none));
       } else {
-        tr.appendChild(td(pickSelect({ get: function () { return splitCode(b.give); }, set: function (l) { b.give = joinCodes(l); styleMarkers(); }, placeholder: 'what it gives; a message is SH|text' })));
+        tr.appendChild(td(pickSelect({ get: function () { return splitCode(b.give); }, set: function (l) { b.give = joinCodes(l); rebuildShapes(); }, placeholder: 'what it gives; a message is SH|text' })));
       }
       // any box can wear its own color; the type's is the default
-      var color = document.createElement('input'); color.type = 'color'; color.value = colorOf(b); color.disabled = hidden(b); color.title = b.color ? 'own color' : 'the default for a ' + types[b.type] + ' box';
-      color.onchange = function () { b.color = color.value.replace('#', ''); styleMarkers(); };
+      var color = document.createElement('input'); color.type = 'color'; color.title = b.color ? 'own color' : 'the default for a ' + types[b.type] + ' box';
+      color.onchange = function () { b.color = color.value.replace('#', ''); recolorBox(coords); };
       tr.appendChild(td(color));
       // invisible: it still works, nobody sees it
-      var hide = document.createElement('input'); hide.type = 'checkbox'; hide.checked = hidden(b);
-      hide.onchange = function () { if (hide.checked) b.color = 'none'; else delete b.color; render(); };
+      var hide = document.createElement('button'); hide.className = 'quiet icon';
+      var drawEye = function () {
+        hide.innerHTML = hidden(b) ? EYE_OFF : EYE;
+        hide.title = hidden(b) ? 'Invisible in game. Click to make it visible.' : 'Visible in game. Click to make it invisible (it stays dashed here).';
+        color.value = colorOf(b); color.disabled = hidden(b);
+      };
+      drawEye();
+      hide.onclick = function () { if (hidden(b)) delete b.color; else b.color = 'none'; drawEye(); recolorBox(coords); };
       tr.appendChild(td(hide));
-      var del = document.createElement('button'); del.className = 'danger'; del.textContent = 'remove'; del.onclick = function () { boxes.splice(i, 1); render(); };
+      var del = document.createElement('button'); del.className = 'danger icon'; del.innerHTML = '&times;'; del.title = 'Remove this box';
+      del.onclick = function () { boxes.splice(i, 1); render(); };
       tr.appendChild(td(del));
       tbody.appendChild(tr);
     });
@@ -731,12 +792,13 @@
       inv.appendChild(pickSelect({ get: function () { return v.inventory || []; }, set: function (l) { v.inventory = l; }, placeholder: 'given at the start' }));
       box.appendChild(inv);
       var h = document.createElement('div'); h.className = 'muted'; h.style.marginTop = '6px'; h.textContent = 'Boxes only this variant has'; box.appendChild(h);
-      var table = document.createElement('table');
-      table.innerHTML = '<thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th>color</th><th>hidden</th><th></th></tr></thead><tbody></tbody>';
-      renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id, false);
-      box.appendChild(table);
-      var add = document.createElement('button'); add.className = 'quiet'; add.textContent = 'add box'; add.style.marginTop = '6px'; add.onclick = function () { v.boxes.push(freshBox('kill')); render(); };
+      var add = document.createElement('button'); add.className = 'quiet'; add.textContent = 'add box'; add.style.margin = '6px 0'; add.onclick = function () { v.boxes.push(freshBox('kill')); render(); };
       box.appendChild(add);
+      var table = document.createElement('table');
+      table.innerHTML = '<thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th></th><th></th><th></th></tr></thead><tbody></tbody>';
+      renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id, false);
+      var wrap = document.createElement('div'); wrap.className = 'boxwrap'; wrap.appendChild(table);
+      box.appendChild(wrap);
       root.appendChild(box);
     });
   }
