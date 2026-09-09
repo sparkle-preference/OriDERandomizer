@@ -200,9 +200,8 @@ public static class RandomizerSkillIcons {
         Quadify(renderer.GetComponent<MeshFilter>(), rect);
     }
 
-    // Each icon is drawn on a mesh traced to the shape of its own art -- 400-500 verts, not a
-    // quad -- so replacement art would be clipped to the vanilla silhouette. One shared quad
-    // lets the texture's own alpha be the shape, at a rect every replaced icon agrees on.
+    // a vanilla icon's mesh is traced to its own art, which would clip the replacement:
+    // one shared quad lets the texture's alpha be the shape
     private static void Quadify(MeshFilter filter, Bounds bounds) {
         if (filter == null || filter.sharedMesh == null) {
             return;

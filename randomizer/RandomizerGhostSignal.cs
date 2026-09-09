@@ -38,9 +38,8 @@ public static class RandomizerGhostSignal {
 
     public static bool Joined { get; private set; }
 
-    // How often a joined client says so again. Participation dies with the socket it was
-    // announced on, and the socket underneath can be replaced without this code seeing it --
-    // the native layer reconnects on its own. Saying it again is idempotent and costs a frame.
+    // participation dies with the socket it was announced on, and that socket can be
+    // replaced without this code seeing it
     private const float ReassertAfter = 15f;
 
     // Told, not polled: the roster lives on the socket, so a socket that closes takes

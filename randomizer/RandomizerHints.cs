@@ -67,7 +67,7 @@ public static class RandomizerHints {
         () => "Ori Rando, like many things in life, is what you make of it",
         () => powerSkills.Unheld().NonEmpty() ? $"{powerSkills.Unheld().ToNames().RandFrom()} might be one of the best skills in the game, but it's nothing compared to ${lifeSkills.RandFrom()}$" : null,
         () => goodSkills.Held().NonEmpty() ? $"You might not have everything you need yet, but at least you have {goodSkills.Held().ToNames().RandFrom()}" : null
-    };  
+    };
 
     private static List<AbilityType> InvCheck(this List<AbilityType> skills, bool held = true) => Characters.Sein ? skills.Where(sk => Characters.Sein.PlayerAbilities.HasAbility(sk) == held).ToList() : new List<AbilityType>();
     private static List<AbilityType> Held(this List<AbilityType> skills) => skills.InvCheck(true);
@@ -76,10 +76,10 @@ public static class RandomizerHints {
     private static T RandFrom<T>(this List<T> source) => source[hintRandom.Next(source.Count)];
     private static bool NonEmpty<T>(this List<T> source) => source.Count > 0;
 
-    private static List<AbilityType> powerSkills = new List<AbilityType>() {AbilityType.ChargeJump, AbilityType.Bash, AbilityType.Dash};
-    private static List<AbilityType> goodSkills  = new List<AbilityType>() {AbilityType.ChargeJump, AbilityType.Bash, AbilityType.Dash, AbilityType.DoubleJump, AbilityType.Grenade, AbilityType.Stomp};
+    private static List<AbilityType> powerSkills = new List<AbilityType>() { AbilityType.ChargeJump, AbilityType.Bash, AbilityType.Dash };
+    private static List<AbilityType> goodSkills = new List<AbilityType>() { AbilityType.ChargeJump, AbilityType.Bash, AbilityType.Dash, AbilityType.DoubleJump, AbilityType.Grenade, AbilityType.Stomp };
 
-    private static List<string> lifeSkills = new List<string>() {"Curiosity", "Determination", "Kindness", "Hope", "Creativity", "Bravery", "Patience"}; 
+    private static List<string> lifeSkills = new List<string>() { "Curiosity", "Determination", "Kindness", "Hope", "Creativity", "Bravery", "Patience" };
 
     // I personally think it's very funny that this will trigger for the odd-numbered leagues
     private static bool SuggestBingo() {
