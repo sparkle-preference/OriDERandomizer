@@ -38,18 +38,27 @@ public static class RandomizerGhostSignal {
 
     public static bool Joined { get; private set; }
 
+    // How often a joined client says so again. Participation dies with the socket it was
+    // announced on, and the socket underneath can be replaced without this code seeing it --
+    // the native layer reconnects on its own. Saying it again is idempotent and costs a frame.
+    private const float ReassertAfter = 15f;
+
     // Told, not polled: the roster lives on the socket, so a socket that closes takes
     // participation with it and a new one has never been told.
     public static void Apply() {
         var want = RandomizerSyncManager.WsOpen && NativeWebSocket.RtcAvailable &&
             RandomizerSettings.Customization.ShowOtherPlayers.Value;
-        if (want == Joined) {
+        var now = Time.realtimeSinceStartup;
+        var told = announcedOn == RandomizerSyncManager.WsGeneration && now - announcedAt < ReassertAfter;
+        if (want == Joined && (!want || told)) {
             return;
         }
 
         Joined = want;
         if (RandomizerSyncManager.WsOpen) {
             NativeWebSocket.SendText(want ? "ghosts:1" : "ghosts:0");
+            announcedOn = RandomizerSyncManager.WsGeneration;
+            announcedAt = now;
         }
 
         if (!want) {
@@ -343,6 +352,11 @@ public static class RandomizerGhostSignal {
     private static readonly byte[] Buffer = new byte[RandomizerGhostPacket.MaxSize];
 
     private static bool Minded;
+
+    // which socket the last ghosts: frame went out on, and when
+    private static int announcedOn = -1;
+
+    private static float announcedAt;
 
     private static int Host;
 

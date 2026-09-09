@@ -106,6 +106,7 @@ public static class RandomizerSyncManager {
             NativeWebSocket.SetAutoReconnect(true);
             NativeWebSocket.Start();
             wsStartedUrl = url;
+            WsGeneration++;
             Randomizer.log($"ws diag: socket started for {url} (ca: {NativeWebSocket.CaPath ?? "none"})");
         } catch (Exception e) {
             // file-only: LogError renders on-screen and itself NREs during
@@ -116,6 +117,9 @@ public static class RandomizerSyncManager {
     }
 
     public static bool WsOpen => !wsDead && NativeWebSocket.Loaded && wsStartedUrl != null && NativeWebSocket.GetState() == NativeWebSocket.SocketState.Open;
+
+    // bumped on every socket we start; anything registered against a socket has to say so again
+    public static int WsGeneration { get; private set; }
 
     public static void Update() {
         try {
@@ -181,10 +185,9 @@ public static class RandomizerSyncManager {
                 NativeWebSocket.SendText("goals:");
             }
 
-            if (WsOpen != wsWasOpen) {
-                RandomizerGhostSignal.Apply();
-            }
-
+            // every frame, not on the open/closed edge: a socket can be replaced without this
+            // ever reading false, and Apply returns immediately once it has nothing to say
+            RandomizerGhostSignal.Apply();
             wsWasOpen = WsOpen;
             Silent();
             PumpSidecar();
