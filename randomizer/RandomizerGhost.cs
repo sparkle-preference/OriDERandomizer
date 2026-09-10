@@ -9,7 +9,7 @@ using UnityEngine;
 // Translucent replays, to race against or to watch other players by. Samples carry their own
 // timestamp so a ghost recorded at one framerate plays back correctly at another, and they
 // store the sprite's transform rather than Ori's state: facing, roll and bash spin come along
-// for free. This half owns recording and the shared lookups; RandomizerGhostView draws one.
+// for free. RandomizerGhost owns recording and the shared lookups; RandomizerGhostView renders.
 public static class RandomizerGhost {
     public struct Sample {
         public float Time;
@@ -20,7 +20,7 @@ public static class RandomizerGhost {
         public float AnimationTime;
         public int Charge;
         public float BashAngle;
-        // where the arrow belongs, which is the thing being bashed rather than Ori
+        // Arrow goes here and not on Ori
         public Vector2 BashTarget;
         public Vector2 GrenadeAim;
         public float WallAim;
@@ -35,8 +35,6 @@ public static class RandomizerGhost {
             Record();
         }
 
-        // a throw out of Update goes to Player.log and silently stops everything below it;
-        // say so once in randomizer.log instead
         try {
             RandomizerGhostNet.Update();
             RandomizerGhostSignal.Update();
@@ -79,8 +77,7 @@ public static class RandomizerGhost {
         }
     }
 
-    // Keyed on the player, never on arrival order: the same player has to be the same color on
-    // everyone's screen, and arrival order differs per client. Player zero is your own replay.
+    // Keyed on the player. Player zero is your own replay.
     private static Color Shade(IGhostSource source) {
         var id = source.PlayerId;
         return id < 1 ? Tint : Palette[(id - 1) % Palette.Length];
@@ -131,8 +128,7 @@ public static class RandomizerGhost {
 
     public static bool Playing { get { return Shown.Count > 0; } }
 
-    // Racing is one press: the new run starts recording and the old one starts running
-    // beside it. Recording alone is what you get the first time, with no ghost stored yet.
+    // TODO: do we use this anymore?
     public static void ToggleRace() {
         var starting = !Recording;
         ToggleRecording();
@@ -143,6 +139,7 @@ public static class RandomizerGhost {
         }
     }
 
+    // TODO: do we use this anymore?
     public static void ToggleRecording() {
         if (Recording) {
             Recording = false;
@@ -169,6 +166,7 @@ public static class RandomizerGhost {
         Randomizer.showHint(RandomizerUI.Message.InfoMessage("Ghost: recording", 2));
     }
 
+    // TODO: do we use this anymore?
     public static void TogglePlayback() {
         if (Playing) {
             Clear();
@@ -246,8 +244,8 @@ public static class RandomizerGhost {
         public Color Shade;
     }
 
-    // Every other player worth drawing on the map; a culled ghost still has its position
-    // updated. Player zero -- your own replay -- is not another player.
+    // List of peer players we want drawn on map; a culled ghost still has its position
+    // updated. Player zero is not a peer.
     public static void Markers(List<Marker> into) {
         into.Clear();
         for (var i = 0; i < Sources.Count; i++) {
@@ -264,7 +262,7 @@ public static class RandomizerGhost {
         }
     }
 
-    // The live Ori as a Sample, for sending. Identical to what Record stores, minus the
+    // The live Ori  as a Sample, for sending. Identical to what Record stores, minus the
     // recording clock: a packet carries the sender's own time.
     public static bool SampleLive(out Sample sample) {
         return Capture(Time.time, out sample);
@@ -278,7 +276,7 @@ public static class RandomizerGhost {
     }
 
     internal static bool Capture(float at, out Sample sample) {
-        sample = new Sample();
+        sample = new Sample();    
         var sprite = Downed() ? null : Sprite();
         if (sprite == null) {
             return Dying(at, out sample);
@@ -334,6 +332,7 @@ public static class RandomizerGhost {
         }
     }
 
+    // I'm dying, Squirtle
     private static bool Dying(float at, out Sample sample) {
         sample = Held;
         if (!Have || Time.time - DiedAt > DeathHold) {
@@ -351,8 +350,7 @@ public static class RandomizerGhost {
         return true;
     }
 
-    // What Ori's own death spawns, kept from the last local death; before one has happened,
-    // the provider is asked the same way with an ordinary enemy death.
+    // Cached copy of the death effect.
     internal static GameObject DeathEffect() {
         if (DeathPrefab != null) {
             return DeathPrefab;
@@ -388,7 +386,7 @@ public static class RandomizerGhost {
             return float.NaN;
         }
 
-        var game = Object.FindObjectOfType<BashAttackGame>();
+        var game = BashGame();
         if (game == null) {
             return float.NaN;
         }
@@ -426,7 +424,7 @@ public static class RandomizerGhost {
         // FindObjectsOfTypeAll hands back prefabs and half-wired instances too; a skill flag
         // is never worth throwing over, sampling has to survive anywhere in the game
         try {
-            var ability = Ability<SeinDoubleJump>();
+            var ability = Jumper();
             if (ability == null || ability.ExtraJumpsAvailable != 2) {
                 return false;
             }
@@ -516,8 +514,40 @@ public static class RandomizerGhost {
         return ChargeState;
     }
 
-    // Abilities are CharacterStates and are off most of the time, so only FindObjectsOfTypeAll
-    // finds them -- and it also returns prefab assets, in no order. A prefab has no scene.
+    internal static SeinDoubleJump Jumper() {
+        if (JumpState == null) {
+            JumpState = Ability<SeinDoubleJump>();
+        }
+
+        return JumpState;
+    }
+
+    internal static SeinStomp Stomper() {
+        if (StompState == null) {
+            StompState = Ability<SeinStomp>();
+        }
+
+        return StompState;
+    }
+
+    internal static SeinBashAttack Basher() {
+        if (BashState == null) {
+            BashState = Ability<SeinBashAttack>();
+        }
+
+        return BashState;
+    }
+
+    private static BashAttackGame BashGame() {
+        if (BashGameFound == null || !BashGameFound.gameObject.activeInHierarchy) {
+            BashGameFound = Object.FindObjectOfType<BashAttackGame>();
+        }
+
+        return BashGameFound;
+    }
+
+    // Abilities are CharacterStates and are off when not found so getting them
+    // has to be done by runtime. This search is nontrivial - callers should cache.
     internal static T Ability<T>() where T : MonoBehaviour {
         var all = Resources.FindObjectsOfTypeAll<T>();
         T fallback = null;
@@ -566,7 +596,7 @@ public static class RandomizerGhost {
     }
 
     // A cloned effect leaves two things behind: its fader, which would switch off what Paint
-    // switched on, and its SoundSource, since a ghost is silent.
+    // switched on, and its SoundSource, since ghosts are silent.
     internal static void Hush(GameObject target) {
         foreach (var sound in target.GetComponentsInChildren<SoundSource>(true)) {
             Object.Destroy(sound);
@@ -892,6 +922,14 @@ public static class RandomizerGhost {
     private static float RecordStart;
 
     private static SeinChargeJumpCharging ChargeState;
+
+    private static SeinDoubleJump JumpState;
+
+    private static SeinStomp StompState;
+
+    private static SeinBashAttack BashState;
+
+    private static BashAttackGame BashGameFound;
 
     private static SeinSoulFlame FlameState;
 

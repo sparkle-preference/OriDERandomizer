@@ -273,7 +273,7 @@ public class RandomizerGhostView {
         }
 
         if (ArrowObject == null) {
-            var ability = RandomizerGhost.Ability<SeinBashAttack>();
+            var ability = RandomizerGhost.Basher();
             if (ability == null || ability.BashAttackGamePrefab == null) {
                 return;
             }
@@ -445,7 +445,7 @@ public class RandomizerGhostView {
         }
 
         if (sample.Animation == "doubleJump") {
-            var ability = RandomizerGhost.Ability<SeinDoubleJump>();
+            var ability = RandomizerGhost.Jumper();
             if (ability != null) {
                 // the burst is turned to face the way Ori was travelling, which the recorded
                 // positions give us without having to store it
@@ -456,7 +456,7 @@ public class RandomizerGhostView {
                     RandomizerGhost.JumpBurstAlpha);
             }
         } else if (sample.Animation == "stompLand") {
-            var ability = RandomizerGhost.Ability<SeinStomp>();
+            var ability = RandomizerGhost.Stomper();
             if (ability != null) {
                 Burst(ability.StompLandEffect,
                     GhostTransform.position + RandomizerGhost.FeetOffset, Quaternion.identity,
