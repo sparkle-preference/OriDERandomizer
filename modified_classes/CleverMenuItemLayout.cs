@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CleverMenuItemLayout : MonoBehaviour {
@@ -135,14 +136,14 @@ public class CleverMenuItemLayout : MonoBehaviour {
     public Alignment VerticalAlignment;
 
     // 0 lays out every row, which is what every layout that has not opted in wants
-    public int MaxVisible;
+    [NonSerialized] public int MaxVisible;
 
-    public CleverMenuItemSelectionManager Selection;
+    [NonSerialized] public CleverMenuItemSelectionManager Selection;
 
-    public int ScrollTop;
+    [NonSerialized] public int ScrollTop;
 
     // 0 = no fade; otherwise the opacity of a window edge that has more rows past it
-    public float EdgeFade;
+    [NonSerialized] public float EdgeFade;
 
     public enum Alignment {
         Top,

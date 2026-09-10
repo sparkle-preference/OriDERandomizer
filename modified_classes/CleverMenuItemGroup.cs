@@ -18,10 +18,10 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase {
     }
 
     // off by default: this class lays out the inventory and the map as well
-    public bool HideImmediately;
+    [NonSerialized] public bool HideImmediately;
 
     // a nav column that dims behind the panel it opened reads as disabled
-    public bool StayLit;
+    [NonSerialized] public bool StayLit;
 
     public override bool CanBeEntered => !CanBeEnteredCondition || CanBeEnteredCondition.Validate(null);
 
