@@ -62,6 +62,11 @@ public static class RandomizerGhostMap {
 
     private static GameObject At(int index, AreaMapUI map) {
         while (Icons.Count <= index) {
+            // run. Wait for the map to be all the way up.
+            if (map.FadeOutAnimator == null || map.FadeOutAnimator.FinalOpacity < 1f) {
+                return null;
+            }
+
             var made = Object.Instantiate(map.PlayerPositionMarkerPrefab);
             made.name = "randomizerPeerMarker";
             made.transform.parent = map.FadeOutGroup;

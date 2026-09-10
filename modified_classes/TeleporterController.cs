@@ -158,8 +158,8 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public static void Activate(string identifier, bool natural) {
-        // The teleporter is activated before anyone is told, because telling can fail: a server
-        // that rejects the frame or a bingo board that never loaded must not cost a warp point.
+        // need this so we don't spam manual activations
+        var known = RandomizerSyncManager.isTeleporterActivated(identifier, false);
         foreach (var gameMapTeleporter in Instance.Teleporters) {
             if (gameMapTeleporter.Identifier == identifier) {
                 gameMapTeleporter.Activated = true;
@@ -167,7 +167,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         }
 
         RandomizerStatsManager.TeleporterActivated(identifier);
-        if (natural) {
+        if (natural && !known) {
             RandomizerSyncManager.FoundTP(identifier);
         }
 

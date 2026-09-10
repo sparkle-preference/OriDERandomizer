@@ -735,7 +735,8 @@ public static class RandomizerSyncManager {
         }
 
         try {
-            if (TPIds.ContainsKey(identifier) && !isTeleporterActivated(identifier, false)) {
+            // the caller decides whether this is a new one: by here it is already activated
+            if (TPIds.ContainsKey(identifier)) {
                 FoundPickup(TPIds[identifier], 1); // this used to be -1 but multiworlds need that
             }
         } catch (Exception e) {
