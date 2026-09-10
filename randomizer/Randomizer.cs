@@ -578,7 +578,9 @@ public static class Randomizer {
                 RandomizerChaosManager.Update();
             }
 
-            if (Sync) {
+            // A practice save has none of the team's items and stands where its segment starts:
+            // ticking would grant it the team's kit and hand the server that state as the player's.
+            if (Sync && !PracticeController.Active) {
                 RandomizerSyncManager.Update();
             }
 
