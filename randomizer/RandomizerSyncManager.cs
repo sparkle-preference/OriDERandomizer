@@ -280,9 +280,8 @@ public static class RandomizerSyncManager {
                 foundHandle = 0;
                 FoundSidecarDone(status);
             } else if (Time.realtimeSinceStartup - foundSentAt > SidecarLimit) {
-                // A request the sidecar never finishes would hold the queue shut for the rest
-                // of the run: nothing else clears SendingPickup, and the socket retry wants a
-                // token this lane sets to zero.
+                // nothing else clears SendingPickup, so a request the sidecar never
+                // finishes would hold the queue shut for the rest of the run
                 SidecarForget(foundHandle);
                 foundHandle = 0;
                 RequeuePickup();

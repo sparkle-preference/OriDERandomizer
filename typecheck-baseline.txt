@@ -5,3 +5,4 @@ Randomizer.cs: error CS0246: The type or namespace name 'POINT' could not be fou
 RandomizerLocationManager.cs: error CS0246: The type or namespace name 'Protogen' could not be found (are you missing a using directive or an assembly reference?)
 RandomizerLocationManager.cs: error CS0246: The type or namespace name 'AreaGraph' could not be found (are you missing a using directive or an assembly reference?)
 RandomizerRebinding.cs: error CS0426: The type name 'ControllerButton' does not exist in the type 'PlayerInputRebinding'
+RandomizerGhost.cs: error CS0122: 'BashAttackGame' is inaccessible due to its protection level

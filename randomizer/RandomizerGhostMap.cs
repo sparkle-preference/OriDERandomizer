@@ -62,7 +62,7 @@ public static class RandomizerGhostMap {
 
     private static GameObject At(int index, AreaMapUI map) {
         while (Icons.Count <= index) {
-            // run. Wait for the map to be all the way up.
+            // an icon made before the map is all the way up is lost with the fade-in
             if (map.FadeOutAnimator == null || map.FadeOutAnimator.FinalOpacity < 1f) {
                 return null;
             }

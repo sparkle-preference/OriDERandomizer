@@ -262,7 +262,7 @@ public static class RandomizerGhost {
         }
     }
 
-    // The live Ori  as a Sample, for sending. Identical to what Record stores, minus the
+    // The live Ori as a Sample, for sending. Identical to what Record stores, minus the
     // recording clock: a packet carries the sender's own time.
     public static bool SampleLive(out Sample sample) {
         return Capture(Time.time, out sample);
@@ -276,7 +276,7 @@ public static class RandomizerGhost {
     }
 
     internal static bool Capture(float at, out Sample sample) {
-        sample = new Sample();    
+        sample = new Sample();
         var sprite = Downed() ? null : Sprite();
         if (sprite == null) {
             return Dying(at, out sample);
