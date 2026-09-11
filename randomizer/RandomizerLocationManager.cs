@@ -328,6 +328,26 @@ public class RandomizerLocationManager {
             primedPaths[ksDoor.Source].Add(ksDoor.Destination);
         }
 
+        if (KeyTiers != null) {
+            // tiered seeds: a door is passable once lifetime keystones clear its tier
+            // and never by spending, so the engine's keystone routes are switched off
+            var ksLifetime = Randomizer.Inventory.GetRandomizerItem(70);
+            foreach (var ksDoor in KeystoneDoors.Values) {
+                var pos = DoorWirePos[ksDoor.Source];
+                if (pos >= KeyTiers.Length || KeyTiers[pos] <= 0 || ksLifetime < KeyTiers[pos]) {
+                    continue;
+                }
+
+                if (!primedPaths.ContainsKey(ksDoor.Source)) {
+                    primedPaths[ksDoor.Source] = new HashSet<string>();
+                }
+
+                primedPaths[ksDoor.Source].Add(ksDoor.Destination);
+            }
+
+            currentInventory.Keystones = 0;
+        }
+
         if (Randomizer.InLogicWarps) {
             foreach (var teleporter in TeleporterController.Instance.Teleporters) {
                 if (Randomizer.WarpLogicLocations.Contains(teleporter.Identifier)) {
@@ -445,7 +465,7 @@ public class RandomizerLocationManager {
 
     public static bool DoorLogicValid;
 
-    // wire order, from the seed's KeyTiers flag (AP exported-keystone seeds)
+    // wire order, from the seed's KeyTiers line (AP seeds)
     public static int[] KeyTiers;
 
     private static HashSet<MoonGuid> warnedDoors = new HashSet<MoonGuid>();
