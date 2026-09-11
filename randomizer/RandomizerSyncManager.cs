@@ -135,6 +135,7 @@ public static class RandomizerSyncManager {
             // pickups wait in the queue until a transport exists (with the
             // http fallback gone, that means until the socket reconnects)
             if (SendingPickup == null && PickupQueue.Count > 0
+                && Time.realtimeSinceStartup >= foundRetryAt
                 && ((WsOpen && !wsFoundUnsupported) || HttpLaneOpen)) {
                 SendingPickup = PickupQueue.Dequeue();
                 wsFoundAttempts = 0;
@@ -202,6 +203,7 @@ public static class RandomizerSyncManager {
                 NativeWebSocket.SendText("tick:" + TickPayload());
             } else if (HttpLaneOpen && tickHandle == 0) {
                 tslu = 0f;
+                tickSentAt = Time.realtimeSinceStartup;
                 tickHandle = NativeWebSocket.HttpBegin("POST", RootUrl + "/tick/", TickPayload(), FormType);
             }
         } catch (Exception e) {
@@ -264,6 +266,10 @@ public static class RandomizerSyncManager {
                         Randomizer.LogError("Co-op server error, try reloading the seed (Alt+L)");
                     }
                 }
+            } else if (Time.realtimeSinceStartup - tickSentAt > SidecarLimit) {
+                // ticks only go out while this is clear, so a stuck one is the end of them
+                SidecarForget(tickHandle);
+                tickHandle = 0;
             }
         }
 
@@ -273,12 +279,19 @@ public static class RandomizerSyncManager {
                 NativeWebSocket.HttpRelease(foundHandle);
                 foundHandle = 0;
                 FoundSidecarDone(status);
+            } else if (Time.realtimeSinceStartup - foundSentAt > SidecarLimit) {
+                // A request the sidecar never finishes would hold the queue shut for the rest
+                // of the run: nothing else clears SendingPickup, and the socket retry wants a
+                // token this lane sets to zero.
+                SidecarForget(foundHandle);
+                foundHandle = 0;
+                RequeuePickup();
             }
         }
     }
 
     // Gone revokes RBs and drops, NotAcceptable and success drop, other
-    // statuses re-issue, transport errors drop
+    // statuses re-issue, transport errors go back in the queue
     private static void FoundSidecarDone(int status) {
         if (SendingPickup == null) {
             return;
@@ -293,13 +306,11 @@ public static class RandomizerSyncManager {
         } else if (status == 406 || (status >= 200 && status < 300)) {
             SendingPickup = null;
         } else if (status > 0) {
-            foundHandle = NativeWebSocket.HttpBegin("GET", SendingPickup.GetURL().ToString(), null, null);
-            if (foundHandle == 0) {
-                RequeuePickup();
-            }
+            SendFoundHttp();
         } else {
-            Randomizer.log($"found fallback: transport error {status}, dropping");
-            SendingPickup = null;
+            Randomizer.log($"found fallback: transport error {status}, requeued");
+            foundRetryAt = Time.realtimeSinceStartup + RetryGap;
+            RequeuePickup();
         }
     }
 
@@ -311,6 +322,7 @@ public static class RandomizerSyncManager {
         }
 
         SidecarForget(foundHandle);
+        foundSentAt = Time.realtimeSinceStartup;
         foundHandle = NativeWebSocket.HttpBegin("GET", SendingPickup.GetURL().ToString(), null, null);
         if (foundHandle == 0) {
             RequeuePickup();
@@ -882,6 +894,19 @@ public static class RandomizerSyncManager {
     private static int wsFoundAttempts;
 
     private static bool wsFoundUnsupported;
+
+    private static float foundSentAt;
+
+    private static float tickSentAt;
+
+    // a sidecar request that has not landed by now is never going to
+    private const float SidecarLimit = 15f;
+
+    // how long a lane that failed at the transport gets left alone
+    private const float RetryGap = 5f;
+
+    private static float foundRetryAt;
+
     private static bool wsWasOpen;
 
     private static bool wsNoHttp;
