@@ -134,7 +134,7 @@ public static class RandomizerSyncManager {
 
             // pickups wait in the queue until a transport exists (with the
             // http fallback gone, that means until the socket reconnects)
-            if (SendingPickup == null && PickupQueue.Count > 0
+            if (SendingPickup == null && PickupQueue.Count > 0 && !Refused
                 && Time.realtimeSinceStartup >= foundRetryAt
                 && ((WsOpen && !wsFoundUnsupported) || HttpLaneOpen)) {
                 SendingPickup = PickupQueue.Dequeue();
@@ -192,6 +192,12 @@ public static class RandomizerSyncManager {
             wsWasOpen = WsOpen;
             Silent();
             PumpSidecar();
+
+            // a refused game does not tick again until Alt+L: the answer would be the same and
+            // the server closes the socket on every one
+            if (Refused) {
+                return;
+            }
 
             tslu += Time.deltaTime;
             if (tslu < PERIOD) {
@@ -260,11 +266,7 @@ public static class RandomizerSyncManager {
                 if (body != null && Characters.Sein) {
                     ProcessTickResponse(body);
                 } else if (status == 412) {
-                    if (Randomizer.SyncMode == 1 || Randomizer.SyncMode == 5) {
-                        Randomizer.printInfo("Co-op server error, try reloading the seed (Alt+L)");
-                    } else {
-                        Randomizer.LogError("Co-op server error, try reloading the seed (Alt+L)");
-                    }
+                    Refuse();
                 }
             } else if (Time.realtimeSinceStartup - tickSentAt > SidecarLimit) {
                 // ticks only go out while this is clear, so a stuck one is the end of them
@@ -289,8 +291,8 @@ public static class RandomizerSyncManager {
         }
     }
 
-    // Gone revokes RBs and drops, NotAcceptable and success drop, other
-    // statuses re-issue, transport errors go back in the queue
+    // Gone revokes RBs and drops, NotAcceptable and success drop, PreconditionFailed is
+    // the server refusing the game, anything else goes back in the queue after a gap
     private static void FoundSidecarDone(int status) {
         if (SendingPickup == null) {
             return;
@@ -304,10 +306,10 @@ public static class RandomizerSyncManager {
             SendingPickup = null;
         } else if (status == 406 || (status >= 200 && status < 300)) {
             SendingPickup = null;
-        } else if (status > 0) {
-            SendFoundHttp();
+        } else if (status == 412) {
+            Refuse();
         } else {
-            Randomizer.log($"found fallback: transport error {status}, requeued");
+            Randomizer.log($"found fallback: {(status > 0 ? "status" : "transport error")} {status}, requeued");
             foundRetryAt = Time.realtimeSinceStartup + RetryGap;
             RequeuePickup();
         }
@@ -440,8 +442,8 @@ public static class RandomizerSyncManager {
                     BingoController.OnBingoErr();
                 }
 
-                if (what.StartsWith("tick")) {
-                    Refused = true;
+                if (what == "tick:412") {
+                    Refuse();
                 }
 
                 Randomizer.log("ws: server err frame: " + what);
@@ -474,6 +476,8 @@ public static class RandomizerSyncManager {
             SendingPickup = null;
         } else if (status < 300 || status == 406) {
             SendingPickup = null;
+        } else if (status == 412) {
+            Refuse();
         } else if (wsFoundAttempts < 3 && WsOpen) {
             SendFoundWs();
         } else {
@@ -735,9 +739,21 @@ public static class RandomizerSyncManager {
         }
 
         Warned = true;
-        Randomizer.printInfo(Refused
-            ? "@Not syncing@: the server does not know this game. Check your Netcode URLs."
-            : "@Not syncing@: no reply from the server. Check your Netcode URLs.", 480);
+        Randomizer.printInfo("@Not syncing@: no reply from the server. Check your Netcode URLs.", 480);
+    }
+
+    // 412 is the server saying this game is not its. Nothing more goes out until Alt+L; the
+    // pickup in flight waits in the queue with the rest.
+    private static void Refuse() {
+        if (Refused) {
+            return;
+        }
+
+        Refused = true;
+        Warned = true;
+        wsFoundToken = 0;
+        RequeuePickup();
+        Randomizer.printInfo("@Not syncing@: the server does not know this game. Reload the seed (Alt+L) to retry.", 480);
     }
 
     public static void FoundTP(string identifier) {

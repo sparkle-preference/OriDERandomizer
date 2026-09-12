@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -33,6 +34,9 @@ public static class NativeWebSocket {
 
     public const string DllResource = "NativeWebSocket.dll";
     public const string CaResource = "cacert.pem";
+
+    // the sidecar build writes its version string here, and into the dll's version resource
+    public const string VersionResource = ".sidecar_ver";
 
     public static bool Loaded { get; private set; }
     public static string CaPath { get; private set; }
@@ -149,8 +153,8 @@ public static class NativeWebSocket {
         try {
             var dir = ExeDir();
             Randomizer.log($"ws diag: extracting to {dir}");
-            var dllPath = Extract(DllResource, Path.Combine(dir, DllResource));
-            CaPath = Extract(CaResource, Path.Combine(dir, CaResource));
+            var dllPath = Extract(DllResource, Path.Combine(dir, DllResource), SidecarCurrent);
+            CaPath = Extract(CaResource, Path.Combine(dir, CaResource), SameBytes);
             if (dllPath == null) {
                 return false;
             }
@@ -257,7 +261,7 @@ public static class NativeWebSocket {
     // Writes the resource to disk if missing or stale. A locked stale file
     // (second game instance) is used as-is — versions only drift across
     // dll updates, and both instances then hold the same Assembly-CSharp.
-    private static string Extract(string resource, string target) {
+    private static string Extract(string resource, string target, Func<string, byte[], bool> current) {
         var bytes = RandomizerResources.ReadResource(resource);
         if (bytes == null) {
             Randomizer.log($"ws diag: failed to load embedded resource '{resource}'. See previous log for more details.");
@@ -265,7 +269,7 @@ public static class NativeWebSocket {
         }
 
         try {
-            if (!File.Exists(target) || new FileInfo(target).Length != bytes.Length) {
+            if (!current(target, bytes)) {
                 File.WriteAllBytes(target, bytes);
                 Randomizer.log($"ws diag: wrote {resource} ({bytes.Length} bytes) to {target}");
             } else {
@@ -279,6 +283,57 @@ public static class NativeWebSocket {
         }
 
         return target;
+    }
+
+    // The dll's version resource answers in a few KB what its two MB would; a build without the
+    // stamp (older than the sidecar's version.rc) falls back to the bytes.
+    private static bool SidecarCurrent(string path, byte[] bytes) {
+        var want = Stamp();
+        if (want == null) {
+            return SameBytes(path, bytes);
+        }
+
+        var have = SidecarVersion(path);
+        Randomizer.log($"ws diag: sidecar on disk {have ?? "unversioned"}, embedded {want}");
+        return have == want;
+    }
+
+    private static string Stamp() {
+        if (Array.IndexOf(RandomizerResources.ListResources(), VersionResource) < 0) {
+            return null;
+        }
+
+        var bytes = RandomizerResources.ReadResource(VersionResource);
+        return bytes == null ? null : Encoding.ASCII.GetString(bytes).Trim();
+    }
+
+    private static string SidecarVersion(string path) {
+        try {
+            if (!File.Exists(path)) {
+                return null;
+            }
+
+            var version = FileVersionInfo.GetVersionInfo(path).ProductVersion;
+            return string.IsNullOrEmpty(version) ? null : version.Trim();
+        } catch (Exception) {
+            return null;
+        }
+    }
+
+    // a rebuilt file can come out the same size, so the bytes are compared, not measured
+    private static bool SameBytes(string path, byte[] bytes) {
+        if (!File.Exists(path) || new FileInfo(path).Length != bytes.Length) {
+            return false;
+        }
+
+        var have = File.ReadAllBytes(path);
+        for (var i = 0; i < bytes.Length; i++) {
+            if (have[i] != bytes[i]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public static void FinalizeNetwork() {

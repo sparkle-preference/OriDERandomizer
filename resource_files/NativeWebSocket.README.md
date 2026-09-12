@@ -1,11 +1,10 @@
 # NativeWebSocket.dll
 
 The native websocket sidecar the randomizer's netcode uses (the game's
-Mono can't speak modern TLS or websockets). Built from
+Mono can't speak modern TLS or websockets). Our fork of
 [timoschwarzer/dotnet-native-websocket](https://github.com/timoschwarzer/dotnet-native-websocket)
-(MIT) — our changes (thread safety, TLS CA support, connection counters,
-text frames, http downloads) are PR'd upstream rather than forked here;
-only the built binary lives in this repo.
+(MIT) lives in the `dotnet-native-websocket` checkout next to this repo;
+only the built binary lives here.
 
 It also carries `http_download` / `get_last_http_error`, an HTTPS GET
 straight to a file over the same mbedtls stack, which is how the updater
@@ -33,10 +32,13 @@ dll loses ghost multiplayer and keeps everything else.
 
 Two things to know before touching this:
 
-- **libdatachannel needs OpenSSL**, and the vcpkg port exposes no mbedtls
-  option, so the dll now links both TLS stacks. That is most of its size.
-  If it ever matters, upstream libdatachannel does have `USE_MBEDTLS` and
-  a port overlay could reach it.
+- **One TLS stack, mbedtls, and it is shared.** A vcpkg port overlay builds
+  libdatachannel against mbedtls, and mbedtls 3.6 keeps one process-wide
+  PSA crypto core behind every TLS 1.3 handshake. Two things keep that
+  safe with sockets on several threads, and both live in the sidecar's
+  build: ixwebsocket is patched not to free the core on socket close, and
+  mbedtls is built with its `pthreads` feature so the core is locked.
+  Without either, two TLS sockets on two threads can crash the game.
 - **We are a fork now, and that is fine** (Lapis, 2026-08-29). zre made the
   original for us and it has morphed into something else; merging upstream
   is a conversation to have eventually, not a constraint on what goes in.
@@ -63,9 +65,14 @@ history). From the dotnet-native-websocket checkout:
 cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 ^
   -DCMAKE_TOOLCHAIN_FILE=<vcpkg>/scripts/buildsystems/vcpkg.cmake ^
   -DVCPKG_TARGET_TRIPLET=x86-windows-static ^
-  -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+  -DVCPKG_OVERLAY_PORTS=<checkout>/vcpkg-overlays
 cmake --build build --config Release
 ```
 
-Output: `build/bin/Release/NativeWebSocket.dll`, self-contained (static
-CRT, static ixwebsocket + mbedtls). Copy it here, re-embed via dnSpy.
+Output: `build/bin/Release/NativeWebSocket.dll` and `.sidecar_ver`,
+self-contained (static CRT, static ixwebsocket + mbedtls + libdatachannel).
+Copy both here, re-embed via dnSpy. The build stamps the dll's version
+resource with "<version>+<git commit>" and writes the same string to
+`.sidecar_ver`; `NativeWebSocket.Load` reads the extracted dll's stamp and
+rewrites the dll only when it differs from the embedded one, so no player
+reads two MB at launch and no rebuild is mistaken for the last.

@@ -394,6 +394,7 @@
 	"resourceFiles": [
 		"resource_files/hintMessageBackgroundWhite.png",
 		"resource_files/NativeWebSocket.dll",
+		"resource_files/.sidecar_ver",
 		"resource_files/cacert.pem",
 		"resource_files/plant.png",
 		"resource_files/color_wheel.png",
