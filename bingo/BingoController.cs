@@ -112,6 +112,8 @@ public static class BingoController {
                 BoolGoals["FastStompless"].Completed = true;
             } else if (entity.MoonGuid == Drain) {
                 BoolGoals["DrainSwamp"].Completed = true;
+            } else if (entity.MoonGuid == SpiderSac) {
+                BoolGoals["DropSpiderSac"].Completed = true;
             } else if (entity.MoonGuid == CoreSkipRight || entity.MoonGuid == CoreSkipLeft && damage.Type == DamageType.LevelUp) {
                 if (CoreSkipTimeout > 0) {
                     BoolGoals["CoreSkip"].Completed = true;
@@ -1052,6 +1054,7 @@ public static class BingoController {
                 BoolGoal.mk("DrownFrog", 2502);
                 BoolGoal.mk("DrainSwamp", 2503);
                 BoolGoal.mk("WilhelmScream", 2504);
+                BoolGoal.mk("DropSpiderSac", 2521);
                 IntGoals = new Dictionary<string, IntGoal>();
                 IntLocsGoal.mk("MapstoneLocs", 2505, new HashSet<int> { -1840228, -4359680, -4440152, -5640092, 1480360, 2999904, 3439744, 5119584, 7959788 });
                 IntGoal.mk("OpenKSDoors", 2506);
@@ -1591,6 +1594,7 @@ public static class BingoController {
 
     public static MoonGuid StomplessRocks = new MoonGuid(-1118019250, 1080908127, 1929144468, -1515713832);
     public static MoonGuid Drain = new MoonGuid(1711549718, 1225123502, -2036372807, 248162391);
+    public static MoonGuid SpiderSac = new MoonGuid(-498376834, 1193417293, 1785650862, 816998872);  // the breakable that lets the sac fall
     public static MoonGuid CoreSkipRight = new MoonGuid(1165644159, 1142717490, -237578866, -2119320164);
     public static MoonGuid CoreSkipLeft = new MoonGuid(1709969197, 1275364087, -792362568, -1385507206);
     public static HashSet<string> Amphibians = new HashSet<string> { "jumperEnemy", "spitterEnemy", "fastSpitterEnemy" };
