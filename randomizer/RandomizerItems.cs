@@ -89,6 +89,7 @@ public static class RandomizerItems {
         { 114, "Summon Mom" },
         { 115, "Toggle Enhanced Effects" },
         { 116, "Mark" },
+        { 117, "Warp to Grenade" },
         { 1587, "Warp to Credits" },
         { 4087, "Warp to Credits" },
     };
