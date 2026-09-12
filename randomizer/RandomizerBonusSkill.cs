@@ -316,6 +316,17 @@ public static class RandomizerBonusSkill {
                 BonusSkillText(pos + "\n" + scene + "\n" + zone);
                 Randomizer.log("MARK | scene=" + scene + " | zone=" + zone + " | pos=" + pos);
                 break;
+            case 117:
+                if (IsActive(ab)) {
+                    Deactivate(ab);
+                    BonusSkillText("Warp to Grenade disabled");
+                    Characters.Sein.Inventory.SetRandomizerItem(1110, 0);
+                } else {
+                    Activate(ab);
+                    BonusSkillText("Warp to Grenade enabled");
+                    Characters.Sein.Inventory.SetRandomizerItem(1110, 1);
+                }
+                break;
             }
             default:
                 return;
