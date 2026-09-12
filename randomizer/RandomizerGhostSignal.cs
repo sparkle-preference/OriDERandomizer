@@ -16,6 +16,10 @@ using Sample = RandomizerGhost.Sample;
 // The lowest participating player id hosts and offers to everyone else; everyone else answers.
 // No negotiation round, and both sides derive the same answer from the same list. The type
 // rides inside the payload rather than in the frame, so the server stays a dumb relay.
+//
+// Motion is a star: the host hands every packet it receives to every other peer, so one link is
+// enough to see everyone. Packets carry their sender, ghosts are keyed by it, and a client drops
+// its own row on the way back in.
 public static class RandomizerGhostSignal {
     private class Link {
         public int Handle;
@@ -25,7 +29,6 @@ public static class RandomizerGhostSignal {
         public bool Announced;
         public float Since;
         public int Attempt;
-        public LiveGhostSource Remote;
     }
 
     // How long a peer may sit in connecting before the handshake counts as lost; the roster
@@ -98,11 +101,17 @@ public static class RandomizerGhostSignal {
         Host = host;
         Randomizer.log("ghost signal: roster host=" + host + " players=" + present.Count);
 
-        // anyone who left takes their peer with them
+        // anyone who left takes their peer and their ghost with them
         for (var i = Links.Count - 1; i >= 0; i--) {
             if (!present.Contains(Links[i].PlayerId)) {
                 Drop(Links[i]);
                 Links.RemoveAt(i);
+            }
+        }
+
+        foreach (var pid in new List<int>(Ghosts.Keys)) {
+            if (!present.Contains(pid)) {
+                Forget(pid);
             }
         }
 
@@ -248,33 +257,25 @@ public static class RandomizerGhostSignal {
 
             if (!link.Announced && NativeWebSocket.RtcIsOpen(link.Handle)) {
                 link.Announced = true;
-                link.Remote = new LiveGhostSource("p" + link.PlayerId, link.PlayerId,
-                    RandomizerGhost.InterpolationDelay);
-                RandomizerGhost.AddLive(link.Remote);
                 Randomizer.log("ghost signal: channel open to " + link.PlayerId);
-            }
-
-            // a peer retired for silence still has its channel, so the first packet back has
-            // to bring the ghost with it
-            if (link.Announced && NativeWebSocket.RtcHasMessage(link.Handle) &&
-                    (link.Remote == null || !RandomizerGhost.Showing(link.Remote))) {
-                link.Remote = new LiveGhostSource("p" + link.PlayerId, link.PlayerId,
-                    RandomizerGhost.InterpolationDelay);
-                RandomizerGhost.AddLive(link.Remote);
-                Randomizer.log("ghost signal: peer " + link.PlayerId + " came back, ghost restored");
             }
 
             while (NativeWebSocket.RtcHasMessage(link.Handle)) {
                 var packet = NativeWebSocket.RtcGetMessage(link.Handle);
-                if (packet == null || link.Remote == null) {
+                if (packet == null) {
                     continue;
                 }
 
                 Sample got;
                 byte who;
                 ushort seq;
-                if (RandomizerGhostPacket.Decode(packet, packet.Length, out got, out who, out seq)) {
-                    link.Remote.Accept(got);
+                if (!RandomizerGhostPacket.Decode(packet, packet.Length, out got, out who, out seq) || who == Me) {
+                    continue;
+                }
+
+                Feed(who, got);
+                if (Host == Me) {
+                    Relay(packet, link);
                 }
             }
 
@@ -317,7 +318,6 @@ public static class RandomizerGhostSignal {
     private static void Drop(Link link) {
         NativeWebSocket.RtcClose(link.Handle);
         NativeWebSocket.RtcRelease(link.Handle);
-        link.Remote = null;
     }
 
     private static void DropAll() {
@@ -326,6 +326,41 @@ public static class RandomizerGhostSignal {
         }
 
         Links.Clear();
+        foreach (var pid in new List<int>(Ghosts.Keys)) {
+            Forget(pid);
+        }
+    }
+
+    // A sample from a player, whichever link carried it. A ghost retired for silence is no
+    // longer showing, so the first packet back brings it with it.
+    private static void Feed(int who, Sample got) {
+        LiveGhostSource ghost;
+        var known = Ghosts.TryGetValue(who, out ghost);
+        if (!known || !RandomizerGhost.Showing(ghost)) {
+            ghost = new LiveGhostSource("p" + who, who, RandomizerGhost.InterpolationDelay);
+            Ghosts[who] = ghost;
+            RandomizerGhost.AddLive(ghost);
+            Randomizer.log("ghost signal: ghost for " + who + (known ? " restored" : " up"));
+        }
+
+        ghost.Accept(got);
+    }
+
+    // the host's half of the star: every packet in goes out again on every other open link
+    private static void Relay(byte[] packet, Link from) {
+        foreach (var link in Links) {
+            if (link != from && link.Announced && NativeWebSocket.RtcIsOpen(link.Handle)) {
+                NativeWebSocket.RtcSend(link.Handle, packet, packet.Length);
+            }
+        }
+    }
+
+    private static void Forget(int pid) {
+        LiveGhostSource ghost;
+        if (Ghosts.TryGetValue(pid, out ghost)) {
+            RandomizerGhost.Remove(ghost);
+            Ghosts.Remove(pid);
+        }
     }
 
     // "<game>.<player>" -- the player half is who we are on the wire.
@@ -347,6 +382,9 @@ public static class RandomizerGhostSignal {
     }
 
     private static readonly List<Link> Links = new List<Link>();
+
+    // one ghost per player, keyed by the id their packets carry
+    private static readonly Dictionary<int, LiveGhostSource> Ghosts = new Dictionary<int, LiveGhostSource>();
 
     private static readonly byte[] Buffer = new byte[RandomizerGhostPacket.MaxSize];
 
