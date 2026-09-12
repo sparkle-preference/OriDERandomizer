@@ -73,7 +73,7 @@ public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
         }
 
         m_waitDelay = 0.1f;
-        if (Characters.Sein.Inventory.GetRandomizerItem(1010) > 0)
+        if (Characters.Sein.Inventory.GetRandomizerItem(1110) > 0)
 		{
 			Characters.Sein.Position = position;
 			Characters.Sein.Speed = new Vector3(0f, 0f);
