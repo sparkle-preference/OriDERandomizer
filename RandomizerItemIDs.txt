@@ -247,7 +247,6 @@ Enhanced mode -- April Fools :)
 1107 - Enable Debug Movement (DebugMenuB.DebugControlsEnabled)
 1108 - Enable Autoplayer (collects one in-logic location per second)
 1109 - Enable Pickup Drop (grants and deletes pickup.tmp)
-1110 - Enable Warp to Grenade (the bonus skill toggles this state)
 
 
 1600 - Pickups found everywhere
