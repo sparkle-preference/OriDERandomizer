@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using CatlikeCoding.TextBox;
 using UnityEngine;
 
 // The practice chooser: the file select with a segment on every card. A container's
@@ -20,7 +21,11 @@ public static class PracticeSelect {
     // the file select is listing segments rather than saves
     public static bool Choosing;
 
-    public static int Count => Files.Count;
+    // the segment cards, and one more that makes a new segment
+    public static int Count => Files.Count + 1;
+
+    // whether each segment has anything to end it; one without opens in the editor
+    private static readonly List<bool> Ends = new List<bool>();
 
     private static readonly List<BfrpFile> Files = new List<BfrpFile>();
 
@@ -72,6 +77,17 @@ public static class PracticeSelect {
             reopen = false;
             Open();
         }
+
+        // A run parked behind the title is picked back up by loading its slot, so the menu
+        // opens pointing at the way there rather than at whatever was last used.
+        if (screen == TitleScreenManager.Screen.MainMenu && PracticeController.Active) {
+            if (!pointed) {
+                pointed = true;
+                PointAtStart();
+            }
+        } else {
+            pointed = false;
+        }
     }
 
     // the main menu's EXIT GAME ends the parked run rather than the game, and says so
@@ -98,7 +114,7 @@ public static class PracticeSelect {
                 exitLabel = box.MessageProvider;
             }
 
-            box.SetMessage(new MessageDescriptor("EXIT PRACTICE SESSION"));
+            box.SetMessage(new MessageDescriptor("END PRACTICE RUN"));
         } else if (exitLabel != null) {
             box.SetMessageProvider(exitLabel);
             exitLabel = null;
@@ -111,6 +127,22 @@ public static class PracticeSelect {
 
     private static bool exitLabelled;
 
+    private static bool pointed;
+
+    private static void PointAtStart() {
+        if (mainMenu == null) {
+            return;
+        }
+
+        for (var i = 0; i < mainMenu.MenuItems.Count; i++) {
+            var item = mainMenu.MenuItems[i];
+            if (item != null && item.gameObject.name.EndsWith("startGame")) {
+                mainMenu.SetCurrentItem(i);
+                return;
+            }
+        }
+    }
+
     private static void Arm() {
         if (exitScreen == null || exitScreen.MenuItems.Count < 2) {
             return;
@@ -121,7 +153,7 @@ public static class PracticeSelect {
                 if (box.GetComponentInParent<CleverMenuItem>() == null) {
                     exitTitle = box;
                     exitQuestion = box.MessageProvider;
-                    box.SetMessage(new MessageDescriptor("End the practice session?"));
+                    box.SetMessage(new MessageDescriptor("End this practice run?"));
                     break;
                 }
             }
@@ -219,10 +251,14 @@ public static class PracticeSelect {
 
         var slots = SaveSlotsManager.Instance.SaveSlots;
         slots.Clear();
+        Ends.Clear();
         foreach (var file in Files) {
             slots.Add(Info(file));
+            Ends.Add(HasEnd(file));
         }
 
+        // the last card is empty on purpose: it makes a new segment
+        slots.Add(null);
         Choosing = true;
         Randomizer.log("practice: " + Files.Count + " segment(s) in " + Folder);
         TitleScreenManager.SetScreen(TitleScreenManager.Screen.SaveSlots);
@@ -256,20 +292,30 @@ public static class PracticeSelect {
     public static void Shown(SaveSlotsUI screen) {
         Legend(screen, !Choosing);
         if (Choosing) {
-            Rewind(screen);
+            Rewind(screen, Mathf.Clamp(chosen, 0, Mathf.Max(0, Count - 1)));
+        } else if (PracticeController.Active) {
+            // the run's own slot, the middle card: proceed twice from the title is the way
+            // back into a quit-out
+            screen.SetCurrentItemAndScroll(PracticeController.LoadedSlot - PracticeController.FirstSlot);
+            screen.ItemsUI.SnapScroll();
         }
     }
 
-    // The screen keeps the saves' scroll position; a short segment list seen from slot 7 looks empty.
-    private static void Rewind(SaveSlotsUI screen) {
+    // The screen keeps the saves' scroll position; a short segment list seen from slot 7 looks
+    // empty. The chooser keeps its own, so it comes back on the segment you left it on.
+    private static void Rewind(SaveSlotsUI screen, int index) {
         if (savedIndex < 0) {
             savedIndex = screen.CurrentSlotIndex;
         }
 
-        screen.SetCurrentItemAndScroll(0);
+        screen.SetCurrentItemAndScroll(index);
+        screen.ItemsUI.SnapScroll();
     }
 
     private static int savedIndex = -1;
+
+    // the segment card last picked, so the chooser reopens where it was left
+    private static int chosen;
 
     public static void Hidden(SaveSlotsUI screen) {
         if (!Choosing) {
@@ -279,11 +325,13 @@ public static class PracticeSelect {
         // the slot list was the segments; give the next screen the saves back, rebuilt
         // now, while nothing is shown
         Choosing = false;
+        chosen = screen.CurrentSlotIndex;
         Legend(screen, true);
         SaveSlotsManager.PrepareSlots();
         screen.ItemsUI.Refresh();
         if (savedIndex >= 0) {
             screen.SetCurrentItemAndScroll(savedIndex);
+            screen.ItemsUI.SnapScroll();
             savedIndex = -1;
         }
     }
@@ -298,11 +346,15 @@ public static class PracticeSelect {
             return;
         }
 
-        foreach (var name in new[] { "copy", "delete" }) {
-            var entry = legend.FindChild(name);
-            if (entry != null) {
-                entry.gameObject.SetActive(saves);
-            }
+        var copy = legend.FindChild("copy");
+        if (copy != null) {
+            copy.gameObject.SetActive(saves);
+        }
+
+        // a segment is a file: delete means the same thing it means for a save
+        var erase = legend.FindChild("delete");
+        if (erase != null) {
+            erase.gameObject.SetActive(true);
         }
 
         var backups = legend.FindChild("backups");
@@ -334,7 +386,12 @@ public static class PracticeSelect {
         var number = "*" + (position + 1) + ":* ";
         if (Choosing) {
             var file = position < Files.Count ? Files[position] : null;
+            Bare(card, true);
             if (file == null) {
+                card.IsSuspended = true;
+                card.EmptySlot.SetMessage(new MessageDescriptor(Waiting
+                    ? "NEW SEGMENT\nwaiting for base file selection"
+                    : "NEW SEGMENT\npick a starting save on the editor page"));
                 return;
             }
 
@@ -346,18 +403,19 @@ public static class PracticeSelect {
             }
 
             card.AreaName.SetMessage(new MessageDescriptor(number + Name(file)));
-            var best = Best(file, null);
-            card.Time.SetMessage(new MessageDescriptor(best < 0 ? "no runs yet" : "best " + PracticeController.Clock(best)));
+            var unfinished = position < Ends.Count && !Ends[position];
+            card.Time.SetMessage(new MessageDescriptor(Tally(file, unfinished)));
             if (card.Difficulty) {
                 var variants = file.Variants.Count;
-                card.Difficulty.SetMessage(new MessageDescriptor(variants > 0
-                    ? variants + (variants == 1 ? " variant" : " variants")
+                card.Difficulty.SetMessage(new MessageDescriptor(unfinished ? "Unfinished"
+                    : variants > 0 ? variants + (variants == 1 ? " variant" : " variants")
                     : (Average(file) ? "Average time" : "Best time")));
             }
 
             return;
         }
 
+        Bare(card, false);
         card.IsSuspended = false;
         if (!PracticeController.Active) {
             return;
@@ -415,6 +473,64 @@ public static class PracticeSelect {
         }
     }
 
+    // A segment has no cells to show: the row is one line about how it has gone, centred.
+    private static void Bare(SaveSlotUI card, bool segment) {
+        var box = card.Time;
+        if (box == null) {
+            return;
+        }
+
+        var row = box.transform.parent;
+        if (row != null) {
+            foreach (var name in new[] { "healthIcon", "healthText", "energyIcon", "energyText" }) {
+                var part = row.FindChild(name);
+                if (part != null) {
+                    part.gameObject.SetActive(!segment);
+                }
+            }
+        }
+
+        var text = box.GetComponent<TextBox>();
+        if (text != null) {
+            text.horizontalAnchor = segment ? HorizontalAnchorMode.Center : HorizontalAnchorMode.Right;
+            text.alignment = segment ? AlignmentMode.Center : AlignmentMode.Right;
+            // a clock's worth of room wraps the run count onto a second line
+            text.width = segment ? 11f : 4f;
+        }
+
+        var at = box.transform.localPosition;
+        box.transform.localPosition = new Vector3(segment ? 0f : TimeX, at.y, at.z);
+    }
+
+    // where the time sits on a save card, which is the right of the row
+    private const float TimeX = -0.768f;
+
+    // how it has gone: nothing to run yet, nothing run yet, or the count and the best of them
+    private static string Tally(BfrpFile file, bool unfinished) {
+        if (unfinished) {
+            return "click to edit";
+        }
+
+        var runs = 0;
+        var best = -1L;
+        foreach (var each in file.Variants.Count > 0 ? file.Variants : Unnamed) {
+            foreach (var run in file.RunsFor(each)) {
+                runs++;
+                if (best < 0 || run.Ms < best) {
+                    best = run.Ms;
+                }
+            }
+        }
+
+        if (runs == 0) {
+            return "no runs yet";
+        }
+
+        return runs + (runs == 1 ? " run" : " runs") + "     PB " + PracticeController.Clock(best);
+    }
+
+    private static readonly List<string> Unnamed = new List<string> { "" };
+
     private static string Name(BfrpFile file) {
         var name = file.Segment["name"];
         if (name.IsString && name.Str.Length > 0) {
@@ -452,36 +568,321 @@ public static class PracticeSelect {
     public static void Choose(SaveSlotsUI screen) {
         var card = screen.CurrentSaveSlot;
         var index = screen.CurrentSlotIndex;
+        if (index == Files.Count) {
+            CreateNew(screen);
+            return;
+        }
+
         if (card == null || card.SaveSlot == null || index < 0 || index >= Files.Count) {
             return;
         }
 
         var file = Files[index];
         var variants = file.Variants;
-        if (variants.Count == 0) {
-            Start(screen, file, "");
-            return;
-        }
+        var variant = "";
+        if (variants.Count > 0) {
+            // a variant is always a choice; pressing the card itself unfolds them
+            var picked = card.BackupIndex;
+            if (picked < 0 || picked >= variants.Count) {
+                SaveSlotBackupsManager.RequestReadBackups(index, card.OnFinishedReadingBackups);
+                if (card.BackupsAnimator) {
+                    card.BackupsAnimator.AnimatorDriver.ContinueForward();
+                }
 
-        // a variant is always a choice; pressing the card itself unfolds them
-        var picked = card.BackupIndex;
-        if (picked < 0 || picked >= variants.Count) {
-            SaveSlotBackupsManager.RequestReadBackups(index, card.OnFinishedReadingBackups);
-            if (card.BackupsAnimator) {
-                card.BackupsAnimator.AnimatorDriver.ContinueForward();
+                card.ChangeSelectionIndex(0);
+                return;
             }
 
-            card.ChangeSelectionIndex(0);
+            variant = variants[picked];
+        }
+
+        chosen = index;
+        // a segment with nothing to end it has nothing to run: it goes straight to the editor
+        if (!Ended(file, variant)) {
+            Start(screen, file, variant, true);
             return;
         }
 
-        Start(screen, file, variants[picked]);
+        pending = file;
+        pendingVariant = variant;
+        Prompt(screen, new[] { "RUN", "EDIT" }, RunOrEdit);
+    }
+
+    private static void RunOrEdit(int row) {
+        var screen = SaveSlotsUI.Instance;
+        var file = pending;
+        pending = null;
+        if (screen == null || file == null) {
+            return;
+        }
+
+        screen.ClosePrompt();
+        Start(screen, file, pendingVariant, row == 1);
+    }
+
+    // The page does the making: it lists the game's saves and asks for a name. The chooser
+    // holds a prompt meanwhile, so the screen says what it is waiting for and can call it off.
+    private static void CreateNew(SaveSlotsUI screen) {
+        PracticeServer.Open();
+        // without the prompt there is nothing to call the waiting off with, so do not wait
+        if (!PracticeServer.Running || !Prompt(screen, new[] { "CANCEL" }, Called)) {
+            Randomizer.printInfo("The segment editor page could not be opened", 300);
+            return;
+        }
+
+        Randomizer.printQuiet("The segment editor page is open in your browser: pick a starting save there", 600);
+        Waiting = true;
+        screen.ItemsUI.RefreshItem(screen.CurrentSlotIndex);
+    }
+
+    private static void Called(int row) {
+        var screen = SaveSlotsUI.Instance;
+        if (screen != null) {
+            screen.ClosePrompt();
+        }
+
+        PromptCancelled();
+    }
+
+    // The page asks about this: it stops offering to make one when the game stops waiting.
+    public static bool Waiting;
+
+    private static BfrpFile pending;
+
+    private static string pendingVariant = "";
+
+    private static Action<int> chose;
+
+    // The difficulty screen with our own rows: two words about the segment you just picked.
+    // Rows past the ones we want leave the menu entirely, so navigation cannot land on them.
+    private static bool Prompt(SaveSlotsUI screen, string[] rows, Action<int> pressed) {
+        var manager = screen.ShowPrompt();
+        if (manager == null) {
+            return false;
+        }
+
+        chose = pressed;
+        var layout = manager.GetComponentInChildren<CleverMenuItemLayout>(true);
+        var items = manager.MenuItems;
+        for (var i = items.Count - 1; i >= 0; i--) {
+            var item = items[i];
+            if (item == null || i >= rows.Length) {
+                items.RemoveAt(i);
+                if (layout != null) {
+                    layout.MenuItems.Remove(item);
+                }
+
+                if (item != null) {
+                    item.gameObject.SetActive(false);
+                }
+
+                continue;
+            }
+
+            var box = item.GetComponentInChildren<MessageBox>(true);
+            if (box != null) {
+                box.SetMessage(new MessageDescriptor(rows[i]));
+            }
+
+            // gone this frame, not at the end of it: a highlight would print its difficulty
+            var tip = item.GetComponent<CleverMenuItemTooltip>();
+            if (tip != null) {
+                UnityEngine.Object.DestroyImmediate(tip);
+            }
+
+            var row = i;
+            item.Pressed = null;
+            item.PressedCallback += delegate { Pressed(row); };
+        }
+
+        // the manager prints a tooltip as it highlights: the controller goes, and its line with it
+        var tips = manager.GetComponentInChildren<CleverMenuItemTooltipController>(true);
+        if (tips != null) {
+            var line = tips.gameObject;
+            UnityEngine.Object.DestroyImmediate(tips);
+            line.SetActive(false);
+        }
+
+        if (layout != null) {
+            layout.Sort();
+        }
+
+        manager.SetCurrentItem(0);
+        return true;
+    }
+
+    private static void Pressed(int row) {
+        var pick = chose;
+        chose = null;
+        if (pick != null) {
+            pick(row);
+        }
+    }
+
+    // Back on the prompt, or anything else that takes it down.
+    public static void PromptCancelled() {
+        chose = null;
+        pending = null;
+        if (!Waiting) {
+            return;
+        }
+
+        Waiting = false;
+        // nothing waits on the page any more, so neither does the message saying so
+        Randomizer.clearMessage();
+        var screen = SaveSlotsUI.Instance;
+        if (Choosing && screen != null && screen.CurrentSlotIndex == Files.Count) {
+            screen.ItemsUI.RefreshItem(screen.CurrentSlotIndex);
+        }
+    }
+
+    // Back inside the unfolded variants closes them instead of the chooser.
+    public static bool Fold(SaveSlotsUI screen) {
+        var card = screen.CurrentSaveSlot;
+        if (card == null || card.BackupIndex < 0) {
+            return false;
+        }
+
+        // the rows close however far down them the selection is
+        for (var guard = 0; card.BackupIndex >= 0 && guard < 16; guard++) {
+            card.ChangeSelectionIndex(-1);
+        }
+
+        if (card.BackupsAnimator) {
+            card.BackupsAnimator.AnimatorDriver.ContinueBackwards();
+        }
+
+        return true;
+    }
+
+    public static bool Deletable(int index) {
+        return Choosing && index >= 0 && index < Files.Count;
+    }
+
+    // Named when the prompt goes up, not when it is answered: the list underneath can be
+    // rebuilt by the page while the question is on screen.
+    public static void Erasing(int index) {
+        erasing = Deletable(index) ? Files[index].Path : null;
+    }
+
+    private static string erasing;
+
+    // The card's file, gone; the chooser comes back listing what is left.
+    public static void Erase(SaveSlotsUI screen) {
+        var index = screen.CurrentSlotIndex;
+        var path = erasing;
+        erasing = null;
+        if (path == null || !Choosing) {
+            return;
+        }
+        try {
+            System.IO.File.Delete(path);
+            Randomizer.log("practice: deleted " + path);
+        } catch (Exception e) {
+            Randomizer.LogError("practice: could not delete " + path + ": " + e.Message);
+            return;
+        }
+
+        chosen = Mathf.Max(0, index - 1);
+        Open();
+    }
+
+    public static bool HasEnd(BfrpFile file) {
+        var variants = file.Variants;
+        return Ended(file, variants.Count > 0 ? variants[0] : "");
+    }
+
+    private static bool Ended(BfrpFile file, string variant) {
+        try {
+            return PracticeSegment.Parse(file, variant).HasEnd;
+        } catch (Exception) {
+            return true;
+        }
+    }
+
+    // "New Segment N", past every N already in the folder
+    public static string NextName() {
+        var taken = 0;
+        try {
+            // the names on the cards, which is what the player is counting
+            if (Choosing) {
+                foreach (var file in Files) {
+                    taken = Math.Max(taken, Numbered(Name(file)));
+                }
+
+                return "New Segment " + (taken + 1);
+            }
+
+            if (Directory.Exists(Folder)) {
+                foreach (var path in Directory.GetFiles(Folder, "*.bfrp")) {
+                    taken = Math.Max(taken, Numbered(Path.GetFileNameWithoutExtension(path)));
+                }
+            }
+        } catch (Exception e) {
+            Randomizer.log("practice: could not number the new segment: " + e.Message);
+        }
+
+        return "New Segment " + (taken + 1);
+    }
+
+    // The N in "New Segment N", or zero for a name that is not one. A trailing " (2)" is the
+    // file name dodging one already taken, not a segment of its own.
+    private static int Numbered(string name) {
+        var bracket = name.IndexOf(" (");
+        var stem = bracket > 0 ? name.Substring(0, bracket) : name;
+        int n;
+        return stem.StartsWith("New Segment ", StringComparison.OrdinalIgnoreCase)
+            && int.TryParse(stem.Substring("New Segment ".Length).Trim(), out n) ? n : 0;
+    }
+
+    // a file name from a segment name, unique in the folder
+    public static string PathFor(string name) {
+        var safe = name;
+        foreach (var bad in Path.GetInvalidFileNameChars()) {
+            safe = safe.Replace(bad, '-');
+        }
+
+        if (!Directory.Exists(Folder)) {
+            Directory.CreateDirectory(Folder);
+        }
+
+        var path = Path.Combine(Folder, safe + ".bfrp");
+        for (var n = 2; System.IO.File.Exists(path); n++) {
+            path = Path.Combine(Folder, safe + " (" + n + ").bfrp");
+        }
+
+        return path;
+    }
+
+    // A segment the page just made, started the way its card would start it. Only from the
+    // chooser: anywhere else the file simply waits in the list.
+    public static bool StartPath(string path) {
+        var screen = SaveSlotsUI.Instance;
+        if (!Choosing || screen == null || PracticeController.Active) {
+            return false;
+        }
+
+        // the prompt hangs off a card the re-list is about to replace
+        screen.ClosePrompt();
+        PromptCancelled();
+        Open();
+        for (var i = 0; i < Files.Count; i++) {
+            if (string.Equals(Path.GetFullPath(Files[i].Path), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase)) {
+                screen.SetCurrentItemAndScroll(i);
+                chosen = i;
+                Start(screen, Files[i], "", false);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // The session seeds its slot; the title screen's own load sequence takes it from there.
-    private static void Start(SaveSlotsUI screen, BfrpFile file, string variant) {
+    private static void Start(SaveSlotsUI screen, BfrpFile file, string variant, bool edit) {
         Choosing = false;
         Legend(screen, true);
+        PracticeController.EditNext = PracticeController.EditNext || edit;
         try {
             PracticeController.Begin(file, variant, true);
         } catch (Exception e) {

@@ -383,12 +383,19 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
         }
 
         HandleNavigation();
-        // a segment card has nothing to copy, delete or back up: pick it or leave
+        // a segment card has nothing to copy: pick it, delete it, or leave
         if (PracticeSelect.Choosing) {
             if (ClickedCurrentItem || (Core.Input.ActionButtonA.OnPressed && !Core.Input.ActionButtonA.Used)) {
                 PracticeSelect.Choose(this);
+            } else if (Core.Input.Delete.OnPressed && !Core.Input.Delete.Used) {
+                if (PracticeSelect.Deletable(CurrentSlotIndex)) {
+                    AskEraseSegment();
+                }
             } else if (Core.Input.Cancel.OnPressed && !Core.Input.Cancel.Used) {
-                PracticeSelect.Leave(this);
+                // the variants are a menu of their own: Back closes them before the chooser
+                if (!PracticeSelect.Fold(this)) {
+                    PracticeSelect.Leave(this);
+                }
             }
 
             return;
@@ -493,6 +500,73 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
         m_difficultyScreen = null;
         if (CancelDifficultyMenuSound) {
             Sound.Play(CancelDifficultyMenuSound.GetSound(null), transform.position, null);
+        }
+
+        PracticeSelect.PromptCancelled();
+    }
+
+    // The difficulty screen borrowed as a small prompt over the card, for practice to put its
+    // own rows in. Held in the same field, so navigation stays with it and Back still cancels.
+    public CleverMenuItemSelectionManager ShowPrompt() {
+        if (CurrentSaveSlot == null || m_difficultyScreen != null) {
+            return null;
+        }
+
+        m_difficultyScreen = (GameObject)InstantiateUtility.Instantiate(CurrentSaveSlot.DifficultyScreen);
+        var manager = m_difficultyScreen.GetComponent<CleverMenuItemSelectionManager>();
+        manager.SetVisible(true);
+        m_difficultyScreen.transform.parent = CurrentSaveSlot.HighlightAnimator.transform;
+        m_difficultyScreen.transform.localScale = Vector3.one * 1.5384f;
+        m_difficultyScreen.transform.localPosition = Vector3.zero;
+        if (OpenDifficultyMenuSound) {
+            Sound.Play(OpenDifficultyMenuSound.GetSound(null), transform.position, null);
+        }
+
+        return manager;
+    }
+
+    public void ClosePrompt() {
+        if (m_difficultyScreen == null) {
+            return;
+        }
+
+        m_difficultyScreen.GetComponent<CleverMenuItemSelectionManager>().SetVisible(false);
+        InstantiateUtility.Destroy(m_difficultyScreen, 2f);
+        m_difficultyScreen = null;
+    }
+
+    // Delete on a segment card: the save select's own prompt, over the file instead of a slot.
+    public void AskEraseSegment() {
+        PracticeSelect.Erasing(CurrentSlotIndex);
+        CurrentSaveSlot.SetDeleting(true);
+        if (BeginDeleteSound) {
+            Sound.Play(BeginDeleteSound.GetSound(null), transform.position, null);
+        }
+
+        AskPrompt(DeleteQuestion, OnEraseSegmentConfirmed, OnEraseSegmentCancelled);
+    }
+
+    public void OnEraseSegmentConfirmed() {
+        m_prompt = null;
+        if (CurrentSaveSlot != null) {
+            CurrentSaveSlot.SetDeleting(false);
+        }
+
+        if (DeleteSound) {
+            Sound.Play(DeleteSound.GetSound(null), transform.position, null);
+        }
+
+        PracticeSelect.Erase(this);
+    }
+
+    public void OnEraseSegmentCancelled() {
+        m_prompt = null;
+        if (CurrentSaveSlot != null) {
+            CurrentSaveSlot.SetDeleting(false);
+        }
+
+        if (CancelDeleteSound) {
+            Sound.Play(CancelDeleteSound.GetSound(null), transform.position, null);
         }
     }
 }

@@ -91,7 +91,6 @@ public class RandomizerGhostView {
 
     // Hiding is SetActive, which also stops the animator, most of what a distant ghost costs;
     // transforms still apply to an inactive object, so it does not snap when it comes back.
-    // The object itself goes once the veil has faded it out, in Sink.
     public void Cull(bool hidden) {
         if (GhostObject == null || Hidden == hidden) {
             return;
@@ -103,6 +102,7 @@ public class RandomizerGhostView {
             if (LabelObject != null) {
                 LabelObject.SetActive(Labelled != null);
                 LabelFresh = true;
+                LabelAlpha = 0f;
             }
 
             // the animator missed everything it slept through, so make the next Pose re-seat it
@@ -227,6 +227,9 @@ public class RandomizerGhostView {
         // constant in practice -- Ori's own scale -- but never interpolated, so it stays right
         // if that ever stops being true
         GhostTransform.localScale = from.Scale;
+        // the retire clock has to keep time for a culled ghost too, or a distant peer coming
+        // back from the title is taken down as if they never came back
+        TitleSince = from.OnTitle ? (TitleSince < 0f ? Time.time : TitleSince) : -1f;
         if (Hidden) {
             return;
         }
@@ -500,7 +503,6 @@ public class RandomizerGhostView {
         LinkObject.transform.position = where;
     }
 
-    // Called only where a clip begins, so it does not need to guard against repeats.
     // Seconds this ghost has stood under "..."; the coordinator takes it down after a while.
     public float TitleFor { get { return TitleSince < 0f ? 0f : Time.time - TitleSince; } }
 
@@ -511,9 +513,8 @@ public class RandomizerGhostView {
 
     private const float LabelHeight = 0.8f;
 
-    // Every way of not being there takes the same beat -- a word going away, a ghost timing
-    // out, warping, culled -- and everything comes back quicker than it left. Statics: they
-    // are tuned live.
+    // Every way of not being there takes this beat; coming back takes the shorter one.
+    // Statics, so both can be tuned live.
     internal static float FadeOut = 0.167f;
 
     internal static float FadeIn = 0.05f;
@@ -521,18 +522,9 @@ public class RandomizerGhostView {
     // the label's height in world units, whatever size the hint text comes at
     private const float LabelSize = 1f;
 
-    // A word over the head for a peer who is not really there: "..." on the title screen, a
-    // pause mark in any menu. The text is the hint message's, cloned the way the version
-    // stamp clones it, and followed by position so Ori's flip and scale stay out of it.
+    // A word over the head for a peer who is not really there: "..." on the title, a pause mark
+    // in a menu. Followed by position, so Ori's flip and scale stay out of it.
     private void Status(Sample from) {
-        if (from.OnTitle) {
-            if (TitleSince < 0f) {
-                TitleSince = Time.time;
-            }
-        } else {
-            TitleSince = -1f;
-        }
-
         var text = from.OnTitle ? "..." : (from.InMenu ? PauseGlyph : null);
         if (text == null && (LabelObject == null || !LabelObject.activeSelf)) {
             return;
@@ -568,7 +560,11 @@ public class RandomizerGhostView {
 
         var beat = text == null ? FadeOut : FadeIn;
         LabelAlpha = Mathf.MoveTowards(LabelAlpha, text == null ? 0f : 1f, Time.deltaTime / beat);
-        Paint(LabelObject, Faded * Veil * LabelAlpha);
+        var alpha = Faded * Veil * LabelAlpha;
+        if (Mathf.Abs(alpha - LabelPainted) > 0.001f) {
+            LabelPainted = alpha;
+            Paint(LabelObject, alpha);
+        }
         if (LabelAlpha <= 0f) {
             Labelled = null;
             LabelObject.SetActive(false);
@@ -806,6 +802,8 @@ public class RandomizerGhostView {
     private bool LabelFresh;
 
     private float LabelAlpha;
+
+    private float LabelPainted = -1f;
 
     // 1 on screen, 0 not there: the cull, the warp and the retire all ride this one alpha
     private float Veil;

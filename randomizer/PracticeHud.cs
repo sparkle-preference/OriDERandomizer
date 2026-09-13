@@ -25,12 +25,23 @@ public static class PracticeHud {
 
     private static readonly Vector3 TallyAt = new Vector3(-4.2f, 2.4f, 0f);
 
+    // a run that survives a quit to menu is still running while the title is up, and its clock
+    // is the reason to hurry back
+    private static bool Parked {
+        get {
+            return PracticeController.Current == PracticeController.Phase.Running
+                && PracticeController.Segment != null && PracticeController.Segment.QuitToMenu;
+        }
+    }
+
     public static void Tick() {
         // the finish screen's tally has the time; the clock would say it a second time
         var wanted = PracticeController.Active && RandomizerSettings.Practice.Timer.Value
+            && !PracticeController.EditPending
             && PracticeController.Current != PracticeController.Phase.Editing
             && PracticeController.Current != PracticeController.Phase.Finished
-            && GameController.Instance != null && !GameController.Instance.GameInTitleScreen;
+            && GameController.Instance != null
+            && (!GameController.Instance.GameInTitleScreen || Parked);
         if (!wanted) {
             HideClock();
             return;

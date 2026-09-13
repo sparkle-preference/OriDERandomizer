@@ -56,6 +56,11 @@ public class BfrpFile {
         get { return zip.Get(SaveEntry); }
     }
 
+    // a new start for every attempt from here on; history and ghosts stay as they were
+    public void SetBaseSave(byte[] save) {
+        zip.Set(SaveEntry, save);
+    }
+
     // --- placements.bfr, the root's or a variant's: seed lines and box lines ---
 
     public List<string> PlacementLines(string variant) {

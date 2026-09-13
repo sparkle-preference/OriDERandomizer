@@ -67,9 +67,15 @@ public static class PracticeServer {
         return false;
     }
 
-    public static void Open() {
+    // True when a browser was opened; false when the page already open was turned around
+    // instead, which is the whole point of the pane bookkeeping below.
+    public static bool Open() {
         if (!Start()) {
-            return;
+            return false;
+        }
+
+        if (Turn()) {
+            return false;
         }
 
         try {
@@ -77,6 +83,65 @@ public static class PracticeServer {
         } catch (Exception e) {
             Randomizer.LogError("practice: could not open the editor page: " + e.Message);
         }
+
+        return true;
+    }
+
+    // --- the pane ----------------------------------------------------------------------
+
+    // The newest page to check in is *the* pane, and opening the editor turns that one rather
+    // than stacking up another tab. Answered off the main thread: touch nothing of Unity's.
+    private const double PaneQuiet = 6.0;
+
+    private static string pane;
+
+    private static DateTime paneSeen;
+
+    private static bool paneTurn;
+
+    private static string Pane(string id, bool fresh, bool watched) {
+        var now = DateTime.UtcNow;
+        var mine = pane == id;
+        // the tab being looked at is the one the game should turn, whenever it was opened
+        if (fresh || watched || pane == null || mine || (now - paneSeen).TotalSeconds > PaneQuiet) {
+            if (!mine) {
+                pane = id;
+                paneTurn = false;
+                mine = true;
+            }
+
+            paneSeen = now;
+        }
+
+        var turn = mine && paneTurn;
+        if (turn) {
+            paneTurn = false;
+        }
+
+        var reply = JsonValue.NewObject();
+        reply.Set("reload", JsonValue.Of(turn));
+        return reply.Serialize(false);
+    }
+
+    // one value out of a query string; no Uri parser needed for two short fields
+    private static string Arg(string query, string name) {
+        foreach (var pair in query.Split('&')) {
+            var eq = pair.IndexOf('=');
+            if (eq > 0 && pair.Substring(0, eq) == name) {
+                return pair.Substring(eq + 1);
+            }
+        }
+
+        return "";
+    }
+
+    private static bool Turn() {
+        if (pane == null || (DateTime.UtcNow - paneSeen).TotalSeconds > PaneQuiet) {
+            return false;
+        }
+
+        paneTurn = true;
+        return true;
     }
 
     public static void OpenOnce() {
@@ -163,7 +228,9 @@ public static class PracticeServer {
         }
 
         var query = path.IndexOf('?');
+        var args = "";
         if (query >= 0) {
+            args = path.Substring(query + 1);
             path = path.Substring(0, query);
         }
 
@@ -187,8 +254,19 @@ public static class PracticeServer {
         } else if ((method == "PUT" || method == "POST") && path == "/api/segment") {
             var text = Encoding.UTF8.GetString(body);
             content = Reply(OnMain(delegate { return WriteSegment(text); }, out error), error, out status);
+        } else if (method == "GET" && path == "/api/pane") {
+            content = Encoding.UTF8.GetBytes(Pane(Arg(args, "id"), Arg(args, "new") == "1",
+                Arg(args, "see") == "1"));
         } else if (method == "GET" && path == "/api/catalog") {
             content = Reply(OnMain(Catalog, out error), error, out status);
+        } else if (method == "GET" && path == "/api/saves") {
+            content = Reply(OnMain(Saves, out error), error, out status);
+        } else if (method == "POST" && path == "/api/create") {
+            var text = Encoding.UTF8.GetString(body);
+            content = Reply(OnMain(delegate { return CreateSegment(text); }, out error), error, out status);
+        } else if (method == "POST" && path == "/api/save") {
+            var text = Encoding.UTF8.GetString(body);
+            content = Reply(OnMain(delegate { return ReplaceSave(text); }, out error), error, out status);
         } else if (method == "GET" && path == "/api/ghosts") {
             content = Reply(OnMain(Ghosts, out error), error, out status);
         } else if (method == "POST" && path == "/api/ghost/pin") {
@@ -485,10 +563,19 @@ public static class PracticeServer {
         var reply = JsonValue.NewObject();
         reply.Set("session", JsonValue.Of(file != null));
         if (file == null) {
+            // without a session the page makes segments: the next name, and whether the
+            // chooser is up to start one
+            reply.Set("suggestedName", JsonValue.Of(PracticeSelect.NextName()));
+            reply.Set("choosing", JsonValue.Of(PracticeSelect.Choosing));
+            reply.Set("awaiting", JsonValue.Of(PracticeSelect.Waiting));
             return reply.Serialize(false);
         }
 
         reply.Set("path", JsonValue.Of(file.Path));
+        var header = Header(file.BaseSave);
+        if (header != null) {
+            reply.Set("base", header);
+        }
         reply.Set("variant", JsonValue.Of(file.Variant ?? ""));
         reply.Set("editing", JsonValue.Of(PracticeEditor.Active));
         reply.Set("segment", WithBoxes(file, ""));
@@ -654,6 +741,111 @@ public static class PracticeServer {
         file.Save();
         Randomizer.log("practice: ghost " + slot + " removed from the editor page");
         return "{\"ok\":true}";
+    }
+
+    // --- the game's saves ------------------------------------------------------------
+
+    // the fifty save slots as the file select shows them, for picking a segment's start
+    private static string Saves() {
+        var reply = JsonValue.NewObject();
+        var list = JsonValue.NewArray();
+        var saves = GameController.Instance.SaveGameController;
+        for (var slot = 0; slot < 50; slot++) {
+            if (!saves.SaveExists(slot)) {
+                continue;
+            }
+
+            JsonValue entry;
+            try {
+                entry = Header(File.ReadAllBytes(saves.GetSaveFilePath(slot)));
+            } catch (Exception) {
+                continue;
+            }
+
+            if (entry != null) {
+                entry.Set("slot", JsonValue.Of(slot));
+                list.Add(entry);
+            }
+        }
+
+        reply.Set("saves", list);
+        return reply.Serialize(false);
+    }
+
+    // what a save's header says about it; null for bytes that are not a save
+    private static JsonValue Header(byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
+
+        try {
+            using (var reader = new BinaryReader(new MemoryStream(bytes))) {
+                var info = new SaveSlotInfo();
+                if (!info.LoadFromReader(reader)) {
+                    return null;
+                }
+
+                var shots = SaveSlotsScreenshotManager.Instance;
+                var entry = JsonValue.NewObject();
+                entry.Set("area", JsonValue.Of(shots != null ? shots.FindAreaName(info.AreaName) : info.AreaName));
+                entry.Set("completion", JsonValue.Of(info.Completion));
+                entry.Set("health", JsonValue.Of(info.Health));
+                entry.Set("maxHealth", JsonValue.Of(info.MaxHealth));
+                entry.Set("energy", JsonValue.Of(info.Energy));
+                entry.Set("maxEnergy", JsonValue.Of(info.MaxEnergy));
+                entry.Set("seconds", JsonValue.Of(info.TotalSeconds));
+                entry.Set("difficulty", JsonValue.Of(info.Difficulty.ToString()));
+                return entry;
+            }
+        } catch (Exception) {
+            return null;
+        }
+    }
+
+    private static byte[] SaveBytes(JsonValue incoming) {
+        var slot = incoming["slot"].IsNumber ? (int)incoming["slot"].Num : -1;
+        var saves = GameController.Instance.SaveGameController;
+        if (slot < 0 || slot >= 50 || !saves.SaveExists(slot)) {
+            throw new Exception("there is no save in slot " + (slot + 1));
+        }
+
+        return File.ReadAllBytes(saves.GetSaveFilePath(slot));
+    }
+
+    // a new container around one of the game's saves; from the chooser it starts at once
+    private static string CreateSegment(string text) {
+        var incoming = JsonValue.Parse(text);
+        var save = SaveBytes(incoming);
+        var name = incoming["name"].IsString ? incoming["name"].Str.Trim() : "";
+        var path = PracticeEditor.CreateFrom(save, name);
+        var started = PracticeSelect.StartPath(path);
+        var reply = JsonValue.NewObject();
+        reply.Set("ok", JsonValue.Of(true));
+        reply.Set("path", JsonValue.Of(path));
+        reply.Set("started", JsonValue.Of(started));
+        return reply.Serialize(false);
+    }
+
+    // the running segment starts from another of the game's saves from now on, and the
+    // attempt begins again from it
+    private static string ReplaceSave(string text) {
+        var file = PracticeController.File;
+        if (file == null) {
+            throw new Exception("no practice session is running");
+        }
+
+        file.SetBaseSave(SaveBytes(JsonValue.Parse(text)));
+        file.Save();
+        // parked behind the title there is nothing to reload into, and the slot holds the run
+        // the player left: the new save is theirs the next time the segment starts
+        var game = GameController.Instance;
+        var parked = game == null || game.GameInTitleScreen;
+        if (!parked) {
+            PracticeController.Restart();
+        }
+
+        Randomizer.log("practice: starting save replaced from the editor page");
+        return parked ? "{\"ok\":true,\"restarted\":false}" : "{\"ok\":true,\"restarted\":true}";
     }
 
     // --- the catalog -----------------------------------------------------------------

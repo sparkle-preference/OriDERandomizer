@@ -12,9 +12,10 @@ PRACTICE on the title menu lists them. You race a clock, and a ghost of one of y
 
 Making a segment
 ===
-In a normal game, get to the spot you want to practice from and press Alt+M. The current state is saved as a new segment, named after the area and the time.
-From the title menu choose PRACTICE, pick the new segment, and start it.
-Pause and choose EDIT PRACTICE SEGMENT. The world freezes and you draw boxes with the mouse.
+In a normal game, get to the spot you want to practice from and press Alt+M. The current state is saved as a new segment, named New Segment 1, 2, 3 and so on; rename it on the page.
+Or choose NEW SEGMENT at the end of the PRACTICE list: the editor page opens in your browser, you pick one of your saves to start from, and the game opens the new segment in the editor.
+A segment with nothing to end it yet says "unfinished - select to edit" in the list and opens straight in the editor.
+On a finished segment, pause and choose EDIT PRACTICE SEGMENT. The world freezes and you draw boxes with the mouse.
 
 Editor keys:
 1 / 2 / 3 / 4       Goal, kill, hint or solid tool
@@ -23,10 +24,15 @@ Z                   Undo the last box
 X                   Delete the box under the cursor
 WASD                Pan the camera
 5                   Open the segment editor page in a browser
+Ctrl+S              Save and keep editing
+Ctrl+R              Reload from disk, dropping edits since the last save
 Enter               Save and restart the attempt
+
+The pause menu while editing: BACK TO EDITING, SAVE, RELOAD FROM DISK, EXIT TO PRACTICE MENU, SAVE AND RETRY.
 
 Everything else is on the segment editor page, which opens in your browser the first time you edit: the name, what ends the run, hint text, item boxes, shuffle groups, variants and ghosts.
 Save to game writes it back, and a running attempt uses the new rules at once.
+The page can also swap the segment's starting save for another of your saves ("Starts from ... change"); the game reloads from it.
 The page's map downloads the world map tiles once (about 20 MB) into the practice folder.
 
 

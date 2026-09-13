@@ -458,6 +458,8 @@ public static class Randomizer {
     public static void pinMessage(string message) {
         Pinned = message;
         pinnedBox = null;
+        // the queue's leftover time would hold the box shut for seconds; this cannot wait
+        clearMessage();
     }
 
     public static void unpinMessage() {
@@ -472,9 +474,8 @@ public static class Randomizer {
 
     public static bool MessagePinned { get { return Pinned != null; } }
 
-    // The box is held open rather than shown again and again: its hide is put off every frame,
-    // so it neither times out nor replays its arrival. Anything else may still take the screen,
-    // and the pin comes back when that message is done with it.
+    // The box is held open rather than shown again: its hide is put off every frame, so it
+    // never replays its arrival. Anything else may take the screen; the pin returns after.
     private static void HoldPinned() {
         if (Pinned == null) {
             return;
@@ -731,7 +732,26 @@ public static class Randomizer {
             return;
         }
 
-        if (RandomizerRebinding.ReloadSeed.IsPressed()) {
+        // IsPressed clears its edge only on a call that finds the key up, so a bind skipped on
+        // the frame it was pressed fires on the next one. Read every frame, whoever acts on it.
+        var reload = RandomizerRebinding.ReloadSeed.IsPressed();
+        if (PracticeKeys()) {
+            return;
+        }
+
+        // Editing a segment: every other bind would change the world the boxes are drawn on,
+        // so the practice ones above are all there is.
+        if (PracticeEditor.Active) {
+            return;
+        }
+
+        if (reload) {
+            // a practice session is the seed's guest: throwing it away underneath one is not a run
+            if (PracticeController.Active) {
+                printInfo("Reload Seed is off during a practice session", 180);
+                return;
+            }
+
             initialize();
             if (RandomizerSettings.Dev) {
                 log("Reset and loaded seed: " + SeedMeta);
@@ -744,27 +764,6 @@ public static class Randomizer {
         if (Characters.Sein) {
             if (RandomizerRebinding.GrantTestPickup.IsPressed()) {
                 RandomizerAutoplayer.GrantTestPickup();
-                return;
-            }
-
-            // the bench entry point until the practice file select exists
-            if (RandomizerRebinding.StartPracticeDebug.IsPressed()) {
-                PracticeController.BeginDebug();
-                return;
-            }
-
-            if (RandomizerRebinding.OpenPracticeMenu.IsPressed()) {
-                PracticeMenu.Open();
-                return;
-            }
-
-            if (RandomizerRebinding.CreatePracticeSegment.IsPressed()) {
-                PracticeEditor.Create();
-                return;
-            }
-
-            if (RandomizerRebinding.OpenPracticeEditorPage.IsPressed()) {
-                PracticeServer.Open();
                 return;
             }
 
@@ -1094,6 +1093,46 @@ public static class Randomizer {
         }
     }
 
+    // The binds practice keeps for itself. They run before every other bind and are the only
+    // ones left while the editor is up.
+    private static bool PracticeKeys() {
+        if (!Characters.Sein) {
+            return false;
+        }
+
+        // the bench entry point until the practice file select exists
+        if (RandomizerRebinding.StartPracticeDebug.IsPressed()) {
+            PracticeController.BeginDebug();
+            return true;
+        }
+
+        if (RandomizerRebinding.OpenPracticeMenu.IsPressed()) {
+            PracticeMenu.Open();
+            return true;
+        }
+
+        if (RandomizerRebinding.CreatePracticeSegment.IsPressed()) {
+            PracticeEditor.Create();
+            return true;
+        }
+
+        if (RandomizerRebinding.OpenPracticeEditorPage.IsPressed()) {
+            if (!PracticeServer.Open()) {
+                printInfo("Refreshed the editor page you already have open", 180);
+            }
+
+            return true;
+        }
+
+        // shares Alt+L with Reload Seed on purpose: that one is off during a session anyway
+        if (RandomizerRebinding.RetryPracticeSegment.IsPressed() && PracticeController.Active) {
+            PracticeController.RetryOrStart();
+            return true;
+        }
+
+        return false;
+    }
+
     public static void UpdateMessages() {
         if (MessageQueueTime <= 0f) {
             if (MessageQueue.Count == 0) {
@@ -1102,7 +1141,7 @@ public static class Randomizer {
             }
 
             var queueItem = MessageQueue.Dequeue();
-            var message = queueItem.MessageString;
+            var message = Bound(queueItem.MessageString);
             MessageQueueTime += queueItem.BaseDuration * 0.5f;
             MessageBgColor = queueItem.BgColor;
             if (message != "") {

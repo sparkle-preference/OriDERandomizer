@@ -29,9 +29,17 @@ public class PracticeSegment {
     // the pause menu stays the game's own, and Exit keeps the session, when this is set
     public bool QuitToMenu;
 
+    // what the segment is for, in the maker's words; shown once a session before the first run
+    public string About = "";
+
     // The shared boxes, then the variant's; the goal is the first goal box among them.
     public static PracticeSegment Parse(BfrpFile file, string variant) {
         var seg = Parse(file.Segment);
+        var about = file.Segment["about"];
+        if (about.IsString) {
+            seg.About = about.Str;
+        }
+
         seg.Boxes.AddRange(file.Boxes(""));
         var json = file.VariantSegment(variant);
         if (json.IsObject) {

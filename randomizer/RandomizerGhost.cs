@@ -79,7 +79,8 @@ public static class RandomizerGhost {
             // a stalled peer holds its pose (the cursor runs out of samples): full opacity
             // while it might come back, then a fade, then gone
             view.Tick(source);
-            view.Fade(keep || silence <= Retire ? 1f : 1f - (silence - Retire) / FadeOut);
+            var fade = FadeOut > 0.001f ? (silence - Retire) / FadeOut : 1f;
+            view.Fade(keep || silence <= Retire ? 1f : 1f - fade);
             view.Cull(here != null &&
                 (view.Position - here.position).sqrMagnitude > CullRadius * CullRadius);
             view.Sink();
@@ -95,8 +96,7 @@ public static class RandomizerGhost {
         }
     }
 
-    // An echo is yours until you clear it. Its script stops growing whenever yours does -- a
-    // menu, the title screen -- and the closest one runs out first, which is not it leaving.
+    // An echo is yours until you clear it: its script stops growing whenever yours does.
     private static bool Kept(IGhostSource source) {
         var loopback = source as LoopbackGhostSource;
         return loopback != null && Echoes.Contains(loopback);
@@ -196,8 +196,8 @@ public static class RandomizerGhost {
         Randomizer.showHint(RandomizerUI.Message.InfoMessage("Ghost: recording", 2));
     }
 
-    // Echoes: loopback ghosts of your own recording, each a step further behind. A test rig for
-    // the ghost code that is also a toy; not while real ghosts or a practice run are on.
+    // Echoes: loopback ghosts of your own recording, each a step further behind. Never while
+    // real ghosts or a practice run are on.
     private static readonly List<LoopbackGhostSource> Echoes = new List<LoopbackGhostSource>();
 
     private static bool echoesRecord;
@@ -247,8 +247,7 @@ public static class RandomizerGhost {
         }
     }
 
-    // An echo the coordinator has already taken down (the recording stalled in a menu, say) is
-    // gone as far as the chain is concerned.
+    // An echo the coordinator has already taken down is gone as far as the chain is concerned.
     private static void PruneEchoes() {
         for (var i = Echoes.Count - 1; i >= 0; i--) {
             if (!Showing(Echoes[i])) {
@@ -390,7 +389,8 @@ public static class RandomizerGhost {
         player = 0;
         var best = radius;
         for (var i = 0; i < Sources.Count; i++) {
-            if (Sources[i].PlayerId < 1) {
+            // an echo's link is your own; saving at it would be saving at yours twice
+            if (Sources[i].PlayerId < 1 || Kept(Sources[i])) {
                 continue;
             }
 

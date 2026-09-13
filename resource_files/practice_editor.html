@@ -64,24 +64,44 @@
   .pick .opt { padding: 3px 12px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pick .opt.hi, .pick .opt:hover { background: #2f6fd6; }
   .pick .opt small { color: #b8c2cf; margin-left: 8px; }
+  .saves .save { padding: 4px 8px; cursor: pointer; border-radius: 4px; }
+  .saves .save:hover { background: #2a323c; }
+  .saves .save.picked { background: #2f6fd6; }
+  body.nosession .cols, body.nosession > section:not(#createSection), body.nosession #status { display: none; }
 </style>
 </head>
 <body>
 <h1>Practice segment editor</h1>
 <div class="muted" id="path">Talking to the game…</div>
 
+<section id="createSection" hidden>
+  <h2>New segment</h2>
+  <div class="muted">Practice segments start from a saved game. Pick one from your game; everything else is edited once the game has the segment open.</div>
+  <div class="row"><label>Name <input type="text" id="newName" size="40"></label></div>
+  <div id="createSaves" class="saves muted">Loading saves…</div>
+  <div class="row"><button id="create" disabled>Create and open in the game</button> <span class="muted" id="createNote"></span></div>
+</section>
+
 <details style="margin: 10px 0">
   <summary>How this works</summary>
   <div class="muted" style="margin-top:6px; max-width: 900px">
-    A segment is a save file plus rules. In the game, <b>EDIT PRACTICE SEGMENT</b> on the practice pause freezes the world so you can draw boxes with the mouse:
-    <b>1</b> goal, <b>2</b> kill, <b>3</b> hint, <b>4</b> solid (a block Ori can stand on, climb and wall jump off), <b>Z</b> undo, <b>X</b> delete under the cursor, <b>WASD</b> pans, <b>5</b> opens this page, <b>Enter</b> saves and restarts the attempt.
-    Everything else is edited here and sent back with <b>Save to game</b>: names, what boxes give, what ends the run, which pickups a shuffle scatters where, and variants,
-    which share the start and the end but bring their own loadout and boxes.
-    A hint is an item box that gives a message (<i>SH|text</i>); change what it gives in the Boxes table to make it any pickup. An item box gives once and a repeat item box every time.
-    Boxes are lines in the segment's placements.bfr, the same lines a seed can carry.
-    Pick locations from the zone and location lists or click them on the map; they go to whatever <i>locations go to</i> says.
-    With <i>edit boxes on the map</i> on, drag a box to move it and its corners to resize it.
-    A run ends when every part of the end condition holds at once.
+    <p><b>Practice Segments:</b> A <i>practice segment</i> is a save file plus some rules: where you start, what the end condition is, what pickups are in the world.
+    <b>PRACTICE</b> on the title screen to enter the segment select menu. Pick a finished segment to <b>run</b> or <b>edit</b> it. Unfinished segments jump straight to the editor.</p>
+
+    <p><b>Editor:</b> The editor freezes the world and gives you several control options:
+    <b>Drag the left mouse</b> to create a box (<b>1</b> goal, <b>2</b> kill, <b>3</b> hint, <b>4</b> solid), <b>Z</b> to undo a placement, <b>X</b> to delete a box under the cursor.
+    <b>WASD</b> pans the view and <b>right click</b> warps Ori to the mouse and loads nearby scenes. <b>Ctrl+S</b> saves, <b>Ctrl+R</b> reloads from disk, 
+    <b>Enter</b> saves and begins a run on the segment, and <b>5</b> opens this page.
+    While you are editing, the randomizer's other keybinds are off, and the pause menu is replaced with practice-specific options.</p>
+
+    <p><b>Web Editing Helper:</b> This page allows for advanced configuration of practice segments - QTM compatibility, box options (color, position, visibility, and items), 
+    ending conditions more complicated than a box collider, shuffle groups, the briefing, and variants. (For more info on each of these topics, <s>check out the Practice Mode FAQ</s> bug Eiko in the dev discord to get the FAQ written.) 
+    When you are finished making changes, click <b>Save to game</b> at the bottom of the page.</p>
+
+    <p><b>The map:</b> Pick locations from the zone and location lists or click them on the map to select locations required to finish the segment or to include in a shuffle group.
+    With <i>edit boxes on the map</i> on, drag a box to move it and its corners to resize it.</p>
+
+    <p><b>Misc Info:</b> A run ends when ALL of its end conditions are satisfied and needs to have at least one. The Retry Practice Segment Randomizer Bind (default Alt+L) restarts an attempt, and dismisses an open briefing if one exists. Quitting to menu ends a practice run unless it is QTM-enabled - ending a QTM-enabled run can be done from the main menu. Practice files are stored as .bfrp files in [Your Ori Install]\practice and can be copied and shared with other players.</p>
   </div>
 </details>
 
@@ -95,11 +115,15 @@
   <label>Ghost shown
     <select id="showGhost"><option value="">pinned, else fastest</option><option value="fastest">fastest</option><option value="pinned">pinned</option><option value="recent">most recent</option><option value="none">none</option></select>
   </label></div>
-  <div class="row"><label><input type="checkbox" id="qtm"> quit to menu keeps the run (vanilla pause menu)</label></div>
+  <div class="row"><label><input type="checkbox" id="qtm"> QTM enabled.</label></div>
+  <div class="row"><label style="display:block">Briefing <span class="muted">shown once a session before the first run; the player presses retry to start</span><br>
+    <textarea id="about" rows="3" cols="60" placeholder="what this segment is for"></textarea></label></div>
+  <div class="row">Starts from <span id="baseInfo" class="muted">the segment's save</span> <button class="quiet" id="changeSave">change</button></div>
+  <div id="changeSaves" class="saves" hidden></div>
 </section>
 
 <section>
-  <h2>End condition <span class="muted">(everything set must hold)</span></h2>
+  <h2>End condition(s) <span class="muted">(need at least 1)</span></h2>
   <div class="row">Goal box <span id="goalBox" class="muted">none</span> <span class="muted">— edit it in the Boxes table, or draw one in the game with the 1 key</span></div>
   <div class="row">Items held <span id="endItems"></span></div>
   <div class="row">Pickup count <input type="number" id="count" min="0" placeholder="any"> <span class="muted">blank for none</span></div>
@@ -178,13 +202,115 @@
   function load() {
     say('Loading…');
     return api('/api/catalog').then(function (c) { state.catalog = c; return api('/api/segment'); }).then(function (s) {
-      if (!s.session) { $('path').textContent = 'No practice session is running. Start one from the PRACTICE menu, then reload.'; say(''); return; }
+      document.body.classList.toggle('nosession', !s.session);
+      $('createSection').hidden = !!s.session;
+      if (!s.session) {
+        $('path').textContent = s.awaiting ? 'The game is waiting for a starting save. Pick one below.'
+          : s.choosing ? 'No segment is open. Make one below and the game starts it in the editor.'
+          : 'No practice session is running. Make a segment below, or start one from PRACTICE in the game.';
+        say('');
+        return renderCreate(s);
+      }
       $('path').textContent = s.path + (s.variant ? '  (playing variant ' + s.variant + ')' : '');
       state.segment = s.segment; state.variants = s.variants || {}; state.playing = s.variant || '';
+      state.base = s.base || null;
       render(); say('Loaded.', 'ok');
       return loadGhosts();
     }).catch(function (e) { say('Could not reach the game: ' + e.message, 'bad'); });
   }
+
+  function clock(seconds) {
+    var h = Math.floor(seconds / 3600), m = Math.floor(seconds / 60) % 60, s = seconds % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(s).padStart(2, '0');
+  }
+  function describe(h) {
+    return h.area + ' · ' + h.completion + '% · ' + clock(h.seconds) + ' · ' + h.difficulty + ' · ' + h.health + '/' + h.maxHealth + ' health cells, ' + h.energy + '/' + h.maxEnergy + ' energy cells';
+  }
+
+  // the game's saves as rows to pick from; onPick gets the header, slot included
+  function saveList(root, onPick) {
+    root.textContent = 'Loading saves…';
+    return api('/api/saves').then(function (r) {
+      root.innerHTML = ''; root.classList.remove('muted');
+      if (!r.saves.length) { root.textContent = 'The game has no saves yet.'; return; }
+      var picked = null;
+      r.saves.forEach(function (h) {
+        var row = document.createElement('div'); row.className = 'save';
+        row.textContent = 'Slot ' + (h.slot + 1) + ' · ' + describe(h);
+        row.onclick = function () {
+          if (picked) picked.classList.remove('picked');
+          picked = row; row.classList.add('picked');
+          onPick(h);
+        };
+        root.appendChild(row);
+      });
+    }).catch(function (e) { root.textContent = 'Could not list the saves: ' + e.message; });
+  }
+
+  // The game holds a prompt open while it waits for this; watch for it going away, since
+  // cancelling it there is the other way this ends.
+  var awaitTimer = null;
+  function awaitCancel(awaiting) {
+    if (awaitTimer) { clearTimeout(awaitTimer); awaitTimer = null; }
+    if (!awaiting) return;
+    var tick = function () {
+      api('/api/segment').then(function (s) {
+        if (s.session) return load();
+        if (s.awaiting) { awaitTimer = setTimeout(tick, 1500); return; }
+        $('path').textContent = 'The game stopped waiting for a save. Make the segment here and start it from PRACTICE.';
+      }).catch(function () { awaitTimer = setTimeout(tick, 3000); });
+    };
+    awaitTimer = setTimeout(tick, 1500);
+  }
+
+  var newSlot = null;
+  function renderCreate(s) {
+    if (!$('newName').value) $('newName').value = s.suggestedName || '';
+    awaitCancel(s.awaiting);
+    newSlot = null; $('create').disabled = true; $('createNote').textContent = 'pick a save';
+    return saveList($('createSaves'), function (h) { newSlot = h.slot; $('create').disabled = false; $('createNote').textContent = 'from slot ' + (h.slot + 1) + ', ' + h.area; });
+  }
+  $('create').onclick = function () {
+    if (newSlot === null) return;
+    $('create').disabled = true; say('Creating…');
+    api('/api/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slot: newSlot, name: $('newName').value.trim() }) })
+      .then(function (r) {
+        if (!r.started) { say('Created ' + r.path + '. Start it from PRACTICE in the game; it opens in the editor.', 'ok'); $('create').disabled = false; return; }
+        say('Created ' + r.path + '. The game is loading it into the editor…', 'ok');
+        return waitForSession(20);
+      })
+      .catch(function (e) { say('Could not create it: ' + e.message, 'bad'); $('create').disabled = false; });
+  };
+  // the game loads for a few seconds before the segment is open to edit
+  function waitForSession(tries) {
+    return api('/api/segment').then(function (s) {
+      if (s.session) return load();
+      if (tries <= 0) { say('The game has not opened the segment yet; reload once it has.', 'bad'); return; }
+      return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return waitForSession(tries - 1); });
+    });
+  }
+
+  function renderBase() {
+    $('baseInfo').textContent = state.base ? describe(state.base) : "the segment's own save";
+  }
+  $('changeSave').onclick = function () {
+    var list = $('changeSaves');
+    list.hidden = !list.hidden;
+    if (list.hidden) return;
+    saveList(list, function (h) {
+      if (!confirm('Start this segment from slot ' + (h.slot + 1) + ' (' + h.area + ') from now on? A running attempt reloads from it.')) return;
+      say('Replacing the starting save…');
+      api('/api/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slot: h.slot }) })
+        .then(function (r) {
+          list.hidden = true;
+          say(r.restarted ? 'Starting save replaced; the game is reloading from it.'
+            : 'Starting save replaced; the segment starts from it next time you run it.', 'ok');
+          return new Promise(function (ok) { setTimeout(ok, r.restarted ? 2500 : 300); });
+        })
+        .then(load)
+        .catch(function (e) { say('Could not replace the save: ' + e.message, 'bad'); });
+    });
+  };
 
   function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : Math.round(n * 10) / 10; }
 
@@ -420,7 +546,9 @@
     if (state.map || typeof L === 'undefined') return;
     var map = L.map('map', { crs: gameCrs(), zoomControl: true, minZoom: 2, maxZoom: 7, attributionControl: false });
     L.tileLayer('/tiles/{z}/{x}/{y}.png', { noWrap: true, maxNativeZoom: 6, maxZoom: 7, tileSize: 256, bounds: [[-500, -400], [700, 800]] }).addTo(map);
-    map.setView([-240, 120], 5);
+    var start = state.segment && state.segment.start;
+    if (start && typeof start.x === 'number' && typeof start.y === 'number') map.setView([start.y, start.x], 6);
+    else map.setView([-240, 120], 5);
     state.map = map;
     var zoneColor = {};
     var palette = ['#7fd1ff', '#ffb36b', '#9be37f', '#ff8fb1', '#e0c26b', '#c59bff', '#6bf0dc', '#ff7f7f', '#b8b8ff', '#ffd27f'];
@@ -598,10 +726,12 @@
   function render() {
     var seg = state.segment;
     $('name').value = seg.name || '';
+    $('about').value = seg.about || '';
     var timing = seg.timing || {};
     $('mode').value = timing.mode === 'average' ? 'average' : 'best';
     $('showGhost').value = timing.showGhost || '';
     $('qtm').checked = !!seg.qtm_enabled;
+    renderBase();
     var end = seg.end = seg.end || {};
     $('goalBox').textContent = end.box && end.box.length === 4 ? end.box.join(', ') : 'none';
     $('count').value = typeof end.count === 'number' ? end.count : '';
@@ -823,6 +953,8 @@
     var seg = state.segment;
     seg.version = seg.version || 1;
     seg.name = $('name').value;
+    var about = $('about').value.trim();
+    if (about) { seg.about = about; } else { delete seg.about; }
     seg.timing = seg.timing || {};
     seg.timing.mode = $('mode').value;
     if ($('showGhost').value) seg.timing.showGhost = $('showGhost').value; else delete seg.timing.showGhost;
@@ -847,6 +979,30 @@
       .catch(function (e) { say('Save failed: ' + e.message, 'bad'); });
   };
   $('reload').onclick = load;
+
+  // This tab is the game's editor pane: while it keeps checking in, opening the editor from
+  // the game turns this one around instead of stacking up another copy of it.
+  var pane = Math.random().toString(36).slice(2);
+  var paneNew = true;
+  var paneTitle = document.title;
+  function checkIn() {
+    var see = document.hasFocus && document.hasFocus();
+    return api('/api/pane?id=' + pane + (paneNew ? '&new=1' : '') + (see ? '&see=1' : '')).then(function (r) {
+      paneNew = false;
+      if (r.reload) { turned(); window.scrollTo(0, 0); load(); }
+    }).catch(function () { });
+  }
+  // A background tab cannot pull itself to the front -- browsers do not allow it -- so it
+  // marks its own title instead, and clears the mark once it is looked at.
+  function turned() {
+    try { window.focus(); } catch (e) { }
+    if (document.hasFocus && document.hasFocus()) return;
+    document.title = '\u2190 ' + paneTitle;
+    var clear = function () { document.title = paneTitle; window.removeEventListener('focus', clear); };
+    window.addEventListener('focus', clear);
+  }
+  setInterval(checkIn, 2000);
+  checkIn();
   load();
 })();
 </script>

@@ -87,6 +87,13 @@ public class SaveSlotsItemsUI : MonoBehaviour {
         Scroll.localPosition = Vector3.left * m_scroll * Spacing;
     }
 
+    // For a scroll set while the screen is hidden: it fades in already in place rather than
+    // sliding there in front of you.
+    public void SnapScroll() {
+        m_scroll = m_targetScroll;
+        Scroll.localPosition = Vector3.left * m_scroll * Spacing;
+    }
+
     public void SetScrollFromIndex(int index) {
         TargetScroll = index - 1;
     }

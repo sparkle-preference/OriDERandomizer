@@ -78,9 +78,21 @@ public static class PracticeController {
     // its own boxes, end condition, items and history. From the title screen the game's
     // own load sequence loads, and the world freezes once it has finished.
     public static void Begin(BfrpFile file, string variant, bool fromTitle) {
+        // taken before anything can throw: a segment that will not parse must not leave the
+        // next one opening in the editor
+        var wanted = EditNext;
+        EditNext = false;
         File = file;
         File.Variant = variant;
         Segment = PracticeSegment.Parse(file, variant);
+        // nothing to end it means nothing to run: the attempt opens in the editor instead
+        editOnLoad = wanted || !Segment.HasEnd;
+        if (fromTitle) {
+            told = false;
+        }
+
+        awaitingStart = false;
+        Randomizer.unpinMessage();
         RandomizerBoxes.Use(Segment.Boxes);
         Placements = PracticeSegment.ResolvePlacements(file, variant);
         ResetGhosts();
@@ -115,6 +127,14 @@ public static class PracticeController {
     }
 
     private static bool statsPending;
+
+    // loading a segment that is on its way to the editor: no run, so nothing to time
+    public static bool EditPending { get { return editOnLoad; } }
+
+    private static bool editOnLoad;
+
+    // the next Begin lands in the editor whatever the segment says
+    public static bool EditNext;
 
     // Loads practice/debug.bfrp and starts it, or ends a running session. The
     // file select will call Begin the same way once it exists.
@@ -165,6 +185,63 @@ public static class PracticeController {
             return;
         }
 
+        Begin(File, File.Variant);
+    }
+
+    // The retry bind doubles as "I have read it": the briefing holds the countdown.
+    public static void RetryOrStart() {
+        if (!Active) {
+            return;
+        }
+
+        if (awaitingStart) {
+            awaitingStart = false;
+            Randomizer.unpinMessage();
+            return;
+        }
+
+        Retry();
+    }
+
+    private static bool awaitingStart;
+
+    // once a session, not once an attempt
+    private static bool told;
+
+    // Where this segment starts, for the page's map. Written the first time it is played,
+    // since only a real load knows where the save puts Ori.
+    private static void RememberStart() {
+        // saving the container saves whatever is in it, so never while the editor holds boxes
+        // nobody has asked to keep
+        if (File == null || Characters.Sein == null || PracticeEditor.Active || editOnLoad) {
+            return;
+        }
+
+        var at = Characters.Sein.Position;
+        var start = File.Segment["start"];
+        if (start.IsObject && Math.Abs(start["x"].Num - at.x) < 1.0 && Math.Abs(start["y"].Num - at.y) < 1.0) {
+            return;
+        }
+
+        try {
+            var where = JsonValue.NewObject();
+            where.Set("x", JsonValue.Of(Math.Round(at.x, 1)));
+            where.Set("y", JsonValue.Of(Math.Round(at.y, 1)));
+            File.Segment.Set("start", where);
+            File.Save();
+        } catch (Exception e) {
+            Randomizer.log("practice: could not record the start: " + e.Message);
+        }
+    }
+
+    // The start was swapped from the page: the attempt begins again from the new save, in
+    // the editor if that is where it was.
+    public static void Restart() {
+        if (!Active) {
+            return;
+        }
+
+        EditNext = Current == Phase.Editing;
         Begin(File, File.Variant);
     }
 
@@ -311,6 +388,15 @@ public static class PracticeController {
             return;
         }
 
+        // The editor cannot follow the game to the title, and a session left standing there
+        // shows an empty save select over it.
+        if (Current == Phase.Editing && GameController.Instance != null
+                && GameController.Instance.GameInTitleScreen) {
+            End();
+            PracticeSelect.ReopenOnTitle();
+            return;
+        }
+
         var dt = Time.unscaledDeltaTime * 1000.0;
         PracticeHud.Tick();
         if (Current == Phase.Countdown) {
@@ -332,6 +418,21 @@ public static class PracticeController {
                 // the base save may carry a seed's taken boxes; this attempt's start untaken
                 RandomizerBoxes.ClearOff();
                 GrantStartingItems();
+                RememberStart();
+                if (editOnLoad) {
+                    editOnLoad = false;
+                    PracticeEditor.Begin();
+                    return;
+                }
+
+                // the maker's word on what this is, once a session, and the countdown waits
+                // for the player to say they have read it
+                if (!told && Segment != null && !string.IsNullOrEmpty(Segment.About)) {
+                    told = true;
+                    awaitingStart = true;
+                    Randomizer.pinMessage(Segment.About + "\n\npress [[Retry Practice Segment]] to start");
+                }
+
                 return;
             }
 
@@ -343,6 +444,11 @@ public static class PracticeController {
 
             // the world is already still; the numbers start as the black lifts
             if (Fading()) {
+                return;
+            }
+
+            // held on the briefing until it is answered
+            if (awaitingStart) {
                 return;
             }
 
@@ -430,7 +536,14 @@ public static class PracticeController {
         LastResult = Clock(Elapsed);
         if (against >= 0) {
             var delta = Elapsed - against;
-            line += "\n" + (delta < 0 ? "-" : "+") + Clock(Math.Abs(delta)) + (average_mode ? " vs average" : " vs best");
+            // green when the number is better than what you had, red when it is worse
+            var mark = delta < 0 ? "$" : "@";
+            if (delta < 0) {
+                line += "   $(" + (average_mode ? "below average!" : "new PB!") + ")$";
+            }
+
+            line += "\n" + mark + (delta < 0 ? "-" : "+") + Clock(Math.Abs(delta))
+                + (average_mode ? " vs average" : " vs best") + mark;
         } else {
             line += "\nfirst run";
         }
@@ -442,8 +555,8 @@ public static class PracticeController {
             var deaths = Get(Deaths);
             var quits = Get(Quits);
             line += "\navg " + Clock(mean < 0 ? Elapsed : mean) + " over " + runs + (runs == 1 ? " run" : " runs")
-                + "\n" + deaths + (deaths == 1 ? " death, " : " deaths, ") + quits + (quits == 1 ? " quit, " : " quits, ")
-                + Clock(MenuElapsed) + " in menus";
+                + "\n" + deaths + (deaths == 1 ? " death, " : " deaths, ") + quits + (quits == 1 ? " quit" : " quits")
+                + "\n" + Clock(MenuElapsed) + " in menus";
         }
 
         // a hint would be hidden by the finish screen opening; a box of our own is not
@@ -489,6 +602,14 @@ public static class PracticeController {
     // keeps the session, and the clock, through it; any other ends here.
     public static void OnReturnToTitle() {
         if (!Active) {
+            return;
+        }
+
+        // An editor has nothing to park, and a countdown has no run to keep: leaving either
+        // ends the session, whatever the segment says about quitting to menu.
+        if (Current == Phase.Editing || Current == Phase.Countdown) {
+            End();
+            PracticeSelect.ReopenOnTitle();
             return;
         }
 
@@ -593,6 +714,8 @@ public static class PracticeController {
     }
 
     public static void OnQuitToMenu() {
+        // a freeze that rode along would hold the title's own menu shut
+        Resume();
         Inc(Quits, 1);
         ParkGhostAtLink();
     }
@@ -637,6 +760,7 @@ public static class PracticeController {
 
         Segment = PracticeSegment.Parse(File, File.Variant);
         RandomizerBoxes.Use(Segment.Boxes);
+        Placements = PracticeSegment.ResolvePlacements(File, File.Variant);
     }
 
     public static void OnPickup() {

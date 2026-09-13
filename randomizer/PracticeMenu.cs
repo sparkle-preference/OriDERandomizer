@@ -27,6 +27,8 @@ public static class PracticeMenu {
 
     private static RandomizerMessageProvider retryLabel;
 
+    private static RandomizerMessageProvider saveLabel;
+
     // the next show is dressed whatever the segment says
     private static bool wanted;
 
@@ -37,7 +39,10 @@ public static class PracticeMenu {
         try {
             Restore(screen);
             var segment = PracticeController.Segment;
-            if (PracticeController.Active && (wanted || segment == null || !segment.QuitToMenu)) {
+            // a segment that keeps the vanilla pause for its quit trick still wants the
+            // editor's rows while it is being edited: there is no run to quit out of
+            if (PracticeController.Active
+                    && (wanted || PracticeEditor.Active || segment == null || !segment.QuitToMenu)) {
                 Decorate(screen);
             }
         } catch (Exception e) {
@@ -76,18 +81,22 @@ public static class PracticeMenu {
     private static void Decorate(InventoryManager screen) {
         var manager = screen.NavigationManager;
         var finished = PracticeController.Current == PracticeController.Phase.Finished;
+        var editing = PracticeController.Current == PracticeController.Phase.Editing;
 
         // the row's text is its value box, rewritten from its provider every frame
         if (retryLabel == null) {
             retryLabel = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
             retryLabel.SetMessage("RETRY");
+            saveLabel = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
+            saveLabel.SetMessage("SAVE");
         }
 
-        var retry = Take(manager, "difficulty", Retry, false);
+        // while editing the row saves and stays; everywhere else it starts over
+        var retry = Take(manager, "difficulty", editing ? (Action)Save : Retry, false);
         if (retry != null && screen.Difficulty != null) {
             retry.Boxes.Add(screen.Difficulty);
             retry.Providers.Add(screen.Difficulty.MessageProvider);
-            screen.Difficulty.SetMessageProvider(retryLabel);
+            screen.Difficulty.SetMessageProvider(editing ? saveLabel : retryLabel);
             foreach (var box in retry.Item.GetComponentsInChildren<MessageBox>(true)) {
                 if (box != screen.Difficulty) {
                     retry.Boxes.Add(box);
@@ -103,8 +112,10 @@ public static class PracticeMenu {
         Label(exit, "EXIT TO PRACTICE MENU");
 
         // the cutscene skip row is the practice row: edit mid-run, save while editing,
-        // pin once the run is over
-        if (PracticeController.Current == PracticeController.Phase.Editing) {
+        // pin once the run is over; editing borrows Resume and Options as well
+        if (editing) {
+            Label(Take(manager, "continue", null, true), "BACK TO EDITING");
+            Label(Take(manager, "options", Reload, false), "RELOAD FROM DISK");
             Label(Take(manager, "skip", SaveAndRetry, false), "SAVE AND RETRY");
         } else if (!finished) {
             Label(Take(manager, "skip", Edit, false), "EDIT PRACTICE SEGMENT");
@@ -130,8 +141,9 @@ public static class PracticeMenu {
             }
         }
 
-        // the editor row goes last, under Exit
-        Arrange(manager, finished ? null : Find(manager, "skip"));
+        // the editor row goes last, under Exit; while editing, Reload sits under Save
+        Arrange(manager, finished ? null : Find(manager, "skip"),
+            editing ? Find(manager, "options") : null, editing ? Find(manager, "difficulty") : null);
         Relayout(manager);
     }
 
@@ -169,7 +181,7 @@ public static class PracticeMenu {
     // The layout lists rows top to bottom, so moving one is moving it in that list.
     // The cage's edges are replaced with plain up/down ones between the visible rows:
     // an edge into a hidden row is a dead end.
-    private static void Arrange(CleverMenuItemSelectionManager manager, CleverMenuItem bottom) {
+    private static void Arrange(CleverMenuItemSelectionManager manager, CleverMenuItem bottom, CleverMenuItem move, CleverMenuItem after) {
         var layout = manager.GetComponentInChildren<CleverMenuItemLayout>(true);
         if (layout == null) {
             return;
@@ -183,6 +195,11 @@ public static class PracticeMenu {
 
         if (bottom != null && layout.MenuItems.Remove(bottom)) {
             layout.MenuItems.Add(bottom);
+        }
+
+        if (move != null && after != null && layout.MenuItems.Remove(move)) {
+            var at = layout.MenuItems.IndexOf(after);
+            layout.MenuItems.Insert(at < 0 ? layout.MenuItems.Count : at + 1, move);
         }
 
         var edges = new List<CleverMenuItemSelectionManager.NavigationData>();
@@ -432,6 +449,16 @@ public static class PracticeMenu {
     private static void SaveAndRetry() {
         Game.UI.Menu.HideMenuScreen(true);
         PracticeEditor.SaveAndRetry();
+    }
+
+    private static void Save() {
+        Game.UI.Menu.HideMenuScreen(true);
+        PracticeEditor.Save();
+    }
+
+    private static void Reload() {
+        Game.UI.Menu.HideMenuScreen(true);
+        PracticeEditor.Reload();
     }
 }
 

@@ -56,28 +56,78 @@ public static class PracticeEditor {
         dragging = false;
     }
 
-    // save what was drawn and run it
+    // save what was drawn and run it; with nothing to end the run yet, stay
     public static void SaveAndRetry() {
         if (!Active) {
             return;
         }
 
-        try {
-            PracticeController.File.Save();
-        } catch (Exception e) {
-            Randomizer.LogError("practice: could not save the segment: " + e.Message);
+        if (!Write()) {
+            Say("The segment could not be saved; see randomizer.log", 300);
+            return;
+        }
+
+        if (PracticeController.Segment != null && !PracticeController.Segment.HasEnd) {
+            Say("Saved. Nothing ends this segment yet: draw a goal box with 1, or set the end condition on the page", 600);
+            return;
         }
 
         Stop();
         PracticeController.Retry();
     }
 
-    public static void Tick() {
+    // save what was drawn and keep editing
+    public static void Save() {
+        if (Active && Write()) {
+            Say("Segment saved", 180);
+        }
+    }
+
+    private static bool Write() {
+        try {
+            PracticeController.File.Save();
+            return true;
+        } catch (Exception e) {
+            Randomizer.LogError("practice: could not save the segment: " + e.Message);
+            return false;
+        }
+    }
+
+    // what is on disk replaces everything drawn since the last save
+    public static void Reload() {
         if (!Active) {
             return;
         }
 
-        Pan();
+        try {
+            var fresh = BfrpFile.Load(PracticeController.File.Path);
+            fresh.Variant = PracticeController.File.Variant;
+            PracticeController.File = fresh;
+            lastBox = null;
+            PracticeController.Reparse();
+            Say("Segment reloaded from disk", 180);
+        } catch (Exception e) {
+            Randomizer.LogError("practice: could not reload the segment: " + e.Message);
+        }
+    }
+
+    public static void Tick() {
+        if (!Active || Characters.Sein == null || GameController.Instance == null || GameController.Instance.GameInTitleScreen) {
+            return;
+        }
+
+        // Ctrl and a letter is a command, not a pan
+        var ctrl = UnityEngine.Input.GetKey(KeyCode.LeftControl) || UnityEngine.Input.GetKey(KeyCode.RightControl);
+        if (ctrl) {
+            if (UnityEngine.Input.GetKeyDown(KeyCode.S)) {
+                Save();
+            } else if (UnityEngine.Input.GetKeyDown(KeyCode.R)) {
+                Reload();
+            }
+        } else {
+            Pan();
+        }
+
         // number keys: the letters are taken by the pan
         if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha1) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad1)) {
             Tool("goal");
@@ -91,6 +141,7 @@ public static class PracticeEditor {
             PracticeServer.Open();
         } else if (UnityEngine.Input.GetKeyDown(KeyCode.V)) {
             toVariant = !toVariant;
+            Randomizer.clearMessage();
             Help();
         } else if (UnityEngine.Input.GetKeyDown(KeyCode.Z)) {
             Undo();
@@ -101,7 +152,18 @@ public static class PracticeEditor {
             return;
         }
 
+        // the legend is this mode's HUD, not a one-off: it goes back up as it runs out
+        if (Time.unscaledTime - helped > HelpAgain && Randomizer.MessageQueue.Count == 0
+                && Randomizer.MessageQueueTime <= 0f) {
+            Help();
+        }
+
         var at = World(Core.Input.CursorPosition);
+        // right click stands Ori where you are looking, which is how the scenes there load
+        if (Core.Input.RightClick.OnPressed && !Game.UI.MainMenuVisible) {
+            Characters.Sein.Position = at;
+        }
+
         if (Core.Input.LeftClick.OnPressed && !Game.UI.MainMenuVisible) {
             dragFrom = at;
             dragging = true;
@@ -124,6 +186,8 @@ public static class PracticeEditor {
 
     private static void Tool(string name) {
         tool = name;
+        // the legend is what says which box you are drawing, so it changes as you change it
+        Randomizer.clearMessage();
         Help();
     }
 
@@ -135,13 +199,27 @@ public static class PracticeEditor {
         get { return toVariant && HasVariant; }
     }
 
+    // the legend's own duration, less a moment, so it never blinks out between showings
+    private const float HelpAgain = 25f;
+
+    private static float helped = -100f;
+
+    // What the editor has to say goes up now rather than behind the legend, and the legend
+    // waits its turn rather than covering it.
+    private static void Say(string text, int frames) {
+        Randomizer.clearMessage();
+        Randomizer.printInfo(text, frames);
+        helped = Time.unscaledTime - HelpAgain + frames / 60f;
+    }
+
     private static void Help() {
+        helped = Time.unscaledTime;
         var where = !HasVariant ? "" : "\n"
-            + (TargetVariant ? "boxes go to this variant" : "boxes go to the shared list") + "   V switches";
-        Randomizer.printInfo("EDITING - drag to draw a " + tool + " box" + where + "\n"
-            + "1 goal   2 kill   3 hint   4 solid   Z undo   X delete under cursor\n"
-            + "WASD pan   Enter save and retry\n"
-            + "5 open the segment editor in a browser" + (PracticeServer.Running ? "   " + PracticeServer.Url : ""), 1800);
+            + (TargetVariant ? "boxes go to this variant" : "boxes go to the shared list") + "   V: switch";
+        Randomizer.printQuiet("EDITING - drag to draw a " + tool + " box" + where + "\n"
+            + "1: goal   2: kill   3: hint   4: solid   Z: undo   X: delete under cursor\n"
+            + "WASD: pan   right click: stand Ori here   Ctrl+S: save   Ctrl+R: reload from disk   Enter: save and retry\n"
+            + "5: open the segment editor in a browser" + (PracticeServer.Running ? "   " + PracticeServer.Url : ""), 1800);
     }
 
     // WASD walks the camera's own root, which the frozen chase leaves alone
@@ -303,37 +381,27 @@ public static class PracticeEditor {
             game.CreateCheckpoint();
             game.SaveGameController.PerformSave();
             var bytes = File.ReadAllBytes(game.SaveGameController.GetSaveFilePath(SaveSlotsManager.CurrentSlotIndex));
-
-            var area = "segment";
-            using (var reader = new BinaryReader(new MemoryStream(bytes))) {
-                var info = new SaveSlotInfo();
-                if (info.LoadFromReader(reader) && !string.IsNullOrEmpty(info.AreaName)) {
-                    area = info.AreaName;
-                }
-            }
-
-            var name = area + " " + DateTime.Now.ToString("yyyy-MM-dd HHmm");
-            var safe = name;
-            foreach (var bad in Path.GetInvalidFileNameChars()) {
-                safe = safe.Replace(bad, '-');
-            }
-
-            var folder = PracticeSelect.Folder;
-            if (!Directory.Exists(folder)) {
-                Directory.CreateDirectory(folder);
-            }
-
-            var path = Path.Combine(folder, safe + ".bfrp");
-            var segment = JsonValue.NewObject();
-            segment.Set("version", JsonValue.Of(1));
-            segment.Set("name", JsonValue.Of(name));
-            segment.Set("end", JsonValue.NewObject());
-            segment.Set("boxes", JsonValue.NewArray());
-            BfrpFile.Create(path, segment, bytes).Save();
-            Randomizer.printInfo("Practice segment saved: " + path + "\nStart it from PRACTICE and press EDIT BOXES", 600);
-            Randomizer.log("practice: created " + path + " (" + bytes.Length + " byte save)");
+            var path = CreateFrom(bytes, null);
+            Randomizer.printInfo("Practice segment saved: " + path + "\nStart it from PRACTICE: it opens in the editor", 600);
         } catch (Exception e) {
             Randomizer.LogError("practice: could not create a segment: " + e.Message);
         }
+    }
+
+    // A new container in the practice folder around a save, with nothing to end it yet.
+    // The name is the next "New Segment N" unless one is given.
+    public static string CreateFrom(byte[] save, string name) {
+        if (string.IsNullOrEmpty(name)) {
+            name = PracticeSelect.NextName();
+        }
+
+        var path = PracticeSelect.PathFor(name);
+        var segment = JsonValue.NewObject();
+        segment.Set("version", JsonValue.Of(1));
+        segment.Set("name", JsonValue.Of(name));
+        segment.Set("end", JsonValue.NewObject());
+        BfrpFile.Create(path, segment, save).Save();
+        Randomizer.log("practice: created " + path + " (" + save.Length + " byte save)");
+        return path;
     }
 }
