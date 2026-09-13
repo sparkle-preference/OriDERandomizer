@@ -316,6 +316,7 @@ public static class RandomizerBonusSkill {
                 BonusSkillText(pos + "\n" + scene + "\n" + zone);
                 Randomizer.log("MARK | scene=" + scene + " | zone=" + zone + " | pos=" + pos);
                 break;
+            }
             case 117:
                 if (IsActive(ab)) {
                     Deactivate(ab);
@@ -324,8 +325,8 @@ public static class RandomizerBonusSkill {
                     Activate(ab);
                     BonusSkillText("Warp to Grenade enabled");
                 }
+
                 break;
-            }
             default:
                 return;
         }
