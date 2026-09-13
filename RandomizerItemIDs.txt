@@ -77,6 +77,7 @@ Randomizer inventory ids.
 114 - Summon Mom (unfinished/nonfunctional)
 115 - Toggle Enhanced Effects
 116 - Mark (prints position/scene/zone)
+117 - Warp to Grenade
 
 --- if ID is less than 130, sync will consider it a bonus skill. 
 --- IF IT'S NOT ACTUALLY A BONUS SKILL, THINGS WILL BE BAD.
