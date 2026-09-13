@@ -247,6 +247,7 @@ Enhanced mode -- April Fools :)
 1107 - Enable Debug Movement (DebugMenuB.DebugControlsEnabled)
 1108 - Enable Autoplayer (collects one in-logic location per second)
 1109 - Enable Pickup Drop (grants and deletes pickup.tmp)
+1110 - Save at allies' soul links (ghosts): the soul flame button at a ghost link saves there without moving your own, and their links show on the map
 
 
 1600 - Pickups found everywhere

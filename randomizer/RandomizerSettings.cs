@@ -12,7 +12,7 @@ public static class RandomizerSettings {
     }
 
     // move this with every new setting, or existing installs take the nag path on update
-    public static string LastAddedSetting = "Rainbow Dash";
+    public static string LastAddedSetting = "Echo Delay";
 
     private static string StripComment(string line) {
         var at = line.IndexOf("//");
@@ -269,6 +269,8 @@ public static class RandomizerSettings {
         DevSettings.NetcodeHost = new HostSetting("Netcode Host", Randomizer.NETCODE_HOST, "The server root address for netcode functionality (without the protocol prefix).", false, true);
         DevSettings.PlainHttp = new BoolSetting("Netcode Plain HTTP", false, "True: connect to the server without encryption (only do this if you're locally hosting! it won't work on the actual site!)\nFalse (default): TLS.", false, true);
         DevSettings.BuiltinHost = new StringSetting("Built-in Netcode Host", Randomizer.NETCODE_HOST, "Where this dll pointed when it was built. (Not an actual setting. Don't change it.)", false);
+        DevSettings.EchoDelay = new FloatSetting("Echo Delay", 0.5f, "Seconds behind you the first echo runs (the Spawn Echo keybind).", false, true);
+        DevSettings.EchoSpacing = new FloatSetting("Echo Spacing", 0.5f, "Seconds each further echo trails the one before it.", false, true);
     }
 
     // 0-255 is the "normal" range and lands at half intensity, leaving room above 255 to
@@ -430,6 +432,8 @@ public static class RandomizerSettings {
         public static HostSetting NetcodeHost;
         public static BoolSetting PlainHttp;
         public static StringSetting BuiltinHost;
+        public static FloatSetting EchoDelay;
+        public static FloatSetting EchoSpacing;
     }
 
     public abstract class SettingBase {

@@ -336,7 +336,13 @@ public static class RandomizerGhostSignal {
     private static void Feed(int who, Sample got) {
         LiveGhostSource ghost;
         var known = Ghosts.TryGetValue(who, out ghost);
-        if (!known || !RandomizerGhost.Showing(ghost)) {
+        var showing = known && RandomizerGhost.Showing(ghost);
+        // a title heartbeat cannot raise a ghost already taken down for standing on the title
+        if (!showing && got.OnTitle) {
+            return;
+        }
+
+        if (!showing) {
             ghost = new LiveGhostSource("p" + who, who, RandomizerGhost.InterpolationDelay);
             Ghosts[who] = ghost;
             RandomizerGhost.AddLive(ghost);

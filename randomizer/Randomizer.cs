@@ -660,6 +660,16 @@ public static class Randomizer {
                 return;
             }
 
+            if (RandomizerRebinding.SpawnEcho.IsPressed()) {
+                RandomizerGhost.SpawnEcho();
+                return;
+            }
+
+            if (RandomizerRebinding.ClearAllEchoes.IsPressed()) {
+                RandomizerGhost.ClearEchoes();
+                return;
+            }
+
             if (RandomizerRebinding.ShowStats.IsPressed()) {
                 RandomizerStatsManager.ShowStats(10);
                 if (BingoController.Active) {

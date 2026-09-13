@@ -240,6 +240,8 @@ public static class RandomizerRebinding {
         { "Practice Menu", "" },
         { "Create Practice Segment", "LeftAlt+M, RightAlt+M" },
         { "Open Practice Editor Page", "" },
+        { "Spawn Echo", "" },
+        { "Clear All Echoes", "" },
         { "Save Select Back 3", "PageUp" },
         { "Save Select Forward 3", "PageDown" },
         { "Save Select Back 10", "LeftShift+PageUp, RightShift+PageUp" },
@@ -284,6 +286,8 @@ public static class RandomizerRebinding {
     public static BindSet OpenPracticeMenu = new BindSet(new List<SingleBind>());
     public static BindSet CreatePracticeSegment = new BindSet(new List<SingleBind>());
     public static BindSet OpenPracticeEditorPage = new BindSet(new List<SingleBind>());
+    public static BindSet SpawnEcho = new BindSet(new List<SingleBind>());
+    public static BindSet ClearAllEchoes = new BindSet(new List<SingleBind>());
     public static BindSet SaveSelectBack3 = new BindSet(new List<SingleBind>());
     public static BindSet SaveSelectForward3 = new BindSet(new List<SingleBind>());
     public static BindSet SaveSelectBack10 = new BindSet(new List<SingleBind>());
@@ -324,6 +328,8 @@ public static class RandomizerRebinding {
         { "Practice Menu", OpenPracticeMenu },
         { "Create Practice Segment", CreatePracticeSegment },
         { "Open Practice Editor Page", OpenPracticeEditorPage },
+        { "Spawn Echo", SpawnEcho },
+        { "Clear All Echoes", ClearAllEchoes },
         { "Save Select Back 3", SaveSelectBack3 },
         { "Save Select Forward 3", SaveSelectForward3 },
         { "Save Select Back 10", SaveSelectBack10 },

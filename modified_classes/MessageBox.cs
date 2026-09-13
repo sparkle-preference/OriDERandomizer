@@ -336,6 +336,13 @@ public class MessageBox : MonoBehaviour {
     }
 
     public void SetMessageProvider(MessageProvider messageProvider) {
+        if (m_tinted) {
+            var material = Background().material;
+            material.SetTexture("_MainTex", m_untintedTexture);
+            material.SetColor("_Color", m_untinted);
+            m_tinted = false;
+        }
+
         MessageProvider = messageProvider;
         RefreshText();
     }
@@ -389,6 +396,32 @@ public class MessageBox : MonoBehaviour {
         var backgroundRenderer = Visibility.transform.FindChild("background/hintMessageBackground").GetComponent<Renderer>();
         UberShaderAPI.SetMainTexture(backgroundRenderer, WhiteBackground, true);
         UberShaderAPI.SetColor(backgroundRenderer, bgColor, true);
+    }
+
+    // This one box in a dark shade of a player's colour; shown again, it comes back plain. The
+    // game's texture is black, so the colour goes on the white copy the randomizer's boxes use.
+    public void TintBackground(Color shade, float strength) {
+        var renderer = Background();
+        if (renderer == null) {
+            return;
+        }
+
+        var material = renderer.material;
+        if (!m_tinted) {
+            m_untintedTexture = material.GetTexture("_MainTex");
+            m_untinted = material.GetColor("_Color");
+            m_tinted = true;
+        }
+
+        var dark = Color.Lerp(Color.black, shade, strength);
+        dark.a = m_untinted.a;
+        material.SetTexture("_MainTex", WhiteBackground);
+        material.SetColor("_Color", dark);
+    }
+
+    private Renderer Background() {
+        var background = Visibility ? Visibility.transform.FindChild("background/hintMessageBackground") : null;
+        return background ? background.GetComponent<Renderer>() : null;
     }
 
     private static Texture2D _hintMessageBackgroundWhite;
@@ -449,6 +482,12 @@ public class MessageBox : MonoBehaviour {
     private MessageDescriptor m_currentMessage;
 
     private bool m_hasBackgroundColor;
+
+    private bool m_tinted;
+
+    private Color m_untinted;
+
+    private Texture m_untintedTexture;
 
     private struct TextFont {
         public BitmapFont Font;

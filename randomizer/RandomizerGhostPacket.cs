@@ -31,6 +31,8 @@ public static class RandomizerGhostPacket {
     private const int Dead = 1 << 7;
 
     private const int SoulLinked = 1 << 0;
+    private const int InMenu = 1 << 1;
+    private const int OnTitle = 1 << 2;
 
     // Ori's sprite mirrors by turning 180 degrees about Y rather than by a negative scale --
     // Transform.lossyScale cannot report a mirror, which is why the recording never shows one.
@@ -50,6 +52,8 @@ public static class RandomizerGhostPacket {
 
         var flags2 = 0;
         if (!float.IsNaN(sample.SoulLink.x)) { flags2 |= SoulLinked; }
+        if (sample.InMenu) { flags2 |= InMenu; }
+        if (sample.OnTitle) { flags2 |= OnTitle; }
 
         var at = 0;
         into[at++] = Version;
@@ -123,6 +127,8 @@ public static class RandomizerGhostPacket {
         sample.Charge = (flags & Charged) != 0 ? 2 : ((flags & Charging) != 0 ? 1 : 0);
         sample.Triple = (flags & Triple) != 0;
         sample.Died = (flags & Dead) != 0;
+        sample.InMenu = (flags2 & InMenu) != 0;
+        sample.OnTitle = (flags2 & OnTitle) != 0;
 
         sample.BashAngle = float.NaN;
         sample.BashTarget = new Vector2(float.NaN, float.NaN);

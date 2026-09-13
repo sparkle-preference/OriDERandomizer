@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CatlikeCoding.TextBox;
 using Core;
 using Game;
 using UnityEngine;
@@ -46,7 +47,7 @@ public class RandomizerGhostView {
         // true asks for the instance material: false hands back the one the live Ori is
         // still rendering with, and tinting that tints them both
         foreach (var renderer in GhostObject.GetComponentsInChildren<Renderer>(true)) {
-            UberShaderAPI.SetColor(renderer, Shade, true);
+            UberShaderAPI.SetColor(renderer, new Color(Shade.r, Shade.g, Shade.b, 0f), true);
         }
 
         GhostTransform = GhostObject.transform;
@@ -57,6 +58,10 @@ public class RandomizerGhostView {
         AuraShown = 0;
         Hidden = false;
         Faded = 1f;
+        // it fades up from nothing the same way it will fade away
+        Veil = 0f;
+        Leaving = false;
+        WarpUntil = 0f;
         return true;
     }
 
@@ -75,24 +80,65 @@ public class RandomizerGhostView {
         Drop(ref AimObject);
         Drop(ref WallObject);
         Drop(ref LinkObject);
+        Drop(ref LabelObject);
         GhostTransform = null;
         GhostAnimator = null;
         ArrowPivot = null;
         AimRenderer = null;
+        LabelBox = null;
+        Labelled = null;
     }
 
     // Hiding is SetActive, which also stops the animator, most of what a distant ghost costs;
     // transforms still apply to an inactive object, so it does not snap when it comes back.
+    // The object itself goes once the veil has faded it out, in Sink.
     public void Cull(bool hidden) {
         if (GhostObject == null || Hidden == hidden) {
             return;
         }
 
         Hidden = hidden;
-        GhostObject.SetActive(!hidden);
         if (!hidden) {
+            GhostObject.SetActive(true);
+            if (LabelObject != null) {
+                LabelObject.SetActive(Labelled != null);
+                LabelFresh = true;
+            }
+
             // the animator missed everything it slept through, so make the next Pose re-seat it
             Posed = null;
+        }
+    }
+
+    // On its way out for good: the coordinator drops it once Gone.
+    public void Vanish() {
+        Leaving = true;
+    }
+
+    public bool Gone { get { return GhostObject == null || (Leaving && Veil <= 0f); } }
+
+    // Walks the veil towards where this ghost belongs and repaints if it moved. Every frame,
+    // for ghosts on screen and ghosts on their way out alike.
+    public void Sink() {
+        if (GhostObject == null) {
+            return;
+        }
+
+        var want = Leaving || Hidden || Time.time < WarpUntil ? 0f : 1f;
+        if (Veil != want) {
+            var span = want < Veil ? FadeOut : FadeIn;
+            Veil = span > 0.001f
+                ? Mathf.MoveTowards(Veil, want, Time.deltaTime / span)
+                : want;
+            Repaint();
+        }
+
+        // faded out where it stood: now it can stop costing anything
+        if (Veil <= 0f && Hidden && !Leaving && GhostObject.activeSelf) {
+            GhostObject.SetActive(false);
+            if (LabelObject != null) {
+                LabelObject.SetActive(false);
+            }
         }
     }
 
@@ -102,9 +148,18 @@ public class RandomizerGhostView {
         }
 
         Faded = alpha;
+        Repaint();
+    }
+
+    private void Repaint() {
+        var alpha = Faded * Veil;
         var faded = new Color(Shade.r, Shade.g, Shade.b, Shade.a * alpha);
         foreach (var renderer in GhostObject.GetComponentsInChildren<Renderer>(true)) {
             UberShaderAPI.SetColor(renderer, faded, true);
+        }
+
+        if (LabelObject != null) {
+            Paint(LabelObject, alpha * LabelAlpha);
         }
     }
 
@@ -156,12 +211,17 @@ public class RandomizerGhostView {
             Warped = Cursor;
             Randomizer.log("ghost " + Label + ": holding across a " +
                 (to.Position - from.Position).magnitude.ToString("F1") + " unit warp");
+            // out where it stood, in where it lands: by the time it moves it is invisible
+            WarpUntil = Time.time + FadeOut;
+            WarpHold = from.Position;
         }
 
         // facing is a 180 degree turn about Y: slerping through it takes the sprite edge-on, so
         // any large step is a flip and is cut rather than swept
         var flip = Quaternion.Angle(from.Rotation, to.Rotation) > RandomizerGhost.FlipAngle;
-        GhostTransform.position = warp ? from.Position : Vector3.Lerp(from.Position, to.Position, t);
+        GhostTransform.position = Time.time < WarpUntil
+            ? WarpHold
+            : (warp ? from.Position : Vector3.Lerp(from.Position, to.Position, t));
         GhostTransform.rotation = warp || flip
             ? from.Rotation : Quaternion.Slerp(from.Rotation, to.Rotation, t);
         // constant in practice -- Ori's own scale -- but never interpolated, so it stays right
@@ -178,6 +238,7 @@ public class RandomizerGhostView {
         AimLine(from.GrenadeAim);
         WallArrow(from.WallAim);
         SoulLink(from.SoulLink);
+        Status(from);
     }
 
     private static Vector3 VelocityAt(List<Sample> samples, int index) {
@@ -408,7 +469,7 @@ public class RandomizerGhostView {
             return;
         }
 
-        var where = new Vector3(at.x, at.y, 0f);
+        var where = new Vector3(at.x, at.y, RandomizerGhost.LinkBehind);
         if (LinkObject == null) {
             var flame = RandomizerGhost.Flamer();
             if (flame == null || flame.CheckpointMarker == null) {
@@ -431,7 +492,8 @@ public class RandomizerGhostView {
             }
 
             RandomizerGhost.Quiet(LinkObject);
-            RandomizerGhost.Recolor(LinkObject);
+            // theirs, not yours: it wears their colour and stays faint
+            RandomizerGhost.Paint(LinkObject, RandomizerGhost.LinkShade(Shade));
             RandomizerGhost.Dim(LinkObject, RandomizerGhost.LinkAlpha);
         }
 
@@ -439,6 +501,138 @@ public class RandomizerGhostView {
     }
 
     // Called only where a clip begins, so it does not need to guard against repeats.
+    // Seconds this ghost has stood under "..."; the coordinator takes it down after a while.
+    public float TitleFor { get { return TitleSince < 0f ? 0f : Time.time - TitleSince; } }
+
+    private float TitleSince = -1f;
+
+    // what a peer in a menu wears; a static so the glyph can be tried live
+    internal static string PauseGlyph = "II";
+
+    private const float LabelHeight = 0.8f;
+
+    // Every way of not being there takes the same beat -- a word going away, a ghost timing
+    // out, warping, culled -- and everything comes back quicker than it left. Statics: they
+    // are tuned live.
+    internal static float FadeOut = 0.167f;
+
+    internal static float FadeIn = 0.05f;
+
+    // the label's height in world units, whatever size the hint text comes at
+    private const float LabelSize = 1f;
+
+    // A word over the head for a peer who is not really there: "..." on the title screen, a
+    // pause mark in any menu. The text is the hint message's, cloned the way the version
+    // stamp clones it, and followed by position so Ori's flip and scale stay out of it.
+    private void Status(Sample from) {
+        if (from.OnTitle) {
+            if (TitleSince < 0f) {
+                TitleSince = Time.time;
+            }
+        } else {
+            TitleSince = -1f;
+        }
+
+        var text = from.OnTitle ? "..." : (from.InMenu ? PauseGlyph : null);
+        if (text == null && (LabelObject == null || !LabelObject.activeSelf)) {
+            return;
+        }
+
+        if (LabelObject == null && !MakeLabel()) {
+            return;
+        }
+
+        if (!LabelObject.activeSelf) {
+            LabelObject.SetActive(true);
+            LabelFresh = true;
+            LabelAlpha = 0f;
+            Paint(LabelObject, 0f);
+        }
+
+        // TextBox resets its text when it comes up, so ours waits for the frame after
+        if (LabelFresh) {
+            LabelFresh = false;
+            Labelled = null;
+            return;
+        }
+
+        if (text != null && Labelled != text) {
+            Labelled = text;
+            LabelBox.SetText(text);
+            LabelBox.RenderText();
+            var height = LabelBox.boundsTop - LabelBox.boundsBottom;
+            if (height > 0.001f) {
+                LabelObject.transform.localScale = Vector3.one * (LabelSize / height);
+            }
+        }
+
+        var beat = text == null ? FadeOut : FadeIn;
+        LabelAlpha = Mathf.MoveTowards(LabelAlpha, text == null ? 0f : 1f, Time.deltaTime / beat);
+        Paint(LabelObject, Faded * Veil * LabelAlpha);
+        if (LabelAlpha <= 0f) {
+            Labelled = null;
+            LabelObject.SetActive(false);
+            return;
+        }
+
+        LabelObject.transform.position = GhostTransform.position + Vector3.up * LabelHeight;
+        LabelObject.transform.rotation = Quaternion.identity;
+    }
+
+    private void Paint(GameObject target, float alpha) {
+        foreach (var renderer in target.GetComponentsInChildren<Renderer>(true)) {
+            renderer.enabled = true;
+            UberShaderAPI.SetColor(renderer, new Color(Shade.r, Shade.g, Shade.b, alpha), true);
+        }
+    }
+
+    private bool MakeLabel() {
+        var controller = UI.MessageController;
+        var hint = controller == null ? null : controller.HintMessage;
+        var text = hint == null ? null : hint.transform.FindChild("text");
+        if (text == null) {
+            return false;
+        }
+
+        // cloned while inactive, so the clone does not wake up as the hint's own text
+        var wasActive = hint.activeSelf;
+        hint.SetActive(false);
+        var clone = Object.Instantiate(text.gameObject) as GameObject;
+        hint.SetActive(wasActive);
+        if (clone == null) {
+            return false;
+        }
+
+        clone.name = "ghostStatus";
+        clone.transform.parent = null;
+        Object.DontDestroyOnLoad(clone);
+        // the hint's layer is the gui camera's; the ghost is in the world
+        var art = LayerMask.NameToLayer("art");
+        foreach (var child in clone.GetComponentsInChildren<Transform>(true)) {
+            child.gameObject.layer = art;
+        }
+
+        // that component sizes a message background this label does not have
+        var sizer = clone.GetComponent<ScaleToTextBox>();
+        if (sizer != null) {
+            Object.Destroy(sizer);
+        }
+
+        LabelBox = clone.GetComponent<TextBox>();
+        if (LabelBox == null) {
+            Object.Destroy(clone);
+            return false;
+        }
+
+        LabelBox.alignment = AlignmentMode.Center;
+        LabelBox.horizontalAnchor = HorizontalAnchorMode.Center;
+        LabelBox.verticalAnchor = VerticalAnchorMode.Bottom;
+        LabelBox.CreateRendersIfThereAreNone();
+        LabelObject = clone;
+        LabelObject.SetActive(false);
+        return true;
+    }
+
     private void Effects(Sample sample, Vector3 velocity) {
         if (GhostTransform == null) {
             return;
@@ -601,4 +795,24 @@ public class RandomizerGhostView {
     private GameObject WallObject;
 
     private GameObject LinkObject;
+
+    private GameObject LabelObject;
+
+    private TextBox LabelBox;
+
+    // the text on the label, null while it is hidden
+    private string Labelled;
+
+    private bool LabelFresh;
+
+    private float LabelAlpha;
+
+    // 1 on screen, 0 not there: the cull, the warp and the retire all ride this one alpha
+    private float Veil;
+
+    private bool Leaving;
+
+    private float WarpUntil;
+
+    private Vector3 WarpHold;
 }

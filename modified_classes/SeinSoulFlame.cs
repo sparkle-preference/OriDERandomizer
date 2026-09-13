@@ -188,6 +188,8 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
                 m_isCasting = true;
                 if (InsideCheckpointMarker) {
                     m_tapRemainingTime = 0.3f;
+                } else if (FindAllyLink()) {
+                    m_tapRemainingTime = 0.3f;
                 } else if (!CanAffordSoulFlame) {
                     HideOtherMessages();
                     UI.SeinUI.ShakeEnergyOrbBar();
@@ -229,6 +231,8 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
                     GameController.Instance.SaveGameController.PerformSave();
                     m_soulFlame.OnRekindle();
                     GameController.Instance.PerformSaveGameSequence();
+                } else if (m_tapRemainingTime < 0f && !InsideCheckpointMarker && FindAllyLink() && IsSafeToCastSoulFlame == SoulFlamePlacementSafety.Safe) {
+                    SaveAtAllyLink();
                 }
             }
 
@@ -236,7 +240,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
                 m_isCasting = false;
                 if (m_tapRemainingTime > 0f) {
                     m_tapRemainingTime = 0f;
-                    if (AllowedToAccessSkillTree && InsideCheckpointMarker) {
+                    if (AllowedToAccessSkillTree && (InsideCheckpointMarker || FindAllyLink())) {
                         if (m_skillTreeHint) {
                             m_skillTreeHint.Visibility.HideImmediately();
                         }
@@ -253,6 +257,26 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
         if (m_holdDownTime == 1f && m_sein.IsOnGround && m_delayOnGround == 0f) {
             CastSoulFlame();
         }
+    }
+
+    // Rekindling someone else's link: the checkpoint lands on their flame, yours stays put.
+    private void SaveAtAllyLink() {
+        OnSoulFlameCast();
+        var position = Characters.Sein.Position;
+        Characters.Sein.Position = m_allyLink;
+        SaveSlotBackupsManager.CreateCurrentBackup();
+        GameController.Instance.CreateCheckpoint();
+        Characters.Sein.Position = position;
+        GameController.Instance.SaveGameController.PerformSave();
+        GameController.Instance.PerformSaveGameSequence();
+        // the sequence's own box, in the colour of whose link this was
+        if (UI.Hints.CurrentHint) {
+            UI.Hints.CurrentHint.TintBackground(RandomizerGhost.ShadeOf(m_allyPlayer), AllyHintTint);
+        }
+    }
+
+    private bool FindAllyLink() {
+        return RandomizerBonus.AllyLinkSaves && RandomizerGhost.AllyLinkNear(m_sein.Position, AllyLinkRadius, out m_allyLink, out m_allyPlayer);
     }
 
     private void CastSoulFlame() {
@@ -294,7 +318,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
     }
 
     private void HandleCharging() {
-        if (m_isCasting && CanAffordSoulFlame && IsSafeToCastSoulFlame == SoulFlamePlacementSafety.Safe && m_cooldownRemaining == 0f && !InsideCheckpointMarker && PlayerCouldSoulFlame) {
+        if (m_isCasting && CanAffordSoulFlame && IsSafeToCastSoulFlame == SoulFlamePlacementSafety.Safe && m_cooldownRemaining == 0f && !InsideCheckpointMarker && !FindAllyLink() && PlayerCouldSoulFlame) {
             if (m_holdDownTime == 0f && ChargingSound) {
                 ChargingSound.Play();
             }
@@ -364,10 +388,15 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
 
     private void HandleSkillTreeHint() {
         if (AllowedToAccessSkillTree) {
-            if (InsideCheckpointMarker && SkillTreeMessage && SkillTreeRekindleMessage && PlayerCouldSoulFlame) {
+            if ((InsideCheckpointMarker || FindAllyLink()) && SkillTreeMessage && SkillTreeRekindleMessage && PlayerCouldSoulFlame) {
                 if (m_skillTreeHint == null) {
-                    var messageProvider = !Characters.Sein.PlayerAbilities.Rekindle.HasAbility || IsSafeToCastSoulFlame != SoulFlamePlacementSafety.Safe ? SkillTreeMessage : SkillTreeRekindleMessage;
+                    // an ally's link takes a save without Rekindle, so its hint always offers one
+                    var canSave = !InsideCheckpointMarker || Characters.Sein.PlayerAbilities.Rekindle.HasAbility;
+                    var messageProvider = !canSave || IsSafeToCastSoulFlame != SoulFlamePlacementSafety.Safe ? SkillTreeMessage : SkillTreeRekindleMessage;
                     m_skillTreeHint = UI.Hints.Show(messageProvider, HintLayer.SoulFlame, float.PositiveInfinity);
+                    if (!InsideCheckpointMarker && m_skillTreeHint) {
+                        m_skillTreeHint.TintBackground(RandomizerGhost.ShadeOf(m_allyPlayer), AllyHintTint);
+                    }
                 }
             } else if (m_skillTreeHint) {
                 m_skillTreeHint.HideMessageScreen();
@@ -512,6 +541,16 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
     private MoonGuid m_sceneCheckpoint = new MoonGuid(0, 0, 0, 0);
 
     private bool m_isCasting;
+
+    // the game's own exit radius for standing at a link
+    private const float AllyLinkRadius = 2f;
+
+    // how far a box goes from the game's black toward the link owner's colour: dark, but theirs
+    internal static float AllyHintTint = 0.075f;
+
+    private Vector3 m_allyLink;
+
+    private int m_allyPlayer;
 
     private float m_delayOnGround;
 

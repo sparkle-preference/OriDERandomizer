@@ -28,6 +28,10 @@ public static class RandomizerGhost {
         public bool Died;
         // where their soul link stands; NaN when there is none
         public Vector2 SoulLink;
+        // a menu is up on their side, so nothing there is moving
+        public bool InMenu;
+        // no Ori to sample: they are on the title screen
+        public bool OnTitle;
     }
 
     public static void Update() {
@@ -61,8 +65,12 @@ public static class RandomizerGhost {
 
             var view = Shown[i];
             var silence = source.Silence;
-            if (source.Done || !view.Alive || silence > Retire + FadeTime) {
-                view.Despawn();
+            var keep = Kept(source);
+            // a peer parked on the title says so for a while, then goes
+            if (!view.Alive ||
+                (!keep && (source.Done || silence > Retire + FadeOut || view.TitleFor > TitleRetire))) {
+                view.Vanish();
+                Leaving.Add(view);
                 Shown.RemoveAt(i);
                 Sources.RemoveAt(i);
                 continue;
@@ -71,16 +79,36 @@ public static class RandomizerGhost {
             // a stalled peer holds its pose (the cursor runs out of samples): full opacity
             // while it might come back, then a fade, then gone
             view.Tick(source);
-            view.Fade(silence <= Retire ? 1f : 1f - (silence - Retire) / FadeTime);
+            view.Fade(keep || silence <= Retire ? 1f : 1f - (silence - Retire) / FadeOut);
             view.Cull(here != null &&
                 (view.Position - here.position).sqrMagnitude > CullRadius * CullRadius);
+            view.Sink();
+        }
+
+        // nobody feeds these any more; they are only finishing their fade
+        for (var i = Leaving.Count - 1; i >= 0; i--) {
+            Leaving[i].Sink();
+            if (Leaving[i].Gone) {
+                Leaving[i].Despawn();
+                Leaving.RemoveAt(i);
+            }
         }
     }
 
-    // Keyed on the player. Player zero is your own replay.
+    // An echo is yours until you clear it. Its script stops growing whenever yours does -- a
+    // menu, the title screen -- and the closest one runs out first, which is not it leaving.
+    private static bool Kept(IGhostSource source) {
+        var loopback = source as LoopbackGhostSource;
+        return loopback != null && Echoes.Contains(loopback);
+    }
+
     private static Color Shade(IGhostSource source) {
-        var id = source.PlayerId;
-        return id < 1 ? Tint : Palette[(id - 1) % Palette.Length];
+        return ShadeOf(source.PlayerId);
+    }
+
+    // Keyed on the player. Player zero is your own replay.
+    public static Color ShadeOf(int player) {
+        return player < 1 ? Tint : Palette[(player - 1) % Palette.Length];
     }
 
     private static bool Add(IGhostSource source) {
@@ -112,14 +140,16 @@ public static class RandomizerGhost {
             return;
         }
 
-        Shown[i].Despawn();
+        Shown[i].Vanish();
+        Leaving.Add(Shown[i]);
         Shown.RemoveAt(i);
         Sources.RemoveAt(i);
     }
 
     private static void Clear() {
         foreach (var view in Shown) {
-            view.Despawn();
+            view.Vanish();
+            Leaving.Add(view);
         }
 
         Shown.Clear();
@@ -164,6 +194,90 @@ public static class RandomizerGhost {
         RecordStart = Time.time;
         Recording = true;
         Randomizer.showHint(RandomizerUI.Message.InfoMessage("Ghost: recording", 2));
+    }
+
+    // Echoes: loopback ghosts of your own recording, each a step further behind. A test rig for
+    // the ghost code that is also a toy; not while real ghosts or a practice run are on.
+    private static readonly List<LoopbackGhostSource> Echoes = new List<LoopbackGhostSource>();
+
+    private static bool echoesRecord;
+
+    public static void SpawnEcho() {
+        if (RandomizerGhostSignal.Joined || PracticeController.Active) {
+            Randomizer.showHint(RandomizerUI.Message.InfoMessage("Echoes are for playing alone", 3));
+            return;
+        }
+
+        if (Sprite() == null) {
+            return;
+        }
+
+        PruneEchoes();
+        // nothing left of the last chain: the next one starts from here, not from that recording
+        if (Echoes.Count == 0 && echoesRecord) {
+            StopEchoTake();
+        }
+
+        if (!Recording) {
+            Take.Clear();
+            RecordStart = Time.time;
+            Recording = true;
+            echoesRecord = true;
+        }
+
+        var settings = RandomizerSettings.DevSettings.EchoDelay;
+        var spacing = RandomizerSettings.DevSettings.EchoSpacing;
+        var step = 0;
+        foreach (var live in Echoes) {
+            step = Mathf.Max(step, live.PlayerId - 1);
+        }
+
+        step++;
+        var behind = Mathf.Max(0f, (settings == null ? 0.5f : settings.Value)
+            + (step - 1) * (spacing == null ? 0.5f : spacing.Value));
+        // you are player one, so the first echo wears the second player's colour
+        var who = step + 1;
+        // the interpolation hold comes off the start, so the echo trails by exactly `behind`
+        var started = Mathf.Max(RecordStart, RecordStart + behind - InterpolationDelay);
+        var echo = new LoopbackGhostSource(Take, "echo" + step, who, InterpolationDelay, started);
+        if (Add(echo)) {
+            Echoes.Add(echo);
+            Randomizer.showHint(RandomizerUI.Message.InfoMessage(
+                "Echo " + step + ": " + behind.ToString("F1") + "s behind you", 3));
+        }
+    }
+
+    // An echo the coordinator has already taken down (the recording stalled in a menu, say) is
+    // gone as far as the chain is concerned.
+    private static void PruneEchoes() {
+        for (var i = Echoes.Count - 1; i >= 0; i--) {
+            if (!Showing(Echoes[i])) {
+                Echoes.RemoveAt(i);
+            }
+        }
+    }
+
+    // Only ever with the chain empty: the live echoes read from this list.
+    private static void StopEchoTake() {
+        echoesRecord = false;
+        Recording = false;
+        Take.Clear();
+    }
+
+    public static void ClearEchoes() {
+        foreach (var echo in Echoes) {
+            Remove(echo);
+        }
+
+        if (Echoes.Count > 0) {
+            Randomizer.showHint(RandomizerUI.Message.InfoMessage("Echoes cleared", 2));
+        }
+
+        Echoes.Clear();
+        // the recording was ours: it stops without becoming a stored ghost
+        if (echoesRecord) {
+            StopEchoTake();
+        }
     }
 
     // TODO: do we use this anymore?
@@ -242,6 +356,8 @@ public static class RandomizerGhost {
         public int PlayerId;
         public Vector3 Position;
         public Color Shade;
+        // where their soul link stands; NaN when there is none
+        public Vector2 SoulLink;
     }
 
     // List of peer players we want drawn on map; a culled ghost still has its position
@@ -257,9 +373,41 @@ public static class RandomizerGhost {
             into.Add(new Marker {
                 PlayerId = id,
                 Position = Shown[i].Position,
-                Shade = Shade(Sources[i])
+                Shade = Shade(Sources[i]),
+                SoulLink = LinkOf(Sources[i])
             });
         }
+    }
+
+    private static Vector2 LinkOf(IGhostSource source) {
+        var samples = source.Samples;
+        return samples.Count > 0 ? samples[samples.Count - 1].SoulLink : new Vector2(float.NaN, float.NaN);
+    }
+
+    // The nearest peer's soul link within reach of a point, for saving at it.
+    public static bool AllyLinkNear(Vector3 at, float radius, out Vector3 link, out int player) {
+        link = Vector3.zero;
+        player = 0;
+        var best = radius;
+        for (var i = 0; i < Sources.Count; i++) {
+            if (Sources[i].PlayerId < 1) {
+                continue;
+            }
+
+            var there = LinkOf(Sources[i]);
+            if (float.IsNaN(there.x)) {
+                continue;
+            }
+
+            var distance = Vector2.Distance(new Vector2(at.x, at.y), there);
+            if (distance <= best) {
+                best = distance;
+                link = new Vector3(there.x, there.y, at.z);
+                player = Sources[i].PlayerId;
+            }
+        }
+
+        return player > 0;
     }
 
     // The live Ori as a Sample, for sending. Identical to what Record stores, minus the
@@ -277,6 +425,13 @@ public static class RandomizerGhost {
 
     internal static bool Capture(float at, out Sample sample) {
         sample = new Sample();
+        // the title screen keeps an Ori of its own on show; a peer there is not anywhere
+        var game = GameController.Instance;
+        if (game != null && game.GameInTitleScreen) {
+            return OnTitle(at, out sample);
+        }
+
+        TitleSince = -1f;
         var sprite = Downed() ? null : Sprite();
         if (sprite == null) {
             return Dying(at, out sample);
@@ -299,6 +454,7 @@ public static class RandomizerGhost {
             WallAim = WallArrowAim(clip == null ? null : clip.name),
             Triple = OnLastAirJump(),
             SoulLink = SoulLinkAt(),
+            InMenu = UI.MainMenuVisible,
             Time = at,
             Position = sprite.position,
             Rotation = sprite.rotation,
@@ -341,6 +497,39 @@ public static class RandomizerGhost {
 
         sample.Time = at;
         sample.Died = true;
+        sample.Charge = 0;
+        sample.Triple = false;
+        sample.BashAngle = float.NaN;
+        sample.BashTarget = new Vector2(float.NaN, float.NaN);
+        sample.WallAim = float.NaN;
+        sample.GrenadeAim = new Vector2(float.NaN, float.NaN);
+        return true;
+    }
+
+    // No Ori on the title screen, so the last pose stands in, flagged. Held for TitleHold
+    // seconds: long enough for peers to say so and let go, not forever for a player who stays.
+    private const float TitleHold = 12f;
+
+    private static float TitleSince = -1f;
+
+    private static bool OnTitle(float at, out Sample sample) {
+        sample = Held;
+        if (!Have) {
+            return false;
+        }
+
+        if (TitleSince < 0f) {
+            TitleSince = Time.time;
+        }
+
+        if (Time.time - TitleSince > TitleHold) {
+            return false;
+        }
+
+        sample.Time = at;
+        sample.OnTitle = true;
+        sample.InMenu = false;
+        sample.Died = false;
         sample.Charge = 0;
         sample.Triple = false;
         sample.BashAngle = float.NaN;
@@ -904,6 +1093,9 @@ public static class RandomizerGhost {
 
     private static readonly List<IGhostSource> Sources = new List<IGhostSource>();
 
+    // views with no source left, kept only until they have faded out
+    private static readonly List<RandomizerGhostView> Leaving = new List<RandomizerGhostView>();
+
     private static readonly List<Sample> Take = new List<Sample>();
 
     private static List<Sample> Ghost = new List<Sample>();
@@ -961,7 +1153,11 @@ public static class RandomizerGhost {
     // long enough to ride out a bad stretch of connection
     private const float Retire = 5f;
 
-    private const float FadeTime = 1f;
+    // one knob for every fade-out, tuned live on the view
+    private static float FadeOut { get { return RandomizerGhostView.FadeOut; } }
+
+    // how long a ghost stands under "..." before it is taken down
+    private const float TitleRetire = 10f;
 
     // about two screens. Beyond it a ghost keeps its position but stops drawing and animating.
     private const float CullRadius = 40f;
@@ -985,7 +1181,19 @@ public static class RandomizerGhost {
 
     internal const float WallArrowScale = 0.85f;
 
-    internal const float LinkAlpha = 0.5f;
+    // a link is furniture, not a player: well under what the ghost's own effects get
+    internal const float LinkAlpha = 0.3125f;
+
+    // how far a link's colour goes from the effect tint toward its player's shade
+    internal const float LinkTintStrength = 0.8f;
+
+    internal static Color LinkShade(Color shade) {
+        var mixed = Color.Lerp(EffectTint, shade, LinkTintStrength);
+        return new Color(mixed.r, mixed.g, mixed.b, 1f);
+    }
+
+    // a hair behind the world plane, so a link sitting on yours draws under it, not over
+    internal const float LinkBehind = 0.1f;
 
     internal const float StompBurstAlpha = 0.5f;
 

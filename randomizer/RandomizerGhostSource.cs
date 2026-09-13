@@ -141,6 +141,12 @@ public class LoopbackGhostSource : IGhostSource {
         Started = Time.time;
     }
 
+    // a script already under way: the replay clock starts where it is told, not now
+    public LoopbackGhostSource(List<Sample> script, string label, int who, float delay, float started)
+        : this(script, label, who, delay) {
+        Started = started;
+    }
+
     public List<Sample> Samples { get { return Received; } }
 
     // Held back by the interpolation delay, so the view is always drawing between two samples
