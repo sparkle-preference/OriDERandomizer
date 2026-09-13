@@ -320,11 +320,9 @@ public static class RandomizerBonusSkill {
                 if (IsActive(ab)) {
                     Deactivate(ab);
                     BonusSkillText("Warp to Grenade disabled");
-                    Characters.Sein.Inventory.SetRandomizerItem(1110, 0);
                 } else {
                     Activate(ab);
                     BonusSkillText("Warp to Grenade enabled");
-                    Characters.Sein.Inventory.SetRandomizerItem(1110, 1);
                 }
                 break;
             }
