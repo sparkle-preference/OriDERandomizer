@@ -6,20 +6,14 @@ public static class RandomizerCreditsManager {
     public static void Initialize() {
         CreditsDone = false;
         Credits = new List<KeyValuePair<string, int>>();
-        Credits.Add(
-            new KeyValuePair<string, int>(
-                @"ANCHORTOPPARAMS_20_9_2_Ori DE Randomizer (" + Randomizer.DisplayVersion + @")
+        Credits.Add(new KeyValuePair<string, int>(
+            @"ANCHORTOPPARAMS_20_9_2_Ori DE Randomizer (" + Randomizer.DisplayVersion + @")
 Developed by:
 Torin  *Eiko*  @Vulajin@
-$d265f27$  #Kirefel# :AsmPrgmC3" +
-                (BingoController.Active ? "\n\nBingo by *Eiko*" : ""),
-                14
-            )
-        );
+$d265f27$  #Kirefel# :AsmPrgmC3" + (BingoController.Active ? "\n\nBingo by *Eiko*" : ""), 14));
 
-        Credits.Add(
-            new KeyValuePair<string, int>(
-                @"ANCHORTOPPARAMS_20_7.5_2_Major contributions by:
+        Credits.Add(new KeyValuePair<string, int>(
+            @"ANCHORTOPPARAMS_20_7_2_Major contributions by:
 DevilSquirrel
 Xemsys
 jeflefou
@@ -27,35 +21,25 @@ Melody
 
 
 Community Contributions by:
-GreeZ  Hydra  Jitaenow  LusTher  
-Kiara_TV  Skulblaka  Terra  2Kil",
-                16
-            )
-        );
+GreeZ  Hydra  Jitaenow
+Kiara_TV  LusTher  Skulblaka
+Smashy  Terra  2Kil", 16));
         Credits.Add(
             new KeyValuePair<string, int>(
-                @"ANCHORTOPPARAMS_20_12_2_Additional community contributions by:
-Athos213    AvengedRuler    Cereberon    Cleanfel
-CovertMuffin   Grimelios   iRobin   JHobz   Roryrai
-Jitaenow    Nari    madinsane    Mattermonkey
-RainbowPoogle   UncleRonny   Wingheart   spinesheath
-SeaAverage   DireKrow   Eph   xaviershay   jmal116",
-                16
-            )
-        );
+            @"ANCHORTOPPARAMS_20_12_2_Additional community contributions by:
+Athos213  AvengedRuler  Cereberon  Cleanfel  CosmicAngel
+CovertMuffin   DireKrow   Eph   Grimelios   iRobin
+JHobz   jmal116   madinsane   Mattermonkey    Nari
+RainbowPoogle    Roryrai    SeaAverage    spinesheath
+UncleRonny    Wingheart    xaviershay", 16));
 
-        Credits.Add(
-            new KeyValuePair<string, int>(
-                @"ANCHORTOPPARAMS_20_10_2_Ori DE Randomizer inspired by:
+        Credits.Add(new KeyValuePair<string, int>(
+            @"ANCHORTOPPARAMS_20_10_2_Ori DE Randomizer inspired by:
 Chicken_Supreme's Ori 'remix'
-A Link to the Past Randomizer",
-                10
-            )
-        );
+A Link to the Past Randomizer", 10));
 
-        Credits.Add(
-            new KeyValuePair<string, int>(
-                @"ALIGNLEFTANCHORTOPPARAMS_24_12_2_        Ori Randomizer Tournament Champions
+        Credits.Add(new KeyValuePair<string, int>(
+            @"ALIGNLEFTANCHORTOPPARAMS_24_12_2_        Ori Randomizer Tournament Champions
 
 		2017
 Singles:	Covert_Muffin
@@ -73,10 +57,7 @@ Runner-ups: Tritonite, Xemsys, Dedew
 Winners:	Team StoryTime (Dedew and Covert_Muffin)
 2nd Place:	Bizarre Adventurers (lifdoff and Sirius)
 3rd Place:	Ku's Bird Bath (Cleanfel and J Halcyon)
-",
-                18
-            )
-        );
+", 18));
 
         // i wish things could have been different. you deserved better.
         Credits.Add(new KeyValuePair<string, int>("In memory of Mari L.", 3));
