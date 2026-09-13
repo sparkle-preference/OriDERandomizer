@@ -15,7 +15,7 @@ public static class RandomizerHints {
         () => "Energy Regeneration restores your Energy slowly over time\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
         () => "Charge Dash Efficiency halves the Energy cost of #Charge Dash#\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
         () => "Spirit Light Efficiency grants 100% increased experience from all sources.\nIt stacks (additively) with #Spirit Efficiency# and #Spirit Potency#\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
-        () => "Join the Ori community at orirando.com/discord",
+        () => $"Join the Ori community at {RandomizerSettings.DevSettings.BuiltinHost}/discord",
         () => "Use the Logic Helper map filter to check which pickups are currently in logic",
         () => "Some enemies are immune to some spikes, allowing them to be lured surprising distances",
         () => "The top of the Ginso escape will always teleport you to Thornfelt Swamp",
@@ -52,7 +52,7 @@ public static class RandomizerHints {
 
     public static List<StringMaker> MiscTips = new List<StringMaker> {
         () => "Once you've cleared the fog in Misty Woods, you can change the layout by interacting with the orb pedestal",
-        () => "Report bugs and discuss upcoming rando features in the *dev* discord (orirando.com/discord/dev)",
+        () => $"Report bugs and discuss upcoming rando features in the *dev* discord ({RandomizerSettings.DevSettings.BuiltinHost}/discord/dev)",
         () => "The Wilhelm frog in upper Valley only spawns if you have the @Sunstone@",
         () => "You can press [[Save Select Back 10]] and [[Save Select Forward 10]] to rapidly scroll through the file select menu",
         () => "While she does talk a lot, Enhanced Sein also gives unique hints in some locations",
