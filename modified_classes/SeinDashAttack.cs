@@ -234,8 +234,8 @@ public class SeinDashAttack : CharacterState, ISeinReceiver {
             m_chargeDashAtTarget = false;
         }
 
-        var dashSound = !RainbowDash ? ChargeDashSound : RainbowDashSound;
-        PerformDash(ChargeDashAnimation, dashSound);
+        // rainbow or not: the rainbow sound is too quiet to read as a charge dash
+        PerformDash(ChargeDashAnimation, ChargeDashSound);
         if (m_chargeDashAtTarget) {
             SpriteRotation = Mathf.Atan2(m_chargeDashDirection.y, m_chargeDashDirection.x) * 57.29578f - (!m_faceLeft ? 0 : 180);
         }
