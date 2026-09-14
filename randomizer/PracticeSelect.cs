@@ -257,7 +257,7 @@ public static class PracticeSelect {
             Ends.Add(HasEnd(file));
         }
 
-        // the last card is empty on purpose: it makes a new segment
+        // the last card is empty: it makes a new segment
         slots.Add(null);
         Choosing = true;
         Randomizer.log("practice: " + Files.Count + " segment(s) in " + Folder);

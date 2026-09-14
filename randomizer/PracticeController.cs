@@ -136,8 +136,7 @@ public static class PracticeController {
     // the next Begin lands in the editor whatever the segment says
     public static bool EditNext;
 
-    // Loads practice/debug.bfrp and starts it, or ends a running session. The
-    // file select will call Begin the same way once it exists.
+    // Loads practice/debug.bfrp and starts it, or ends a running session.
     public static void BeginDebug() {
         if (Active && Current != Phase.Finished) {
             var ms = Elapsed;

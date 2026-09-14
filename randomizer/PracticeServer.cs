@@ -67,8 +67,7 @@ public static class PracticeServer {
         return false;
     }
 
-    // True when a browser was opened; false when the page already open was turned around
-    // instead, which is the whole point of the pane bookkeeping below.
+    // True when a browser was opened; false when the page already open was turned around instead.
     public static bool Open() {
         if (!Start()) {
             return false;

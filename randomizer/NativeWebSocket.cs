@@ -285,8 +285,7 @@ public static class NativeWebSocket {
         return target;
     }
 
-    // The dll's version resource answers in a few KB what its two MB would; a build without the
-    // stamp (older than the sidecar's version.rc) falls back to the bytes.
+    // reads a few KB of version resource, not two MB; an unstamped build falls back to the bytes
     private static bool SidecarCurrent(string path, byte[] bytes) {
         var want = Stamp();
         if (want == null) {

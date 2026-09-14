@@ -204,8 +204,7 @@ public static class PracticeEditor {
 
     private static float helped = -100f;
 
-    // What the editor has to say goes up now rather than behind the legend, and the legend
-    // waits its turn rather than covering it.
+    // goes up ahead of the legend, which then waits its turn
     private static void Say(string text, int frames) {
         Randomizer.clearMessage();
         Randomizer.printInfo(text, frames);

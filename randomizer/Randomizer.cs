@@ -1100,7 +1100,7 @@ public static class Randomizer {
             return false;
         }
 
-        // the bench entry point until the practice file select exists
+        // the dev bench: practice/debug.bfrp without the chooser
         if (RandomizerRebinding.StartPracticeDebug.IsPressed()) {
             PracticeController.BeginDebug();
             return true;
@@ -1124,7 +1124,7 @@ public static class Randomizer {
             return true;
         }
 
-        // shares Alt+L with Reload Seed on purpose: that one is off during a session anyway
+        // shares Alt+L with Reload Seed, which is off during a session anyway
         if (RandomizerRebinding.RetryPracticeSegment.IsPressed() && PracticeController.Active) {
             PracticeController.RetryOrStart();
             return true;

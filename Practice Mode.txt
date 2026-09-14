@@ -23,6 +23,7 @@ Drag                Draw a box
 Z                   Undo the last box
 X                   Delete the box under the cursor
 WASD                Pan the camera
+Right click         Stand Ori at the cursor (loads the scenes there)
 5                   Open the segment editor page in a browser
 Ctrl+S              Save and keep editing
 Ctrl+R              Reload from disk, dropping edits since the last save
