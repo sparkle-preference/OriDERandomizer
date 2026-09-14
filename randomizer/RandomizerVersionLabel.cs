@@ -13,10 +13,10 @@ public class RandomizerVersionLabel : MonoBehaviour {
     // share of the menu camera's visible height
     private const float MenuTextHeight = 0.025f;
 
-    // Viewport fractions in from the bottom-right; the text hangs below its
-    // anchor, so the y inset clears its own height too.
+    // Viewport fractions from the bottom-right to the text's own edges (it sits
+    // above and left of its anchor); the two match in pixels at 16:9.
     private const float InsetX = 0.015f;
-    private const float InsetY = 0.058f;
+    private const float InsetY = 0.025f;
 
     public static void Initialize() {
         Instance = new GameObject("randomizerVersionLabel").AddComponent<RandomizerVersionLabel>();
