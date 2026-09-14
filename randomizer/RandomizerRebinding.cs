@@ -302,6 +302,12 @@ public static class RandomizerRebinding {
     public static BindSet Bonus8 = new BindSet(new List<SingleBind>());
     public static BindSet Bonus9 = new BindSet(new List<SingleBind>());
 
+    // What to press, for text that has to say so: the settings file's own name for the bind.
+    public static string NameOf(string action) {
+        BindSet set;
+        return rebindMap.TryGetValue(action, out set) ? set.FirstBindName() : "<NO BIND>";
+    }
+
     private static Dictionary<string, BindSet> rebindMap = new Dictionary<string, BindSet> {
         { "Replay Message", ReplayMessage },
         { "Warp", ReturnToStart },

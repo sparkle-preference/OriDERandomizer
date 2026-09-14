@@ -264,6 +264,9 @@ public class RandomizerUI : MonoBehaviour {
         public Color BgColor;
         public float BaseDuration;
 
+        // shown without the hint box's arrival sound
+        public bool Quiet;
+
         public MessageBox MessageBox;
     }
 }

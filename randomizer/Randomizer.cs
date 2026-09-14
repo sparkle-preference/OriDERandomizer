@@ -454,6 +454,114 @@ public static class Randomizer {
         MessageQueue.Enqueue(RandomizerUI.Message.InfoMessage(message, frames / 60f));
     }
 
+    // Stays up until something takes it down: for a message the player is meant to answer.
+    public static void pinMessage(string message) {
+        Pinned = message;
+        pinnedBox = null;
+    }
+
+    public static void unpinMessage() {
+        if (Pinned == null) {
+            return;
+        }
+
+        Pinned = null;
+        pinnedBox = null;
+        clearMessage();
+    }
+
+    public static bool MessagePinned { get { return Pinned != null; } }
+
+    // The box is held open rather than shown again and again: its hide is put off every frame,
+    // so it neither times out nor replays its arrival. Anything else may still take the screen,
+    // and the pin comes back when that message is done with it.
+    private static void HoldPinned() {
+        if (Pinned == null) {
+            return;
+        }
+
+        if (pinnedBox != null && UI.Hints.CurrentHint == pinnedBox && pinnedBox.Visibility != null) {
+            // re-arms the box's own hide timer, which is set when it is shown and counts down
+            // from there; its show curve is already at the end, so nothing moves
+            pinnedBox.Visibility.ShowMessageScreen();
+            return;
+        }
+
+        // a higher hint layer can refuse us the box; do not ask every frame while it does
+        if (Time.unscaledTime - pinnedTry < 0.25f) {
+            return;
+        }
+
+        pinnedTry = Time.unscaledTime;
+        ShowPinned();
+    }
+
+    private static float pinnedTry;
+
+    private static void ShowPinned() {
+        MessageProvider.SetMessage(Bound(Pinned));
+        var hush = Hush();
+        pinnedBox = UI.Hints.Show(MessageProvider, HintLayer.Randomizer, 4f);
+        if (hush != null) {
+            hush.enabled = true;
+        }
+
+        if (pinnedBox != null) {
+            pinnedBox.SetBackgroundColor(RandomizerUI.Message.VanillaBgColor);
+        }
+    }
+
+    private static string Pinned;
+
+    private static MessageBox pinnedBox;
+
+    // [[Bind Name]] in any message becomes the key it is bound to.
+    private static string Bound(string message) {
+        if (message == null || message.IndexOf("[[") < 0) {
+            return message;
+        }
+
+        var open = message.IndexOf("[[");
+        while (open >= 0) {
+            var close = message.IndexOf("]]", open + 2);
+            if (close < 0) {
+                break;
+            }
+
+            var action = message.Substring(open + 2, close - open - 2);
+            message = message.Substring(0, open) + RandomizerRebinding.NameOf(action) + message.Substring(close + 2);
+            open = message.IndexOf("[[");
+        }
+
+        return message;
+    }
+
+    // For a message that is no longer true: off the screen now, and out of the way of the next.
+    public static void clearMessage() {
+        UI.Hints.HideExistingHint(true);
+        MessageQueueTime = 0f;
+    }
+
+    // For a message that comes back again and again: the box, without the noise.
+    public static void printQuiet(string message, int frames) {
+        var note = RandomizerUI.Message.InfoMessage(message, frames / 60f);
+        note.Quiet = true;
+        MessageQueue.Enqueue(note);
+    }
+
+    // The hint box plays a sound as it comes up, off the box's own SoundSource; a component
+    // that is off when the box wakes never gets to.
+    private static SoundSource Hush() {
+        var hint = UI.MessageController == null ? null : UI.MessageController.HintMessage;
+        var sound = hint == null ? null : hint.GetComponent<SoundSource>();
+        if (sound == null || !sound.enabled) {
+            return null;
+        }
+
+        sound.enabled = false;
+        return sound;
+    }
+
     public static void playLastMessage() {
         if (LastMessageCredits) {
             showCredits(Message, 5);
@@ -989,6 +1097,7 @@ public static class Randomizer {
     public static void UpdateMessages() {
         if (MessageQueueTime <= 0f) {
             if (MessageQueue.Count == 0) {
+                HoldPinned();
                 return;
             }
 
@@ -998,7 +1107,12 @@ public static class Randomizer {
             MessageBgColor = queueItem.BgColor;
             if (message != "") {
                 MessageProvider.SetMessage(message);
+                var hush = queueItem.Quiet ? Hush() : null;
                 var msgBox = UI.Hints.Show(MessageProvider, HintLayer.Randomizer, queueItem.BaseDuration + 1f);
+                if (hush != null) {
+                    hush.enabled = true;
+                }
+
                 msgBox.SetBackgroundColor(MessageBgColor);
             }
         }
@@ -1149,13 +1263,12 @@ public static class Randomizer {
 
         if (immediate) {
             MessageProvider.SetMessage(text);
-            if (mute) {
-                CachedVolume = Math.Max(GameSettings.Instance.SoundEffectsVolume, CachedVolume);
-                GameSettings.Instance.SoundEffectsVolume = 0f;
-                ResetVolume = 3;
+            var hush = mute ? Hush() : null;
+            UI.Hints.Show(MessageProvider, HintLayer.Randomizer, seconds);
+            if (hush != null) {
+                hush.enabled = true;
             }
 
-            UI.Hints.Show(MessageProvider, HintLayer.Randomizer, seconds);
             if (setMessage) {
                 Message = text;
                 MessageBgColor = RandomizerUI.Message.VanillaBgColor;
@@ -1191,13 +1304,6 @@ public static class Randomizer {
                 }
 
                 BingoController.Tick();
-                if (ResetVolume == 1) {
-                    ResetVolume = 0;
-                    GameSettings.Instance.SoundEffectsVolume = CachedVolume;
-                } else if (ResetVolume > 1) {
-                    ResetVolume--;
-                }
-
                 if (CanWarp > 0) {
                     CanWarp--;
                 }
@@ -1865,10 +1971,6 @@ public static class Randomizer {
     public static int StompSlot;
 
     public static bool CreditsActive;
-
-    public static float CachedVolume;
-
-    public static int ResetVolume;
 
     public static bool LastMessageCredits;
 
