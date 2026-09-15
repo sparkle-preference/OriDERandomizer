@@ -483,7 +483,7 @@ public static class RandomizerBonus {
             case 410:
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*p*#i#$r$*i*#t# $F$*l*#a#$m$*e*\nSein's voice has been restored!", 300);
+                    AnnounceEnhanced(ID);
                 }
 
                 break;
@@ -491,7 +491,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $W$*a*#l#$l$ *J*#u#$m$*p*\nNow comes with bonus Climb! ...yeah, sorry, that's it for this one.", 300);
+                    AnnounceEnhanced(ID);
                 }
 
                 break;
@@ -499,7 +499,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $F$*l*#a#$m$*e*\nPowerful enough to capture nearby projectiles in its gravity!", 300);
+                    AnnounceEnhanced(ID);
                 }
 
                 break;
@@ -507,7 +507,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*o*#u#$b$*l*#e# $J$*u*#m#$p$\nLook, we were running out of ideas, so just...have infinite jumps, I guess.", 300);
+                    AnnounceEnhanced(ID);
                 }
 
                 break;
@@ -515,7 +515,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $B$*a*#s#$h$\nMuch more balanced now that it doesn't require a target.", 300);
+                    AnnounceEnhanced(ID);
                 }
 
                 break;
@@ -523,7 +523,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*t*#o#$m$*p*\nWhy should we be limited to only stomping downwards?", 300);
+                    AnnounceEnhanced(ID);
                 }
 
                 break;
@@ -531,7 +531,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*l*#i#$d$*e*\nYou are the wind beneath your wings. Er...feather.", 300);
+                    AnnounceEnhanced(ID);
                 }
 
                 break;
@@ -539,7 +539,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*l*#i#$m$*b*\nNow comes with protective gear for hazardous surfaces!", 300);
+                    AnnounceEnhanced(ID);
                 }
 
                 break;
@@ -547,7 +547,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $J$*u*#m#$p$\nYour very aura is now enough to protect from enemies. Or kill them.", 300);
+                    AnnounceEnhanced(ID);
                 }
 
                 break;
@@ -555,7 +555,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*a*#s#$h$\nBe freed from the limitations of the horizontal axis!", 300);
+                    AnnounceEnhanced(ID);
                 }
 
                 break;
@@ -563,7 +563,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*r*#e#$n$*a*#d#$e$\nI guess it can break floors and walls now? For some reason?", 300);
+                    AnnounceEnhanced(ID);
                 }
 
                 break;
@@ -571,7 +571,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*l*#e#$a$*n* #W#$a$*t*#e#$r$\nIt isn't just clean - it's been cleaned out!", 300);
+                    AnnounceEnhanced(ID);
                 }
 
                 break;
@@ -838,6 +838,78 @@ public static class RandomizerBonus {
             Randomizer.printInfo(msg);
         } else {
             Randomizer.printInfo("No bonus passives");
+        }
+    }
+
+    // The line an Enhanced skill introduces itself with; the name in front comes from
+    // RandomizerItems. Said when the second half arrives, so an Enhanced handed out at spawn
+    // waits for its skill instead of talking to an empty inventory.
+    private static readonly Dictionary<int, string> EnhancedLines = new Dictionary<int, string> {
+        { 410, "Sein's voice has been restored!" },
+        { 411, "Now comes with bonus Climb! ...yeah, sorry, that's it for this one." },
+        { 412, "Powerful enough to capture nearby projectiles in its gravity!" },
+        { 413, "Look, we were running out of ideas, so just...have infinite jumps, I guess." },
+        { 414, "Much more balanced now that it doesn't require a target." },
+        { 415, "Why should we be limited to only stomping downwards?" },
+        { 416, "You are the wind beneath your wings. Er...feather." },
+        { 417, "Now comes with protective gear for hazardous surfaces!" },
+        { 418, "Your very aura is now enough to protect from enemies. Or kill them." },
+        { 419, "Be freed from the limitations of the horizontal axis!" },
+        { 420, "I guess it can break floors and walls now? For some reason?" },
+        { 422, "It isn't just clean - it's been cleaned out!" },
+    };
+
+    // skill pickup id -> the Enhanced that upgrades it, and the ability that has to be in
+    // hand for the line to mean anything. Clean Water is an event, and is always in hand by
+    // the time its Enhanced can matter, so it has no entry.
+    private static readonly Dictionary<int, int> EnhancedForSkill = new Dictionary<int, int> {
+        { 0, 414 }, { 2, 412 }, { 3, 411 }, { 4, 415 }, { 5, 413 },
+        { 8, 418 }, { 12, 417 }, { 14, 416 }, { 15, 410 }, { 50, 419 }, { 51, 420 },
+    };
+
+    private static readonly Dictionary<int, AbilityType> EnhancedNeeds = new Dictionary<int, AbilityType> {
+        { 410, AbilityType.SpiritFlame }, { 411, AbilityType.WallJump }, { 412, AbilityType.ChargeFlame },
+        { 413, AbilityType.DoubleJump }, { 414, AbilityType.Bash }, { 415, AbilityType.Stomp },
+        { 416, AbilityType.Glide }, { 417, AbilityType.Climb }, { 418, AbilityType.ChargeJump },
+        { 419, AbilityType.Dash }, { 420, AbilityType.Grenade },
+    };
+
+    // On finding the Enhanced: only once the thing it upgrades is in hand, which a spawn
+    // grant never is, so those stay quiet until their skill turns up.
+    public static void AnnounceEnhanced(int id) {
+        AbilityType needs;
+        if (EnhancedNeeds.TryGetValue(id, out needs) && !Characters.Sein.PlayerAbilities.HasAbility(needs)) {
+            return;
+        }
+
+        if (id == 422 && !Sein.World.Events.WaterPurified) {
+            return;
+        }
+
+        Announce(id);
+    }
+
+    // On finding the skill, if its Enhanced came first. Spirit Flame is left out: Sein
+    // starts talking, which introduces her better than a message box.
+    public static void AnnounceEnhancedSkill(int skill) {
+        int id;
+        if (skill != 15 && EnhancedForSkill.TryGetValue(skill, out id)
+                && Randomizer.Inventory.GetRandomizerItem(id) > 0) {
+            Announce(id);
+        }
+    }
+
+    public static void AnnounceEnhancedWater() {
+        if (Randomizer.Inventory.GetRandomizerItem(422) > 0) {
+            Announce(422);
+        }
+    }
+
+    private static void Announce(int id) {
+        string line;
+        if (EnhancedLines.TryGetValue(id, out line)) {
+            RandomizerSwitch.PickupMessage(
+                RandomizerText.Alternating(RandomizerItems.Name("RB", id.ToString())) + "\n" + line, 300);
         }
     }
 

@@ -157,6 +157,9 @@ public static class RandomizerSwitch {
                 break;
         }
 
+        // after the ability is set, so Enhanced Mode's own grant above and an Enhanced that
+        // arrived at spawn both get their line here rather than talking too early
+        RandomizerBonus.AnnounceEnhancedSkill(Ability);
         RandomizerStatsManager.FoundSkill(Ability);
     }
 
@@ -174,6 +177,7 @@ public static class RandomizerSwitch {
                 }
 
                 Events.WaterPurified = true;
+                RandomizerBonus.AnnounceEnhancedWater();
                 break;
             case 2:
                 PickupMessage(RandomizerItems.Message("EV", "2"), 300);
