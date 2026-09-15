@@ -59,7 +59,7 @@ public static class RandomizerSwitch {
             case 0:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(414);
-                } else {
+                } else if (!RandomizerBonus.HoldsEnhancedFor(0)) {
                     PickupMessage(RandomizerItems.Message("SK", "0"), 300);
                 }
 
@@ -68,7 +68,7 @@ public static class RandomizerSwitch {
             case 2:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(412);
-                } else {
+                } else if (!RandomizerBonus.HoldsEnhancedFor(2)) {
                     PickupMessage(RandomizerItems.Message("SK", "2"), 300);
                 }
 
@@ -77,7 +77,7 @@ public static class RandomizerSwitch {
             case 3:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(411);
-                } else {
+                } else if (!RandomizerBonus.HoldsEnhancedFor(3)) {
                     PickupMessage(RandomizerItems.Message("SK", "3"), 300);
                 }
 
@@ -86,7 +86,7 @@ public static class RandomizerSwitch {
             case 4:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(415);
-                } else {
+                } else if (!RandomizerBonus.HoldsEnhancedFor(4)) {
                     PickupMessage(RandomizerItems.Message("SK", "4"), 300);
                 }
 
@@ -95,7 +95,7 @@ public static class RandomizerSwitch {
             case 5:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(413);
-                } else {
+                } else if (!RandomizerBonus.HoldsEnhancedFor(5)) {
                     PickupMessage(RandomizerItems.Message("SK", "5"), 300);
                 }
 
@@ -104,7 +104,7 @@ public static class RandomizerSwitch {
             case 8:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(418);
-                } else {
+                } else if (!RandomizerBonus.HoldsEnhancedFor(8)) {
                     PickupMessage(RandomizerItems.Message("SK", "8"), 300);
                 }
 
@@ -113,7 +113,7 @@ public static class RandomizerSwitch {
             case 12:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(417);
-                } else {
+                } else if (!RandomizerBonus.HoldsEnhancedFor(12)) {
                     PickupMessage(RandomizerItems.Message("SK", "12"), 300);
                 }
 
@@ -122,7 +122,7 @@ public static class RandomizerSwitch {
             case 14:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(416);
-                } else {
+                } else if (!RandomizerBonus.HoldsEnhancedFor(14)) {
                     PickupMessage(RandomizerItems.Message("SK", "14"), 300);
                 }
 
@@ -131,7 +131,7 @@ public static class RandomizerSwitch {
             case 15:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(410);
-                } else {
+                } else if (!RandomizerBonus.HoldsEnhancedFor(15)) {
                     PickupMessage(RandomizerItems.Message("SK", "15"), 300);
                 }
 
@@ -140,7 +140,7 @@ public static class RandomizerSwitch {
             case 50:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(419);
-                } else {
+                } else if (!RandomizerBonus.HoldsEnhancedFor(50)) {
                     PickupMessage(RandomizerItems.Message("SK", "50"), 300);
                 }
 
@@ -149,7 +149,7 @@ public static class RandomizerSwitch {
             case 51:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(420);
-                } else {
+                } else if (!RandomizerBonus.HoldsEnhancedFor(51)) {
                     PickupMessage(RandomizerItems.Message("SK", "51"), 300);
                 }
 
@@ -172,7 +172,7 @@ public static class RandomizerSwitch {
             case 1:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(422);
-                } else {
+                } else if (!RandomizerBonus.HoldsEnhancedWater()) {
                     PickupMessage(RandomizerItems.Message("EV", "1"), 300);
                 }
 

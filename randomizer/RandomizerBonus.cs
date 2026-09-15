@@ -889,18 +889,28 @@ public static class RandomizerBonus {
         Announce(id);
     }
 
-    // On finding the skill, if its Enhanced came first. Spirit Flame is left out: Sein
-    // starts talking, which introduces her better than a message box.
-    public static void AnnounceEnhancedSkill(int skill) {
+    // True when finding this skill will say its Enhanced line, so its own pickup message
+    // would be the same news twice. Spirit Flame is left out: Sein starts talking, which
+    // introduces her better than a message box, so the plain line still has a job.
+    public static bool HoldsEnhancedFor(int skill) {
         int id;
-        if (skill != 15 && EnhancedForSkill.TryGetValue(skill, out id)
-                && Randomizer.Inventory.GetRandomizerItem(id) > 0) {
-            Announce(id);
+        return skill != 15 && EnhancedForSkill.TryGetValue(skill, out id)
+            && Randomizer.Inventory.GetRandomizerItem(id) > 0;
+    }
+
+    public static bool HoldsEnhancedWater() {
+        return Randomizer.Inventory.GetRandomizerItem(422) > 0;
+    }
+
+    // On finding the skill, if its Enhanced came first.
+    public static void AnnounceEnhancedSkill(int skill) {
+        if (HoldsEnhancedFor(skill)) {
+            Announce(EnhancedForSkill[skill]);
         }
     }
 
     public static void AnnounceEnhancedWater() {
-        if (Randomizer.Inventory.GetRandomizerItem(422) > 0) {
+        if (HoldsEnhancedWater()) {
             Announce(422);
         }
     }
