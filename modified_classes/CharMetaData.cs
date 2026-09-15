@@ -49,6 +49,7 @@ namespace CatlikeCoding.TextBox {
             type = CharType.Visible;
             positionInBox = position;
             color = style.color;
+            gradient = style.gradient;
             font = style.font;
             scale = style.size;
             renderer = style.renderer;
@@ -83,6 +84,9 @@ namespace CatlikeCoding.TextBox {
         public CharType type;
 
         public Color32 color;
+
+        // the ramp color is the first stop of, null when the colour is flat
+        public Color32[] gradient;
 
         public float scale;
 

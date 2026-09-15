@@ -173,6 +173,9 @@ Available styles:
     Example for big purple text: "<style color=b100e8 fontscale=2>"
     Available properties (must be specified in the order listed):
     - "color=rrggbb" or "color=rrggbbaa": Set the text color. rr/gg/bb/aa are two hex digits each.
+        Several colors separated by commas make a gradient, spaced evenly across the styled text
+        and blended per pixel: "<style color=ff0000,ffff00,0000ff>a rainbow</>". Wrapped text starts
+        the gradient again on each line.
     - "font=fontName": Change font. Available fonts:
         - "sakkalMajalla": Default font for most languages.
         - "icons": Icon font (used by "<icon>").
