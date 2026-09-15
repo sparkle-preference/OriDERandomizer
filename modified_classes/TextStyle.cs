@@ -30,5 +30,9 @@ namespace CatlikeCoding.TextBox {
 
         [NonSerialized]
         public int rendererId;
+
+        // evenly spaced stops of a "color=a,b,.." ramp, null for a flat colour; color is the first stop
+        [NonSerialized]
+        public Color32[] gradient;
     }
 }

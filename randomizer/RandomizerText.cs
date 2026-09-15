@@ -11,6 +11,31 @@ public static class RandomizerText {
         return m_abilityOverrides[ability].NameOverride;
     }
 
+    // Cool to warm and no further: indigo and violet are unreadable on a dark message box.
+    // Blue leads so that a rainbow and a bit comes back round to blue rather than past it.
+    private static readonly string[] RainbowStops = { "4f8cff", "35cdd6", "4fd44f", "ffe94f", "ff8c2b", "ff3b3b" };
+
+    // The text under one gradient, the rainbow crossing it once every repeatEvery characters.
+    // Text shorter than that still gets a whole rainbow rather than a truncated one; longer text
+    // rounds to a whole colour, so the ramp always ends on a stop.
+    public static string Rainbowify(string text, int repeatEvery = 0) {
+        var stops = RainbowStops.Length;
+        if (repeatEvery > 0 && text.Length > repeatEvery) {
+            stops = Mathf.RoundToInt((float)text.Length / repeatEvery * RainbowStops.Length);
+        }
+
+        var built = new System.Text.StringBuilder("<style color=");
+        for (var i = 0; i < stops; i++) {
+            if (i > 0) {
+                built.Append(',');
+            }
+
+            built.Append(RainbowStops[i % RainbowStops.Length]);
+        }
+
+        return built.Append('>').Append(text).Append("</>").ToString();
+    }
+
     public static RandomizerMessageProvider GetAbilityDescription(AbilityType ability) {
         if (!m_abilityOverrides.ContainsKey(ability)) {
             return null;

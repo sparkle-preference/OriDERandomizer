@@ -48,6 +48,7 @@ namespace CatlikeCoding.TextBox {
                     Array.Resize(ref uv2, vertices.Length);
                     Array.Resize(ref triangles, num * 6);
                     Array.Resize(ref normals, num * 4);
+                    Array.Resize(ref gradients, num);
                     while (i < vertices.Length) {
                         triangles[num2] = i;
                         triangles[num2 + 1] = i + 1;
@@ -91,6 +92,10 @@ namespace CatlikeCoding.TextBox {
             var num2 = Mathf.Max(0f, (float)meta.unstyledIndex / FadeSpread);
             normals[num] = normals[num + 1] = normals[num + 2] = normals[num + 3] = Vector3.right * num2;
             colors[num] = colors[num + 1] = colors[num + 2] = colors[num + 3] = meta.color;
+            if (gradients != null && num / 4 < gradients.Length) {
+                gradients[num / 4] = meta.gradient;
+            }
+
             Vector3 vector2;
             var num3 = vector2.x = offset.x + meta.scale * bitmapFontChar.xOffset + meta.positionInBox.x;
             vector2.y = offset.y + meta.scale * bitmapFontChar.yOffset + meta.positionInBox.y;
@@ -109,6 +114,7 @@ namespace CatlikeCoding.TextBox {
             if (renderedCharCount == 0) {
                 gameObject.SetActive(false);
             } else {
+                PaintGradients();
                 mesh.vertices = vertices;
                 mesh.colors32 = colors;
                 mesh.uv = uv;
@@ -123,6 +129,53 @@ namespace CatlikeCoding.TextBox {
             }
 
             lastRendererCharCount = renderedCharCount;
+        }
+
+        // A gradient run is the characters sharing one ramp on one line; x rises across a line,
+        // so a step backwards is a line break. Vertices are laid out top-left, -right, -right, -left.
+        private void PaintGradients() {
+            if (gradients == null) {
+                return;
+            }
+
+            try {
+                var count = Mathf.Min(renderedCharCount, gradients.Length);
+                var first = 0;
+                while (first < count) {
+                    var ramp = gradients[first];
+                    if (ramp == null || ramp.Length < 2) {
+                        first++;
+                        continue;
+                    }
+
+                    var last = first;
+                    while (last + 1 < count && gradients[last + 1] == ramp && vertices[(last + 1) * 4].x >= vertices[last * 4].x) {
+                        last++;
+                    }
+
+                    var start = vertices[first * 4].x;
+                    var span = vertices[last * 4 + 1].x - start;
+                    for (var c = first; c <= last; c++) {
+                        var v = c * 4;
+                        var left = span > 0f ? Sample(ramp, (vertices[v].x - start) / span) : ramp[0];
+                        var right = span > 0f ? Sample(ramp, (vertices[v + 1].x - start) / span) : ramp[ramp.Length - 1];
+                        colors[v] = colors[v + 3] = left;
+                        colors[v + 1] = colors[v + 2] = right;
+                    }
+
+                    first = last + 1;
+                }
+            } catch (Exception e) {
+                gradients = null;
+                Randomizer.LogError("gradient text: " + e.Message);
+            }
+        }
+
+        // the ramp at t, its stops spread evenly over 0..1
+        private static Color32 Sample(Color32[] ramp, float t) {
+            var at = Mathf.Clamp01(t) * (ramp.Length - 1);
+            var stop = Mathf.Min((int)at, ramp.Length - 2);
+            return Color32.Lerp(ramp[stop], ramp[stop + 1], at - stop);
         }
 
         protected static Vector3 hidden = Vector3.zero;
@@ -142,6 +195,9 @@ namespace CatlikeCoding.TextBox {
         protected Vector3[] normals;
 
         protected int[] triangles;
+
+        // one entry per character slot, null where that character's colour is flat
+        protected Color32[][] gradients;
 
         protected bool meshResized;
 

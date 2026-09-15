@@ -4,6 +4,7 @@ namespace CatlikeCoding.TextBox {
     public struct AppliedTextStyle {
         public void Apply(TextStyle style, TextRenderer renderer) {
             color = style.color;
+            gradient = style.gradient;
             font = style.font;
             letterSpacing = style.letterSpacing;
             size = style.fontScale;
@@ -17,6 +18,7 @@ namespace CatlikeCoding.TextBox {
             var refreshDescent = false;
             if (style.hasColor) {
                 color = style.color;
+                gradient = style.gradient;
             }
 
             if (style.font != null) {
@@ -48,6 +50,9 @@ namespace CatlikeCoding.TextBox {
         }
 
         public Color32 color;
+
+        // the ramp color is the first stop of, null when the colour is flat
+        public Color32[] gradient;
 
         public BitmapFont font;
 

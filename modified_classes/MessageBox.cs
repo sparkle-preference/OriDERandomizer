@@ -234,13 +234,39 @@ public class MessageBox : MonoBehaviour {
     private static readonly Regex StyleTagRegex = new(
         @"(?inx)
         <style
-                (\s+color=(?<color>[0-9a-f]{6,8}))?
+                (\s+color=(?<color>[0-9a-f]{6,8}(,[0-9a-f]{6,8})*))?
                 (\s+font=(?<font>[a-z]+))?
                 (\s+letterspacing=(?<letter_spacing>[-.0-9]+))?
                 (\s+fontscale=(?<font_scale>[-.0-9]+))?
                 (\s+linescale=(?<line_scale>[-.0-9]+))?
         >"
     );
+
+    // null for anything unparseable, so the caller drops the style rather than half-applying it
+    private static Color32[] ParseColors(string colorString) {
+        try {
+            var parts = colorString.Split(',');
+            var stops = new Color32[parts.Length];
+            for (var i = 0; i < parts.Length; i++) {
+                var part = parts[i];
+                if (part.Length != 6 && part.Length != 8) {
+                    Randomizer.log($"Invalid font color property: \"{colorString}\"");
+                    return null;
+                }
+
+                var r = byte.Parse(part.Substring(0, 2), NumberStyles.HexNumber);
+                var g = byte.Parse(part.Substring(2, 2), NumberStyles.HexNumber);
+                var b = byte.Parse(part.Substring(4, 2), NumberStyles.HexNumber);
+                var a = part.Length == 8 ? byte.Parse(part.Substring(6, 2), NumberStyles.HexNumber) : (byte)255;
+                stops[i] = new Color32(r, g, b, a);
+            }
+
+            return stops;
+        } catch (Exception e) {
+            Randomizer.log($"Invalid font color property: \"{colorString}\" ({e.Message})");
+            return null;
+        }
+    }
 
     private void ProcessStyleTags(TextStyleCollection styleCollection, string message) {
         List<TextStyle> styles = null;
@@ -264,18 +290,15 @@ public class MessageBox : MonoBehaviour {
             var style = new TextStyle { name = styleName };
 
             if (match.Groups["color"] is { Success: true, Value: var colorString }) {
-                if (colorString.Length != 6 && colorString.Length != 8) {
-                    Randomizer.log($"Invalid font color property: \"{colorString}\"");
+                var stops = ParseColors(colorString);
+                if (stops == null) {
                     continue;
                 }
 
-                var r = byte.Parse(colorString.Substring(0, 2), NumberStyles.HexNumber);
-                var g = byte.Parse(colorString.Substring(2, 2), NumberStyles.HexNumber);
-                var b = byte.Parse(colorString.Substring(4, 2), NumberStyles.HexNumber);
-                var a = colorString.Length == 8 ? byte.Parse(colorString.Substring(6, 2), NumberStyles.HexNumber) : (byte)255;
-
-                style.color = new Color32(r, g, b, a);
+                style.color = stops[0];
                 style.hasColor = true;
+                // one stop is a flat colour; more is a ramp the renderer spreads across the run
+                style.gradient = stops.Length > 1 ? stops : null;
             }
 
             if (match.Groups["font"] is { Success: true, Value: var fontName }) {
