@@ -36,6 +36,23 @@ public static class RandomizerText {
         return built.Append('>').Append(text).Append("</>").ToString();
     }
 
+    // Letters take turns being blue, yellow and green; spaces stay plain.
+    public static string Alternating(string text) {
+        var built = new System.Text.StringBuilder();
+        var marked = 0;
+        foreach (var c in text) {
+            if (c == ' ') {
+                built.Append(c);
+                continue;
+            }
+
+            var mark = "*#$"[marked++ % 3];
+            built.Append(mark).Append(c).Append(mark);
+        }
+
+        return built.ToString();
+    }
+
     public static RandomizerMessageProvider GetAbilityDescription(AbilityType ability) {
         if (!m_abilityOverrides.ContainsKey(ability)) {
             return null;
