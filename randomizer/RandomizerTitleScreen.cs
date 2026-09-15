@@ -23,7 +23,6 @@ public class RandomizerTitleScreen {
                 titleScreen == null ? null : titleScreen.ExitGameScreen
             );
             PracticeSelect.BindMainMenu(titleScreen);
-
             var group = ui.FindChild("group");
             if (group == null) {
                 Randomizer.log("title screen: no ui/group, skipping branding");

@@ -54,7 +54,7 @@ public static class RandomizerHints {
         () => "Once you've cleared the fog in Misty Woods, you can change the layout by interacting with the orb pedestal",
         () => $"Report bugs and discuss upcoming rando features in the *dev* discord ({RandomizerSettings.DevSettings.BuiltinHost}/discord/dev)",
         () => "The Wilhelm frog in upper Valley only spawns if you have the @Sunstone@",
-        () => "You can press [[Save Select Back 10]] and [[Save Select Forward 10]] to rapidly scroll through the file select menu",
+        () => "You can press [[Menu Skip Backwards]] and [[Menu Skip Forwards]] to move through long menus faster, or [[Menu Home]] and [[Menu End]] to jump to either end",
         () => "While she does talk a lot, Enhanced Sein also gives unique hints in some locations",
         () => SuggestBingo() ? "Looking to spice up your randomizer experience? Try bingo!" : null,
     }.Concat(CommonTips).ToList();

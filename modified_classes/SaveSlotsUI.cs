@@ -302,12 +302,14 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
             SetCurrentItemAndScroll(CurrentSlotIndex + 1);
         }
 
-        // all four read every frame, so a plain bind's edge is spent under its shifted one
-        var back10 = RandomizerRebinding.SaveSelectBack10.IsPressed();
-        var back3 = RandomizerRebinding.SaveSelectBack3.IsPressed();
-        var forward10 = RandomizerRebinding.SaveSelectForward10.IsPressed();
-        var forward3 = RandomizerRebinding.SaveSelectForward3.IsPressed();
-        var jump = back10 ? -10 : back3 ? -3 : forward10 ? 10 : forward3 ? 3 : 0;
+        // all four read every frame, so a plain bind's edge is spent under its shifted one.
+        // Ten slots rather than the ends: this list is long enough that the ends are rarely
+        // where you are going.
+        var home = RandomizerRebinding.MenuHome.IsPressed();
+        var back = RandomizerRebinding.MenuSkipBackwards.IsPressed();
+        var end = RandomizerRebinding.MenuEnd.IsPressed();
+        var forward = RandomizerRebinding.MenuSkipForwards.IsPressed();
+        var jump = home ? -10 : back ? -3 : end ? 10 : forward ? 3 : 0;
         if (jump != 0) {
             SetCurrentItemAndScroll(Mathf.Clamp(CurrentSlotIndex + jump, 0, Items.Count - 1));
         }

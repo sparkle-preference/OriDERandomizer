@@ -13,6 +13,7 @@ public class ControllerBindControl : MonoBehaviour {
         UpdateMessageBox();
         SuspensionManager.SuspendAll();
         editing = true;
+        owner.Editing = true;
         exit = 0;
         allButtons = (XboxControllerInput.Button[])Enum.GetValues(typeof(XboxControllerInput.Button));
         buttonsPressed = new bool[allButtons.Length];
@@ -20,7 +21,13 @@ public class ControllerBindControl : MonoBehaviour {
             buttonsPressed[i] = true;
         }
 
-        tooltipProvider.SetMessage("Start: finish editing");
+        // how to work the edit is the legend's job now; the tooltip names what is being edited
+        owner.BindLegend();
+        Tooltip("Editing binds for " + label + "...");
+    }
+
+    private void Tooltip(string words) {
+        tooltipProvider.SetMessage(words);
         owner.tooltipController.UpdateTooltip();
     }
 
@@ -34,14 +41,20 @@ public class ControllerBindControl : MonoBehaviour {
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape) || (WasPressed(XboxControllerInput.Button.Start) && currentKeys.Count > 0)) {
+        if (Cancelling()) {
+            return;
+        }
+
+        if (tapped || (WasPressed(XboxControllerInput.Button.Start) && currentKeys.Count > 0)) {
+            tapped = false;
             editing = false;
+            owner.Editing = false;
             SuspensionManager.ResumeAll();
             SetKeys(currentKeys.ToArray());
             PlayerInputRebinding.WriteControllerRebindSettings();
             PlayerInput.Instance.RefreshControlScheme();
-            tooltipProvider.SetMessage(owner.DefaultTooltip);
-            owner.tooltipController.UpdateTooltip();
+            owner.BindLegend();
+            Tooltip(owner.DefaultTooltip);
             return;
         }
 
@@ -54,6 +67,46 @@ public class ControllerBindControl : MonoBehaviour {
         foreach (var button in allButtons) {
             buttonsPressed[(int)button] = XboxControllerInput.GetButton(button);
         }
+    }
+
+    // Back held long enough abandons the edit, where a tap of it finishes one -- so the tap
+    // lands on the release, which is the first moment the two can be told apart.
+    private bool Cancelling() {
+        var down = CustomSettingsScreen.BackHeld();
+        if (down == KeyCode.None) {
+            tapped = held >= 0f && Time.unscaledTime - held < RandomizerHoldRing.Tap;
+            held = -1f;
+            owner.HideHold();
+            return false;
+        }
+
+        if (held < 0f) {
+            held = Time.unscaledTime;
+        }
+
+        var progress = (Time.unscaledTime - held) / RandomizerHoldRing.Seconds;
+        owner.DrawHold(progress);
+
+        if (progress < 1f) {
+            return true;
+        }
+
+        owner.HideHold();
+        Cancel();
+        return true;
+    }
+
+    // Nothing was written on the way in, so abandoning is just putting the row's own buttons
+    // back on screen and standing down.
+    private void Cancel() {
+        held = -1f;
+        editing = false;
+        owner.Editing = false;
+        SuspensionManager.ResumeAll();
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+        owner.BindLegend();
+        Tooltip(owner.DefaultTooltip);
+        owner.HoldMenu();
     }
 
     public void UpdateMessageBox() {
@@ -75,6 +128,7 @@ public class ControllerBindControl : MonoBehaviour {
     public void Reset() {
         messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
         editing = false;
+        owner.Editing = false;
     }
 
     private bool WasPressed(XboxControllerInput.Button button) {
@@ -170,8 +224,9 @@ public class ControllerBindControl : MonoBehaviour {
         return null;
     }
 
-    public void Init(Func<PlayerInputRebinding.ControllerButton[]> getKeys, Action<PlayerInputRebinding.ControllerButton[]> setKeys, CustomSettingsScreen owner) {
+    public void Init(Func<PlayerInputRebinding.ControllerButton[]> getKeys, Action<PlayerInputRebinding.ControllerButton[]> setKeys, CustomSettingsScreen owner, string label) {
         this.owner = owner;
+        this.label = label;
         GetKeys = getKeys;
         SetKeys = setKeys;
         messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
@@ -182,11 +237,51 @@ public class ControllerBindControl : MonoBehaviour {
         owner.tooltipController.UpdateTooltip();
     }
 
+    // Binds apply as they are made, so leaving without keeping them is a restore, not a
+    // commit. The snapshot is what the screen was entered with.
+    public void Snapshot() {
+        snapshot = (PlayerInputRebinding.ControllerButton[])GetKeys().Clone();
+    }
+
+    public bool Changed {
+        get {
+            if (snapshot == null) {
+                return false;
+            }
+
+            var now = GetKeys();
+            if (now.Length != snapshot.Length) {
+                return true;
+            }
+
+            for (var i = 0; i < now.Length; i++) {
+                if (now[i] != snapshot[i]) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    public void Restore() {
+        if (snapshot == null) {
+            return;
+        }
+
+        SetKeys((PlayerInputRebinding.ControllerButton[])snapshot.Clone());
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+    }
+
+    // this control is taking buttons; owner.Editing only says that *some* control is
+    private bool editing;
+
+    private PlayerInputRebinding.ControllerButton[] snapshot;
+
     public Func<PlayerInputRebinding.ControllerButton[]> GetKeys;
 
     public Action<PlayerInputRebinding.ControllerButton[]> SetKeys;
 
-    public bool editing;
 
     public MessageBox messageBox;
 
@@ -199,6 +294,12 @@ public class ControllerBindControl : MonoBehaviour {
     private XboxControllerInput.Button[] allButtons;
 
     private CustomSettingsScreen owner;
+
+    private string label;
+
+    private float held = -1f;
+
+    private bool tapped;
 
     private RandomizerMessageProvider tooltipProvider;
 }

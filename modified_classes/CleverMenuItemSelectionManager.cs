@@ -421,6 +421,11 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void OnBackPressed() {
+        // a screen with something to ask first answers false and lands the back itself
+        if (BackGuard != null && !BackGuard()) {
+            return;
+        }
+
         OnBackPressedCallback();
         if (BackItem) {
             BackItem.OnPressed();
@@ -543,6 +548,8 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     public Action OptionPressedCallback = delegate { };
 
     public Action OnBackPressedCallback = delegate { };
+
+    public Func<bool> BackGuard;
 
     public bool HighlightOnMouseOver = true;
 

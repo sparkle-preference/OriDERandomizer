@@ -6,9 +6,44 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class CustomSettingsScreen : MonoBehaviour {
+    public void OnEnable() {
+        // each visit is its own baseline, so keeping changes and coming back starts clean
+        SnapshotBinds();
+    }
+
     public void OnDisable() {
+        Hold(false);
+        saving = -1f;
+        HideHold();
         // Will only write if there have been changes
         RandomizerSettings.WriteSettings();
+    }
+
+    // Escape is bound to Pause as well as Cancel: the menu manager reads it first and closes
+    // the whole screen, and the tab list takes clicks even while it is inactive. Both are
+    // shut while the page has a question to ask or an edit in hand, and for a few frames
+    // after either ends -- the manager reads that same press a frame behind the edit.
+    public void HoldMenu() {
+        if (Editing || prompt != null) {
+            settle = SettleFrames;
+        } else if (settle > 0) {
+            settle--;
+        }
+
+        Hold(prompt != null || Editing || settle > 0 || (selectionManager.IsActive && BindsDirty));
+        // an edit owns the page: the row under the cursor must not take the selection, and the
+        // tooltip the edit put up must not be replaced by the one belonging to that row
+        selectionManager.IsLocked = prompt != null || Editing;
+    }
+
+    private void Hold(bool held) {
+        if (Game.UI.Menu != null) {
+            Game.UI.Menu.IsSuspended = held;
+        }
+
+        if (OptionsScreen.Instance != null) {
+            OptionsScreen.Instance.Navigation.IsLocked = held;
+        }
     }
 
     public virtual void Awake() {
@@ -42,14 +77,44 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         tooltipController.enabled = true;
 
         InitScreen();
-        selectionManager.SetCurrentItem(0);
+        // the first row can be a header, which is not a thing to be sitting on
+        selectionManager.SetIndexToFirst();
+        selectionManager.BackGuard = KeepOrDiscard;
+    }
+
+    // Leaving a page whose binds have changed asks first. Both answers land the back they
+    // interrupted, because clearing the change is what lets the guard through.
+    private bool KeepOrDiscard() {
+        if (prompt != null) {
+            return false;
+        }
+
+        if (!BindsDirty) {
+            return true;
+        }
+
+        Confirm("Save keybinding changes?", new[] { "SAVE", "DISCARD" }, answer => {
+            // Back declines to answer, which is a reason to stay rather than either of them
+            if (answer < 0) {
+                return;
+            }
+
+            if (answer == 0) {
+                SnapshotBinds();
+            } else {
+                RevertBinds();
+            }
+
+            selectionManager.OnBackPressed();
+        });
+        return false;
     }
 
     public void AddKeybind(string label, Func<KeyCode[]> getKeys, Action<KeyCode[]> setKeys) {
         var cleverMenuItem = AddItem(label);
         cleverMenuItem.gameObject.name = "Keybind (" + label + ")";
         var kc = cleverMenuItem.gameObject.AddComponent<KeybindControl>();
-        kc.Init(getKeys, setKeys, this);
+        kc.Init(getKeys, setKeys, this, label);
         cleverMenuItem.PressedCallback += delegate { kc.BeginEditing(); };
     }
 
@@ -58,6 +123,10 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // Call from InitScreen. The window follows the selection, so the re-sort has to hang
     // off the selection change rather than off Update.
     public void ScrollAfter(int rows) {
+        // the rows are built by now and never change, so the controls are worth keeping
+        keyControls = GetComponentsInChildren<KeybindControl>(true);
+        padControls = GetComponentsInChildren<ControllerBindControl>(true);
+        randoControls = GetComponentsInChildren<RandomizerBindControl>(true);
         layout.MaxVisible = rows;
         layout.Selection = selectionManager;
         layout.EdgeFade = EdgeFade;
@@ -109,9 +178,19 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     }
 
     public void Update() {
+        // re-asserted every frame because finishing an edit resumes everything
+        HoldMenu();
         if (layout == null || layout.MaxVisible <= 0) {
             return;
         }
+
+        // every key belongs to the bind being edited, and the window it is in stays put
+        if (Editing) {
+            return;
+        }
+
+        RapidScroll();
+        SaveHold();
 
         var wheel = Input.GetAxis("Mouse ScrollWheel");
         if (Mathf.Abs(wheel) > 0.01f) {
@@ -124,6 +203,69 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
     }
 
+    // The same binds that skip through save slots. They move the selection, not the window:
+    // the window is clamped around the selection, so moving it alone would snap back.
+    private void RapidScroll() {
+        // all four read every frame, so a plain bind's edge is spent under its shifted one
+        var home = RandomizerRebinding.MenuHome.IsPressed();
+        var back = RandomizerRebinding.MenuSkipBackwards.IsPressed();
+        var end = RandomizerRebinding.MenuEnd.IsPressed();
+        var forward = RandomizerRebinding.MenuSkipForwards.IsPressed();
+        var last = layout.MenuItems.Count - 1;
+        if (last < 0) {
+            return;
+        }
+
+        if (home || end) {
+            selectionManager.SetCurrentItem(home ? 0 : last);
+            return;
+        }
+
+        if (back || forward) {
+            // most of a screenful, so a row you were just looking at stays in view to orient by
+            var step = Mathf.Max(1, Mathf.RoundToInt(layout.MaxVisible * 0.8f));
+            selectionManager.SetCurrentItem(Mathf.Clamp(selectionManager.Index + (back ? -step : step), 0, last));
+        }
+    }
+
+    // A held Soul Link is how the game itself saves, so it is how a page keeps its changes
+    // without being asked on the way out. It answers the same way the question's SAVE does:
+    // the binds are already live, and keeping them means making them the baseline.
+    private void SaveHold() {
+        if (prompt != null || !selectionManager.IsActive || !BindsDirty ||
+                Down(PlayerInputRebinding.KeyRebindings.SoulFlame) == KeyCode.None) {
+            if (saving >= 0f) {
+                HideHold();
+            }
+
+            saving = -1f;
+            return;
+        }
+
+        // a press of its own, not a key that was already down when the page became savable
+        if (saving < 0f) {
+            if (!Pressed(PlayerInputRebinding.KeyRebindings.SoulFlame)) {
+                return;
+            }
+
+            saving = Time.unscaledTime;
+        }
+
+        var progress = (Time.unscaledTime - saving) / RandomizerHoldRing.Seconds;
+        if (soulGlyph) {
+            DrawHold(progress);
+        }
+
+        if (progress < 1f) {
+            return;
+        }
+
+        saving = -1f;
+        HideHold();
+        SnapshotBinds();
+        BindLegend();
+    }
+
     // Grab anywhere on the bar and the window follows, which is what a scrollbar is for.
     private void DragScrollbar() {
         var cursor = Core.Input.CursorPositionUI;
@@ -134,6 +276,283 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         var t = Mathf.Clamp01((scrollTrack.position.y + half - cursor.y) / (2f * half));
         layout.ScrollTo(Mathf.RoundToInt(t * (layout.MenuItems.Count - layout.MaxVisible)));
+    }
+
+    // Binds apply the moment they are made, so what the screen offers on the way out is
+    // "keep these?", and declining restores what it was entered with.
+    public void SnapshotBinds() {
+        foreach (var control in keyControls) {
+            control.Snapshot();
+        }
+
+        foreach (var control in padControls) {
+            control.Snapshot();
+        }
+
+        foreach (var control in randoControls) {
+            control.Snapshot();
+        }
+    }
+
+    public bool BindsDirty {
+        get {
+            foreach (var control in keyControls) {
+                if (control.Changed) {
+                    return true;
+                }
+            }
+
+            foreach (var control in padControls) {
+                if (control.Changed) {
+                    return true;
+                }
+            }
+
+            foreach (var control in randoControls) {
+                if (control.Changed) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    public void RevertBinds() {
+        foreach (var control in keyControls) {
+            control.Restore();
+        }
+
+        foreach (var control in padControls) {
+            control.Restore();
+        }
+
+        foreach (var control in randoControls) {
+            control.Restore();
+        }
+
+        if (randoControls.Length > 0) {
+            RandomizerRebinding.WriteBindsToFile();
+        }
+
+        if (keyControls.Length > 0) {
+            PlayerInputRebinding.WriteKeyRebindSettings();
+        }
+
+        if (padControls.Length > 0) {
+            PlayerInputRebinding.WriteControllerRebindSettings();
+        }
+
+        var input = PlayerInput.Instance;
+        if (input != null) {
+            input.RefreshControlScheme();
+        }
+    }
+
+    // The bottom line: how to work the page, and whether it is holding anything unsaved. The
+    // interaction text used to live in the tooltip, which left no room for anything about the
+    // bind under the cursor.
+    public virtual void BindLegend() {
+        if (keyControls.Length == 0 && padControls.Length == 0 && randoControls.Length == 0) {
+            return;
+        }
+
+        // a pad edit takes buttons until Escape and has no undo; a key edit ends on Enter
+        if (Editing) {
+            if (randoControls.Length > 0) {
+                Legend("<icon>z</>   Hold: " + (ReadingActions ? "keys" : "game actions"),
+                    "<icon>D</> Finish   <icon>M</> Remove last", "<icon>y</>   Hold: cancel");
+            } else if (keyControls.Length > 0) {
+                Legend("<icon>M</> Remove last", "<icon>D</> Finish", "<icon>y</>   Hold: cancel");
+            } else {
+                Legend(string.Empty, "<icon>y</> Finish", "<icon>y</>   Hold: cancel");
+            }
+
+            return;
+        }
+
+        if (!BindsDirty) {
+            Legend("<icon>vr</> Navigate" + Skips(), "<icon>D</> Rebind", "<icon>y</> Back");
+            return;
+        }
+
+        // the hint is written first because the ring wraps the slot's leftmost glyph
+        soulGlyph = MessageParserUtility.ProcessString(SoulKey).Contains("<icon>");
+        Legend("<icon>vr</> Navigate" + Skips(), "<icon>D</> Rebind",
+            SoulKey + "   Hold to save changes   <icon>y</> Back");
+    }
+
+    // The page-at-a-time binds, named from the bindings themselves. Only worth the words when
+    // there is more list than window, and only while the page is the one taking keys.
+    private string Skips() {
+        if (layout == null || layout.MaxVisible <= 0 || layout.MenuItems.Count <= layout.MaxVisible ||
+                !RandomizerRebinding.MenuSkipBackwards.HasBind() ||
+                !RandomizerRebinding.MenuSkipForwards.HasBind()) {
+            return string.Empty;
+        }
+
+        return "      " + RandomizerRebinding.MenuSkipBackwards.FirstBindName() + "/" +
+            RandomizerRebinding.MenuSkipForwards.FirstBindName() + " Skip";
+    }
+
+    // The legend's three slots. Key icons come out of the text itself -- <icon> switches to a
+    // font whose letters are key images: D is Enter, y Esc, M Del, vr the up and down arrows,
+    // st left and right. More than one hint fits in a slot.
+    public void Legend(string navigate, string select, string back) {
+        var legend = transform.FindChild("highlightFade/legend/pcLegend");
+        if (legend == null) {
+            return;
+        }
+
+        // The slots are cut to the words vanilla puts in them, and ours are longer; once only,
+        // because this runs on every legend change.
+        if (!widened) {
+            widened = true;
+            Widen(legend, "navigate");
+            Widen(legend, "select");
+            Widen(legend, "back");
+        }
+
+        Slot(legend, "navigate", navigate);
+        Slot(legend, "select", select);
+        Slot(legend, "back", back);
+    }
+
+    // Which key is standing in for Back right now. The gesture rides the binding rather than
+    // Escape, because the legend glyph it fills is drawn from the binding too.
+    public static KeyCode BackHeld() {
+        return Down(PlayerInputRebinding.KeyRebindings.Cancel);
+    }
+
+    private static KeyCode Down(KeyCode[] keys) {
+        if (keys == null) {
+            return KeyCode.None;
+        }
+
+        foreach (var key in keys) {
+            if (Input.GetKey(key)) {
+                return key;
+            }
+        }
+
+        return KeyCode.None;
+    }
+
+    private static bool Pressed(KeyCode[] keys) {
+        if (keys == null) {
+            return false;
+        }
+
+        foreach (var key in keys) {
+            if (Input.GetKeyDown(key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // The ring a hold fills, drawn over the glyph of the key being held. One between all the
+    // pages, because only one hold on one of them can be running at a time.
+    public void DrawHold(float progress, string slot = "back") {
+        var glyph = HoldGlyph(slot);
+        if (glyph == null || ringless) {
+            return;
+        }
+
+        // the holder is a plain object and never goes null with the scene its clone was in
+        if (ring == null || ring.Object == null) {
+            ring = new RandomizerHoldRing();
+            if (!ring.Adopt(LoadingBar(), null, "randomizerHoldRing")) {
+                Randomizer.log("hold ring: no loading bar to borrow; holds will have no ring");
+                ring = null;
+                ringless = true;
+                return;
+            }
+
+            ring.Match(glyph, glyph.gameObject.layer);
+            ring.Fade(1f);
+        }
+
+        ring.Show(true);
+        var at = glyph.transform.position;
+        ring.Place(new Vector3(at.x, at.y, at.z - RingLift));
+        ring.Widen(glyph.bounds.size.y * RingSpan);
+        ring.Progress(progress);
+    }
+
+    public void HideHold() {
+        if (ring != null) {
+            ring.Show(false);
+        }
+    }
+
+    // The loading bar carries the provider that reads the prewarmer, which is what names it
+    // among the handful of things alive from boot -- Sein's UI, and its ring, are not.
+    private static GameObject LoadingBar() {
+        foreach (var progress in Resources.FindObjectsOfTypeAll<UberShaderPrewarmerProgress>()) {
+            if (progress != null && progress.GetComponent<TimelineSequence>() != null) {
+                return progress.gameObject;
+            }
+        }
+
+        return null;
+    }
+
+    // The leftmost key glyph in a legend slot, which is the key that slot is offering to hold:
+    // a hold's hint is written first in it. Leftmost rather than first, because the icons are
+    // cloned in the order they were needed and keep it when the text changes under them.
+    public Renderer HoldGlyph(string name) {
+        var slot = transform.FindChild("highlightFade/legend/pcLegend/" + name);
+        var icons = slot == null ? null : slot.GetComponentInChildren<CatlikeCoding.TextBox.MoonIconRenderer>(true);
+        if (icons == null) {
+            return null;
+        }
+
+        Renderer leftmost = null;
+        foreach (var renderer in icons.GetComponentsInChildren<Renderer>(true)) {
+            if (leftmost == null || renderer.transform.position.x < leftmost.transform.position.x) {
+                leftmost = renderer;
+            }
+        }
+
+        return leftmost;
+    }
+
+    private static void Widen(Transform legend, string name) {
+        var child = legend.FindChild(name);
+        var box = child == null ? null : child.GetComponentInChildren<MessageBox>(true);
+        if (box != null && box.TextBox != null) {
+            box.TextBox.width *= SlotWidth;
+        }
+    }
+
+    private static void Slot(Transform legend, string name, string words) {
+        var child = legend.FindChild(name);
+        var box = child == null ? null : child.GetComponentInChildren<MessageBox>(true);
+        if (box == null) {
+            return;
+        }
+
+        box.MessageProvider = null;
+        box.SetMessage(new MessageDescriptor(words));
+    }
+
+    // Two lines of tooltip over the legend, which is the pair the vanilla screens show. The
+    // panel is lifted into the margin above its first row to buy back a row, and the answer
+    // is how many rows fit above the footer. Call instead of ScrollAfter's magic number.
+    public int Footer() {
+        var line = layout.MenuItems.Count > 0 ? layout.MenuItems[0].Space : DefaultSpace;
+        pivot.localPosition += new Vector3(0f, Raise, 0f);
+
+        // a clear line over the legend and another under the last row, tooltip between
+        var top = LegendY + TooltipLines * line;
+        var at = tooltipController.transform.position;
+        at.y = top;
+        tooltipController.transform.position = at;
+
+        var room = FirstRowY + Raise - (top + line);
+        return Mathf.Max(1, Mathf.FloorToInt(room / line) + 1);
     }
 
     public void HideLegend() {
@@ -149,11 +568,38 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         ConfigureTooltip(cleverMenuItem.GetComponent<CleverMenuItemTooltip>(), tooltip ?? caption);
     }
 
+    // A row that is only a label. It sits in both lists so the scroll window's arithmetic still
+    // lines up, but navigation steps over it (an Activated that never validates) and the cursor
+    // cannot land on it (no bounds of its own).
+    public void AddHeader(string caption) {
+        var cleverMenuItem = AddItem(caption);
+        cleverMenuItem.gameObject.name = "Header (" + caption + ")";
+        cleverMenuItem.Size = Vector2.zero;
+        // the row tints its own text, so the colour has to come from there rather than a
+        // <style> tag; all three states, because a header is never in any of them
+        cleverMenuItem.Transition.NormalColor = HeaderColor;
+        cleverMenuItem.Transition.HighlightedColor = HeaderColor;
+        cleverMenuItem.Transition.DisabledColor = HeaderColor;
+        cleverMenuItem.OnUnhighlight();
+        cleverMenuItem.Activated = cleverMenuItem.gameObject.AddComponent<NeverCondition>();
+        var state = cleverMenuItem.transform.Find("text/stateText").GetComponent<MessageBox>();
+        state.MessageProvider = null;
+        state.SetMessage(new MessageDescriptor(string.Empty));
+    }
+
+    public void AddRandomizerBind(string action, string label = null) {
+        var cleverMenuItem = AddItem(label ?? action);
+        cleverMenuItem.gameObject.name = "Rando Bind (" + action + ")";
+        var control = cleverMenuItem.gameObject.AddComponent<RandomizerBindControl>();
+        control.Init(action, this, label ?? action);
+        cleverMenuItem.PressedCallback += delegate { control.BeginEditing(); };
+    }
+
     public void AddControllerBind(string label, Func<PlayerInputRebinding.ControllerButton[]> getKeys, Action<PlayerInputRebinding.ControllerButton[]> setKeys) {
         var cleverMenuItem = AddItem(label);
         cleverMenuItem.gameObject.name = "Controller Bind (" + label + ")";
         var kc = cleverMenuItem.gameObject.AddComponent<ControllerBindControl>();
-        kc.Init(getKeys, setKeys, this);
+        kc.Init(getKeys, setKeys, this, label);
         cleverMenuItem.PressedCallback += delegate { kc.BeginEditing(); };
     }
 
@@ -357,8 +803,127 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return null;
     }
 
-    // LanguageOptions repopulates itself in OnEnable, so it has to go rather than be
-    // emptied. DestroyImmediate: a deferred Destroy would still refill on the way in.
+    // The pause menu's "Return to Main Menu?" prompt, cloned off the InstantiateAction that
+    // normally spawns it. Its own selection manager lists the answers; Back answers -1.
+    public void Confirm(string question, string[] answers, Action<int> chosen) {
+        if (prompt != null) {
+            return;
+        }
+
+        if (questionPrefab == null) {
+            foreach (var spawn in Resources.FindObjectsOfTypeAll<InstantiateAction>()) {
+                if (spawn.Prefab != null && spawn.Prefab.name == QuestionPrefabName) {
+                    questionPrefab = spawn.Prefab;
+                    break;
+                }
+            }
+        }
+
+        if (questionPrefab == null) {
+            Randomizer.log("settings: no confirm prefab, answering " + answers[0]);
+            chosen(0);
+            return;
+        }
+
+        prompt = (GameObject)Instantiate(questionPrefab);
+        prompt.name = "confirm";
+        // world position kept: the prefab already sits where a prompt belongs on screen
+        prompt.transform.SetParent(transform, true);
+        prompt.SetActive(true);
+
+        // its opening sequence pauses the game, which is not ours to do from a menu
+        var opening = prompt.transform.FindChild("*actionSequence");
+        if (opening != null) {
+            opening.gameObject.SetActive(false);
+        }
+
+        // The prefab wraps at the width of "Return to Main Menu?", and a longer question
+        // wrapped onto the answers. Widen before the text is set, so it renders once.
+        var title = prompt.transform.FindChild("title");
+        var titleBox = title == null ? null : title.GetComponentInChildren<MessageBox>(true);
+        if (titleBox != null && titleBox.TextBox != null) {
+            titleBox.TextBox.width *= QuestionWidth;
+        }
+
+        Ask(title, question);
+
+        // The plate widens with the question, and grows upward for a line of headroom over
+        // it rather than moving the text down, so the answers stay where the prefab puts them.
+        var back = prompt.transform.FindChild("messageBackgroundA");
+        var mesh = back == null ? null : back.GetComponent<MeshFilter>();
+        if (mesh != null && mesh.sharedMesh != null && mesh.sharedMesh.bounds.size.y > 0f) {
+            var grow = TopPad / mesh.sharedMesh.bounds.size.y;
+            back.localScale = new Vector3(back.localScale.x * PlateWidth,
+                                          back.localScale.y + grow, back.localScale.z);
+            back.localPosition += new Vector3(0f, 0.5f * TopPad, 0f);
+        }
+        var manager = prompt.GetComponent<CleverMenuItemSelectionManager>();
+        for (var i = 0; i < manager.MenuItems.Count; i++) {
+            var item = manager.MenuItems[i];
+            var answer = i;
+            Ask(item.transform, i < answers.Length ? answers[i] : string.Empty);
+            // vanilla rows quit to the menu through Pressed, and gate that on being safe to
+            // quit; ours are always answerable and only report the answer
+            item.Pressed = null;
+            item.Activated = null;
+            item.Visible = null;
+            item.PressedCallback += delegate { CloseConfirm(chosen, answer); };
+        }
+
+        manager.BackGuard = delegate {
+            CloseConfirm(chosen, -1);
+            return false;
+        };
+
+        // The page behind stays readable but must stop responding. IsActive gates its keys
+        // only -- a click reaches a row ahead of that check -- and the row it left lit would
+        // otherwise go on glowing under the question.
+        selectionManager.IsActive = false;
+        selectionManager.IsLocked = true;
+        if (selectionManager.CurrentMenuItem != null) {
+            selectionManager.CurrentMenuItem.OnUnhighlight();
+        }
+
+        manager.IsActive = true;
+        manager.SetCurrentItem(0);
+    }
+
+    // Every text node in the prompt is a MessageBox under a same-named child.
+    private static void Ask(Transform where, string words) {
+        if (where == null) {
+            return;
+        }
+
+        var box = where.GetComponentInChildren<MessageBox>(true);
+        if (box == null) {
+            return;
+        }
+
+        box.MessageProvider = null;
+        box.SetMessage(new MessageDescriptor(words));
+    }
+
+    private void CloseConfirm(Action<int> chosen, int answer) {
+        if (prompt == null) {
+            return;
+        }
+
+        var going = prompt;
+        prompt = null;
+        Destroy(going);
+        selectionManager.IsActive = true;
+        selectionManager.IsLocked = false;
+        if (selectionManager.CurrentMenuItem != null) {
+            selectionManager.CurrentMenuItem.OnHighlight();
+        }
+
+        // the controller hides the tooltip while the page is inactive and never re-shows it
+        tooltipController.UpdateTooltip();
+        chosen(answer);
+        // after the answer, because that is what decides whether anything is still unsaved
+        BindLegend();
+    }
+
     private CleverMenuOptionsList PlainOptionsList(Transform flyout) {
         var old = flyout.GetComponent<CleverMenuOptionsList>();
         var prefab = old.Item;
@@ -473,6 +1038,79 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     public CleverMenuItem fakeTooltip;
 
     public CleverMenuItemTooltipController tooltipController;
+
+    // a bind control is taking every key; the screen's own binds stand down
+    public bool Editing;
+
+    // which of a rando bind's two readings the edit in hand is on, for the legend
+    public bool ReadingActions;
+
+    // by eye against a legend slot: enough for two hints in one of them
+    private const float SlotWidth = 2.2f;
+
+    private bool widened;
+
+    // warmer and flatter than a row's own white, so a category reads as a label
+    private static readonly Color HeaderColor = new Color(0.85f, 0.72f, 0.42f, 0.55f);
+
+    private GameObject prompt;
+
+    // by eye against a key glyph: the ring reads as around it rather than behind it
+    private const float RingSpan = 1.875f;
+
+    private const float RingLift = 0.1f;
+
+    private static RandomizerHoldRing ring;
+
+    private static bool ringless;
+
+    // long enough to cover the manager's next FixedUpdate whichever order the two run in
+    private const int SettleFrames = 3;
+
+    private int settle;
+
+    // when the save hold started, or -1 for no hold in hand
+    private float saving = -1f;
+
+    // The game's own placeholder for the Soul Link key, which a MessageBox resolves to the
+    // keycap when there is one for that key and to the key's name when there is not.
+    private const string SoulKey = "[SoulFlame]";
+
+    private bool soulGlyph;
+
+    // empty until the rows are built: the legend asks whether they are dirty on the way up
+    private KeybindControl[] keyControls = new KeybindControl[0];
+
+    private ControllerBindControl[] padControls = new ControllerBindControl[0];
+
+    private RandomizerBindControl[] randoControls = new RandomizerBindControl[0];
+
+    // Measured: the vanilla legend sits here, panel rows start here and step by this. The
+    // camera has a fixed vertical FOV, so these are the same at every resolution and aspect.
+    private const float LegendY = -3.42f;
+
+    private const float FirstRowY = 2.944f;
+
+    private const float DefaultSpace = 0.45f;
+
+    // a tooltip wraps, so the footer reserves two lines rather than one
+    private const int TooltipLines = 2;
+
+    // there is about two rows of margin over the first row; one of them is worth taking
+    private const float Raise = 0.45f;
+
+    // a text line, matching the gap between the prompt's own two answers
+    private const float TopPad = 0.45f;
+
+    // Of the prefab's own. Both by eye against the longest question the screens ask; the
+    // plate starts out much wider than the wrap, so it needs less.
+    private const float QuestionWidth = 1.6f;
+
+    private const float PlateWidth = 1.35f;
+
+    private const string QuestionPrefabName = "returnToMainMenuQuestion";
+
+    private static GameObject questionPrefab;
 
     public string DefaultTooltip = "Click on an action to add or remove binds";
 

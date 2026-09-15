@@ -20,8 +20,9 @@ public class OptionsScreen : MenuScreen, ISuspendable {
         AddSubscreen<AccessibilitySettingsScreen>("ACCESSIBILITY", 2);
         AddSubscreen<RandoUiScreen>("RANDO UI", 3);
         AddSubscreen<RandoOptionsScreen>("RANDO OPTIONS", 4);
-        AddSubscreen<KeybindsScreen>("KEYBINDS", 5);
-        AddSubscreen<ControllerBindsScreen>("CONTROLLER BINDS", 6);
+        AddSubscreen<RandomizerBindsScreen>("RANDO BINDS", 5);
+        AddSubscreen<KeybindsScreen>("KEYBINDS", 6);
+        AddSubscreen<ControllerBindsScreen>("CONTROLLER BINDS", 7);
     }
 
     public void OnDestroy() {
