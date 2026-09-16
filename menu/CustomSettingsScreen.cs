@@ -62,15 +62,15 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return true;
         }
 
-        Confirm("Keep your changes to these binds?",
-            delegate {
+        Confirm("Keep your changes to these binds?", new[] { "KEEP", "DISCARD" }, answer => {
+            if (answer == 0) {
                 SnapshotBinds();
-                selectionManager.OnBackPressed();
-            },
-            delegate {
+            } else {
                 RevertBinds();
-                selectionManager.OnBackPressed();
-            });
+            }
+
+            selectionManager.OnBackPressed();
+        });
         return false;
     }
 
@@ -278,6 +278,34 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         item.OnUnhighlight();
     }
 
+    // One settings row, cloned and woken up but not yet owned by any layout.
+    private CleverMenuItem CloneRow(Transform parent, string label) {
+        var gameObject = Instantiate(SettingsScreen.Instance.transform.Find("highlightFade/pivot/damageText").gameObject);
+        gameObject.transform.SetParent(parent);
+        foreach (var c in gameObject.GetComponentsInChildren<MonoBehaviour>()) {
+            c.enabled = true;
+        }
+
+        var component = gameObject.GetComponent<CleverMenuItem>();
+        component.Pressed = null;
+        var animators = component.transform.GetComponentsInChildren<TransparencyAnimator>();
+        for (var i = 0; i < animators.Length; i++) {
+            animators[i].Reset();
+            animators[i].enabled = true;
+        }
+
+        foreach (var obj in component.transform.FindChild("glowGroup")) {
+            TransparencyAnimator.Register((Transform)obj);
+        }
+
+        gameObject.transform.Find("text/nameText").GetComponent<MessageBox>().SetMessage(new MessageDescriptor(label));
+        // the template is a toggle row, so it arrives carrying an ON
+        var state = gameObject.transform.Find("text/stateText").GetComponent<MessageBox>();
+        state.MessageProvider = null;
+        state.SetMessage(new MessageDescriptor(string.Empty));
+        return component;
+    }
+
     public CleverMenuItem AddItem(string label) {
         var gameObject = Instantiate(SettingsScreen.Instance.transform.Find("highlightFade/pivot/damageText").gameObject);
         gameObject.transform.SetParent(pivot);
@@ -473,40 +501,80 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     // LanguageOptions repopulates itself in OnEnable, so it has to go rather than be
     // emptied. DestroyImmediate: a deferred Destroy would still refill on the way in.
-    // The save screen's delete prompt, reused: the only confirmation furniture the game
-    // has, and it already animates, dims and takes its own input.
-    public void Confirm(string question, Action confirmed, Action cancelled) {
-        if (prompt != null || PromptPrefab == null) {
-            // no prefab means the save screen has never opened, which cannot happen in play
-            if (confirmed != null) {
-                confirmed();
-            }
-
+    // The title screen's quit prompt, rebuilt: a question over selectable answers. That one
+    // lives in the title scene and the settings pages outlive it, so this is the same parts
+    // from persistent ones -- the row art is what every settings row already clones, and the
+    // plate behind it is the options screen's own background. It has no full-screen dimmer
+    // because the original has none either; each element sits on its own plate.
+    public void Confirm(string question, string[] answers, Action<int> chosen) {
+        if (prompt != null) {
             return;
         }
 
-        prompt = (ConfirmOrCancel)Instantiate(PromptPrefab, transform.position + PromptAt, Quaternion.identity);
-        prompt.transform.parent = transform;
-        var box = prompt.transform.FindChild("group/text").GetComponent<MessageBox>();
-        box.MessageProvider = null;
-        box.SetMessage(new MessageDescriptor(question));
-        // the prefab's own sequence only tears down on one of the two answers, so take it down
-        // here instead, after its animation has had the half second the sequence allows
-        var shown = prompt.gameObject;
-        prompt.OnConfirm += delegate {
-            prompt = null;
-            Destroy(shown, 0.6f);
-            if (confirmed != null) {
-                confirmed();
-            }
+        prompt = new GameObject("confirm");
+        prompt.transform.SetParent(transform, false);
+        prompt.transform.localPosition = PromptAt;
+
+        // rows are anchored at their left edge, so the content runs rightwards from the
+        // title's origin and the plate has to sit over that, not centred on it
+        var plate = Instantiate(transform.parent.FindChild("menuBackgrounds/menuBackground").gameObject);
+        plate.transform.SetParent(prompt.transform, false);
+        plate.transform.localPosition = new Vector3(PlateOffsetX, -0.5f * answers.Length * RowSpace, 0.1f);
+        plate.transform.localScale = new Vector3(PlateWide, PlateTall + answers.Length * RowSpace, 1f);
+
+        var title = CloneRow(prompt.transform, question);
+        Destroy(title.GetComponent<CleverMenuItem>());
+        title.transform.localPosition = Vector3.zero;
+
+        var manager = prompt.AddComponent<CleverMenuItemSelectionManager>();
+        // AddComponent leaves the serialized fields at zero: the lists are null and would throw
+        // on the first Add, and the direction would be LeftToRight for a column of answers
+        manager.MenuItems = new List<CleverMenuItem>();
+        manager.ItemDirection = CleverMenuItemSelectionManager.Direction.TopToBottom;
+        // its own object: the layout moves what it sits on, and the title and plate stay put
+        var holder = new GameObject("answers");
+        holder.transform.SetParent(prompt.transform, false);
+        holder.transform.localPosition = new Vector3(RowIndent, -RowSpace, 0f);
+        var rows = holder.AddComponent<CleverMenuItemLayout>();
+        rows.MenuItems = new List<CleverMenuItem>();
+        rows.VerticalAlignment = CleverMenuItemLayout.Alignment.Top;
+
+        for (var i = 0; i < answers.Length; i++) {
+            var answer = i;
+            var row = CloneRow(holder.transform, answers[i]);
+            row.PressedCallback += delegate { CloseConfirm(chosen, answer); };
+            manager.MenuItems.Add(row);
+            rows.AddItem(row);
+            // the same waking the settings rows get, and what lights their glow
+            row.SetOpacity(1f);
+            row.OnUnhighlight();
+        }
+
+        rows.Sort();
+
+        // back answers the last row, which is where the harmless answer goes
+        manager.BackGuard = delegate {
+            CloseConfirm(chosen, answers.Length - 1);
+            return false;
         };
-        prompt.OnCancel += delegate {
-            prompt = null;
-            Destroy(shown, 0.6f);
-            if (cancelled != null) {
-                cancelled();
-            }
-        };
+
+        // IsActive is the input gate; visibility would take the page down with it, and the
+        // page is meant to stay readable behind the question
+        selectionManager.IsActive = false;
+        manager.IsActive = true;
+        manager.SetCurrentItem(0);
+    }
+
+    private void CloseConfirm(Action<int> chosen, int answer) {
+        if (prompt == null) {
+            return;
+        }
+
+        var going = prompt;
+        prompt = null;
+        Destroy(going);
+        selectionManager.IsActive = true;
+        chosen(answer);
     }
 
     private CleverMenuOptionsList PlainOptionsList(Transform flyout) {
@@ -627,13 +695,20 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // a bind control is taking every key; the screen's own binds stand down
     public bool Editing;
 
-    private ConfirmOrCancel prompt;
-
-    // captured off the save screen, which always opens before settings can be reached
-    public static ConfirmOrCancel PromptPrefab;
+    private GameObject prompt;
 
     // over the rows it is asking about, in front of them
-    private static readonly Vector3 PromptAt = new Vector3(0f, 0.4f, -2f);
+    private static readonly Vector3 PromptAt = new Vector3(-1.1f, 0.9f, -2f);
+
+    private const float RowSpace = 0.45f;
+
+    private const float RowIndent = 0.35f;
+
+    private const float PlateWide = 4.6f;
+
+    private const float PlateTall = 1.1f;
+
+    private const float PlateOffsetX = 1.55f;
 
     public string DefaultTooltip = "Click on an action to add or remove binds";
 
