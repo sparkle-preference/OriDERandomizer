@@ -12,7 +12,7 @@ public class ControllerBindControl : MonoBehaviour {
         currentKeys.Clear();
         UpdateMessageBox();
         SuspensionManager.SuspendAll();
-        editing = true;
+        owner.Editing = true;
         exit = 0;
         allButtons = (XboxControllerInput.Button[])Enum.GetValues(typeof(XboxControllerInput.Button));
         buttonsPressed = new bool[allButtons.Length];
@@ -25,7 +25,7 @@ public class ControllerBindControl : MonoBehaviour {
     }
 
     public void Update() {
-        if (!editing) {
+        if (!owner.Editing) {
             return;
         }
 
@@ -35,7 +35,7 @@ public class ControllerBindControl : MonoBehaviour {
         }
 
         if (Input.GetKeyDown(KeyCode.Escape) || (WasPressed(XboxControllerInput.Button.Start) && currentKeys.Count > 0)) {
-            editing = false;
+            owner.Editing = false;
             SuspensionManager.ResumeAll();
             SetKeys(currentKeys.ToArray());
             PlayerInputRebinding.WriteControllerRebindSettings();
@@ -74,7 +74,7 @@ public class ControllerBindControl : MonoBehaviour {
 
     public void Reset() {
         messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
-        editing = false;
+        owner.Editing = false;
     }
 
     private bool WasPressed(XboxControllerInput.Button button) {
@@ -186,7 +186,6 @@ public class ControllerBindControl : MonoBehaviour {
 
     public Action<PlayerInputRebinding.ControllerButton[]> SetKeys;
 
-    public bool editing;
 
     public MessageBox messageBox;
 

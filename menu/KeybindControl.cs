@@ -11,14 +11,14 @@ public class KeybindControl : MonoBehaviour {
         currentKeys.Clear();
         currentKeys.AddRange(GetKeys());
         SuspensionManager.SuspendAll();
-        editing = true;
+        owner.Editing = true;
         exit = 0;
         tooltipProvider.SetMessage("Backspace: remove bind\nEnter: finish editing");
         owner.tooltipController.UpdateTooltip();
     }
 
     public void Update() {
-        if (!editing) {
+        if (!owner.Editing) {
             return;
         }
 
@@ -28,7 +28,7 @@ public class KeybindControl : MonoBehaviour {
         }
 
         if (Input.GetKeyDown(KeyCode.Return) && currentKeys.Count > 0) {
-            editing = false;
+            owner.Editing = false;
             SuspensionManager.ResumeAll();
             SetKeys(currentKeys.ToArray());
             PlayerInputRebinding.WriteKeyRebindSettings();
@@ -72,7 +72,7 @@ public class KeybindControl : MonoBehaviour {
 
     public void Reset() {
         messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
-        editing = false;
+        owner.Editing = false;
     }
 
     public void Init(Func<KeyCode[]> getKeys, Action<KeyCode[]> setKeys, CustomSettingsScreen owner) {
@@ -91,7 +91,6 @@ public class KeybindControl : MonoBehaviour {
 
     private Action<KeyCode[]> SetKeys;
 
-    private bool editing;
 
     private MessageBox messageBox;
 

@@ -113,6 +113,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return;
         }
 
+        // every key belongs to the bind being edited, including these
+        if (!Editing) {
+            RapidScroll();
+        }
+
         var wheel = Input.GetAxis("Mouse ScrollWheel");
         if (Mathf.Abs(wheel) > 0.01f) {
             layout.ScrollBy(wheel > 0f ? -1 : 1);
@@ -121,6 +126,31 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         if (Input.GetMouseButton(0) && scrollTrack != null) {
             DragScrollbar();
+        }
+    }
+
+    // The same binds that skip through save slots. They move the selection, not the window:
+    // the window is clamped around the selection, so moving it alone would snap back.
+    private void RapidScroll() {
+        // all four read every frame, so a plain bind's edge is spent under its shifted one
+        var home = RandomizerRebinding.MenuHome.IsPressed();
+        var back = RandomizerRebinding.MenuSkipBackwards.IsPressed();
+        var end = RandomizerRebinding.MenuEnd.IsPressed();
+        var forward = RandomizerRebinding.MenuSkipForwards.IsPressed();
+        var last = layout.MenuItems.Count - 1;
+        if (last < 0) {
+            return;
+        }
+
+        if (home || end) {
+            selectionManager.SetCurrentItem(home ? 0 : last);
+            return;
+        }
+
+        if (back || forward) {
+            // most of a screenful, so a row you were just looking at stays in view to orient by
+            var step = Mathf.Max(1, Mathf.RoundToInt(layout.MaxVisible * 0.8f));
+            selectionManager.SetCurrentItem(Mathf.Clamp(selectionManager.Index + (back ? -step : step), 0, last));
         }
     }
 
@@ -473,6 +503,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     public CleverMenuItem fakeTooltip;
 
     public CleverMenuItemTooltipController tooltipController;
+
+    // a bind control is taking every key; the screen's own binds stand down
+    public bool Editing;
 
     public string DefaultTooltip = "Click on an action to add or remove binds";
 

@@ -59,6 +59,9 @@ public static class RandomizerRebinding {
                 } else if (action == "Return to Start") {
                     action = "Warp";
                     dirty = true;
+                } else if (renamed.ContainsKey(action)) {
+                    action = renamed[action];
+                    dirty = true;
                 }
 
                 if (!DefaultBinds.ContainsKey(action)) {
@@ -243,10 +246,10 @@ public static class RandomizerRebinding {
         { "Retry Practice Segment", "LeftAlt+L, RightAlt+L" },
         { "Spawn Echo", "" },
         { "Clear All Echoes", "" },
-        { "Save Select Back 3", "PageUp" },
-        { "Save Select Forward 3", "PageDown" },
-        { "Save Select Back 10", "LeftShift+PageUp, RightShift+PageUp" },
-        { "Save Select Forward 10", "LeftShift+PageDown, RightShift+PageDown" },
+        { "Menu Skip Backwards", "PageUp" },
+        { "Menu Skip Forwards", "PageDown" },
+        { "Menu Home", "LeftShift+PageUp, RightShift+PageUp" },
+        { "Menu End", "LeftShift+PageDown, RightShift+PageDown" },
         { "Bonus 1", "" },
         { "Bonus 2", "" },
         { "Bonus 3", "" },
@@ -290,10 +293,10 @@ public static class RandomizerRebinding {
     public static BindSet RetryPracticeSegment = new BindSet(new List<SingleBind>());
     public static BindSet SpawnEcho = new BindSet(new List<SingleBind>());
     public static BindSet ClearAllEchoes = new BindSet(new List<SingleBind>());
-    public static BindSet SaveSelectBack3 = new BindSet(new List<SingleBind>());
-    public static BindSet SaveSelectForward3 = new BindSet(new List<SingleBind>());
-    public static BindSet SaveSelectBack10 = new BindSet(new List<SingleBind>());
-    public static BindSet SaveSelectForward10 = new BindSet(new List<SingleBind>());
+    public static BindSet MenuSkipBackwards = new BindSet(new List<SingleBind>());
+    public static BindSet MenuSkipForwards = new BindSet(new List<SingleBind>());
+    public static BindSet MenuHome = new BindSet(new List<SingleBind>());
+    public static BindSet MenuEnd = new BindSet(new List<SingleBind>());
     public static BindSet Bonus1 = new BindSet(new List<SingleBind>());
     public static BindSet Bonus2 = new BindSet(new List<SingleBind>());
     public static BindSet Bonus3 = new BindSet(new List<SingleBind>());
@@ -309,6 +312,15 @@ public static class RandomizerRebinding {
         BindSet set;
         return rebindMap.TryGetValue(action, out set) ? set.FirstBindName() : "<NO BIND>";
     }
+
+    // Old names carried forward so a rebinding file keeps its binds. Matching one marks the
+    // file dirty, which rewrites it whole and drops whatever else has gone stale in it.
+    private static Dictionary<string, string> renamed = new Dictionary<string, string> {
+        { "Save Select Back 3", "Menu Skip Backwards" },
+        { "Save Select Forward 3", "Menu Skip Forwards" },
+        { "Save Select Back 10", "Menu Home" },
+        { "Save Select Forward 10", "Menu End" },
+    };
 
     private static Dictionary<string, BindSet> rebindMap = new Dictionary<string, BindSet> {
         { "Replay Message", ReplayMessage },
@@ -339,10 +351,10 @@ public static class RandomizerRebinding {
         { "Retry Practice Segment", RetryPracticeSegment },
         { "Spawn Echo", SpawnEcho },
         { "Clear All Echoes", ClearAllEchoes },
-        { "Save Select Back 3", SaveSelectBack3 },
-        { "Save Select Forward 3", SaveSelectForward3 },
-        { "Save Select Back 10", SaveSelectBack10 },
-        { "Save Select Forward 10", SaveSelectForward10 },
+        { "Menu Skip Backwards", MenuSkipBackwards },
+        { "Menu Skip Forwards", MenuSkipForwards },
+        { "Menu Home", MenuHome },
+        { "Menu End", MenuEnd },
         { "Bonus 1", Bonus1 },
         { "Bonus 2", Bonus2 },
         { "Bonus 3", Bonus3 },
