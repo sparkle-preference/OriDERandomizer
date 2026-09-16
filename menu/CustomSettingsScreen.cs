@@ -62,7 +62,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return true;
         }
 
-        Confirm("Keep your changes to these binds?", new[] { "KEEP", "DISCARD" }, answer => {
+        Confirm("Save keybinding changes?", new[] { "SAVE", "DISCARD" }, answer => {
             if (answer == 0) {
                 SnapshotBinds();
             } else {
@@ -478,74 +478,78 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // from persistent ones -- the row art is what every settings row already clones, and the
     // plate behind it is the options screen's own background. It has no full-screen dimmer
     // because the original has none either; each element sits on its own plate.
+    // The pause menu's "Return to Main Menu?" prompt, which is a prefab rather than a scene
+    // object: backdrop, two lit rows, title and its own sounds, all self-contained. Held by
+    // the InstantiateAction that normally spawns it, found by type because it is parked
+    // inactive. Answers are given as { ok, cancel } and Back answers cancel.
     public void Confirm(string question, string[] answers, Action<int> chosen) {
-        if (prompt != null || QuitPrompt == null) {
+        if (prompt != null) {
             return;
         }
 
-        var clone = (CleverMenuItemSelectionManager)Instantiate(QuitPrompt);
-        prompt = clone.gameObject;
-        prompt.name = "confirm";
-        prompt.transform.SetParent(transform, false);
-        prompt.transform.localPosition = PromptAt;
-        prompt.SetActive(true);
-
-        // The prompt's own fog reads against the title screen's bright sky and disappears
-        // against this page, so it gets the pause screen's fader behind it -- a backdrop the
-        // title screen never needed. Found by type because it is parked inactive.
-        if (dimTemplate == null) {
-            foreach (var pause in Resources.FindObjectsOfTypeAll<PauseScreen>()) {
-                var fader = pause.transform.FindChild("skipFader");
-                if (fader != null) {
-                    dimTemplate = fader.gameObject;
+        if (questionPrefab == null) {
+            foreach (var spawn in Resources.FindObjectsOfTypeAll<InstantiateAction>()) {
+                if (spawn.Prefab != null && spawn.Prefab.name == QuestionPrefabName) {
+                    questionPrefab = spawn.Prefab;
                     break;
                 }
             }
         }
 
-        if (dimTemplate != null) {
-            var dim = Instantiate(dimTemplate);
-            dim.transform.SetParent(prompt.transform, false);
-            dim.transform.localPosition = new Vector3(0f, 0f, 0.2f);
-            dim.transform.localScale = Vector3.one * DimScale;
-            dim.SetActive(true);
-            foreach (var r in dim.GetComponentsInChildren<Renderer>(true)) {
-                r.enabled = true;
-            }
-
-            // It is the cutscene-skip fader, so driven forward it blacks the screen outright.
-            // Its animator is switched off and the alpha held partway instead; touching
-            // .material clones the shared one, so the real fader is untouched.
-            var fade = dim.GetComponent<TransparencyAnimator>();
-            if (fade != null) {
-                fade.enabled = false;
-            }
-
-            foreach (var r in dim.GetComponentsInChildren<Renderer>(true)) {
-                var colour = r.material.color;
-                colour.a = DimAlpha;
-                r.material.color = colour;
-            }
+        if (questionPrefab == null) {
+            Randomizer.log("settings: no confirm prefab, answering " + answers[0]);
+            chosen(0);
+            return;
         }
 
-        Ask(prompt.transform.FindChild("return"), question);
-        var manager = clone;
-        manager.IsActive = true;
-        for (var i = 0; i < Answers.Length && i < answers.Length; i++) {
-            var answer = i;
+        prompt = (GameObject)Instantiate(questionPrefab);
+        prompt.name = "confirm";
+        // world position kept: the prefab already sits where a prompt belongs on screen
+        prompt.transform.SetParent(transform, true);
+        prompt.SetActive(true);
+
+        // its opening sequence pauses the game, which is not ours to do from a menu
+        var opening = prompt.transform.FindChild("*actionSequence");
+        if (opening != null) {
+            opening.gameObject.SetActive(false);
+        }
+
+        Ask(prompt.transform.FindChild("title"), question);
+        var manager = prompt.GetComponent<CleverMenuItemSelectionManager>();
+        for (var i = 0; i < Answers.Length; i++) {
             var row = prompt.transform.FindChild(Answers[i]);
-            Ask(row, answers[i]);
+            if (row == null) {
+                continue;
+            }
+
+            var answer = i;
+            Ask(row, i < answers.Length ? answers[i] : Answers[i]);
             var item = row.GetComponent<CleverMenuItem>();
-            // the vanilla rows quit the game through Pressed; ours only report the answer
+            // OK is gated on being safe to quit, which has nothing to do with a settings page
+            var safe = row.GetComponent<IsSafeToExitCondition>();
+            if (safe != null) {
+                Destroy(safe);
+            }
+
+            // the vanilla rows quit to the menu through Pressed; ours only report the answer
             item.Pressed = null;
             item.PressedCallback += delegate { CloseConfirm(chosen, answer); };
         }
 
         manager.BackGuard = delegate {
-            CloseConfirm(chosen, answers.Length - 1);
+            CloseConfirm(chosen, Answers.Length - 1);
             return false;
         };
+
+        // The page behind stays readable but must stop responding: IsActive gates its keys,
+        // the mouse reaches rows through the highlight path regardless of it, and the row it
+        // left lit would otherwise go on glowing under the question.
         selectionManager.IsActive = false;
+        selectionManager.HighlightOnMouseOver = false;
+        if (selectionManager.CurrentMenuItem != null) {
+            selectionManager.CurrentMenuItem.OnUnhighlight();
+        }
+        manager.IsActive = true;
         manager.SetCurrentItem(0);
     }
 
@@ -564,7 +568,6 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         box.SetMessage(new MessageDescriptor(words));
     }
 
-
     private void CloseConfirm(Action<int> chosen, int answer) {
         if (prompt == null) {
             return;
@@ -574,6 +577,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         prompt = null;
         Destroy(going);
         selectionManager.IsActive = true;
+        selectionManager.HighlightOnMouseOver = true;
+        if (selectionManager.CurrentMenuItem != null) {
+            selectionManager.CurrentMenuItem.OnHighlight();
+        }
+
         chosen(answer);
     }
 
@@ -697,21 +705,12 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     private GameObject prompt;
 
-    // The title screen's own quit prompt, captured on the way past. The title scene is only
-    // ever disabled, never unloaded, so it is still there to clone from mid-game.
-    public static CleverMenuItemSelectionManager QuitPrompt;
-
     // the prompt's two rows, in the order its answers are given
     private static readonly string[] Answers = { "ok", "cancel" };
 
-    // over the rows it is asking about, in front of them
-    private static readonly Vector3 PromptAt = new Vector3(0f, 0.4f, -2f);
+    private const string QuestionPrefabName = "returnToMainMenuQuestion";
 
-    private const float DimScale = 40f;
-
-    private const float DimAlpha = 0.72f;
-
-    private static GameObject dimTemplate;
+    private static GameObject questionPrefab;
 
     public string DefaultTooltip = "Click on an action to add or remove binds";
 

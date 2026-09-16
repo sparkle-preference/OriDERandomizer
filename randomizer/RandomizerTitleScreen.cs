@@ -23,10 +23,6 @@ public class RandomizerTitleScreen {
                 titleScreen == null ? null : titleScreen.ExitGameScreen
             );
             PracticeSelect.BindMainMenu(titleScreen);
-            // the settings screens borrow this to ask their own questions; the title scene is
-            // only ever disabled, never unloaded, so the template outlives the title screen
-            CustomSettingsScreen.QuitPrompt = titleScreen == null ? null : titleScreen.ExitGameScreen;
-
             var group = ui.FindChild("group");
             if (group == null) {
                 Randomizer.log("title screen: no ui/group, skipping branding");

@@ -39,6 +39,14 @@ public class ControllerBindsScreen : CustomSettingsScreen {
     }
 
     private void ResetKeybinds() {
+        Confirm("Reset ALL controller binds to default?", new[] { "OK", "CANCEL" }, answer => {
+            if (answer == 0) {
+                DoResetKeybinds();
+            }
+        });
+    }
+
+    private void DoResetKeybinds() {
         PlayerInputRebinding.SetDefaultControllerBindingSettings();
         var instance = PlayerInput.Instance;
         if (instance != null) {

@@ -39,12 +39,11 @@ public class KeybindsScreen : CustomSettingsScreen {
     }
 
     private void ResetKeybinds() {
-        Confirm("Reset every keyboard bind to its default?", new[] { "RESET", "CANCEL" },
-            answer => {
-                if (answer == 0) {
-                    DoResetKeybinds();
-                }
-            });
+        Confirm("Reset ALL keybinds to default?", new[] { "OK", "CANCEL" }, answer => {
+            if (answer == 0) {
+                DoResetKeybinds();
+            }
+        });
     }
 
     private void DoResetKeybinds() {
