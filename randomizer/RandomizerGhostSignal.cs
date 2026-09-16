@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 using Sample = RandomizerGhost.Sample;
@@ -12,6 +13,8 @@ using Sample = RandomizerGhost.Sample;
 //   in   ghosts:<host>:<pids>     the roster, pushed whenever it changes
 //   out  ghost:<to>:<type>|<b64>  a description for one player
 //   in   ghost:<from>:<type>|<b64>
+//   out  ghostice:<peer>          a peer no direct attempt could reach
+//   in   ice:<json>               relay credentials for this game
 //
 // The lowest participating player id hosts and offers to everyone else; everyone else answers.
 // No negotiation round, and both sides derive the same answer from the same list. The type
@@ -35,7 +38,7 @@ public static class RandomizerGhostSignal {
     // still lists the player, so nothing else would ever re-offer.
     private const float RetryAfter = 15f;
 
-    private const string IceServers = "stun:stun.l.google.com:19302";
+    private const string StunServers = "stun:stun.l.google.com:19302";
 
     private const float SendInterval = 1f / 30f;
 
@@ -233,6 +236,7 @@ public static class RandomizerGhostSignal {
                 var offering = link.Offering;
                 Drop(link);
                 Links.RemoveAt(i);
+                Escalate(pid);
                 if (offering) {
                     var fresh = Open(pid, true);
                     if (fresh != null) {
@@ -291,7 +295,10 @@ public static class RandomizerGhostSignal {
     }
 
     private static Link Open(int pid, bool offering) {
-        var handle = NativeWebSocket.RtcCreate(offering, IceServers);
+        // Only a peer a direct attempt already failed against: gathering is non-trickle,
+        // so a slow relay in the list would stall every handshake.
+        var relayed = RelayUrl != null && Relayed.Contains(pid);
+        var handle = NativeWebSocket.RtcCreate(offering, relayed ? StunServers + "," + RelayUrl : StunServers);
         if (handle == 0) {
             Randomizer.log("ghost signal: could not create a peer for " + pid + ", " +
                 NativeWebSocket.RtcLastError());
@@ -301,8 +308,78 @@ public static class RandomizerGhostSignal {
         var link = new Link { Handle = handle, PlayerId = pid, Offering = offering, Since = Time.time };
         Links.Add(link);
         Randomizer.log("ghost signal: " + (offering ? "offering to " : "answering ") + pid +
-            ", handle " + handle + ", " + Links.Count + " link(s)");
+            ", handle " + handle + ", " + Links.Count + " link(s)" + (relayed ? ", via the relay" : ""));
         return link;
+    }
+
+    // Asked once per peer: the server reads it as the report that pid needs relaying.
+    private static void Escalate(int pid) {
+        var first = Relayed.Add(pid);
+        if (first && RandomizerSyncManager.WsOpen) {
+            NativeWebSocket.SendText("ghostice:" + pid);
+        }
+    }
+
+    // "ice:<json>" -- the relay, in the same shape a browser's iceServers takes.
+    public static void OnIce(string body) {
+        JsonValue parsed;
+        try {
+            parsed = JsonValue.Parse(body);
+        } catch (Exception) {
+            Randomizer.log("ghost signal: unreadable relay config");
+            return;
+        }
+
+        var urls = parsed["urls"];
+        var user = parsed["username"];
+        var secret = parsed["credential"];
+        if (!urls.IsArray || urls.Count == 0 || !urls[0].IsString ||
+            !user.IsString || !secret.IsString) {
+            Randomizer.log("ghost signal: relay config missing a field");
+            return;
+        }
+
+        var url = urls[0].Str;
+        var scheme = url.IndexOf(':');
+        if (scheme < 0) {
+            Randomizer.log("ghost signal: relay url has no scheme");
+            return;
+        }
+
+        // libdatachannel url-decodes the userinfo but its grammar ends the username at a
+        // colon, and a TURN username is "<expiry>:<name>". Escape both halves.
+        RelayUrl = url.Substring(0, scheme + 1) + Escape(user.Str) + ":" + Escape(secret.Str) +
+            "@" + url.Substring(scheme + 1);
+        Randomizer.log("ghost signal: relay configured");
+
+        // whoever we are already failing against should not wait out another retry
+        for (var i = Links.Count - 1; i >= 0; i--) {
+            var link = Links[i];
+            if (!link.Announced && link.Offering && Relayed.Contains(link.PlayerId)) {
+                var pid = link.PlayerId;
+                var attempt = link.Attempt;
+                Drop(link);
+                Links.RemoveAt(i);
+                var fresh = Open(pid, true);
+                if (fresh != null) {
+                    fresh.Attempt = attempt;
+                }
+            }
+        }
+    }
+
+    private static string Escape(string raw) {
+        var built = new StringBuilder(raw.Length + 8);
+        foreach (var c in raw) {
+            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
+                c == '-' || c == '.' || c == '_' || c == '~') {
+                built.Append(c);
+            } else {
+                built.Append('%').Append(((int)c).ToString("X2"));
+            }
+        }
+
+        return built.ToString();
     }
 
     private static Link Find(int pid) {
@@ -326,6 +403,9 @@ public static class RandomizerGhostSignal {
         }
 
         Links.Clear();
+        Relayed.Clear();
+        // credentials are named for the game we just left
+        RelayUrl = null;
         foreach (var pid in new List<int>(Ghosts.Keys)) {
             Forget(pid);
         }
@@ -388,6 +468,12 @@ public static class RandomizerGhostSignal {
     }
 
     private static readonly List<Link> Links = new List<Link>();
+
+    // peers a direct attempt has already failed against; their next link gets the relay
+    private static readonly HashSet<int> Relayed = new HashSet<int>();
+
+    // the relay as one url with its credentials folded in, or null until the server sends one
+    private static string RelayUrl;
 
     // one ghost per player, keyed by the id their packets carry
     private static readonly Dictionary<int, LiveGhostSource> Ghosts = new Dictionary<int, LiveGhostSource>();

@@ -420,6 +420,8 @@ public static class RandomizerSyncManager {
                 RandomizerGhostSignal.OnRoster(frame.Substring(sep + 1));
             } else if (kind == "ghost" && sep >= 0) {
                 RandomizerGhostSignal.OnDescription(frame.Substring(sep + 1));
+            } else if (kind == "ice" && sep >= 0) {
+                RandomizerGhostSignal.OnIce(frame.Substring(sep + 1));
             } else if (kind == "completeack") {
                 // no Sein guard: this arrives during credits
                 completePending = false;
