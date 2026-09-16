@@ -11,6 +11,7 @@ public class KeybindControl : MonoBehaviour {
         currentKeys.Clear();
         currentKeys.AddRange(GetKeys());
         SuspensionManager.SuspendAll();
+        editing = true;
         owner.Editing = true;
         exit = 0;
         tooltipProvider.SetMessage("Backspace: remove bind\nEnter: finish editing");
@@ -18,7 +19,7 @@ public class KeybindControl : MonoBehaviour {
     }
 
     public void Update() {
-        if (!owner.Editing) {
+        if (!editing) {
             return;
         }
 
@@ -28,6 +29,7 @@ public class KeybindControl : MonoBehaviour {
         }
 
         if (Input.GetKeyDown(KeyCode.Return) && currentKeys.Count > 0) {
+            editing = false;
             owner.Editing = false;
             SuspensionManager.ResumeAll();
             SetKeys(currentKeys.ToArray());
@@ -72,6 +74,7 @@ public class KeybindControl : MonoBehaviour {
 
     public void Reset() {
         messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+        editing = false;
         owner.Editing = false;
     }
 
@@ -129,6 +132,9 @@ public class KeybindControl : MonoBehaviour {
 
 
     private MessageBox messageBox;
+
+    // this control is taking keys; owner.Editing only says that *some* control is
+    private bool editing;
 
     private KeyCode[] snapshot;
 
