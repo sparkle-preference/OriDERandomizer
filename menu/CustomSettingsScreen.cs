@@ -6,6 +6,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class CustomSettingsScreen : MonoBehaviour {
+    public void OnEnable() {
+        // each visit is its own baseline, so keeping changes and coming back starts clean
+        SnapshotBinds();
+    }
+
     public void OnDisable() {
         // Will only write if there have been changes
         RandomizerSettings.WriteSettings();
@@ -43,6 +48,30 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         InitScreen();
         selectionManager.SetCurrentItem(0);
+        selectionManager.BackGuard = KeepOrDiscard;
+    }
+
+    // Leaving a page whose binds have changed asks first. Both answers land the back they
+    // interrupted, because clearing the change is what lets the guard through.
+    private bool KeepOrDiscard() {
+        if (prompt != null) {
+            return false;
+        }
+
+        if (!BindsDirty) {
+            return true;
+        }
+
+        Confirm("Keep your changes to these binds?",
+            delegate {
+                SnapshotBinds();
+                selectionManager.OnBackPressed();
+            },
+            delegate {
+                RevertBinds();
+                selectionManager.OnBackPressed();
+            });
+        return false;
     }
 
     public void AddKeybind(string label, Func<KeyCode[]> getKeys, Action<KeyCode[]> setKeys) {
@@ -164,6 +193,61 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         var t = Mathf.Clamp01((scrollTrack.position.y + half - cursor.y) / (2f * half));
         layout.ScrollTo(Mathf.RoundToInt(t * (layout.MenuItems.Count - layout.MaxVisible)));
+    }
+
+    // Binds apply the moment they are made, so what the screen offers on the way out is
+    // "keep these?", and declining restores what it was entered with.
+    public void SnapshotBinds() {
+        foreach (var control in GetComponentsInChildren<KeybindControl>(true)) {
+            control.Snapshot();
+        }
+
+        foreach (var control in GetComponentsInChildren<ControllerBindControl>(true)) {
+            control.Snapshot();
+        }
+    }
+
+    public bool BindsDirty {
+        get {
+            foreach (var control in GetComponentsInChildren<KeybindControl>(true)) {
+                if (control.Changed) {
+                    return true;
+                }
+            }
+
+            foreach (var control in GetComponentsInChildren<ControllerBindControl>(true)) {
+                if (control.Changed) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    public void RevertBinds() {
+        var keys = GetComponentsInChildren<KeybindControl>(true);
+        foreach (var control in keys) {
+            control.Restore();
+        }
+
+        var pads = GetComponentsInChildren<ControllerBindControl>(true);
+        foreach (var control in pads) {
+            control.Restore();
+        }
+
+        if (keys.Length > 0) {
+            PlayerInputRebinding.WriteKeyRebindSettings();
+        }
+
+        if (pads.Length > 0) {
+            PlayerInputRebinding.WriteControllerRebindSettings();
+        }
+
+        var input = PlayerInput.Instance;
+        if (input != null) {
+            input.RefreshControlScheme();
+        }
     }
 
     public void HideLegend() {
@@ -389,6 +473,42 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     // LanguageOptions repopulates itself in OnEnable, so it has to go rather than be
     // emptied. DestroyImmediate: a deferred Destroy would still refill on the way in.
+    // The save screen's delete prompt, reused: the only confirmation furniture the game
+    // has, and it already animates, dims and takes its own input.
+    public void Confirm(string question, Action confirmed, Action cancelled) {
+        if (prompt != null || PromptPrefab == null) {
+            // no prefab means the save screen has never opened, which cannot happen in play
+            if (confirmed != null) {
+                confirmed();
+            }
+
+            return;
+        }
+
+        prompt = (ConfirmOrCancel)Instantiate(PromptPrefab, transform.position + PromptAt, Quaternion.identity);
+        prompt.transform.parent = transform;
+        var box = prompt.transform.FindChild("group/text").GetComponent<MessageBox>();
+        box.MessageProvider = null;
+        box.SetMessage(new MessageDescriptor(question));
+        // the prefab's own sequence only tears down on one of the two answers, so take it down
+        // here instead, after its animation has had the half second the sequence allows
+        var shown = prompt.gameObject;
+        prompt.OnConfirm += delegate {
+            prompt = null;
+            Destroy(shown, 0.6f);
+            if (confirmed != null) {
+                confirmed();
+            }
+        };
+        prompt.OnCancel += delegate {
+            prompt = null;
+            Destroy(shown, 0.6f);
+            if (cancelled != null) {
+                cancelled();
+            }
+        };
+    }
+
     private CleverMenuOptionsList PlainOptionsList(Transform flyout) {
         var old = flyout.GetComponent<CleverMenuOptionsList>();
         var prefab = old.Item;
@@ -506,6 +626,14 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     // a bind control is taking every key; the screen's own binds stand down
     public bool Editing;
+
+    private ConfirmOrCancel prompt;
+
+    // captured off the save screen, which always opens before settings can be reached
+    public static ConfirmOrCancel PromptPrefab;
+
+    // over the rows it is asking about, in front of them
+    private static readonly Vector3 PromptAt = new Vector3(0f, 0.4f, -2f);
 
     public string DefaultTooltip = "Click on an action to add or remove binds";
 

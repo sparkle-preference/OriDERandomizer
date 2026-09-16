@@ -182,6 +182,44 @@ public class ControllerBindControl : MonoBehaviour {
         owner.tooltipController.UpdateTooltip();
     }
 
+    // Binds apply as they are made, so leaving without keeping them is a restore, not a
+    // commit. The snapshot is what the screen was entered with.
+    public void Snapshot() {
+        snapshot = (PlayerInputRebinding.ControllerButton[])GetKeys().Clone();
+    }
+
+    public bool Changed {
+        get {
+            if (snapshot == null) {
+                return false;
+            }
+
+            var now = GetKeys();
+            if (now.Length != snapshot.Length) {
+                return true;
+            }
+
+            for (var i = 0; i < now.Length; i++) {
+                if (now[i] != snapshot[i]) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    public void Restore() {
+        if (snapshot == null) {
+            return;
+        }
+
+        SetKeys((PlayerInputRebinding.ControllerButton[])snapshot.Clone());
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+    }
+
+    private PlayerInputRebinding.ControllerButton[] snapshot;
+
     public Func<PlayerInputRebinding.ControllerButton[]> GetKeys;
 
     public Action<PlayerInputRebinding.ControllerButton[]> SetKeys;

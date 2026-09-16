@@ -75,6 +75,42 @@ public class KeybindControl : MonoBehaviour {
         owner.Editing = false;
     }
 
+    // Binds apply as they are made, so leaving without keeping them is a restore, not a
+    // commit. The snapshot is what the screen was entered with.
+    public void Snapshot() {
+        snapshot = (KeyCode[])GetKeys().Clone();
+    }
+
+    public bool Changed {
+        get {
+            if (snapshot == null) {
+                return false;
+            }
+
+            var now = GetKeys();
+            if (now.Length != snapshot.Length) {
+                return true;
+            }
+
+            for (var i = 0; i < now.Length; i++) {
+                if (now[i] != snapshot[i]) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    public void Restore() {
+        if (snapshot == null) {
+            return;
+        }
+
+        SetKeys((KeyCode[])snapshot.Clone());
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+    }
+
     public void Init(Func<KeyCode[]> getKeys, Action<KeyCode[]> setKeys, CustomSettingsScreen owner) {
         this.owner = owner;
         GetKeys = getKeys;
@@ -93,6 +129,8 @@ public class KeybindControl : MonoBehaviour {
 
 
     private MessageBox messageBox;
+
+    private KeyCode[] snapshot;
 
     private List<KeyCode> currentKeys = new List<KeyCode>();
 

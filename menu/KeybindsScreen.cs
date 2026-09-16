@@ -39,6 +39,10 @@ public class KeybindsScreen : CustomSettingsScreen {
     }
 
     private void ResetKeybinds() {
+        Confirm("Reset every keyboard bind to its default?", DoResetKeybinds, null);
+    }
+
+    private void DoResetKeybinds() {
         PlayerInputRebinding.SetDefaultKeyBindingSettings();
         var instance = PlayerInput.Instance;
         if (instance != null) {

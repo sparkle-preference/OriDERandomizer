@@ -161,6 +161,9 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
     public void Awake() {
         Instance = this;
         SuspensionManager.Register(this);
+        // the only prompt prefab in the game, and this screen is always reached before
+        // the pause menu can offer settings
+        CustomSettingsScreen.PromptPrefab = DeleteQuestion;
     }
 
     // Unity's focus message misses a plain tab-out of this borderless window
