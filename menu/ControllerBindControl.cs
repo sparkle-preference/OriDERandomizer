@@ -21,8 +21,14 @@ public class ControllerBindControl : MonoBehaviour {
             buttonsPressed[i] = true;
         }
 
-        // how to work the edit is the legend's job now; the tooltip stays on the bind itself
+        // how to work the edit is the legend's job now; the tooltip names what is being edited
         owner.BindLegend();
+        Tooltip("Editing binds for " + label + "...");
+    }
+
+    private void Tooltip(string words) {
+        tooltipProvider.SetMessage(words);
+        owner.tooltipController.UpdateTooltip();
     }
 
     public void Update() {
@@ -43,6 +49,7 @@ public class ControllerBindControl : MonoBehaviour {
             PlayerInputRebinding.WriteControllerRebindSettings();
             PlayerInput.Instance.RefreshControlScheme();
             owner.BindLegend();
+            Tooltip(owner.DefaultTooltip);
             return;
         }
 
@@ -172,8 +179,9 @@ public class ControllerBindControl : MonoBehaviour {
         return null;
     }
 
-    public void Init(Func<PlayerInputRebinding.ControllerButton[]> getKeys, Action<PlayerInputRebinding.ControllerButton[]> setKeys, CustomSettingsScreen owner) {
+    public void Init(Func<PlayerInputRebinding.ControllerButton[]> getKeys, Action<PlayerInputRebinding.ControllerButton[]> setKeys, CustomSettingsScreen owner, string label) {
         this.owner = owner;
+        this.label = label;
         GetKeys = getKeys;
         SetKeys = setKeys;
         messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
@@ -241,6 +249,8 @@ public class ControllerBindControl : MonoBehaviour {
     private XboxControllerInput.Button[] allButtons;
 
     private CustomSettingsScreen owner;
+
+    private string label;
 
     private RandomizerMessageProvider tooltipProvider;
 }

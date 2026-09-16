@@ -12,8 +12,22 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     }
 
     public void OnDisable() {
+        Hold(false);
         // Will only write if there have been changes
         RandomizerSettings.WriteSettings();
+    }
+
+    // The ways off this page that skip its own Back, shut while it has a question to ask:
+    // Escape is bound to Pause as well as Cancel and the menu manager reads it first and
+    // closes the whole screen, and the tab list takes clicks even while it is inactive.
+    private void Hold(bool held) {
+        if (Game.UI.Menu != null) {
+            Game.UI.Menu.IsSuspended = held;
+        }
+
+        if (OptionsScreen.Instance != null) {
+            OptionsScreen.Instance.Navigation.IsLocked = held;
+        }
     }
 
     public virtual void Awake() {
@@ -63,6 +77,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
 
         Confirm("Save keybinding changes?", new[] { "SAVE", "DISCARD" }, answer => {
+            // Back declines to answer, which is a reason to stay rather than either of them
+            if (answer < 0) {
+                return;
+            }
+
             if (answer == 0) {
                 SnapshotBinds();
             } else {
@@ -78,7 +97,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         var cleverMenuItem = AddItem(label);
         cleverMenuItem.gameObject.name = "Keybind (" + label + ")";
         var kc = cleverMenuItem.gameObject.AddComponent<KeybindControl>();
-        kc.Init(getKeys, setKeys, this);
+        kc.Init(getKeys, setKeys, this, label);
         cleverMenuItem.PressedCallback += delegate { kc.BeginEditing(); };
     }
 
@@ -87,6 +106,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // Call from InitScreen. The window follows the selection, so the re-sort has to hang
     // off the selection change rather than off Update.
     public void ScrollAfter(int rows) {
+        // the rows are built by now and never change, so the controls are worth keeping
+        keyControls = GetComponentsInChildren<KeybindControl>(true);
+        padControls = GetComponentsInChildren<ControllerBindControl>(true);
         layout.MaxVisible = rows;
         layout.Selection = selectionManager;
         layout.EdgeFade = EdgeFade;
@@ -138,6 +160,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     }
 
     public void Update() {
+        // re-asserted every frame because finishing an edit resumes everything
+        Hold(prompt != null || (selectionManager.IsActive && BindsDirty));
         if (layout == null || layout.MaxVisible <= 0) {
             return;
         }
@@ -198,24 +222,24 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // Binds apply the moment they are made, so what the screen offers on the way out is
     // "keep these?", and declining restores what it was entered with.
     public void SnapshotBinds() {
-        foreach (var control in GetComponentsInChildren<KeybindControl>(true)) {
+        foreach (var control in keyControls) {
             control.Snapshot();
         }
 
-        foreach (var control in GetComponentsInChildren<ControllerBindControl>(true)) {
+        foreach (var control in padControls) {
             control.Snapshot();
         }
     }
 
     public bool BindsDirty {
         get {
-            foreach (var control in GetComponentsInChildren<KeybindControl>(true)) {
+            foreach (var control in keyControls) {
                 if (control.Changed) {
                     return true;
                 }
             }
 
-            foreach (var control in GetComponentsInChildren<ControllerBindControl>(true)) {
+            foreach (var control in padControls) {
                 if (control.Changed) {
                     return true;
                 }
@@ -226,21 +250,19 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     }
 
     public void RevertBinds() {
-        var keys = GetComponentsInChildren<KeybindControl>(true);
-        foreach (var control in keys) {
+        foreach (var control in keyControls) {
             control.Restore();
         }
 
-        var pads = GetComponentsInChildren<ControllerBindControl>(true);
-        foreach (var control in pads) {
+        foreach (var control in padControls) {
             control.Restore();
         }
 
-        if (keys.Length > 0) {
+        if (keyControls.Length > 0) {
             PlayerInputRebinding.WriteKeyRebindSettings();
         }
 
-        if (pads.Length > 0) {
+        if (padControls.Length > 0) {
             PlayerInputRebinding.WriteControllerRebindSettings();
         }
 
@@ -254,6 +276,10 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // interaction text used to live in the tooltip, which left no room for anything about the
     // bind under the cursor.
     public virtual void BindLegend() {
+        if (keyControls.Length == 0 && padControls.Length == 0) {
+            return;
+        }
+
         if (Editing) {
             Legend(string.Empty, "<icon>D</> Finish", "Backspace  Remove last");
             return;
@@ -295,12 +321,13 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         var line = layout.MenuItems.Count > 0 ? layout.MenuItems[0].Space : DefaultSpace;
         pivot.localPosition += new Vector3(0f, Raise, 0f);
 
-        var top = LegendY + (TooltipLines + 0.5f) * line;
+        // a clear line over the legend and another under the last row, tooltip between
+        var top = LegendY + TooltipLines * line;
         var at = tooltipController.transform.position;
         at.y = top;
         tooltipController.transform.position = at;
 
-        var room = FirstRowY + Raise - (top + 0.5f * line);
+        var room = FirstRowY + Raise - (top + line);
         return Mathf.Max(1, Mathf.FloorToInt(room / line) + 1);
     }
 
@@ -321,7 +348,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         var cleverMenuItem = AddItem(label);
         cleverMenuItem.gameObject.name = "Controller Bind (" + label + ")";
         var kc = cleverMenuItem.gameObject.AddComponent<ControllerBindControl>();
-        kc.Init(getKeys, setKeys, this);
+        kc.Init(getKeys, setKeys, this, label);
         cleverMenuItem.PressedCallback += delegate { kc.BeginEditing(); };
     }
 
@@ -525,17 +552,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return null;
     }
 
-    // LanguageOptions repopulates itself in OnEnable, so it has to go rather than be
-    // emptied. DestroyImmediate: a deferred Destroy would still refill on the way in.
-    // The title screen's quit prompt, rebuilt: a question over selectable answers. That one
-    // lives in the title scene and the settings pages outlive it, so this is the same parts
-    // from persistent ones -- the row art is what every settings row already clones, and the
-    // plate behind it is the options screen's own background. It has no full-screen dimmer
-    // because the original has none either; each element sits on its own plate.
-    // The pause menu's "Return to Main Menu?" prompt, which is a prefab rather than a scene
-    // object: backdrop, two lit rows, title and its own sounds, all self-contained. Held by
-    // the InstantiateAction that normally spawns it, found by type because it is parked
-    // inactive. Answers are given as { ok, cancel } and Back answers cancel.
+    // The pause menu's "Return to Main Menu?" prompt, cloned off the InstantiateAction that
+    // normally spawns it. Its own selection manager lists the answers; Back answers -1.
     public void Confirm(string question, string[] answers, Action<int> chosen) {
         if (prompt != null) {
             return;
@@ -580,39 +598,32 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             back.localPosition += new Vector3(0f, 0.5f * TopPad, 0f);
         }
         var manager = prompt.GetComponent<CleverMenuItemSelectionManager>();
-        for (var i = 0; i < Answers.Length; i++) {
-            var row = prompt.transform.FindChild(Answers[i]);
-            if (row == null) {
-                continue;
-            }
-
+        for (var i = 0; i < manager.MenuItems.Count; i++) {
+            var item = manager.MenuItems[i];
             var answer = i;
-            Ask(row, i < answers.Length ? answers[i] : Answers[i]);
-            var item = row.GetComponent<CleverMenuItem>();
-            // OK is gated on being safe to quit, which has nothing to do with a settings page
-            var safe = row.GetComponent<IsSafeToExitCondition>();
-            if (safe != null) {
-                Destroy(safe);
-            }
-
-            // the vanilla rows quit to the menu through Pressed; ours only report the answer
+            Ask(item.transform, i < answers.Length ? answers[i] : string.Empty);
+            // vanilla rows quit to the menu through Pressed, and gate that on being safe to
+            // quit; ours are always answerable and only report the answer
             item.Pressed = null;
+            item.Activated = null;
+            item.Visible = null;
             item.PressedCallback += delegate { CloseConfirm(chosen, answer); };
         }
 
         manager.BackGuard = delegate {
-            CloseConfirm(chosen, Answers.Length - 1);
+            CloseConfirm(chosen, -1);
             return false;
         };
 
-        // The page behind stays readable but must stop responding: IsActive gates its keys,
-        // the mouse reaches rows through the highlight path regardless of it, and the row it
-        // left lit would otherwise go on glowing under the question.
+        // The page behind stays readable but must stop responding. IsActive gates its keys
+        // only -- a click reaches a row ahead of that check -- and the row it left lit would
+        // otherwise go on glowing under the question.
         selectionManager.IsActive = false;
-        selectionManager.HighlightOnMouseOver = false;
+        selectionManager.IsLocked = true;
         if (selectionManager.CurrentMenuItem != null) {
             selectionManager.CurrentMenuItem.OnUnhighlight();
         }
+
         manager.IsActive = true;
         manager.SetCurrentItem(0);
     }
@@ -641,12 +652,16 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         prompt = null;
         Destroy(going);
         selectionManager.IsActive = true;
-        selectionManager.HighlightOnMouseOver = true;
+        selectionManager.IsLocked = false;
         if (selectionManager.CurrentMenuItem != null) {
             selectionManager.CurrentMenuItem.OnHighlight();
         }
 
+        // the controller hides the tooltip while the page is inactive and never re-shows it
+        tooltipController.UpdateTooltip();
         chosen(answer);
+        // after the answer, because that is what decides whether anything is still unsaved
+        BindLegend();
     }
 
     private CleverMenuOptionsList PlainOptionsList(Transform flyout) {
@@ -769,8 +784,10 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     private GameObject prompt;
 
-    // the prompt's two rows, in the order its answers are given
-    private static readonly string[] Answers = { "ok", "cancel" };
+    // empty until the rows are built: the legend asks whether they are dirty on the way up
+    private KeybindControl[] keyControls = new KeybindControl[0];
+
+    private ControllerBindControl[] padControls = new ControllerBindControl[0];
 
     // Measured: the vanilla legend sits here, panel rows start here and step by this. The
     // camera has a fixed vertical FOV, so these are the same at every resolution and aspect.
@@ -786,7 +803,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // there is about two rows of margin over the first row; one of them is worth taking
     private const float Raise = 0.45f;
 
-    // a text line, matching the gap between the prompt    // a text line, matching the gap between the prompt's own two answersapos;s own two answers
+    // a text line, matching the gap between the prompt's own two answers
     private const float TopPad = 0.45f;
 
     private const string QuestionPrefabName = "returnToMainMenuQuestion";

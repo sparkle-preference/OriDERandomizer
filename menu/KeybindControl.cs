@@ -14,8 +14,14 @@ public class KeybindControl : MonoBehaviour {
         editing = true;
         owner.Editing = true;
         exit = 0;
-        // how to work the edit is the legend's job now; the tooltip stays on the bind itself
+        // how to work the edit is the legend's job now; the tooltip names what is being edited
         owner.BindLegend();
+        Tooltip("Editing binds for " + label + "...");
+    }
+
+    private void Tooltip(string words) {
+        tooltipProvider.SetMessage(words);
+        owner.tooltipController.UpdateTooltip();
     }
 
     public void Update() {
@@ -36,6 +42,7 @@ public class KeybindControl : MonoBehaviour {
             PlayerInputRebinding.WriteKeyRebindSettings();
             PlayerInput.Instance.RefreshControlScheme();
             owner.BindLegend();
+            Tooltip(owner.DefaultTooltip);
             return;
         }
 
@@ -113,8 +120,9 @@ public class KeybindControl : MonoBehaviour {
         messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
     }
 
-    public void Init(Func<KeyCode[]> getKeys, Action<KeyCode[]> setKeys, CustomSettingsScreen owner) {
+    public void Init(Func<KeyCode[]> getKeys, Action<KeyCode[]> setKeys, CustomSettingsScreen owner, string label) {
         this.owner = owner;
+        this.label = label;
         GetKeys = getKeys;
         SetKeys = setKeys;
         messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
@@ -142,6 +150,8 @@ public class KeybindControl : MonoBehaviour {
     private int exit;
 
     private CustomSettingsScreen owner;
+
+    private string label;
 
     private RandomizerMessageProvider tooltipProvider;
 }
