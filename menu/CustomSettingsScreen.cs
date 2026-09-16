@@ -515,6 +515,16 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
 
         Ask(prompt.transform.FindChild("title"), question);
+
+        // A line of headroom over the question. The box grows upward rather than the text
+        // moving down, so the answers stay where the prefab puts them.
+        var back = prompt.transform.FindChild("messageBackgroundA");
+        var mesh = back == null ? null : back.GetComponent<MeshFilter>();
+        if (mesh != null && mesh.sharedMesh != null && mesh.sharedMesh.bounds.size.y > 0f) {
+            var grow = TopPad / mesh.sharedMesh.bounds.size.y;
+            back.localScale = new Vector3(back.localScale.x, back.localScale.y + grow, back.localScale.z);
+            back.localPosition += new Vector3(0f, 0.5f * TopPad, 0f);
+        }
         var manager = prompt.GetComponent<CleverMenuItemSelectionManager>();
         for (var i = 0; i < Answers.Length; i++) {
             var row = prompt.transform.FindChild(Answers[i]);
@@ -707,6 +717,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     // the prompt's two rows, in the order its answers are given
     private static readonly string[] Answers = { "ok", "cancel" };
+
+    // a text line, matching the gap between the prompt's own two answers
+    private const float TopPad = 0.45f;
 
     private const string QuestionPrefabName = "returnToMainMenuQuestion";
 
