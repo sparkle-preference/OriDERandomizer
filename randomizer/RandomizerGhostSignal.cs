@@ -226,8 +226,11 @@ public static class RandomizerGhostSignal {
             }
 
             // a lost handshake tells neither side; only the offerer can restart one, and the
-            // answerer's link is replaced when the next offer arrives
-            if (!link.Announced && now - link.Since > RetryAfter) {
+            // answerer's link is replaced when the next offer arrives. Openness is asked of the
+            // channel, not of Announced: a frame gap longer than the timeout would otherwise
+            // report a peer that came up fine.
+            if (!link.Announced && !NativeWebSocket.RtcIsOpen(link.Handle) &&
+                now - link.Since > RetryAfter) {
                 var pid = link.PlayerId;
                 var attempt = link.Attempt + 1;
                 Randomizer.log("ghost signal: peer " + pid + " never connected in " +
