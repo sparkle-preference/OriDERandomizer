@@ -278,7 +278,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         item.OnUnhighlight();
     }
 
-    // One settings row, cloned and woken up but not yet owned by any layout.
+    // One settings row, cloned and labelled. It is not lit until WakeRow, which has to come
+    // after the row belongs to a layout.
     private CleverMenuItem CloneRow(Transform parent, string label) {
         var gameObject = Instantiate(SettingsScreen.Instance.transform.Find("highlightFade/pivot/damageText").gameObject);
         gameObject.transform.SetParent(parent);
@@ -288,22 +289,38 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         var component = gameObject.GetComponent<CleverMenuItem>();
         component.Pressed = null;
-        var animators = component.transform.GetComponentsInChildren<TransparencyAnimator>();
-        for (var i = 0; i < animators.Length; i++) {
-            animators[i].Reset();
-            animators[i].enabled = true;
-        }
-
-        foreach (var obj in component.transform.FindChild("glowGroup")) {
-            TransparencyAnimator.Register((Transform)obj);
-        }
-
         gameObject.transform.Find("text/nameText").GetComponent<MessageBox>().SetMessage(new MessageDescriptor(label));
         // the template is a toggle row, so it arrives carrying an ON
         var state = gameObject.transform.Find("text/stateText").GetComponent<MessageBox>();
         state.MessageProvider = null;
         state.SetMessage(new MessageDescriptor(string.Empty));
         return component;
+    }
+
+    // Order matters and only one works: the animators are reset and registered first, then the
+    // row is lit. Setting opacity before the reset leaves the glow group at zero, which reads
+    // as a row that highlights its text but never its glow.
+    private static void WakeRow(CleverMenuItem item) {
+        var animators = item.transform.GetComponentsInChildren<TransparencyAnimator>();
+        for (var i = 0; i < animators.Length; i++) {
+            animators[i].Reset();
+            animators[i].enabled = true;
+        }
+
+        foreach (var obj in item.transform.FindChild("glowGroup")) {
+            TransparencyAnimator.Register((Transform)obj);
+        }
+
+        item.SetOpacity(1f);
+        item.OnUnhighlight();
+
+        // SetOpacity does not reach the glow group, which sits at zero and so never shows the
+        // highlight. A page row's is at one whether highlighted or not, so drive it there.
+        var glow = item.transform.FindChild("glowGroup").GetComponent<TransparencyAnimator>();
+        if (glow != null) {
+            glow.Initialize();
+            glow.AnimatorDriver.ContinueForward();
+        }
     }
 
     public CleverMenuItem AddItem(string label) {
@@ -515,8 +532,10 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         prompt.transform.SetParent(transform, false);
         prompt.transform.localPosition = PromptAt;
 
-        // rows are anchored at their left edge, so the content runs rightwards from the
-        // title's origin and the plate has to sit over that, not centred on it
+        // The options screen's own background, not the flyout panel: that one carries mask and
+        // distort modifiers that only resolve inside the flyout, and clones of it draw nothing.
+        // Rows are anchored at their left edge, so the content runs rightwards from the title's
+        // origin and the plate sits over that rather than centred on it.
         var plate = Instantiate(transform.parent.FindChild("menuBackgrounds/menuBackground").gameObject);
         plate.transform.SetParent(prompt.transform, false);
         plate.transform.localPosition = new Vector3(PlateOffsetX, -0.5f * answers.Length * RowSpace, 0.1f);
@@ -531,6 +550,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         // on the first Add, and the direction would be LeftToRight for a column of answers
         manager.MenuItems = new List<CleverMenuItem>();
         manager.ItemDirection = CleverMenuItemSelectionManager.Direction.TopToBottom;
+        // the page's own move sound, so the modal is not the one silent thing in the menu
+        manager.OptionChangeAction = selectionManager.OptionChangeAction;
         // its own object: the layout moves what it sits on, and the title and plate stay put
         var holder = new GameObject("answers");
         holder.transform.SetParent(prompt.transform, false);
@@ -545,12 +566,12 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             row.PressedCallback += delegate { CloseConfirm(chosen, answer); };
             manager.MenuItems.Add(row);
             rows.AddItem(row);
-            // the same waking the settings rows get, and what lights their glow
-            row.SetOpacity(1f);
-            row.OnUnhighlight();
         }
 
         rows.Sort();
+        foreach (var row in rows.MenuItems) {
+            WakeRow(row);
+        }
 
         // back answers the last row, which is where the harmless answer goes
         manager.BackGuard = delegate {
