@@ -250,6 +250,60 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
     }
 
+    // The bottom line: how to work the page, and whether it is holding anything unsaved. The
+    // interaction text used to live in the tooltip, which left no room for anything about the
+    // bind under the cursor.
+    public virtual void BindLegend() {
+        if (Editing) {
+            Legend(string.Empty, "<icon>D</> Finish", "Backspace  Remove last");
+            return;
+        }
+
+        Legend("<icon>vr</> Navigate", "<icon>D</> Rebind",
+            BindsDirty ? "<icon>y</> Back  (unsaved)" : "<icon>y</> Back");
+    }
+
+    // The legend's three slots. Key icons come out of the text itself -- <icon> switches to a
+    // font whose letters are key images: D is Enter, y Esc, M Del, vr the up and down arrows,
+    // st left and right. More than one hint fits in a slot.
+    public void Legend(string navigate, string select, string back) {
+        var legend = transform.FindChild("highlightFade/legend/pcLegend");
+        if (legend == null) {
+            return;
+        }
+
+        Slot(legend, "navigate", navigate);
+        Slot(legend, "select", select);
+        Slot(legend, "back", back);
+    }
+
+    private static void Slot(Transform legend, string name, string words) {
+        var child = legend.FindChild(name);
+        var box = child == null ? null : child.GetComponentInChildren<MessageBox>(true);
+        if (box == null) {
+            return;
+        }
+
+        box.MessageProvider = null;
+        box.SetMessage(new MessageDescriptor(words));
+    }
+
+    // Two lines of tooltip over the legend, which is the pair the vanilla screens show. The
+    // panel is lifted into the margin above its first row to buy back a row, and the answer
+    // is how many rows fit above the footer. Call instead of ScrollAfter's magic number.
+    public int Footer() {
+        var line = layout.MenuItems.Count > 0 ? layout.MenuItems[0].Space : DefaultSpace;
+        pivot.localPosition += new Vector3(0f, Raise, 0f);
+
+        var top = LegendY + (TooltipLines + 0.5f) * line;
+        var at = tooltipController.transform.position;
+        at.y = top;
+        tooltipController.transform.position = at;
+
+        var room = FirstRowY + Raise - (top + 0.5f * line);
+        return Mathf.Max(1, Mathf.FloorToInt(room / line) + 1);
+    }
+
     public void HideLegend() {
         Destroy(transform.FindChild("highlightFade/legend").gameObject);
     }
@@ -718,7 +772,21 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // the prompt's two rows, in the order its answers are given
     private static readonly string[] Answers = { "ok", "cancel" };
 
-    // a text line, matching the gap between the prompt's own two answers
+    // Measured: the vanilla legend sits here, panel rows start here and step by this. The
+    // camera has a fixed vertical FOV, so these are the same at every resolution and aspect.
+    private const float LegendY = -3.42f;
+
+    private const float FirstRowY = 2.944f;
+
+    private const float DefaultSpace = 0.45f;
+
+    // a tooltip wraps, so the footer reserves two lines rather than one
+    private const int TooltipLines = 2;
+
+    // there is about two rows of margin over the first row; one of them is worth taking
+    private const float Raise = 0.45f;
+
+    // a text line, matching the gap between the prompt    // a text line, matching the gap between the prompt's own two answersapos;s own two answers
     private const float TopPad = 0.45f;
 
     private const string QuestionPrefabName = "returnToMainMenuQuestion";

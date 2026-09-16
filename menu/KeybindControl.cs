@@ -14,8 +14,8 @@ public class KeybindControl : MonoBehaviour {
         editing = true;
         owner.Editing = true;
         exit = 0;
-        tooltipProvider.SetMessage("Backspace: remove bind\nEnter: finish editing");
-        owner.tooltipController.UpdateTooltip();
+        // how to work the edit is the legend's job now; the tooltip stays on the bind itself
+        owner.BindLegend();
     }
 
     public void Update() {
@@ -35,8 +35,7 @@ public class KeybindControl : MonoBehaviour {
             SetKeys(currentKeys.ToArray());
             PlayerInputRebinding.WriteKeyRebindSettings();
             PlayerInput.Instance.RefreshControlScheme();
-            tooltipProvider.SetMessage(owner.DefaultTooltip);
-            owner.tooltipController.UpdateTooltip();
+            owner.BindLegend();
             return;
         }
 

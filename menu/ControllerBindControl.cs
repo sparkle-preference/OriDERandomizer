@@ -21,8 +21,8 @@ public class ControllerBindControl : MonoBehaviour {
             buttonsPressed[i] = true;
         }
 
-        tooltipProvider.SetMessage("Start: finish editing");
-        owner.tooltipController.UpdateTooltip();
+        // how to work the edit is the legend's job now; the tooltip stays on the bind itself
+        owner.BindLegend();
     }
 
     public void Update() {
@@ -42,8 +42,7 @@ public class ControllerBindControl : MonoBehaviour {
             SetKeys(currentKeys.ToArray());
             PlayerInputRebinding.WriteControllerRebindSettings();
             PlayerInput.Instance.RefreshControlScheme();
-            tooltipProvider.SetMessage(owner.DefaultTooltip);
-            owner.tooltipController.UpdateTooltip();
+            owner.BindLegend();
             return;
         }
 

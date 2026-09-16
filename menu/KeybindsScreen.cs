@@ -29,13 +29,8 @@ public class KeybindsScreen : CustomSettingsScreen {
         AddKeybind("Zoom Out (Map)", () => PlayerInputRebinding.KeyRebindings.ZoomOut, k => PlayerInputRebinding.KeyRebindings.ZoomOut = k);
         AddButton("Reset Keybinds", ResetKeybinds, "Puts every keyboard bind on this screen back to its default.");
 
-        ScrollAfter(12);
-
-        // Lower tooltip so it fits under the options
-        var pos = tooltipController.transform.position;
-        pos.y = -3.38f;
-        tooltipController.transform.position = pos;
-        HideLegend();
+        ScrollAfter(Footer());
+        BindLegend();
     }
 
     private void ResetKeybinds() {
