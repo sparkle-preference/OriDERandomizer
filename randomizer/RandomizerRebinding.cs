@@ -11,6 +11,7 @@ public static class RandomizerRebinding {
     public static void WriteBindsToFile() {
         var streamWriter = new StreamWriter("RandomizerRebinding.txt");
         streamWriter.WriteLine("Bind syntax: Key1+Key2, Key1+Key3+Key4, ... Syntax errors will load default binds.");
+        streamWriter.WriteLine("Alt, Shift, Control, Command and Windows mean either side; name a side to want only that one.");
         streamWriter.WriteLine("Functions are unbound if there is no binding specified.");
         streamWriter.WriteLine("Supported binds are Unity KeyCodes (https://docs.unity3d.com/ScriptReference/KeyCode.html) and the following actions:");
         streamWriter.WriteLine("Jump, SpiritFlame, Bash, SoulFlame, ChargeJump, Glide, Dash, Grenade, Left, Right, Up, Down, LeftStick, RightStick, Start, Select");
@@ -70,6 +71,10 @@ public static class RandomizerRebinding {
 
                 var bindingString = parts[1].Trim();
                 AssignBind(action, bindingString, writeList);
+                if (rebindMap.ContainsKey(action) && rebindMap[action].Collapse()) {
+                    dirty = true;
+                }
+
                 unseenActions.Remove(action);
             }
 
@@ -215,41 +220,41 @@ public static class RandomizerRebinding {
     private static readonly Regex bindPattern = new Regex(@"\[\[([^\[\]]+)\]\]");
 
     public static Dictionary<string, string> DefaultBinds = new Dictionary<string, string> {
-        { "Replay Message", "LeftAlt+T, RightAlt+T" },
-        { "Warp", "LeftAlt+R, RightAlt+R" },
-        { "Reload Seed", "LeftAlt+L, RightAlt+L" },
+        { "Replay Message", "Alt+T" },
+        { "Warp", "Alt+R" },
+        { "Reload Seed", "Alt+L" },
         { "Toggle Chaos", "" },
-        { "Chaos Verbosity", "LeftAlt+V, RightAlt+V" },
-        { "Force Chaos Effect", "LeftAlt+F, RightAlt+F" },
-        { "Show Progress", "LeftAlt+P, RightAlt+P" },
-        { "Color Shift", "LeftAlt+C, RightAlt+C" },
+        { "Chaos Verbosity", "Alt+V" },
+        { "Force Chaos Effect", "Alt+F" },
+        { "Show Progress", "Alt+P" },
+        { "Color Shift", "Alt+C" },
         { "Double Bash", "Grenade" },
         { "Toggle Map Mode", "Grenade" },
         { "Map Warp", "Bash" },
         { "Grenade Jump", "Grenade+Jump" },
-        { "Show Bonuses", "LeftAlt+B, RightAlt+B" },
-        { "Bonus Switch", "LeftAlt+Q, RightAlt+Q" },
-        { "Bonus Toggle", "LeftAlt+Mouse1, RightAlt+Mouse1" },
+        { "Show Bonuses", "Alt+B" },
+        { "Bonus Switch", "Alt+Q" },
+        { "Bonus Toggle", "Alt+Mouse1" },
         { "Reset Grenade Aim", "" },
         { "Suppress Autofire", "" },
-        { "List Trees", "LeftAlt+Alpha1, RightAlt+Alpha1" },
-        { "List Map Altars", "LeftAlt+Alpha2, RightAlt+Alpha2" },
-        { "List Teleporters", "LeftAlt+Alpha3, RightAlt+Alpha3" },
-        { "List Relics", "LeftAlt+Alpha4, RightAlt+Alpha4" },
-        { "Show Stats", "LeftAlt+Alpha5, RightAlt+Alpha5" },
-        { "Show Keysanity Progress", "LeftAlt+K, RightAlt+K" },
+        { "List Trees", "Alt+Alpha1" },
+        { "List Map Altars", "Alt+Alpha2" },
+        { "List Teleporters", "Alt+Alpha3" },
+        { "List Relics", "Alt+Alpha4" },
+        { "Show Stats", "Alt+Alpha5" },
+        { "Show Keysanity Progress", "Alt+K" },
         { "Grant Test Pickup", "" },
         { "Start Practice Debug", "" },
         { "Practice Menu", "" },
-        { "Create Practice Segment", "LeftAlt+M, RightAlt+M" },
+        { "Create Practice Segment", "Alt+M" },
         { "Open Practice Editor Page", "" },
-        { "Retry Practice Segment", "LeftAlt+L, RightAlt+L" },
+        { "Retry Practice Segment", "Alt+L" },
         { "Spawn Echo", "" },
         { "Clear All Echoes", "" },
         { "Menu Skip Backwards", "PageUp" },
         { "Menu Skip Forwards", "PageDown" },
-        { "Menu Home", "LeftShift+PageUp, RightShift+PageUp" },
-        { "Menu End", "LeftShift+PageDown, RightShift+PageDown" },
+        { "Menu Home", "Shift+PageUp" },
+        { "Menu End", "Shift+PageDown" },
         { "Bonus 1", "" },
         { "Bonus 2", "" },
         { "Bonus 3", "" },
@@ -383,10 +388,44 @@ public static class RandomizerRebinding {
             } else if (CoreInputMap.ContainsKey(input)) {
                 Type = ActionType.CoreInput;
                 CoreInput = CoreInputMap[input];
+            } else if (Unside(input) != null) {
+                Type = ActionType.EitherKey;
+                either = Unside(input);
+                Key = StringToKeyBinding("Left" + either);
+                KeyAlt = StringToKeyBinding("Right" + either);
             } else {
                 Type = ActionType.KeyCode;
                 Key = StringToKeyBinding(input);
             }
+        }
+
+        // A modifier written without a side means either one: which of the two the player
+        // reaches for is not information. Unity spells the sides "Left"/"Right" + the name.
+        private static readonly string[] Unsided = {
+            "Alt", "Shift", "Control", "Command", "Windows"
+        };
+
+        // the canonical spelling of an unsided modifier, or null for anything else
+        public static string Unside(string input) {
+            foreach (var name in Unsided) {
+                if (String.Equals(input, name, StringComparison.OrdinalIgnoreCase)) {
+                    return name;
+                }
+            }
+
+            return null;
+        }
+
+        // the unsided name of a sided modifier key, or null for anything else
+        public static string SideOf(KeyCode key) {
+            foreach (var name in Unsided) {
+                if (key == StringToKeyBinding("Left" + name) ||
+                        key == StringToKeyBinding("Right" + name)) {
+                    return name;
+                }
+            }
+
+            return null;
         }
 
         public void FixedUpdate() {
@@ -400,6 +439,9 @@ public static class RandomizerRebinding {
                 case ActionType.KeyCode:
                     Update(MoonInput.GetKey(Key));
                     break;
+                case ActionType.EitherKey:
+                    Update(MoonInput.GetKey(Key) || MoonInput.GetKey(KeyAlt));
+                    break;
             }
         }
 
@@ -411,6 +453,8 @@ public static class RandomizerRebinding {
                     return "_" + Button;
                 case ActionType.KeyCode:
                     return Key.ToString();
+                case ActionType.EitherKey:
+                    return either;
                 default:
                     return "";
             }
@@ -424,6 +468,8 @@ public static class RandomizerRebinding {
                     return $"_{Button}";
                 case ActionType.KeyCode:
                     return $"{Key}";
+                case ActionType.EitherKey:
+                    return either;
                 default:
                     return "";
             }
@@ -431,6 +477,10 @@ public static class RandomizerRebinding {
 
 
         public KeyCode Key;
+
+        public KeyCode KeyAlt;
+
+        private string either;
 
         private string raw;
 
@@ -443,7 +493,8 @@ public static class RandomizerRebinding {
         public enum ActionType {
             CoreInput,
             ControllerButton,
-            KeyCode
+            KeyCode,
+            EitherKey
         }
     }
 
@@ -481,46 +532,65 @@ public static class RandomizerRebinding {
 
         public override string ToString() => String.Join(", ", Binds.Select(binds => binds.RawStr()).ToArray());
 
-        // Both sides of a modifier are usually bound to the same thing, and which one the
-        // player reaches for is not information: "Alt+R" beats "LeftAlt+R". Only collapses
-        // when the mirrored bind is actually there, so a deliberately one-sided bind still
-        // says which side. Display only -- the file keeps every bind spelled out.
         public string FirstBindName() {
-            if (!HasBind()) {
-                return "<NO BIND>";
+            return HasBind() ? Binds[0].ToString() : "<NO BIND>";
+        }
+
+        // A file that spells both sides of a modifier out becomes one bind meaning either, and
+        // says so on the way out. Only when the mirrored bind is actually there, so a
+        // deliberately one-sided bind still says which side.
+        public bool Collapse() {
+            var changed = false;
+            while (CollapseOnce()) {
+                changed = true;
             }
 
-            var original = Binds[0].Inputs.Select(input => input.ToString()).ToList();
-            var others = Binds.Skip(1)
-                .Select(bind => bind.Inputs.Select(input => input.ToString()).ToList()).ToList();
-            var shown = new List<string>(original);
+            return changed;
+        }
 
-            for (var i = 0; i < original.Count; i++) {
-                string mirror;
-                if (!sidedModifiers.TryGetValue(original[i], out mirror)) {
+        private bool CollapseOnce() {
+            for (var i = 0; i < Binds.Count; i++) {
+                for (var j = i + 1; j < Binds.Count; j++) {
+                    var at = Mirrored(Binds[i], Binds[j]);
+                    if (at < 0) {
+                        continue;
+                    }
+
+                    Binds[i].Inputs[at] = new SingleInput(SingleInput.SideOf(Binds[i].Inputs[at].Key));
+                    Binds.RemoveAt(j);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // The one place two otherwise identical binds hold the two sides of one modifier, or -1.
+        private static int Mirrored(SingleBind a, SingleBind b) {
+            if (a.Inputs.Count != b.Inputs.Count) {
+                return -1;
+            }
+
+            var found = -1;
+            for (var i = 0; i < a.Inputs.Count; i++) {
+                if (a.Inputs[i].RawStr() == b.Inputs[i].RawStr()) {
                     continue;
                 }
 
-                // mirror the original, not what earlier passes already collapsed
-                var wanted = new List<string>(original);
-                wanted[i] = mirror;
-                if (others.Any(other => other.SequenceEqual(wanted))) {
-                    shown[i] = original[i].StartsWith("Left")
-                        ? original[i].Substring("Left".Length)
-                        : original[i].Substring("Right".Length);
+                var side = SingleInput.SideOf(a.Inputs[i].Key);
+                if (found >= 0 || side == null ||
+                        a.Inputs[i].Type != SingleInput.ActionType.KeyCode ||
+                        b.Inputs[i].Type != SingleInput.ActionType.KeyCode ||
+                        side != SingleInput.SideOf(b.Inputs[i].Key)) {
+                    return -1;
                 }
+
+                found = i;
             }
 
-            return String.Join("+", shown.ToArray());
+            return found;
         }
 
-        private static readonly Dictionary<string, string> sidedModifiers = new Dictionary<string, string> {
-            { "LeftAlt", "RightAlt" }, { "RightAlt", "LeftAlt" },
-            { "LeftShift", "RightShift" }, { "RightShift", "LeftShift" },
-            { "LeftControl", "RightControl" }, { "RightControl", "LeftControl" },
-            { "LeftCommand", "RightCommand" }, { "RightCommand", "LeftCommand" },
-            { "LeftWindows", "RightWindows" }, { "RightWindows", "LeftWindows" },
-        };
 
         public bool HasBind() => Binds.Count > 0;
 
