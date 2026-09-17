@@ -372,14 +372,27 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
 
         if (!BindsDirty) {
-            Legend("<icon>vr</> Navigate", "<icon>D</> Rebind", "<icon>y</> Back");
+            Legend("<icon>vr</> Navigate" + Skips(), "<icon>D</> Rebind", "<icon>y</> Back");
             return;
         }
 
         // the hint is written first because the ring wraps the slot's leftmost glyph
         soulGlyph = MessageParserUtility.ProcessString(SoulKey).Contains("<icon>");
-        Legend("<icon>vr</> Navigate", "<icon>D</> Rebind",
+        Legend("<icon>vr</> Navigate" + Skips(), "<icon>D</> Rebind",
             SoulKey + "   Hold to save changes   <icon>y</> Back");
+    }
+
+    // The page-at-a-time binds, named from the bindings themselves. Only worth the words when
+    // there is more list than window, and only while the page is the one taking keys.
+    private string Skips() {
+        if (layout == null || layout.MaxVisible <= 0 || layout.MenuItems.Count <= layout.MaxVisible ||
+                !RandomizerRebinding.MenuSkipBackwards.HasBind() ||
+                !RandomizerRebinding.MenuSkipForwards.HasBind()) {
+            return string.Empty;
+        }
+
+        return "      " + RandomizerRebinding.MenuSkipBackwards.FirstBindName() + "/" +
+            RandomizerRebinding.MenuSkipForwards.FirstBindName() + " Skip";
     }
 
     // The legend's three slots. Key icons come out of the text itself -- <icon> switches to a
@@ -1032,8 +1045,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // which of a rando bind's two readings the edit in hand is on, for the legend
     public bool ReadingActions;
 
-    // by eye against a legend slot: enough for a hint of four or five words
-    private const float SlotWidth = 1.6f;
+    // by eye against a legend slot: enough for two hints in one of them
+    private const float SlotWidth = 2.2f;
 
     private bool widened;
 
