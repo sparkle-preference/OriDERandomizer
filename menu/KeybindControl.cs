@@ -77,7 +77,7 @@ public class KeybindControl : MonoBehaviour {
 
             held = -1f;
             tapped = KeyCode.None;
-            RandomizerHoldRing.Hide();
+            owner.HideHold();
             return false;
         }
 
@@ -86,11 +86,8 @@ public class KeybindControl : MonoBehaviour {
             tapped = down;
         }
 
-        var glyph = owner.BackGlyph();
         var progress = (Time.unscaledTime - held) / RandomizerHoldRing.Seconds;
-        if (glyph != null) {
-            RandomizerHoldRing.Draw(glyph, progress);
-        }
+        owner.DrawHold(progress);
 
         if (progress < 1f) {
             return true;
@@ -98,7 +95,7 @@ public class KeybindControl : MonoBehaviour {
 
         // the hold spent the key, so letting go of it must not also bind it
         tapped = KeyCode.None;
-        RandomizerHoldRing.Hide();
+        owner.HideHold();
         Cancel();
         return true;
     }

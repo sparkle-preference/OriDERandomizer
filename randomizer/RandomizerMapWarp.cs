@@ -549,20 +549,15 @@ public static class RandomizerMapWarp {
         SoulFade = Mathf.MoveTowards(SoulFade, progress > 0f ? 1f : 0f,
             Time.unscaledDeltaTime * FadeRate);
         if (SoulFade <= 0.001f) {
-            soul.SetActive(false);
+            soul.Show(false);
             return;
         }
 
-        soul.SetActive(true);
-        Tint(SoulFade);
-        soul.transform.position = navigation.WorldToMapPosition(well.WorldPosition);
-        Measure(soul);
-        soul.transform.localScale = SoulBase * (2f * Scaled(navigation) / SoulSpan);
-        if (SoulTimeline != null && SoulTimeline.AnimatorDriver != null) {
-            var driver = SoulTimeline.AnimatorDriver;
-            driver.CurrentTime = progress * SoulFull;
-            driver.Sample();
-        }
+        soul.Show(true);
+        soul.Fade(SoulFade);
+        soul.Place(navigation.WorldToMapPosition(well.WorldPosition));
+        soul.Widen(2f * Scaled(navigation));
+        soul.Progress(progress);
     }
 
     // Taken while the menu's prefabs are certainly still loaded. The clone holds a reference to
@@ -571,7 +566,7 @@ public static class RandomizerMapWarp {
         try {
             var soul = Soul(map);
             if (soul != null) {
-                soul.SetActive(false);
+                soul.Show(false);
             }
         } catch (System.Exception e) {
             SoulMissing = true;
@@ -579,12 +574,15 @@ public static class RandomizerMapWarp {
         }
     }
 
-    // The soul link's own charge ring. Its fill is a TimelineSequence that a
-    // FloatProviderAnimatorDriver walks from the real cooldown -- drop that driver and the
-    // timeline is ours to scrub, which is the authored animation at any point we like.
-    private static GameObject Soul(AreaMapUI map) {
-        if (SoulObject != null || SoulMissing) {
-            return SoulObject;
+    // The soul link's own charge ring, borrowed and scrubbed.
+    private static RandomizerHoldRing Soul(AreaMapUI map) {
+        // the holder is a plain object and never goes null with the scene its clone was in
+        if (SoulRing != null && SoulRing.Object != null) {
+            return SoulRing;
+        }
+
+        if (SoulMissing) {
+            return null;
         }
 
         var source = UI.SeinUI == null ? null : UI.SeinUI.SoulFlameUI;
@@ -594,98 +592,16 @@ public static class RandomizerMapWarp {
             return null;
         }
 
-        SoulObject = (GameObject)Object.Instantiate(source);
-        SoulObject.name = "randomizerWarpSoulRing";
-        SoulObject.transform.parent = map.FadeOutGroup;
-        foreach (var driver in SoulObject.GetComponentsInChildren<FloatProviderAnimatorDriver>(true)) {
-            Object.DestroyImmediate(driver);
+        var ring = new RandomizerHoldRing();
+        if (!ring.Adopt(source, map.FadeOutGroup, "randomizerWarpSoulRing")) {
+            SoulMissing = true;
+            return null;
         }
 
-        RandomizerGhost.Quiet(SoulObject);
-        // Enabled and made opaque, but not repainted: the widget is many colors and flattening it
-        // to one tint throws away the thing worth having. Its fader is gone with Quiet, and what
-        // the fader left behind is invisible, so only the alpha is overruled.
-        Opaque(SoulObject);
-        var sorted = Sorting(map);
-        var layer = MapLayer(map);
-        foreach (var renderer in SoulObject.GetComponentsInChildren<Renderer>(true)) {
-            renderer.enabled = true;
-            renderer.gameObject.layer = layer;
-            if (sorted != null) {
-                renderer.sortingLayerID = sorted.sortingLayerID;
-                renderer.sortingOrder = sorted.sortingOrder + 1;
-            }
-        }
-
-        foreach (var animator in SoulObject.GetComponentsInChildren<BaseAnimator>(true)) {
-            if (animator.GetType().Name == "TimelineSequence" && animator.AnimatorDriver != null) {
-                SoulTimeline = animator;
-                animator.AnimatorDriver.Stop();
-                break;
-            }
-        }
-
-        SoulBase = SoulObject.transform.localScale;
-        return SoulObject;
-    }
-
-    // The widget is hidden while playing, and an inactive renderer has no bounds to read, so its
-    // size cannot be known until the frame it is first shown. The ring halves are the ring;
-    // everything else is glow and background reaching well past it.
-    private static void Measure(GameObject soul) {
-        if (SoulSpan > 0.0001f) {
-            return;
-        }
-
-        soul.transform.localScale = SoulBase;
-        var widest = 0f;
-        var ring = 0f;
-        foreach (var renderer in soul.GetComponentsInChildren<Renderer>(true)) {
-            if (renderer == null) {
-                continue;
-            }
-
-            if (renderer.bounds.size.x > widest) {
-                widest = renderer.bounds.size.x;
-            }
-
-            var material = renderer.sharedMaterial;
-            var texture = material == null ? null : material.mainTexture;
-            if (texture != null && texture.name == "soulflameCircle" &&
-                    renderer.bounds.size.x > ring) {
-                ring = renderer.bounds.size.x;
-            }
-        }
-
-        ring = ring > 0.0001f ? ring : widest;
-        // a last resort that keeps it on screen rather than microscopic
-        SoulSpan = ring > 0.0001f ? ring : SoulBase.x;
-    }
-
-    private static void Opaque(GameObject target) {
-        SoulPaints.Clear();
-        SoulKeys.Clear();
-        foreach (var renderer in target.GetComponentsInChildren<Renderer>(true)) {
-            var material = renderer == null ? null : renderer.material;
-            if (material == null) {
-                continue;
-            }
-
-            foreach (var name in Alphas) {
-                if (material.HasProperty(name)) {
-                    // kept so the fade multiplies the widget's colors rather than flattening them
-                    SoulPaints.Add(material);
-                    SoulKeys.Add(name);
-                }
-            }
-        }
-    }
-
-    private static void Tint(float alpha) {
-        for (var i = 0; i < SoulPaints.Count; i++) {
-            var color = SoulPaints[i].GetColor(SoulKeys[i]);
-            SoulPaints[i].SetColor(SoulKeys[i], new Color(color.r, color.g, color.b, alpha));
-        }
+        ring.Match(Sorting(map), MapLayer(map));
+        ring.Full = SoulFull;
+        SoulRing = ring;
+        return SoulRing;
     }
 
     // The layer things on this map are drawn on, which is not the one the group holding them
@@ -745,8 +661,8 @@ public static class RandomizerMapWarp {
 
     private static void Hide() {
         SoulFade = 0f;
-        if (SoulObject != null) {
-            SoulObject.SetActive(false);
+        if (SoulRing != null) {
+            SoulRing.Show(false);
         }
     }
 
@@ -766,21 +682,11 @@ public static class RandomizerMapWarp {
 
     private static float Since = -1f;
 
-    private static GameObject SoulObject;
-
-    private static BaseAnimator SoulTimeline;
-
-    private static float SoulSpan;
-
-    private static Vector3 SoulBase = Vector3.one;
+    private static RandomizerHoldRing SoulRing;
 
     private static bool SoulMissing;
 
     private static float SoulFade;
-
-    private static readonly List<Material> SoulPaints = new List<Material>();
-
-    private static readonly List<string> SoulKeys = new List<string>();
 
     private static float PinNatural;
 

@@ -337,6 +337,53 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return KeyCode.None;
     }
 
+    // The ring a hold fills, drawn over the Back glyph. One between all the pages, because only
+    // one row on one of them can be holding at a time.
+    public void DrawHold(float progress) {
+        var glyph = BackGlyph();
+        if (glyph == null || ringless) {
+            return;
+        }
+
+        // the holder is a plain object and never goes null with the scene its clone was in
+        if (ring == null || ring.Object == null) {
+            ring = new RandomizerHoldRing();
+            if (!ring.Adopt(LoadingBar(), null, "randomizerHoldRing")) {
+                Randomizer.log("hold ring: no loading bar to borrow; holds will have no ring");
+                ring = null;
+                ringless = true;
+                return;
+            }
+
+            ring.Match(glyph, glyph.gameObject.layer);
+            ring.Fade(1f);
+        }
+
+        ring.Show(true);
+        var at = glyph.transform.position;
+        ring.Place(new Vector3(at.x, at.y, at.z - RingLift));
+        ring.Widen(glyph.bounds.size.y * RingSpan);
+        ring.Progress(progress);
+    }
+
+    public void HideHold() {
+        if (ring != null) {
+            ring.Show(false);
+        }
+    }
+
+    // The loading bar carries the provider that reads the prewarmer, which is what names it
+    // among the handful of things alive from boot -- Sein's UI, and its ring, are not.
+    private static GameObject LoadingBar() {
+        foreach (var progress in Resources.FindObjectsOfTypeAll<UberShaderPrewarmerProgress>()) {
+            if (progress != null && progress.GetComponent<TimelineSequence>() != null) {
+                return progress.gameObject;
+            }
+        }
+
+        return null;
+    }
+
     // The key glyph in the Back slot, which is what a hold draws its ring around and takes its
     // layer and sorting from.
     public Renderer BackGlyph() {
@@ -834,6 +881,15 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     public bool Editing;
 
     private GameObject prompt;
+
+    // by eye against a key glyph: the ring reads as around it rather than behind it
+    private const float RingSpan = 2.5f;
+
+    private const float RingLift = 0.1f;
+
+    private static RandomizerHoldRing ring;
+
+    private static bool ringless;
 
     // long enough to cover the manager's next FixedUpdate whichever order the two run in
     private const int SettleFrames = 3;

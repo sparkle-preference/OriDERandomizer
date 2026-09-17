@@ -76,7 +76,7 @@ public class ControllerBindControl : MonoBehaviour {
         if (down == KeyCode.None) {
             tapped = held >= 0f && Time.unscaledTime - held < RandomizerHoldRing.Tap;
             held = -1f;
-            RandomizerHoldRing.Hide();
+            owner.HideHold();
             return false;
         }
 
@@ -84,17 +84,14 @@ public class ControllerBindControl : MonoBehaviour {
             held = Time.unscaledTime;
         }
 
-        var glyph = owner.BackGlyph();
         var progress = (Time.unscaledTime - held) / RandomizerHoldRing.Seconds;
-        if (glyph != null) {
-            RandomizerHoldRing.Draw(glyph, progress);
-        }
+        owner.DrawHold(progress);
 
         if (progress < 1f) {
             return true;
         }
 
-        RandomizerHoldRing.Hide();
+        owner.HideHold();
         Cancel();
         return true;
     }
