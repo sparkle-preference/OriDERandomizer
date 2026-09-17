@@ -17,9 +17,20 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         RandomizerSettings.WriteSettings();
     }
 
-    // The ways off this page that skip its own Back, shut while it has a question to ask:
-    // Escape is bound to Pause as well as Cancel and the menu manager reads it first and
-    // closes the whole screen, and the tab list takes clicks even while it is inactive.
+    // Escape is bound to Pause as well as Cancel: the menu manager reads it first and closes
+    // the whole screen, and the tab list takes clicks even while it is inactive. Both are
+    // shut while the page has a question to ask or an edit in hand, and for a few frames
+    // after either ends -- the manager reads that same press a frame behind the edit.
+    public void HoldMenu() {
+        if (Editing || prompt != null) {
+            settle = SettleFrames;
+        } else if (settle > 0) {
+            settle--;
+        }
+
+        Hold(prompt != null || Editing || settle > 0 || (selectionManager.IsActive && BindsDirty));
+    }
+
     private void Hold(bool held) {
         if (Game.UI.Menu != null) {
             Game.UI.Menu.IsSuspended = held;
@@ -161,7 +172,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     public void Update() {
         // re-asserted every frame because finishing an edit resumes everything
-        Hold(prompt != null || (selectionManager.IsActive && BindsDirty));
+        HoldMenu();
         if (layout == null || layout.MaxVisible <= 0) {
             return;
         }
@@ -280,8 +291,14 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return;
         }
 
+        // a pad edit takes buttons until Escape and has no undo; a key edit ends on Enter
         if (Editing) {
-            Legend(string.Empty, "<icon>D</> Finish", "Backspace  Remove last");
+            if (keyControls.Length > 0) {
+                Legend(string.Empty, "<icon>D</> Finish", "Backspace  Remove last");
+            } else {
+                Legend(string.Empty, "<icon>y</> Finish", string.Empty);
+            }
+
             return;
         }
 
@@ -792,6 +809,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     public bool Editing;
 
     private GameObject prompt;
+
+    // long enough to cover the manager's next FixedUpdate whichever order the two run in
+    private const int SettleFrames = 3;
+
+    private int settle;
 
     // empty until the rows are built: the legend asks whether they are dirty on the way up
     private KeybindControl[] keyControls = new KeybindControl[0];
