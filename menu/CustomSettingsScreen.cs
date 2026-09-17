@@ -77,7 +77,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         tooltipController.enabled = true;
 
         InitScreen();
-        selectionManager.SetCurrentItem(0);
+        // the first row can be a header, which is not a thing to be sitting on
+        selectionManager.SetIndexToFirst();
         selectionManager.BackGuard = KeepOrDiscard;
     }
 
@@ -390,6 +391,15 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return;
         }
 
+        // The slots are cut to the words vanilla puts in them, and ours are longer; once only,
+        // because this runs on every legend change.
+        if (!widened) {
+            widened = true;
+            Widen(legend, "navigate");
+            Widen(legend, "select");
+            Widen(legend, "back");
+        }
+
         Slot(legend, "navigate", navigate);
         Slot(legend, "select", select);
         Slot(legend, "back", back);
@@ -496,6 +506,14 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return leftmost;
     }
 
+    private static void Widen(Transform legend, string name) {
+        var child = legend.FindChild(name);
+        var box = child == null ? null : child.GetComponentInChildren<MessageBox>(true);
+        if (box != null && box.TextBox != null) {
+            box.TextBox.width *= SlotWidth;
+        }
+    }
+
     private static void Slot(Transform legend, string name, string words) {
         var child = legend.FindChild(name);
         var box = child == null ? null : child.GetComponentInChildren<MessageBox>(true);
@@ -535,6 +553,25 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         cleverMenuItem.PressedCallback += onClick;
         // without this the row keeps the tooltip of the vanilla one it was cloned from
         ConfigureTooltip(cleverMenuItem.GetComponent<CleverMenuItemTooltip>(), tooltip ?? caption);
+    }
+
+    // A row that is only a label. It sits in both lists so the scroll window's arithmetic still
+    // lines up, but navigation steps over it (an Activated that never validates) and the cursor
+    // cannot land on it (no bounds of its own).
+    public void AddHeader(string caption) {
+        var cleverMenuItem = AddItem(caption);
+        cleverMenuItem.gameObject.name = "Header (" + caption + ")";
+        cleverMenuItem.Size = Vector2.zero;
+        // the row tints its own text, so the colour has to come from there rather than a
+        // <style> tag; all three states, because a header is never in any of them
+        cleverMenuItem.Transition.NormalColor = HeaderColor;
+        cleverMenuItem.Transition.HighlightedColor = HeaderColor;
+        cleverMenuItem.Transition.DisabledColor = HeaderColor;
+        cleverMenuItem.OnUnhighlight();
+        cleverMenuItem.Activated = cleverMenuItem.gameObject.AddComponent<NeverCondition>();
+        var state = cleverMenuItem.transform.Find("text/stateText").GetComponent<MessageBox>();
+        state.MessageProvider = null;
+        state.SetMessage(new MessageDescriptor(string.Empty));
     }
 
     public void AddRandomizerBind(string action, string label = null) {
@@ -994,6 +1031,14 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     // which of a rando bind's two readings the edit in hand is on, for the legend
     public bool ReadingActions;
+
+    // by eye against a legend slot: enough for a hint of four or five words
+    private const float SlotWidth = 1.6f;
+
+    private bool widened;
+
+    // warmer and flatter than a row's own white, so a category reads as a label
+    private static readonly Color HeaderColor = new Color(0.85f, 0.72f, 0.42f, 0.55f);
 
     private GameObject prompt;
 

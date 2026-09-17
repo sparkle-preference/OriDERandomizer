@@ -176,6 +176,7 @@
 		"menu/CustomSettingsScreen.cs",
 		"menu/KeybindControl.cs",
 		"menu/KeybindsScreen.cs",
+		"menu/NeverCondition.cs",
 		"menu/RandoOptionsScreen.cs",
 		"menu/RandomizerBindControl.cs",
 		"menu/RandomizerBindsScreen.cs",
