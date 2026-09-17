@@ -13,6 +13,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     public void OnDisable() {
         Hold(false);
+        saving = -1f;
+        HideHold();
         // Will only write if there have been changes
         RandomizerSettings.WriteSettings();
     }
@@ -180,6 +182,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         // every key belongs to the bind being edited, including these
         if (!Editing) {
             RapidScroll();
+            SaveHold();
         }
 
         var wheel = Input.GetAxis("Mouse ScrollWheel");
@@ -216,6 +219,44 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             var step = Mathf.Max(1, Mathf.RoundToInt(layout.MaxVisible * 0.8f));
             selectionManager.SetCurrentItem(Mathf.Clamp(selectionManager.Index + (back ? -step : step), 0, last));
         }
+    }
+
+    // A held Soul Link is how the game itself saves, so it is how a page keeps its changes
+    // without being asked on the way out. It answers the same way the question's SAVE does:
+    // the binds are already live, and keeping them means making them the baseline.
+    private void SaveHold() {
+        if (prompt != null || !selectionManager.IsActive || !BindsDirty ||
+                Down(PlayerInputRebinding.KeyRebindings.SoulFlame) == KeyCode.None) {
+            if (saving >= 0f) {
+                HideHold();
+            }
+
+            saving = -1f;
+            return;
+        }
+
+        // a press of its own, not a key that was already down when the page became savable
+        if (saving < 0f) {
+            if (!Pressed(PlayerInputRebinding.KeyRebindings.SoulFlame)) {
+                return;
+            }
+
+            saving = Time.unscaledTime;
+        }
+
+        var progress = (Time.unscaledTime - saving) / RandomizerHoldRing.Seconds;
+        if (soulGlyph) {
+            DrawHold(progress);
+        }
+
+        if (progress < 1f) {
+            return;
+        }
+
+        saving = -1f;
+        HideHold();
+        SnapshotBinds();
+        BindLegend();
     }
 
     // Grab anywhere on the bar and the window follows, which is what a scrollbar is for.
@@ -302,8 +343,15 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return;
         }
 
+        if (!BindsDirty) {
+            Legend("<icon>vr</> Navigate", "<icon>D</> Rebind", "<icon>y</> Back");
+            return;
+        }
+
+        // the hint is written first because the ring wraps the slot's leftmost glyph
+        soulGlyph = MessageParserUtility.ProcessString(SoulKey).Contains("<icon>");
         Legend("<icon>vr</> Navigate", "<icon>D</> Rebind",
-            BindsDirty ? "<icon>y</> Back  (unsaved)" : "<icon>y</> Back");
+            SoulKey + " Hold to save changes   <icon>y</> Back");
     }
 
     // The legend's three slots. Key icons come out of the text itself -- <icon> switches to a
@@ -323,12 +371,15 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // Which key is standing in for Back right now. The gesture rides the binding rather than
     // Escape, because the legend glyph it fills is drawn from the binding too.
     public static KeyCode BackHeld() {
-        var back = PlayerInputRebinding.KeyRebindings.Cancel;
-        if (back == null) {
+        return Down(PlayerInputRebinding.KeyRebindings.Cancel);
+    }
+
+    private static KeyCode Down(KeyCode[] keys) {
+        if (keys == null) {
             return KeyCode.None;
         }
 
-        foreach (var key in back) {
+        foreach (var key in keys) {
             if (Input.GetKey(key)) {
                 return key;
             }
@@ -337,10 +388,24 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return KeyCode.None;
     }
 
-    // The ring a hold fills, drawn over the Back glyph. One between all the pages, because only
-    // one row on one of them can be holding at a time.
+    private static bool Pressed(KeyCode[] keys) {
+        if (keys == null) {
+            return false;
+        }
+
+        foreach (var key in keys) {
+            if (Input.GetKeyDown(key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // The ring a hold fills, drawn over the glyph of the key being held. One between all the
+    // pages, because only one hold on one of them can be running at a time.
     public void DrawHold(float progress) {
-        var glyph = BackGlyph();
+        var glyph = HoldGlyph();
         if (glyph == null || ringless) {
             return;
         }
@@ -384,12 +449,24 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return null;
     }
 
-    // The key glyph in the Back slot, which is what a hold draws its ring around and takes its
-    // layer and sorting from.
-    public Renderer BackGlyph() {
+    // The leftmost key glyph in the back slot, which is the key that slot is offering to hold:
+    // a hold's hint is written first in it. Leftmost rather than first, because the icons are
+    // cloned in the order they were needed and keep it when the text changes under them.
+    public Renderer HoldGlyph() {
         var slot = transform.FindChild("highlightFade/legend/pcLegend/back");
-        var icon = slot == null ? null : slot.GetComponentInChildren<CatlikeCoding.TextBox.MoonIconRenderer>(true);
-        return icon == null ? null : icon.GetComponentInChildren<Renderer>(true);
+        var icons = slot == null ? null : slot.GetComponentInChildren<CatlikeCoding.TextBox.MoonIconRenderer>(true);
+        if (icons == null) {
+            return null;
+        }
+
+        Renderer leftmost = null;
+        foreach (var renderer in icons.GetComponentsInChildren<Renderer>(true)) {
+            if (leftmost == null || renderer.transform.position.x < leftmost.transform.position.x) {
+                leftmost = renderer;
+            }
+        }
+
+        return leftmost;
     }
 
     private static void Slot(Transform legend, string name, string words) {
@@ -895,6 +972,15 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     private const int SettleFrames = 3;
 
     private int settle;
+
+    // when the save hold started, or -1 for no hold in hand
+    private float saving = -1f;
+
+    // The game's own placeholder for the Soul Link key, which a MessageBox resolves to the
+    // keycap when there is one for that key and to the key's name when there is not.
+    private const string SoulKey = "[SoulFlame]";
+
+    private bool soulGlyph;
 
     // empty until the rows are built: the legend asks whether they are dirty on the way up
     private KeybindControl[] keyControls = new KeybindControl[0];
