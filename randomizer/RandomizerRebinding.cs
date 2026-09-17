@@ -12,7 +12,7 @@ public static class RandomizerRebinding {
         var streamWriter = new StreamWriter("RandomizerRebinding.txt");
         streamWriter.WriteLine("Bind syntax: Key1+Key2, Key1+Key3+Key4, ... Syntax errors will load default binds.");
         streamWriter.WriteLine("Alt, Shift, Control, Command and Windows mean either side; name a side to want only that one.");
-        streamWriter.WriteLine("Functions are unbound if there is no binding specified.");
+        streamWriter.WriteLine("Functions are unbound if the binding is empty or the word Unbound.");
         streamWriter.WriteLine("Supported binds are Unity KeyCodes (https://docs.unity3d.com/ScriptReference/KeyCode.html) and the following actions:");
         streamWriter.WriteLine("Jump, SpiritFlame, Bash, SoulFlame, ChargeJump, Glide, Dash, Grenade, Left, Right, Up, Down, LeftStick, RightStick, Start, Select");
         streamWriter.WriteLine("");
@@ -25,7 +25,7 @@ public static class RandomizerRebinding {
             if (bindparts.Value.HasBind()) {
                 streamWriter.WriteLine($"{bindparts.Key}: {bindparts.Value}{(bindparts.Key == "Double Bash" && Randomizer.BashTap ? ", Tap" : "")}");
             } else {
-                streamWriter.WriteLine($"{bindparts.Key}: {DefaultBinds[bindparts.Key]}");
+                streamWriter.WriteLine($"{bindparts.Key}: {Unbound}");
             }
         }
 
@@ -75,6 +75,10 @@ public static class RandomizerRebinding {
                     dirty = true;
                 }
 
+                if (Restore(action, writeList)) {
+                    dirty = true;
+                }
+
                 unseenActions.Remove(action);
             }
 
@@ -117,6 +121,16 @@ public static class RandomizerRebinding {
         }
     }
 
+    // An action nothing can be done without takes its default back rather than stay unbound.
+    private static bool Restore(string action, List<string> writeList) {
+        if (!Required.Contains(action) || !rebindMap.ContainsKey(action) || rebindMap[action].HasBind()) {
+            return false;
+        }
+
+        AssignBind(action, DefaultBinds[action], writeList);
+        return true;
+    }
+
     public static void AssignBind(string action, string bindingString, List<string> writeList) {
         if (!rebindMap.ContainsKey(action)) {
             return;
@@ -153,6 +167,9 @@ public static class RandomizerRebinding {
 
     public static BindSet ParseBinds(string action, string bindingString) {
         var binds = new List<SingleBind>();
+        if (String.Equals(bindingString.Trim(), Unbound, StringComparison.OrdinalIgnoreCase)) {
+            return new BindSet(binds);
+        }
 
         foreach (var bind in bindingString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)) {
             var singleBind = new List<SingleInput>();
@@ -197,6 +214,18 @@ public static class RandomizerRebinding {
         { "Select", Input.Select }
     };
 
+    // The settings screen's way in. The live BindSet is what every FixedUpdate reads, so
+    // replacing its binds is the whole of applying them; the file is written separately.
+    public static void SetBinds(string action, string bindingString) {
+        var set = BindNamed(action);
+        if (set == null) {
+            return;
+        }
+
+        set.Binds = ParseBinds(action, bindingString).Binds;
+        set.deprecated_wasPressed = true;
+    }
+
     public static BindSet BindNamed(string name) {
         BindSet bind;
         return rebindMap.TryGetValue(name.Trim(), out bind) ? bind : null;
@@ -218,6 +247,17 @@ public static class RandomizerRebinding {
     }
 
     private static readonly Regex bindPattern = new Regex(@"\[\[([^\[\]]+)\]\]");
+
+    // What a binding says to mean "deliberately nothing", so an action cleared on purpose does
+    // not read as one the file forgot and pick its default back up.
+    public const string Unbound = "Unbound";
+
+    // Without these there is no way back to a menu or a seed, so they keep a bind whatever the
+    // file says: the settings screen will not clear the last one, and a file that has lost one
+    // gets its default back on read.
+    public static readonly List<string> Required = new List<string> {
+        "Warp", "Map Warp", "Reload Seed"
+    };
 
     public static Dictionary<string, string> DefaultBinds = new Dictionary<string, string> {
         { "Replay Message", "Alt+T" },

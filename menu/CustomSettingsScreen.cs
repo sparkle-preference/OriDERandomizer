@@ -31,6 +31,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
 
         Hold(prompt != null || Editing || settle > 0 || (selectionManager.IsActive && BindsDirty));
+        // an edit owns the page: the row under the cursor must not take the selection, and the
+        // tooltip the edit put up must not be replaced by the one belonging to that row
+        selectionManager.IsLocked = prompt != null || Editing;
     }
 
     private void Hold(bool held) {
@@ -122,6 +125,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         // the rows are built by now and never change, so the controls are worth keeping
         keyControls = GetComponentsInChildren<KeybindControl>(true);
         padControls = GetComponentsInChildren<ControllerBindControl>(true);
+        randoControls = GetComponentsInChildren<RandomizerBindControl>(true);
         layout.MaxVisible = rows;
         layout.Selection = selectionManager;
         layout.EdgeFade = EdgeFade;
@@ -179,11 +183,13 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return;
         }
 
-        // every key belongs to the bind being edited, including these
-        if (!Editing) {
-            RapidScroll();
-            SaveHold();
+        // every key belongs to the bind being edited, and the window it is in stays put
+        if (Editing) {
+            return;
         }
+
+        RapidScroll();
+        SaveHold();
 
         var wheel = Input.GetAxis("Mouse ScrollWheel");
         if (Mathf.Abs(wheel) > 0.01f) {
@@ -281,6 +287,10 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         foreach (var control in padControls) {
             control.Snapshot();
         }
+
+        foreach (var control in randoControls) {
+            control.Snapshot();
+        }
     }
 
     public bool BindsDirty {
@@ -297,6 +307,12 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
                 }
             }
 
+            foreach (var control in randoControls) {
+                if (control.Changed) {
+                    return true;
+                }
+            }
+
             return false;
         }
     }
@@ -308,6 +324,14 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         foreach (var control in padControls) {
             control.Restore();
+        }
+
+        foreach (var control in randoControls) {
+            control.Restore();
+        }
+
+        if (randoControls.Length > 0) {
+            RandomizerRebinding.WriteBindsToFile();
         }
 
         if (keyControls.Length > 0) {
@@ -328,13 +352,16 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // interaction text used to live in the tooltip, which left no room for anything about the
     // bind under the cursor.
     public virtual void BindLegend() {
-        if (keyControls.Length == 0 && padControls.Length == 0) {
+        if (keyControls.Length == 0 && padControls.Length == 0 && randoControls.Length == 0) {
             return;
         }
 
         // a pad edit takes buttons until Escape and has no undo; a key edit ends on Enter
         if (Editing) {
-            if (keyControls.Length > 0) {
+            if (randoControls.Length > 0) {
+                Legend("<icon>z</>   Hold: " + (ReadingActions ? "keys" : "game actions"),
+                    "<icon>D</> Finish   <icon>M</> Remove last", "<icon>y</>   Hold: cancel");
+            } else if (keyControls.Length > 0) {
                 Legend("<icon>M</> Remove last", "<icon>D</> Finish", "<icon>y</>   Hold: cancel");
             } else {
                 Legend(string.Empty, "<icon>y</> Finish", "<icon>y</>   Hold: cancel");
@@ -404,8 +431,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     // The ring a hold fills, drawn over the glyph of the key being held. One between all the
     // pages, because only one hold on one of them can be running at a time.
-    public void DrawHold(float progress) {
-        var glyph = HoldGlyph();
+    public void DrawHold(float progress, string slot = "back") {
+        var glyph = HoldGlyph(slot);
         if (glyph == null || ringless) {
             return;
         }
@@ -449,11 +476,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return null;
     }
 
-    // The leftmost key glyph in the back slot, which is the key that slot is offering to hold:
+    // The leftmost key glyph in a legend slot, which is the key that slot is offering to hold:
     // a hold's hint is written first in it. Leftmost rather than first, because the icons are
     // cloned in the order they were needed and keep it when the text changes under them.
-    public Renderer HoldGlyph() {
-        var slot = transform.FindChild("highlightFade/legend/pcLegend/back");
+    public Renderer HoldGlyph(string name) {
+        var slot = transform.FindChild("highlightFade/legend/pcLegend/" + name);
         var icons = slot == null ? null : slot.GetComponentInChildren<CatlikeCoding.TextBox.MoonIconRenderer>(true);
         if (icons == null) {
             return null;
@@ -508,6 +535,14 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         cleverMenuItem.PressedCallback += onClick;
         // without this the row keeps the tooltip of the vanilla one it was cloned from
         ConfigureTooltip(cleverMenuItem.GetComponent<CleverMenuItemTooltip>(), tooltip ?? caption);
+    }
+
+    public void AddRandomizerBind(string action, string label = null) {
+        var cleverMenuItem = AddItem(label ?? action);
+        cleverMenuItem.gameObject.name = "Rando Bind (" + action + ")";
+        var control = cleverMenuItem.gameObject.AddComponent<RandomizerBindControl>();
+        control.Init(action, this, label ?? action);
+        cleverMenuItem.PressedCallback += delegate { control.BeginEditing(); };
     }
 
     public void AddControllerBind(string label, Func<PlayerInputRebinding.ControllerButton[]> getKeys, Action<PlayerInputRebinding.ControllerButton[]> setKeys) {
@@ -957,6 +992,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // a bind control is taking every key; the screen's own binds stand down
     public bool Editing;
 
+    // which of a rando bind's two readings the edit in hand is on, for the legend
+    public bool ReadingActions;
+
     private GameObject prompt;
 
     // by eye against a key glyph: the ring reads as around it rather than behind it
@@ -986,6 +1024,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     private KeybindControl[] keyControls = new KeybindControl[0];
 
     private ControllerBindControl[] padControls = new ControllerBindControl[0];
+
+    private RandomizerBindControl[] randoControls = new RandomizerBindControl[0];
 
     // Measured: the vanilla legend sits here, panel rows start here and step by this. The
     // camera has a fixed vertical FOV, so these are the same at every resolution and aspect.
