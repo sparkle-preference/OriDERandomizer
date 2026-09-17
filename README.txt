@@ -1,19 +1,17 @@
 This repository contains the client code (distributed as a modified Assembly-CSharp.dll) for the OriDE randomizer.
 
-The website, seed generator, bingo and other web tools are hosted at https://github.com/turntekGodhead/ori_rando_server
+The website (with seed generator, bingo and other web tools) source can be found at https://github.com/sparke-preference/ori_rando_server
 
-Built on top of sigmasin's incredible work.
+Built on top of Torin's (@tksstepan) incredible work.
 
-Everything a player needs is on the website:
+Up-to-date information for players found on the website:
 
-https://orirando.com/faq            Installing, generating seeds, trackers, bingo, Archipelago, practice mode
-https://orirando.com/patchnotes     What changed, and when
-https://orirando.com/discord        Ask a person
-
+https://orirando.com/faq                   Guides for installing, generating seeds, trackers, Archipelago, etc
+https://orirando.com/patchnotes            Change log
+https://orirando.com/discord               Join the community discord server
 ----------------------------
 
 Setup:
-
 Install with the Rando App from https://orirando.com/app, or by hand: put Assembly-CSharp.dll in Steam/steamapps/common/Ori DE/oriDE_Data/Managed.
 Generate a seed at https://orirando.com and put the downloaded randomizer.bfr next to OriDE.exe.
 
@@ -25,7 +23,7 @@ COMMANDS
 
 Binds are in RandomizerRebinding.txt, which the game writes on first launch and reads on every launch. Every entry below can be rebound there; the file lists the ones with no default too.
 
-Alt+R               Warp: the world map, to travel to a spirit well
+Alt+R               Warp to an unlocked spirit well
 Alt+T               Replay the last pickup message
 Alt+L               Reload the seed file, to change seeds without restarting
 Alt+P               Skill tree and shard progress
