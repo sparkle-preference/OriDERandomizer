@@ -294,7 +294,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         // a pad edit takes buttons until Escape and has no undo; a key edit ends on Enter
         if (Editing) {
             if (keyControls.Length > 0) {
-                Legend(string.Empty, "<icon>D</> Finish", "Backspace  Remove last");
+                Legend(string.Empty, "<icon>D</> Finish", "<icon>M</> Remove last");
             } else {
                 Legend(string.Empty, "<icon>y</> Finish", string.Empty);
             }
