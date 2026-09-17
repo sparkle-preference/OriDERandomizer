@@ -294,9 +294,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         // a pad edit takes buttons until Escape and has no undo; a key edit ends on Enter
         if (Editing) {
             if (keyControls.Length > 0) {
-                Legend(string.Empty, "<icon>D</> Finish", "<icon>M</> Remove last");
+                Legend("<icon>M</> Remove last", "<icon>D</> Finish", "<icon>y</> Hold: cancel");
             } else {
-                Legend(string.Empty, "<icon>y</> Finish", string.Empty);
+                Legend(string.Empty, "<icon>y</> Finish", "<icon>y</> Hold: cancel");
             }
 
             return;
@@ -318,6 +318,31 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         Slot(legend, "navigate", navigate);
         Slot(legend, "select", select);
         Slot(legend, "back", back);
+    }
+
+    // Which key is standing in for Back right now. The gesture rides the binding rather than
+    // Escape, because the legend glyph it fills is drawn from the binding too.
+    public static KeyCode BackHeld() {
+        var back = PlayerInputRebinding.KeyRebindings.Cancel;
+        if (back == null) {
+            return KeyCode.None;
+        }
+
+        foreach (var key in back) {
+            if (Input.GetKey(key)) {
+                return key;
+            }
+        }
+
+        return KeyCode.None;
+    }
+
+    // The key glyph in the Back slot, which is what a hold draws its ring around and takes its
+    // layer and sorting from.
+    public Renderer BackGlyph() {
+        var slot = transform.FindChild("highlightFade/legend/pcLegend/back");
+        var icon = slot == null ? null : slot.GetComponentInChildren<CatlikeCoding.TextBox.MoonIconRenderer>(true);
+        return icon == null ? null : icon.GetComponentInChildren<Renderer>(true);
     }
 
     private static void Slot(Transform legend, string name, string words) {

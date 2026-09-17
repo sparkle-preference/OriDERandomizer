@@ -41,7 +41,12 @@ public class ControllerBindControl : MonoBehaviour {
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape) || (WasPressed(XboxControllerInput.Button.Start) && currentKeys.Count > 0)) {
+        if (Cancelling()) {
+            return;
+        }
+
+        if (tapped || (WasPressed(XboxControllerInput.Button.Start) && currentKeys.Count > 0)) {
+            tapped = false;
             editing = false;
             owner.Editing = false;
             SuspensionManager.ResumeAll();
@@ -62,6 +67,49 @@ public class ControllerBindControl : MonoBehaviour {
         foreach (var button in allButtons) {
             buttonsPressed[(int)button] = XboxControllerInput.GetButton(button);
         }
+    }
+
+    // Back held long enough abandons the edit, where a tap of it finishes one -- so the tap
+    // lands on the release, which is the first moment the two can be told apart.
+    private bool Cancelling() {
+        var down = CustomSettingsScreen.BackHeld();
+        if (down == KeyCode.None) {
+            tapped = held >= 0f && Time.unscaledTime - held < RandomizerHoldRing.Tap;
+            held = -1f;
+            RandomizerHoldRing.Hide();
+            return false;
+        }
+
+        if (held < 0f) {
+            held = Time.unscaledTime;
+        }
+
+        var glyph = owner.BackGlyph();
+        var progress = (Time.unscaledTime - held) / RandomizerHoldRing.Seconds;
+        if (glyph != null) {
+            RandomizerHoldRing.Draw(glyph, progress);
+        }
+
+        if (progress < 1f) {
+            return true;
+        }
+
+        RandomizerHoldRing.Hide();
+        Cancel();
+        return true;
+    }
+
+    // Nothing was written on the way in, so abandoning is just putting the row's own buttons
+    // back on screen and standing down.
+    private void Cancel() {
+        held = -1f;
+        editing = false;
+        owner.Editing = false;
+        SuspensionManager.ResumeAll();
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+        owner.BindLegend();
+        Tooltip(owner.DefaultTooltip);
+        owner.HoldMenu();
     }
 
     public void UpdateMessageBox() {
@@ -251,6 +299,10 @@ public class ControllerBindControl : MonoBehaviour {
     private CustomSettingsScreen owner;
 
     private string label;
+
+    private float held = -1f;
+
+    private bool tapped;
 
     private RandomizerMessageProvider tooltipProvider;
 }

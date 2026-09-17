@@ -351,6 +351,7 @@
 		"randomizer/RandomizerGhostPacket.cs",
 		"randomizer/RandomizerGhostSource.cs",
 		"randomizer/RandomizerGhostView.cs",
+		"randomizer/RandomizerHoldRing.cs",
 		"randomizer/RandomizerHints.cs",
 		"randomizer/RandomizerAutoplayer.cs",
 		"randomizer/RandomizerItems.cs",

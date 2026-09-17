@@ -34,6 +34,10 @@ public class KeybindControl : MonoBehaviour {
             return;
         }
 
+        if (Cancelling()) {
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Return) && currentKeys.Count > 0) {
             editing = false;
             owner.Editing = false;
@@ -60,6 +64,63 @@ public class KeybindControl : MonoBehaviour {
                 }
             }
         }
+    }
+
+    // Back held long enough abandons the edit. A tap of it is still a key, so it binds on the
+    // release -- at the press there is no telling the two apart yet.
+    private bool Cancelling() {
+        var down = CustomSettingsScreen.BackHeld();
+        if (down == KeyCode.None) {
+            if (tapped != KeyCode.None && Time.unscaledTime - held < RandomizerHoldRing.Tap) {
+                Bind(tapped);
+            }
+
+            held = -1f;
+            tapped = KeyCode.None;
+            RandomizerHoldRing.Hide();
+            return false;
+        }
+
+        if (held < 0f) {
+            held = Time.unscaledTime;
+            tapped = down;
+        }
+
+        var glyph = owner.BackGlyph();
+        var progress = (Time.unscaledTime - held) / RandomizerHoldRing.Seconds;
+        if (glyph != null) {
+            RandomizerHoldRing.Draw(glyph, progress);
+        }
+
+        if (progress < 1f) {
+            return true;
+        }
+
+        // the hold spent the key, so letting go of it must not also bind it
+        tapped = KeyCode.None;
+        RandomizerHoldRing.Hide();
+        Cancel();
+        return true;
+    }
+
+    private void Bind(KeyCode key) {
+        if (!currentKeys.Contains(key)) {
+            currentKeys.Add(key);
+            UpdateMessageBox();
+        }
+    }
+
+    // Nothing was written on the way in, so abandoning is just putting the row's own keys back
+    // on screen and standing down.
+    private void Cancel() {
+        held = -1f;
+        editing = false;
+        owner.Editing = false;
+        SuspensionManager.ResumeAll();
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+        owner.BindLegend();
+        Tooltip(owner.DefaultTooltip);
+        owner.HoldMenu();
     }
 
     private void UpdateMessageBox() {
@@ -152,6 +213,10 @@ public class KeybindControl : MonoBehaviour {
     private CustomSettingsScreen owner;
 
     private string label;
+
+    private float held = -1f;
+
+    private KeyCode tapped = KeyCode.None;
 
     private RandomizerMessageProvider tooltipProvider;
 }
