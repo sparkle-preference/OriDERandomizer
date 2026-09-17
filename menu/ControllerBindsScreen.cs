@@ -27,21 +27,17 @@ public class ControllerBindsScreen : CustomSettingsScreen {
         AddControllerBind("Map", () => PlayerInputRebinding.ControllerRebindings.Select, k => PlayerInputRebinding.ControllerRebindings.Select = k);
         AddControllerBind("Zoom In (Map)", () => PlayerInputRebinding.ControllerRebindings.ZoomIn, k => PlayerInputRebinding.ControllerRebindings.ZoomIn = k);
         AddControllerBind("Zoom Out (Map)", () => PlayerInputRebinding.ControllerRebindings.ZoomOut, k => PlayerInputRebinding.ControllerRebindings.ZoomOut = k);
-        AddButton("Reset Keybinds", ResetKeybinds, "Puts every controller bind on this screen back to its default.");
 
         ScrollAfter(Footer());
         BindLegend();
     }
 
-    private void ResetKeybinds() {
-        Confirm("Reset ALL controller binds to default?", new[] { "OK", "CANCEL" }, answer => {
-            if (answer == 0) {
-                DoResetKeybinds();
-            }
-        });
+    public override string ResetQuestion {
+        get { return "Reset ALL controller binds to default?"; }
     }
 
-    private void DoResetKeybinds() {
+    public override void ResetToDefaults() {
+        Backup(PlayerInputRebinding.ControllerRebindingFile);
         PlayerInputRebinding.SetDefaultControllerBindingSettings();
         var instance = PlayerInput.Instance;
         if (instance != null) {

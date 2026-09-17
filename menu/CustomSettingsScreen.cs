@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Collections.Generic;
@@ -191,6 +192,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         RapidScroll();
         SaveHold();
+        ResetTap();
 
         var wheel = Input.GetAxis("Mouse ScrollWheel");
         if (Mathf.Abs(wheel) > 0.01f) {
@@ -253,7 +255,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         var progress = (Time.unscaledTime - saving) / RandomizerHoldRing.Seconds;
         if (soulGlyph) {
-            DrawHold(progress);
+            DrawHold(progress, "select");
         }
 
         if (progress < 1f) {
@@ -264,6 +266,44 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         HideHold();
         SnapshotBinds();
         BindLegend();
+    }
+
+    // Putting a page back rides a key rather than a row: a row is one more thing that scrolls
+    // out of sight and reads like the binds around it. The question is the guard.
+    private void ResetTap() {
+        if (prompt != null || !selectionManager.IsActive || ResetQuestion == null ||
+                !Input.GetKeyDown(EraseKey)) {
+            return;
+        }
+
+        Confirm(ResetQuestion, new[] { "OK", "CANCEL" }, answer => {
+            if (answer == 0) {
+                ResetToDefaults();
+            }
+        });
+    }
+
+    // A page that can put its binds back overrides both. Without a question there is no
+    // reset: the legend does not offer the key and the key does nothing.
+    public virtual string ResetQuestion {
+        get { return null; }
+    }
+
+    public virtual void ResetToDefaults() {
+    }
+
+    // A reset is the one thing these pages do that cannot be undone from inside them, so the
+    // file it is about to overwrite is kept beside it. One copy, holding the state before the
+    // last reset -- a history is not what someone who just lost their binds is after. Its own
+    // suffix rather than .bak, which is where people put copies they made themselves.
+    public static void Backup(string file) {
+        try {
+            if (File.Exists(file)) {
+                File.Copy(file, file + BackupSuffix, true);
+            }
+        } catch (Exception e) {
+            Randomizer.log("settings: no backup of " + file + ": " + e.Message);
+        }
     }
 
     // Grab anywhere on the bar and the window follows, which is what a scrollbar is for.
@@ -359,46 +399,77 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         // a pad edit takes buttons until Escape and has no undo; a key edit ends on Enter
         if (Editing) {
+            var erase = RandomizerKeyIcons.Caption(EraseKey) + " Remove Last";
             if (randoControls.Length > 0) {
-                Legend("<icon>z</>   Hold: " + (ReadingActions ? "keys" : "game actions"),
-                    "<icon>D</> Finish   <icon>M</> Remove last", "<icon>y</>   Hold: cancel");
+                Legend("<icon>z</>" + Ring + "(Hold): Bind " + (ReadingActions ? "Keys" : "Game Actions"),
+                    Join(erase, "<icon>D</> Finish"), "<icon>y</>" + Ring + "(Hold): Cancel",
+                    ModeShift);
             } else if (keyControls.Length > 0) {
-                Legend("<icon>M</> Remove last", "<icon>D</> Finish", "<icon>y</>   Hold: cancel");
+                Legend(string.Empty, Join(erase, "<icon>D</> Finish"),
+                    "<icon>y</>" + Ring + "(Hold): Cancel");
             } else {
-                Legend(string.Empty, "<icon>y</> Finish", "<icon>y</>   Hold: cancel");
+                Legend(string.Empty, "<icon>y</> Finish", "<icon>y</>" + Ring + "(Hold): Cancel");
             }
 
             return;
         }
 
+        var navigate = "<icon>vr</>" + Pages() + " Navigate";
         if (!BindsDirty) {
-            Legend("<icon>vr</> Navigate" + Skips(), "<icon>D</> Rebind", "<icon>y</> Back");
+            Legend(navigate, Join("<icon>D</> Rebind", Reset()), "<icon>y</> Back");
             return;
         }
 
-        // the hint is written first because the ring wraps the slot's leftmost glyph
+        // Five hints over three slots: rebind joins the navigation it sits beside anyway, so the
+        // save hint has a slot of its own and the ring can wrap its glyph as the leftmost one.
+        // Reset follows save, keeping the two keys that rewrite the file next to each other.
         soulGlyph = MessageParserUtility.ProcessString(SoulKey).Contains("<icon>");
-        Legend("<icon>vr</> Navigate" + Skips(), "<icon>D</> Rebind",
-            SoulKey + "   Hold to save changes   <icon>y</> Back");
+        Legend(Join(navigate, "<icon>D</> Rebind"), SoulKey + Ring + "(Hold): Save Changes",
+            Join(Reset(), "<icon>y</> Back"), SavingLeft, SavingRight);
     }
 
-    // The page-at-a-time binds, named from the bindings themselves. Only worth the words when
-    // there is more list than window, and only while the page is the one taking keys.
-    private string Skips() {
+    // The key that puts the whole page back, on the pages that have one.
+    private string Reset() {
+        if (ResetQuestion == null) {
+            return string.Empty;
+        }
+
+        return RandomizerKeyIcons.Caption(EraseKey) + " Reset All";
+    }
+
+    // Hints that share a slot, with the ones a page has no use for left out.
+    private static string Join(params string[] hints) {
+        return string.Join(Apart, hints.Where(hint => !string.IsNullOrEmpty(hint)).ToArray());
+    }
+
+    // Between two hints sharing a slot, and after the glyph of a hint that is held -- the ring
+    // is drawn wider than the cap it wraps, so the words after it have to start clear of it.
+    private static string Apart {
+        get { return RandomizerKeyIcons.Gap; }
+    }
+
+    private static string Ring {
+        get { return RandomizerKeyIcons.Thin; }
+    }
+
+    // The page-at-a-time binds, drawn from the bindings themselves and shown in the same breath
+    // as the arrows: four keys, one word. Only when there is more list than window.
+    private string Pages() {
         if (layout == null || layout.MaxVisible <= 0 || layout.MenuItems.Count <= layout.MaxVisible ||
                 !RandomizerRebinding.MenuSkipBackwards.HasBind() ||
                 !RandomizerRebinding.MenuSkipForwards.HasBind()) {
             return string.Empty;
         }
 
-        return "      " + RandomizerRebinding.MenuSkipBackwards.FirstBindName() + "/" +
-            RandomizerRebinding.MenuSkipForwards.FirstBindName() + " Skip";
+        return RandomizerRebinding.MenuSkipBackwards.FirstBindName() +
+            RandomizerRebinding.MenuSkipForwards.FirstBindName();
     }
 
     // The legend's three slots. Key icons come out of the text itself -- <icon> switches to a
     // font whose letters are key images: D is Enter, y Esc, M Del, vr the up and down arrows,
     // st left and right. More than one hint fits in a slot.
-    public void Legend(string navigate, string select, string back) {
+    public void Legend(string navigate, string select, string back,
+                       float left = SlotShift, float right = SlotShift) {
         var legend = transform.FindChild("highlightFade/legend/pcLegend");
         if (legend == null) {
             return;
@@ -413,9 +484,25 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             Widen(legend, "back");
         }
 
+        Spread(legend, left, right);
         Slot(legend, "navigate", navigate);
         Slot(legend, "select", select);
         Slot(legend, "back", back);
+    }
+
+    // The three slots sit where vanilla's short hints sat, anchored so the outer two grow away
+    // from the middle one: how far apart they belong depends on how much each is carrying. Each
+    // line says, and the numbers are measured off it -- one gap between hints wherever they sit.
+    private void Spread(Transform legend, float left, float right) {
+        if (!Mathf.Approximately(spread.x, left)) {
+            Nudge(legend, "navigate", spread.x - left);
+            spread.x = left;
+        }
+
+        if (!Mathf.Approximately(spread.y, right)) {
+            Nudge(legend, "back", right - spread.y);
+            spread.y = right;
+        }
     }
 
     // Which key is standing in for Back right now. The gesture rides the binding rather than
@@ -519,6 +606,16 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return leftmost;
     }
 
+    // Vanilla's three hints are short and sit with a clear band between them; ours are long
+    // enough to close those gaps up. The outer two move apart into the empty screen either
+    // side of the legend, which is where the room is.
+    private static void Nudge(Transform legend, string name, float by) {
+        var child = legend.FindChild(name);
+        if (child != null) {
+            child.localPosition += new Vector3(by, 0f, 0f);
+        }
+    }
+
     private static void Widen(Transform legend, string name) {
         var child = legend.FindChild(name);
         var box = child == null ? null : child.GetComponentInChildren<MessageBox>(true);
@@ -587,11 +684,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         state.SetMessage(new MessageDescriptor(string.Empty));
     }
 
-    public void AddRandomizerBind(string action, string label = null) {
+    public void AddRandomizerBind(string action, string help = null, string label = null) {
         var cleverMenuItem = AddItem(label ?? action);
         cleverMenuItem.gameObject.name = "Rando Bind (" + action + ")";
         var control = cleverMenuItem.gameObject.AddComponent<RandomizerBindControl>();
-        control.Init(action, this, label ?? action);
+        control.Init(action, this, label ?? action, help);
         cleverMenuItem.PressedCallback += delegate { control.BeginEditing(); };
     }
 
@@ -1048,6 +1145,20 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // by eye against a legend slot: enough for two hints in one of them
     private const float SlotWidth = 2.2f;
 
+    // How far the outer two slots stand off the middle one, per line, measured so that every
+    // gap between hints comes out near sixty pixels of screen. A slot carrying more reaches
+    // further on its own and needs less; the editing line's mode hint and the dirty line's
+    // three hints on the right are where that shows.
+    private const float SlotShift = 0.35f;
+
+    private const float ModeShift = 0.5f;
+
+    private const float SavingLeft = 0.1f;
+
+    private const float SavingRight = 0.25f;
+
+    private Vector2 spread;
+
     private bool widened;
 
     // warmer and flatter than a row's own white, so a category reads as a label
@@ -1077,6 +1188,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     private const string SoulKey = "[SoulFlame]";
 
     private bool soulGlyph;
+
+    // Erase, at both scales: the last bind of the row being edited, or every bind on the page.
+    private const KeyCode EraseKey = KeyCode.Backspace;
+
+    private const string BackupSuffix = ".before-reset";
 
     // empty until the rows are built: the legend asks whether they are dirty on the way up
     private KeybindControl[] keyControls = new KeybindControl[0];

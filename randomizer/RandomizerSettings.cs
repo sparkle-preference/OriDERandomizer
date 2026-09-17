@@ -93,6 +93,7 @@ public static class RandomizerSettings {
             }
 
             CurrentFilter = Customization.DefaultMapFilter.Value;
+            ImportDoubleBashTap();
             if (dirty) {
                 WriteSettings();
             }
@@ -109,6 +110,21 @@ public static class RandomizerSettings {
         } catch (Exception e) {
             Randomizer.LogError("Error parsing settings: " + e.Message);
         }
+    }
+
+    // Tap used to be a word on the Double Bash bind line, where it was a setting wearing a
+    // binding's clothes. It moves here the first time a file that still says it is read, and
+    // the bind line loses it on the way out -- after the setting has taken it, so an interrupted
+    // run leaves the preference somewhere rather than nowhere.
+    private static void ImportDoubleBashTap() {
+        if (!RandomizerRebinding.TapWasBound) {
+            return;
+        }
+
+        RandomizerRebinding.TapWasBound = false;
+        Controls.DoubleBash.Value = DoubleBashMode.Tap;
+        dirty = true;
+        RandomizerRebinding.WriteBindsToFile();
     }
 
     public static void ParseSettingLine(string setting, string value) {
@@ -218,6 +234,7 @@ public static class RandomizerSettings {
         Controls.InvertSwim = new BoolSetting("Invert Swim", false, "True: Ori swims fast by default, and slows down while pressing [Jump].\nFalse (default): Vanilla behavior (hold [Jump] to swim faster).");
         Controls.InvertClimb = new BoolSetting("Invert Climb", false, "True: Ori Climbs on walls by default, and lets go when holding [Climb]\nFalse (default): Vanilla behavior (hold [Climb] to Climb).");
         Controls.GrenadeJump = new EnumSetting<GrenadeJumpMode>("Grenade Jump Mode", GrenadeJumpMode.Auto, "Auto (default): Grenade Jump by pressing [[Grenade Jump]] (Default [LightSpheres]+[Jump]).\nManual: Vanilla behavior (Grenade Jump by by pressing [Grenade], then [Jump] 1 frame later).");
+        Controls.DoubleBash = new EnumSetting<DoubleBashMode>("Double Bash Mode", DoubleBashMode.Hold, "Hold (default): Hold [[Double Bash]] while Bashing to queue the next Bash.\nTap: Press [[Double Bash]] to Bash again, without holding it.");
         Controls.WallChargeMouseAim = new BoolSetting("Wall Charge Mouse Aim", true, "True (default): On Keyboard+Mouse, allows aiming Wall Charge Jumps with the mouse.\nFalse: Vanilla behavior.");
         Controls.SwimmingMouseAim = new BoolSetting("Swimming Mouse Aim", false, "True: On Keyboard+Mouse, Ori will swim towards the mouse cursor.\nFalse (default): Vanilla behavior.");
         Controls.SlowClimbVault = new BoolSetting("Slow Climb Vault", true, "True (default): slightly slows Climb vaults, making it easier to land on small vertical platforms with Climb.\nFalse: Vanilla behavior.");
@@ -313,6 +330,11 @@ public static class RandomizerSettings {
         Auto
     }
 
+    public enum DoubleBashMode {
+        Hold,
+        Tap
+    }
+
     public enum MapFilterMode {
         [Description("In Logic")] InLogic,
         [Description("Uncollected")] Uncollected
@@ -330,6 +352,8 @@ public static class RandomizerSettings {
         public static BoolSetting InvertClimb;
 
         public static EnumSetting<GrenadeJumpMode> GrenadeJump;
+
+        public static EnumSetting<DoubleBashMode> DoubleBash;
 
         public static BoolSetting WallChargeMouseAim;
 

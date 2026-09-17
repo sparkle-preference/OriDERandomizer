@@ -158,7 +158,8 @@ internal class BashAttackGame : Suspendable, IPooled {
             GameFinished();
         }
 
-        if (ButtonBash.Released || (RandomizerRebinding.DoubleBash.Pressed && Randomizer.BashTap)) {
+        if (ButtonBash.Released || (RandomizerRebinding.DoubleBash.Pressed &&
+                RandomizerSettings.Controls.DoubleBash.Value == RandomizerSettings.DoubleBashMode.Tap)) {
             GameFinished();
         }
     }

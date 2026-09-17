@@ -70,7 +70,6 @@ public static class Randomizer {
             MessageQueueTime = 0;
             QueueBash = false;
             BashWasQueued = false;
-            BashTap = false;
             GrenadeJumpQueued = false;
             fragsEnabled = false;
             LastTick = 10000000L;
@@ -637,6 +636,9 @@ public static class Randomizer {
     }
 
     public static void Update() {
+        // before anything asks for a key's icon: the game caches the answer it gives for a key
+        // it has no cap for, and would go on giving the bare name all session
+        RandomizerKeyIcons.Register();
         PracticeController.Tick();
         PracticeSelect.Tick();
         PracticeServer.Tick();
@@ -1971,7 +1973,6 @@ public static class Randomizer {
     public static Hashtable DoorTable;
     public static bool QueueBash;
     public static bool BashWasQueued;
-    public static bool BashTap;
     public static bool WorldTour;
     public static bool fragsEnabled;
     public static int fragKeyFinish;

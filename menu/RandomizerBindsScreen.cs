@@ -3,81 +3,79 @@ public class RandomizerBindsScreen : CustomSettingsScreen {
     public override void InitScreen() {
         DefaultTooltip = "Click on an action to add or remove binds";
 
-        AddHeader("GETTING AROUND");
-        AddRandomizerBind("Warp");
-        AddRandomizerBind("Map Warp");
-        AddRandomizerBind("Reload Seed");
+        AddHeader("BASIC");
+        AddRandomizerBind("Warp", "Open the teleportation map to start a warp");
+        AddRandomizerBind("Map Warp", "Hold to warp to a highlighted target from the area map");
+        AddRandomizerBind("Reload Seed", "Load the seed file from disk (and re-initialize the randomizer)");
+        AddRandomizerBind("Replay Message", "Show the last displayed message again; hold to see the last five");
+        AddRandomizerBind("Show Progress", "Display total pickup count, dungeon keys, and goal progress");
 
-        AddHeader("WHAT THE SEED IS DOING");
-        AddRandomizerBind("Show Progress");
-        AddRandomizerBind("Show Keysanity Progress");
-        AddRandomizerBind("Show Stats");
-        AddRandomizerBind("Replay Message");
+        AddHeader("LISTING");
+        AddRandomizerBind("List Trees", "List collected and uncollected Skill Trees");
+        AddRandomizerBind("List Map Altars", "List collected and uncollected Mapstones by zone");
+        AddRandomizerBind("List Teleporters", "List collected and uncollected teleporters");
+        AddRandomizerBind("List Relics", "List collected and uncollected Relics");
+        AddRandomizerBind("Show Bonuses", "List held bonus items");
+        AddRandomizerBind("Show Keysanity Progress", "(Keysanity only) list which doors you have keystones for, and any unlocked Keysanity hints");
+        AddRandomizerBind("Show Stats", "Cycle through the stats pages displayed during the credits");
 
-        AddHeader("FINDING THINGS");
-        AddRandomizerBind("List Trees");
-        AddRandomizerBind("List Map Altars");
-        AddRandomizerBind("List Teleporters");
-        AddRandomizerBind("List Relics");
-
-        AddHeader("PLAYING");
-        AddRandomizerBind("Double Bash");
-        AddRandomizerBind("Grenade Jump");
-        AddRandomizerBind("Reset Grenade Aim");
-        AddRandomizerBind("Suppress Autofire");
-        AddRandomizerBind("Toggle Map Mode");
-        AddRandomizerBind("Color Shift");
-
-        AddHeader("BONUS ITEMS");
-        AddRandomizerBind("Show Bonuses");
-        AddRandomizerBind("Bonus Switch");
-        AddRandomizerBind("Bonus Toggle");
-        for (var slot = 1; slot <= BonusSlots; slot++) {
-            AddRandomizerBind("Bonus " + slot);
+        AddHeader("CONTROLS");
+        var isTapMode = RandomizerSettings.Controls.DoubleBash.Value == RandomizerSettings.DoubleBashMode.Tap;
+        AddRandomizerBind("Double Bash", $"{(isTapMode ? "Tap" : "Hold")} while Bashing to Double Bash.");
+        if (RandomizerSettings.Controls.GrenadeJump.Value == RandomizerSettings.GrenadeJumpMode.Auto) {
+            // it's not meaningful to show this in a different gjump mode.
+            AddRandomizerBind("Grenade Jump", "Press with Wall Charge Jump charged to perform a Grenade Jump");
         }
-
-        AddHeader("PRACTICE");
-        AddRandomizerBind("Practice Menu");
-        AddRandomizerBind("Create Practice Segment");
-        AddRandomizerBind("Retry Practice Segment");
-        AddRandomizerBind("Open Practice Editor Page");
-
-        AddHeader("CHAOS");
-        AddRandomizerBind("Toggle Chaos");
-        AddRandomizerBind("Chaos Verbosity");
-        AddRandomizerBind("Force Chaos Effect");
+        AddRandomizerBind("Reset Grenade Aim", "(Controller) Reset Grenade Aim to a neutral position");
+        AddRandomizerBind("Suppress Autofire", "(With Autofire set to Hold) Hold this to enable using Charge Flame normally");
+        AddRandomizerBind("Color Shift", "Toggle color shift mode, which randomizes Ori's color every time a pickup is collected");
 
         AddHeader("MENUS");
-        AddRandomizerBind("Menu Home");
-        AddRandomizerBind("Menu End");
-        AddRandomizerBind("Menu Skip Backwards");
-        AddRandomizerBind("Menu Skip Forwards");
+        AddRandomizerBind("Toggle Map Mode", "Toggle item filters on the map");
+        AddRandomizerBind("Menu Skip Backwards", "Jumps back/up a page in scrolling menus and the save select screen");
+        AddRandomizerBind("Menu Skip Forwards", "Jumps forwards/down a page in scrolling menus and the save select screen");
+        AddRandomizerBind("Menu Home", "Jumps to the top of a long menu");
+        AddRandomizerBind("Menu End", "Jumps to the bottom of a long menu");
+
+        AddHeader("PRACTICE MODE");
+        AddRandomizerBind("Create Practice Segment", "Create a practice segment from your current location");
+        AddRandomizerBind("Practice Menu", "Opens the practice menu"); // TODO: what do we use this for?
+        AddRandomizerBind("Retry Practice Segment", "Restart a currently-running segment you are practicing");
+        AddRandomizerBind("Open Practice Editor Page", "Opens the practice editor in your browser"); // TODO: what do we use this for?
+
+        AddHeader("BONUS SKILLS");
+        AddRandomizerBind("Bonus Switch", "Cycle between active bonus skills");
+        AddRandomizerBind("Bonus Toggle", "Use the active bonus skill");
+        for (var slot = 1; slot <= BonusSlots; slot++) {
+            AddRandomizerBind($"Bonus {slot}", $"Use the bonus skill in slot {slot}");
+        }
+
+        AddHeader("CHAOS");
+        AddRandomizerBind("Toggle Chaos", "Toggle periodic chaos effect triggering");
+        AddRandomizerBind("Chaos Verbosity", "Toggle chaos effect verbosity");
+        AddRandomizerBind("Force Chaos Effect", "Trigger a chaos effect right now");
+
 
         // Test rigging rather than play: shown to whoever has already said they want the rest
         // of the dev settings.
         if (RandomizerSettings.Dev != null && RandomizerSettings.Dev.Value) {
             AddHeader("DEV");
-            AddRandomizerBind("Spawn Echo");
-            AddRandomizerBind("Clear All Echoes");
-            AddRandomizerBind("Grant Test Pickup");
-            AddRandomizerBind("Start Practice Debug");
+            AddRandomizerBind("Spawn Echo", "Spawn in a ghost echo");
+            AddRandomizerBind("Clear All Echoes", "Remove all echoes");
+            AddRandomizerBind("Grant Test Pickup", "Grant the contents of test_pickup.txt");
+            AddRandomizerBind("Start Practice Debug", "Load into practice/debug.bfrp");
         }
-
-        AddButton("Reset Rando Binds", ResetBinds, "Puts every rando bind on this screen back to its default.");
 
         ScrollAfter(Footer());
         BindLegend();
     }
 
-    private void ResetBinds() {
-        Confirm("Reset ALL rando binds to default?", new[] { "OK", "CANCEL" }, answer => {
-            if (answer == 0) {
-                DoResetBinds();
-            }
-        });
+    public override string ResetQuestion {
+        get { return "Reset ALL rando binds to default?"; }
     }
 
-    private void DoResetBinds() {
+    public override void ResetToDefaults() {
+        Backup(RandomizerRebinding.BindsFile);
         foreach (var control in GetComponentsInChildren<RandomizerBindControl>(true)) {
             RandomizerRebinding.SetBinds(control.Action, RandomizerRebinding.DefaultBinds[control.Action]);
             control.Reset();
