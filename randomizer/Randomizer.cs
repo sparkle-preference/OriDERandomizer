@@ -632,6 +632,9 @@ public static class Randomizer {
     }
 
     public static void Update() {
+        // before anything asks for a key's icon: the game caches the answer it gives for a key
+        // it has no cap for, and would go on giving the bare name all session
+        RandomizerKeyIcons.Register();
         PracticeController.Tick();
         PracticeSelect.Tick();
         PracticeServer.Tick();

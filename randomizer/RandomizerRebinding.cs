@@ -492,12 +492,19 @@ public static class RandomizerRebinding {
                 case ActionType.ControllerButton:
                     return "_" + Button;
                 case ActionType.KeyCode:
-                    return Key.ToString();
+                    return Shown(Key);
                 case ActionType.EitherKey:
-                    return either;
+                    // the left one of the pair, because a cap for a modifier says no side
+                    return Shown(Key);
                 default:
                     return "";
             }
+        }
+
+        // What a key looks like in a message: our own cap first, because a bind on a digit
+        // means that digit, where the game reads two of them as the movement keys.
+        private static string Shown(KeyCode key) {
+            return RandomizerKeyIcons.Glyph(key, true) ?? ButtonIconUtility.IconFor(key);
         }
 
         public string RawStr() {

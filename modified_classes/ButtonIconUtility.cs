@@ -158,6 +158,11 @@ public static class ButtonIconUtility {
         { XboxOneController.Axis.Gamepad1LeftTrigger, "<icon>m</>" }, { XboxOneController.Axis.Gamepad1RightTrigger, "<icon>k</>" }
     };
 
+    // The same answer the game gives its own messages, for text of the randomizer's own.
+    public static string IconFor(KeyCode keyCode) {
+        return KeyCodeToString(keyCode);
+    }
+
     private static string KeyCodeToString(KeyCode keyCode) {
         if (keyCode == KeyCode.Alpha7 && GameSettings.Instance.KeyboardScheme == ControlScheme.Keyboard) {
             return "<icon>K</>";
@@ -165,8 +170,20 @@ public static class ButtonIconUtility {
         if (m_keycodeToIconString.ContainsKey(keyCode)) {
             return m_keycodeToIconString[keyCode];
         }
+
+        // A cap borrowed for a key the game shipped without one. Neither answer is remembered
+        // until the caps are in: the table below is a cache of misses as well as hits, and a
+        // name cached before then is a name for the rest of the session.
+        var borrowed = RandomizerKeyIcons.Glyph(keyCode);
+        if (borrowed != null) {
+            return borrowed;
+        }
+
         string text = keyCode.ToString();
-        m_keycodeToIconString[keyCode] = text;
+        if (RandomizerKeyIcons.Ready) {
+            m_keycodeToIconString[keyCode] = text;
+        }
+
         return text;
     }
 
