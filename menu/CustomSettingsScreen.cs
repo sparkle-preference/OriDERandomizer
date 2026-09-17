@@ -335,9 +335,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         // a pad edit takes buttons until Escape and has no undo; a key edit ends on Enter
         if (Editing) {
             if (keyControls.Length > 0) {
-                Legend("<icon>M</> Remove last", "<icon>D</> Finish", "<icon>y</> Hold: cancel");
+                Legend("<icon>M</> Remove last", "<icon>D</> Finish", "<icon>y</>   Hold: cancel");
             } else {
-                Legend(string.Empty, "<icon>y</> Finish", "<icon>y</> Hold: cancel");
+                Legend(string.Empty, "<icon>y</> Finish", "<icon>y</>   Hold: cancel");
             }
 
             return;
@@ -351,7 +351,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         // the hint is written first because the ring wraps the slot's leftmost glyph
         soulGlyph = MessageParserUtility.ProcessString(SoulKey).Contains("<icon>");
         Legend("<icon>vr</> Navigate", "<icon>D</> Rebind",
-            SoulKey + " Hold to save changes   <icon>y</> Back");
+            SoulKey + "   Hold to save changes   <icon>y</> Back");
     }
 
     // The legend's three slots. Key icons come out of the text itself -- <icon> switches to a
@@ -960,7 +960,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     private GameObject prompt;
 
     // by eye against a key glyph: the ring reads as around it rather than behind it
-    private const float RingSpan = 2.5f;
+    private const float RingSpan = 1.875f;
 
     private const float RingLift = 0.1f;
 
