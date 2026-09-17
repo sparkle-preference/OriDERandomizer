@@ -586,15 +586,24 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             opening.gameObject.SetActive(false);
         }
 
-        Ask(prompt.transform.FindChild("title"), question);
+        // The prefab wraps at the width of "Return to Main Menu?", and a longer question
+        // wrapped onto the answers. Widen before the text is set, so it renders once.
+        var title = prompt.transform.FindChild("title");
+        var titleBox = title == null ? null : title.GetComponentInChildren<MessageBox>(true);
+        if (titleBox != null && titleBox.TextBox != null) {
+            titleBox.TextBox.width *= QuestionWidth;
+        }
 
-        // A line of headroom over the question. The box grows upward rather than the text
-        // moving down, so the answers stay where the prefab puts them.
+        Ask(title, question);
+
+        // The plate widens with the question, and grows upward for a line of headroom over
+        // it rather than moving the text down, so the answers stay where the prefab puts them.
         var back = prompt.transform.FindChild("messageBackgroundA");
         var mesh = back == null ? null : back.GetComponent<MeshFilter>();
         if (mesh != null && mesh.sharedMesh != null && mesh.sharedMesh.bounds.size.y > 0f) {
             var grow = TopPad / mesh.sharedMesh.bounds.size.y;
-            back.localScale = new Vector3(back.localScale.x, back.localScale.y + grow, back.localScale.z);
+            back.localScale = new Vector3(back.localScale.x * PlateWidth,
+                                          back.localScale.y + grow, back.localScale.z);
             back.localPosition += new Vector3(0f, 0.5f * TopPad, 0f);
         }
         var manager = prompt.GetComponent<CleverMenuItemSelectionManager>();
@@ -805,6 +814,12 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     // a text line, matching the gap between the prompt's own two answers
     private const float TopPad = 0.45f;
+
+    // Of the prefab's own. Both by eye against the longest question the screens ask; the
+    // plate starts out much wider than the wrap, so it needs less.
+    private const float QuestionWidth = 1.6f;
+
+    private const float PlateWidth = 1.35f;
 
     private const string QuestionPrefabName = "returnToMainMenuQuestion";
 
