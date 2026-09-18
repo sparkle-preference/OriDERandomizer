@@ -684,11 +684,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         state.SetMessage(new MessageDescriptor(string.Empty));
     }
 
-    public void AddRandomizerBind(string action, string label = null) {
+    public void AddRandomizerBind(string action, string help = null, string label = null) {
         var cleverMenuItem = AddItem(label ?? action);
         cleverMenuItem.gameObject.name = "Rando Bind (" + action + ")";
         var control = cleverMenuItem.gameObject.AddComponent<RandomizerBindControl>();
-        control.Init(action, this, label ?? action);
+        control.Init(action, this, label ?? action, help);
         cleverMenuItem.PressedCallback += delegate { control.BeginEditing(); };
     }
 

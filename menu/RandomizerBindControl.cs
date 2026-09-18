@@ -16,13 +16,14 @@ public class RandomizerBindControl : MonoBehaviour {
         messageBox = transform.Find("text/stateText").GetComponent<MessageBox>();
     }
 
-    public void Init(string action, CustomSettingsScreen owner, string label) {
+    public void Init(string action, CustomSettingsScreen owner, string label, string help) {
         this.owner = owner;
         this.action = action;
         this.label = label;
+        this.help = help ?? owner.DefaultTooltip;
         Show();
         tooltipProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
-        tooltipProvider.SetMessage(owner.DefaultTooltip);
+        tooltipProvider.SetMessage(this.help);
         GetComponent<CleverMenuItemTooltip>().Tooltip = tooltipProvider;
         owner.tooltipController.UpdateTooltip();
     }
@@ -325,7 +326,7 @@ public class RandomizerBindControl : MonoBehaviour {
     private void Tooltip() {
         tooltipProvider.SetMessage(editing
             ? "Editing binds for " + label + " (" + (mode == Mode.Keys ? "keys" : "game actions") + ")..."
-            : owner.DefaultTooltip);
+            : help);
         owner.tooltipController.UpdateTooltip();
     }
 
@@ -382,6 +383,9 @@ public class RandomizerBindControl : MonoBehaviour {
     private string action;
 
     private string label;
+
+    // what this bind is for, shown whenever the row is not being edited
+    private string help;
 
     // this control is taking keys; owner.Editing only says that *some* control is
     private bool editing;
