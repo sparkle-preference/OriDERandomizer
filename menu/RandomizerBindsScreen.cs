@@ -63,21 +63,16 @@ public class RandomizerBindsScreen : CustomSettingsScreen {
             AddRandomizerBind("Start Practice Debug");
         }
 
-        AddButton("Reset Rando Binds", ResetBinds, "Puts every rando bind on this screen back to its default.");
-
         ScrollAfter(Footer());
         BindLegend();
     }
 
-    private void ResetBinds() {
-        Confirm("Reset ALL rando binds to default?", new[] { "OK", "CANCEL" }, answer => {
-            if (answer == 0) {
-                DoResetBinds();
-            }
-        });
+    public override string ResetQuestion {
+        get { return "Reset ALL rando binds to default?"; }
     }
 
-    private void DoResetBinds() {
+    public override void ResetToDefaults() {
+        Backup(RandomizerRebinding.BindsFile);
         foreach (var control in GetComponentsInChildren<RandomizerBindControl>(true)) {
             RandomizerRebinding.SetBinds(control.Action, RandomizerRebinding.DefaultBinds[control.Action]);
             control.Reset();

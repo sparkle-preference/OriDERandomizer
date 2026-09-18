@@ -130,6 +130,13 @@ public static class RandomizerKeyIcons {
         return cap.Icon;
     }
 
+    // How to write a key wherever one is named: our own cap first, asked literally, because a
+    // rando bind on a digit means that digit where the game reads two of them as the movement
+    // keys. The game's answer -- its own cap, or the key's name -- where we have nothing.
+    public static string Caption(KeyCode key) {
+        return Glyph(key, true) ?? ButtonIconUtility.IconFor(key);
+    }
+
     public static bool Ready {
         get { return registered; }
     }

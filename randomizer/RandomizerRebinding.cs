@@ -8,8 +8,11 @@ using UnityEngine;
 using Input = Core.Input;
 
 public static class RandomizerRebinding {
+    // In the game folder, beside the other things a run leaves behind.
+    public const string BindsFile = "RandomizerRebinding.txt";
+
     public static void WriteBindsToFile() {
-        var streamWriter = new StreamWriter("RandomizerRebinding.txt");
+        var streamWriter = new StreamWriter(BindsFile);
         streamWriter.WriteLine("Bind syntax: Key1+Key2, Key1+Key3+Key4, ... Syntax errors will load default binds.");
         streamWriter.WriteLine("Alt, Shift, Control, Command and Windows mean either side; name a side to want only that one.");
         streamWriter.WriteLine("Functions are unbound if the binding is empty or the word Unbound.");
@@ -38,11 +41,11 @@ public static class RandomizerRebinding {
         var dirty = false;
 
         try {
-            if (!File.Exists("RandomizerRebinding.txt")) {
+            if (!File.Exists(BindsFile)) {
                 WriteBindsToFile();
             }
 
-            var lines = File.ReadAllLines("RandomizerRebinding.txt");
+            var lines = File.ReadAllLines(BindsFile);
             var unseenActions = new ArrayList(DefaultBinds.Keys);
             var writeList = new List<string>();
 
@@ -109,7 +112,7 @@ public static class RandomizerRebinding {
                     writeText += Environment.NewLine + writeAction + ": " + DefaultBinds[writeAction];
                 }
 
-                File.AppendAllText("RandomizerRebinding.txt", writeText);
+                File.AppendAllText(BindsFile, writeText);
             }
 
             if (dirty) {
@@ -492,19 +495,13 @@ public static class RandomizerRebinding {
                 case ActionType.ControllerButton:
                     return "_" + Button;
                 case ActionType.KeyCode:
-                    return Shown(Key);
+                    return RandomizerKeyIcons.Caption(Key);
                 case ActionType.EitherKey:
                     // the left one of the pair, because a cap for a modifier says no side
-                    return Shown(Key);
+                    return RandomizerKeyIcons.Caption(Key);
                 default:
                     return "";
             }
-        }
-
-        // What a key looks like in a message: our own cap first, because a bind on a digit
-        // means that digit, where the game reads two of them as the movement keys.
-        private static string Shown(KeyCode key) {
-            return RandomizerKeyIcons.Glyph(key, true) ?? ButtonIconUtility.IconFor(key);
         }
 
         public string RawStr() {

@@ -27,21 +27,17 @@ public class KeybindsScreen : CustomSettingsScreen {
         AddKeybind("Map", () => PlayerInputRebinding.KeyRebindings.Select, k => PlayerInputRebinding.KeyRebindings.Select = k);
         AddKeybind("Zoom In (Map)", () => PlayerInputRebinding.KeyRebindings.ZoomIn, k => PlayerInputRebinding.KeyRebindings.ZoomIn = k);
         AddKeybind("Zoom Out (Map)", () => PlayerInputRebinding.KeyRebindings.ZoomOut, k => PlayerInputRebinding.KeyRebindings.ZoomOut = k);
-        AddButton("Reset Keybinds", ResetKeybinds, "Puts every keyboard bind on this screen back to its default.");
 
         ScrollAfter(Footer());
         BindLegend();
     }
 
-    private void ResetKeybinds() {
-        Confirm("Reset ALL keybinds to default?", new[] { "OK", "CANCEL" }, answer => {
-            if (answer == 0) {
-                DoResetKeybinds();
-            }
-        });
+    public override string ResetQuestion {
+        get { return "Reset ALL keybinds to default?"; }
     }
 
-    private void DoResetKeybinds() {
+    public override void ResetToDefaults() {
+        Backup(PlayerInputRebinding.KeyRebindingFile);
         PlayerInputRebinding.SetDefaultKeyBindingSettings();
         var instance = PlayerInput.Instance;
         if (instance != null) {

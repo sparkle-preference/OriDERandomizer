@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Collections.Generic;
@@ -191,6 +192,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         RapidScroll();
         SaveHold();
+        ResetTap();
 
         var wheel = Input.GetAxis("Mouse ScrollWheel");
         if (Mathf.Abs(wheel) > 0.01f) {
@@ -264,6 +266,44 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         HideHold();
         SnapshotBinds();
         BindLegend();
+    }
+
+    // Putting a page back rides a key rather than a row: a row is one more thing that scrolls
+    // out of sight and reads like the binds around it. The question is the guard.
+    private void ResetTap() {
+        if (prompt != null || !selectionManager.IsActive || ResetQuestion == null ||
+                !Input.GetKeyDown(ResetKey)) {
+            return;
+        }
+
+        Confirm(ResetQuestion, new[] { "OK", "CANCEL" }, answer => {
+            if (answer == 0) {
+                ResetToDefaults();
+            }
+        });
+    }
+
+    // A page that can put its binds back overrides both. Without a question there is no
+    // reset: the legend does not offer the key and the key does nothing.
+    public virtual string ResetQuestion {
+        get { return null; }
+    }
+
+    public virtual void ResetToDefaults() {
+    }
+
+    // A reset is the one thing these pages do that cannot be undone from inside them, so the
+    // file it is about to overwrite is kept beside it. One copy, holding the state before the
+    // last reset -- a history is not what someone who just lost their binds is after. Its own
+    // suffix rather than .bak, which is where people put copies they made themselves.
+    public static void Backup(string file) {
+        try {
+            if (File.Exists(file)) {
+                File.Copy(file, file + BackupSuffix, true);
+            }
+        } catch (Exception e) {
+            Randomizer.log("settings: no backup of " + file + ": " + e.Message);
+        }
     }
 
     // Grab anywhere on the bar and the window follows, which is what a scrollbar is for.
@@ -372,27 +412,36 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
 
         if (!BindsDirty) {
-            Legend("<icon>vr</> Navigate" + Skips(), "<icon>D</> Rebind", "<icon>y</> Back");
+            Legend("<icon>vr</>" + Pages() + " Navigate", Select(), "<icon>y</> Back");
             return;
         }
 
         // the hint is written first because the ring wraps the slot's leftmost glyph
         soulGlyph = MessageParserUtility.ProcessString(SoulKey).Contains("<icon>");
-        Legend("<icon>vr</> Navigate" + Skips(), "<icon>D</> Rebind",
+        Legend("<icon>vr</>" + Pages() + " Navigate", Select(),
             SoulKey + "   Hold to save changes   <icon>y</> Back");
     }
 
-    // The page-at-a-time binds, named from the bindings themselves. Only worth the words when
-    // there is more list than window, and only while the page is the one taking keys.
-    private string Skips() {
+    // The middle slot: what a row does, and the key that puts the whole page back.
+    private string Select() {
+        if (ResetQuestion == null) {
+            return "<icon>D</> Rebind";
+        }
+
+        return "<icon>D</> Rebind   " + RandomizerKeyIcons.Caption(ResetKey) + " Reset all";
+    }
+
+    // The page-at-a-time binds, drawn from the bindings themselves and shown in the same breath
+    // as the arrows: four keys, one word. Only when there is more list than window.
+    private string Pages() {
         if (layout == null || layout.MaxVisible <= 0 || layout.MenuItems.Count <= layout.MaxVisible ||
                 !RandomizerRebinding.MenuSkipBackwards.HasBind() ||
                 !RandomizerRebinding.MenuSkipForwards.HasBind()) {
             return string.Empty;
         }
 
-        return "      " + RandomizerRebinding.MenuSkipBackwards.FirstBindName() + "/" +
-            RandomizerRebinding.MenuSkipForwards.FirstBindName() + " Skip";
+        return RandomizerRebinding.MenuSkipBackwards.FirstBindName() +
+            RandomizerRebinding.MenuSkipForwards.FirstBindName();
     }
 
     // The legend's three slots. Key icons come out of the text itself -- <icon> switches to a
@@ -1077,6 +1126,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     private const string SoulKey = "[SoulFlame]";
 
     private bool soulGlyph;
+
+    // The one key a binds page has nothing else to do with, and the one that reads as erase.
+    private const KeyCode ResetKey = KeyCode.Backspace;
+
+    private const string BackupSuffix = ".before-reset";
 
     // empty until the rows are built: the legend asks whether they are dirty on the way up
     private KeybindControl[] keyControls = new KeybindControl[0];
