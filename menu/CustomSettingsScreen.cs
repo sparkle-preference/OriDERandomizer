@@ -272,7 +272,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // out of sight and reads like the binds around it. The question is the guard.
     private void ResetTap() {
         if (prompt != null || !selectionManager.IsActive || ResetQuestion == null ||
-                !Input.GetKeyDown(ResetKey)) {
+                !Input.GetKeyDown(EraseKey)) {
             return;
         }
 
@@ -399,13 +399,14 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         // a pad edit takes buttons until Escape and has no undo; a key edit ends on Enter
         if (Editing) {
+            var erase = RandomizerKeyIcons.Caption(EraseKey) + " Remove last";
             if (randoControls.Length > 0) {
-                Legend("<icon>z</>   Hold: " + (ReadingActions ? "keys" : "game actions"),
-                    "<icon>D</> Finish   <icon>M</> Remove last", "<icon>y</>   Hold: cancel");
+                Legend("<icon>z</>" + Ring + "Hold: " + (ReadingActions ? "keys" : "game actions"),
+                    "<icon>D</> Finish" + Apart + erase, "<icon>y</>" + Ring + "Hold: cancel");
             } else if (keyControls.Length > 0) {
-                Legend("<icon>M</> Remove last", "<icon>D</> Finish", "<icon>y</>   Hold: cancel");
+                Legend(erase, "<icon>D</> Finish", "<icon>y</>" + Ring + "Hold: cancel");
             } else {
-                Legend(string.Empty, "<icon>y</> Finish", "<icon>y</>   Hold: cancel");
+                Legend(string.Empty, "<icon>y</> Finish", "<icon>y</>" + Ring + "Hold: cancel");
             }
 
             return;
@@ -419,7 +420,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         // the hint is written first because the ring wraps the slot's leftmost glyph
         soulGlyph = MessageParserUtility.ProcessString(SoulKey).Contains("<icon>");
         Legend("<icon>vr</>" + Pages() + " Navigate", Select(),
-            SoulKey + "   Hold to save changes   <icon>y</> Back");
+            SoulKey + Ring + "Hold to save changes" + Apart + "<icon>y</> Back");
     }
 
     // The middle slot: what a row does, and the key that puts the whole page back.
@@ -428,7 +429,17 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return "<icon>D</> Rebind";
         }
 
-        return "<icon>D</> Rebind   " + RandomizerKeyIcons.Caption(ResetKey) + " Reset all";
+        return "<icon>D</> Rebind" + Apart + RandomizerKeyIcons.Caption(EraseKey) + " Reset all";
+    }
+
+    // Between two hints sharing a slot, and after the glyph of a hint that is held -- the ring
+    // is drawn wider than the cap it wraps, so the words after it have to start clear of it.
+    private static string Apart {
+        get { return RandomizerKeyIcons.Gap; }
+    }
+
+    private static string Ring {
+        get { return RandomizerKeyIcons.Gap + " "; }
     }
 
     // The page-at-a-time binds, drawn from the bindings themselves and shown in the same breath
@@ -460,6 +471,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             Widen(legend, "navigate");
             Widen(legend, "select");
             Widen(legend, "back");
+            Nudge(legend, "navigate", -SlotShift);
+            Nudge(legend, "back", SlotShift);
         }
 
         Slot(legend, "navigate", navigate);
@@ -566,6 +579,16 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
 
         return leftmost;
+    }
+
+    // Vanilla's three hints are short and sit with a clear band between them; ours are long
+    // enough to close those gaps up. The outer two move apart into the empty screen either
+    // side of the legend, which is where the room is.
+    private static void Nudge(Transform legend, string name, float by) {
+        var child = legend.FindChild(name);
+        if (child != null) {
+            child.localPosition += new Vector3(by, 0f, 0f);
+        }
     }
 
     private static void Widen(Transform legend, string name) {
@@ -1097,6 +1120,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // by eye against a legend slot: enough for two hints in one of them
     private const float SlotWidth = 2.2f;
 
+    // measured: about sixty pixels of screen, which is a gap you can see
+    private const float SlotShift = 0.35f;
+
     private bool widened;
 
     // warmer and flatter than a row's own white, so a category reads as a label
@@ -1127,8 +1153,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     private bool soulGlyph;
 
-    // The one key a binds page has nothing else to do with, and the one that reads as erase.
-    private const KeyCode ResetKey = KeyCode.Backspace;
+    // Erase, at both scales: the last bind of the row being edited, or every bind on the page.
+    private const KeyCode EraseKey = KeyCode.Backspace;
 
     private const string BackupSuffix = ".before-reset";
 

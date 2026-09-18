@@ -50,7 +50,7 @@ public class KeybindControl : MonoBehaviour {
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Delete)) {
+        if (Input.GetKeyDown(KeyCode.Backspace)) {
             if (currentKeys.Count > 0) {
                 currentKeys.RemoveAt(currentKeys.Count - 1);
                 UpdateMessageBox();

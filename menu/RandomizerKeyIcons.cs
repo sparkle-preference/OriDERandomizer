@@ -179,10 +179,33 @@ public static class RandomizerKeyIcons {
                 Learn(cap);
             }
 
+            Blank(font);
             Space();
             registered = true;
         } finally {
             registering = false;
+        }
+    }
+
+    // A run of spaces in a message lays out as one, so two hints in a legend slot cannot be
+    // pushed apart with spaces. This is a cap that draws nothing and holds a width instead.
+    private static void Blank(TextBoxIconsFontGenerator font) {
+        blank = (char)(Private + Caps.Length);
+        gap = "<icon>" + blank + "</>";
+        // parked like a cap, and active like one: the renderer throws away a clone that
+        // arrives switched off, even one with nothing to draw
+        var empty = new GameObject("keyCapBlank");
+        empty.transform.parent = Parked();
+        font.Icons.Add(new TextBoxIconsFontGenerator.IconData {
+            Character = blank.ToString(), Icon = empty, Width = Pad
+        });
+    }
+
+    // What to write between two hints that share a legend slot.
+    public static string Gap {
+        get {
+            Register();
+            return gap;
         }
     }
 
@@ -294,10 +317,11 @@ public static class RandomizerKeyIcons {
         // the painted part is not always in the middle of its own image
         quad.transform.localPosition = new Vector3(
             lift.x - (tight.center.x - 0.5f) * wide, lift.y - (tight.center.y - 0.5f) * tall, lift.z);
-        // The room a cap takes on a line is its own width and then some: the game's art carries
-        // that margin inside the sprite, where ours was cut to the cap itself, so caps of ours
-        // sat touching each other where the game's do not.
-        cap.Advance = Gap * tight.width * wide / Mathf.Max(0.0001f, size.x);
+        // The room a cap takes on a line is its own width and then a margin: the game's art
+        // carries that inside the sprite, where ours was cut to the cap itself, so caps of ours
+        // sat touching each other where the game's do not. The margin is the same for every cap
+        // -- a share of the width leaves a wide one standing too far from the word after it.
+        cap.Advance = tight.width * wide / Mathf.Max(0.0001f, size.x) + Margin;
     }
 
     // Borrowed art is drawn to be added to a lit scene rather than laid over a dark one: the
@@ -417,7 +441,7 @@ public static class RandomizerKeyIcons {
 
         widened.Add(font);
         var was = font.otherChars.Length;
-        var chars = new BitmapFontChar[was + Caps.Length];
+        var chars = new BitmapFontChar[was + Caps.Length + 1];
         Array.Copy(font.otherChars, chars, was);
         for (var i = 0; i < Caps.Length; i++) {
             // uv and width stay zero: the prefab draws the cap, the font only spaces it
@@ -429,6 +453,14 @@ public static class RandomizerKeyIcons {
                 kernings = new float[0]
             };
         }
+
+        chars[was + Caps.Length] = new BitmapFontChar {
+            id = blank,
+            advance = Pad,
+            height = 0.01f,
+            kerningIds = new int[0],
+            kernings = new float[0]
+        };
 
         Array.Sort(chars, (a, b) => a.id.CompareTo(b.id));
         font.otherChars = chars;
@@ -479,7 +511,11 @@ public static class RandomizerKeyIcons {
     private const float Softened = 0.45f;
 
     // measured off a row of them: eighty pixels of line for a sixty-four pixel cap
-    private const float Gap = 1.25f;
+    private const float Margin = 0.2f;
+
+    // What one blank draws as, in the same units. Wide enough that two hints sharing a legend
+    // slot read as two, because a run of spaces in a message lays out as one space.
+    private const float Pad = 1.1f;
 
     // solid enough to be the cap rather than the glow around it
     private const byte Faint = 128;
@@ -514,4 +550,8 @@ public static class RandomizerKeyIcons {
     private static bool registering;
 
     private static Transform parked;
+
+    private static char blank;
+
+    private static string gap = string.Empty;
 }

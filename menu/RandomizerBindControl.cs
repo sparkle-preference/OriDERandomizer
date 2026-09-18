@@ -66,7 +66,7 @@ public class RandomizerBindControl : MonoBehaviour {
             return;
         }
 
-        if (Bare(KeyCode.Delete)) {
+        if (Bare(KeyCode.Backspace)) {
             RemoveLast();
             return;
         }
