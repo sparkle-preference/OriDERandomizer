@@ -255,7 +255,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         var progress = (Time.unscaledTime - saving) / RandomizerHoldRing.Seconds;
         if (soulGlyph) {
-            DrawHold(progress);
+            DrawHold(progress, "select");
         }
 
         if (progress < 1f) {
@@ -402,9 +402,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             var erase = RandomizerKeyIcons.Caption(EraseKey) + " Remove Last";
             if (randoControls.Length > 0) {
                 Legend("<icon>z</>" + Ring + "(Hold): Bind " + (ReadingActions ? "Keys" : "Game Actions"),
-                    Join("<icon>D</> Finish", erase), "<icon>y</>" + Ring + "(Hold): Cancel");
+                    Join(erase, "<icon>D</> Finish"), "<icon>y</>" + Ring + "(Hold): Cancel",
+                    ModeShift);
             } else if (keyControls.Length > 0) {
-                Legend(erase, "<icon>D</> Finish", "<icon>y</>" + Ring + "(Hold): Cancel");
+                Legend(string.Empty, Join(erase, "<icon>D</> Finish"),
+                    "<icon>y</>" + Ring + "(Hold): Cancel");
             } else {
                 Legend(string.Empty, "<icon>y</> Finish", "<icon>y</>" + Ring + "(Hold): Cancel");
             }
@@ -418,11 +420,12 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return;
         }
 
-        // the save hint is written first because the ring wraps the slot's leftmost glyph, and
-        // reset follows it so the two keys that rewrite the file stay next to each other
+        // Five hints over three slots: rebind joins the navigation it sits beside anyway, so the
+        // save hint has a slot of its own and the ring can wrap its glyph as the leftmost one.
+        // Reset follows save, keeping the two keys that rewrite the file next to each other.
         soulGlyph = MessageParserUtility.ProcessString(SoulKey).Contains("<icon>");
-        Legend(navigate, "<icon>D</> Rebind",
-            Join(SoulKey + Ring + "(Hold): Save Changes", Reset(), "<icon>y</> Back"));
+        Legend(Join(navigate, "<icon>D</> Rebind"), SoulKey + Ring + "(Hold): Save Changes",
+            Join(Reset(), "<icon>y</> Back"), SavingLeft, SavingRight);
     }
 
     // The key that puts the whole page back, on the pages that have one.
@@ -465,7 +468,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // The legend's three slots. Key icons come out of the text itself -- <icon> switches to a
     // font whose letters are key images: D is Enter, y Esc, M Del, vr the up and down arrows,
     // st left and right. More than one hint fits in a slot.
-    public void Legend(string navigate, string select, string back) {
+    public void Legend(string navigate, string select, string back,
+                       float left = SlotShift, float right = SlotShift) {
         var legend = transform.FindChild("highlightFade/legend/pcLegend");
         if (legend == null) {
             return;
@@ -478,13 +482,27 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             Widen(legend, "navigate");
             Widen(legend, "select");
             Widen(legend, "back");
-            Nudge(legend, "navigate", -SlotShift);
-            Nudge(legend, "back", SlotShift);
         }
 
+        Spread(legend, left, right);
         Slot(legend, "navigate", navigate);
         Slot(legend, "select", select);
         Slot(legend, "back", back);
+    }
+
+    // The three slots sit where vanilla's short hints sat, anchored so the outer two grow away
+    // from the middle one: how far apart they belong depends on how much each is carrying. Each
+    // line says, and the numbers are measured off it -- one gap between hints wherever they sit.
+    private void Spread(Transform legend, float left, float right) {
+        if (!Mathf.Approximately(spread.x, left)) {
+            Nudge(legend, "navigate", spread.x - left);
+            spread.x = left;
+        }
+
+        if (!Mathf.Approximately(spread.y, right)) {
+            Nudge(legend, "back", right - spread.y);
+            spread.y = right;
+        }
     }
 
     // Which key is standing in for Back right now. The gesture rides the binding rather than
@@ -1127,8 +1145,19 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // by eye against a legend slot: enough for two hints in one of them
     private const float SlotWidth = 2.2f;
 
-    // measured: about sixty pixels of screen, which is a gap you can see
+    // How far the outer two slots stand off the middle one, per line, measured so that every
+    // gap between hints comes out near sixty pixels of screen. A slot carrying more reaches
+    // further on its own and needs less; the editing line's mode hint and the dirty line's
+    // three hints on the right are where that shows.
     private const float SlotShift = 0.35f;
+
+    private const float ModeShift = 0.5f;
+
+    private const float SavingLeft = 0.1f;
+
+    private const float SavingRight = 0.25f;
+
+    private Vector2 spread;
 
     private bool widened;
 
