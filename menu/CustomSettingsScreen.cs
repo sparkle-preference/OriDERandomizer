@@ -399,37 +399,44 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         // a pad edit takes buttons until Escape and has no undo; a key edit ends on Enter
         if (Editing) {
-            var erase = RandomizerKeyIcons.Caption(EraseKey) + " Remove last";
+            var erase = RandomizerKeyIcons.Caption(EraseKey) + " Remove Last";
             if (randoControls.Length > 0) {
-                Legend("<icon>z</>" + Ring + "Hold: " + (ReadingActions ? "keys" : "game actions"),
-                    "<icon>D</> Finish" + Apart + erase, "<icon>y</>" + Ring + "Hold: cancel");
+                Legend("<icon>z</>" + Ring + "(Hold): Bind " + (ReadingActions ? "Keys" : "Game Actions"),
+                    Join("<icon>D</> Finish", erase), "<icon>y</>" + Ring + "(Hold): Cancel");
             } else if (keyControls.Length > 0) {
-                Legend(erase, "<icon>D</> Finish", "<icon>y</>" + Ring + "Hold: cancel");
+                Legend(erase, "<icon>D</> Finish", "<icon>y</>" + Ring + "(Hold): Cancel");
             } else {
-                Legend(string.Empty, "<icon>y</> Finish", "<icon>y</>" + Ring + "Hold: cancel");
+                Legend(string.Empty, "<icon>y</> Finish", "<icon>y</>" + Ring + "(Hold): Cancel");
             }
 
             return;
         }
 
+        var navigate = "<icon>vr</>" + Pages() + " Navigate";
         if (!BindsDirty) {
-            Legend("<icon>vr</>" + Pages() + " Navigate", Select(), "<icon>y</> Back");
+            Legend(navigate, Join("<icon>D</> Rebind", Reset()), "<icon>y</> Back");
             return;
         }
 
-        // the hint is written first because the ring wraps the slot's leftmost glyph
+        // the save hint is written first because the ring wraps the slot's leftmost glyph, and
+        // reset follows it so the two keys that rewrite the file stay next to each other
         soulGlyph = MessageParserUtility.ProcessString(SoulKey).Contains("<icon>");
-        Legend("<icon>vr</>" + Pages() + " Navigate", Select(),
-            SoulKey + Ring + "Hold to save changes" + Apart + "<icon>y</> Back");
+        Legend(navigate, "<icon>D</> Rebind",
+            Join(SoulKey + Ring + "(Hold): Save Changes", Reset(), "<icon>y</> Back"));
     }
 
-    // The middle slot: what a row does, and the key that puts the whole page back.
-    private string Select() {
+    // The key that puts the whole page back, on the pages that have one.
+    private string Reset() {
         if (ResetQuestion == null) {
-            return "<icon>D</> Rebind";
+            return string.Empty;
         }
 
-        return "<icon>D</> Rebind" + Apart + RandomizerKeyIcons.Caption(EraseKey) + " Reset all";
+        return RandomizerKeyIcons.Caption(EraseKey) + " Reset All";
+    }
+
+    // Hints that share a slot, with the ones a page has no use for left out.
+    private static string Join(params string[] hints) {
+        return string.Join(Apart, hints.Where(hint => !string.IsNullOrEmpty(hint)).ToArray());
     }
 
     // Between two hints sharing a slot, and after the glyph of a hint that is held -- the ring
@@ -439,7 +446,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     }
 
     private static string Ring {
-        get { return RandomizerKeyIcons.Gap + " "; }
+        get { return RandomizerKeyIcons.Thin; }
     }
 
     // The page-at-a-time binds, drawn from the bindings themselves and shown in the same breath

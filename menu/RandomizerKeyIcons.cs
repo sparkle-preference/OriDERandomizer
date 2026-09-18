@@ -14,12 +14,13 @@ using UnityEngine;
 // nobody has to ration letters.
 public static class RandomizerKeyIcons {
     private class Cap {
-        public Cap(string name, int x, int y, int width, int height) {
+        public Cap(string name, int x, int y, int width, int height, float trim = 0f) {
             Name = name;
             X = x;
             Y = y;
             Width = width;
             Height = height;
+            Trim = trim;
         }
 
         public readonly string Name;
@@ -31,6 +32,11 @@ public static class RandomizerKeyIcons {
         public readonly int Width;
 
         public readonly int Height;
+
+        // Taken off the room this one cap asks for. Every cap but Backspace lands where the
+        // width says it should; that one measures seventeen pixels wide of it and nothing in
+        // the art or the alpha bounds accounts for the difference.
+        public readonly float Trim;
 
         public char Character;
 
@@ -58,7 +64,7 @@ public static class RandomizerKeyIcons {
         new Cap("Asterisk", 153, 66, 67, 60),
         new Cap("BackQuote", 223, 66, 67, 59),
         new Cap("Backslash", 292, 66, 67, 59),
-        new Cap("Backspace", 362, 66, 119, 60),
+        new Cap("Backspace", 362, 66, 119, 60, Wide),
         new Cap("CapsLock", 484, 66, 119, 60),
         new Cap("Comma", 3, 129, 68, 59),
         new Cap("End", 73, 129, 68, 60),
@@ -187,18 +193,25 @@ public static class RandomizerKeyIcons {
         }
     }
 
-    // A run of spaces in a message lays out as one, so two hints in a legend slot cannot be
-    // pushed apart with spaces. This is a cap that draws nothing and holds a width instead.
+    // A run of spaces in a message lays out as one, so nothing in a legend can be pushed along
+    // with spaces. These are caps that draw nothing and hold a width instead: a wide one to set
+    // two hints apart, and a thin one for the glyph of a hint that is held, which is drawn with
+    // a ring around it reaching past the cap on both sides.
     private static void Blank(TextBoxIconsFontGenerator font) {
-        blank = (char)(Private + Caps.Length);
-        gap = "<icon>" + blank + "</>";
+        gap = Empty(font, 0, Pad);
+        thin = Empty(font, 1, Clearance);
+    }
+
+    private static string Empty(TextBoxIconsFontGenerator font, int which, float width) {
+        blanks[which] = (char)(Private + Caps.Length + which);
         // parked like a cap, and active like one: the renderer throws away a clone that
         // arrives switched off, even one with nothing to draw
-        var empty = new GameObject("keyCapBlank");
+        var empty = new GameObject("keyCapBlank" + which);
         empty.transform.parent = Parked();
         font.Icons.Add(new TextBoxIconsFontGenerator.IconData {
-            Character = blank.ToString(), Icon = empty, Width = Pad
+            Character = blanks[which].ToString(), Icon = empty, Width = width
         });
+        return "<icon>" + blanks[which] + "</>";
     }
 
     // What to write between two hints that share a legend slot.
@@ -206,6 +219,14 @@ public static class RandomizerKeyIcons {
         get {
             Register();
             return gap;
+        }
+    }
+
+    // What to write after the glyph of a hint that is held, to clear its ring.
+    public static string Thin {
+        get {
+            Register();
+            return thin;
         }
     }
 
@@ -321,7 +342,7 @@ public static class RandomizerKeyIcons {
         // carries that inside the sprite, where ours was cut to the cap itself, so caps of ours
         // sat touching each other where the game's do not. The margin is the same for every cap
         // -- a share of the width leaves a wide one standing too far from the word after it.
-        cap.Advance = tight.width * wide / Mathf.Max(0.0001f, size.x) + Margin;
+        cap.Advance = tight.width * wide / Mathf.Max(0.0001f, size.x) + Margin - cap.Trim;
     }
 
     // Borrowed art is drawn to be added to a lit scene rather than laid over a dark one: the
@@ -441,7 +462,7 @@ public static class RandomizerKeyIcons {
 
         widened.Add(font);
         var was = font.otherChars.Length;
-        var chars = new BitmapFontChar[was + Caps.Length + 1];
+        var chars = new BitmapFontChar[was + Caps.Length + blanks.Length];
         Array.Copy(font.otherChars, chars, was);
         for (var i = 0; i < Caps.Length; i++) {
             // uv and width stay zero: the prefab draws the cap, the font only spaces it
@@ -454,13 +475,16 @@ public static class RandomizerKeyIcons {
             };
         }
 
-        chars[was + Caps.Length] = new BitmapFontChar {
-            id = blank,
-            advance = Pad,
-            height = 0.01f,
-            kerningIds = new int[0],
-            kernings = new float[0]
-        };
+        var widths = new[] { Pad, Clearance };
+        for (var i = 0; i < blanks.Length; i++) {
+            chars[was + Caps.Length + i] = new BitmapFontChar {
+                id = blanks[i],
+                advance = widths[i],
+                height = 0.01f,
+                kerningIds = new int[0],
+                kernings = new float[0]
+            };
+        }
 
         Array.Sort(chars, (a, b) => a.id.CompareTo(b.id));
         font.otherChars = chars;
@@ -513,9 +537,15 @@ public static class RandomizerKeyIcons {
     // measured off a row of them: eighty pixels of line for a sixty-four pixel cap
     private const float Margin = 0.2f;
 
-    // What one blank draws as, in the same units. Wide enough that two hints sharing a legend
-    // slot read as two, because a run of spaces in a message lays out as one space.
+    // What the two blanks draw as, in the same units. Wide enough that two hints sharing a
+    // legend slot read as two; thin enough that a held key's ring clears the word after it
+    // without looking parted from it.
     private const float Pad = 1.1f;
+
+    private const float Clearance = 0.32f;
+
+    // measured: this much more line than its own width, and only this cap
+    private const float Wide = 0.37f;
 
     // solid enough to be the cap rather than the glow around it
     private const byte Faint = 128;
@@ -551,7 +581,9 @@ public static class RandomizerKeyIcons {
 
     private static Transform parked;
 
-    private static char blank;
+    private static readonly char[] blanks = new char[2];
 
     private static string gap = string.Empty;
+
+    private static string thin = string.Empty;
 }
