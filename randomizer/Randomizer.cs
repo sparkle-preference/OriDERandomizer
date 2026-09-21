@@ -70,7 +70,6 @@ public static class Randomizer {
             MessageQueueTime = 0;
             QueueBash = false;
             BashWasQueued = false;
-            BashTap = false;
             GrenadeJumpQueued = false;
             fragsEnabled = false;
             LastTick = 10000000L;
@@ -1969,7 +1968,6 @@ public static class Randomizer {
     public static Hashtable DoorTable;
     public static bool QueueBash;
     public static bool BashWasQueued;
-    public static bool BashTap;
     public static bool WorldTour;
     public static bool fragsEnabled;
     public static int fragKeyFinish;

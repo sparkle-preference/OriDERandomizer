@@ -10,6 +10,7 @@ public class ControlsSettingsScreen : CustomSettingsScreen {
         AddToggle(RandomizerSettings.Controls.SlowClimbVault, "Toggles slow Climb vaults, which make it slightly easier to land on narrow platforms from below.");
         AddToggle(RandomizerSettings.Controls.LongerBashAimTime, "Triples the maximum Bash aim duration.");
         AddEnum(RandomizerSettings.Controls.GrenadeJump, "Auto jumps on the [[Grenade Jump]] bind; Manual is the vanilla two-input timing.");
+        AddEnum(RandomizerSettings.Controls.DoubleBash, "Hold holds [[Double Bash]] through the Bash; Tap presses it to Bash again.");
         AddEnum(RandomizerSettings.Controls.Autofire, "Change Autofire modes - hold or toggle Spirit Flame to fire continuously, or Off for vanilla.");
     }
 }

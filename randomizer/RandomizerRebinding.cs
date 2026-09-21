@@ -11,6 +11,10 @@ public static class RandomizerRebinding {
     // In the game folder, beside the other things a run leaves behind.
     public const string BindsFile = "RandomizerRebinding.txt";
 
+    // A file still carrying the old Tap word on its Double Bash line. The settings parse picks
+    // this up and clears it; nothing here reads it, and nothing writes the word back out.
+    public static bool TapWasBound;
+
     public static void WriteBindsToFile() {
         var streamWriter = new StreamWriter(BindsFile);
         streamWriter.WriteLine("Bind syntax: Key1+Key2, Key1+Key3+Key4, ... Syntax errors will load default binds.");
@@ -26,7 +30,7 @@ public static class RandomizerRebinding {
         streamWriter.WriteLine("");
         foreach (var bindparts in rebindMap) {
             if (bindparts.Value.HasBind()) {
-                streamWriter.WriteLine($"{bindparts.Key}: {bindparts.Value}{(bindparts.Key == "Double Bash" && Randomizer.BashTap ? ", Tap" : "")}");
+                streamWriter.WriteLine($"{bindparts.Key}: {bindparts.Value}");
             } else {
                 streamWriter.WriteLine($"{bindparts.Key}: {Unbound}");
             }
@@ -178,7 +182,7 @@ public static class RandomizerRebinding {
             var singleBind = new List<SingleInput>();
             foreach (var input in bind.Trim().Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries)) {
                 if (action == "Double Bash" && input.Trim().ToLower() == "tap") {
-                    Randomizer.BashTap = true;
+                    TapWasBound = true;
                 } else {
                     singleBind.Add(new SingleInput(input.Trim()));
                 }
