@@ -129,9 +129,14 @@ public class RandomizerVersionLabel : MonoBehaviour {
 
     private void Place() {
         // a live entry is the only reliable way to find the menu's own layer
-        var item = UI.MainMenuVisible && UI.Menu != null
-            ? UI.Menu.GetComponentInChildren<CleverMenuItem>()
-            : null;
+        CleverMenuItem item = null;
+        if (UI.MainMenuVisible && UI.Menu != null) {
+            if (m_menuItem == null || !m_menuItem.gameObject.activeInHierarchy) {
+                m_menuItem = UI.Menu.GetComponentInChildren<CleverMenuItem>();
+            }
+
+            item = m_menuItem;
+        }
 
         if (item != null) {
             PlaceInMenu(item);
@@ -192,7 +197,24 @@ public class RandomizerVersionLabel : MonoBehaviour {
 
     // the menu camera is manually driven, so it is disabled and Camera.allCameras
     // never lists it
+    // the menu camera does not move, so the FindObjectsOfTypeAll walk runs once per layer
     private static Camera MenuCamera(int layer) {
+        if (s_menuCamera != null && s_menuCameraLayer == layer && s_menuCamera.gameObject.activeInHierarchy) {
+            return s_menuCamera;
+        }
+
+        s_menuCamera = FindMenuCamera(layer);
+        s_menuCameraLayer = layer;
+        return s_menuCamera;
+    }
+
+    private static Camera s_menuCamera;
+
+    private static int s_menuCameraLayer = -1;
+
+    private CleverMenuItem m_menuItem;
+
+    private static Camera FindMenuCamera(int layer) {
         Camera best = null;
         foreach (var camera in Resources.FindObjectsOfTypeAll<Camera>()) {
             if (!camera.gameObject.activeInHierarchy || (camera.cullingMask & (1 << layer)) == 0) {
