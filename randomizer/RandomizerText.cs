@@ -11,6 +11,29 @@ public static class RandomizerText {
         return m_abilityOverrides[ability].NameOverride;
     }
 
+    // The wheel calls a skill what the rest of the randomizer calls it: Kuro's Feather is
+    // Glide and Light Burst is Grenade in every seed, log line and hint.
+    public static MessageProvider SkillName(AbilityType ability) {
+        int id;
+        if (!m_skillIds.TryGetValue(ability, out id)) {
+            return null;
+        }
+
+        RandomizerMessageProvider provider;
+        if (!m_skillNames.TryGetValue(ability, out provider) || provider == null) {
+            string name;
+            if (!RandomizerItems.SkillNames.TryGetValue(id.ToString(), out name)) {
+                return null;
+            }
+
+            provider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
+            provider.SetMessage(name);
+            m_skillNames[ability] = provider;
+        }
+
+        return provider;
+    }
+
     // Cool to warm and no further: indigo and violet are unreadable on a dark message box.
     // Blue leads so that a rainbow and a bit comes back round to blue rather than past it.
     private static readonly string[] RainbowStops = { "4f8cff", "35cdd6", "4fd44f", "ffe94f", "ff8c2b", "ff3b3b" };
@@ -112,6 +135,16 @@ public static class RandomizerText {
                 return null;
         }
     }
+
+    // wheel skill -> the SK id RandomizerItems.SkillNames is keyed by
+    private static readonly Dictionary<AbilityType, int> m_skillIds = new Dictionary<AbilityType, int> {
+        { AbilityType.Bash, 0 }, { AbilityType.ChargeFlame, 2 }, { AbilityType.WallJump, 3 },
+        { AbilityType.Stomp, 4 }, { AbilityType.DoubleJump, 5 }, { AbilityType.ChargeJump, 8 },
+        { AbilityType.Climb, 12 }, { AbilityType.Glide, 14 }, { AbilityType.SpiritFlame, 15 },
+        { AbilityType.Dash, 50 }, { AbilityType.Grenade, 51 },
+    };
+
+    private static readonly Dictionary<AbilityType, RandomizerMessageProvider> m_skillNames = new Dictionary<AbilityType, RandomizerMessageProvider>();
 
     private static Dictionary<AbilityType, AbilityTextOverrides> m_abilityOverrides = new Dictionary<AbilityType, AbilityTextOverrides> {
         {

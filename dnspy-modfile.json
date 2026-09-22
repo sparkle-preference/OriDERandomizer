@@ -375,6 +375,7 @@
 		"randomizer/RandomizerMW.cs",
 		"randomizer/RandomizerPickupAction.cs",
 		"randomizer/RandomizerRebinding.cs",
+		"randomizer/RandomizerEnhancedWheel.cs",
 		"randomizer/RandomizerQuad.cs",
 		"randomizer/RandomizerResources.cs",
 		"randomizer/RandomizerSkillIcons.cs",

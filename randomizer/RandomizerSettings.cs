@@ -12,7 +12,7 @@ public static class RandomizerSettings {
     }
 
     // move this with every new setting, or existing installs take the nag path on update
-    public static string LastAddedSetting = "Echo Delay";
+    public static string LastAddedSetting = "Enhanced Skill Wheel Animation";
 
     private static string StripComment(string line) {
         var at = line.IndexOf("//");
@@ -266,6 +266,7 @@ public static class RandomizerSettings {
 
         QOL.AbilityMenuOpacity = new FloatSetting("Ability Menu Opacity", 0.5f, "(0.0-1.0) The opacity of the ability menu when performing a Save Anywhere.", false);
         QOL.PauseMenuOpacity = new FloatSetting("Pause Menu Opacity", 1.0f, "(0.0-1.0) The opacity of the pause menu.", false);
+        Customization.EnhancedWheelAnimation = new BoolSetting("Enhanced Skill Wheel Animation", true, "True (default): the rainbow marking Enhanced skills drifts while the pause menu is open. False: it holds still, which costs nothing to draw.", false);
         QOL.CursorLock = new BoolSetting("Cursor Lock", false, "True: Locks the mouse cursor inside the window\nFalse (default): Vanilla behavior (cursor can leave the Ori window in borderless / windowed mode).", false);
 
         Practice.Folder = new StringSetting("Practice Folder", "practice", "Where practice segments (.bfrp files) are kept: a folder name inside the game folder, or a full path.", false);
@@ -398,6 +399,8 @@ public static class RandomizerSettings {
         public static BoolSetting KeyLockWarnings;
 
         public static BoolSetting DisableTempResourceRows;
+
+        public static BoolSetting EnhancedWheelAnimation;
 
         public static FloatSetting TempRowSpacing;
 

@@ -90,9 +90,11 @@ public class InventoryManager : MenuScreen {
         var component2 = NavigationManager.CurrentMenuItem.GetComponent<InventoryItemHelpText>();
         if (component2) {
             SuspensionManager.SuspendAll();
-            var messageBox = UI.MessageController.ShowMessageBoxB(HelpMessageBox, component2.HelpMessage, Vector3.zero, float.PositiveInfinity);
+            var help = RandomizerEnhancedWheel.HelpFor(component, component2.HelpMessage);
+            var messageBox = UI.MessageController.ShowMessageBoxB(HelpMessageBox, help, Vector3.zero, float.PositiveInfinity);
             if (messageBox) {
                 messageBox.SetAvatar(component2.Avatar);
+                RandomizerEnhancedWheel.DyeAvatar(messageBox, component);
                 messageBox.OnMessageScreenHide += OnMessageScreenHide;
             } else {
                 SuspensionManager.ResumeAll();
@@ -154,8 +156,10 @@ public class InventoryManager : MenuScreen {
             AbilityNameText.gameObject.SetActive(true);
             AbilityItemHighlight.SetActive(true);
             AbilityItemHighlight.transform.position = component.transform.position;
+            RandomizerEnhancedWheel.Highlight(AbilityItemHighlight, component);
             if (component.HasAbility) {
-                AbilityNameText.SetMessageProvider(component.AbilityName);
+                var label = RandomizerText.SkillName(component.Ability) ?? component.AbilityName;
+                AbilityNameText.SetMessageProvider(RandomizerEnhancedWheel.NameFor(component, label));
             } else {
                 AbilityNameText.SetMessageProvider(LockedMessageProvider);
             }
@@ -170,10 +174,12 @@ public class InventoryManager : MenuScreen {
     }
 
     public void FixedUpdate() {
+        RandomizerEnhancedWheel.Tick();
         UpdateItems();
     }
 
     public void OnEnable() {
+        RandomizerEnhancedWheel.Refresh(this);
         UpdateItems();
     }
 
