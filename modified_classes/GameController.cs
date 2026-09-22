@@ -212,6 +212,7 @@ public class GameController : SaveSerialize, ISuspendable {
         UI.LoadMessageController();
         Systems.Clear();
         Application.targetFrameRate = 60;
+        RandomizerPerf.Apply();
         UberGCManager.CollectProactiveFull();
     }
 

@@ -2,6 +2,7 @@ public class RandoOptionsScreen : CustomSettingsScreen {
     public override void InitScreen() {
         AddSlider(RandomizerSettings.Customization.TouchedVisibility, 0f, 1f, 0.05f, "Pickup icon transparency for checked-but-uncollected pickups.");
         AddSlider(RandomizerSettings.Customization.MapWarpHold, 0.1f, 3f, 0.1f, "Hold duration when warping to Teleporters using the area map ([[Map Warp]]).");
+        AddToggle(RandomizerSettings.QOL.PerformanceOptimizations, "Fewer loading freezes and steadier frame pacing. Off restores the vanilla behavior.");
         AddToggle(RandomizerSettings.Customization.ShowOtherPlayers, "Shows the other players in your multiplayer games on your screen and map.");
         AddToggle(RandomizerSettings.Customization.RandomizedExpNames, "Replaces \"Experience\" with a random-chosen currency name.");
         AddToggle(RandomizerSettings.Customization.AlwaysShowDoorHints, "Shows every unlocked Keysanity door hint on the map without hovering.");

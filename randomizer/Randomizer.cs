@@ -643,6 +643,7 @@ public static class Randomizer {
         PracticeSelect.Tick();
         PracticeServer.Tick();
         RandomizerBoxes.Update();
+        RandomizerPreloader.Tick();
         RandomizerGhost.Update();
         UpdateMessages();
         UpdatePendingWin();

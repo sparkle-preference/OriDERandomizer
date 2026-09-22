@@ -372,6 +372,10 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         }
     }
 
+    public static bool IsBlooming {
+        get { return Instance != null && Instance.m_isBlooming; }
+    }
+
     public bool IsSuspended { get; set; }
 
     public static TeleporterController Instance;

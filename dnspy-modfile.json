@@ -343,6 +343,8 @@
 		"randomizer/PracticeSelect.cs",
 		"randomizer/PracticeServer.cs",
 		"randomizer/Randomizer.cs",
+		"randomizer/RandomizerPerf.cs",
+		"randomizer/RandomizerPreloader.cs",
 		"randomizer/RandomizerAction.cs",
 		"randomizer/RandomizerAutoplayer.cs",
 		"randomizer/RandomizerBitfield.cs",

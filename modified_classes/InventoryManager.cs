@@ -133,31 +133,43 @@ public class InventoryManager : MenuScreen {
         }
     }
 
+    // SetMessage re-renders the text mesh; only a changed string is worth that
+    private static void Refresh(MessageBox box, ref string last, string text) {
+        if (text != last) {
+            last = text;
+            box.SetMessage(new MessageDescriptor(text));
+        }
+    }
+
+    private readonly string[] m_lastText = new string[9];
+
+    private MessageProvider m_lastProvider;
+
     public void UpdateItems() {
         SeinCharacter sein = Characters.Sein;
         if (sein == null) {
             return;
         }
 
-        CompletionText.SetMessage(new MessageDescriptor(GameWorld.Instance.CompletionPercentage + "%"));
-        DeathText.SetMessage(new MessageDescriptor(SeinDeathCounter.Count.ToString()));
-        HealthUpgradesText.SetMessage(new MessageDescriptor(sein.Mortality.Health.HealthUpgradesCollected + " / " + 12));
-        EnergyUpgradesText.SetMessage(new MessageDescriptor(sein.Energy.EnergyUpgradesCollected + " / " + 15));
-        SkillPointUniquesText.SetMessage(new MessageDescriptor(sein.Inventory.SkillPointsCollected + " / " + 33));
-        waterVeinClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.GinsoTree, RandomizerBonus.WaterVeinShards(), 0)));
-        gumonSealClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.ForlornRuins, RandomizerBonus.GumonSealShards(), 1)));
-        sunstoneClueText.SetMessage(new MessageDescriptor(GetKeyLabel(Keys.MountHoru, RandomizerBonus.SunstoneShards(), 2)));
+        Refresh(CompletionText, ref m_lastText[0], GameWorld.Instance.CompletionPercentage + "%");
+        Refresh(DeathText, ref m_lastText[1], SeinDeathCounter.Count.ToString());
+        Refresh(HealthUpgradesText, ref m_lastText[2], sein.Mortality.Health.HealthUpgradesCollected + " / " + 12);
+        Refresh(EnergyUpgradesText, ref m_lastText[3], sein.Energy.EnergyUpgradesCollected + " / " + 15);
+        Refresh(SkillPointUniquesText, ref m_lastText[4], sein.Inventory.SkillPointsCollected + " / " + 33);
+        Refresh(waterVeinClueText, ref m_lastText[5], GetKeyLabel(Keys.GinsoTree, RandomizerBonus.WaterVeinShards(), 0));
+        Refresh(gumonSealClueText, ref m_lastText[6], GetKeyLabel(Keys.ForlornRuins, RandomizerBonus.GumonSealShards(), 1));
+        Refresh(sunstoneClueText, ref m_lastText[7], GetKeyLabel(Keys.MountHoru, RandomizerBonus.SunstoneShards(), 2));
         var timer = GameController.Instance.Timer;
-        TimeText.SetMessage(new MessageDescriptor(string.Format("{0:D2}:{1:D2}:{2:D2}", timer.Hours, timer.Minutes, timer.Seconds)));
+        Refresh(TimeText, ref m_lastText[8], string.Format("{0:D2}:{1:D2}:{2:D2}", timer.Hours, timer.Minutes, timer.Seconds));
         var component = NavigationManager.CurrentMenuItem.GetComponent<InventoryAbilityItem>();
         if (component) {
             AbilityNameText.gameObject.SetActive(true);
             AbilityItemHighlight.SetActive(true);
             AbilityItemHighlight.transform.position = component.transform.position;
-            if (component.HasAbility) {
-                AbilityNameText.SetMessageProvider(component.AbilityName);
-            } else {
-                AbilityNameText.SetMessageProvider(LockedMessageProvider);
+            MessageProvider provider = component.HasAbility ? (MessageProvider)component.AbilityName : LockedMessageProvider;
+            if (!ReferenceEquals(provider, m_lastProvider)) {
+                m_lastProvider = provider;
+                AbilityNameText.SetMessageProvider(provider);
             }
         } else {
             AbilityNameText.gameObject.SetActive(false);
