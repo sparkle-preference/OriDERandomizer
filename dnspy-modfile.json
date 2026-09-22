@@ -145,6 +145,7 @@
 		"TextStyle",
 		"TransparentWallB",
 		"UI",
+		"UberGCManager",
 		"WorldMapSetObjectiveTextAction",
 		"WorldMapUI",
 		"WormMortarShootingState"
@@ -318,6 +319,7 @@
 		"modified_classes/TransparencyAnimator.cs",
 		"modified_classes/TransparentWallB.cs",
 		"modified_classes/UI.cs",
+		"modified_classes/UberGCManager.cs",
 		"modified_classes/WorldMapUI.cs",
 		"modified_classes/WormMortarShootingState.cs",
 		"protogen/AreaGraph.cs",
