@@ -483,7 +483,7 @@ public static class RandomizerBonus {
             case 410:
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                    AnnounceEnhanced(ID);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -491,7 +491,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    AnnounceEnhanced(ID);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -499,7 +499,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    AnnounceEnhanced(ID);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -507,7 +507,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    AnnounceEnhanced(ID);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -515,7 +515,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    AnnounceEnhanced(ID);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -523,7 +523,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    AnnounceEnhanced(ID);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -531,7 +531,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    AnnounceEnhanced(ID);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -539,7 +539,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    AnnounceEnhanced(ID);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -547,7 +547,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    AnnounceEnhanced(ID);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -555,7 +555,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    AnnounceEnhanced(ID);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -563,7 +563,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    AnnounceEnhanced(ID);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -571,7 +571,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    AnnounceEnhanced(ID);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -874,19 +874,24 @@ public static class RandomizerBonus {
         { 419, AbilityType.Dash }, { 420, AbilityType.Grenade },
     };
 
-    // On finding the Enhanced: only once the thing it upgrades is in hand, which a spawn
-    // grant never is, so those stay quiet until their skill turns up.
-    public static void AnnounceEnhanced(int id) {
+    // Its line once the skill it upgrades is in hand, else just its name; a grant with no
+    // location behind it (spawn is 2, none is -1) says nothing, the skill's pickup speaks for both.
+    public static void AnnounceEnhanced(int id, int coords) {
+        if (!Waiting(id)) {
+            Announce(id);
+        } else if (coords != 2 && coords != -1) {
+            RandomizerSwitch.PickupMessage(RandomizerItems.Name("RB", id.ToString()));
+        }
+    }
+
+    // true while the thing this Enhanced upgrades is still missing
+    private static bool Waiting(int id) {
         AbilityType needs;
-        if (EnhancedNeeds.TryGetValue(id, out needs) && !Characters.Sein.PlayerAbilities.HasAbility(needs)) {
-            return;
+        if (EnhancedNeeds.TryGetValue(id, out needs)) {
+            return !Characters.Sein.PlayerAbilities.HasAbility(needs);
         }
 
-        if (id == 422 && !Sein.World.Events.WaterPurified) {
-            return;
-        }
-
-        Announce(id);
+        return id == 422 && !Sein.World.Events.WaterPurified;
     }
 
     // True when finding this skill will say its Enhanced line, so its own pickup message
