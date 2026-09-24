@@ -88,7 +88,9 @@ public class RandomizerAction {
             String.Join(
                 "/",
                 actions.Select(act => {
-                    var escapedValue = act.Value.ToString().Replace("/", "//");
+                    // a leading "/" would read as an escape on the code, so it gets a space in front
+                    var value = act.Value.ToString();
+                    var escapedValue = (value.StartsWith("/") ? " " + value : value).Replace("/", "//");
                     return $"{act.Action}/{escapedValue}";
                 }
                 ).ToArray()

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 
 // The clip table packets index into, fixed at build time since a sweep finds only what is loaded.
-// Nothing exchanges Hash, so changing the table needs a packet Version bump. Dev on regenerates it
-// (the ghost sweep writes ghost-animations.txt); a name missing here renders but does not animate.
+// Peers swap Hash in the handshake and don't animate across tables. Dev on regenerates it (the
+// ghost sweep writes ghost-animations.txt); a name missing here renders but does not animate.
 public static class RandomizerGhostAnimations {
     public const int Unknown = 0xFFFF;
 

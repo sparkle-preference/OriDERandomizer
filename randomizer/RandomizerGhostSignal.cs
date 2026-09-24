@@ -8,12 +8,12 @@ using Sample = RandomizerGhost.Sample;
 // Ghost multiplayer: WebRTC links signalled over the game's websocket, which relays descriptions
 // verbatim and never looks inside them.
 //
-//   out  ghosts:1                 join (or 0 to leave)
-//   in   ghosts:<host>:<pids>     the roster, pushed whenever it changes
-//   out  ghost:<to>:<type>|<b64>  a description for one player
-//   in   ghost:<from>:<type>|<b64>
-//   out  ghostice:<peer>          a peer no direct attempt could reach
-//   in   ice:<json>               relay credentials for this game
+//   out  ghosts:1                         join (or 0 to leave)
+//   in   ghosts:<host>:<pids>             the roster, pushed whenever it changes
+//   out  ghost:<to>:<type>|<b64>|<clips>  a description for one player, and our clip table's Hash
+//   in   ghost:<from>:<type>|<b64>|<clips>
+//   out  ghostice:<peer>                  a peer no direct attempt could reach
+//   in   ice:<json>                       relay credentials for this game
 //
 // The roster names the host (the server picks the lowest directly reachable id); the host
 // offers to everyone else and they answer.
@@ -29,6 +29,8 @@ public static class RandomizerGhostSignal {
         public bool Announced;
         public float Since;
         public int Attempt;
+        // their clip table is not ours (or unsaid), so their clips are blanked
+        public bool OtherClips;
     }
 
     // seconds in connecting before a handshake counts as lost and is retried
@@ -46,7 +48,8 @@ public static class RandomizerGhostSignal {
     // Every frame: announces on a change of mind or a new socket, and re-asserts periodically.
     public static void Apply() {
         var want = RandomizerSyncManager.WsOpen && NativeWebSocket.RtcAvailable &&
-            RandomizerSettings.Customization.ShowOtherPlayers.Value;
+            RandomizerSettings.Customization.ShowOtherPlayers.Value &&
+            Randomizer.Sync && !PracticeController.Active;
         var now = Time.realtimeSinceStartup;
         var told = announcedOn == RandomizerSyncManager.WsGeneration && now - announcedAt < ReassertAfter;
         if (want == Joined && (!want || told)) {
@@ -142,7 +145,7 @@ public static class RandomizerGhostSignal {
         }
     }
 
-    // "ghost:<from>:<type>|<b64>" -- one description from one player.
+    // "ghost:<from>:<type>|<b64>|<clips>" -- one description from one player.
     public static void OnDescription(string body) {
         // every rejection below is logged: a silent drop leaves the far side waiting forever
         var sep = body.IndexOf(':');
@@ -172,9 +175,14 @@ public static class RandomizerGhostSignal {
         }
 
         var type = payload.Substring(0, bar);
+        // "<b64>|<clips>"; a peer that sends no hash counts as another table
+        var rest = payload.Substring(bar + 1);
+        var tail = rest.IndexOf('|');
+        var clips = tail < 0 ? "unsent" : rest.Substring(tail + 1);
+        var b64 = tail < 0 ? rest : rest.Substring(0, tail);
         string sdp;
         try {
-            sdp = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(payload.Substring(bar + 1)));
+            sdp = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(b64));
         } catch (Exception) {
             Randomizer.log("ghost signal: undecodable description from " + from);
             return;
@@ -199,12 +207,13 @@ public static class RandomizerGhostSignal {
             return;
         }
 
+        link.OtherClips = clips != Clips;
         if (NativeWebSocket.RtcSetRemote(link.Handle, type, sdp) < 0) {
             Randomizer.log("ghost signal: " + type + " from " + from + " rejected, " +
                 NativeWebSocket.RtcLastError());
         } else {
-            Randomizer.log("ghost signal: accepted " + type + " from " + from +
-                " on handle " + link.Handle);
+            Randomizer.log("ghost signal: accepted " + type + " from " + from + " on handle " +
+                link.Handle + (link.OtherClips ? ", clip table " + clips + " is not ours, not animating" : ""));
         }
     }
 
@@ -270,7 +279,7 @@ public static class RandomizerGhostSignal {
                 var sdp = NativeWebSocket.RtcLocalDescription(link.Handle);
                 NativeWebSocket.SendText("ghost:" + link.PlayerId + ":" +
                     (link.Offering ? "offer" : "answer") + "|" +
-                    Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sdp)));
+                    Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sdp)) + "|" + Clips);
                 Randomizer.log("ghost signal: sent " + (link.Offering ? "offer" : "answer") +
                     " to " + link.PlayerId + ", " + sdp.Length + " bytes");
             }
@@ -295,6 +304,13 @@ public static class RandomizerGhostSignal {
                     continue;
                 }
 
+                // another table's indices name the wrong clips: it slides, and is relayed unclipped
+                if (link.OtherClips) {
+                    got.Animation = "";
+                    got.AnimationTime = 0f;
+                    RandomizerGhostPacket.Unclip(packet);
+                }
+
                 Feed(who, got);
                 if (Host == Me) {
                     Relay(packet, link);
@@ -315,6 +331,11 @@ public static class RandomizerGhostSignal {
     private static Link Open(int pid, bool offering) {
         // the relay only for peers a direct attempt failed against: gathering waits on every server
         var relayed = RelayUrl != null && Relayed.Contains(pid);
+        // an expired credential is asked for again; OnIce re-opens an offer made with the old one
+        if (relayed && Time.realtimeSinceStartup >= RelayExpires && RandomizerSyncManager.WsOpen) {
+            NativeWebSocket.SendText("ghostice:" + pid);
+        }
+
         var handle = NativeWebSocket.RtcCreate(offering, relayed ? StunServers + "," + RelayUrl : StunServers);
         if (handle == 0) {
             Randomizer.log("ghost signal: could not create a peer for " + pid + ", " +
@@ -367,7 +388,11 @@ public static class RandomizerGhostSignal {
         // colon, and a TURN username is "<expiry>:<name>". Escape both halves.
         RelayUrl = url.Substring(0, scheme + 1) + Escape(user.Str) + ":" + Escape(secret.Str) +
             "@" + url.Substring(scheme + 1);
-        Randomizer.log("ghost signal: relay configured");
+        // half the ttl: the server may hand out a credential it has cached a while
+        var ttl = parsed["ttl"];
+        RelayExpires = ttl.IsNumber && ttl.Num > 0
+            ? Time.realtimeSinceStartup + (float)(ttl.Num / 2) : float.MaxValue;
+        Randomizer.log("ghost signal: relay configured" + (ttl.IsNumber ? ", ttl " + ttl.Num + "s" : ""));
 
         // whoever we are already failing against should not wait out another retry
         for (var i = Links.Count - 1; i >= 0; i--) {
@@ -505,6 +530,11 @@ public static class RandomizerGhostSignal {
 
     // the relay as one url with its credentials folded in, or null until the server sends one
     private static string RelayUrl;
+
+    // realtimeSinceStartup past which RelayUrl's credential is asked for again
+    private static float RelayExpires;
+
+    private static string Clips { get { return RandomizerGhostAnimations.Hash.ToString("X8"); } }
 
     // one ghost per player, keyed by the id their packets carry
     private static readonly Dictionary<int, LiveGhostSource> Ghosts = new Dictionary<int, LiveGhostSource>();

@@ -214,6 +214,37 @@ public static class RandomizerSyncManager {
         }
     }
 
+    // Update's gate is shut: ghosts leave, a non-sync seed stops the socket, practice drops frames
+    public static void Idle() {
+        try {
+            RandomizerGhostSignal.Apply();
+            if (!Randomizer.Sync) {
+                StopSocket();
+            } else if (NativeWebSocket.Loaded && wsStartedUrl != null) {
+                DropFrames();
+            }
+        } catch (Exception e) {
+            Randomizer.log("RSM.Idle: " + e.Message);
+        }
+    }
+
+    // wsUrl is kept, so the same game coming back keeps its queued finds
+    private static void StopSocket() {
+        if (wsStartedUrl == null || !NativeWebSocket.Loaded) {
+            return;
+        }
+
+        NativeWebSocket.Stop();
+        wsStartedUrl = null;
+        DropFrames();
+        Randomizer.log("ws diag: socket stopped, this seed does not sync");
+    }
+
+    private static void DropFrames() {
+        while (NativeWebSocket.GetPendingMessage() != null) {
+        }
+    }
+
     // one host, two schemes; the sidecar speaks both, with or without TLS
     public static string WebBase() =>
         (RandomizerSettings.DevSettings.PlainHttp ? "http://" : "https://") + RandomizerSettings.DevSettings.NetcodeHost.Value;
@@ -235,8 +266,10 @@ public static class RandomizerSyncManager {
     private static void DropSidecarHandles() {
         SidecarForget(tickHandle);
         SidecarForget(foundHandle);
+        SidecarForget(completeHandle);
         tickHandle = 0;
         foundHandle = 0;
+        completeHandle = 0;
         wsFoundToken = 0;
         RequeuePickup();
     }
@@ -285,6 +318,18 @@ public static class RandomizerSyncManager {
                 SidecarForget(foundHandle);
                 foundHandle = 0;
                 RequeuePickup();
+            }
+        }
+
+        if (completeHandle != 0) {
+            var status = NativeWebSocket.HttpStatus(completeHandle);
+            if (status != NativeWebSocket.HttpPending) {
+                NativeWebSocket.HttpRelease(completeHandle);
+                completeHandle = 0;
+                OnCompleteStatus(status);
+            } else if (Time.realtimeSinceStartup - completeSentAt > SidecarLimit) {
+                SidecarForget(completeHandle);
+                completeHandle = 0;
             }
         }
     }
@@ -347,7 +392,7 @@ public static class RandomizerSyncManager {
                 return;
             }
 
-            var array = File.ReadAllLines(Randomizer.SeedFilePath);
+            var array = (string[])SeedHead.Clone();
             array[0] = array[0].Replace(',', '|');
             var seed = string.Join(",", array).Replace("#", "");
             if (WsOpen) {
@@ -417,7 +462,8 @@ public static class RandomizerSyncManager {
                 RandomizerGhostSignal.OnIce(frame.Substring(sep + 1));
             } else if (kind == "completeack") {
                 // no Sein guard: this arrives during credits
-                completePending = false;
+                int status;
+                OnCompleteStatus(sep >= 0 && int.TryParse(frame.Substring(sep + 1), out status) ? status : 200);
             } else if (kind == "nohttp") {
                 wsNoHttp = true;
                 Randomizer.log("ws: server flagged http fallback unavailable; websocket-only mode");
@@ -553,14 +599,25 @@ public static class RandomizerSyncManager {
                     if (id >= 900 && id < 910) {
                         var tree = id - 899;
                         var treeName = RandomizerTrackedDataManager.Trees[tree];
-                        if (RandomizerTrackedDataManager.SetTree(tree)) {
-                            Randomizer.showHint(RandomizerUI.Message.PickupMessage(treeName + " tree (activated by teammate)"));
+                        // a teammate's tree or relic is stamped offworld, like their upgrades
+                        RandomizerStatsManager.PickupZone = "offworld";
+                        try {
+                            if (RandomizerTrackedDataManager.SetTree(tree)) {
+                                Randomizer.showHint(RandomizerUI.Message.PickupMessage(treeName + " tree (activated by teammate)"));
+                            }
+                        } finally {
+                            RandomizerStatsManager.PickupZone = null;
                         }
                         // 911-921: relic progress
                     } else if (id >= 911 && id < 922) {
                         var relicZone = RandomizerTrackedDataManager.Zones[id - 911];
-                        if (RandomizerTrackedDataManager.SetRelic(relicZone)) {
-                            Randomizer.showHint(RandomizerUI.Message.PickupMessage("#" + relicZone + " relic# (found by teammate)", 5f));
+                        RandomizerStatsManager.PickupZone = "offworld";
+                        try {
+                            if (RandomizerTrackedDataManager.SetRelic(relicZone)) {
+                                Randomizer.showHint(RandomizerUI.Message.PickupMessage("#" + relicZone + " relic# (found by teammate)", 5f));
+                            }
+                        } finally {
+                            RandomizerStatsManager.PickupZone = null;
                         }
                         // 100-129: bonus skills
                     } else if (id >= 100 && id < 130) {
@@ -580,8 +637,18 @@ public static class RandomizerSyncManager {
 
             // field 5, signals: multiworld always sends it (maybe empty) so slots sit at 6
             if (array.Length > 5 && array[5] != "") {
+                // a seen signal still riding the tick lost its confirm: say it again now and then
+                var reconf = ++signalTicks % ReconfTicks == 0;
                 foreach (var text in array[5].Split('|')) {
-                    if (text == "" || CurrentSignals.Contains(text)) {
+                    if (text == "") {
+                        continue;
+                    }
+
+                    if (CurrentSignals.Contains(text)) {
+                        if (reconf) {
+                            Conf(text);
+                        }
+
                         continue;
                     }
 
@@ -599,12 +666,6 @@ public static class RandomizerSyncManager {
 
                             RandomizerStatsManager.WriteStatsFile();
                         }
-                    } else if (text.StartsWith("pickup:")) {
-                        var parts = text.Substring(7).Split('|');
-                        RandomizerAction action;
-                        action = new RandomizerAction(parts[0], parts[1]);
-                        RandomizerSwitch.GivePickup(action, 0, false);
-                        mustRefreshLogic = true;
                     } else if (text.StartsWith("dl:")) {
                         // archipelago death link: "<token>;<source>"
                         RandomizerDeathLink.OnSignal(text.Substring(3));
@@ -617,13 +678,7 @@ public static class RandomizerSyncManager {
                         ChaosTimeoutCounter = 3600;
                     }
 
-                    if (WsOpen) {
-                        NativeWebSocket.SendText("conf:" + text);
-                    } else if (HttpLaneOpen) {
-                        SidecarForget(NativeWebSocket.HttpBegin("GET", RequestUrl(RootUrl + "/callback/" + text), null, null));
-                    }
-
-                    // no transport: this confirm is lost, and nothing re-sends it
+                    Conf(text);
                     CurrentSignals.Add(text);
                 }
             } else {
@@ -647,6 +702,10 @@ public static class RandomizerSyncManager {
                 RandomizerMW.OnReleasedField(array[9]);
             }
 
+            if (Randomizer.SyncMode == 5 && array.Length > 10 && RandomizerMW.OnExtraItemsField(array[10])) {
+                mustRefreshLogic = true;
+            }
+
             if (Randomizer.SyncMode == 5 && array.Length > 8 && array[8] != "") {
                 // AP hints for the slots we asked about; absent until one is bought
                 RandomizerMW.OnApHintsField(array[8]);
@@ -657,6 +716,15 @@ public static class RandomizerSyncManager {
             }
         } finally {
             RandomizerSwitch.SilentMode = false;
+        }
+    }
+
+    // the server confirms exact matches only, so saying it twice is harmless
+    private static void Conf(string text) {
+        if (WsOpen) {
+            NativeWebSocket.SendText("conf:" + text);
+        } else if (HttpLaneOpen) {
+            SidecarForget(NativeWebSocket.HttpBegin("GET", RequestUrl(RootUrl + "/callback/" + text), null, null));
         }
     }
 
@@ -686,34 +754,42 @@ public static class RandomizerSyncManager {
     }
 
     // Credits ping: the server's game end, which in multiworld releases our leftovers to their owners.
-    // Retries until completeack; the http path cannot ack, so it gets five spaced tries.
+    // Retries with a growing gap, for as long as it takes, until either lane answers 2xx.
     public static void SendGameComplete() {
         if (!Randomizer.Sync || Randomizer.SyncId == "") {
             return;
         }
 
         completePending = true;
-        completeAttempts = 0;
+        completeGap = FirstCompleteGap;
         TrySendComplete();
     }
 
     private static void TrySendComplete() {
-        completeNextAt = Time.realtimeSinceStartup + 3f;
+        var now = Time.realtimeSinceStartup;
         try {
             if (WsOpen) {
                 NativeWebSocket.SendText("complete:");
-                completeAttempts++;
-            } else if (HttpLaneOpen) {
-                SidecarForget(NativeWebSocket.HttpBegin("GET", RootUrl + "/complete", null, null));
-                completeAttempts++;
+            } else if (HttpLaneOpen && completeHandle == 0) {
+                completeSentAt = now;
+                completeHandle = NativeWebSocket.HttpBegin("GET", RootUrl + "/complete", null, null);
+            } else {
+                // nothing went out, so the gap does not grow
+                completeNextAt = now + FirstCompleteGap;
+                return;
             }
 
-            // no transport right now: attempts don't count, wait for the socket
-            if (completeAttempts >= 5) {
-                completePending = false;
-            }
+            completeNextAt = now + completeGap;
+            completeGap = Math.Min(completeGap * 2f, MaxCompleteGap);
         } catch (Exception e) {
             Randomizer.log("SendGameComplete: " + e.Message);
+            completeNextAt = now + completeGap;
+        }
+    }
+
+    private static void OnCompleteStatus(int status) {
+        if (status >= 200 && status < 300) {
+            completePending = false;
         }
     }
 
@@ -727,6 +803,18 @@ public static class RandomizerSyncManager {
         }
 
         Warned = true;
+        if (!NativeWebSocket.Loaded) {
+            var path = NativeWebSocket.DllPath ?? NativeWebSocket.DllResource;
+            // the message parser reads "\n" as a line break, even inside a path
+            if (path.Contains("\\n")) {
+                path = path.Replace('\\', '/');
+            }
+
+            Randomizer.printInfo("netcode dll not found (check your antivirus for actions against " + path +
+                " and make an exception if necessary)", 480);
+            return;
+        }
+
         Randomizer.printInfo("@Not syncing@: no reply from the server. Check your Netcode URLs.", 480);
     }
 
@@ -814,7 +902,15 @@ public static class RandomizerSyncManager {
 
     public static bool SeedSent;
 
+    // the lines of the seed the server is sent, cached at parse: line 1 (the server reads its Sync id)
+    public static string[] SeedHead;
+
     public static HashSet<string> CurrentSignals;
+
+    // ticks with signals between re-sent confirms
+    private const int ReconfTicks = 10;
+
+    private static int signalTicks;
 
     public static bool NetworkFree => Randomizer.SyncId == "" || (PickupQueue.Count == 0 && SendingPickup == null);
 
@@ -917,9 +1013,17 @@ public static class RandomizerSyncManager {
 
     private static bool completePending;
 
-    private static int completeAttempts;
+    private const float FirstCompleteGap = 3f;
+
+    private const float MaxCompleteGap = 60f;
+
+    private static float completeGap = FirstCompleteGap;
 
     private static float completeNextAt;
+
+    private static int completeHandle;
+
+    private static float completeSentAt;
 
     public static bool WsNoHttp => wsNoHttp;
 

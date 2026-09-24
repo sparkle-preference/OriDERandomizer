@@ -275,7 +275,7 @@ public static class RandomizerSwitch {
                         GivePickup(subpart, coords, false);
                     }
 
-                    SilentMode = false;
+                    SeedSilent = false;
                     break;
                 case "AC":
                     if ((int)action.Value < 0) {
@@ -348,7 +348,7 @@ public static class RandomizerSwitch {
                             if (p[0] == "d") {
                                 int.TryParse(p[1], out duration);
                             } else if (p[0] == "s") {
-                                SilentMode = p[1].Trim().ToLower() == "true";
+                                SeedSilent = p[1].Trim().ToLower() == "true";
                             }
                         }
 
@@ -422,9 +422,15 @@ public static class RandomizerSwitch {
                             RandomizerMW.GrantSelfItem(coords);
                         }
                     } else if (RandomizerItems.Inner((string)action.Value, Randomizer.PlayerCount, out var mwCode, out var mwId)) {
-                        var playerName = int.TryParse(mwPieces[0], out var pid) ? RandomizerMW.PlayerName(pid) : $"Player {mwPieces[0]}";
                         var mwItem = RandomizerItems.Name(mwCode, mwId);
-                        SentMwPickupMessage($"{playerName}'s {RandomizerItems.ColorWrap(mwItem)}");
+                        var known = int.TryParse(mwPieces[0], out var pid);
+                        // an AP reserved line not scouted yet: its owner is our shadow, not a player
+                        if (known && Randomizer.PlayerCount > 0 && pid > Randomizer.PlayerCount) {
+                            SentMwPickupMessage($"{RandomizerItems.ColorWrap(mwItem)} (Archipelago)");
+                        } else {
+                            var playerName = known ? RandomizerMW.PlayerName(pid) : $"Player {mwPieces[0]}";
+                            SentMwPickupMessage($"{playerName}'s {RandomizerItems.ColorWrap(mwItem)}");
+                        }
                     } else {
                         SentMwPickupMessage("Unknown Foreign Item");
                     }
@@ -508,7 +514,11 @@ public static class RandomizerSwitch {
     }
 
 
+    // a caller's squelch around its own grants; seed content never writes it
     public static bool SilentMode;
+
+    // the seed's SH s=true: ends when an MU/RP completes or an MW batch is granted
+    public static bool SeedSilent;
 
     // true only while Autoplayer.Drop grants from pickup.tmp; bingo looks away
     public static bool FromFile;
@@ -521,7 +531,7 @@ public static class RandomizerSwitch {
             text += MessageSuffix;
         }
 
-        if (SilentMode) {
+        if (SilentMode || SeedSilent) {
             if (RandomizerSettings.Dev) {
                 Randomizer.log(text + " (squelched)");
             }
@@ -533,7 +543,7 @@ public static class RandomizerSwitch {
     }
 
     public static void SentMwPickupMessage(string text, int frames = 120) {
-        if (SilentMode) {
+        if (SilentMode || SeedSilent) {
             if (RandomizerSettings.Dev) {
                 Randomizer.log(text + " (squelched)");
             }

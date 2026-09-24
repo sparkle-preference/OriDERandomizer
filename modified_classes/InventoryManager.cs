@@ -145,6 +145,8 @@ public class InventoryManager : MenuScreen {
 
     private MessageProvider m_lastProvider;
 
+    private MessageProvider m_lastDifficulty;
+
     public void UpdateItems() {
         SeinCharacter sein = Characters.Sein;
         if (sein == null) {
@@ -176,7 +178,9 @@ public class InventoryManager : MenuScreen {
             AbilityItemHighlight.SetActive(false);
         }
 
-        if (Difficulty) {
+        // redrawn on open and on a provider swap; a difficulty change has its own event
+        if (Difficulty && !ReferenceEquals(Difficulty.MessageProvider, m_lastDifficulty)) {
+            m_lastDifficulty = Difficulty.MessageProvider;
             Difficulty.RefreshText();
         }
     }
@@ -186,6 +190,7 @@ public class InventoryManager : MenuScreen {
     }
 
     public void OnEnable() {
+        m_lastDifficulty = null;
         UpdateItems();
     }
 

@@ -202,8 +202,8 @@ Enhanced mode -- April Fools :)
 905 - Glide Tree Prog
 906 - Climb Tree Prog
 907 - Charge Jump Tree Prog
-908 - Dash Tree Prog
-909 - Grenade Tree Prog
+908 - Grenade Tree Prog
+909 - Dash Tree Prog
 911 - Glades Relic Prog
 912 - Grove Relic Prog
 913 - Grotto Relic Prog
@@ -226,6 +226,7 @@ Enhanced mode -- April Fools :)
 937 - Have Pickup Bitfield #8
 
 940-947 - (Multiworld) Granted slot bitfields
+948 - (Archipelago) Extra items applied: how much of tick field 10 this save has granted
 
 950 - Finished Ginso escape
 

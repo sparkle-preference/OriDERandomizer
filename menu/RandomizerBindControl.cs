@@ -24,6 +24,8 @@ public class RandomizerBindControl : MonoBehaviour {
         tooltipProvider.SetMessage(this.help);
         GetComponent<CleverMenuItemTooltip>().Tooltip = tooltipProvider;
         owner.tooltipController.UpdateTooltip();
+        back = new BindHold(p => owner.DrawHold(p), owner.HideHold, Press, Join, Cancel);
+        swap = new BindHold(p => owner.DrawHold(p, "navigate"), owner.HideHold, Press, Join, Swap);
     }
 
     public void BeginEditing() {
@@ -36,6 +38,9 @@ public class RandomizerBindControl : MonoBehaviour {
         owner.ReadingActions = false;
         armed = false;
         peak.Clear();
+        back.Reset();
+        swap.Reset();
+        denyAt = -1f;
         owner.BindLegend();
         Tooltip();
     }
@@ -50,7 +55,14 @@ public class RandomizerBindControl : MonoBehaviour {
             return;
         }
 
-        if (Cancelling()) {
+        // a key pressed during a Back or Tab hold joins the chord
+        if (armed && Input.anyKeyDown) {
+            back.Join();
+            swap.Join();
+        }
+
+        // A Back hold cancels the edit; a tap is a key like any other and binds on release.
+        if (back.Update(CustomSettingsScreen.BackHeld(), Time.unscaledTime)) {
             return;
         }
 
@@ -70,7 +82,8 @@ public class RandomizerBindControl : MonoBehaviour {
             return;
         }
 
-        if (Swapping()) {
+        // A Tab hold swaps keys/actions; a tap, or Tab with a chord in hand, is just a key.
+        if (swap.Update(Input.GetKey(KeyCode.Tab) ? KeyCode.Tab : KeyCode.None, Time.unscaledTime, Empty)) {
             return;
         }
 
@@ -79,7 +92,12 @@ public class RandomizerBindControl : MonoBehaviour {
 
     // pressed with no chord in hand
     private bool Bare(KeyCode key) {
-        return Input.GetKeyDown(key) && peak.Count == 0;
+        return Input.GetKeyDown(key) && Empty;
+    }
+
+    // no chord in hand; a held Back or Tab that joined one counts as one
+    private bool Empty {
+        get { return peak.Count == 0 && !back.Joined && !swap.Joined; }
     }
 
     // triggers, sticks and the D-pad are axes, which anyKey does not see
@@ -99,80 +117,23 @@ public class RandomizerBindControl : MonoBehaviour {
         return true;
     }
 
-    // A Back hold cancels the edit; a tap is a key like any other and binds on release.
-    private bool Cancelling() {
-        var down = CustomSettingsScreen.BackHeld();
-        if (down == KeyCode.None) {
-            if (tapped != KeyCode.None && Time.unscaledTime - held < RandomizerHoldRing.Tap) {
-                Press(tapped);
-            }
-
-            held = -1f;
-            tapped = KeyCode.None;
-            owner.HideHold();
-            return false;
+    // in Actions mode a held key counts through its action, as any held key does
+    private void Join(KeyCode key) {
+        if (mode == Mode.Keys) {
+            Press(key);
         }
-
-        if (held < 0f) {
-            held = Time.unscaledTime;
-            tapped = down;
-        }
-
-        var progress = (Time.unscaledTime - held) / RandomizerHoldRing.Seconds;
-        owner.DrawHold(progress);
-
-        if (progress < 1f) {
-            return true;
-        }
-
-        // the hold spent the key, so letting go of it must not also bind it
-        tapped = KeyCode.None;
-        owner.HideHold();
-        Cancel();
-        return true;
     }
 
-    // A Tab hold swaps keys/actions; a tap, or Tab with a chord in hand, is just a key.
-    private bool Swapping() {
-        if (!Input.GetKey(KeyCode.Tab)) {
-            if (swap >= 0f) {
-                if (Time.unscaledTime - swap < RandomizerHoldRing.Tap) {
-                    Press(KeyCode.Tab);
-                }
-
-                owner.HideHold();
-            }
-
-            swap = -1f;
-            return false;
-        }
-
-        if (swap < 0f) {
-            if (peak.Count > 0) {
-                return false;
-            }
-
-            swap = Time.unscaledTime;
-        }
-
-        var progress = (Time.unscaledTime - swap) / RandomizerHoldRing.Seconds;
-        owner.DrawHold(progress, "navigate");
-
-        if (progress < 1f) {
-            return true;
-        }
-
-        swap = -1f;
-        owner.HideHold();
+    private void Swap() {
         mode = mode == Mode.Keys ? Mode.Actions : Mode.Keys;
         owner.ReadingActions = mode == Mode.Actions;
         peak.Clear();
+        denyAt = -1f;
         // wait for Tab to come up, or it swaps straight back
         armed = false;
         owner.BindLegend();
         Tooltip();
         UpdateMessageBox();
-        return true;
     }
 
     // The chord grows while anything is down and lands when the board is clear again.
@@ -194,8 +155,13 @@ public class RandomizerBindControl : MonoBehaviour {
                 }
             }
 
-            // a key on none of the actions is worth saying no to, once per chord
-            if (Input.anyKeyDown && !grew && peak.Count == 0) {
+            // a key on no action gets one refusal per chord, once a fixed step (when actions move) grew nothing
+            if (grew || peak.Count > 0) {
+                denyAt = -1f;
+            } else if (Input.anyKeyDown && denyAt < 0f) {
+                denyAt = Time.fixedTime;
+            } else if (denyAt >= 0f && Time.fixedTime > denyAt) {
+                denyAt = -1f;
                 Deny();
             }
         }
@@ -270,7 +236,6 @@ public class RandomizerBindControl : MonoBehaviour {
 
     // Nothing is written until the edit ends, so abandoning it is just standing down.
     private void Cancel() {
-        held = -1f;
         Show();
         Stop();
     }
@@ -408,11 +373,12 @@ public class RandomizerBindControl : MonoBehaviour {
 
     private string snapshot;
 
-    private float held = -1f;
+    private BindHold back;
 
-    private float swap = -1f;
+    private BindHold swap;
 
-    private KeyCode tapped = KeyCode.None;
+    // Time.fixedTime at a press that grew nothing yet, or -1
+    private float denyAt = -1f;
 
     private RandomizerMessageProvider tooltipProvider;
 

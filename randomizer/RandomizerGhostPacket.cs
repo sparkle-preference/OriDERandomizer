@@ -168,6 +168,18 @@ public static class RandomizerGhostPacket {
         return true;
     }
 
+    // Blanks the clip of an encoded packet in place, so it decodes as no clip.
+    public static void Unclip(byte[] packet) {
+        if (packet.Length > ClipAt + 2) {
+            packet[ClipAt] = 0xFF;
+            packet[ClipAt + 1] = 0xFF;
+            packet[ClipAt + 2] = 0;
+        }
+    }
+
+    // clipId's offset: after version, playerId, seq, t, x and y
+    private const int ClipAt = 16;
+
     private static bool Finite(float value) {
         return !float.IsNaN(value) && !float.IsInfinity(value);
     }

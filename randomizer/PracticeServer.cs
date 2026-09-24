@@ -99,23 +99,29 @@ public static class PracticeServer {
 
     private static bool paneTurn;
 
+    // the three pane fields, shared by the request workers and Open on the main thread
+    private static readonly object paneGate = new object();
+
     private static string Pane(string id, bool fresh, bool watched) {
-        var now = DateTime.UtcNow;
-        var mine = pane == id;
-        // the tab being looked at is the one the game should turn, whenever it was opened
-        if (fresh || watched || pane == null || mine || (now - paneSeen).TotalSeconds > PaneQuiet) {
-            if (!mine) {
-                pane = id;
-                paneTurn = false;
-                mine = true;
+        bool turn;
+        lock (paneGate) {
+            var now = DateTime.UtcNow;
+            var mine = pane == id;
+            // the tab being looked at is the one the game should turn, whenever it was opened
+            if (fresh || watched || pane == null || mine || (now - paneSeen).TotalSeconds > PaneQuiet) {
+                if (!mine) {
+                    pane = id;
+                    paneTurn = false;
+                    mine = true;
+                }
+
+                paneSeen = now;
             }
 
-            paneSeen = now;
-        }
-
-        var turn = mine && paneTurn;
-        if (turn) {
-            paneTurn = false;
+            turn = mine && paneTurn;
+            if (turn) {
+                paneTurn = false;
+            }
         }
 
         var reply = JsonValue.NewObject();
@@ -136,12 +142,14 @@ public static class PracticeServer {
     }
 
     private static bool Turn() {
-        if (pane == null || (DateTime.UtcNow - paneSeen).TotalSeconds > PaneQuiet) {
-            return false;
-        }
+        lock (paneGate) {
+            if (pane == null || (DateTime.UtcNow - paneSeen).TotalSeconds > PaneQuiet) {
+                return false;
+            }
 
-        paneTurn = true;
-        return true;
+            paneTurn = true;
+            return true;
+        }
     }
 
     public static void OpenOnce() {
@@ -211,23 +219,29 @@ public static class PracticeServer {
         }
     }
 
+    // a worker per connection, so an idle or slow socket holds up only itself
     private static void Loop() {
         while (listener != null) {
-            TcpClient client = null;
             try {
-                client = listener.AcceptTcpClient();
-                Serve(client);
+                ThreadPool.QueueUserWorkItem(Handle, listener.AcceptTcpClient());
             } catch (Exception e) {
                 if (listener == null) {
                     break;
                 }
 
-                Randomizer.log("practice: editor page request failed: " + e.Message);
-            } finally {
-                if (client != null) {
-                    client.Close();
-                }
+                Randomizer.log("practice: editor page connection failed: " + e.Message);
             }
+        }
+    }
+
+    private static void Handle(object state) {
+        var client = (TcpClient)state;
+        try {
+            Serve(client);
+        } catch (Exception e) {
+            Randomizer.log("practice: editor page request failed: " + e.Message);
+        } finally {
+            client.Close();
         }
     }
 
@@ -272,7 +286,11 @@ public static class PracticeServer {
             content = Reply(OnMain(ReadSegment, out error), error, out status);
         } else if (method == "PUT" && path == "/api/segment") {
             var text = Encoding.UTF8.GetString(body);
-            content = Reply(OnMain(delegate { return WriteSegment(text); }, out error), error, out status);
+            var stale = false;
+            content = Reply(OnMain(delegate { return WriteSegment(text, ref stale); }, out error), error, out status);
+            if (stale) {
+                status = 409;
+            }
         } else if (method == "GET" && path == "/api/pane") {
             content = Encoding.UTF8.GetBytes(Pane(Arg(args, "id"), Arg(args, "new") == "1",
                 Arg(args, "see") == "1"));
@@ -371,6 +389,7 @@ public static class PracticeServer {
             case 400: return "Bad Request";
             case 403: return "Forbidden";
             case 404: return "Not Found";
+            case 409: return "Conflict";
             case 503: return "Service Unavailable";
             default: return "Error";
         }
@@ -615,6 +634,7 @@ public static class PracticeServer {
         var file = PracticeController.File;
         var reply = JsonValue.NewObject();
         reply.Set("session", JsonValue.Of(file != null));
+        reply.Set("folder", JsonValue.Of(FolderPath()));
         if (file == null) {
             // no session: the page's create panel wants a name and whether the chooser can start one
             reply.Set("suggestedName", JsonValue.Of(PracticeSelect.NextName()));
@@ -630,14 +650,37 @@ public static class PracticeServer {
         }
         reply.Set("variant", JsonValue.Of(file.Variant ?? ""));
         reply.Set("editing", JsonValue.Of(PracticeEditor.Active));
-        reply.Set("segment", WithBoxes(file, ""));
+        Current(file, reply);
+        return reply.Serialize(false);
+    }
+
+    // for the page's help; a folder setting the path API refuses is shown as written
+    private static string FolderPath() {
+        var folder = PracticeSelect.Folder;
+        try {
+            return Path.GetFullPath(folder);
+        } catch (Exception) {
+            return folder;
+        }
+    }
+
+    // the segment and its variants as the page edits them, and the revision a save must name
+    private static void Current(BfrpFile file, JsonValue reply) {
+        var segment = WithBoxes(file, "");
         var variants = JsonValue.NewObject();
         foreach (var id in file.Variants) {
             variants.Set(id, WithBoxes(file, id));
         }
 
+        // FNV-1a of exactly what the page is shown
+        var hash = 14695981039346656037UL;
+        foreach (var b in Encoding.UTF8.GetBytes(segment.Serialize(false) + variants.Serialize(false))) {
+            hash = (hash ^ b) * 1099511628211UL;
+        }
+
+        reply.Set("segment", segment);
         reply.Set("variants", variants);
-        return reply.Serialize(false);
+        reply.Set("rev", JsonValue.Of(hash.ToString("x16")));
     }
 
     // The page's shape: boxes as an array and the goal as end.box, on a shallow copy so none
@@ -698,13 +741,22 @@ public static class PracticeServer {
     }
 
     // the page's copy replaces the file's, is saved, and the live session re-parses it
-    private static string WriteSegment(string text) {
+    private static string WriteSegment(string text, ref bool stale) {
         var file = PracticeController.File;
         if (file == null) {
             throw new Exception("no practice session is running");
         }
 
         var incoming = JsonValue.Parse(text);
+        // a copy made before the game changed the segment gets the current one back, to merge
+        var now = JsonValue.NewObject();
+        Current(file, now);
+        if (incoming["rev"].IsString && incoming["rev"].Str != now["rev"].Str) {
+            stale = true;
+            now.Set("error", JsonValue.Of("the game changed this segment since the page loaded it"));
+            return now.Serialize(false);
+        }
+
         var segment = incoming["segment"];
         if (!segment.IsObject) {
             throw new Exception("segment must be an object");
@@ -937,7 +989,7 @@ public static class PracticeServer {
 
     // --- the catalog -----------------------------------------------------------------
 
-    // what the pickers offer: skills and world events by name, every location by zone
+    // what the pickers offer: skills and world events by name, every location by zone with what it can be picked for
     private static string Catalog() {
         var reply = JsonValue.NewObject();
         var skills = JsonValue.NewArray();
@@ -959,6 +1011,8 @@ public static class PracticeServer {
             entry.Set("type", JsonValue.Of(location.Type.ToString()));
             entry.Set("x", JsonValue.Of(Math.Round(location.Position.x, 1)));
             entry.Set("y", JsonValue.Of(Math.Round(location.Position.y, 1)));
+            entry.Set("ends", JsonValue.Of(PracticeSegment.CanEnd(location.Key)));
+            entry.Set("shuffles", JsonValue.Of(!PracticeSegment.NeverGiven(location.Key)));
             locations.Add(entry);
         }
 

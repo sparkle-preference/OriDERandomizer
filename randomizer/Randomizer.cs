@@ -99,6 +99,7 @@ public static class Randomizer {
             StompSlot = -1;
             StompTriggers = false;
             AltRDisabled = false;
+            RandomizerSwitch.SeedSilent = false;
             GoalModeFinish = false;
             SpawnWith = "";
             IgnoreEnemyExp = false;
@@ -145,6 +146,7 @@ public static class Randomizer {
                     var s = flagLine[1];
                     var flags = flagLine[0].Split(',');
                     SeedMeta = allLines[0];
+                    RandomizerSyncManager.SeedHead = new[] { allLines[0] };
                     var doBingo = ParseFlags(s, flags);
                     if (doBingo) {
                         Message = "Good luck on your bingo!";
@@ -726,6 +728,8 @@ public static class Randomizer {
             // ticking would grant it the team's kit and hand the server that state as the player's.
             if (Sync && !PracticeController.Active) {
                 RandomizerSyncManager.Update();
+            } else {
+                RandomizerSyncManager.Idle();
             }
 
             if (Warping > 0) {

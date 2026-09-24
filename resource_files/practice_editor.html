@@ -101,7 +101,7 @@
     <p><b>The map:</b> Pick locations from the zone and location lists or click them on the map to select locations required to finish the segment or to include in a shuffle group.
     With <i>edit boxes on the map</i> on, drag a box to move it and its corners to resize it.</p>
 
-    <p><b>Misc Info:</b> A run ends when ALL of its end conditions are satisfied and needs to have at least one. The Retry Practice Segment Randomizer Bind (default Alt+L) restarts an attempt, and dismisses an open briefing if one exists. Quitting to menu ends a practice run unless it is QTM-enabled - ending a QTM-enabled run can be done from the main menu. Practice files are stored as .bfrp files in [Your Ori Install]\practice and can be copied and shared with other players.</p>
+    <p><b>Misc Info:</b> A run ends when ALL of its end conditions are satisfied and needs to have at least one. The Retry Practice Segment Randomizer Bind (default Alt+L) restarts an attempt, and dismisses an open briefing if one exists. Quitting to menu ends a practice run unless it is QTM-enabled - ending a QTM-enabled run can be done from the main menu. Practice files are stored as .bfrp files in <span id="folder">[Your Ori Install]\practice</span> and can be copied and shared with other players.</p>
   </div>
 </details>
 
@@ -195,13 +195,17 @@
 
   function api(url, opts) {
     return fetch(url, Object.assign({ cache: 'no-store' }, opts || {})).then(function (r) {
-      return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || r.status); return j; });
+      return r.json().then(function (j) {
+        if (!r.ok) { var e = new Error(j.error || r.status); e.status = r.status; e.body = j; throw e; }
+        return j;
+      });
     });
   }
 
   function load() {
     say('Loading…');
     return api('/api/catalog').then(function (c) { state.catalog = c; return api('/api/segment'); }).then(function (s) {
+      if (s.folder) { $('folder').textContent = shortPath(s.folder, 60); $('folder').title = s.folder; }
       document.body.classList.toggle('nosession', !s.session);
       $('createSection').hidden = !!s.session;
       if (!s.session) {
@@ -214,9 +218,20 @@
       $('path').textContent = s.path + (s.variant ? '  (playing variant ' + s.variant + ')' : '');
       state.segment = s.segment; state.variants = s.variants || {}; state.playing = s.variant || '';
       state.base = s.base || null;
-      render(); say('Loaded.', 'ok');
+      // a save names the revision it was made from; a stale one merges against these two copies
+      state.rev = s.rev; state.loaded = JSON.stringify({ segment: s.segment, variants: state.variants });
+      render(); state.shown = JSON.stringify(collect()); say('Loaded.', 'ok');
       return loadGhosts();
     }).catch(function (e) { say('Could not reach the game: ' + e.message, 'bad'); });
+  }
+
+  // a long path keeps its drive and as many of its last folders as fit
+  function shortPath(p, max) {
+    var sep = p.indexOf('\\') >= 0 ? '\\' : '/', parts = p.split(sep);
+    if (p.length <= max || parts.length < 3) return p;
+    var tail = [parts.pop()];
+    while (parts.length > 2 && (parts[0] + sep + '...' + sep + parts[parts.length - 1] + sep + tail.join(sep)).length <= max) tail.unshift(parts.pop());
+    return parts[0] + sep + '...' + sep + tail.join(sep);
   }
 
   function clock(seconds) {
@@ -555,7 +570,7 @@
       if (!(loc.zone in zoneColor)) zoneColor[loc.zone] = palette[Object.keys(zoneColor).length % palette.length];
       var m = L.circleMarker([loc.y, loc.x], { radius: 5, weight: 1, color: '#000', fillColor: zoneColor[loc.zone], fillOpacity: 0.9 }).addTo(map);
       m.bindTooltip(asText(loc.name + ' (' + loc.zone + ')'), { direction: 'top', offset: [0, -6] });
-      m.on('click', function () { if (!state.editing) toggleLocation(loc.key); });
+      m.on('click', function () { if (!state.editing && pickable(loc)) toggleLocation(loc.key); });
       state.markers[loc.key] = m;
     });
     map.on('mousemove', function (ev) { $('tileStatus').title = 'x ' + ev.latlng.lng.toFixed(1) + '  y ' + ev.latlng.lat.toFixed(1); });
@@ -582,6 +597,9 @@
     if (i >= 0) list.splice(i, 1); else list.push(key);
     render();
   }
+
+  // the game flags what it can honor: an ending needs a coord it records, a shuffle spot a pickup it gives
+  function pickable(loc) { return state.target === 'end' ? loc.ends : loc.shuffles; }
 
   function matches(loc) {
     var q = $('locSearch').value.trim().toLowerCase();
@@ -775,14 +793,14 @@
   // zone then location, in the catalog's order; a search spans every zone
   function renderLocationPicker() {
     var zones = [], byZone = {};
-    state.catalog.locations.forEach(function (loc) { if (!byZone[loc.zone]) { byZone[loc.zone] = []; zones.push(loc.zone); } byZone[loc.zone].push(loc); });
+    state.catalog.locations.filter(pickable).forEach(function (loc) { if (!byZone[loc.zone]) { byZone[loc.zone] = []; zones.push(loc.zone); } byZone[loc.zone].push(loc); });
     var zone = $('zone'), keepZone = zone.value; zone.innerHTML = '';
     zones.forEach(function (z) { var o = document.createElement('option'); o.value = z; o.textContent = z; zone.appendChild(o); });
     zone.value = keepZone; if (!zone.value) zone.value = zones[0] || '';
     var q = $('locSearch').value.trim();
     zone.disabled = !!q;
     var locSel = $('loc'), keepLoc = locSel.value; locSel.innerHTML = '';
-    var pool = q ? state.catalog.locations.filter(matches) : (byZone[zone.value] || []);
+    var pool = (q ? state.catalog.locations.filter(matches) : (byZone[zone.value] || [])).filter(pickable);
     var chosen = currentList();
     pool.forEach(function (loc) {
       var o = document.createElement('option'); o.value = String(loc.key);
@@ -975,13 +993,78 @@
   }
   function tidy(b) { if (b.type === 'kill' || b.type === 'solid') delete b.give; delete b.text; delete b.repeat; }
 
+  function put(doc, rev) {
+    return api('/api/segment', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ segment: doc.segment, variants: doc.variants, rev: rev }) });
+  }
   $('save').onclick = function () {
     say('Saving…');
-    api('/api/segment', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(collect()) })
+    var mine = collect();
+    put(mine, state.rev)
       .then(function () { return load(); })
       .then(function () { say('Saved. A running attempt uses the new rules now; a changed start needs a retry.', 'ok'); })
-      .catch(function (e) { say('Save failed: ' + e.message, 'bad'); });
+      .catch(function (e) { if (e.status === 409) return saveOver(mine, e.body); say('Save failed: ' + e.message, 'bad'); });
   };
+
+  // The game changed the segment since this page loaded it: boxes added on both sides are merged, anything else asks.
+  function saveOver(mine, current) {
+    var ours = added(JSON.parse(state.shown), mine), theirs = added(JSON.parse(state.loaded), current);
+    var merged = ours && theirs && union(current, ours, theirs);
+    if (!merged) return offerReload();
+    return put(merged, current.rev)
+      .then(function () { return load(); })
+      .then(function () { say('Saved, keeping the boxes added in the game meanwhile.', 'ok'); })
+      .catch(function (e) { if (e.status === 409) return offerReload(); say('Save failed: ' + e.message, 'bad'); });
+  }
+  function offerReload() {
+    if (confirm('The game changed this segment since this page loaded it. Reload it from the game? Changes made here since then are lost.')) return load();
+    say('Not saved: the game changed this segment since this page loaded it.', 'bad');
+  }
+
+  // json with its keys sorted, so equal values compare equal
+  function canon(v) {
+    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+    if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map(function (k) { return JSON.stringify(k) + ':' + canon(v[k]); }).join(',') + '}';
+    return JSON.stringify(v);
+  }
+  function boxLists(doc) {
+    return [{ id: '', boxes: doc.segment.boxes || [] }].concat(Object.keys(doc.variants || {}).sort().map(function (id) { return { id: id, boxes: doc.variants[id].boxes || [] }; }));
+  }
+  function withoutBoxes(doc) {
+    var d = JSON.parse(JSON.stringify({ segment: doc.segment, variants: doc.variants || {} }));
+    delete d.segment.boxes; if (d.segment.end) delete d.segment.end.box;
+    Object.keys(d.variants).forEach(function (id) { delete d.variants[id].boxes; });
+    return canon(d);
+  }
+  // What `to` adds to `from` when boxes added is all that differs: the goal and each list's new boxes; else null.
+  function added(from, to) {
+    if (withoutBoxes(from) !== withoutBoxes(to)) return null;
+    var goalFrom = (from.segment.end || {}).box, goalTo = (to.segment.end || {}).box;
+    if (goalFrom && canon(goalFrom) !== canon(goalTo)) return null;
+    var out = { goal: goalFrom ? null : goalTo || null, lists: [] }, before = boxLists(from), after = boxLists(to);
+    for (var i = 0; i < after.length; i++) {
+      var keys = after[i].boxes.map(canon), used = keys.map(function () { return false; });
+      for (var j = 0; j < before[i].boxes.length; j++) {
+        var at = -1, key = canon(before[i].boxes[j]);
+        for (var k = 0; k < keys.length && at < 0; k++) if (!used[k] && keys[k] === key) at = k;
+        if (at < 0) return null;
+        used[at] = true;
+      }
+      out.lists.push({ id: after[i].id, boxes: after[i].boxes.filter(function (b, n) { return !used[n]; }) });
+    }
+    return out;
+  }
+  // the game's copy with this page's new boxes added; a box both sides added is kept once
+  function union(current, ours, theirs) {
+    if (ours.goal && theirs.goal && canon(ours.goal) !== canon(theirs.goal)) return null;
+    var doc = JSON.parse(JSON.stringify({ segment: current.segment, variants: current.variants || {} }));
+    if (ours.goal) { doc.segment.end = doc.segment.end || {}; doc.segment.end.box = ours.goal; }
+    ours.lists.forEach(function (list, i) {
+      var into = list.id === '' ? (doc.segment.boxes = doc.segment.boxes || []) : (doc.variants[list.id].boxes = doc.variants[list.id].boxes || []);
+      var twice = theirs.lists[i].boxes.map(canon);
+      list.boxes.forEach(function (b) { var at = twice.indexOf(canon(b)); if (at >= 0) twice.splice(at, 1); else into.push(b); });
+    });
+    return doc;
+  }
   $('reload').onclick = load;
 
   // checking in keeps this tab the game's editor pane, which the game reloads instead of opening another

@@ -26,7 +26,10 @@ public static class NativeWebSocket {
     public static bool Loaded { get; private set; }
     public static string CaPath { get; private set; }
 
-    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
+    // where the sidecar is meant to be, set before the first load attempt whether or not it works
+    public static string DllPath { get; private set; }
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "LoadLibraryW")]
     private static extern IntPtr LoadLibrary(string path);
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
@@ -77,6 +80,25 @@ public static class NativeWebSocket {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate int RtcSendFn(int handle, byte[] data, int length);
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void WStrFn([MarshalAs(UnmanagedType.LPWStr)] string s);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WDownloadFn([MarshalAs(UnmanagedType.LPWStr)] string url,
+        [MarshalAs(UnmanagedType.LPWStr)] string caPath, [MarshalAs(UnmanagedType.LPWStr)] string outPath);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WBeginFn([MarshalAs(UnmanagedType.LPWStr)] string method,
+        [MarshalAs(UnmanagedType.LPWStr)] string url, [MarshalAs(UnmanagedType.LPWStr)] string caPath,
+        [MarshalAs(UnmanagedType.LPWStr)] string body, [MarshalAs(UnmanagedType.LPWStr)] string contentType);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WRtcCreateFn(int offerer, [MarshalAs(UnmanagedType.LPWStr)] string iceServers);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WRtcRemoteFn(int handle, [MarshalAs(UnmanagedType.LPWStr)] string type,
+        [MarshalAs(UnmanagedType.LPWStr)] string sdp);
+
     private static VoidFn initialize_network;
     private static VoidFn finalize_network;
     private static StrFn set_url;
@@ -117,6 +139,16 @@ public static class NativeWebSocket {
     private static IntFn rtc_release;
     private static PtrLenFn rtc_last_error;
 
+    // UTF-16 twins of the string calls, used whenever the dll has them: a narrow string's bytes
+    // would depend on how this Mono marshals it, and paths would go through the ANSI code page
+    private static WStrFn set_url_w;
+    private static WStrFn set_ca_file_w;
+    private static WStrFn send_text_w;
+    private static WDownloadFn http_download_w;
+    private static WBeginFn http_begin_w;
+    private static WRtcCreateFn rtc_create_w;
+    private static WRtcRemoteFn rtc_set_remote_w;
+
     // false when the extracted sidecar predates the updater: only the update option hides
     public static bool HttpAvailable => http_download != null;
 
@@ -136,7 +168,8 @@ public static class NativeWebSocket {
         try {
             var dir = ExeDir();
             Randomizer.log($"ws diag: extracting to {dir}");
-            var dllPath = Extract(DllResource, Path.Combine(dir, DllResource), SidecarCurrent);
+            DllPath = Path.Combine(dir, DllResource);
+            var dllPath = Extract(DllResource, DllPath, SidecarCurrent);
             CaPath = Extract(CaResource, Path.Combine(dir, CaResource), SameBytes);
             if (dllPath == null) {
                 return false;
@@ -189,6 +222,17 @@ public static class NativeWebSocket {
             rtc_close = (IntFn)BindOptional(module, "rtc_close", typeof(IntFn));
             rtc_release = (IntFn)BindOptional(module, "rtc_release", typeof(IntFn));
             rtc_last_error = (PtrLenFn)BindOptional(module, "rtc_last_error", typeof(PtrLenFn));
+            set_url_w = (WStrFn)BindOptional(module, "set_url_w", typeof(WStrFn));
+            set_ca_file_w = (WStrFn)BindOptional(module, "set_ca_file_w", typeof(WStrFn));
+            send_text_w = (WStrFn)BindOptional(module, "send_text_w", typeof(WStrFn));
+            http_download_w = (WDownloadFn)BindOptional(module, "http_download_w", typeof(WDownloadFn));
+            http_begin_w = (WBeginFn)BindOptional(module, "http_begin_w", typeof(WBeginFn));
+            rtc_create_w = (WRtcCreateFn)BindOptional(module, "rtc_create_w", typeof(WRtcCreateFn));
+            rtc_set_remote_w = (WRtcRemoteFn)BindOptional(module, "rtc_set_remote_w", typeof(WRtcRemoteFn));
+            if (send_text_w == null) {
+                Randomizer.log("ws diag: sidecar has no wide exports; strings go narrow");
+            }
+
             if (rtc_create == null) {
                 Randomizer.log("ws diag: sidecar has no data channels; ghost multiplayer disabled");
             }
@@ -324,11 +368,19 @@ public static class NativeWebSocket {
     }
 
     public static void SetUrl(string url) {
-        set_url(url);
+        if (set_url_w != null) {
+            set_url_w(url);
+        } else {
+            set_url(url);
+        }
     }
 
     public static void SetCaFile(string path) {
-        set_ca_file(path);
+        if (set_ca_file_w != null) {
+            set_ca_file_w(path);
+        } else {
+            set_ca_file(path);
+        }
     }
 
     public static void SetPingInterval(int seconds) {
@@ -348,7 +400,11 @@ public static class NativeWebSocket {
     }
 
     public static void SendText(string data) {
-        send_text(data);
+        if (send_text_w != null) {
+            send_text_w(data);
+        } else {
+            send_text(data);
+        }
     }
 
     public static void SendBinary(byte[] data) {
@@ -385,6 +441,10 @@ public static class NativeWebSocket {
     // Blocking, and the body lands in outPath rather than crossing interop.
     // Returns the HTTP status, or negative if it never got that far.
     public static int HttpDownload(string url, string outPath) {
+        if (http_download_w != null) {
+            return http_download_w(url, CaPath ?? "", outPath);
+        }
+
         if (http_download == null) {
             return -1;
         }
@@ -395,6 +455,10 @@ public static class NativeWebSocket {
     // Returns 0 if the request could not start. Poll HttpStatus past HttpPending, read the body,
     // then always HttpRelease.
     public static int HttpBegin(string method, string url, string body, string contentType) {
+        if (http_begin_w != null) {
+            return http_begin_w(method, url, CaPath ?? "", body ?? "", contentType ?? "");
+        }
+
         if (http_begin == null) {
             return 0;
         }
@@ -485,6 +549,10 @@ public static class NativeWebSocket {
 
     // 0 if no peer could be created; the offerer opens the data channel, the answerer waits for it
     public static int RtcCreate(bool offerer, string iceServers) {
+        if (rtc_create_w != null) {
+            return rtc_create_w(offerer ? 1 : 0, iceServers ?? "");
+        }
+
         return rtc_create == null ? 0 : rtc_create(offerer ? 1 : 0, iceServers ?? "");
     }
 
@@ -501,6 +569,10 @@ public static class NativeWebSocket {
     }
 
     public static int RtcSetRemote(int handle, string type, string sdp) {
+        if (rtc_set_remote_w != null) {
+            return rtc_set_remote_w(handle, type ?? "", sdp ?? "");
+        }
+
         return rtc_set_remote == null ? -1 : rtc_set_remote(handle, type ?? "", sdp ?? "");
     }
 

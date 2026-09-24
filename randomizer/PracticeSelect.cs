@@ -246,12 +246,20 @@ public static class PracticeSelect {
 
             var paths = Directory.GetFiles(Folder, "*.bfrp");
             Array.Sort(paths, StringComparer.OrdinalIgnoreCase);
+            var skipped = new List<string>();
             foreach (var path in paths) {
                 try {
                     Files.Add(BfrpFile.Load(path));
                 } catch (Exception e) {
                     Randomizer.log("practice: skipped " + path + ": " + e.Message);
+                    var why = e.Message.StartsWith(path + ": ") ? e.Message.Substring(path.Length + 2) : e.Message;
+                    skipped.Add("PRACTICE skipped " + Path.GetFileName(path) + ": " + why);
                 }
+            }
+
+            // a file left off the list says why on screen, or it just vanishes
+            if (skipped.Count > 0) {
+                Randomizer.printInfo(string.Join("\n", skipped.ToArray()), 600);
             }
         } catch (Exception e) {
             Randomizer.LogError("practice: could not list " + Folder + ": " + e.Message);
@@ -794,7 +802,7 @@ public static class PracticeSelect {
 
     private static bool Ended(BfrpFile file, string variant) {
         try {
-            return PracticeSegment.Parse(file, variant).HasEnd;
+            return PracticeSegment.Ends(file, variant);
         } catch (Exception) {
             return true;
         }

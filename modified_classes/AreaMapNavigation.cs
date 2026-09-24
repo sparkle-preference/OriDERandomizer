@@ -250,12 +250,6 @@ public class AreaMapNavigation : MonoBehaviour {
             var offset = .45f * (float)Math.Pow(zoomScaleFactor, 1.5f); // it's kind of a dumb story
             var textScale = new Vector3(0.3f * zoomScaleFactor, 0.3f * zoomScaleFactor, 0.3f); // but they work well i prommy
 
-            // a well's prompt beats any tooltip under it, or it could never be reached
-            if (RandomizerMapWarp.Update(m_areaMapUi, this, cursorPositionWorld, textScale, offset)) {
-                AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(false);
-                return;
-            }
-
             foreach (RuntimeGameWorldArea runtimeArea in GameWorld.Instance.RuntimeAreas) {
                 foreach (var runtimeIcon in runtimeArea.Icons) {
                     if (!runtimeIcon.IsVisible(m_areaMapUi) || runtimeIcon.Icon == WorldMapIconType.Invisible) {
@@ -302,7 +296,17 @@ public class AreaMapNavigation : MonoBehaviour {
             }
 
             // Peers are considered last and win ties: the thing that moves is the thing you meant.
-            if (RandomizerGhostMap.Hover(cursorPositionWorld, ref candidateDistance, out var peerAt, out var peerName)) {
+            var peer = RandomizerGhostMap.Hover(cursorPositionWorld, ref candidateDistance, out var peerAt, out var peerName);
+
+            // at full zoom the nearest thing takes the cursor; otherwise a well's prompt beats any
+            // tooltip under it, or it could never be reached
+            var beat = ZoomTime >= 2f ? candidateDistance : Mathf.Infinity;
+            if (RandomizerMapWarp.Update(m_areaMapUi, this, cursorPositionWorld, textScale, offset, beat)) {
+                AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(false);
+                return;
+            }
+
+            if (peer) {
                 var peerPosition = WorldToMapPosition(peerAt);
                 peerPosition.y -= offset * 0.6f;
                 AreaMapUI.Instance.RandomizerTooltip.transform.position = peerPosition;

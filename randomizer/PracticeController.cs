@@ -378,6 +378,7 @@ public static class PracticeController {
             }
         } finally {
             RandomizerSwitch.SilentMode = silent;
+            RandomizerSwitch.SeedSilent = false;
         }
 
         return true;

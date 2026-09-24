@@ -111,9 +111,9 @@ public class LiveGhostSource : IGhostSource {
     private const float Resync = 1f;
 
     // a couple of minutes at 30 Hz, trimmed back to one when it fills
-    private const int MaxSamples = 4096;
+    internal const int MaxSamples = 4096;
 
-    private const int KeepSamples = 2048;
+    internal const int KeepSamples = 2048;
 
     private readonly List<Sample> Received = new List<Sample>();
 
@@ -170,6 +170,32 @@ public class LoopbackGhostSource : IGhostSource {
             Received.Add(Script[Next]);
             Next++;
             Arrived = Time.time;
+        }
+
+        // trimmed as LiveGhostSource trims: the view re-seeks when its cursor falls off
+        if (Received.Count > LiveGhostSource.MaxSamples) {
+            Received.RemoveRange(0, Received.Count - LiveGhostSource.KeepSamples);
+        }
+    }
+
+    // Cuts the front of a script shared by `readers` once all have fed past it, keeping `keep`
+    // behind the slowest for a later reader further behind. Cuts at least `keep` at a time.
+    public static void Trim(List<Sample> script, List<LoopbackGhostSource> readers, int keep) {
+        var slowest = script.Count;
+        foreach (var reader in readers) {
+            if (reader.Next < slowest) {
+                slowest = reader.Next;
+            }
+        }
+
+        var cut = slowest - keep;
+        if (cut < keep) {
+            return;
+        }
+
+        script.RemoveRange(0, cut);
+        foreach (var reader in readers) {
+            reader.Next -= cut;
         }
     }
 

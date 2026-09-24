@@ -365,8 +365,9 @@ public static class RandomizerBonusSkill {
                 return;
             }
 
+            // rates are per 60 Hz frame, paid in real time whatever the refresh rate
             if (EnergyDrainRate > 0f) {
-                Characters.Sein.Energy.Spend(EnergyDrainRate);
+                Characters.Sein.Energy.Spend(EnergyDrainRate * Mathf.Min(Time.unscaledDeltaTime, MaxDrainStep) * 60f);
             }
         }
     }
@@ -541,6 +542,9 @@ public static class RandomizerBonusSkill {
     }
 
     public static float EnergyDrainRate;
+
+    // seconds; a load hitch drains no more than this
+    private const float MaxDrainStep = 0.1f;
 
     public static bool IsActive(int id) {
         try {

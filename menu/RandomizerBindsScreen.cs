@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 public class RandomizerBindsScreen : CustomSettingsScreen {
     // Ordered by how often a run reaches for them, not by how the file lists them.
     public override void InitScreen() {
@@ -73,15 +75,54 @@ public class RandomizerBindsScreen : CustomSettingsScreen {
         get { return "Reset ALL rando binds to default?"; }
     }
 
+    // every action, rows or not: Grenade Jump and the dev binds may have none
     public override void ResetToDefaults() {
         Backup(RandomizerRebinding.BindsFile);
+        RandomizerRebinding.UseDefaults();
         foreach (var control in GetComponentsInChildren<RandomizerBindControl>(true)) {
-            RandomizerRebinding.SetBinds(control.Action, RandomizerRebinding.DefaultBinds[control.Action]);
             control.Reset();
         }
 
         RandomizerRebinding.WriteBindsToFile();
+        AfterReset(RandomizerRebinding.BindsFile);
     }
+
+    protected override void SnapshotUnlisted() {
+        unlisted.Clear();
+        var rows = new HashSet<string>();
+        foreach (var control in GetComponentsInChildren<RandomizerBindControl>(true)) {
+            rows.Add(control.Action);
+        }
+
+        foreach (var action in RandomizerRebinding.DefaultBinds.Keys) {
+            if (!rows.Contains(action)) {
+                unlisted[action] = RandomizerRebinding.BindNamed(action).ToString();
+            }
+        }
+    }
+
+    protected override bool UnlistedChanged {
+        get {
+            foreach (var pair in unlisted) {
+                if (RandomizerRebinding.BindNamed(pair.Key).ToString() != pair.Value) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    protected override void RestoreUnlisted() {
+        foreach (var pair in unlisted) {
+            if (RandomizerRebinding.BindNamed(pair.Key).ToString() != pair.Value) {
+                RandomizerRebinding.SetBinds(pair.Key, pair.Value);
+            }
+        }
+    }
+
+    // the file form of each action with no row here, as the page was entered
+    private readonly Dictionary<string, string> unlisted = new Dictionary<string, string>();
 
     private const int BonusSlots = 9;
 }

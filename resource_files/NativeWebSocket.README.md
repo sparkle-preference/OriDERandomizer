@@ -13,6 +13,11 @@ interop boundary, and the call blocks, so it runs on its own thread.
 `randomizer/NativeWebSocket.cs` binds those two *optionally*: a wrapper
 paired with an older dll loses the updater but keeps its socket.
 
+Every export taking a string has a `*_w` twin taking UTF-16 (1.2.0 on),
+and the wrapper uses the twins whenever the dll has them: text reaches the
+wire as UTF-8 and paths skip the ANSI code page, so an install folder
+outside it works. The dll itself is loaded with LoadLibraryW.
+
 ## Data channels (`rtc_*`)
 
 WebRTC data channels, for ghost multiplayer, over libdatachannel. Same
@@ -65,9 +70,12 @@ history). From the dotnet-native-websocket checkout:
 cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 ^
   -DCMAKE_TOOLCHAIN_FILE=<vcpkg>/scripts/buildsystems/vcpkg.cmake ^
   -DVCPKG_TARGET_TRIPLET=x86-windows-static ^
-  -DVCPKG_OVERLAY_PORTS=<checkout>/vcpkg-overlays
+  -DVCPKG_OVERLAY_PORTS=<checkout>/vcpkg-overlays ^
+  -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
 cmake --build build --config Release
 ```
+
+The last flag matches the static triplet's CRT; without it the link fails (LNK2038).
 
 Output: `build/bin/Release/NativeWebSocket.dll` and `.sidecar_ver`,
 self-contained (static CRT, static ixwebsocket + mbedtls + libdatachannel).

@@ -174,7 +174,7 @@ public static class RandomizerSettings {
             return;
         }
 
-        using (var writer = new StreamWriter("RandomizerSettings.txt", false)) {
+        using (var writer = new StringWriter()) {
             writer.WriteLine("// This file contains a variety of randomizer-specific settings.");
             writer.WriteLine("// Lines that start with // are comments - they explain what this file does and how it works");
             writer.WriteLine("// Edit values of settings by changing the text after the \":\" and then saving the file.");
@@ -200,9 +200,37 @@ public static class RandomizerSettings {
                 writer.Write(": ");
                 writer.WriteLine($"{setting.Value.ToString()}\n");
             }
+
+            Save("RandomizerSettings.txt", writer.ToString());
         }
 
         dirty = false;
+    }
+
+    // Whole or not at all: a temp file replaces the old one. A symlink, or a file whose holder
+    // refuses the swap, is written in place instead.
+    private static void Save(string path, string text) {
+        var linked = File.Exists(path) && (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+        if (!linked) {
+            var temp = path + ".tmp";
+            try {
+                File.WriteAllText(temp, text);
+                if (File.Exists(path)) {
+                    File.Replace(temp, path, null);
+                } else {
+                    File.Move(temp, path);
+                }
+
+                return;
+            } catch (Exception) {
+                try {
+                    File.Delete(temp);
+                } catch (Exception) {
+                }
+            }
+        }
+
+        File.WriteAllText(path, text);
     }
 
     public static bool IsSwimBoosting() {
@@ -232,7 +260,7 @@ public static class RandomizerSettings {
     }
 
     static RandomizerSettings() {
-        Controls.BashDeadzone = new FloatSetting("Controller Bash Deadzone", 0.5f, "(0.0-1.0, Default=0.5): Size of the controller stick deadzone when aiming Bash.");
+        Controls.BashDeadzone = new FloatSetting("Controller Bash Deadzone", 0.5f, "(0.0-1.0, Default=0.5): Size of the controller stick deadzone when aiming Bash.", min: 0f, max: 1f);
         Controls.FastGrenadeAim = new BoolSetting("Instant Grenade Aim", false, "True: When aiming Grenade on a controller, throw the grenade in the direction and distance the stick is aimed.\nFalse (Default): Vanilla behavior (move the stick to move the target location).");
         Controls.GrenadeAimSpeed = new FloatSetting("Grenade Aim Speed", 1.0f, "(Default 1.0 - higher numbers are faster): The speed at which controller/wsad inputs move the Grenade target.");
         Controls.InvertSwim = new BoolSetting("Invert Swim", false, "True: Ori swims fast by default, and slows down while pressing [Jump].\nFalse (default): Vanilla behavior (hold [Jump] to swim faster).");
@@ -250,7 +278,7 @@ public static class RandomizerSettings {
         Customization.DiscoSense = new BoolSetting("Disco Sense", false, "True: Ignore sense colors, and instead speed up the Color.txt rotation when sense is active (if you have one).\nFalse (default): Color.txt rotation is overwritten by Sense colors.", false);
         Customization.RainbowDash = new BoolSetting("Rainbow Dash", false, "True: Enhance your dashes (cosmetically) with sparkles and rainbows.\nFalse (default): Vanilla dashes.", false);
         Customization.TouchedVisibility = new FloatSetting("Touched Pickup Visibility", 0.5f, "(0.0-1.0, Default=0.5): Transparency for pickup icons that have been touched but are not currently collected (usually because they were lost on death). Set to 0 to hide completely; the Uncollected filter still shows them faintly.");
-        Customization.MapWarpHold = new FloatSetting("Map Warp Hold", 1f, "(0.1-3.0, Default=1.0): How long [[Map Warp]] must be held to start a warp on the area map.");
+        Customization.MapWarpHold = new FloatSetting("Map Warp Hold", 1f, "(0.01-3.0, Default=1.0): How long [[Map Warp]] must be held to start a warp on the area map.");
         Customization.ShowOtherPlayers = new BoolSetting("Show Other Players", true, "True (default): In multiplayer games, other players show up as translucent ghosts when on the same screen and are marked on the map.\nFalse: disables this functionality.", true);
         Customization.MultiplePickupMessages = new BoolSetting("Display Multiple Pickup Messages", false, "True: Shows up to 5 pickup messages at once on the left side of the screen. Hold [[Replay Message]] to show more.\nFalse (default): New pickup messages display one at a time at the top center of the screen.", false);
         Customization.AlwaysShowLastFivePickups = new BoolSetting("Always Show Last Five Pickup Messages", false, "True: Always show the last 5 pickup messages. Only works if Display Multiple Pickups is set to True.\nFalse (default): Only show pickups when found or on pressing [[Replay Message]].", false);
@@ -265,7 +293,7 @@ public static class RandomizerSettings {
         Customization.DisableTempResourceRows = new BoolSetting("Disable Temporary Resource Rows", false, "True: temporary health and energy draw inline past your normal cells, as older versions did.\nFalse (default): temporary health and energy get their own smaller row above each bar.", false);
         Customization.TempRowSpacing = new FloatSetting("Temp Row Spacing", 0.8f, "Vertical gap between a HUD bar and its temporary-resource row, in strip heights.", false);
         Customization.TempRowHorizontalOffset = new FloatSetting("Temp Row Horizontal Offset", 0f, "Horizontal shift of the temporary-resource rows, in strip heights. Positive pushes away from the experience wheel.", false);
-        Customization.TempRowScale = new FloatSetting("Temp Row Scale", 0.7f, "Temporary-resource row size relative to the base bar.", false);
+        Customization.TempRowScale = new FloatSetting("Temp Row Scale", 0.7f, "(0.2-2.0) Temporary-resource row size relative to the base bar.", false, min: 0.2f, max: 2f);
         Customization.TempRowBrightness = new FloatSetting("Temp Row Brightness", 0.8f, "Brightness of the temporary-resource rows, relative to the base bars.", false);
 
         QOL.AbilityMenuOpacity = new FloatSetting("Ability Menu Opacity", 0.5f, "(0.0-1.0) The opacity of the ability menu when performing a Save Anywhere.", false);
@@ -280,7 +308,7 @@ public static class RandomizerSettings {
         Game.DefaultDifficulty = new EnumSetting<Difficulty>("Default Difficulty", Difficulty.Relaxing, "(Relaxing (default), Challenging, Punishing, OneLife): The default difficulty on new file selection.", false);
 
         Accessibility.ApplySoundCompression = new BoolSetting("Apply Sound Compression", false, "True: Caps sound from getting too loud (relevant when e.g. charge jumping very echo-y areas, like Spirit Caverns).\nFalse (default): Vanilla behavior.", false);
-        Accessibility.SoundCompressionFactor = new FloatSetting("Sound Compression Factor", 0.6f, "(0.0-1.0) Higher values mean more sound compression (fewer sounds louder than the rest of them).", false);
+        Accessibility.SoundCompressionFactor = new FloatSetting("Sound Compression Factor", 0.6f, "(0.0-1.0) Higher values mean more sound compression (fewer sounds louder than the rest of them).", false, min: 0f, max: 1f);
         Accessibility.CameraShakeFactor = new FloatSetting("Camera Shake Factor", 1f, "(0.0-1.0) Reduce the intensity of camera shake effects in the game. Set to 0 to disable camera shake entirely.", false);
         Accessibility.DisableMenuBlur = new BoolSetting("Disable Menu Blur", false, "True: Disables the blur effect applied to the game during Save Anywhere.\nFalse (default): Vanilla behavior.", false);
 
@@ -528,12 +556,20 @@ public static class RandomizerSettings {
     }
 
     public class FloatSetting : Setting<float> {
-        public FloatSetting(string name, float defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
+        public FloatSetting(string name, float defaultValue, string comment = "", bool nag = true, bool hidden = false,
+                float min = float.NegativeInfinity, float max = float.PositiveInfinity) : base(name, defaultValue, comment, nag, hidden) {
+            Min = min;
+            Max = max;
         }
 
-        // either decimal mark reads and a dot is written, whatever the player's locale
+        // either decimal mark reads and a dot is written, whatever the player's locale; NaN is never in range
         public override void Parse(string value) {
-            Value = float.Parse(value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture);
+            var parsed = float.Parse(value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture);
+            if (!(parsed >= Min && parsed <= Max)) {
+                throw new FormatException("out of range");
+            }
+
+            Value = parsed;
         }
 
         public override string ToString() {
@@ -541,6 +577,10 @@ public static class RandomizerSettings {
         }
 
         public override string ValidValues() => "A decimal number";
+
+        public readonly float Min;
+
+        public readonly float Max;
     }
 
     public class HostSetting : Setting<String> {

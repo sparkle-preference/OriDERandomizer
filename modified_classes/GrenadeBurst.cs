@@ -7,6 +7,7 @@ public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
         m_suspended = false;
         m_time = 0f;
         m_waitDelay = 0f;
+        m_warped = false;
     }
 
     public static void IgnoreOnLastInstance(IAttackable attackable) {
@@ -73,7 +74,9 @@ public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
         }
 
         m_waitDelay = 0.1f;
-        if (RandomizerBonusSkill.IsActive(117) && RandomizerBonusSkill.CanWarpTo(position)) {
+        // once per burst, not on every damage tick after it
+        if (!m_warped && RandomizerBonusSkill.IsActive(117) && RandomizerBonusSkill.CanWarpTo(position)) {
+            m_warped = true;
             Characters.Sein.Position = position;
             Characters.Sein.Speed = new Vector3(0f, 0f);
             Characters.Ori.Position = new Vector3(position.x, position.y + 5f);
@@ -114,4 +117,6 @@ public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
     private static GrenadeBurst m_lastInstance;
 
     private bool m_suspended;
+
+    private bool m_warped;
 }

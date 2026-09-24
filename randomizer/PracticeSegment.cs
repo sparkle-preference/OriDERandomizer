@@ -29,7 +29,28 @@ public class PracticeSegment {
     // what the segment is for, in the maker's words; shown once a session before the first run
     public string About = "";
 
-    // The shared boxes, then the variant's; the goal is the first goal box among them.
+    // set while the chooser lists segments: parse problems go to the log under the file's name
+    private static string quietFile;
+
+    // HasEnd for the chooser, which must not paint every file's problems over itself
+    public static bool Ends(BfrpFile file, string variant) {
+        quietFile = file.Path;
+        try {
+            return Parse(file, variant).HasEnd;
+        } finally {
+            quietFile = null;
+        }
+    }
+
+    public static void Report(string problem) {
+        if (quietFile == null) {
+            Randomizer.LogError("practice: " + problem);
+        } else {
+            Randomizer.log("practice: " + quietFile + ": " + problem);
+        }
+    }
+
+    // The shared boxes, then the variant's; the goal is the first shared goal box.
     public static PracticeSegment Parse(BfrpFile file, string variant) {
         var seg = Parse(file.Segment);
         var about = file.Segment["about"];
@@ -41,10 +62,15 @@ public class PracticeSegment {
         var json = file.VariantSegment(variant);
         if (json.IsObject) {
             if (json["end"].IsObject) {
-                Randomizer.LogError("practice: variants share the segment's end condition; ignoring this one's");
+                Report("variants share the segment's end condition; ignoring this one's");
             }
 
-            seg.Boxes.AddRange(file.Boxes(variant));
+            var own = file.Boxes(variant);
+            if (own.RemoveAll(box => box.Goal) > 0) {
+                Report("variants share the segment's goal box; ignoring this one's");
+            }
+
+            seg.Boxes.AddRange(own);
             var items = json["inventory"];
             for (var i = 0; i < items.Count; i++) {
                 var action = Action(items[i]);
@@ -71,7 +97,7 @@ public class PracticeSegment {
 
         var action = Pickup(value.Str);
         if (action == null) {
-            Randomizer.LogError("practice: '" + value.Str + "' is not a pickup");
+            Report("'" + value.Str + "' is not a pickup");
         }
 
         return action;
@@ -108,18 +134,18 @@ public class PracticeSegment {
                 if (item.IsString && Holdable(item.Str)) {
                     seg.EndItems.Add(item.Str);
                 } else {
-                    Randomizer.LogError("practice: segment wants item " + item.Serialize(false) + ", which is not a skill or world event");
+                    Report("segment wants item " + item.Serialize(false) + ", which is not a skill or world event");
                 }
             }
 
             for (var i = 0; i < end["locations"].Count; i++) {
                 var key = (int)end["locations"][i].Num;
-                if (RandomizerTrackedDataManager.CoordsMap.ContainsKey(key)) {
+                if (CanEnd(key)) {
                     seg.EndLocations.Add(key);
                 } else if (RandomizerLocationManager.LocationsByKey.ContainsKey(key)) {
-                    Randomizer.LogError("practice: segment wants location " + key + ", which cannot end a segment");
+                    Report("segment wants location " + key + ", which cannot end a segment");
                 } else {
-                    Randomizer.LogError("practice: segment wants location " + key + ", which is not a place");
+                    Report("segment wants location " + key + ", which is not a place");
                 }
             }
 
@@ -129,6 +155,19 @@ public class PracticeSegment {
         }
 
         return seg;
+    }
+
+    // Sein gives Spirit Flame before practice sees it, and Map1-9 are only reached past practice's branch
+    public static bool NeverGiven(int key) {
+        RandomizerLocationManager.Location location;
+        return RandomizerLocationManager.LocationsByKey.TryGetValue(key, out location)
+            && (location.Type == RandomizerLocationManager.Location.LocationType.ProgressiveMap
+                || location.Type == RandomizerLocationManager.Location.LocationType.Skill && location.SpecialIndex == 0);
+    }
+
+    // Met reads coord bits, and practice sets one only for a CoordsMap location it gives
+    public static bool CanEnd(int key) {
+        return RandomizerTrackedDataManager.CoordsMap.ContainsKey(key) && !NeverGiven(key);
     }
 
     // What the attempt's locations hold: placement lines, shared then the variant's, then each
@@ -146,7 +185,7 @@ public class PracticeSegment {
             int coord;
             RandomizerAction action;
             if (parts.Length < 3 || !int.TryParse(parts[0], out coord) || (action = Pickup(parts[1], parts[2])) == null) {
-                Randomizer.LogError("practice: '" + line + "' is not a placement");
+                Report("'" + line + "' is not a placement");
                 continue;
             }
 
@@ -160,8 +199,15 @@ public class PracticeSegment {
             var among = groups[g]["among"];
             var spots = new List<int>();
             for (var i = 0; i < among.Count; i++) {
-                if (among[i].IsNumber && !spots.Contains((int)among[i].Num)) {
-                    spots.Add((int)among[i].Num);
+                if (!among[i].IsNumber || spots.Contains((int)among[i].Num)) {
+                    continue;
+                }
+
+                var spot = (int)among[i].Num;
+                if (NeverGiven(spot)) {
+                    Report("shuffle group wants location " + spot + ", which cannot hold a pickup");
+                } else {
+                    spots.Add(spot);
                 }
             }
 

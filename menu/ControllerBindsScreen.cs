@@ -50,5 +50,6 @@ public class ControllerBindsScreen : CustomSettingsScreen {
         }
 
         PlayerInputRebinding.WriteControllerRebindSettings();
+        AfterReset(PlayerInputRebinding.ControllerRebindingFile);
     }
 }

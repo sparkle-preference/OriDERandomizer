@@ -106,7 +106,8 @@ public static class RandomizerRebinding {
             // parse step 2: load defaults for missing binds
             foreach (string missingAction in unseenActions) {
                 AssignBind(missingAction, null, writeList);
-                if (missingAction == "Show Keysanity Progress") {
+                // files from before Show Keysanity Progress had Toggle Chaos on its Alt+K
+                if (missingAction == "Show Keysanity Progress" && ToggleChaos.ToString() == "Alt+K") {
                     AssignBind("Toggle Chaos", null, writeList);
                     dirty = true;
                 }
@@ -182,7 +183,13 @@ public static class RandomizerRebinding {
 
     public static KeyCode StringToKeyBinding(string s) {
         if (s != "") {
-            return (KeyCode)Enum.Parse(typeof(KeyCode), s, true);
+            var key = (KeyCode)Enum.Parse(typeof(KeyCode), s, true);
+            // Enum.Parse takes any number, which no key answers to
+            if (!Enum.IsDefined(typeof(KeyCode), key)) {
+                throw new ArgumentException("no key " + s);
+            }
+
+            return key;
         }
 
         return KeyCode.None;

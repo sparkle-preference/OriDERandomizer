@@ -12,12 +12,17 @@ public static class RandomizerMW {
 
     public const int GrantedSlotsLast = 947;
 
+    // tick field 10 items this save has applied: outside KeptOnDeath too, so a rollback re-grants
+    public const int ExtraItemsApplied = 948;
+
     public class ManifestEntry {
         public int Slot;
         public int Finder;
         public string Code;
         public string Id;
         public string Zone;
+        // who to credit when there is no slot to look up
+        public string Sender;
     }
 
     public static Dictionary<int, ManifestEntry> Manifest = new Dictionary<int, ManifestEntry>();
@@ -166,6 +171,10 @@ public static class RandomizerMW {
 
     // who to name on a grant: apfrom's sender for AP, else the manifest's finder; "" = yourself
     private static string SenderFor(ManifestEntry entry) {
+        if (entry.Sender != null) {
+            return entry.Sender;
+        }
+
         if (SlotSenders.TryGetValue(entry.Slot, out var token)) {
             return token == "" ? "" : ApName(token);
         }
@@ -329,6 +338,16 @@ public static class RandomizerMW {
         return SlotGranted(-coords - 2);
     }
 
+    // a warp from outside the seed still needs its logic node; seed parse registers plain TW lines only
+    private static void RegisterWarpLogic(ManifestEntry entry) {
+        if (entry.Code == "TW") {
+            var warp = entry.Id.Split(',');
+            if (warp.Length > 3 && !Randomizer.WarpLogicLocations.ContainsKey(warp[0])) {
+                Randomizer.WarpLogicLocations.Add(warp[0], warp[3]);
+            }
+        }
+    }
+
     // manifest line: <-(slot+2)>|MW|<finder>,<holder>,<code>,<id>|<zone>; bounded split, TW ids hold commas
     public static void AddManifestEntry(int coords, string value, string zone) {
         try {
@@ -347,13 +366,7 @@ public static class RandomizerMW {
             var who = string.IsNullOrEmpty(holder) ? $"P{entry.Finder}" : holder;
             var clue = string.IsNullOrEmpty(zone) ? who : $"{who} {zone}";
 
-            // an exported warp still needs its logic node; seed parse registers plain TW lines only
-            if (entry.Code == "TW") {
-                var warp = entry.Id.Split(',');
-                if (warp.Length > 3 && !Randomizer.WarpLogicLocations.ContainsKey(warp[0])) {
-                    Randomizer.WarpLogicLocations.Add(warp[0], warp[3]);
-                }
-            }
+            RegisterWarpLogic(entry);
 
             // clues for our dungeon keys placed in other worlds
             if (Randomizer.CluesMode && entry.Code == "EV") {
@@ -488,15 +501,20 @@ public static class RandomizerMW {
             return false;
         }
 
-        var entry = Manifest[slot];
-        var coords = -slot - 2;
+        Give(Manifest[slot], -slot - 2, batch, batched);
+        return true;
+    }
+
+    private static void Give(ManifestEntry entry, int coords, bool batch, List<ManifestEntry> batched) {
         if (batch) {
             // squelch per-item messages; ShowBatchMessage summarizes after
+            var squelched = RandomizerSwitch.SilentMode;
             RandomizerSwitch.SilentMode = true;
             try {
                 RandomizerSwitch.GivePickup(new RandomizerAction(entry.Code, entry.Id), coords, false);
             } finally {
-                RandomizerSwitch.SilentMode = false;
+                RandomizerSwitch.SilentMode = squelched;
+                RandomizerSwitch.SeedSilent = false;
             }
 
             batched.Add(entry);
@@ -510,8 +528,84 @@ public static class RandomizerMW {
                 RandomizerSwitch.MessageSuffix = null;
             }
         }
+    }
 
-        return true;
+    // tick field 10: Archipelago items with no slot, ";"-joined and append-only; true if any were given
+    public static bool OnExtraItemsField(string field) {
+        try {
+            if (string.IsNullOrEmpty(field) || !Characters.Sein || Characters.Sein.Inventory == null) {
+                return false;
+            }
+
+            var items = field.Split(';');
+            var applied = Characters.Sein.Inventory.GetRandomizerItem(ExtraItemsApplied);
+            if (applied >= items.Length) {
+                return false;
+            }
+
+            var silent = Randomizer.CreditsActive;
+            var batch = items.Length - applied > ApBatchMessageThreshold;
+            var batched = new List<ManifestEntry>();
+            for (var i = applied; i < items.Length; i++) {
+                try {
+                    var entry = ParseExtraItem(items[i]);
+                    if (entry == null) {
+                        throw new FormatException("malformed");
+                    }
+
+                    RegisterWarpLogic(entry);
+                    // coords 0: the pickup is offworld and no location reports found
+                    Give(entry, 0, batch || silent, batched);
+                } catch (Exception e) {
+                    Randomizer.LogError($"MW: extra item {i} ({items[i]}): {e.Message}");
+                }
+
+                // counted even when unreadable, or one bad item would stall the rest
+                Characters.Sein.Inventory.SetRandomizerItem(ExtraItemsApplied, i + 1);
+            }
+
+            if (batched.Count > 0 && !silent) {
+                ShowBatchMessage(batched);
+            }
+
+            return true;
+        } catch (Exception e) {
+            Randomizer.LogError("MW.OnExtraItemsField: " + e.Message);
+        }
+
+        return false;
+    }
+
+    // one field 10 item, percent-escaped "code|id"; null if malformed
+    public static ManifestEntry ParseExtraItem(string raw) {
+        var text = UnescapeTickItem(raw ?? "");
+        var bar = text.IndexOf('|');
+        if (bar <= 0 || bar == text.Length - 1) {
+            return null;
+        }
+
+        return new ManifestEntry { Slot = -1, Code = text.Substring(0, bar), Id = text.Substring(bar + 1), Sender = "Archipelago" };
+    }
+
+    // the server escapes only % , ; (as %25 %2C %3B); any other % passes through as sent
+    public static string UnescapeTickItem(string text) {
+        if (text.IndexOf('%') < 0) {
+            return text;
+        }
+
+        var sb = new System.Text.StringBuilder(text.Length);
+        for (var i = 0; i < text.Length; i++) {
+            var hex = text[i] == '%' && i + 2 < text.Length ? text.Substring(i + 1, 2).ToUpperInvariant() : "";
+            var c = hex == "25" ? '%' : hex == "2C" ? ',' : hex == "3B" ? ';' : '\0';
+            if (c == '\0') {
+                sb.Append(text[i]);
+            } else {
+                sb.Append(c);
+                i += 2;
+            }
+        }
+
+        return sb.ToString();
     }
 
 

@@ -247,16 +247,14 @@ public class RandomizerLocationManager {
     // runs on DLThread: Randomizer.log only, since LogError draws on screen
     public static void DownloadAreas() {
         if (RandomizerSettings.DevSettings.AreasOri) {
+            // areas.ori is only ever swapped for a whole download, never written into
+            const string temp = "areas.ori.tmp";
             try {
-                if (File.Exists("areas.ori")) {
-                    File.Move("areas.ori", "areas.ori.old"); // backup
-                }
-
                 // The logic thread can block, so the sidecar's download is free here.
                 // A first TLS request can lose a race with the ws handshake: two tries.
                 var fetched = false;
                 for (var attempt = 0; attempt < 2 && NativeWebSocket.Loaded && NativeWebSocket.HttpAvailable; attempt++) {
-                    var status = NativeWebSocket.HttpDownload(AreasURL(), "areas.ori");
+                    var status = NativeWebSocket.HttpDownload(AreasURL(), temp);
                     if (status == 200) {
                         fetched = true;
                         break;
@@ -268,30 +266,23 @@ public class RandomizerLocationManager {
                 }
 
                 if (!fetched) {
-                    // no lane could serve it: keep what we had rather than
-                    // leaving the install with no logic file at all
                     Randomizer.log("areas.ori: no transport could fetch it; keeping the existing file");
-                    if (File.Exists("areas.ori.old")) {
-                        File.Move("areas.ori.old", "areas.ori");
+                } else {
+                    if (File.Exists("areas.ori")) {
+                        File.Replace(temp, "areas.ori", null);
+                    } else {
+                        File.Move(temp, "areas.ori");
                     }
 
-                    return;
-                }
-
-                Randomizer.log($"areas.ori: fetched from {AreasURL()}");
-
-                if (File.Exists("areas.ori.old")) {
-                    File.Delete("areas.ori.old"); // clean backup
+                    Randomizer.log($"areas.ori: fetched from {AreasURL()}");
                 }
             } catch (Exception e) {
                 Randomizer.log($"Failed to download areas.ori: {e}");
-                if (File.Exists("areas.ori")) {
-                    File.Delete("areas.ori"); // remove broken / failed
-                }
+            }
 
-                if (File.Exists("areas.ori.old")) {
-                    File.Move("areas.ori.old", "areas.ori"); // restore backup
-                }
+            try {
+                File.Delete(temp);
+            } catch (Exception) {
             }
         }
 

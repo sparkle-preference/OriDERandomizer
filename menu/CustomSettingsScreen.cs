@@ -297,14 +297,24 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     public virtual void ResetToDefaults() {
     }
 
-    // One copy of the file as it was before the last reset; not .bak, where people keep their own.
+    // One copy of the file before the last reset that changed it; not .bak, where people keep their own.
     public static void Backup(string file) {
         try {
-            if (File.Exists(file)) {
+            string left;
+            if (File.Exists(file) && !(resetLeft.TryGetValue(file, out left) && File.ReadAllText(file) == left)) {
                 File.Copy(file, file + BackupSuffix, true);
             }
         } catch (Exception e) {
             Randomizer.log("settings: no backup of " + file + ": " + e.Message);
+        }
+    }
+
+    // Call once a reset has written the file: a second reset with nothing changed keeps the first's backup.
+    public static void AfterReset(string file) {
+        try {
+            resetLeft[file] = File.ReadAllText(file);
+        } catch (Exception) {
+            resetLeft.Remove(file);
         }
     }
 
@@ -333,10 +343,27 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         foreach (var control in randoControls) {
             control.Snapshot();
         }
+
+        SnapshotUnlisted();
+    }
+
+    // Binds the page changes without a row for them (a reset reaches them); DISCARD restores them too.
+    protected virtual void SnapshotUnlisted() {
+    }
+
+    protected virtual bool UnlistedChanged {
+        get { return false; }
+    }
+
+    protected virtual void RestoreUnlisted() {
     }
 
     public bool BindsDirty {
         get {
+            if (UnlistedChanged) {
+                return true;
+            }
+
             foreach (var control in keyControls) {
                 if (control.Changed) {
                     return true;
@@ -372,6 +399,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             control.Restore();
         }
 
+        RestoreUnlisted();
         if (randoControls.Length > 0) {
             RandomizerRebinding.WriteBindsToFile();
         }
@@ -396,18 +424,19 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return;
         }
 
-        // a pad edit takes buttons until Escape and has no undo; a key edit ends on Enter
+        // a pad edit takes buttons until Cancel and has no undo; a key edit ends on Enter
+        var cancel = CancelCap();
         if (Editing) {
             var erase = RandomizerKeyIcons.Caption(EraseKey) + " Remove Last";
             if (randoControls.Length > 0) {
                 Legend("<icon>z</>" + Ring + "(Hold): Bind " + (ReadingActions ? "Keys" : "Game Actions"),
-                    Join(erase, "<icon>D</> Finish"), "<icon>y</>" + Ring + "(Hold): Cancel",
+                    Join(erase, "<icon>D</> Finish"), cancel + Ring + "(Hold): Cancel",
                     ModeShift);
             } else if (keyControls.Length > 0) {
                 Legend(string.Empty, Join(erase, "<icon>D</> Finish"),
-                    "<icon>y</>" + Ring + "(Hold): Cancel");
+                    cancel + Ring + "(Hold): Cancel");
             } else {
-                Legend(string.Empty, "<icon>y</> Finish", "<icon>y</>" + Ring + "(Hold): Cancel");
+                Legend(string.Empty, cancel + " Finish", cancel + Ring + "(Hold): Cancel");
             }
 
             return;
@@ -415,14 +444,20 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         var navigate = "<icon>vr</>" + Pages() + " Navigate";
         if (!BindsDirty) {
-            Legend(navigate, Join("<icon>D</> Rebind", Reset()), "<icon>y</> Back");
+            Legend(navigate, Join("<icon>D</> Rebind", Reset()), cancel + " Back");
             return;
         }
 
         // the save hint gets a slot to itself: its ring wraps the slot's leftmost glyph
         soulGlyph = MessageParserUtility.ProcessString(SoulKey).Contains("<icon>");
         Legend(Join(navigate, "<icon>D</> Rebind"), SoulKey + Ring + "(Hold): Save Changes",
-            Join(Reset(), "<icon>y</> Back"), SavingLeft, SavingRight);
+            Join(Reset(), cancel + " Back"), SavingLeft, SavingRight);
+    }
+
+    // the first Cancel key's cap, as the holds and taps follow that bind rather than Escape
+    private static string CancelCap() {
+        var keys = PlayerInputRebinding.KeyRebindings.Cancel;
+        return keys != null && keys.Length > 0 ? RandomizerKeyIcons.Caption(keys[0]) : "<icon>y</>";
     }
 
     // the reset hint, on pages that have one
@@ -1159,6 +1194,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     private const string BackupSuffix = ".before-reset";
 
+    // each reset file as this session's last reset left it
+    private static readonly Dictionary<string, string> resetLeft = new Dictionary<string, string>();
+
     // empty until the rows are built: the legend asks whether they are dirty on the way up
     private KeybindControl[] keyControls = new KeybindControl[0];
 
@@ -1229,4 +1267,86 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     private Transform scrollTrack;
 
     private Transform scrollThumb;
+}
+
+// A key held to cancel or swap, tapped to bind; a key pressed mid-hold joins the chord along with it.
+public class BindHold {
+    public BindHold(Action<float> draw, Action hide, Action<KeyCode> tap, Action<KeyCode> join, Action held) {
+        this.draw = draw;
+        this.hide = hide;
+        this.tap = tap;
+        this.join = join;
+        this.held = held;
+    }
+
+    // the held key is a chord member now, and neither taps nor holds until it is let go
+    public bool Joined { get; private set; }
+
+    // down is the key held now, or None; true while the hold has the frame, the one it lands on included
+    public bool Update(KeyCode down, float now, bool canStart = true) {
+        if (down == KeyCode.None) {
+            var tapped = key != KeyCode.None && !Joined && now - since < RandomizerHoldRing.Tap ? key : KeyCode.None;
+            hide();
+            Reset();
+            if (tapped != KeyCode.None) {
+                tap(tapped);
+            }
+
+            return false;
+        }
+
+        if (key == KeyCode.None) {
+            if (!canStart) {
+                return false;
+            }
+
+            key = down;
+            since = now;
+        }
+
+        if (Joined) {
+            return false;
+        }
+
+        var progress = (now - since) / RandomizerHoldRing.Seconds;
+        draw(progress);
+        if (progress < 1f) {
+            return true;
+        }
+
+        hide();
+        Reset();
+        held();
+        return true;
+    }
+
+    // Another key went down. Called before Update, so a hold that starts this frame is not joined.
+    public void Join() {
+        if (key == KeyCode.None || Joined) {
+            return;
+        }
+
+        Joined = true;
+        hide();
+        join(key);
+    }
+
+    public void Reset() {
+        key = KeyCode.None;
+        Joined = false;
+    }
+
+    private readonly Action<float> draw;
+
+    private readonly Action hide;
+
+    private readonly Action<KeyCode> tap;
+
+    private readonly Action<KeyCode> join;
+
+    private readonly Action held;
+
+    private KeyCode key = KeyCode.None;
+
+    private float since;
 }

@@ -18,6 +18,10 @@ public static class RandomizerTempResourceUI {
 
     private static bool errorLogged;
 
+    private static SeinUI searchedHud;
+
+    private static Vector2 lastOverflow;
+
     private static float TempRowScale => RandomizerSettings.Customization.TempRowScale;
 
     public static void EnsureRows() {
@@ -41,9 +45,16 @@ public static class RandomizerTempResourceUI {
                 return;
             }
 
-            if (healthFill == null || energyFill == null) {
-                FindFills();
+            // one search per HUD; a row still missing is looked for again only when the overflow moves
+            var hud = UI.SeinUI;
+            var overflow = Overflow();
+            if (hud != null && (!ReferenceEquals(hud, searchedHud)
+                    || overflow != lastOverflow && (healthRow == null || energyRow == null))) {
+                searchedHud = hud;
+                FindFills(hud);
             }
+
+            lastOverflow = overflow;
 
             if (builtScale != TempRowScale && (healthRow != null || energyRow != null)) {
                 // scale changed: rebuild next pass (Destroy lands at end of frame)
@@ -60,11 +71,12 @@ public static class RandomizerTempResourceUI {
                 return;
             }
 
-            if (healthRow == null && healthFill != null) {
+            // a clone of an inactive strip would stay hidden: nothing vanilla ever turns it on
+            if (healthRow == null && healthFill != null && healthFill.gameObject.activeInHierarchy) {
                 healthRow = BuildRow(healthFill, false);
             }
 
-            if (energyRow == null && energyFill != null) {
+            if (energyRow == null && energyFill != null && energyFill.gameObject.activeInHierarchy) {
                 energyRow = BuildRow(energyFill, true);
             }
 
@@ -77,10 +89,17 @@ public static class RandomizerTempResourceUI {
         }
     }
 
+    // over-max health and energy: what the rows show
+    private static Vector2 Overflow() {
+        var health = Characters.Sein.Mortality.Health;
+        var energy = Characters.Sein.Energy;
+        return new Vector2(Mathf.Max(0f, health.Amount - health.MaxHealth), Mathf.Max(0f, energy.Current - energy.Max));
+    }
+
     // find each bar's leading fill strip and cap every fill layer at the
     // permanent max; on later passes (fills already ours) just recover refs
-    private static void FindFills() {
-        foreach (var driver in UnityEngine.Object.FindObjectsOfType<FloatProviderAnimatorDriver>()) {
+    private static void FindFills(SeinUI hud) {
+        foreach (var driver in hud.GetComponentsInChildren<FloatProviderAnimatorDriver>(true)) {
             if (driver.Value is SeinHealthVisualMaxProvider) {
                 healthFill = driver;
                 Cap(driver, false, false, ((SeinHealthVisualMaxProvider)driver.Value).DivideBy);

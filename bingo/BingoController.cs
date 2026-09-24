@@ -114,7 +114,7 @@ public static class BingoController {
                 BoolGoals["DrainSwamp"].Completed = true;
             } else if (entity.MoonGuid == SpiderSac) {
                 BoolGoals["DropSpiderSac"].Completed = true;
-            } else if (entity.MoonGuid == CoreSkipRight || entity.MoonGuid == CoreSkipLeft && damage.Type == DamageType.LevelUp) {
+            } else if ((entity.MoonGuid == CoreSkipRight || entity.MoonGuid == CoreSkipLeft) && damage.Type == DamageType.LevelUp) {
                 if (CoreSkipTimeout > 0) {
                     BoolGoals["CoreSkip"].Completed = true;
                 } else {
@@ -1033,6 +1033,7 @@ public static class BingoController {
             GoalsWsUnsupported = false;
             GoalsGone = false;
             UpdateGone = false;
+            updateBackoff = FirstUpdateBackoff;
             // a reload moves the urls; in-flight replies from the old game die here
             RandomizerSyncManager.SidecarForget(updateHandle);
             RandomizerSyncManager.SidecarForget(goalsHandle);
@@ -1565,14 +1566,22 @@ public static class BingoController {
         }
     }
 
-    // 404: no such bingo game, so updates stop until the seed reloads; other failures retry fast
+    // 404: no such bingo game, so updates stop until the seed reloads; other failures back off
     private static void OnUpdateStatus(int status) {
         if (status == 404) {
             UpdateGone = true;
         } else if (status >= 300 || status <= 0) {
-            UpdateTimer = Math.Min(1, UpdateTimer);
+            UpdateTimer = updateBackoff;
+            updateBackoff = Math.Min(updateBackoff * 2, MaxUpdateBackoff);
+        } else {
+            updateBackoff = FirstUpdateBackoff;
         }
     }
+
+    // in ticks, like UpdateTimer
+    private const int FirstUpdateBackoff = 5;
+    private const int MaxUpdateBackoff = 30;
+    private static int updateBackoff = FirstUpdateBackoff;
 
     // the server err'd a bingo frame (predates them): back to http, resend promptly
     public static void OnBingoErr() {

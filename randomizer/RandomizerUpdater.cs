@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading;
 using UnityEngine;
 
@@ -261,22 +262,8 @@ public class RandomizerUpdater : MonoBehaviour {
     }
 
     private void SwapAndRestart(string staged) {
-        var exe = Path.Combine(s_exeDir, "oriDE.exe");
         var script = Path.Combine(Path.GetTempPath(), "orirando_update.bat");
-
-        // del "%~f0" must stay the last line: cmd reads a batch file line by line
-        var body = "@echo off\r\n"
-            + ":wait\r\n"
-            + "tasklist /FI \"IMAGENAME eq oriDE.exe\" | find /I \"oriDE.exe\" >nul\r\n"
-            + "if not errorlevel 1 (\r\n"
-            + "  ping -n 2 127.0.0.1 >nul\r\n"
-            + "  goto wait\r\n"
-            + ")\r\n"
-            + $"move /Y \"{staged}\" \"{ManagedDll}\"\r\n"
-            + $"start \"\" /D \"{s_exeDir}\" \"{exe}\"\r\n"
-            + "del \"%~f0\"\r\n";
-
-        File.WriteAllText(script, body);
+        File.WriteAllText(script, UpdateScript(staged, ManagedDll, s_exeDir), new UTF8Encoding(false));
 
         var info = new ProcessStartInfo("cmd.exe", $"/c \"{script}\"");
         info.UseShellExecute = false;
@@ -286,6 +273,27 @@ public class RandomizerUpdater : MonoBehaviour {
 
         Log($"updater: staged {staged}, quitting for restart");
         m_restartPending = true;
+    }
+
+    // UTF-8 without a BOM, read as UTF-8 once chcp has run; a path's % doubles or cmd expands it.
+    // del "%~f0" must stay the last line: cmd reads a batch file line by line
+    private static string UpdateScript(string staged, string dll, string dir) {
+        var exe = Path.Combine(dir, "oriDE.exe");
+        return "@chcp 65001 >nul\r\n"
+            + "@echo off\r\n"
+            + ":wait\r\n"
+            + "tasklist /FI \"IMAGENAME eq oriDE.exe\" | find /I \"oriDE.exe\" >nul\r\n"
+            + "if not errorlevel 1 (\r\n"
+            + "  ping -n 2 127.0.0.1 >nul\r\n"
+            + "  goto wait\r\n"
+            + ")\r\n"
+            + $"move /Y \"{Bat(staged)}\" \"{Bat(dll)}\"\r\n"
+            + $"start \"\" /D \"{Bat(dir)}\" \"{Bat(exe)}\"\r\n"
+            + "del \"%~f0\"\r\n";
+    }
+
+    private static string Bat(string path) {
+        return path.Replace("%", "%%");
     }
 
     // "4.2.15" is newer than "4.2.14"; anything unparseable is not

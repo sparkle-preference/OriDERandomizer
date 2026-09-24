@@ -413,6 +413,21 @@ public static class RandomizerGhost {
         if (Capture(Time.time - RecordStart, out sample)) {
             Take.Add(sample);
         }
+
+        if (echoesRecord && Take.Count >= 2 * LiveGhostSource.KeepSamples) {
+            TrimTake();
+        }
+    }
+
+    // The echoes read Take by index, so only the chain may cut it.
+    private static void TrimTake() {
+        PruneEchoes();
+        if (Echoes.Count == 0) {
+            StopEchoTake();
+            return;
+        }
+
+        LoopbackGhostSource.Trim(Take, Echoes, LiveGhostSource.KeepSamples);
     }
 
     internal static bool Capture(float at, out Sample sample) {

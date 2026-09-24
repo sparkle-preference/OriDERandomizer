@@ -9,11 +9,12 @@ using UnityEngine;
 public static class UberGCManager {
     private const float MinInterval = 10f;
     private const float GrowthMb = 256f;
-    private const float CeilingMb = 2560f;
+    private const float CeilingMb = 2048f;
 
     private static float s_lastUnload;
     private static float s_lastCheck;
     private static float s_sweptAtMb;
+    private static AsyncOperation s_sweep;
 
     public static int Swept;
     public static int Skipped;
@@ -43,6 +44,7 @@ public static class UberGCManager {
         }
 
         if (RandomizerPerf.On) {
+            Settle();
             var mb = PrivateMb();
             var grown = mb >= s_sweptAtMb + GrowthMb || mb >= CeilingMb;
             if (ScreenCovered() ? !grown : mb < CeilingMb) {
@@ -54,10 +56,20 @@ public static class UberGCManager {
         var op = Resources.UnloadUnusedAssets();
         op.priority = 0;
         s_lastUnload = Time.realtimeSinceStartup;
+        s_sweep = op;
+        Swept++;
+    }
+
+    // The sweep runs async, so the size it leaves is sampled once it has finished.
+    private static void Settle() {
+        if (s_sweep == null || !s_sweep.isDone) {
+            return;
+        }
+
+        s_sweep = null;
         // a failed sample must not put the next covered sweep out of reach
         var after = PrivateMb();
         s_sweptAtMb = after == float.MaxValue ? 0f : after;
-        Swept++;
     }
 
     // a fade to black, or a teleport at full bloom
@@ -104,6 +116,7 @@ public static class UberGCManager {
     }
 
     private static void Update() {
+        Settle();
         if (Time.realtimeSinceStartup - s_lastCheck > 2.5f) {
             s_lastCheck = Time.realtimeSinceStartup;
             CollectResourcesIfOutOfMem();

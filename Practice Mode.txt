@@ -103,4 +103,5 @@ Alt+M               Create Practice Segment
 Files
 ===
 A .bfrp is a zip: segment.json (the rules), save.sav (the start), placements.bfr (the boxes, and what the locations hold), variants/<id>/segment.json and placements.bfr, and runs.csv and ghosts/ per variant.
+Its entries must be stored uncompressed: if you re-zip one by hand, choose Store (no compression), or PRACTICE skips the file.
 The page is the reference for what segment.json can say.

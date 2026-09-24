@@ -82,14 +82,17 @@ public static class RandomizerBonus {
                 return;
             case 0:
                 if (!flag) {
-                    Characters.Sein.Mortality.Health.SetAmount(Characters.Sein.Mortality.Health.MaxHealth + 20);
+                    // tops up to Max + 20, never below an overheal already there
+                    var health = Characters.Sein.Mortality.Health;
+                    health.SetAmount(Mathf.Max(health.Amount, health.MaxHealth + 20));
                     RandomizerSwitch.PickupMessage("Mega Health");
                 }
 
                 break;
             case 1:
                 if (!flag) {
-                    Characters.Sein.Energy.SetCurrent(Characters.Sein.Energy.Max + 5f);
+                    var energy = Characters.Sein.Energy;
+                    energy.SetCurrent(Mathf.Max(energy.Current, energy.Max + 5f));
                     RandomizerSwitch.PickupMessage("Mega Energy");
                 }
 

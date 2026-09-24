@@ -50,5 +50,6 @@ public class KeybindsScreen : CustomSettingsScreen {
         }
 
         PlayerInputRebinding.WriteKeyRebindSettings();
+        AfterReset(PlayerInputRebinding.KeyRebindingFile);
     }
 }

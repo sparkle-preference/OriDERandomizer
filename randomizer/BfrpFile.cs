@@ -103,7 +103,7 @@ public class BfrpFile {
             try {
                 boxes.Add(RandomizerBox.Parse(line));
             } catch (Exception e) {
-                Randomizer.LogError("practice: " + Path + ": " + e.Message + " in '" + line + "'");
+                PracticeSegment.Report(e.Message + " in '" + line + "'");
             }
         }
 

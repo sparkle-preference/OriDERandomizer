@@ -109,6 +109,7 @@ public class PlayerInputRebinding {
                 }
             }
         } catch (Exception) {
+            keyFileUnread = true;
             SetDefaultKeyBindingSettings();
         }
     }
@@ -125,6 +126,11 @@ public class PlayerInputRebinding {
     }
 
     public static void WriteKeyRebindSettings() {
+        if (keyFileUnread) {
+            keyFileUnread = false;
+            CustomSettingsScreen.Backup(KeyRebindingFile);
+        }
+
         using (var streamWriter = new StreamWriter(new FileStream(KeyRebindingFile, FileMode.Create))) {
             var keyRebindings = m_keyRebindings;
             streamWriter.WriteLine("Keyboard Rebindings");
@@ -578,6 +584,7 @@ public class PlayerInputRebinding {
                 };
             }
         } catch (Exception) {
+            padFileUnread = true;
             SetDefaultControllerBindingSettings();
         }
     }
@@ -594,6 +601,11 @@ public class PlayerInputRebinding {
     }
 
     public static void WriteControllerRebindSettings() {
+        if (padFileUnread) {
+            padFileUnread = false;
+            CustomSettingsScreen.Backup(ControllerRebindingFile);
+        }
+
         using (var streamWriter = new StreamWriter(new FileStream(ControllerRebindingFile, FileMode.Create))) {
             var controllerRebindings = m_controllerRebindings;
             streamWriter.WriteLine("Controller Rebindings");
@@ -804,6 +816,11 @@ public class PlayerInputRebinding {
     public static string controllerInputRebindingsFileName = "ControllerRebindings.txt";
 
     public static ControllerBindingSettings m_controllerRebindings;
+
+    // the file failed to parse, so it is the player's edit: copied aside before the first rewrite
+    private static bool keyFileUnread;
+
+    private static bool padFileUnread;
 
     public class KeyBindingSettings {
         public KeyBindingSettings() {

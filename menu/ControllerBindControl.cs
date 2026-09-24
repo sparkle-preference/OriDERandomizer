@@ -21,6 +21,8 @@ public class ControllerBindControl : MonoBehaviour {
             buttonsPressed[i] = true;
         }
 
+        back.Reset();
+        tapped = false;
         // the legend says how to edit; the tooltip names what is being edited
         owner.BindLegend();
         Tooltip("Editing binds for " + label + "...");
@@ -41,7 +43,14 @@ public class ControllerBindControl : MonoBehaviour {
             return;
         }
 
-        if (Cancelling()) {
+        // a button pressed during a Back hold joins the binds; Back itself is no button
+        var pressed = GetPressedButtonAsBind();
+        if (pressed != null && !currentKeys.Contains(pressed.Value)) {
+            back.Join();
+        }
+
+        // A Back hold cancels the edit; a tap finishes it, on release.
+        if (back.Update(CustomSettingsScreen.BackHeld(), Time.unscaledTime)) {
             return;
         }
 
@@ -52,7 +61,7 @@ public class ControllerBindControl : MonoBehaviour {
             return;
         }
 
-        if (tapped || (WasPressed(XboxControllerInput.Button.Start) && currentKeys.Count > 0)) {
+        if (tapped || (WasPressed(XboxControllerInput.Button.Start) && currentKeys.Count > 0 && !back.Joined)) {
             tapped = false;
             editing = false;
             owner.Editing = false;
@@ -69,9 +78,8 @@ public class ControllerBindControl : MonoBehaviour {
             return;
         }
 
-        var pressedButtonAsBind = GetPressedButtonAsBind();
-        if (pressedButtonAsBind != null && !currentKeys.Contains(pressedButtonAsBind.Value)) {
-            currentKeys.Add(pressedButtonAsBind.Value);
+        if (pressed != null && !currentKeys.Contains(pressed.Value)) {
+            currentKeys.Add(pressed.Value);
             UpdateMessageBox();
         }
 
@@ -80,35 +88,8 @@ public class ControllerBindControl : MonoBehaviour {
         }
     }
 
-    // A Back hold cancels the edit; a tap finishes it, on release.
-    private bool Cancelling() {
-        var down = CustomSettingsScreen.BackHeld();
-        if (down == KeyCode.None) {
-            tapped = held >= 0f && Time.unscaledTime - held < RandomizerHoldRing.Tap;
-            held = -1f;
-            owner.HideHold();
-            return false;
-        }
-
-        if (held < 0f) {
-            held = Time.unscaledTime;
-        }
-
-        var progress = (Time.unscaledTime - held) / RandomizerHoldRing.Seconds;
-        owner.DrawHold(progress);
-
-        if (progress < 1f) {
-            return true;
-        }
-
-        owner.HideHold();
-        Cancel();
-        return true;
-    }
-
     // nothing is applied until the edit finishes, so cancelling only redraws the row
     private void Cancel() {
-        held = -1f;
         editing = false;
         owner.Editing = false;
         SuspensionManager.ResumeAll();
@@ -246,6 +227,7 @@ public class ControllerBindControl : MonoBehaviour {
         tooltipProvider.SetMessage(owner.DefaultTooltip);
         component.Tooltip = tooltipProvider;
         owner.tooltipController.UpdateTooltip();
+        back = new BindHold(p => owner.DrawHold(p), owner.HideHold, key => tapped = true, key => { }, Cancel);
     }
 
     // the buttons the screen was entered with; Restore puts them back
@@ -307,8 +289,9 @@ public class ControllerBindControl : MonoBehaviour {
 
     private string label;
 
-    private float held = -1f;
+    private BindHold back;
 
+    // a Back tap came up this frame
     private bool tapped;
 
     private RandomizerMessageProvider tooltipProvider;

@@ -14,6 +14,7 @@ public class KeybindControl : MonoBehaviour {
         editing = true;
         owner.Editing = true;
         exit = 0;
+        back.Reset();
         // the legend says how to edit; the tooltip names what is being edited
         owner.BindLegend();
         Tooltip("Editing binds for " + label + "...");
@@ -34,11 +35,17 @@ public class KeybindControl : MonoBehaviour {
             return;
         }
 
-        if (Cancelling()) {
+        // a key pressed during a Back hold joins the binds, Back with it
+        if (Input.anyKeyDown) {
+            back.Join();
+        }
+
+        // A Back hold cancels the edit; a tap is a key like any other and binds on release.
+        if (back.Update(CustomSettingsScreen.BackHeld(), Time.unscaledTime)) {
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Return) && currentKeys.Count > 0) {
+        if (Input.GetKeyDown(KeyCode.Return) && currentKeys.Count > 0 && !back.Joined) {
             editing = false;
             owner.Editing = false;
             SuspensionManager.ResumeAll();
@@ -54,7 +61,7 @@ public class KeybindControl : MonoBehaviour {
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Backspace)) {
+        if (Input.GetKeyDown(KeyCode.Backspace) && !back.Joined) {
             if (currentKeys.Count > 0) {
                 currentKeys.RemoveAt(currentKeys.Count - 1);
                 UpdateMessageBox();
@@ -70,39 +77,6 @@ public class KeybindControl : MonoBehaviour {
         }
     }
 
-    // A Back hold cancels the edit; a tap is a key like any other and binds on release.
-    private bool Cancelling() {
-        var down = CustomSettingsScreen.BackHeld();
-        if (down == KeyCode.None) {
-            if (tapped != KeyCode.None && Time.unscaledTime - held < RandomizerHoldRing.Tap) {
-                Bind(tapped);
-            }
-
-            held = -1f;
-            tapped = KeyCode.None;
-            owner.HideHold();
-            return false;
-        }
-
-        if (held < 0f) {
-            held = Time.unscaledTime;
-            tapped = down;
-        }
-
-        var progress = (Time.unscaledTime - held) / RandomizerHoldRing.Seconds;
-        owner.DrawHold(progress);
-
-        if (progress < 1f) {
-            return true;
-        }
-
-        // the hold spent the key, so letting go of it must not also bind it
-        tapped = KeyCode.None;
-        owner.HideHold();
-        Cancel();
-        return true;
-    }
-
     private void Bind(KeyCode key) {
         if (!currentKeys.Contains(key)) {
             currentKeys.Add(key);
@@ -112,7 +86,6 @@ public class KeybindControl : MonoBehaviour {
 
     // nothing is applied until Enter, so cancelling only redraws the row and stands down
     private void Cancel() {
-        held = -1f;
         editing = false;
         owner.Editing = false;
         SuspensionManager.ResumeAll();
@@ -190,6 +163,7 @@ public class KeybindControl : MonoBehaviour {
         tooltipProvider.SetMessage(owner.DefaultTooltip);
         component.Tooltip = tooltipProvider;
         owner.tooltipController.UpdateTooltip();
+        back = new BindHold(p => owner.DrawHold(p), owner.HideHold, Bind, Bind, Cancel);
     }
 
     private Func<KeyCode[]> GetKeys;
@@ -212,9 +186,7 @@ public class KeybindControl : MonoBehaviour {
 
     private string label;
 
-    private float held = -1f;
-
-    private KeyCode tapped = KeyCode.None;
+    private BindHold back;
 
     private RandomizerMessageProvider tooltipProvider;
 }

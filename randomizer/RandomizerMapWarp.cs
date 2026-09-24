@@ -12,6 +12,11 @@ public static class RandomizerMapWarp {
 
     private const float PadReach = 25f;
 
+    // the hold's range in seconds, whatever the settings file says
+    private const float MinHold = 0.01f;
+
+    private const float MaxHold = 3f;
+
     // ring radius in map units, scaled by MapPivot like the icons so it tracks every zoom
     private const float RingSpan = 7.04f;
 
@@ -43,11 +48,12 @@ public static class RandomizerMapWarp {
         "_Color", "_TintColor", "_MaskDissolveColor", "_AdditiveLayerColor"
     };
 
-    // True when a well has the cursor, so the map knows not to draw a pickup tooltip over it.
+    // True when a well has the cursor, so the map knows not to draw a pickup tooltip over it;
+    // a well farther than beat leaves the cursor to whatever tooltip is that near.
     public static bool Update(AreaMapUI map, AreaMapNavigation navigation, Vector2 cursor,
-            Vector3 textScale, float offset) {
+            Vector3 textScale, float offset, float beat) {
         try {
-            return Inner(map, navigation, cursor, textScale, offset);
+            return Inner(map, navigation, cursor, textScale, offset, beat);
         } catch (System.Exception e) {
             if (!Complained) {
                 Complained = true;
@@ -59,8 +65,15 @@ public static class RandomizerMapWarp {
     }
 
     private static bool Inner(AreaMapUI map, AreaMapNavigation navigation, Vector2 cursor,
-            Vector3 textScale, float offset) {
-        var found = Nearest(Pointing() ? cursor : navigation.ScrollPosition);
+            Vector3 textScale, float offset, float beat) {
+        // a map the game opens itself (a map stone's reveal) is no place to warp from
+        if (!Ready()) {
+            List(map, navigation, textScale, offset, null);
+            Clear();
+            return false;
+        }
+
+        var found = Nearest(Pointing() ? cursor : navigation.ScrollPosition, beat);
         List(map, navigation, textScale, offset, found);
         if (found == null) {
             Clear();
@@ -89,8 +102,8 @@ public static class RandomizerMapWarp {
             Since = Time.time;
         }
 
-        var progress = Since < 0f ? 0f
-            : Mathf.Clamp01((Time.time - Since) / RandomizerSettings.Customization.MapWarpHold.Value);
+        var hold = Mathf.Clamp(RandomizerSettings.Customization.MapWarpHold.Value, MinHold, MaxHold);
+        var progress = Since < 0f ? 0f : Mathf.Clamp01((Time.time - Since) / hold);
         Charging(progress > 0f && progress < 1f);
         Draw(map, navigation, found, progress);
         if (progress < 1f) {
@@ -227,14 +240,20 @@ public static class RandomizerMapWarp {
             Vector3.Distance(well.WorldPosition, Characters.Sein.Position) >= 10f;
     }
 
-    private static GameMapTeleporter Nearest(Vector2 cursor) {
+    // The warp paths' own guard: Ori free to move, and no warp already under way.
+    private static bool Ready() {
+        var sein = Characters.Sein;
+        return sein != null && sein.Controller.CanMove && sein.Active && !TeleporterController.IsTeleporting;
+    }
+
+    private static GameMapTeleporter Nearest(Vector2 cursor, float beat) {
         var controller = TeleporterController.Instance;
         if (controller == null || controller.Teleporters == null) {
             return null;
         }
 
         // the scroll center is a blunter pointer than a mouse, so it reaches further
-        var nearest = Pointing() ? Reach : PadReach;
+        var nearest = Mathf.Min(Pointing() ? Reach : PadReach, beat);
         GameMapTeleporter found = null;
         foreach (var well in controller.Teleporters) {
             if (well == null) {
