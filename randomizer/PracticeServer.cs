@@ -595,7 +595,7 @@ public static class PracticeServer {
         var end = Copy(json["end"], "box");
         var list = JsonValue.NewArray();
         foreach (var box in file.Boxes(variant)) {
-            if (box.Type == RandomizerBox.Kind.Goal) {
+            if (box.Goal) {
                 end.Set("box", box.ToJson()["box"]);
             } else {
                 list.Add(box.ToJson());

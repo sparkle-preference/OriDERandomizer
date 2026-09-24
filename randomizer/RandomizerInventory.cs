@@ -18,19 +18,19 @@ public class RandomizerInventory : SaveSerialize {
         return inventory;
     }
 
-    private Dictionary<int, int> randomizerItems = new Dictionary<int, int>();
+    private Dictionary<int, int> randomizerItems = new();
 
     public int SetRandomizerItem(int code, int value) {
         randomizerItems[code] = value;
+        if (code is >= RandomizerBoxes.FirstBitId and <= RandomizerBoxes.LastBitId) {
+            RandomizerBoxes.MaskUpdated(code);
+        }
+
         return value;
     }
 
     public int GetRandomizerItem(int code) {
-        if (randomizerItems.ContainsKey(code)) {
-            return randomizerItems[code];
-        }
-
-        return 0;
+        return randomizerItems.TryGetValue(code, out var value) ? value : 0;
     }
 
     public int IncRandomizerItem(int code, int value) {
@@ -70,12 +70,7 @@ public class RandomizerInventory : SaveSerialize {
             return 0;
         }
 
-        if (Characters.Sein == null) {
-            Randomizer.LogError("slot " + id + ": read before the game was ready, using 0");
-            return 0;
-        }
-
-        return Characters.Sein.Inventory.GetRandomizerItem(id);
+        return Randomizer.Inventory.GetRandomizerItem(id);
     }
 
     public static void Write(int id, int value) {
@@ -84,17 +79,12 @@ public class RandomizerInventory : SaveSerialize {
             return;
         }
 
-        if (Characters.Sein == null) {
-            Randomizer.LogError("slot " + id + ": written before the game was ready");
-            return;
-        }
-
-        Characters.Sein.Inventory.SetRandomizerItem(id, value);
+        Randomizer.Inventory.SetRandomizerItem(id, value);
     }
 
     // a plain number, {n} for whatever slot n holds, or (a OP b): 1 when the comparison
     // holds and 0 when it does not, a and b each a number or {n}, OP one of == != < > <= >=
-    public static bool Value(string text, out int value) {
+    public static bool ParseValue(string text, out int value) {
         text = (text ?? "").Trim();
         if (text.Length > 2 && text[0] == '(' && text[text.Length - 1] == ')') {
             return Comparison(text.Substring(1, text.Length - 2), out value);
@@ -119,8 +109,11 @@ public class RandomizerInventory : SaveSerialize {
                 return false;
             }
 
-            var holds = op == "==" ? left == right : op == "!=" ? left != right : op == "<=" ? left <= right
-                : op == ">=" ? left >= right : op == "<" ? left < right : left > right;
+            var holds = op == "==" ? left == right
+                : op == "!=" ? left != right
+                : op == "<=" ? left <= right
+                : op == ">=" ? left >= right
+                : op == "<" ? left < right : left > right;
             value = holds ? 1 : 0;
             return true;
         }
@@ -158,7 +151,7 @@ public class RandomizerInventory : SaveSerialize {
         }
 
         int id, value;
-        if (!int.TryParse(left, out id) || !Value(text.Substring(eq + 1), out value)) {
+        if (!int.TryParse(left, out id) || !ParseValue(text.Substring(eq + 1), out value)) {
             Randomizer.LogError("RI|" + text + ": a slot write is n=v, n+=v, n-=v, n*=v, n/=v or n%=v");
             return;
         }
@@ -204,7 +197,8 @@ public class RandomizerInventory : SaveSerialize {
             var slot = SaveSlotsManager.CurrentSlotIndex + 1;
             var preserve = PracticeController.Active
                 ? randomizerItems.Where(item => item.Key >= PracticeController.FirstStat
-                    && item.Key <= PracticeController.LastStat).ToList()
+                    && item.Key <= PracticeController.LastStat
+                ).ToList()
                 : GetRandomizerItem(SlotStamp) == slot
                     ? randomizerItems.Where(item => KeptOnDeath(item.Key)).ToList()
                     : new List<KeyValuePair<int, int>>();
@@ -220,6 +214,8 @@ public class RandomizerInventory : SaveSerialize {
             }
 
             randomizerItems[SlotStamp] = slot;
+
+            RandomizerBoxes.SaveLoaded();
         } else {
             randomizerItems[SlotStamp] = SaveSlotsManager.CurrentSlotIndex + 1;
             ar.Serialize(randomizerItems.Count);

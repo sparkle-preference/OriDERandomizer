@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class DamageDealer : MonoBehaviour {
@@ -8,6 +9,10 @@ public class DamageDealer : MonoBehaviour {
     }
 
     public void Start() {
+    }
+
+    private void Update() {
+        m_collidedThisTick.Clear();
     }
 
     public void OnTriggerStay(Collider collider) {
@@ -37,7 +42,9 @@ public class DamageDealer : MonoBehaviour {
             return;
         }
 
-        if (!collided.activeInHierarchy) {
+        var target = GetTarget(collided);
+
+        if (target == null || !target.activeInHierarchy) {
             return;
         }
 
@@ -50,12 +57,33 @@ public class DamageDealer : MonoBehaviour {
                 s_oriMask = LayerMask.NameToLayer("character");
             }
 
-            if (collided.layer != s_oriMask || (!collided.GetComponent<SeinDamageReciever>() && !collided.GetComponent<SpiritGrenadeDamageDealer>())) {
+            if (target.layer != s_oriMask || (!target.GetComponent<SeinDamageReciever>() && !target.GetComponent<SpiritGrenadeDamageDealer>())) {
                 return;
             }
         }
 
-        DealDamage(collided);
+        DealDamage(target);
+    }
+
+    private GameObject GetTarget(GameObject collided) {
+        if (!UseExtendedHitboxes) {
+            return collided;
+        }
+
+        var damageReciever = collided
+            .GetComponentsInChildren<IDamageReciever>()
+            .Select(dr => ((MonoBehaviour)dr).gameObject)
+            .SingleOrDefault(dr => dr.layer == RandomizerLayers.Character);
+
+        if (damageReciever == null) {
+            damageReciever = collided;
+        }
+
+        if (!m_collidedThisTick.Add(damageReciever)) {
+            return null;
+        }
+
+        return damageReciever;
     }
 
     public virtual void DealDamage(GameObject target) {
@@ -103,6 +131,10 @@ public class DamageDealer : MonoBehaviour {
     public Func<GameObject, bool> ShouldDealDamage;
 
     public Condition Condition;
+
+    [NonSerialized] public bool UseExtendedHitboxes;
+
+    private HashSet<GameObject> m_collidedThisTick = new();
 
     private static int s_oriMask = -1;
 

@@ -58,8 +58,8 @@ public class PracticeSegment {
         }
 
         foreach (var box in seg.Boxes) {
-            if (box.Type == RandomizerBox.Kind.Goal) {
-                seg.GoalArea = box.Area;
+            if (box.Goal) {
+                seg.GoalArea = box.Rect;
                 break;
             }
         }
@@ -159,10 +159,6 @@ public class PracticeSegment {
         }
 
         return table;
-    }
-
-    public void Check(Vector2 at) {
-        RandomizerBoxes.Check(at, Boxes);
     }
 
     // Every clause present must hold at once; a goal box is only satisfied

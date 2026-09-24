@@ -391,6 +391,8 @@ public class GameController : SaveSerialize, ISuspendable {
             m_lastDebugControlsEnabledValue = DebugMenuB.DebugControlsEnabled;
         }
 
+        Randomizer.FixedUpdate();
+
         if (!IsSuspended) {
             GameTime += Time.deltaTime;
         }

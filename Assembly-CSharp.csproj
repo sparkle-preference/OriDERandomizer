@@ -12,7 +12,7 @@
         <AssemblyName>Assembly_CSharp</AssemblyName>
         <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
-        <LangVersion>latest</LangVersion>
+        <LangVersion>preview</LangVersion>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <PlatformTarget>AnyCPU</PlatformTarget>
@@ -85,10 +85,14 @@
         <Compile Include="action\*.cs"/>
         <Compile Include="bingo\*.cs"/>
         <Compile Include="contrib\*.cs"/>
+        <Compile Include="language_support\*.cs" />
         <Compile Include="menu\*.cs"/>
         <Compile Include="modified_classes\*.cs" Exclude="modified_classes\SaveGameData_analysis.cs"/>
         <Compile Include="protogen\*.cs"/>
         <Compile Include="randomizer\*.cs"/>
+    </ItemGroup>
+    <ItemGroup>
+      <Content Include="language_support\README.txt" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

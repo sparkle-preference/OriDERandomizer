@@ -121,7 +121,7 @@ public class BfrpFile {
         }
 
         foreach (var box in boxes) {
-            lines.Add(box.ToLine());
+            lines.Add(box.Line);
         }
 
         SetPlacementLines(variant, lines);

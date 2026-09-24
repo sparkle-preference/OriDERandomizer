@@ -387,7 +387,7 @@ public static class RandomizerSwitch {
                     RandomizerInventory.Apply((string)action.Value);
                     break;
                 case "BM":
-                    RandomizerBoxes.Modify((string)action.Value);
+                    RandomizerBoxes.EvalBM((string)action.Value);
                     break;
                 case "TW":
                     // TW entries are coord|TW|name,x,y
