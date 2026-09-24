@@ -48,6 +48,13 @@ public static class PracticeSelect {
         reopen = true;
     }
 
+    // said in red once the chooser is back up, where the player is looking by then
+    public static void ReopenSaying(string error) {
+        reopenError = error;
+    }
+
+    private static string reopenError;
+
     public static void Tick() {
         var screen = TitleScreenManager.CurrentScreen;
         if (screen != lastScreen) {
@@ -75,6 +82,12 @@ public static class PracticeSelect {
         if (reopen && screen == TitleScreenManager.Screen.MainMenu) {
             reopen = false;
             Open();
+            if (reopenError != null) {
+                // the editor's legend would hold the queue for its whole run
+                Randomizer.clearMessage();
+                Randomizer.MessageQueue.Enqueue(new RandomizerUI.Message(reopenError, RandomizerUI.Message.ErrorBgColor, 10f));
+                reopenError = null;
+            }
         }
 
         // with a run parked, the main menu opens on START GAME, the way back into it
@@ -151,7 +164,7 @@ public static class PracticeSelect {
     }
 
     private static void Arm() {
-        if (exitScreen == null || exitScreen.MenuItems.Count < 2) {
+        if (RandomizerUpdater.PromptShown || exitScreen == null || exitScreen.MenuItems.Count < 2) {
             return;
         }
 

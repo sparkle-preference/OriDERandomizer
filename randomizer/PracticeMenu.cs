@@ -52,7 +52,8 @@ public static class PracticeMenu {
 
     // from the keybind, and the finish line
     public static void Open() {
-        if (!PracticeController.Active || Game.UI.Menu == null || Game.UI.MainMenuVisible
+        if (!PracticeController.Active || PracticeController.Current == PracticeController.Phase.Ending
+                || Game.UI.Menu == null || Game.UI.MainMenuVisible
                 || GameController.Instance == null || GameController.Instance.GameInTitleScreen) {
             return;
         }

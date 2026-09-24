@@ -14,6 +14,9 @@ public class PracticeSegment {
 
     public List<int> EndLocations = new List<int>();
 
+    // the end locations that are map-stone pedestals, and each one's bit in the turn-in field
+    public Dictionary<int, int> EndPedestals = new Dictionary<int, int>();
+
     public int EndCount = -1;
 
     public bool HasEnd {
@@ -142,6 +145,9 @@ public class PracticeSegment {
                 var key = (int)end["locations"][i].Num;
                 if (CanEnd(key)) {
                     seg.EndLocations.Add(key);
+                    if (Pedestal(key) >= 0) {
+                        seg.EndPedestals[key] = Pedestal(key);
+                    }
                 } else if (RandomizerLocationManager.LocationsByKey.ContainsKey(key)) {
                     Report("segment wants location " + key + ", which cannot end a segment");
                 } else {
@@ -165,9 +171,16 @@ public class PracticeSegment {
                 || location.Type == RandomizerLocationManager.Location.LocationType.Skill && location.SpecialIndex == 0);
     }
 
-    // Met reads coord bits, and practice sets one only for a CoordsMap location it gives
+    // Met reads a pedestal's turn-in bit, else the coord bit practice sets for a CoordsMap location
     public static bool CanEnd(int key) {
-        return RandomizerTrackedDataManager.CoordsMap.ContainsKey(key) && !NeverGiven(key);
+        return (Pedestal(key) >= 0 || RandomizerTrackedDataManager.CoordsMap.ContainsKey(key)) && !NeverGiven(key);
+    }
+
+    // a map-stone pedestal's bit in the turn-in field, or -1
+    public static int Pedestal(int key) {
+        RandomizerLocationManager.Location location;
+        return RandomizerLocationManager.LocationsByKey.TryGetValue(key, out location)
+            && location.Type == RandomizerLocationManager.Location.LocationType.Map ? location.SpecialIndex : -1;
     }
 
     // What the attempt's locations hold: placement lines, shared then the variant's, then each
@@ -239,12 +252,15 @@ public class PracticeSegment {
             return false;
         }
 
-        if (EndCount >= 0 && PracticeController.Get(PracticeController.Pickups) < EndCount) {
+        if (EndCount >= 0 && PracticeController.Get(PracticeController.Held) < EndCount) {
             return false;
         }
 
         foreach (var location in EndLocations) {
-            if (!Randomizer.HaveCoord(location)) {
+            int stone;
+            var done = EndPedestals.TryGetValue(location, out stone)
+                ? RandomizerTrackedDataManager.GetMapstone(stone) : Randomizer.HaveCoord(location);
+            if (!done) {
                 return false;
             }
         }
@@ -256,6 +272,20 @@ public class PracticeSegment {
         }
 
         return true;
+    }
+
+    // an end pedestal the start already turned in holds from the first frame
+    public void LogTurnedIn() {
+        if (EndPedestals.Count == 0) {
+            return;
+        }
+
+        RandomizerTrackedDataManager.UpdateBitfields();
+        foreach (var pair in EndPedestals) {
+            if (RandomizerTrackedDataManager.GetMapstone(pair.Value)) {
+                Randomizer.log("practice: the starting save has already turned in pedestal " + pair.Key + ", so that part of the end holds from the start");
+            }
+        }
     }
 
     // The skill ids a seed uses, as the ability enum the player actually holds

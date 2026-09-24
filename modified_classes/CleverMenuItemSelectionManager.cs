@@ -181,6 +181,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void SetCurrentItem(int index) {
+        EnterAt = -1;
         if (CurrentMenuItem) {
             CurrentMenuItem.OnUnhighlight();
         }
@@ -222,6 +223,11 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void SetIndexToFirst() {
+        if (EnterAt >= 0 && EnterAt < MenuItems.Count) {
+            SetCurrentItem(EnterAt);
+            return;
+        }
+
         for (var i = 0; i < MenuItems.Count; i++) {
             if (MenuItems[i].IsActivated) {
                 SetCurrentItem(i);
@@ -574,6 +580,9 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     public Action OnBackPressedCallback = delegate { };
 
     public Func<bool> BackGuard;
+
+    // the next SetIndexToFirst (entering the menu) selects this row instead, unless the selection moves first
+    public int EnterAt = -1;
 
     public bool HighlightOnMouseOver = true;
 

@@ -1,5 +1,6 @@
 public class KeybindsScreen : CustomSettingsScreen {
     public override void InitScreen() {
+        AddHeader("GAMEPLAY");
         AddKeybind("Bash", () => PlayerInputRebinding.KeyRebindings.Bash, k => PlayerInputRebinding.KeyRebindings.Bash = k);
         AddKeybind("Charge Jump", () => PlayerInputRebinding.KeyRebindings.ChargeJump, k => PlayerInputRebinding.KeyRebindings.ChargeJump = k);
         AddKeybind("Dash", () => PlayerInputRebinding.KeyRebindings.RightShoulder, k => PlayerInputRebinding.KeyRebindings.RightShoulder = k);
@@ -15,6 +16,7 @@ public class KeybindsScreen : CustomSettingsScreen {
         AddKeybind("Movement Left", () => PlayerInputRebinding.KeyRebindings.HorizontalDigiPadLeft, k => PlayerInputRebinding.KeyRebindings.HorizontalDigiPadLeft = k);
         AddKeybind("Movement Right", () => PlayerInputRebinding.KeyRebindings.HorizontalDigiPadRight, k => PlayerInputRebinding.KeyRebindings.HorizontalDigiPadRight = k);
 
+        AddHeader("MENUS");
         AddKeybind("Pause", () => PlayerInputRebinding.KeyRebindings.Start, k => PlayerInputRebinding.KeyRebindings.Start = k);
         AddKeybind("Cancel", () => PlayerInputRebinding.KeyRebindings.Cancel, k => PlayerInputRebinding.KeyRebindings.Cancel = k);
         AddKeybind("Proceed", () => PlayerInputRebinding.KeyRebindings.ActionButtonA, k => PlayerInputRebinding.KeyRebindings.ActionButtonA = k);
@@ -52,4 +54,20 @@ public class KeybindsScreen : CustomSettingsScreen {
         PlayerInputRebinding.WriteKeyRebindSettings();
         AfterReset(PlayerInputRebinding.KeyRebindingFile);
     }
+
+    protected override void SnapshotUnlisted() {
+        entered.Take(PlayerInputRebinding.KeyRebindings);
+    }
+
+    protected override bool UnlistedChanged {
+        get { return entered.Differs(PlayerInputRebinding.KeyRebindings); }
+    }
+
+    protected override void RestoreUnlisted() {
+        entered.Restore(PlayerInputRebinding.KeyRebindings);
+    }
+
+    // the whole object, as the reset replaces it: Copy, Focus, Legend and the rest have no row
+    private readonly SettingsSnapshot<PlayerInputRebinding.KeyBindingSettings> entered =
+        new SettingsSnapshot<PlayerInputRebinding.KeyBindingSettings>();
 }

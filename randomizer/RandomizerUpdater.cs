@@ -16,6 +16,9 @@ public class RandomizerUpdater : MonoBehaviour {
     // set once the player commits, so the menu item stops responding
     public static bool Busy { get; private set; }
 
+    // its restart question is on the quit prompt, which nothing else may borrow meanwhile
+    public static bool PromptShown { get { return s_okHandler != null; } }
+
     public static string Status { get; private set; }
 
     public static void Initialize() {

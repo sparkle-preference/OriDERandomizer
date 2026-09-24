@@ -266,6 +266,7 @@ Enhanced mode -- April Fools :)
 1612 - Mapstones
 
 1650 - LevelUpKills
+1651 - Practice: pickups held this attempt, for a segment's pickup count (rolls back with the checkpoint)
 
 
 1700-1999 - Box bitfields: which boxes (BX lines) are turned off (e.g., one-shot item boxes taken)

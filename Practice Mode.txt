@@ -56,6 +56,7 @@ Running a segment
 ===
 PRACTICE on the title menu lists your segments. Up and Down pick a variant, Space starts.
 After a three second countdown the clock runs in real time through everything: pauses, deaths, quitting to the menu.
+A segment can open with a briefing (its "about" text on the page); the countdown waits until you press Retry Practice Segment.
 Every run is kept in the segment's history.
 
 The pause menu during an attempt:
@@ -95,6 +96,7 @@ RandomizerSettings.txt:
 
 RandomizerRebinding.txt:
 Alt+M               Create Practice Segment
+Alt+L               Retry Practice Segment: start the attempt over, or start after a briefing
 (unbound)           Practice Menu: the practice pause, for quit-to-menu segments
 (unbound)           Open Practice Editor Page: the page, from anywhere in a session
 

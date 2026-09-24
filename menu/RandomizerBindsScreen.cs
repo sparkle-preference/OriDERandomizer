@@ -22,12 +22,12 @@ public class RandomizerBindsScreen : CustomSettingsScreen {
         AddRandomizerBind("Show Stats", "Cycle through the stats pages displayed during the credits");
 
         AddHeader("CONTROLS");
-        var isTapMode = RandomizerSettings.Controls.DoubleBash.Value == RandomizerSettings.DoubleBashMode.Tap;
-        AddRandomizerBind("Double Bash", $"{(isTapMode ? "Tap" : "Hold")} while Bashing to Double Bash.");
-        if (RandomizerSettings.Controls.GrenadeJump.Value == RandomizerSettings.GrenadeJumpMode.Auto) {
-            // it's not meaningful to show this in a different gjump mode.
-            AddRandomizerBind("Grenade Jump", "Press with Wall Charge Jump charged to perform a Grenade Jump");
-        }
+        // these two follow CONTROL OPTIONS as it is when the page opens
+        AddRandomizerBind("Double Bash", () =>
+            $"{(RandomizerSettings.Controls.DoubleBash.Value == RandomizerSettings.DoubleBashMode.Tap ? "Tap" : "Hold")} while Bashing to Double Bash.");
+        AddRandomizerBind("Grenade Jump", () =>
+            (RandomizerSettings.Controls.GrenadeJump.Value == RandomizerSettings.GrenadeJumpMode.Auto ? "" : "(With Grenade Jump Mode set to Auto) ") +
+            "Press with Wall Charge Jump charged to perform a Grenade Jump");
         AddRandomizerBind("Reset Grenade Aim", "(Controller) Reset Grenade Aim to a neutral position");
         AddRandomizerBind("Suppress Autofire", "(With Autofire set to Hold) Hold this to enable using Charge Flame normally");
         AddRandomizerBind("Color Shift", "Toggle color shift mode, which randomizes Ori's color every time a pickup is collected");
@@ -58,14 +58,13 @@ public class RandomizerBindsScreen : CustomSettingsScreen {
         AddRandomizerBind("Force Chaos Effect", "Trigger a chaos effect right now");
 
 
-        // test rigging, shown only with the dev settings on
-        if (RandomizerSettings.Dev != null && RandomizerSettings.Dev.Value) {
-            AddHeader("DEV");
-            AddRandomizerBind("Spawn Echo", "Spawn in a ghost echo");
-            AddRandomizerBind("Clear All Echoes", "Remove all echoes");
-            AddRandomizerBind("Grant Test Pickup", "Grant the contents of test_pickup.txt");
-            AddRandomizerBind("Start Practice Debug", "Load into practice/debug.bfrp");
-        }
+        // test rigging, on the page only while Dev is on; every row after this is optional, so it stays last
+        OptionalRows(() => RandomizerSettings.Dev != null && RandomizerSettings.Dev.Value);
+        AddHeader("DEV");
+        AddRandomizerBind("Spawn Echo", "Spawn in a ghost echo");
+        AddRandomizerBind("Clear All Echoes", "Remove all echoes");
+        AddRandomizerBind("Grant Test Pickup", "Grant the contents of test_pickup.txt");
+        AddRandomizerBind("Start Practice Debug", "Load into practice/debug.bfrp");
 
         ScrollAfter(Footer());
         BindLegend();
@@ -75,7 +74,7 @@ public class RandomizerBindsScreen : CustomSettingsScreen {
         get { return "Reset ALL rando binds to default?"; }
     }
 
-    // every action, rows or not: Grenade Jump and the dev binds may have none
+    // every action, and every row: the dev rows too while they are off the page
     public override void ResetToDefaults() {
         Backup(RandomizerRebinding.BindsFile);
         RandomizerRebinding.UseDefaults();

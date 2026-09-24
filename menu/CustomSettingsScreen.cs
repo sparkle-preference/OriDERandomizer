@@ -2,12 +2,14 @@
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class CustomSettingsScreen : MonoBehaviour {
     public void OnEnable() {
+        FitOptional();
         // each visit is its own baseline, so keeping changes and coming back starts clean
         SnapshotBinds();
         // the file can be reloaded under a page built earlier
@@ -17,6 +19,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         // a flyout open when the screen closed still has the tooltip
         RestoreTooltip();
+        // its key caps follow binds changed since it was drawn
+        BindLegend();
     }
 
     public void OnDisable() {
@@ -162,6 +166,58 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         obj.transform.SetParent(scrollBar, false);
         return obj.transform;
+    }
+
+    // Rows added after this are on the page only while wanted() holds, checked on each open. They leave
+    // both lists rather than hide: the scroll window and the manager re-show any row that is listed.
+    public void OptionalRows(Func<bool> wanted) {
+        optionalFrom = selectionManager.MenuItems.Count;
+        optionalWanted = wanted;
+    }
+
+    private void FitOptional() {
+        if (optionalWanted == null) {
+            return;
+        }
+
+        if (optionalRows == null) {
+            optionalRows = selectionManager.MenuItems.GetRange(optionalFrom, selectionManager.MenuItems.Count - optionalFrom);
+        }
+
+        var wanted = optionalWanted();
+        if (wanted == optionalShown) {
+            return;
+        }
+
+        optionalShown = wanted;
+        // Off a leaving row without SetCurrentItem, whose callbacks would enter the page from its OnEnable;
+        // entry would pick the window's top row, so it is told where to land.
+        if (!wanted && selectionManager.Index >= optionalFrom) {
+            if (selectionManager.CurrentMenuItem != null) {
+                selectionManager.CurrentMenuItem.OnUnhighlight();
+            }
+
+            selectionManager.Index = selectionManager.NavigableFrom(optionalFrom - 1, 0, optionalFrom - 1);
+            selectionManager.EnterAt = selectionManager.Index;
+            if (selectionManager.IsHighlightVisible && selectionManager.CurrentMenuItem != null) {
+                selectionManager.CurrentMenuItem.OnHighlight();
+            }
+        }
+
+        foreach (var row in optionalRows) {
+            if (wanted) {
+                row.gameObject.SetActive(true);
+                selectionManager.MenuItems.Add(row);
+                layout.MenuItems.Add(row);
+            } else {
+                selectionManager.MenuItems.Remove(row);
+                layout.MenuItems.Remove(row);
+                row.gameObject.SetActive(false);
+            }
+        }
+
+        layout.Sort();
+        PlaceScrollbar();
     }
 
     private void PlaceScrollbar() {
@@ -704,11 +760,17 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     }
 
     public void AddRandomizerBind(string action, string help = null, string label = null) {
+        AddRandomizerBind(action, help == null ? null : (Func<string>)(() => help), label);
+    }
+
+    // help is read again each time the page opens
+    public void AddRandomizerBind(string action, Func<string> help, string label = null) {
         var cleverMenuItem = AddItem(label ?? action);
         cleverMenuItem.gameObject.name = "Rando Bind (" + action + ")";
         var control = cleverMenuItem.gameObject.AddComponent<RandomizerBindControl>();
         control.Init(action, this, label ?? action, help);
         cleverMenuItem.PressedCallback += delegate { control.BeginEditing(); };
+        rowRefresh.Add(control.Refresh);
     }
 
     public void AddControllerBind(string label, Func<PlayerInputRebinding.ControllerButton[]> getKeys, Action<PlayerInputRebinding.ControllerButton[]> setKeys) {
@@ -1207,6 +1269,15 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // re-reads each value row's setting into the row
     private readonly List<Action> rowRefresh = new List<Action>();
 
+    // the tail of both lists from optionalFrom, kept while it is off them
+    private int optionalFrom;
+
+    private Func<bool> optionalWanted;
+
+    private List<CleverMenuItem> optionalRows;
+
+    private bool optionalShown = true;
+
     // Measured: the vanilla legend sits here, panel rows start here and step by this. The
     // camera has a fixed vertical FOV, so these are the same at every resolution and aspect.
     private const float LegendY = -3.42f;
@@ -1282,6 +1353,11 @@ public class BindHold {
     // the held key is a chord member now, and neither taps nor holds until it is let go
     public bool Joined { get; private set; }
 
+    // a key is down under this hold, joined or not
+    public bool Holding {
+        get { return key != KeyCode.None; }
+    }
+
     // down is the key held now, or None; true while the hold has the frame, the one it lands on included
     public bool Update(KeyCode down, float now, bool canStart = true) {
         if (down == KeyCode.None) {
@@ -1349,4 +1425,64 @@ public class BindHold {
     private KeyCode key = KeyCode.None;
 
     private float since;
+}
+
+// A whole settings object as it was taken, arrays copied: fields no row shows are restored too.
+public class SettingsSnapshot<T> where T : class, new() {
+    public void Take(T live) {
+        taken = new T();
+        Copy(live, taken);
+    }
+
+    public bool Differs(T live) {
+        if (taken == null) {
+            return false;
+        }
+
+        foreach (var field in Fields) {
+            if (!Same(field.GetValue(taken), field.GetValue(live))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void Restore(T live) {
+        if (taken != null) {
+            Copy(taken, live);
+        }
+    }
+
+    private static void Copy(T from, T to) {
+        foreach (var field in Fields) {
+            var value = field.GetValue(from);
+            var array = value as Array;
+            field.SetValue(to, array != null ? array.Clone() : value);
+        }
+    }
+
+    private static bool Same(object a, object b) {
+        var x = a as Array;
+        var y = b as Array;
+        if (x == null || y == null) {
+            return Equals(a, b);
+        }
+
+        if (x.Length != y.Length) {
+            return false;
+        }
+
+        for (var i = 0; i < x.Length; i++) {
+            if (!Equals(x.GetValue(i), y.GetValue(i))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static readonly FieldInfo[] Fields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Instance);
+
+    private T taken;
 }

@@ -754,7 +754,7 @@ public static class RandomizerSyncManager {
     }
 
     // Credits ping: the server's game end, which in multiworld releases our leftovers to their owners.
-    // Retries with a growing gap, for as long as it takes, until either lane answers 2xx.
+    // Retries with a growing gap until either lane answers 2xx, or 412 (the server has no such game).
     public static void SendGameComplete() {
         if (!Randomizer.Sync || Randomizer.SyncId == "") {
             return;
@@ -788,7 +788,7 @@ public static class RandomizerSyncManager {
     }
 
     private static void OnCompleteStatus(int status) {
-        if (status >= 200 && status < 300) {
+        if ((status >= 200 && status < 300) || status == 412) {
             completePending = false;
         }
     }

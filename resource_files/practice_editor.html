@@ -598,7 +598,7 @@
     render();
   }
 
-  // the game flags what it can honor: an ending needs a coord it records, a shuffle spot a pickup it gives
+  // the game flags what it can honor: an ending needs a coord or turn-in it records, a shuffle spot a pickup it gives
   function pickable(loc) { return state.target === 'end' ? loc.ends : loc.shuffles; }
 
   function matches(loc) {

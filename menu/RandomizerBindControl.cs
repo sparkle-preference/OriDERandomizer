@@ -14,18 +14,18 @@ public class RandomizerBindControl : MonoBehaviour {
         messageBox = transform.Find("text/stateText").GetComponent<MessageBox>();
     }
 
-    public void Init(string action, CustomSettingsScreen owner, string label, string help) {
+    public void Init(string action, CustomSettingsScreen owner, string label, Func<string> help) {
         this.owner = owner;
         this.action = action;
         this.label = label;
-        this.help = help ?? owner.DefaultTooltip;
+        this.help = help ?? (() => owner.DefaultTooltip);
         Show();
         tooltipProvider = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
-        tooltipProvider.SetMessage(this.help);
+        tooltipProvider.SetMessage(this.help());
         GetComponent<CleverMenuItemTooltip>().Tooltip = tooltipProvider;
         owner.tooltipController.UpdateTooltip();
-        back = new BindHold(p => owner.DrawHold(p), owner.HideHold, Press, Join, Cancel);
-        swap = new BindHold(p => owner.DrawHold(p, "navigate"), owner.HideHold, Press, Join, Swap);
+        back = new BindHold(p => owner.DrawHold(p), owner.HideHold, Tapped, Join, Cancel);
+        swap = new BindHold(p => owner.DrawHold(p, "navigate"), owner.HideHold, Tapped, Join, Swap);
     }
 
     public void BeginEditing() {
@@ -40,6 +40,7 @@ public class RandomizerBindControl : MonoBehaviour {
         peak.Clear();
         back.Reset();
         swap.Reset();
+        risen.Reset();
         denyAt = -1f;
         owner.BindLegend();
         Tooltip();
@@ -50,6 +51,8 @@ public class RandomizerBindControl : MonoBehaviour {
             return;
         }
 
+        // every frame, and before the holds, whose taps read it
+        risen.Update(back.Holding || swap.Holding);
         if (exit < 2) {
             exit++;
             return;
@@ -115,6 +118,22 @@ public class RandomizerBindControl : MonoBehaviour {
         }
 
         return true;
+    }
+
+    // in Actions mode a tap binds what the key did, as a held key would
+    private void Tapped(KeyCode key) {
+        if (mode == Mode.Keys) {
+            Press(key);
+            return;
+        }
+
+        foreach (var name in risen.Rose) {
+            Add(name);
+        }
+
+        if (peak.Count == 0) {
+            Deny();
+        }
     }
 
     // in Actions mode a held key counts through its action, as any held key does
@@ -299,7 +318,7 @@ public class RandomizerBindControl : MonoBehaviour {
     private void Tooltip() {
         tooltipProvider.SetMessage(editing
             ? "Editing binds for " + label + " (" + (mode == Mode.Keys ? "keys" : "game actions") + ")..."
-            : help);
+            : help());
         owner.tooltipController.UpdateTooltip();
     }
 
@@ -323,6 +342,14 @@ public class RandomizerBindControl : MonoBehaviour {
         Show();
         editing = false;
         owner.Editing = false;
+    }
+
+    // the bind and help as they are now: the file can be reloaded, and help can follow a setting
+    public void Refresh() {
+        if (!editing) {
+            Show();
+            tooltipProvider.SetMessage(help());
+        }
     }
 
     // Binds apply live; Restore puts this back and the screen writes the file.
@@ -354,7 +381,7 @@ public class RandomizerBindControl : MonoBehaviour {
     private string label;
 
     // what this bind is for, shown whenever the row is not being edited
-    private string help;
+    private Func<string> help;
 
     // this control is taking keys; owner.Editing only says that *some* control is
     private bool editing;
@@ -380,7 +407,37 @@ public class RandomizerBindControl : MonoBehaviour {
     // Time.fixedTime at a press that grew nothing yet, or -1
     private float denyAt = -1f;
 
+    private readonly RisenActions risen = new RisenActions();
+
     private RandomizerMessageProvider tooltipProvider;
 
     private static SoundProvider denial;
+}
+
+// The game actions that went down while a Back or Tab hold ran, which a tap of it binds in Actions mode.
+public class RisenActions {
+    // Once a frame; holding is whether a hold had a key coming into it.
+    public void Update(bool holding) {
+        if (!holding) {
+            Rose.Clear();
+        }
+
+        foreach (var pair in RandomizerRebinding.CoreInputMap) {
+            if (!pair.Value.Pressed) {
+                down.Remove(pair.Key);
+            } else if (down.Add(pair.Key) && !Rose.Contains(pair.Key)) {
+                Rose.Add(pair.Key);
+            }
+        }
+    }
+
+    public void Reset() {
+        Rose.Clear();
+        down.Clear();
+    }
+
+    // in the order they went down
+    public readonly List<string> Rose = new List<string>();
+
+    private readonly HashSet<string> down = new HashSet<string>();
 }

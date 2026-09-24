@@ -569,7 +569,12 @@ public class RandomizerLocationManager {
             // a practice segment places and counts its own pickups; nothing below applies to it
             if (PracticeController.Active) {
                 PracticeController.GiveAt(Key);
-                Randomizer.OnCoord(Key);
+                if (Type == LocationType.Map) {
+                    RandomizerTrackedDataManager.SetMapstone(SpecialIndex);
+                } else {
+                    Randomizer.OnCoord(Key);
+                }
+
                 return;
             }
 

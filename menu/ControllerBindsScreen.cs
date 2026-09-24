@@ -1,5 +1,6 @@
 public class ControllerBindsScreen : CustomSettingsScreen {
     public override void InitScreen() {
+        AddHeader("GAMEPLAY");
         AddControllerBind("Bash", () => PlayerInputRebinding.ControllerRebindings.Bash, k => PlayerInputRebinding.ControllerRebindings.Bash = k);
         AddControllerBind("Charge Jump", () => PlayerInputRebinding.ControllerRebindings.ChargeJump, k => PlayerInputRebinding.ControllerRebindings.ChargeJump = k);
         AddControllerBind("Dash", () => PlayerInputRebinding.ControllerRebindings.RightShoulder, k => PlayerInputRebinding.ControllerRebindings.RightShoulder = k);
@@ -15,6 +16,7 @@ public class ControllerBindsScreen : CustomSettingsScreen {
         AddControllerBind("Movement Left", () => PlayerInputRebinding.ControllerRebindings.HorizontalDigiPadLeft, k => PlayerInputRebinding.ControllerRebindings.HorizontalDigiPadLeft = k);
         AddControllerBind("Movement Right", () => PlayerInputRebinding.ControllerRebindings.HorizontalDigiPadRight, k => PlayerInputRebinding.ControllerRebindings.HorizontalDigiPadRight = k);
 
+        AddHeader("MENUS");
         AddControllerBind("Pause", () => PlayerInputRebinding.ControllerRebindings.Start, k => PlayerInputRebinding.ControllerRebindings.Start = k);
         AddControllerBind("Cancel", () => PlayerInputRebinding.ControllerRebindings.Cancel, k => PlayerInputRebinding.ControllerRebindings.Cancel = k);
         AddControllerBind("Proceed", () => PlayerInputRebinding.ControllerRebindings.ActionButtonA, k => PlayerInputRebinding.ControllerRebindings.ActionButtonA = k);
@@ -52,4 +54,20 @@ public class ControllerBindsScreen : CustomSettingsScreen {
         PlayerInputRebinding.WriteControllerRebindSettings();
         AfterReset(PlayerInputRebinding.ControllerRebindingFile);
     }
+
+    protected override void SnapshotUnlisted() {
+        entered.Take(PlayerInputRebinding.ControllerRebindings);
+    }
+
+    protected override bool UnlistedChanged {
+        get { return entered.Differs(PlayerInputRebinding.ControllerRebindings); }
+    }
+
+    protected override void RestoreUnlisted() {
+        entered.Restore(PlayerInputRebinding.ControllerRebindings);
+    }
+
+    // the whole object, as the reset replaces it: Copy, Focus, Legend and the rest have no row
+    private readonly SettingsSnapshot<PlayerInputRebinding.ControllerBindingSettings> entered =
+        new SettingsSnapshot<PlayerInputRebinding.ControllerBindingSettings>();
 }

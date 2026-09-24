@@ -91,9 +91,9 @@ public static class PracticeEditor {
     }
 
     // what is on disk replaces everything drawn since the last save
-    public static void Reload() {
+    public static bool Reload() {
         if (!Active) {
-            return;
+            return false;
         }
 
         try {
@@ -103,8 +103,10 @@ public static class PracticeEditor {
             lastBox = null;
             PracticeController.Reparse();
             Say("Segment reloaded from disk", 180);
+            return true;
         } catch (Exception e) {
             Randomizer.LogError("practice: could not reload the segment: " + e.Message);
+            return false;
         }
     }
 

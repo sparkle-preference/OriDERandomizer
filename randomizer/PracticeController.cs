@@ -19,7 +19,8 @@ public static class PracticeController {
 
     public const int Deaths = 10002;
 
-    public const int Pickups = 10003;
+    // distinct locations collected this attempt, deaths or not: the csv's pickups column
+    public const int Touched = 10003;
 
     public const int Quits = 10004;
 
@@ -34,6 +35,9 @@ public static class PracticeController {
 
     public const int LastStat = 10999;
 
+    // pickups held, for the end count: below 4000, so a death or a reload rolls it back with them
+    public const int Held = 1651;
+
     private const float CountdownSeconds = 3f;
 
     public enum Phase {
@@ -41,7 +45,9 @@ public static class PracticeController {
         Countdown,
         Running,
         Finished,
-        Editing
+        Editing,
+        // over, but Active until the title is up: the practice save is still in the world
+        Ending
     }
 
     public static bool Active {
@@ -105,13 +111,17 @@ public static class PracticeController {
         Randomizer.Returning = false;
         try {
             SeedSlots(!fromTitle);
-        } catch (Exception) {
+        } catch (Exception e) {
             // from the title nothing is loaded yet: a start that cannot seed its slots never began
             if (fromTitle) {
                 End();
+                throw;
             }
 
-            throw;
+            Randomizer.log("practice: could not write the practice save: " + e);
+            PracticeSelect.ReopenSaying("PRACTICE stopped: could not write the practice save\n" + e.Message);
+            ReturnToTitle(true);
+            return;
         }
 
         if (!fromTitle) {
@@ -122,6 +132,7 @@ public static class PracticeController {
         Countdown = CountdownSeconds;
         Elapsed = 0;
         MenuElapsed = 0;
+        touchedKeys.Clear();
         RandomizerStatsManager.Active = false;
         // from the title there is no Ori to hold the stats yet; zeroed once the save is up
         statsPending = fromTitle;
@@ -145,6 +156,10 @@ public static class PracticeController {
 
     // Loads practice/debug.bfrp and starts it, or ends a running session.
     public static void BeginDebug() {
+        if (Current == Phase.Ending) {
+            return;
+        }
+
         if (Active && Current != Phase.Finished) {
             var ms = Elapsed;
             End();
@@ -187,7 +202,7 @@ public static class PracticeController {
     }
 
     public static void Retry() {
-        if (!Active) {
+        if (!Active || Current == Phase.Ending) {
             return;
         }
 
@@ -203,6 +218,11 @@ public static class PracticeController {
         if (awaitingStart) {
             awaitingStart = false;
             Randomizer.unpinMessage();
+            return;
+        }
+
+        // in the editor it runs what is on disk, dropping unsaved edits as Ctrl+R does
+        if (PracticeEditor.Active && !PracticeEditor.Reload()) {
             return;
         }
 
@@ -248,7 +268,7 @@ public static class PracticeController {
 
     // after the page swaps the start: begin again from the new save, in the editor if it was
     public static void Restart() {
-        if (!Active) {
+        if (!Active || Current == Phase.Ending) {
             return;
         }
 
@@ -271,6 +291,17 @@ public static class PracticeController {
         MenuElapsed = 0;
         InMenu = false;
         RandomizerStatsManager.Active = true;
+    }
+
+    // everything the player sees goes now; End waits for the title, which unloads the practice save
+    private static void EndAtTitle() {
+        DropBriefing();
+        ResetGhosts();
+        PracticeEditor.Stop();
+        PracticeHud.Hide();
+        Resume();
+        pendingSetup = false;
+        Current = Phase.Ending;
     }
 
     // every attempt: the file's save in slot 51, and 50, 52 and every backup emptied
@@ -337,7 +368,7 @@ public static class PracticeController {
 
     // the return-to-menu prompt's OK sequence, in its order, without the prompt
     public static void ReturnToTitle(bool endSession) {
-        if (!Active) {
+        if (!Active || Current == Phase.Ending) {
             return;
         }
 
@@ -350,8 +381,7 @@ public static class PracticeController {
         }
 
         if (endSession) {
-            End();
-            PracticeSelect.ReopenOnTitle();
+            EndAtTitle();
         } else {
             OnQuitToMenu();
         }
@@ -388,17 +418,26 @@ public static class PracticeController {
         return slot >= FirstSlot && slot <= LastSlot;
     }
 
+    // a session, or a practice save left loaded by one: never the seed's game either way
+    public static bool InPracticeSave {
+        get { return Active || SaveSlotsManager.Instance != null && IsPracticeSlot(SaveSlotsManager.CurrentSlotIndex); }
+    }
+
     // every frame; the clock is real time, so a stutter costs what it costs
     public static void Tick() {
         if (!Active) {
             return;
         }
 
-        // an editing session that reaches the title ends, or it shows an empty save select there
-        if (Current == Phase.Editing && GameController.Instance != null
+        // an ending or editing session that reaches the title ends, or it shows an empty save select there
+        if ((Current == Phase.Ending || Current == Phase.Editing) && GameController.Instance != null
                 && GameController.Instance.GameInTitleScreen) {
             End();
             PracticeSelect.ReopenOnTitle();
+            return;
+        }
+
+        if (Current == Phase.Ending) {
             return;
         }
 
@@ -421,9 +460,18 @@ public static class PracticeController {
                     Inc(Attempts, 1);
                 }
 
-                // the base save may carry a seed's taken boxes; this attempt's start untaken
+                // the base save may carry a seed's taken boxes or a held count; this attempt starts clear
                 var changed = RandomizerBoxes.ClearOff();
+                if (Get(Held) != 0) {
+                    Set(Held, 0);
+                    changed = true;
+                }
+
                 changed = GrantStartingItems() || changed;
+                if (Segment != null) {
+                    Segment.LogTurnedIn();
+                }
+
                 // checkpointed and saved: a death or quit restores those, not the live inventory
                 if (changed) {
                     GameController.Instance.CreateCheckpoint();
@@ -532,7 +580,7 @@ public static class PracticeController {
                     }
                 }
 
-                File.AppendRun(DateTime.Now, Get(Pickups), (long)Elapsed);
+                File.AppendRun(DateTime.Now, Get(Touched), (long)Elapsed);
                 File.Save();
             } catch (Exception e) {
                 Randomizer.LogError("practice: could not record the run: " + e.Message);
@@ -609,14 +657,13 @@ public static class PracticeController {
 
     // the vanilla Exit: a quit-to-menu segment keeps the session and its clock; others end
     public static void OnReturnToTitle() {
-        if (!Active) {
+        if (!Active || Current == Phase.Ending) {
             return;
         }
 
         // an editor or a countdown has no run to park: leaving ends the session regardless
         if (Current == Phase.Editing || Current == Phase.Countdown) {
-            End();
-            PracticeSelect.ReopenOnTitle();
+            EndAtTitle();
             return;
         }
 
@@ -625,8 +672,7 @@ public static class PracticeController {
             return;
         }
 
-        End();
-        PracticeSelect.ReopenOnTitle();
+        EndAtTitle();
     }
 
     // this attempt's ghost (30 Hz on the practice clock) and the stored one it races
@@ -709,8 +755,15 @@ public static class PracticeController {
     // this attempt's placements (bfr lines, then shuffle groups); an unlisted location is empty
     public static Dictionary<int, RandomizerAction> Placements = new Dictionary<int, RandomizerAction>();
 
+    // this attempt's locations, which a death does not forget
+    private static readonly HashSet<int> touchedKeys = new HashSet<int>();
+
     public static void GiveAt(int key) {
-        Inc(Pickups, 1);
+        Inc(Held, 1);
+        if (touchedKeys.Add(key)) {
+            Inc(Touched, 1);
+        }
+
         RandomizerAction action;
         if (Placements.TryGetValue(key, out action) && action != null) {
             RandomizerSwitch.GivePickup(action, key, false);
@@ -766,10 +819,6 @@ public static class PracticeController {
         Segment = segment;
         RandomizerBoxes.Use(Segment.Boxes);
         Placements = placements;
-    }
-
-    public static void OnPickup() {
-        Inc(Pickups, 1);
     }
 
     // [h:]mm:ss.xx, rounded to hundredths before the split so 59.996 carries into the minute
