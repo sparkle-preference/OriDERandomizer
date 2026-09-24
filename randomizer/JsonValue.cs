@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
-// A json tree, parsed and serialized by hand: this runtime has no json
-// library, and the practice container's segment.json is edited by people,
-// so errors carry positions. Numbers live as doubles, which hold every
-// location coordinate and duration this project uses exactly.
+// A hand-rolled json tree (this runtime has no json library); parse errors carry line and column.
+// Numbers are doubles, which hold every coordinate and duration used here exactly.
 public class JsonValue {
     private Dictionary<string, JsonValue> obj;
 
@@ -122,9 +120,13 @@ public class JsonValue {
 
     // --- parsing ---
 
+    // deeper than any segment.json, shallow enough that a hostile file cannot overflow the stack
+    private const int MaxDepth = 64;
+
     public static JsonValue Parse(string text) {
-        var at = 0;
-        var v = ParseValue(text, ref at);
+        // a hand edit saved as "UTF-8 with BOM"
+        var at = text.Length > 0 && text[0] == '﻿' ? 1 : 0;
+        var v = ParseValue(text, ref at, 0);
         SkipSpace(text, ref at);
         if (at != text.Length) {
             throw Bad(text, at, "trailing content after the document");
@@ -133,19 +135,23 @@ public class JsonValue {
         return v;
     }
 
-    private static JsonValue ParseValue(string t, ref int at) {
+    private static JsonValue ParseValue(string t, ref int at, int depth) {
         SkipSpace(t, ref at);
         if (at >= t.Length) {
             throw Bad(t, at, "value expected");
         }
 
         var c = t[at];
+        if ((c == '{' || c == '[') && depth >= MaxDepth) {
+            throw Bad(t, at, "nested more than " + MaxDepth + " deep");
+        }
+
         if (c == '{') {
-            return ParseObject(t, ref at);
+            return ParseObject(t, ref at, depth + 1);
         }
 
         if (c == '[') {
-            return ParseArray(t, ref at);
+            return ParseArray(t, ref at, depth + 1);
         }
 
         if (c == '"') {
@@ -174,7 +180,7 @@ public class JsonValue {
         throw Bad(t, at, "unrecognized value");
     }
 
-    private static JsonValue ParseObject(string t, ref int at) {
+    private static JsonValue ParseObject(string t, ref int at, int depth) {
         var v = NewObject();
         at++;
         SkipSpace(t, ref at);
@@ -196,7 +202,7 @@ public class JsonValue {
             }
 
             at++;
-            v.Set(key, ParseValue(t, ref at));
+            v.Set(key, ParseValue(t, ref at, depth));
             SkipSpace(t, ref at);
             if (at >= t.Length) {
                 throw Bad(t, at, "unterminated object");
@@ -216,7 +222,7 @@ public class JsonValue {
         }
     }
 
-    private static JsonValue ParseArray(string t, ref int at) {
+    private static JsonValue ParseArray(string t, ref int at, int depth) {
         var v = NewArray();
         at++;
         SkipSpace(t, ref at);
@@ -226,7 +232,7 @@ public class JsonValue {
         }
 
         while (true) {
-            v.Add(ParseValue(t, ref at));
+            v.Add(ParseValue(t, ref at, depth));
             SkipSpace(t, ref at);
             if (at >= t.Length) {
                 throw Bad(t, at, "unterminated array");
@@ -354,8 +360,10 @@ public class JsonValue {
                 WriteString(sb, str);
                 return;
             case 4:
-                // whole values print whole: coordinates must not grow ".0" or E-notation
-                if (num == Math.Floor(num) && Math.Abs(num) < 9007199254740992.0) {
+                // json has no NaN or Infinity; whole values print whole: coordinates must not grow ".0" or E-notation
+                if (double.IsNaN(num) || double.IsInfinity(num)) {
+                    sb.Append("null");
+                } else if (num == Math.Floor(num) && Math.Abs(num) < 9007199254740992.0) {
                     sb.Append(((long)num).ToString(CultureInfo.InvariantCulture));
                 } else {
                     sb.Append(num.ToString("R", CultureInfo.InvariantCulture));

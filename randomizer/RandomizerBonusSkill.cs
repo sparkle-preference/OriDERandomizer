@@ -8,14 +8,14 @@ using UnityEngine;
 public static class RandomizerBonusSkill {
     public static void SwitchBonusSkill() {
         var unlocked = new Dictionary<int, int>(UnlockedBonusSkills);
+        if (unlocked.Count == 0) {
+            Randomizer.Print("No bonus skills unlocked!", 3, false, false, false, true);
+            return;
+        }
+
         var slot_0 = unlocked.Keys.Min();
         var slot_n = unlocked.Keys.Max();
         if (ActiveBonus == 0) {
-            if (unlocked.Count == 0) {
-                Randomizer.Print("No bonus skills unlocked!", 3, false, false, false, true);
-                return;
-            }
-
             ActiveBonus = unlocked[slot_0];
         }
 
@@ -241,16 +241,16 @@ public static class RandomizerBonusSkill {
                             } else if (entity is DashOwlEnemy) {
                                 CapturedName = "Bird";
                             } else {
-                                return;
+                                continue;
                             }
 
                             CapturedEnemy = entity as Enemy;
-                            Randomizer.LogError(CapturedEnemy.BoundingBox.ToString());
                             CapturedOffset = CapturedEnemy.PositionToPlayerPosition;
                             CapturedLeft = Characters.Sein.FaceLeft;
                             CapturedEnemy.gameObject.SetActiveRecursively(false);
                             //Events.Scheduler.OnSceneRootDisabled.Remove(new Action<SceneRoot>(CapturedEnemy.OnSceneUnloaded));
                             RandomizerItems.BonusSkillNames[112] = "Pokeball (" + CapturedName + ")";
+                            break;
                         }
                     }
                 } else {
@@ -332,7 +332,7 @@ public static class RandomizerBonusSkill {
         }
     }
 
-    static bool CanWarpTo(Vector3 target) {
+    public static bool CanWarpTo(Vector3 target) {
         return !((Characters.Sein.Abilities.Carry.IsCarrying && !Randomizer.AllowOrbWarps) || !Characters.Sein.Controller.CanMove || !Characters.Sein.Active || (target.x == 0f && target.y == 0f));
     }
 
@@ -394,9 +394,7 @@ public static class RandomizerBonusSkill {
         UpdateDrain();
     }
 
-    // Credit Warp's pickup id is 1587, which is in the old stats block -- a single id nothing
-    // else shares, kept alive through death for no reason but its address. Seeds still say 1587
-    // because that is the server's pickup table; what the save remembers is 4087.
+    // Seeds and the server's pickup table say 1587; the save keeps Credit Warp at 4087.
     public const int LegacyCreditWarp = 1587;
 
     public const int CreditWarp = 4087;
@@ -508,6 +506,11 @@ public static class RandomizerBonusSkill {
         get {
             var ubs = new Dictionary<int, int>();
             foreach (var id in RandomizerItems.BonusSkillNames.Keys) {
+                // a migrated save holds Credit Warp at both ids; 4087 is the one that counts
+                if (id == LegacyCreditWarp) {
+                    continue;
+                }
+
                 var val = get(id);
                 if (val % 2 == 1) {
                     if (ubs.ContainsKey(val >> 2)) {

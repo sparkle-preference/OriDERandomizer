@@ -259,6 +259,8 @@ public static class RandomizerStatsManager {
         }
     }
 
+    // The run's numbers ride to whatever slot loads next (a manual copy of the save is the same run),
+    // and the seconds at the title count toward it.
     public static void OnReturnToMenu() {
         try {
             inc(Reloads, 1);
@@ -336,8 +338,7 @@ public static class RandomizerStatsManager {
             return;
         }
 
-        // the location's own zone, not wherever the player is standing: a
-        // pickup can be collected without being walked to
+        // the location's zone, not the one Ori stands in
         IncPickup(ZoneForPickup(loc));
     }
 
@@ -397,9 +398,7 @@ public static class RandomizerStatsManager {
         return GetStatsPage(page, false);
     }
 
-    // Glades unless the seed moves you. A spawn item holding a teleporter and then a warp is
-    // what says you start somewhere else, and the teleporter it holds is the one you start on.
-    // TP values are TeleportTable keys ("Glades"), not identifiers, hence the hop.
+    // Glades unless the spawn item holds a TP before its WS; TP values are TeleportTable keys.
     public static string SpawnTeleporter() {
         var spawn = Randomizer.SpawnWith ?? "";
         var tp = spawn.IndexOf("TP");
@@ -414,12 +413,8 @@ public static class RandomizerStatsManager {
             : "sunkenGlades";
     }
 
-    // A line for one milestone: what it was, when, and where. Key items and goal-mode
-    // milestones are the same shape, so they share this. One tab per column: the
-    // tab stops are the columns, so label width never moves the rest of the row.
-    // Labels are padded to 20 chars so every one spans exactly two stops at tab
-    // size 2.1 (glyphs run ~0.22 units, spaces ~0.11, so the padded widths land
-    // between one and two stops for the whole label set).
+    // One milestone row: label, time, zone, a tab per column. Labels pad to 20 chars so each
+    // spans exactly two stops at tab size 2.1.
     private static string Stamped(string label, int id, out int time) {
         var l = label + ":";
         while (l.Length < 20) {
@@ -434,7 +429,8 @@ public static class RandomizerStatsManager {
         }
 
         time = raw % (1 << 18);
-        var zoneName = ZonePrettyNames[Offsets.First(x => x.Value == raw >> 18).Key].Trim();
+        var zone = Offsets.FirstOrDefault(x => x.Value == raw >> 18).Key;
+        var zoneName = zone != null ? ZonePrettyNames[zone].Trim() : "Unknown";
         return l + FormatTime(time) + "\t" + zoneName;
     }
 
@@ -448,9 +444,8 @@ public static class RandomizerStatsManager {
         into[time].Add(line);
     }
 
-    // The milestone pages, assembled from time-sorted rows. On screen the row count
-    // picks the font: sixteen rows fit at full size, and past that the whole table
-    // shrinks to match, down to a floor past which the unfound stop being listed.
+    // Time-sorted milestone rows. On screen, found rows always show and unfound ones fill the
+    // rest of a screenful; more found rows than that shrink the table, font floor 0.6.
     private static string MilestoneTable(string header, SortedDictionary<int, List<string>> byTime,
             bool forFile, string emptyLine) {
         List<string> unfound;
@@ -473,8 +468,7 @@ public static class RandomizerStatsManager {
             return header + "\n" + string.Join("\n", rows.ToArray());
         }
 
-        // found rows always stay; unfound rows fill what is left of a screenful,
-        // culled from the front of the display order as finds push in
+        // unfound rows are culled from the front as finds push in
         var excess = rows.Count + unfound.Count - ScreenRows;
         if (excess > 0) {
             unfound.RemoveRange(0, Math.Min(excess, unfound.Count));
@@ -486,13 +480,11 @@ public static class RandomizerStatsManager {
         }
 
         var total = rows.Count + 1;
-        // the leading rides tighter than the font (0.8 at rest, 16/total past a
-        // screenful), and the font only follows two rows later at full shrink
+        // leading is 0.8 at rest and 16/total past a screenful; the font follows two rows later
         var lineScale = Math.Min(0.8f, Math.Max(0.6f, (float)ScreenRows / total));
         var fontScale = Math.Min(1f, Math.Max(0.6f, (ScreenRows + 2f) / total));
         var inv = System.Globalization.CultureInfo.InvariantCulture;
-        // stops anchor at the box origin, so the left padding is exactly one stop
-        // and everything (padding, width, stops) shrinks with the font together
+        // stops anchor at the box origin: left padding is one stop, and all of it scales with the font
         var prefix = "ALIGNLEFTANCHORTOPPADDING_0_" + (2.1f * fontScale).ToString("0.##", inv)
             + "_0_0_PARAMS_16_" + (10.3f * fontScale + 0.5f).ToString("0.##", inv) + "_"
             + (2.1f * fontScale).ToString("0.##", inv) + "_";
@@ -510,13 +502,17 @@ public static class RandomizerStatsManager {
         return label + ":\t" + (raw > 0 ? FormatTime(raw % (1 << 18)) : "---");
     }
 
-    // The goals page: one [name, found at] column pair per active goal mode,
-    // side by side. Every group is a screenful or less, so nothing shrinks.
+    // One [name, found at] column pair per active goal mode; each group fits a screen, so no shrink.
     private static string GoalScreenTable() {
         var groups = new List<List<string>>();
         if (Randomizer.ForceTrees) {
             var g = new List<string> { "Tree\tFound At" };
             foreach (var tree in RandomizerTrackedDataManager.Trees) {
+                // key 0 is Spirit Flame, not a goal
+                if (tree.Key == 0) {
+                    continue;
+                }
+
                 g.Add(GoalCell(tree.Value, TreeTime + tree.Key));
             }
 
@@ -534,7 +530,7 @@ public static class RandomizerStatsManager {
                 g.Add(GoalCell(relic.Key, RelicTime + relic.Value));
             }
 
-            // a WorldTour seed can hold no relics at all; a bare header would just confuse
+            // a WorldTour seed can hold no relics at all: no bare header
             if (g.Count > 1) {
                 groups.Add(g);
             }
@@ -670,9 +666,7 @@ public static class RandomizerStatsManager {
                     Collect(linesByTime, item, KeyItemTime + KeyItemOffsets[item]);
                 }
 
-                // Teleporters, shortened to fit beside the key items. Three are hidden on screen
-                // and kept in the file: the spawn one is not something you went and got, and
-                // Horu Fields and Lost Grove are noise on a list this long.
+                // teleporters by short name; the screen hides spawn, Horu Fields and Lost Grove
                 var spawnTp = SpawnTeleporter();
                 for (var i = 0; i < BingoController.Teleporters.Length; i++) {
                     var id = BingoController.Teleporters[i];
@@ -698,6 +692,10 @@ public static class RandomizerStatsManager {
                     var goals = new SortedDictionary<int, List<string>>();
                     if (Randomizer.ForceTrees) {
                         foreach (var tree in RandomizerTrackedDataManager.Trees) {
+                            if (tree.Key == 0) {
+                                continue;
+                            }
+
                             Collect(goals, tree.Value + " Tree", TreeTime + tree.Key);
                         }
                     }
@@ -719,8 +717,7 @@ public static class RandomizerStatsManager {
                         }
                     }
 
-                    // Fragments are the one thing the screen never shows: there can be any number
-                    // of them, and a wall of them would bury the milestones that are actually rare.
+                    // fragments are file-only: any number of them would bury the rare milestones
                     for (var i = 0; i < get(FragCount); i++) {
                         Collect(goals, "Fragment " + (i + 1), FragFirst + i);
                     }
@@ -761,8 +758,7 @@ public static class RandomizerStatsManager {
     }
 
 
-    // Squares a tab-separated block up into columns. Written for the key items; the goal
-    // milestones are the same three columns, so they get it too.
+    // Pads a tab-separated block into space-aligned columns for stats.txt.
     private static string Columned(string part) {
         part = part.Replace("   ", "");
         part = Regex.Replace(part, "\t+", "\t");
@@ -945,7 +941,9 @@ public static class RandomizerStatsManager {
     }
 
     public static void FoundEvent(int eventID) {
-        FoundKeyItem(EventsById[eventID]);
+        if (EventsById.ContainsKey(eventID)) {
+            FoundKeyItem(EventsById[eventID]);
+        }
     }
 
     public static void FoundKeyItem(string itemName) {
@@ -955,11 +953,14 @@ public static class RandomizerStatsManager {
 
         var offset = KeyItemTime + KeyItemOffsets[itemName];
         if (get(offset) == 0) {
-            var time = get(Time);
-            var key = PickupZone ?? CurrentZone();
-            var zone = Offsets.ContainsKey(key) ? Offsets[key] : Offsets["unknown"];
-            set(offset, time + (zone << 18));
+            set(offset, Packed(PickupZone ?? CurrentZone()));
         }
+    }
+
+    // time + (zone << 18); past 2^18 s the time saturates instead of spilling into the zone
+    private static int Packed(string key) {
+        var zone = Offsets.ContainsKey(key) ? Offsets[key] : Offsets["unknown"];
+        return Math.Min(get(Time), (1 << 18) - 1) + (zone << 18);
     }
 
     // Zone of the item being granted, held for one GivePickup; null means wherever the player stands.
@@ -984,18 +985,13 @@ public static class RandomizerStatsManager {
         return CurrentZone();
     }
 
-    // Stats used to live in 1500-1599, a hundred slots with no room to grow. They are the same
-    // values at the same offsets, 2500 higher, and a save written before the move is copied across
-    // the first time it is loaded. Total time is the sentinel: any played seed has one.
-    // Stamps one milestone id with the current time and zone, once. Mirrors KeyItemFound.
+    // Stamps one milestone id with the current time and zone, once. Mirrors FoundKeyItem.
     private static void Mark(int id) {
         if (Characters.Sein == null || Characters.Sein.Inventory == null || get(id) != 0) {
             return;
         }
 
-        var key = PickupZone ?? CurrentZone();
-        var zone = Offsets.ContainsKey(key) ? Offsets[key] : Offsets["unknown"];
-        set(id, get(Time) + (zone << 18));
+        set(id, Packed(PickupZone ?? CurrentZone()));
     }
 
     public static void TeleporterActivated(string identifier) {
@@ -1020,8 +1016,7 @@ public static class RandomizerStatsManager {
         Mark(MapstoneTime + mapNum);
     }
 
-    // Fragments have no fixed count, so they are stamped in the order they turn up. The held
-    // count is the high-water mark: only a fragment that pushes it higher takes a new slot.
+    // Stamped in the order found; only a fragment that raises the held count takes a new slot.
     public static void FragmentFound() {
         if (Characters.Sein == null || Characters.Sein.Inventory == null) {
             return;
@@ -1037,6 +1032,7 @@ public static class RandomizerStatsManager {
         set(FragCount, recorded + 1);
     }
 
+    // A pre-renumbering save's stats sit at 1500-1599; copy them 2500 up once, Time as the sentinel.
     public static void MoveOldBlock() {
         if (Characters.Sein == null || Characters.Sein.Inventory == null) {
             return;
@@ -1047,8 +1043,7 @@ public static class RandomizerStatsManager {
             return;
         }
 
-        // 1587 stays behind: it is Credit Warp's pickup id, shared with the server's
-        // pickup table and baked into seeds, so it is not ours to renumber.
+        // copies, never clears: 1587 is still Credit Warp's seed-level pickup id
         var carried = 0;
         for (var id = 1500; id < 1600; id++) {
             var was = inventory.GetRandomizerItem(id);
@@ -1061,9 +1056,7 @@ public static class RandomizerStatsManager {
         Randomizer.log("stats: carried " + carried + " values up from the old block");
     }
 
-    // Goal-mode milestones. One id each, holding when and where the same way key items do:
-    // the id says which thing, the packed zone says where you were standing for it. Which
-    // matters more than it sounds -- co-op can hand you a Wall Jump tree while you are in Horu.
+    // Goal-mode milestones, one id each, packed like key items: time + (zone << 18).
     public static int TeleporterTime = 4100;   // + BingoController.Teleporters index
 
     public static int TreeTime = 4120;         // + RandomizerTrackedDataManager.Trees key
@@ -1072,9 +1065,7 @@ public static class RandomizerStatsManager {
 
     public static int MapstoneTime = 4160;     // + RandomizerTrackedDataManager.MapBitsByArea bit
 
-    // How many warmth fragments have been found, doubling as the cursor into the slots below.
-    // Taken from the count actually held, so a fragment re-collected after a death restores a
-    // number already recorded and moves nothing.
+    // Fragments stamped so far, and the cursor into FragFirst; a re-collect after a death stamps nothing.
     public static int FragCount = 4500;
 
     public static int FragFirst = 4501;
@@ -1115,10 +1106,9 @@ public static class RandomizerStatsManager {
 
     public static int CurrentPage;
 
-    // What the old key-item page held, and so how many lines fit on screen.
+    // Rows that fit on screen at full size.
     public const int ScreenRows = 16;
 
-    // the shrink floor: past this many rows the unfound go unlisted instead
 
 
     // Bingo has its own board and goal mode none has nothing to say, so neither gets a page.

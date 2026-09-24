@@ -4,7 +4,6 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 public class SaveSceneManager : MonoBehaviour {
-    // Note: this type is marked as 'beforefieldinit'.
     static SaveSceneManager() {
     }
 
@@ -258,6 +257,7 @@ public class SaveSceneManager : MonoBehaviour {
 
     private Dictionary<MoonGuid, Archive> m_saveCache = new Dictionary<MoonGuid, Archive>();
 
+    // NonSerialized: built scenes have no type tree, so a new serialized field misreads the asset
     [NonSerialized] public Action<SceneRoot> bootstrapHook;
 
     [NonSerialized] public SceneRoot sceneRoot;

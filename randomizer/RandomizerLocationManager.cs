@@ -80,21 +80,18 @@ public class RandomizerLocationManager {
     private static HashSet<string> InitializePaths() {
         var paths = new HashSet<string>();
 
-        var flagLine = Randomizer.SeedMeta.Split(new[] { '|' }, 1)[0];
-        var firstComma = flagLine.IndexOf(',');
-        if (firstComma < 0) {
+        var flags = Randomizer.SeedMeta.Split('|')[0].Split(',');
+        var preset = flags[0];
+        if (preset == "") {
             return paths;
         }
 
-        var preset = flagLine.Substring(0, firstComma);
-
         if (preset.StartsWith("Sync")) {
-            var secondComma = flagLine.IndexOf(',', firstComma + 1);
-            if (secondComma < 0) {
+            if (flags.Length < 2) {
                 return paths;
             }
 
-            preset = flagLine.Substring(firstComma + 1, secondComma - firstComma - 1);
+            preset = flags[1];
         }
 
         switch (preset) {
@@ -184,6 +181,14 @@ public class RandomizerLocationManager {
         pickupLocation.Repeatable = repeatable;
     }
 
+    // a seed names only the locations it fills; the rest must not keep the last seed's items
+    public static void ClearPickups() {
+        foreach (var location in LocationsByKey.Values) {
+            location.Pickup = null;
+            location.Repeatable = false;
+        }
+    }
+
     public static bool IsPickupCollected(MoonGuid pickupGuid) {
         if (LocationsByGuid.ContainsKey(pickupGuid)) {
             return LocationsByGuid[pickupGuid].Collected;
@@ -239,6 +244,7 @@ public class RandomizerLocationManager {
         LogicThread.Start();
     }
 
+    // runs on DLThread: Randomizer.log only, since LogError draws on screen
     public static void DownloadAreas() {
         if (RandomizerSettings.DevSettings.AreasOri) {
             try {
@@ -264,7 +270,7 @@ public class RandomizerLocationManager {
                 if (!fetched) {
                     // no lane could serve it: keep what we had rather than
                     // leaving the install with no logic file at all
-                    Randomizer.LogError("areas.ori: no transport could fetch it; keeping the existing file");
+                    Randomizer.log("areas.ori: no transport could fetch it; keeping the existing file");
                     if (File.Exists("areas.ori.old")) {
                         File.Move("areas.ori.old", "areas.ori");
                     }
@@ -278,7 +284,7 @@ public class RandomizerLocationManager {
                     File.Delete("areas.ori.old"); // clean backup
                 }
             } catch (Exception e) {
-                Randomizer.LogError($"Failed to download areas.ori: ${e}");
+                Randomizer.log($"Failed to download areas.ori: {e}");
                 if (File.Exists("areas.ori")) {
                     File.Delete("areas.ori"); // remove broken / failed
                 }
@@ -376,11 +382,8 @@ public class RandomizerLocationManager {
             item.Value.Reachable = reachable.Contains(item.Key);
         }
 
-        // key-lock warning mask. KeyTiers seeds charge per-door tiers against
-        // lifetime keystones (item 70); other seeds ask the engine: a door is
-        // in logic when its opened side is reachable, which already prices
-        // every still-closed door on the cheapest route there (actually-opened
-        // doors are primed free above)
+        // key-lock warning mask: KeyTiers seeds charge tiers against lifetime keystones (item 70);
+        // otherwise a door is in logic when its far side is reachable
         var doorMask = 0;
         var ksCollected = Randomizer.Inventory.GetRandomizerItem(70);
         foreach (var ksDoor in KeystoneDoors.Values) {
@@ -458,9 +461,8 @@ public class RandomizerLocationManager {
 
     public static Dictionary<MoonGuid, KeystoneDoor> KeystoneDoors = new Dictionary<MoonGuid, KeystoneDoor>();
 
-    // --- key-lock warnings (non-keysanity): is each unopened door in logic? ---
-    // recomputed with reachability; RAM-only, so nothing can warn before the
-    // first sweep of a loaded save
+    // key-lock warnings (non-keysanity): RAM-only, recomputed with reachability, so nothing
+    // warns before a loaded save's first sweep
     public static int DoorsInLogicMask;
 
     public static bool DoorLogicValid;
@@ -501,14 +503,8 @@ public class RandomizerLocationManager {
         return spent;
     }
 
-    /// <summary>
-    /// DoorWithSlots.Highlight: doors take one click per key, so this is
-    /// advice ahead of the first click, never a block. Quiet for keysanity
-    /// (its doors can't waste keys), quiet once per door, quiet while the
-    /// player can't pay the door anyway (nothing to waste yet — no latch, so
-    /// it can still fire once they can), and quiet forever on a save that
-    /// has keyduped (the counters stop meaning anything).
-    /// </summary>
+    /// <summary>Advice before a door's first key, never a block: silent under keysanity, once per
+    /// door, while the player can't pay yet, and forever on a keyduped save (item 73).</summary>
     public static void WarnIfDoorOutOfLogic(MoonGuid doorGuid) {
         if (!RandomizerSettings.Customization.KeyLockWarnings.Value || Randomizer.Keysanity.IsActive
             || !DoorLogicValid || !KeystoneDoors.ContainsKey(doorGuid)) {
@@ -579,9 +575,7 @@ public class RandomizerLocationManager {
                 return;
             }
 
-            // A practice segment places its own pickups and counts them itself. Nothing
-            // below this line belongs to a practice run: not bingo, not normal stats, not
-            // the logic thread, and an unplaced location is empty rather than an error.
+            // a practice segment places and counts its own pickups; nothing below applies to it
             if (PracticeController.Active) {
                 PracticeController.GiveAt(Key);
                 Randomizer.OnCoord(Key);
@@ -638,9 +632,7 @@ public class RandomizerLocationManager {
 
         public bool Collected => Repeatable ? false : Type == LocationType.Map ? RandomizerTrackedDataManager.GetMapstone(SpecialIndex) : Randomizer.HaveCoord(Key);
 
-        // a self-AP location whose slot is already granted has nothing left to
-        // give, so the in-logic filter should stop showing it even after a
-        // death rolled the coord bit back
+        // a granted self-AP slot counts as touched even after a death rolls the coord bit back
         public bool Touched => Collected || Repeatable && Randomizer.HaveCoord(Key)
             || RandomizerMW.SelfItemCollected(Key) || RandomizerMW.ReleasedAway(Pickup);
 

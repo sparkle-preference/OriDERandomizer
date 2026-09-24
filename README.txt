@@ -38,7 +38,7 @@ PgUp / PgDn         Save select: jump three slots (with Shift, ten)
 Bash (held)         On the world map, warp to the spirit well under the cursor
 Grenade             Double bash
 
-The double bash bind exists to create parity between playing randomizer on controller and keyboard+mouse. If any of the binds specified are held when a bash ends, a double bash will automatically occur. To also make any of the binds specified end a bash on their own, add "Tap" as a bind for the double bash function.
+The double bash bind exists to create parity between playing randomizer on controller and keyboard+mouse. If any of the binds specified are held when a bash ends, a double bash will automatically occur. To also make any of the binds specified end a bash on their own, set "Double Bash Mode" to Tap in RandomizerSettings.txt.
 
 RandomizerSettings.txt holds the rest, including the bash deadzone on controller (0 for none through 1 for full).
 

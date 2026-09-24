@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// A rando bind: alternatives separated by commas, each one a chord joined by +. A chord is
-// everything held at once and lands when the last of it comes up, so Alt+R is one press rather
-// than two binds. The edit reads keys, or the game actions they are bound to, and Tab held
-// swaps between the two.
+// Edits one rando bind: comma-separated chords, each landing when all its keys are let go.
+// Reads keys, or the game actions they are bound to; a Tab hold swaps between the two.
 public class RandomizerBindControl : MonoBehaviour {
     public enum Mode {
         Keys,
@@ -79,17 +77,29 @@ public class RandomizerBindControl : MonoBehaviour {
         Collect();
     }
 
-    // Alone, because a chord is collected as it is held: nothing gathered means nothing down.
+    // pressed with no chord in hand
     private bool Bare(KeyCode key) {
         return Input.GetKeyDown(key) && peak.Count == 0;
     }
 
-    private static bool Quiet() {
-        return !Input.anyKey;
+    // triggers, sticks and the D-pad are axes, which anyKey does not see
+    private bool Quiet() {
+        if (Input.anyKey) {
+            return false;
+        }
+
+        if (mode == Mode.Actions) {
+            foreach (var pair in RandomizerRebinding.CoreInputMap) {
+                if (pair.Value.Pressed) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
-    // Back held long enough abandons the edit. A tap of it is still a key, so it binds on the
-    // release -- at the press there is no telling the two apart yet.
+    // A Back hold cancels the edit; a tap is a key like any other and binds on release.
     private bool Cancelling() {
         var down = CustomSettingsScreen.BackHeld();
         if (down == KeyCode.None) {
@@ -122,8 +132,7 @@ public class RandomizerBindControl : MonoBehaviour {
         return true;
     }
 
-    // Tab held swaps what the edit reads; tapped, it is a key like any other, and held with a
-    // chord already in hand it is part of that chord.
+    // A Tab hold swaps keys/actions; a tap, or Tab with a chord in hand, is just a key.
     private bool Swapping() {
         if (!Input.GetKey(KeyCode.Tab)) {
             if (swap >= 0f) {
@@ -158,7 +167,7 @@ public class RandomizerBindControl : MonoBehaviour {
         mode = mode == Mode.Keys ? Mode.Actions : Mode.Keys;
         owner.ReadingActions = mode == Mode.Actions;
         peak.Clear();
-        // Tab is still down, and standing down again is what stops it swapping straight back
+        // wait for Tab to come up, or it swaps straight back
         armed = false;
         owner.BindLegend();
         Tooltip();
@@ -223,8 +232,7 @@ public class RandomizerBindControl : MonoBehaviour {
         UpdateMessageBox();
     }
 
-    // Modifiers first, then the order they were pressed in. A chord of nothing but modifiers is
-    // a press thought better of rather than a bind, and would fire on its own besides.
+    // Modifiers first, then press order; null for modifiers alone, which are refused.
     private string Chord() {
         var modifiers = new List<string>();
         var rest = new List<string>();
@@ -244,7 +252,7 @@ public class RandomizerBindControl : MonoBehaviour {
         return String.Join("+", modifiers.ToArray());
     }
 
-    // The last bind of something the rando cannot be played without stays where it is.
+    // a Required action keeps its last chord
     private void RemoveLast() {
         if (chords.Count == 0 || (chords.Count == 1 && RandomizerRebinding.Required.Contains(action))) {
             Deny();
@@ -313,7 +321,7 @@ public class RandomizerBindControl : MonoBehaviour {
         messageBox.SetMessage(new MessageDescriptor(Live()));
     }
 
-    // The chord in hand trails a + of its own: it is still open until the keys come up.
+    // the chord still being held trails a +
     private void UpdateMessageBox() {
         var text = String.Join(", ", chords.ToArray());
         if (peak.Count > 0) {
@@ -330,11 +338,8 @@ public class RandomizerBindControl : MonoBehaviour {
         owner.tooltipController.UpdateTooltip();
     }
 
-    // Ori's own no: the sound an ability makes when there is not enough energy behind it. It
-    // lives on Sein, who is not always around, so a menu that cannot find it stays quiet.
+    // Ori's not-enough-energy sound, cached once found; silent while there is no Sein to find it on.
     private void Deny() {
-        // looked up again each time rather than cached away: a menu opened before the save was
-        // loaded has no Sein to ask, and one opened after does
         if (denial == null) {
             foreach (var ability in Resources.FindObjectsOfTypeAll<SeinChargeFlameAbility>()) {
                 if (ability != null && ability.NotEnoughEnergySound != null) {
@@ -355,8 +360,7 @@ public class RandomizerBindControl : MonoBehaviour {
         owner.Editing = false;
     }
 
-    // Binds apply as they are made, so leaving without keeping them is a restore, not a commit.
-    // The screen writes the file once the whole page has been put back.
+    // Binds apply live; Restore puts this back and the screen writes the file.
     public void Snapshot() {
         snapshot = Live();
     }

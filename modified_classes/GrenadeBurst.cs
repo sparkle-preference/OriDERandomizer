@@ -73,7 +73,7 @@ public class GrenadeBurst : MonoBehaviour, IPooled, ISuspendable {
         }
 
         m_waitDelay = 0.1f;
-        if (RandomizerBonusSkill.IsActive(117)) {
+        if (RandomizerBonusSkill.IsActive(117) && RandomizerBonusSkill.CanWarpTo(position)) {
             Characters.Sein.Position = position;
             Characters.Sein.Speed = new Vector3(0f, 0f);
             Characters.Ori.Position = new Vector3(position.x, position.y + 5f);

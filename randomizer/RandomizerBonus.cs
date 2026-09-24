@@ -56,9 +56,7 @@ public static class RandomizerBonus {
         }
 
         switch (ID) {
-            // A pickup that kills you: practice death boxes are made of these. Straight to
-            // OnKill, because damage can be refused or scaled to nothing and a death box
-            // that sometimes does not kill is worse than no death box.
+            // A pickup that kills: straight to OnKill, since damage can be refused or scaled to nothing.
             case 3:
                 if (Characters.Sein != null && Characters.Sein.Mortality != null) {
                     Characters.Sein.Mortality.DamageReciever.OnKill(
@@ -317,8 +315,11 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                v = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                RandomizerSwitch.PickupMessage("Skill Velocity Upgrade x" + v);
+                if (Characters.Sein.Inventory.GetRandomizerItem(ID) > 0) {
+                    v = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
+                    RandomizerSwitch.PickupMessage("Skill Velocity Upgrade x" + v);
+                }
+
                 break;
             case 34:
                 Characters.Sein.Inventory.SetRandomizerItem(34, 1);
@@ -344,8 +345,11 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                j = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                RandomizerSwitch.PickupMessage("Jump Upgrade x" + j);
+                if (Characters.Sein.Inventory.GetRandomizerItem(ID) > 0) {
+                    j = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
+                    RandomizerSwitch.PickupMessage("Jump Upgrade x" + j);
+                }
+
                 break;
             case 38:
                 if (!flag) {
@@ -841,9 +845,7 @@ public static class RandomizerBonus {
         }
     }
 
-    // The line an Enhanced skill introduces itself with; the name in front comes from
-    // RandomizerItems. Said when the second half arrives, so an Enhanced handed out at spawn
-    // waits for its skill instead of talking to an empty inventory.
+    // Each Enhanced's line, said once it and its skill are both held; the name comes from RandomizerItems.
     private static readonly Dictionary<int, string> EnhancedLines = new Dictionary<int, string> {
         { 410, "Sein's voice has been restored!" },
         { 411, "Now comes with bonus Climb! ...yeah, sorry, that's it for this one." },
@@ -859,9 +861,8 @@ public static class RandomizerBonus {
         { 422, "It isn't just clean - it's been cleaned out!" },
     };
 
-    // skill pickup id -> the Enhanced that upgrades it, and the ability that has to be in
-    // hand for the line to mean anything. Clean Water is an event, and is always in hand by
-    // the time its Enhanced can matter, so it has no entry.
+    // SK id -> its Enhanced, then each Enhanced -> the ability it needs. Clean Water (422) is an
+    // event and goes through the *Water methods instead.
     private static readonly Dictionary<int, int> EnhancedForSkill = new Dictionary<int, int> {
         { 0, 414 }, { 2, 412 }, { 3, 411 }, { 4, 415 }, { 5, 413 },
         { 8, 418 }, { 12, 417 }, { 14, 416 }, { 15, 410 }, { 50, 419 }, { 51, 420 },
@@ -894,9 +895,8 @@ public static class RandomizerBonus {
         return id == 422 && !Sein.World.Events.WaterPurified;
     }
 
-    // True when finding this skill will say its Enhanced line, so its own pickup message
-    // would be the same news twice. Spirit Flame is left out: Sein starts talking, which
-    // introduces her better than a message box, so the plain line still has a job.
+    // True when this skill's pickup will say its Enhanced line in place of the plain one.
+    // Never for Spirit Flame (15): Sein's own dialogue introduces her.
     public static bool HoldsEnhancedFor(int skill) {
         int id;
         return skill != 15 && EnhancedForSkill.TryGetValue(skill, out id)

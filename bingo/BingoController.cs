@@ -145,10 +145,8 @@ public static class BingoController {
         }
     }
 
-    // Two ways to die to a crushing hazard: its own damage collider hits you (the
-    // hazard is the sender) or it squeezes you into geometry (CapsuleCrushDetector
-    // fires, and the sender is Sein's own detector). Both happen in the same room,
-    // so DieTo goals have to ask about both.
+    // A crushing hazard kills two ways: its own collider (the hazard is the sender) or squeezing you
+    // into geometry (CapsuleCrushDetector fires, Sein's detector is the sender). DieTo asks both.
     public static bool KilledBy(Damage damage, MoonGuid guid) {
         return OwnerGuid(Sender(damage)) == guid;
     }
@@ -181,9 +179,8 @@ public static class BingoController {
         return owner == null ? null : owner.MoonGuid;
     }
 
-    // Dumps everything OnDeath below can key off to randomizer.log, for authoring new
-    // DieTo goals. Runs whether or not a bingo game is active, but only for players
-    // holding Mark -- it is the switch for this as much as it is a bonus skill.
+    // Logs everything OnDeath can key off, for authoring DieTo goals; with or without a board,
+    // but only while Mark is held (Mark is its switch).
     public static void DeathDebugLog(Damage damage) {
         if (!RandomizerBonusSkill.HasMark) {
             return;
@@ -257,12 +254,13 @@ public static class BingoController {
             UpdateTimer = Math.Min(UpdateTimer, 3);
             // string log_out ="Killed by:" + damage.Sender.name + " ";
             var currentScene = scene();
-            var test = damage.Sender.FindComponent<Entity>();
             // if(test != null)
             //     log_out += "(entity: " + test.MoonGuid + ")";
 
 
-            var owner = damage.Sender.FindComponent<GuidOwner>();
+            // some damage has no sender; the type-only cases below still apply
+            var sender = Sender(damage);
+            var owner = sender == null ? null : sender.FindComponent<GuidOwner>();
             // if(owner != null)
             // {
             //     log_out += "(owner: " + owner.MoonGuid + ")";
@@ -447,7 +445,9 @@ public static class BingoController {
             }
 
             IntGoals["TotalPickups"].OnChange(2);
-            var piz = "PickupsIn" + RandomizerStatsManager.CurrentZone(true);
+            // the zone the stats credit the pickup to, not the one Ori stands in
+            var zone = RandomizerStatsManager.ZonePrettyNames[RandomizerStatsManager.ZoneForPickup(coords)];
+            var piz = "PickupsIn" + zone.Replace("\t", "");
             if (IntGoals.ContainsKey(piz)) {
                 IntGoals[piz].OnChange(2);
             }
@@ -533,11 +533,8 @@ public static class BingoController {
         return last > 0 && last <= Teleporters.Length ? Teleporters[last - 1] : "";
     }
 
-    // Ori physically entered a well (SavePedestal.Highlight) -- deliberately not
-    // OnTouchTeleporter, which also fires for pickup-granted wells and the spawn
-    // activation of Glades, neither of which is a journey. Touching anything on the
-    // way overwrites the origin, so "without touching any in between" needs no
-    // extra bookkeeping.
+    // Ori physically entered a well (SavePedestal.Highlight), unlike OnTouchTeleporter, which also fires
+    // for granted wells. Each touch overwrites the origin, so "none in between" needs no bookkeeping.
     public static void OnPedestalTouch(string identifier) {
         try {
             if (!Active || Characters.Sein == null) {
@@ -1035,6 +1032,7 @@ public static class BingoController {
             WsUnsupported = false; // fresh seed, fresh chance (server may have upgraded)
             GoalsWsUnsupported = false;
             GoalsGone = false;
+            UpdateGone = false;
             // a reload moves the urls; in-flight replies from the old game die here
             RandomizerSyncManager.SidecarForget(updateHandle);
             RandomizerSyncManager.SidecarForget(goalsHandle);
@@ -1118,11 +1116,7 @@ public static class BingoController {
                     }
                 );
 
-                // 7000-7099 is the bingo end of the keep-on-death range
-                // (RandomizerInventory.KeptOnDeath). These lived at 2300-2399 before 5.0,
-                // and in 1500-1599 alongside the stats before that, which is how DeathLink
-                // came to sit on Ginso Escape Fronkey. Take the next free id here for any
-                // future goal that has to survive dying.
+                // 7000-7099: bingo's end of KeptOnDeath; a new goal that must survive dying takes the next id
                 MultiBoolGoal.mk(
                     "DieTo",
                     new List<BoolGoal> {
@@ -1318,7 +1312,7 @@ public static class BingoController {
     }
 
     public static void AskGoals() {
-        if (GoalsGone) {
+        if (GoalsGone || RandomizerSyncManager.Refused) {
             return;
         }
 
@@ -1336,9 +1330,7 @@ public static class BingoController {
             if (status != NativeWebSocket.HttpPending) {
                 NativeWebSocket.HttpRelease(updateHandle);
                 updateHandle = 0;
-                if (status >= 300 || status <= 0) {
-                    UpdateTimer = Math.Min(1, UpdateTimer);
-                }
+                OnUpdateStatus(status);
             }
         }
 
@@ -1357,12 +1349,11 @@ public static class BingoController {
         }
     }
 
-    // the server err'd a goals frame: 404 means no board, no status means it
-    // predates the channel entirely -- that fetch goes http
+    // 404: no board. A bare err is a server without the kind: http for this seed load. Others retry.
     public static void OnGoalsErr(string what) {
         if (what.Contains("404")) {
             GoalsGone = true;
-        } else {
+        } else if (what == "goals") {
             GoalsWsUnsupported = true;
         }
     }
@@ -1376,8 +1367,14 @@ public static class BingoController {
                 if (singleGoal.Contains('-')) {
                     var goalParts = singleGoal.Split('-');
                     ActiveSingleGoals.Add(goalParts[0]);
-                    var count = int.Parse(goalParts[1]);
-                    IntGoals[goalParts[0]].Target = count;
+                    // a goal this dll does not know costs only itself
+                    IntGoal goal;
+                    int count;
+                    if (IntGoals.TryGetValue(goalParts[0], out goal) && int.TryParse(goalParts[1], out count)) {
+                        goal.Target = count;
+                    } else {
+                        Randomizer.log("SAG: unknown int goal " + singleGoal);
+                    }
                 } else {
                     ActiveSingleGoals.Add(singleGoal);
                 }
@@ -1527,19 +1524,20 @@ public static class BingoController {
             jsonFrags.Add(goal.ToJson());
         }
 
-        // no goal tracks this; the board uses it to show whether a journey card is
-        // currently trackable from where the player stands
+        // not a goal: the board shows from it whether a journey card is trackable from here
         jsonFrags.Add("\"LastTouchedTeleporter\": { \"value\": \"" + LastTouchedTeleporter() + "\"}");
         jsonStr += String.Join(",\n", jsonFrags.ToArray()) + "\n}";
         return jsonStr;
     }
 
     public static void PostUpdate() {
+        // a gone game or a refused one sends nothing until Alt+L
+        if (UpdateGone || RandomizerSyncManager.Refused) {
+            return;
+        }
+
         var json = GetJson();
-        // over the websocket when it's up: the server acks with a status
-        // (RandomizerSyncManager routes bingoack/err frames back here).
-        // EscapeDataString throws past ~32k chars; boards run a few KB,
-        // but never let an outlier kill the update path
+        // ws when open (acked by bingoack); EscapeDataString throws past ~32k, so an outlier goes http
         if (RandomizerSyncManager.WsOpen && !WsUnsupported && json.Length < 30000) {
             NativeWebSocket.SendText("bingo:bingoData=" + Uri.EscapeDataString(json) + "&version=" + Randomizer.VERSION);
             UpdateTimer = 15;
@@ -1553,23 +1551,26 @@ public static class BingoController {
                 UpdateTimer = 3;
             }
         } else {
-            // no transport right now (fallback routes gone, socket mid-
-            // reconnect): try again shortly — the next send carries the
-            // full board state anyway
+            // no transport: try again shortly; every send is a full snapshot
             UpdateTimer = 3;
         }
     }
 
-    // a failed update retries fast, like the http door. A LOST frame
-    // (no ack at all) just waits out the 15s cadence — every update is a
-    // full durable snapshot, so nothing is ever missing for long.
+    // a lost frame waits out the 15s cadence (every update is a snapshot)
     public static void OnBingoAck(string status) {
         try {
-            if (int.Parse(status) >= 300) {
-                UpdateTimer = Math.Min(1, UpdateTimer);
-            }
+            OnUpdateStatus(int.Parse(status));
         } catch (Exception e) {
             Randomizer.log("OnBingoAck: " + e.Message);
+        }
+    }
+
+    // 404: no such bingo game, so updates stop until the seed reloads; other failures retry fast
+    private static void OnUpdateStatus(int status) {
+        if (status == 404) {
+            UpdateGone = true;
+        } else if (status >= 300 || status <= 0) {
+            UpdateTimer = Math.Min(1, UpdateTimer);
         }
     }
 
@@ -1583,6 +1584,7 @@ public static class BingoController {
     public static bool GoalsWsUnsupported;
     public static bool GoalsLoaded;
     public static bool GoalsGone;
+    public static bool UpdateGone;
     public static string GoalsUrl;
     private static int updateHandle;
     private static int goalsHandle;

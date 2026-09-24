@@ -140,8 +140,7 @@ public class TransparencyAnimator : BaseAnimator {
             }
 
             if (m_cleverMenuItems != null) {
-                // An item destroyed after it was cached here stays in the list; reaching
-                // through it throws, so drop it and let the list heal itself.
+                // items destroyed after caching stay listed; drop them rather than reach through
                 for (var k = m_cleverMenuItems.Count - 1; k >= 0; k--) {
                     if (m_cleverMenuItems[k] == null) {
                         m_cleverMenuItems.RemoveAt(k);

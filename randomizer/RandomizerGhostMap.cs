@@ -2,13 +2,12 @@ using System.Collections.Generic;
 using Game;
 using UnityEngine;
 
-// The other players, on the area map. Not distance-culled the way the ghosts are: the map is
-// laid out from the start, so there is nothing to spoil and nothing to walk towards.
+// The other players and their soul links on the area map, never distance-culled.
 public static class RandomizerGhostMap {
-    // The player's own marker is generous; a screen of them at that size would be a mess.
+    // scale against the player's own marker
     private const float Relative = 0.5f;
 
-    // The reach the map's own icons hover from, so a player is no fussier to point at.
+    // the reach the map's own icons hover from
     private const float HoverRadius = 12f;
 
     public static void Update(AreaMapUI map) {
@@ -18,6 +17,8 @@ public static class RandomizerGhostMap {
             return;
         }
 
+        Prune(Icons, Painted);
+        Prune(LinkIcons, LinkPainted);
         RandomizerGhost.Markers(Wanted);
         for (var i = 0; i < Wanted.Count; i++) {
             var marker = Wanted[i];
@@ -67,8 +68,7 @@ public static class RandomizerGhostMap {
         Retire(LinkIcons, links);
     }
 
-    // The peer nearest the cursor, if one beats everything else in the running. Shares the map's
-    // one tooltip rather than stacking a second label on the same spot.
+    // The peer nearest the cursor if closer than `nearest`, for the map's one tooltip.
     public static bool Hover(Vector2 cursor, ref float nearest, out Vector3 position, out string name) {
         position = Vector3.zero;
         name = null;
@@ -110,7 +110,17 @@ public static class RandomizerGhostMap {
         return icons[index];
     }
 
-    // Peers come and go; keep the objects rather than the churn, and hide the spares.
+    // Icons live under the map's own objects; any taken down with them are made again by At.
+    private static void Prune(List<GameObject> icons, List<Color> painted) {
+        for (var i = icons.Count - 1; i >= 0; i--) {
+            if (icons[i] == null) {
+                icons.RemoveAt(i);
+                painted.RemoveAt(i);
+            }
+        }
+    }
+
+    // Pooled: spares are hidden, not destroyed.
     private static void Retire(List<GameObject> icons, int keep) {
         for (var i = 0; i < icons.Count; i++) {
             if (icons[i] == null) {

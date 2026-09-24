@@ -10,6 +10,13 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     public void OnEnable() {
         // each visit is its own baseline, so keeping changes and coming back starts clean
         SnapshotBinds();
+        // the file can be reloaded under a page built earlier
+        foreach (var refresh in rowRefresh) {
+            refresh();
+        }
+
+        // a flyout open when the screen closed still has the tooltip
+        RestoreTooltip();
     }
 
     public void OnDisable() {
@@ -20,10 +27,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         RandomizerSettings.WriteSettings();
     }
 
-    // Escape is bound to Pause as well as Cancel: the menu manager reads it first and closes
-    // the whole screen, and the tab list takes clicks even while it is inactive. Both are
-    // shut while the page has a question to ask or an edit in hand, and for a few frames
-    // after either ends -- the manager reads that same press a frame behind the edit.
+    // Escape is also Pause, which the menu manager reads first. Hold it and the tab list off
+    // during a prompt or edit and SettleFrames after: the manager sees that press a frame late.
     public void HoldMenu() {
         if (Editing || prompt != null) {
             settle = SettleFrames;
@@ -32,8 +37,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
 
         Hold(prompt != null || Editing || settle > 0 || (selectionManager.IsActive && BindsDirty));
-        // an edit owns the page: the row under the cursor must not take the selection, and the
-        // tooltip the edit put up must not be replaced by the one belonging to that row
+        // the cursor must not move the selection, or swap the tooltip, under an edit or prompt
         selectionManager.IsLocked = prompt != null || Editing;
     }
 
@@ -48,7 +52,6 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     }
 
     public virtual void Awake() {
-        // Layout and selection manager
         layout = GetComponent<CleverMenuItemLayout>();
         selectionManager = GetComponent<CleverMenuItemSelectionManager>();
         group = GetComponent<CleverMenuItemGroup>();
@@ -67,7 +70,6 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             }
         }
 
-        // Tooltip
         var originalToolip = SettingsScreen.Instance.transform.Find("highlightFade/pivot/tooltip");
         var tooltip = Instantiate(originalToolip);
         tooltip.SetParent(pivot);
@@ -78,13 +80,12 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         tooltipController.enabled = true;
 
         InitScreen();
-        // the first row can be a header, which is not a thing to be sitting on
+        // skips a leading header
         selectionManager.SetIndexToFirst();
         selectionManager.BackGuard = KeepOrDiscard;
     }
 
-    // Leaving a page whose binds have changed asks first. Both answers land the back they
-    // interrupted, because clearing the change is what lets the guard through.
+    // Back from a dirty page asks first; either answer clears the change, then lands the back.
     private bool KeepOrDiscard() {
         if (prompt != null) {
             return false;
@@ -95,7 +96,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
 
         Confirm("Save keybinding changes?", new[] { "SAVE", "DISCARD" }, answer => {
-            // Back declines to answer, which is a reason to stay rather than either of them
+            // Back on the prompt: stay on the page
             if (answer < 0) {
                 return;
             }
@@ -121,10 +122,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     public abstract void InitScreen();
 
-    // Call from InitScreen. The window follows the selection, so the re-sort has to hang
-    // off the selection change rather than off Update.
+    // Call from InitScreen; the window re-sorts on each selection change.
     public void ScrollAfter(int rows) {
-        // the rows are built by now and never change, so the controls are worth keeping
+        // the rows are final by now, so the controls are cached
         keyControls = GetComponentsInChildren<KeybindControl>(true);
         padControls = GetComponentsInChildren<ControllerBindControl>(true);
         randoControls = GetComponentsInChildren<RandomizerBindControl>(true);
@@ -138,9 +138,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         PlaceScrollbar();
     }
 
-    // Two bars: the track is the whole window, the thumb is the share of the list that
-    // fits in it. Both are chalk strokes drawn from PNGs, because the game ships no
-    // scrollbar art and its own sprites cannot be re-textured.
+    // The track spans the window; the thumb's length is the share of the list on screen.
     private void BuildScrollbar() {
         barLength = (layout.MaxVisible - 1) * layout.MenuItems[0].Space;
         scrollBar = new GameObject("scrollbar").transform;
@@ -193,6 +191,10 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         RapidScroll();
         SaveHold();
         ResetTap();
+        // a prompt is modal: the page behind it stays put
+        if (prompt != null) {
+            return;
+        }
 
         var wheel = Input.GetAxis("Mouse ScrollWheel");
         if (Mathf.Abs(wheel) > 0.01f) {
@@ -205,8 +207,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
     }
 
-    // The same binds that skip through save slots. They move the selection, not the window:
-    // the window is clamped around the selection, so moving it alone would snap back.
+    // Moves the selection, not the window: the window is clamped around the selection.
     private void RapidScroll() {
         // all four read every frame, so a plain bind's edge is spent under its shifted one
         var home = RandomizerRebinding.MenuHome.IsPressed();
@@ -214,25 +215,31 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         var end = RandomizerRebinding.MenuEnd.IsPressed();
         var forward = RandomizerRebinding.MenuSkipForwards.IsPressed();
         var last = layout.MenuItems.Count - 1;
-        if (last < 0) {
+        if (last < 0 || prompt != null) {
             return;
         }
 
         if (home || end) {
-            selectionManager.SetCurrentItem(home ? 0 : last);
+            JumpTo(home ? 0 : last);
             return;
         }
 
         if (back || forward) {
-            // most of a screenful, so a row you were just looking at stays in view to orient by
+            // most of a window, so a row you were looking at stays in view
             var step = Mathf.Max(1, Mathf.RoundToInt(layout.MaxVisible * 0.8f));
-            selectionManager.SetCurrentItem(Mathf.Clamp(selectionManager.Index + (back ? -step : step), 0, last));
+            JumpTo(Mathf.Clamp(selectionManager.Index + (back ? -step : step), 0, last));
         }
     }
 
-    // A held Soul Link is how the game itself saves, so it is how a page keeps its changes
-    // without being asked on the way out. It answers the same way the question's SAVE does:
-    // the binds are already live, and keeping them means making them the baseline.
+    // a header cannot hold the selection, so a jump onto one moves past it
+    private void JumpTo(int index) {
+        var row = selectionManager.NavigableFrom(index, 0, layout.MenuItems.Count - 1);
+        if (row >= 0) {
+            selectionManager.SetCurrentItem(row);
+        }
+    }
+
+    // Holding Soul Link does what the prompt's SAVE does: binds are live, so saving is a new baseline.
     private void SaveHold() {
         if (prompt != null || !selectionManager.IsActive || !BindsDirty ||
                 Down(PlayerInputRebinding.KeyRebindings.SoulFlame) == KeyCode.None) {
@@ -268,8 +275,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         BindLegend();
     }
 
-    // Putting a page back rides a key rather than a row: a row is one more thing that scrolls
-    // out of sight and reads like the binds around it. The question is the guard.
+    // Backspace resets the page, behind a confirm.
     private void ResetTap() {
         if (prompt != null || !selectionManager.IsActive || ResetQuestion == null ||
                 !Input.GetKeyDown(EraseKey)) {
@@ -280,11 +286,10 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             if (answer == 0) {
                 ResetToDefaults();
             }
-        });
+        }, -1);
     }
 
-    // A page that can put its binds back overrides both. Without a question there is no
-    // reset: the legend does not offer the key and the key does nothing.
+    // Override both to offer a reset; a null question means no reset key and no legend hint.
     public virtual string ResetQuestion {
         get { return null; }
     }
@@ -292,10 +297,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     public virtual void ResetToDefaults() {
     }
 
-    // A reset is the one thing these pages do that cannot be undone from inside them, so the
-    // file it is about to overwrite is kept beside it. One copy, holding the state before the
-    // last reset -- a history is not what someone who just lost their binds is after. Its own
-    // suffix rather than .bak, which is where people put copies they made themselves.
+    // One copy of the file as it was before the last reset; not .bak, where people keep their own.
     public static void Backup(string file) {
         try {
             if (File.Exists(file)) {
@@ -306,7 +308,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
     }
 
-    // Grab anywhere on the bar and the window follows, which is what a scrollbar is for.
+    // Grab anywhere on the bar and the window follows.
     private void DragScrollbar() {
         var cursor = Core.Input.CursorPositionUI;
         var half = 0.5f * scrollTrack.lossyScale.y;
@@ -318,8 +320,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         layout.ScrollTo(Mathf.RoundToInt(t * (layout.MenuItems.Count - layout.MaxVisible)));
     }
 
-    // Binds apply the moment they are made, so what the screen offers on the way out is
-    // "keep these?", and declining restores what it was entered with.
+    // Binds apply live; the snapshot is what DISCARD restores.
     public void SnapshotBinds() {
         foreach (var control in keyControls) {
             control.Snapshot();
@@ -389,9 +390,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
     }
 
-    // The bottom line: how to work the page, and whether it is holding anything unsaved. The
-    // interaction text used to live in the tooltip, which left no room for anything about the
-    // bind under the cursor.
+    // The legend: how to work the page, and whether it holds unsaved changes.
     public virtual void BindLegend() {
         if (keyControls.Length == 0 && padControls.Length == 0 && randoControls.Length == 0) {
             return;
@@ -420,15 +419,13 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return;
         }
 
-        // Five hints over three slots: rebind joins the navigation it sits beside anyway, so the
-        // save hint has a slot of its own and the ring can wrap its glyph as the leftmost one.
-        // Reset follows save, keeping the two keys that rewrite the file next to each other.
+        // the save hint gets a slot to itself: its ring wraps the slot's leftmost glyph
         soulGlyph = MessageParserUtility.ProcessString(SoulKey).Contains("<icon>");
         Legend(Join(navigate, "<icon>D</> Rebind"), SoulKey + Ring + "(Hold): Save Changes",
             Join(Reset(), "<icon>y</> Back"), SavingLeft, SavingRight);
     }
 
-    // The key that puts the whole page back, on the pages that have one.
+    // the reset hint, on pages that have one
     private string Reset() {
         if (ResetQuestion == null) {
             return string.Empty;
@@ -437,23 +434,22 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return RandomizerKeyIcons.Caption(EraseKey) + " Reset All";
     }
 
-    // Hints that share a slot, with the ones a page has no use for left out.
+    // hints sharing a slot, empty ones dropped
     private static string Join(params string[] hints) {
         return string.Join(Apart, hints.Where(hint => !string.IsNullOrEmpty(hint)).ToArray());
     }
 
-    // Between two hints sharing a slot, and after the glyph of a hint that is held -- the ring
-    // is drawn wider than the cap it wraps, so the words after it have to start clear of it.
+    // between two hints sharing a slot
     private static string Apart {
         get { return RandomizerKeyIcons.Gap; }
     }
 
+    // after a held hint's glyph, so the words start clear of the ring drawn round it
     private static string Ring {
         get { return RandomizerKeyIcons.Thin; }
     }
 
-    // The page-at-a-time binds, drawn from the bindings themselves and shown in the same breath
-    // as the arrows: four keys, one word. Only when there is more list than window.
+    // the page-skip caps for the Navigate hint, only when the list outgrows its window
     private string Pages() {
         if (layout == null || layout.MaxVisible <= 0 || layout.MenuItems.Count <= layout.MaxVisible ||
                 !RandomizerRebinding.MenuSkipBackwards.HasBind() ||
@@ -465,9 +461,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             RandomizerRebinding.MenuSkipForwards.FirstBindName();
     }
 
-    // The legend's three slots. Key icons come out of the text itself -- <icon> switches to a
-    // font whose letters are key images: D is Enter, y Esc, M Del, vr the up and down arrows,
-    // st left and right. More than one hint fits in a slot.
+    // <icon> switches to a font whose letters are key images: D Enter, y Esc, M Del,
+    // vr up/down, st left/right.
     public void Legend(string navigate, string select, string back,
                        float left = SlotShift, float right = SlotShift) {
         var legend = transform.FindChild("highlightFade/legend/pcLegend");
@@ -475,8 +470,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return;
         }
 
-        // The slots are cut to the words vanilla puts in them, and ours are longer; once only,
-        // because this runs on every legend change.
+        // vanilla's slots fit vanilla's words; widen once, as this runs on every legend change
         if (!widened) {
             widened = true;
             Widen(legend, "navigate");
@@ -490,9 +484,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         Slot(legend, "back", back);
     }
 
-    // The three slots sit where vanilla's short hints sat, anchored so the outer two grow away
-    // from the middle one: how far apart they belong depends on how much each is carrying. Each
-    // line says, and the numbers are measured off it -- one gap between hints wherever they sit.
+    // Moves the outer two slots to this line's stand-off from the middle one; spread is where they are.
     private void Spread(Transform legend, float left, float right) {
         if (!Mathf.Approximately(spread.x, left)) {
             Nudge(legend, "navigate", spread.x - left);
@@ -505,8 +497,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
     }
 
-    // Which key is standing in for Back right now. The gesture rides the binding rather than
-    // Escape, because the legend glyph it fills is drawn from the binding too.
+    // the held Cancel-bound key, if any: the legend glyph comes from that binding too
     public static KeyCode BackHeld() {
         return Down(PlayerInputRebinding.KeyRebindings.Cancel);
     }
@@ -539,8 +530,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return false;
     }
 
-    // The ring a hold fills, drawn over the glyph of the key being held. One between all the
-    // pages, because only one hold on one of them can be running at a time.
+    // Fills a ring over the held key's glyph; one static ring, as only one hold runs at a time.
     public void DrawHold(float progress, string slot = "back") {
         var glyph = HoldGlyph(slot);
         if (glyph == null || ringless) {
@@ -574,8 +564,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
     }
 
-    // The loading bar carries the provider that reads the prewarmer, which is what names it
-    // among the handful of things alive from boot -- Sein's UI, and its ring, are not.
+    // the boot loading bar: the one soul-flame ring alive outside gameplay
     private static GameObject LoadingBar() {
         foreach (var progress in Resources.FindObjectsOfTypeAll<UberShaderPrewarmerProgress>()) {
             if (progress != null && progress.GetComponent<TimelineSequence>() != null) {
@@ -586,9 +575,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return null;
     }
 
-    // The leftmost key glyph in a legend slot, which is the key that slot is offering to hold:
-    // a hold's hint is written first in it. Leftmost rather than first, because the icons are
-    // cloned in the order they were needed and keep it when the text changes under them.
+    // The slot's leftmost key glyph, as a hold's hint is written first. Not the first child:
+    // icon clones keep their creation order when the text changes.
     public Renderer HoldGlyph(string name) {
         var slot = transform.FindChild("highlightFade/legend/pcLegend/" + name);
         var icons = slot == null ? null : slot.GetComponentInChildren<CatlikeCoding.TextBox.MoonIconRenderer>(true);
@@ -606,9 +594,6 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return leftmost;
     }
 
-    // Vanilla's three hints are short and sit with a clear band between them; ours are long
-    // enough to close those gaps up. The outer two move apart into the empty screen either
-    // side of the legend, which is where the room is.
     private static void Nudge(Transform legend, string name, float by) {
         var child = legend.FindChild(name);
         if (child != null) {
@@ -635,9 +620,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         box.SetMessage(new MessageDescriptor(words));
     }
 
-    // Two lines of tooltip over the legend, which is the pair the vanilla screens show. The
-    // panel is lifted into the margin above its first row to buy back a row, and the answer
-    // is how many rows fit above the footer. Call instead of ScrollAfter's magic number.
+    // Raises the panel a row and puts a two-line tooltip over the legend; returns how many rows
+    // fit above it, for ScrollAfter.
     public int Footer() {
         var line = layout.MenuItems.Count > 0 ? layout.MenuItems[0].Space : DefaultSpace;
         pivot.localPosition += new Vector3(0f, Raise, 0f);
@@ -661,24 +645,24 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         cleverMenuItem.gameObject.name = "Button (" + caption + ")";
         cleverMenuItem.gameObject.transform.Find("text/stateText").GetComponent<MessageBox>().SetMessage(new MessageDescriptor(caption));
         cleverMenuItem.PressedCallback += onClick;
-        // without this the row keeps the tooltip of the vanilla one it was cloned from
+        // else the row keeps its vanilla template's tooltip
         ConfigureTooltip(cleverMenuItem.GetComponent<CleverMenuItemTooltip>(), tooltip ?? caption);
     }
 
-    // A row that is only a label. It sits in both lists so the scroll window's arithmetic still
-    // lines up, but navigation steps over it (an Activated that never validates) and the cursor
-    // cannot land on it (no bounds of its own).
+    // A label row, in both lists so the window's indices line up. NeverCondition makes navigation
+    // skip it; a zero Size keeps the cursor off it.
     public void AddHeader(string caption) {
         var cleverMenuItem = AddItem(caption);
         cleverMenuItem.gameObject.name = "Header (" + caption + ")";
         cleverMenuItem.Size = Vector2.zero;
-        // the row tints its own text, so the colour has to come from there rather than a
-        // <style> tag; all three states, because a header is never in any of them
+        // the row's tint beats a <style> tag; one colour in every state
         cleverMenuItem.Transition.NormalColor = HeaderColor;
         cleverMenuItem.Transition.HighlightedColor = HeaderColor;
         cleverMenuItem.Transition.DisabledColor = HeaderColor;
         cleverMenuItem.OnUnhighlight();
         cleverMenuItem.Activated = cleverMenuItem.gameObject.AddComponent<NeverCondition>();
+        // else it keeps its template's tooltip, the vanilla Damage Text help
+        Destroy(cleverMenuItem.GetComponent<CleverMenuItemTooltip>());
         var state = cleverMenuItem.transform.Find("text/stateText").GetComponent<MessageBox>();
         state.MessageProvider = null;
         state.SetMessage(new MessageDescriptor(string.Empty));
@@ -739,6 +723,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         toggleCustomSettingsAction.Setting = setting;
         toggleCustomSettingsAction.Init();
         cleverMenuItem.PressedCallback += toggleCustomSettingsAction.Toggle;
+        rowRefresh.Add(toggleCustomSettingsAction.Init);
 
         ConfigureTooltip(cleverMenuItem.GetComponent<CleverMenuItemTooltip>(), tooltip);
     }
@@ -749,8 +734,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return state ? row.transform.InverseTransformPoint(state.position).x : SwatchX;
     }
 
-    // label overrides the row's caption: a setting's name is a file key first, and some of
-    // them are longer than a row.
+    // label overrides the caption: a setting's name is its file key and can outrun a row
     public void AddColor(RandomizerSettings.ColorSetting setting, string tooltip, string label = null, bool asMessage = false) {
         var cleverMenuItem = AddItem(label ?? setting.Name);
         cleverMenuItem.name = setting.Name;
@@ -762,8 +746,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         if (swatch != null) {
             placed = swatch.transform;
             placed.SetParent(cleverMenuItem.transform, false);
-            // a message background gets a wider tile: it is previewing a message, and a
-            // square reads as a color chip rather than as the thing it will look like
+            // a message background previews as a wide tile, like the message it colours
             var wide = asMessage ? MessageSwatchWidth : 1f;
             var width = SwatchSize * wide;
             placed.localScale = new Vector3(width, SwatchSize * 0.55f, 1f);
@@ -776,13 +759,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         var control = cleverMenuItem.gameObject.AddComponent<ColorControl>();
         control.Init(setting, this, placed, tooltip, asMessage);
         cleverMenuItem.PressedCallback += control.BeginEditing;
+        rowRefresh.Add(control.Show);
     }
 
-    // Template is the Language picker: a row whose child flyout is a CleverMenuOptionsList.
-    // Its subclass only exists to refill itself with languages, so it is swapped out for
-    // the bare base class -- pressing the row is handled by the group, not by an action.
-    // label overrides the row's caption, as on AddColor: the setting's name is a file key
-    // first, and the words that read best there are not always the ones for a menu.
+    // Clones the Language row, swapping its language-filling list for a bare CleverMenuOptionsList;
+    // the group opens the flyout on press. rowName overrides the caption, as label does on AddColor.
     public void AddEnum<T>(RandomizerSettings.EnumSetting<T> setting, string tooltip, string rowName = null) where T : Enum {
         var clone = (GameObject)Instantiate(SettingsScreen.Instance.transform.Find("highlightFade/pivot/language").gameObject);
         clone.name = setting.Name;
@@ -820,17 +801,19 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             });
         }
 
-        state.MessageProvider = null;
-        state.SetMessage(new MessageDescriptor(EnumLabel(setting.Value)));
+        Action showValue = delegate {
+            state.MessageProvider = null;
+            state.SetMessage(new MessageDescriptor(EnumLabel(setting.Value)));
+        };
+        showValue();
+        rowRefresh.Add(showValue);
         ConfigureTooltip(clone.GetComponent<CleverMenuItemTooltip>(), tooltip);
         FitBackground(flyout, list.Spacing, members.IndexOf(setting.Value.ToString()));
         FlyoutTooltips(flyout, setting, members, tooltip);
     }
 
-    // The panel is drawn for the language list and is padded for its eight rows, so it
-    // is not enough to scale it -- it has to be re-centred on the rows that are actually
-    // there. Measured off their transforms, which sidesteps how Origin is nested and the
-    // panel's own 270-degree rotation (its local x is the screen's vertical).
+    // Resizes and re-centres the language panel on the rows actually there, measured off their
+    // transforms. The panel is rotated 270 degrees: its local x is the screen's vertical.
     private void FitBackground(Transform flyout, float spacing, int selected) {
         var bg = flyout.FindChild("abilityMessageBackground");
         var mesh = bg == null ? null : bg.GetComponent<MeshFilter>();
@@ -842,25 +825,20 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         var top = flyout.InverseTransformPoint(rows[0].transform.position).y;
         var bottom = flyout.InverseTransformPoint(rows[rows.Count - 1].transform.position).y;
 
-        // The flyout carries a positive offset from the vanilla prefab, which is what put it
-        // above the row that spawns it. Anchor on the option that is *currently set*, so the
-        // value stays where it was reading a moment ago instead of jumping.
+        // opens with the option set at build time over the row's own value
         var anchor = -top + Mathf.Max(0, selected) * spacing;
         flyout.localPosition = new Vector3(flyout.localPosition.x, anchor, flyout.localPosition.z);
 
-        // measured off the rows rather than trusting Spacing, which is the list's own idea
-        // of a gap and not necessarily the one on screen
+        // the on-screen gap, which Spacing need not be
         var gap = rows.Count > 1 ? Mathf.Abs(top - bottom) / (rows.Count - 1) : spacing;
         var wanted = Mathf.Abs(top - bottom) + BackgroundPad * gap;
-        // the panel art carries transparent margin, so the quad has to be bigger than the
-        // rows it is meant to sit behind
+        // the art has a transparent margin, so the quad outgrows the rows
         bg.localScale = new Vector3(wanted / mesh.sharedMesh.bounds.size.x,
                                     bg.localScale.y + 2.2f * gap, bg.localScale.z);
         bg.localPosition = new Vector3(bg.localPosition.x, 0.5f * (top + bottom), bg.localPosition.z);
     }
 
-    // The flyout has its own selection, so the screen's one tooltip is pointed at it while
-    // it is open and handed back on the way out.
+    // Points the page's one tooltip at the flyout while it is open; a pick or Back hands it back.
     private void FlyoutTooltips(Transform flyout, RandomizerSettings.SettingBase setting, List<string> members, string fallback) {
         var sel = flyout.GetComponent<CleverMenuItemSelectionManager>();
         for (var i = 0; i < sel.MenuItems.Count && i < members.Count; i++) {
@@ -882,8 +860,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         tooltipController.UpdateTooltip();
     }
 
-    // The file comment already documents each value as "<Value>: what it does", so the
-    // per-value help is read back out of it rather than written twice.
+    // per-value help, read from the setting comment's "<Value>: what it does" lines
     private static string ValueHelp(RandomizerSettings.SettingBase setting, string member) {
         foreach (var line in setting.Comment.Split('\n')) {
             var text = line.Trim();
@@ -900,9 +877,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return null;
     }
 
-    // The pause menu's "Return to Main Menu?" prompt, cloned off the InstantiateAction that
-    // normally spawns it. Its own selection manager lists the answers; Back answers -1.
-    public void Confirm(string question, string[] answers, Action<int> chosen) {
+    // Clones the pause menu's "Return to Main Menu?" prompt. Answers index its manager's list; Back is -1.
+    // With no prompt to clone, the caller's unasked answer is taken: make it the harmless one.
+    public void Confirm(string question, string[] answers, Action<int> chosen, int unasked = 0) {
         if (prompt != null) {
             return;
         }
@@ -917,8 +894,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         }
 
         if (questionPrefab == null) {
-            Randomizer.log("settings: no confirm prefab, answering " + answers[0]);
-            chosen(0);
+            Randomizer.log("settings: no confirm prefab, answering " + (unasked >= 0 ? answers[unasked] : "Back"));
+            chosen(unasked);
             return;
         }
 
@@ -934,8 +911,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             opening.gameObject.SetActive(false);
         }
 
-        // The prefab wraps at the width of "Return to Main Menu?", and a longer question
-        // wrapped onto the answers. Widen before the text is set, so it renders once.
+        // the prefab wraps at its own question's width; widen before the text so it renders once
         var title = prompt.transform.FindChild("title");
         var titleBox = title == null ? null : title.GetComponentInChildren<MessageBox>(true);
         if (titleBox != null && titleBox.TextBox != null) {
@@ -944,8 +920,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         Ask(title, question);
 
-        // The plate widens with the question, and grows upward for a line of headroom over
-        // it rather than moving the text down, so the answers stay where the prefab puts them.
+        // the plate widens, and grows upward only, so the answers stay put
         var back = prompt.transform.FindChild("messageBackgroundA");
         var mesh = back == null ? null : back.GetComponent<MeshFilter>();
         if (mesh != null && mesh.sharedMesh != null && mesh.sharedMesh.bounds.size.y > 0f) {
@@ -959,8 +934,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             var item = manager.MenuItems[i];
             var answer = i;
             Ask(item.transform, i < answers.Length ? answers[i] : string.Empty);
-            // vanilla rows quit to the menu through Pressed, and gate that on being safe to
-            // quit; ours are always answerable and only report the answer
+            // vanilla rows quit to the menu, gated on being safe to quit; ours only report
             item.Pressed = null;
             item.Activated = null;
             item.Visible = null;
@@ -972,9 +946,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             return false;
         };
 
-        // The page behind stays readable but must stop responding. IsActive gates its keys
-        // only -- a click reaches a row ahead of that check -- and the row it left lit would
-        // otherwise go on glowing under the question.
+        // Freeze the page behind: IsActive stops keys, IsLocked (checked first) stops clicks,
+        // and its lit row is dimmed.
         selectionManager.IsActive = false;
         selectionManager.IsLocked = true;
         if (selectionManager.CurrentMenuItem != null) {
@@ -1017,7 +990,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         // the controller hides the tooltip while the page is inactive and never re-shows it
         tooltipController.UpdateTooltip();
         chosen(answer);
-        // after the answer, because that is what decides whether anything is still unsaved
+        // after the answer, which decides whether anything is unsaved
         BindLegend();
     }
 
@@ -1038,8 +1011,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             }
         }
 
-        // the clone came with the language rows registered; destroying the objects leaves
-        // the selection manager pointing at the corpses, and SetIndexToFirst lands on one
+        // the manager still lists the destroyed language rows, and SetIndexToFirst would land on one
         flyout.GetComponent<CleverMenuItemSelectionManager>().MenuItems.Clear();
 
         var list = flyout.gameObject.AddComponent<CleverMenuOptionsList>();
@@ -1103,18 +1075,15 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         };
         group.AddItem(cleverMenuItem, slider);
 
-        // Set up slider properties
         slider.MinValue = min;
         slider.MaxValue = max;
         slider.Step = step;
         (slider as MusicVolumeSlider).Setting = setting;
 
-        // Update label
         var nameTextBox = clone.transform.Find("nameText").GetComponent<MessageBox>();
         nameTextBox.MessageProvider = null;
         nameTextBox.SetMessage(new MessageDescriptor(setting.Name));
 
-        // Update tooltip
         ConfigureTooltip(clone.GetComponent<CleverMenuItemTooltip>(), tooltip);
     }
 
@@ -1145,10 +1114,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // by eye against a legend slot: enough for two hints in one of them
     private const float SlotWidth = 2.2f;
 
-    // How far the outer two slots stand off the middle one, per line, measured so that every
-    // gap between hints comes out near sixty pixels of screen. A slot carrying more reaches
-    // further on its own and needs less; the editing line's mode hint and the dirty line's
-    // three hints on the right are where that shows.
+    // outer-slot stand-offs per legend line, measured for even gaps between hints
     private const float SlotShift = 0.35f;
 
     private const float ModeShift = 0.5f;
@@ -1183,8 +1149,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // when the save hold started, or -1 for no hold in hand
     private float saving = -1f;
 
-    // The game's own placeholder for the Soul Link key, which a MessageBox resolves to the
-    // keycap when there is one for that key and to the key's name when there is not.
+    // a MessageBox resolves this to the Soul Link keycap, or to the key's name where there is no cap
     private const string SoulKey = "[SoulFlame]";
 
     private bool soulGlyph;
@@ -1200,6 +1165,9 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     private ControllerBindControl[] padControls = new ControllerBindControl[0];
 
     private RandomizerBindControl[] randoControls = new RandomizerBindControl[0];
+
+    // re-reads each value row's setting into the row
+    private readonly List<Action> rowRefresh = new List<Action>();
 
     // Measured: the vanilla legend sits here, panel rows start here and step by this. The
     // camera has a fixed vertical FOV, so these are the same at every resolution and aspect.
@@ -1218,8 +1186,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     // a text line, matching the gap between the prompt's own two answers
     private const float TopPad = 0.45f;
 
-    // Of the prefab's own. Both by eye against the longest question the screens ask; the
-    // plate starts out much wider than the wrap, so it needs less.
+    // multipliers on the prefab's wrap and plate widths, by eye against the longest question
     private const float QuestionWidth = 1.6f;
 
     private const float PlateWidth = 1.35f;
@@ -1235,10 +1202,10 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     public float EdgeFade = 0.35f;
 
-    // the stroke is a fifth of its texture's width, so the quad is wider than the bar
     // how far either side of the bar still counts as grabbing it
     public float ScrollGrab = 0.5f;
 
+    // the stroke is a fifth of its texture's width, so the quad is wider than the bar
     public float BarWidth = 0.26f;
 
     // fallback only: a row missing its state text still needs somewhere to put the swatch
@@ -1252,8 +1219,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     public float MessageSwatchWidth = 4.4f;
 
-    // Panel padding past the first and last row, in row heights. 2.1 is what the vanilla
-    // language panel works out to, so a short list is padded like a long one.
+    // flyout panel length past its rows, in row gaps: both ends plus the art's margin
     public float BackgroundPad = 7.2f;
 
     private float barLength;

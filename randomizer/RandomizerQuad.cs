@@ -1,10 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Draws an embedded PNG as a flat quad. Game sprites cannot be re-textured -- their
-// UberShader variants have the atlas rect baked in -- but the hint background's variant
-// maps a whole texture, so its material plus 0..1 UVs renders a standalone image.
-// Stock shaders are stripped from this build, so there is no other way in.
+// An embedded PNG on a flat quad, drawn with the hint background's material: the one UberShader
+// variant that maps a whole texture (stock shaders are stripped from this build).
 public static class RandomizerQuad {
     public static GameObject Build(string name, string resource, Renderer order) {
         return BuildTextured(name, Texture(resource), order);

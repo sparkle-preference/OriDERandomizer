@@ -1,8 +1,7 @@
 using UnityEngine;
 
-// A loopback self-test of the data channel: two peers in this process, the offer and answer
-// handed straight across, a packet sent and checked. ICE finds host candidates locally (no
-// STUN, no internet); a state machine driven from Update, since gathering takes a moment.
+// Dev self-test of the data channel: two peers in this process, offer and answer handed straight
+// across, one packet sent and checked. No STUN: ICE finds host candidates locally.
 public static class RandomizerGhostNet {
     private enum Step {
         Idle,
@@ -52,8 +51,6 @@ public static class RandomizerGhostNet {
                     var offer = NativeWebSocket.RtcLocalDescription(Offerer);
                     Randomizer.log("rtc loopback: offer gathered, " + offer.Length + " bytes, " +
                         Candidates(offer) + " candidates");
-                    // checked, because a self-test that ignores a failure hides the failure --
-                    // this one silently passed while set_remote was returning an error
                     if (!Fed(Answerer, NativeWebSocket.RtcLocalType(Offerer), offer)) {
                         return;
                     }

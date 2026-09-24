@@ -85,7 +85,7 @@ namespace CatlikeCoding.TextBox {
 
         public Color32 color;
 
-        // the ramp color is the first stop of, null when the colour is flat
+        // a ramp whose first stop is color; null when the colour is flat
         public Color32[] gradient;
 
         public float scale;

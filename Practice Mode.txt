@@ -14,7 +14,7 @@ Making a segment
 ===
 In a normal game, get to the spot you want to practice from and press Alt+M. The current state is saved as a new segment, named New Segment 1, 2, 3 and so on; rename it on the page.
 Or choose NEW SEGMENT at the end of the PRACTICE list: the editor page opens in your browser, you pick one of your saves to start from, and the game opens the new segment in the editor.
-A segment with nothing to end it yet says "unfinished - select to edit" in the list and opens straight in the editor.
+A segment with nothing to end it yet says "Unfinished" and "click to edit" in the list and opens straight in the editor.
 On a finished segment, pause and choose EDIT PRACTICE SEGMENT. The world freezes and you draw boxes with the mouse.
 
 Editor keys:
@@ -65,7 +65,7 @@ EXIT TO PRACTICE MENU       Back to the segment list
 EDIT PRACTICE SEGMENT       Freeze the world and draw boxes
 
 Finishing shows the time against your best (your average, in average mode), the average over every run, and the attempt's deaths, quits and time in menus.
-The menu there: RETRY, PIN THIS RUN'S GHOST, EXIT TO PRACTICE MENU.
+The menu there: RETRY, PIN GHOST, EXIT TO PRACTICE MENU.
 
 
 
@@ -82,7 +82,7 @@ Quit to menu
 ===
 A segment can allow quitting to the menu mid-attempt ("quit to menu keeps the run" on the page), for practicing your menuing the way you would in a real run.
 Its pause menu is the normal one, and the practice pause is on the Practice Menu bind instead.
-While the run is parked the title menu shows CONTINUE PRACTICE and EXIT PRACTICE SESSION, and Escape there asks whether to end it.
+While the run is parked the title menu shows CONTINUE PRACTICE and END PRACTICE RUN, and Escape there asks whether to end it.
 
 
 

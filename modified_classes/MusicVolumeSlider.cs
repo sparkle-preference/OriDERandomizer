@@ -19,7 +19,6 @@ public class MusicVolumeSlider : CleverValueSlider {
         }
     }
 
-    // Specifically hijack the music slider because it's the template for our custom sliders
-    //  and we don't want to have to manually set all the fields if we made a new subclass of CleverValueSlider
+    // set on AddSlider's clones; null keeps this the vanilla music volume slider
     public RandomizerSettings.FloatSetting Setting;
 }

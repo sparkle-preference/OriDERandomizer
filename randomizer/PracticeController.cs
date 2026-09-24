@@ -4,12 +4,10 @@ using System.IO;
 using Game;
 using UnityEngine;
 
-// A practice session: three reserved save slots, a real-time clock, and its
-// own stat block. Active is the one flag the rest of the mod consults --
-// netcode, bingo and normal stats all stand down while it is set.
+// A practice session: three reserved save slots, a real-time clock and its own stat block.
+// Active is the flag the rest of the mod checks (sync, normal stats, boxes, the slot scan).
 public static class PracticeController {
-    // 50-52, past the fifty the vanilla slot scan walks, so the practice
-    // triple exists on disk without ever showing up in a normal file select
+    // past the fifty slots the vanilla scan walks: on disk, never in a normal file select
     public const int FirstSlot = 50;
 
     public const int LoadedSlot = 51;
@@ -29,7 +27,7 @@ public static class PracticeController {
 
     public const int Attempts = 10006;
 
-    // the goal box's own pickup id, at the top of the practice block
+    // unused: reserved at the top of the practice block
     public const int GoalBoxId = 10999;
 
     public const int FirstStat = 10001;
@@ -74,17 +72,18 @@ public static class PracticeController {
         Begin(file, variant, false);
     }
 
-    // A segment with variants has no plain run: one of them is always the attempt, with
-    // its own boxes, end condition, items and history. From the title screen the game's
-    // own load sequence loads, and the world freezes once it has finished.
+    // A segment with variants always runs one of them. From the title the screen's own load
+    // sequence loads the slot, and the world freezes once it finishes.
     public static void Begin(BfrpFile file, string variant, bool fromTitle) {
-        // taken before anything can throw: a segment that will not parse must not leave the
-        // next one opening in the editor
+        // cleared before anything can throw, or a failed parse opens the next segment in the editor
         var wanted = EditNext;
         EditNext = false;
+        // parsed before anything changes, so a segment that will not parse leaves things as they were
+        var segment = PracticeSegment.Parse(file, variant);
+        var placements = PracticeSegment.ResolvePlacements(file, variant);
         File = file;
         File.Variant = variant;
-        Segment = PracticeSegment.Parse(file, variant);
+        Segment = segment;
         // nothing to end it means nothing to run: the attempt opens in the editor instead
         editOnLoad = wanted || !Segment.HasEnd;
         if (fromTitle) {
@@ -94,18 +93,27 @@ public static class PracticeController {
         awaitingStart = false;
         Randomizer.unpinMessage();
         RandomizerBoxes.Use(Segment.Boxes);
-        Placements = PracticeSegment.ResolvePlacements(file, variant);
+        Placements = placements;
         ResetGhosts();
         PracticeEditor.Stop();
-        // the phase is set first: the save machinery only admits the practice slots
-        // exist while a session does
+        // Active before any slot work: the save code only admits slots 50-52 during a session
         Current = Phase.Countdown;
         PracticeHud.HideTally();
         PracticeHud.Refresh();
         // a warp still in flight from the last attempt would drag Ori off the start
         Randomizer.Warping = 0;
         Randomizer.Returning = false;
-        SeedSlots(!fromTitle);
+        try {
+            SeedSlots(!fromTitle);
+        } catch (Exception) {
+            // from the title nothing is loaded yet: a start that cannot seed its slots never began
+            if (fromTitle) {
+                End();
+            }
+
+            throw;
+        }
+
         if (!fromTitle) {
             Suspend();
         }
@@ -115,8 +123,7 @@ public static class PracticeController {
         Elapsed = 0;
         MenuElapsed = 0;
         RandomizerStatsManager.Active = false;
-        // from the title there is no Ori yet to hold the stats; they are zeroed once
-        // the save is up instead
+        // from the title there is no Ori to hold the stats yet; zeroed once the save is up
         statsPending = fromTitle;
         if (!fromTitle) {
             ClearStats();
@@ -204,14 +211,20 @@ public static class PracticeController {
 
     private static bool awaitingStart;
 
+    // the briefing only holds a countdown; anything that leaves the countdown takes it down
+    public static void DropBriefing() {
+        if (awaitingStart) {
+            awaitingStart = false;
+            Randomizer.unpinMessage();
+        }
+    }
+
     // once a session, not once an attempt
     private static bool told;
 
-    // Where this segment starts, for the page's map. Written the first time it is played,
-    // since only a real load knows where the save puts Ori.
+    // Ori's position after the load, for the page's map: only a real load knows it
     private static void RememberStart() {
-        // saving the container saves whatever is in it, so never while the editor holds boxes
-        // nobody has asked to keep
+        // saving writes the whole container, so never while the editor holds unsaved boxes
         if (File == null || Characters.Sein == null || PracticeEditor.Active || editOnLoad) {
             return;
         }
@@ -233,8 +246,7 @@ public static class PracticeController {
         }
     }
 
-    // The start was swapped from the page: the attempt begins again from the new save, in
-    // the editor if that is where it was.
+    // after the page swaps the start: begin again from the new save, in the editor if it was
     public static void Restart() {
         if (!Active) {
             return;
@@ -245,6 +257,7 @@ public static class PracticeController {
     }
 
     public static void End() {
+        DropBriefing();
         RandomizerBoxes.Use(null);
         ResetGhosts();
         PracticeEditor.Stop();
@@ -260,8 +273,7 @@ public static class PracticeController {
         RandomizerStatsManager.Active = true;
     }
 
-    // Every attempt starts from the file's own save, and the two spare slots
-    // start empty: a copy parked there last attempt is last attempt's state.
+    // every attempt: the file's save in slot 51, and 50, 52 and every backup emptied
     private static void SeedSlots(bool load) {
         var saves = GameController.Instance.SaveGameController;
         for (var slot = FirstSlot; slot <= LastSlot; slot++) {
@@ -281,8 +293,7 @@ public static class PracticeController {
         }
     }
 
-    // The world holds still through the countdown: some segments start on a
-    // timer that would otherwise be running while the player reads "3".
+    // the world holds still through the countdown, so a segment's own timers wait for GO
     private static bool suspended;
 
     private static bool pendingSetup;
@@ -295,9 +306,8 @@ public static class PracticeController {
         Suspend();
     }
 
-    // Everything but the fader, which would otherwise hold the screen black, and the
-    // menus, so a wrong file can still be paused out of during the countdown. The
-    // same set is left alone on resume: suspension is counted per object.
+    // Everything but the fader (or the screen stays black) and the menus (so the countdown can
+    // be paused). Suspension is counted per object, so Resume must skip the same set.
     private static void Suspend() {
         if (suspended) {
             return;
@@ -325,8 +335,7 @@ public static class PracticeController {
 
     private static HashSet<ISuspendable> kept;
 
-    // The return-to-menu prompt's own OK, without the prompt: what its sequence does,
-    // in its order, so the way out looks the same.
+    // the return-to-menu prompt's OK sequence, in its order, without the prompt
     public static void ReturnToTitle(bool endSession) {
         if (!Active) {
             return;
@@ -355,11 +364,10 @@ public static class PracticeController {
         Game.UI.Menu.HideMenuScreen();
     }
 
-    // A variant's loadout is part of its starting state, not a pickup: granted
-    // without announcement, then saved into the slot so a death keeps them.
-    private static void GrantStartingItems() {
+    // a variant's loadout, granted silently; true when there was one
+    private static bool GrantStartingItems() {
         if (Segment == null || Segment.StartingItems.Count == 0) {
-            return;
+            return false;
         }
 
         var silent = RandomizerSwitch.SilentMode;
@@ -372,23 +380,20 @@ public static class PracticeController {
             RandomizerSwitch.SilentMode = silent;
         }
 
-        GameController.Instance.CreateCheckpoint();
-        GameController.Instance.SaveGameController.PerformSave();
+        return true;
     }
 
     public static bool IsPracticeSlot(int slot) {
         return slot >= FirstSlot && slot <= LastSlot;
     }
 
-    // Called every frame; the clock is real time so a stutter costs what it
-    // costs, which is the point of racing against it.
+    // every frame; the clock is real time, so a stutter costs what it costs
     public static void Tick() {
         if (!Active) {
             return;
         }
 
-        // The editor cannot follow the game to the title, and a session left standing there
-        // shows an empty save select over it.
+        // an editing session that reaches the title ends, or it shows an empty save select there
         if (Current == Phase.Editing && GameController.Instance != null
                 && GameController.Instance.GameInTitleScreen) {
             End();
@@ -399,14 +404,15 @@ public static class PracticeController {
         var dt = Time.unscaledDeltaTime * 1000.0;
         PracticeHud.Tick();
         if (Current == Phase.Countdown) {
-            // PerformLoad's checkpoint restore lands on a later frame; touching the save
-            // before then loses the start position and doubles the respawn.
+            // the restore lands frames after PerformLoad; touching the save sooner loses the start
             if (GameController.Instance.IsLoadingGame || InstantLoadScenesController.Instance.LockFinishingLoading) {
                 return;
             }
 
             if (pendingSetup) {
                 pendingSetup = false;
+                // suspension is per object: a freeze from before the load misses what it streamed in
+                Resume();
                 Suspend();
                 if (statsPending) {
                     statsPending = false;
@@ -415,8 +421,14 @@ public static class PracticeController {
                 }
 
                 // the base save may carry a seed's taken boxes; this attempt's start untaken
-                RandomizerBoxes.ClearOff();
-                GrantStartingItems();
+                var changed = RandomizerBoxes.ClearOff();
+                changed = GrantStartingItems() || changed;
+                // checkpointed and saved: a death or quit restores those, not the live inventory
+                if (changed) {
+                    GameController.Instance.CreateCheckpoint();
+                    GameController.Instance.SaveGameController.PerformSave();
+                }
+
                 RememberStart();
                 if (editOnLoad) {
                     editOnLoad = false;
@@ -424,8 +436,7 @@ public static class PracticeController {
                     return;
                 }
 
-                // the maker's word on what this is, once a session, and the countdown waits
-                // for the player to say they have read it
+                // the briefing, once a session; the countdown waits for the retry bind to answer it
                 if (!told && Segment != null && !string.IsNullOrEmpty(Segment.About)) {
                     told = true;
                     awaitingStart = true;
@@ -435,8 +446,7 @@ public static class PracticeController {
                 return;
             }
 
-            // Suspension is counted, so a menu opened over the frozen world leaves it
-            // frozen when it closes; only the numbers hold while one is up.
+            // suspension is counted, so the world stays frozen under a menu; only the numbers hold
             if (Game.UI.MainMenuVisible) {
                 return;
             }
@@ -564,7 +574,7 @@ public static class PracticeController {
         PracticeMenu.Open();
     }
 
-    // the time and the comparison, and the finish screen's whole tally
+    // the finished time, and the finish screen's whole tally
     public static string LastResult;
 
     public static string LastTally;
@@ -596,15 +606,13 @@ public static class PracticeController {
         return true;
     }
 
-    // The vanilla way out of the pause menu. A segment that allows quitting to the menu
-    // keeps the session, and the clock, through it; any other ends here.
+    // the vanilla Exit: a quit-to-menu segment keeps the session and its clock; others end
     public static void OnReturnToTitle() {
         if (!Active) {
             return;
         }
 
-        // An editor has nothing to park, and a countdown has no run to keep: leaving either
-        // ends the session, whatever the segment says about quitting to menu.
+        // an editor or a countdown has no run to park: leaving ends the session regardless
         if (Current == Phase.Editing || Current == Phase.Countdown) {
             End();
             PracticeSelect.ReopenOnTitle();
@@ -620,8 +628,7 @@ public static class PracticeController {
         PracticeSelect.ReopenOnTitle();
     }
 
-    // The attempt as a ghost, sampled at the wire rate, and the stored one it races.
-    // Both start when the timer does, so the ghost's clock is the practice clock.
+    // this attempt's ghost (30 Hz on the practice clock) and the stored one it races
     private static readonly List<RandomizerGhost.Sample> Take = new List<RandomizerGhost.Sample>();
 
     private static IGhostSource racing;
@@ -685,8 +692,7 @@ public static class PracticeController {
             return;
         }
 
-        // a gap the clock ran through with nobody to sample -- a menu, a load -- is a
-        // cut in the replay, not a glide
+        // a gap with nobody to sample (a menu, a load) replays as a cut, not a glide
         if (Take.Count > 0 && at - Take[Take.Count - 1].Time > GapCut) {
             var hold = Take[Take.Count - 1];
             hold.Time = at - 0.001f;
@@ -699,8 +705,7 @@ public static class PracticeController {
 
     private const float GapCut = 1f;
 
-    // The placement table for this attempt: what the bfr and the resolved shuffle
-    // groups put where. A location nobody filled in is empty, silently.
+    // this attempt's placements (bfr lines, then shuffle groups); an unlisted location is empty
     public static Dictionary<int, RandomizerAction> Placements = new Dictionary<int, RandomizerAction>();
 
     public static void GiveAt(int key) {
@@ -718,8 +723,7 @@ public static class PracticeController {
         ParkGhostAtLink();
     }
 
-    // Between the quit and the reload the ghost would glide toward the link, which is
-    // where the reload puts Ori; it waits there instead, idle.
+    // the reload puts Ori at the soul link, so the ghost waits there idle rather than gliding
     private static void ParkGhostAtLink() {
         if (!recording || Take.Count == 0) {
             return;
@@ -756,23 +760,24 @@ public static class PracticeController {
             return;
         }
 
-        Segment = PracticeSegment.Parse(File, File.Variant);
+        var segment = PracticeSegment.Parse(File, File.Variant);
+        var placements = PracticeSegment.ResolvePlacements(File, File.Variant);
+        Segment = segment;
         RandomizerBoxes.Use(Segment.Boxes);
-        Placements = PracticeSegment.ResolvePlacements(File, File.Variant);
+        Placements = placements;
     }
 
     public static void OnPickup() {
         Inc(Pickups, 1);
     }
 
-    // hh:mm:ss.xx -- two decimals, which is what a practice clock is read at
+    // [h:]mm:ss.xx, rounded to hundredths before the split so 59.996 carries into the minute
     public static string Clock(double ms) {
-        var total = ms / 1000.0;
-        var hours = (int)(total / 3600);
-        var minutes = (int)(total / 60) % 60;
-        var seconds = total % 60;
+        var centis = (long)Math.Round(ms / 10.0, MidpointRounding.AwayFromZero);
+        var hours = centis / 360000;
+        var minutes = centis / 6000 % 60;
         var body = string.Format(System.Globalization.CultureInfo.InvariantCulture,
-            "{0:00}:{1:00.00}", minutes, seconds);
+            "{0:00}:{1:00}.{2:00}", minutes, centis / 100 % 60, centis % 100);
         return hours > 0 ? hours + ":" + body : body;
     }
 

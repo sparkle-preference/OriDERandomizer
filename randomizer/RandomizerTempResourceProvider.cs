@@ -1,9 +1,8 @@
 using Game;
 using UnityEngine;
 
-// Feeds the split health/energy display (see RandomizerTempResourceUI): base
-// layers capped at the permanent max, the temp row showing only the over-max
-// (temporary) amount. UseMinVisual mirrors the vanilla Min/Max provider pair.
+// Feeds RandomizerTempResourceUI: base layers capped at the permanent max, temp rows the overflow.
+// UseMinVisual mirrors the vanilla Min/Max provider pair.
 public class RandomizerTempResourceProvider : FloatValueProvider {
     public bool Energy;
 
@@ -43,9 +42,7 @@ public class RandomizerTempResourceProvider : FloatValueProvider {
             return Mathf.Min(visual, max) / DivideBy;
         }
 
-        // the temp row tracks true damage in a few frames instead of the slow
-        // vanilla visual settle -- repeated hits must read at a glance. Gains
-        // snap, like the vanilla pickup feel.
+        // the temp row settles on damage in a few frames, not the slow vanilla settle; gains snap
         var target = Mathf.Max(0f, current - max);
         if (!smoothedInit || target > smoothed) {
             smoothedInit = true;

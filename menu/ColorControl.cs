@@ -1,11 +1,7 @@
 using UnityEngine;
 
-// Edits a color in place on a settings row: up/down picks a channel, left/right moves it,
-// Enter commits, Backspace restores the default. Shaped after KeybindControl, including
-// its two-frame wait -- the key that opened the editor is still down on the first frame.
-//
-// Works in the setting's own file units rather than 0..1, so what the row shows is what
-// RandomizerSettings.txt says, whatever scale that setting is on.
+// Edits a colour on its settings row: up/down picks a channel, left/right moves it, Enter commits,
+// Backspace restores the default. Steps are in the setting's file units, not 0..1.
 public class ColorControl : MonoBehaviour {
     public void Init(RandomizerSettings.ColorSetting setting, CustomSettingsScreen owner, Transform swatch, string tooltip, bool asMessage) {
         this.setting = setting;
@@ -26,6 +22,7 @@ public class ColorControl : MonoBehaviour {
         channel = 0;
         exit = 0;
         editing = true;
+        owner.Editing = true;
         held = 0f;
         repeat = 0f;
         original = setting.Value;
@@ -47,12 +44,10 @@ public class ColorControl : MonoBehaviour {
             return;
         }
 
+        // the key that opened the editor is still down for the first frames
         if (exit < 2) {
             exit++;
             if (exit == 2) {
-                // A cloned TextBox resets itself to its serialised text in Start, which
-                // lands a frame after the object is switched on -- so the channel letters
-                // written during BeginEditing are thrown away. Write them again here.
                 Show();
             }
 
@@ -114,8 +109,7 @@ public class ColorControl : MonoBehaviour {
                 continue;
             }
 
-            // a click on a bar that is not the live one only picks it up; nothing moves
-            // until you are holding the bar you meant to hold
+            // a press on another bar only selects it
             if (pressed && channel != c) {
                 channel = c;
                 grab = 0f;
@@ -165,8 +159,7 @@ public class ColorControl : MonoBehaviour {
             return false;
         }
 
-        // the texture puts red at the top and runs hue clockwise, so the angle is measured
-        // from up rather than from the x axis
+        // the texture has red at the top and hue running clockwise: angle from up, not from x
         float h, s, v;
         Color.RGBToHSV(setting.Value, out h, out s, out v);
         h = Mathf.Repeat(Mathf.Atan2(dx, dy) / (2f * Mathf.PI), 1f);
@@ -206,8 +199,7 @@ public class ColorControl : MonoBehaviour {
 
         float h, s, v;
         Color.RGBToHSV(setting.Value, out h, out s, out v);
-        // A drag keeps the value it finds, so a dark color stays dark -- but a disc drawn
-        // at full brightness hides that. Dim it to what it is actually offering.
+        // a drag keeps the colour's value, so the disc is dimmed to it
         var lit = Mathf.Max(v, 0.15f);
         var discRenderer = wheel.GetComponent<Renderer>();
         if (discRenderer != null && discRenderer.sharedMaterial != null) {
@@ -219,9 +211,8 @@ public class ColorControl : MonoBehaviour {
         reticle.localPosition = new Vector3(0.5f * s * Mathf.Sin(angle), 0.5f * s * Mathf.Cos(angle), -0.01f);
     }
 
-    // GetKeyDown does not repeat, so a held arrow is timed the way the menus time theirs.
-    // One timer, reset the instant no arrow is down, so a key cannot stay latched across a
-    // channel change.
+    // Held-arrow repeat on the menus' timing. One timer, reset whenever no arrow is down, so it
+    // cannot stay latched across a channel change.
     private int Step() {
         var dir = 0;
         if (Input.GetKey(KeyCode.RightArrow)) {
@@ -263,14 +254,13 @@ public class ColorControl : MonoBehaviour {
         Show();
     }
 
-    private void Show() {
+    public void Show() {
         messageBox.SetMessage(new MessageDescriptor(""));
         PlaceReticle();
         Paint();
     }
 
-    // Every bar is repainted from the live color, so each channel's gradient shows what
-    // moving THAT channel does to THIS color rather than a generic black-to-red ramp.
+    // Each bar sweeps its channel across the live colour, showing what moving it would do.
     private void Paint() {
         var v = setting.Value;
         if (asMessage && swatch != null) {
@@ -307,15 +297,13 @@ public class ColorControl : MonoBehaviour {
                 for (var x = 0; x < BarW; x++) {
                     Color col;
                     if (x < LabelW) {
-                        // The cap carries the selection -- an outline round a wavy bar reads
-                        // as a fringe. The letter inverts with it so it stays legible.
+                        // the cap shows the selection; its letter inverts to stay legible
                         var cap = picked ? new Color(0.78f, 0.78f, 0.82f) : new Color(0.13f, 0.13f, 0.15f);
                         var ink = picked ? new Color(0.10f, 0.10f, 0.12f) : new Color(0.72f, 0.72f, 0.78f);
                         col = Letter(c, x - 3, y - 3, picked) ? ink : cap;
                     } else {
                         var swept = WithChannel(v, c, (x - LabelW) / (float)span);
-                        // only the alpha bar is about transparency; drawing the other three
-                        // through the color's own alpha just checks every gradient
+                        // only the alpha bar shows transparency; the RGB bars are opaque
                         col = c == 3 ? Over(swept, Checker(x, y))
                                      : new Color(swept.r, swept.g, swept.b, 1f);
                         var d = Mathf.Abs(x - mark);
@@ -326,8 +314,6 @@ public class ColorControl : MonoBehaviour {
                         }
                     }
 
-                    // the cap carries the selection now: an outline round a wavy bar reads
-                    // as a fringe rather than as a highlight
                     col.a = Edge(x, y, BarW, BarH) * Grain(x, y);
                     px[y * BarW + x] = col;
                 }
@@ -338,9 +324,7 @@ public class ColorControl : MonoBehaviour {
         }
     }
 
-    // The scrollbar's look, ported to the runtime painter, so these read as drawn rather
-    // than as UI rectangles. Kept separate from the grain: the highlight on the selected
-    // bar keys off the edge, and grain in that test speckles the whole bar white.
+    // the scrollbar's wavy chalk edge, as alpha
     private static float Edge(int x, int y, int w, int h) {
         var u = x / (w - 1f);
         var wobble = 0.28f * Mathf.Sin(u * 21f) + 0.15f * Mathf.Sin(u * 47f + 1.7f);
@@ -359,15 +343,13 @@ public class ColorControl : MonoBehaviour {
         return ((h ^ (h >> 16)) & 0xFFFF) / 65535f;
     }
 
-    // A 5x7 letter per channel, painted into the bar. The menu's own font was the nicer
-    // idea and did not survive four attempts through a cloned TextBox; see the notes.
+    // A 5x7 letter per channel, painted into the bar: a cloned menu TextBox draws nothing here.
     private static bool Letter(int channel, int x, int y, bool bold) {
         if (Lit(channel, x, y)) {
             return true;
         }
 
-        // Dark ink on a light cap reads thinner than light ink on a dark one, so the
-        // inverted letter is grown by a pixel to weigh the same.
+        // dark-on-light reads thinner, so the inverted letter is a pixel bolder
         return bold && (Lit(channel, x - 1, y) || Lit(channel, x, y - 1));
     }
 
@@ -414,8 +396,7 @@ public class ColorControl : MonoBehaviour {
 
     private void BuildBars() {
         var order = GetComponentInChildren<Renderer>();
-        // a message background previews as itself: the same art the message uses, tinted,
-        // rather than a swatch over a check
+        // a message background previews as the message art, tinted, not as a swatch over a check
         if (swatch != null && !asMessage) {
             swatchTexture = Canvas(SwatchW, SwatchH);
             var renderer = swatch.GetComponent<Renderer>();
@@ -453,13 +434,12 @@ public class ColorControl : MonoBehaviour {
 
     public void Reset() {
         editing = false;
+        owner.Editing = false;
         Show();
     }
 
-    // The legend says Navigate/Select/Back, none of which is true in here. The key icons
-    // come out of the text itself -- <icon> switches to a font whose letters are key
-    // images -- so five entries across three slots is three strings, not three prefabs.
-    // v/r are the up and down arrows, s/t left and right, D Enter, y Esc, M Del.
+    // Swaps the legend for the editor's keys. <icon> letters are key images: vr up/down,
+    // st left/right, D Enter, y Esc, M Del.
     private void RetitleLegend(bool editingNow) {
         var legend = owner.transform.FindChild("highlightFade/legend/pcLegend");
         if (legend == null) {
@@ -494,6 +474,7 @@ public class ColorControl : MonoBehaviour {
 
     private void Finish() {
         editing = false;
+        owner.Editing = false;
         RetitleLegend(false);
         ShowBars(false);
         if (wheel != null) {
@@ -506,6 +487,8 @@ public class ColorControl : MonoBehaviour {
         tooltipProvider.SetMessage(tooltip);
         owner.tooltipController.UpdateTooltip();
         Show();
+        // ResumeAll released the menu: hold it again before the Escape that ended the edit reaches it
+        owner.HoldMenu();
     }
 
     private const int SwatchW = 48;
@@ -535,11 +518,12 @@ public class ColorControl : MonoBehaviour {
 
     private const float ReticleSize = 0.16f;
 
-    // how far above and below a bar still counts as grabbing it
+    // width of the chalk edge's fade, in pixels
     private const float ChalkFeather = 2.2f;
 
     private const float ChalkGrain = 0.22f;
 
+    // how far above and below a bar still counts as grabbing it
     private const float BarGrabPad = 0.04f;
 
     private const float GrabSlow = 0.35f;

@@ -7,10 +7,9 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 
-// The companion page's back end: a loopback listener speaking just enough HTTP for one
-// page. A request that touches the game is handed to the main thread and answered once
-// it has been round; nothing here reads game state off its own thread. It also keeps the
-// site's map tiles: cached beside the segments once, redirected to the site until then.
+// The companion page's back end: a loopback listener speaking just enough HTTP for one page.
+// Anything touching the game runs as a job on the main thread. Map tiles are cached beside the
+// segments once, and redirected to the site until then.
 public static class PracticeServer {
     public const int FirstPort = 47826;
 
@@ -26,14 +25,16 @@ public static class PracticeServer {
 
     private static readonly object gate = new object();
 
-    // the browser is opened once per game launch, the first time the box editor starts;
-    // a page that pops over the game every session would cost the player their focus
+    // the browser opens once per launch, the first time the box editor starts
     private static bool opened;
 
     private class Job {
         public Func<string> Work;
         public string Result;
         public string Error;
+        // both under gate: a job the page gave up on never starts, and one that started is waited for
+        public bool Started;
+        public bool Cancelled;
         public readonly ManualResetEvent Done = new ManualResetEvent(false);
     }
 
@@ -67,7 +68,7 @@ public static class PracticeServer {
         return false;
     }
 
-    // True when a browser was opened; false when the page already open was turned around instead.
+    // true when a browser was opened; false when the open page was turned instead, or no port was free
     public static bool Open() {
         if (!Start()) {
             return false;
@@ -88,8 +89,8 @@ public static class PracticeServer {
 
     // --- the pane ----------------------------------------------------------------------
 
-    // The newest page to check in is *the* pane, and opening the editor turns that one rather
-    // than stacking up another tab. Answered off the main thread: touch nothing of Unity's.
+    // The last tab to claim the pane (new or focused) is what Open reloads instead of a new tab.
+    // Answered off the main thread: touch nothing of Unity's.
     private const double PaneQuiet = 6.0;
 
     private static string pane;
@@ -122,7 +123,7 @@ public static class PracticeServer {
         return reply.Serialize(false);
     }
 
-    // one value out of a query string; no Uri parser needed for two short fields
+    // one raw (not URL-decoded) value out of a query string
     private static string Arg(string query, string name) {
         foreach (var pair in query.Split('&')) {
             var eq = pair.IndexOf('=');
@@ -167,6 +168,11 @@ public static class PracticeServer {
                 }
 
                 job = jobs.Dequeue();
+                if (job.Cancelled) {
+                    continue;
+                }
+
+                job.Started = true;
             }
 
             try {
@@ -186,13 +192,23 @@ public static class PracticeServer {
             jobs.Enqueue(job);
         }
 
-        if (!job.Done.WaitOne(5000, false)) {
-            error = "the game did not answer in time";
-            return null;
-        }
+        using (job.Done) {
+            if (!job.Done.WaitOne(5000, false)) {
+                lock (gate) {
+                    job.Cancelled = !job.Started;
+                }
 
-        error = job.Error;
-        return job.Result;
+                if (job.Cancelled) {
+                    error = "the game did not answer in time";
+                    return null;
+                }
+
+                job.Done.WaitOne();
+            }
+
+            error = job.Error;
+            return job.Result;
+        }
     }
 
     private static void Loop() {
@@ -222,7 +238,8 @@ public static class PracticeServer {
         string method;
         string path;
         byte[] body;
-        if (!ReadRequest(stream, out method, out path, out body)) {
+        Dictionary<string, string> headers;
+        if (!ReadRequest(stream, out method, out path, out body, out headers)) {
             return;
         }
 
@@ -238,7 +255,10 @@ public static class PracticeServer {
         string location = null;
         byte[] content;
         string error = null;
-        if (method == "GET" && path == "/") {
+        if (!Allowed(method, headers, body.Length)) {
+            status = 403;
+            content = Encoding.UTF8.GetBytes("{\"error\":\"forbidden\"}");
+        } else if (method == "GET" && path == "/") {
             content = Resource("practice_editor.html", "text/html; charset=utf-8", out type, out status);
         } else if (method == "GET" && path == "/leaflet.js") {
             content = Resource("leaflet.js", "text/javascript; charset=utf-8", out type, out status);
@@ -250,7 +270,7 @@ public static class PracticeServer {
             content = Encoding.UTF8.GetBytes(TileStatus());
         } else if (method == "GET" && path == "/api/segment") {
             content = Reply(OnMain(ReadSegment, out error), error, out status);
-        } else if ((method == "PUT" || method == "POST") && path == "/api/segment") {
+        } else if (method == "PUT" && path == "/api/segment") {
             var text = Encoding.UTF8.GetString(body);
             content = Reply(OnMain(delegate { return WriteSegment(text); }, out error), error, out status);
         } else if (method == "GET" && path == "/api/pane") {
@@ -271,10 +291,10 @@ public static class PracticeServer {
         } else if (method == "POST" && path == "/api/ghost/pin") {
             content = Reply(OnMain(Pin, out error), error, out status);
         } else if (method == "DELETE" && path.StartsWith("/api/ghost/")) {
-            var slot = path.Substring("/api/ghost/".Length);
+            var slot = Uri.UnescapeDataString(path.Substring("/api/ghost/".Length));
             content = Reply(OnMain(delegate { return DeleteGhost(slot); }, out error), error, out status);
         } else if (method == "DELETE" && path.StartsWith("/api/variant/")) {
-            var id = path.Substring("/api/variant/".Length);
+            var id = Uri.UnescapeDataString(path.Substring("/api/variant/".Length));
             content = Reply(OnMain(delegate { return DeleteVariant(id); }, out error), error, out status);
         } else {
             status = 404;
@@ -318,11 +338,38 @@ public static class PracticeServer {
         return Encoding.UTF8.GetBytes(reply.Serialize(false));
     }
 
+    // Any page in a browser can reach loopback: DNS rebinding arrives under a foreign Host, a cross-site
+    // write under a foreign Origin, and a json body cannot cross sites without a preflight, never answered here.
+    private static bool Allowed(string method, Dictionary<string, string> headers, int bodyLength) {
+        string host, origin, type;
+        if (!headers.TryGetValue("host", out host) || !Ours(host)) {
+            return false;
+        }
+
+        if (method == "GET") {
+            return true;
+        }
+
+        if (headers.TryGetValue("origin", out origin)
+                && !(origin.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && Ours(origin.Substring(7)))) {
+            return false;
+        }
+
+        return bodyLength == 0 || (headers.TryGetValue("content-type", out type)
+            && type.StartsWith("application/json", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool Ours(string host) {
+        return string.Equals(host, "127.0.0.1:" + port, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(host, "localhost:" + port, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static string Reason(int status) {
         switch (status) {
             case 200: return "OK";
             case 302: return "Found";
             case 400: return "Bad Request";
+            case 403: return "Forbidden";
             case 404: return "Not Found";
             case 503: return "Service Unavailable";
             default: return "Error";
@@ -330,10 +377,12 @@ public static class PracticeServer {
     }
 
     // Request line, headers, then exactly Content-Length bytes of body.
-    private static bool ReadRequest(NetworkStream stream, out string method, out string path, out byte[] body) {
+    private static bool ReadRequest(NetworkStream stream, out string method, out string path, out byte[] body,
+            out Dictionary<string, string> headers) {
         method = null;
         path = null;
         body = new byte[0];
+        headers = new Dictionary<string, string>();
         var buffer = new MemoryStream();
         var chunk = new byte[4096];
         var headerEnd = -1;
@@ -367,9 +416,14 @@ public static class PracticeServer {
         var length = 0;
         for (var i = 1; i < lines.Length; i++) {
             var colon = lines[i].IndexOf(':');
-            if (colon > 0 && lines[i].Substring(0, colon).Trim().ToLowerInvariant() == "content-length") {
-                int.TryParse(lines[i].Substring(colon + 1).Trim(), out length);
+            if (colon > 0) {
+                headers[lines[i].Substring(0, colon).Trim().ToLowerInvariant()] = lines[i].Substring(colon + 1).Trim();
             }
+        }
+
+        string declared;
+        if (headers.TryGetValue("content-length", out declared)) {
+            int.TryParse(declared, out length);
         }
 
         if (length < 0 || length > MaxBody) {
@@ -411,9 +465,8 @@ public static class PracticeServer {
 
     // --- the map ---------------------------------------------------------------------
 
-    // The site's tile pyramid: 20480 x 14592 pixels at zoom 7, 256-pixel tiles, so
-    // ceil(80 * 2^z / 128) by ceil(57 * 2^z / 128) tiles at zoom z. Zoom 7 is nearly all
-    // blank and is left to the site.
+    // The site's pyramid, 20480 x 14592 px at zoom 7 in 256 px tiles: ceil(80 * 2^z / 128) by
+    // ceil(57 * 2^z / 128) tiles at zoom z. Zoom 7 is mostly blank and left to the site.
     private const string TileHost = "https://ori-tracker.firebaseapp.com/images/ori-map/";
 
     private const int TileZooms = 7;
@@ -476,8 +529,7 @@ public static class PracticeServer {
         return reply.Serialize(false);
     }
 
-    // once: everything below zoom 7 that is not on disk yet, through the sidecar, which
-    // has the TLS this runtime lacks
+    // once per launch: every tile below zoom 7 not on disk yet, through the sidecar's TLS
     private static void EnsureTiles() {
         if (tilesRunning) {
             return;
@@ -525,15 +577,18 @@ public static class PracticeServer {
             foreach (var tile in missing) {
                 var dir = Path.Combine(Path.Combine(TileDir, tile[0].ToString()), tile[1].ToString());
                 Directory.CreateDirectory(dir);
+                // written beside the tile and moved in whole, since Tile serves whatever file is there
                 var file = Path.Combine(dir, tile[2] + ".png");
-                var status = NativeWebSocket.HttpDownload(TileHost + tile[0] + "/" + tile[1] + "/" + tile[2] + ".png", file);
-                if (status == 200 && File.Exists(file) && new FileInfo(file).Length > 0) {
+                var part = file + ".part";
+                var status = NativeWebSocket.HttpDownload(TileHost + tile[0] + "/" + tile[1] + "/" + tile[2] + ".png", part);
+                if (status == 200 && File.Exists(part) && new FileInfo(part).Length > 0) {
+                    File.Move(part, file);
                     tilesHave++;
                     continue;
                 }
 
-                if (File.Exists(file)) {
-                    File.Delete(file);
+                if (File.Exists(part)) {
+                    File.Delete(part);
                 }
 
                 if (++failures > 25) {
@@ -555,15 +610,13 @@ public static class PracticeServer {
 
     // --- the segment -----------------------------------------------------------------
 
-    // What the page edits: the container's root json and every variant's, serialised
-    // here on the main thread so the page never reads a tree the editor is changing.
+    // what the page edits: the root json and every variant's, in the page's shape
     private static string ReadSegment() {
         var file = PracticeController.File;
         var reply = JsonValue.NewObject();
         reply.Set("session", JsonValue.Of(file != null));
         if (file == null) {
-            // without a session the page makes segments: the next name, and whether the
-            // chooser is up to start one
+            // no session: the page's create panel wants a name and whether the chooser can start one
             reply.Set("suggestedName", JsonValue.Of(PracticeSelect.NextName()));
             reply.Set("choosing", JsonValue.Of(PracticeSelect.Choosing));
             reply.Set("awaiting", JsonValue.Of(PracticeSelect.Waiting));
@@ -587,8 +640,8 @@ public static class PracticeServer {
         return reply.Serialize(false);
     }
 
-    // The page's shape of a segment: the json with its boxes as an array on it and
-    // the goal as end.box. A copy, so the page never reads a tree the editor changes.
+    // The page's shape: boxes as an array and the goal as end.box, on a shallow copy so none
+    // of it lands in the file's own json.
     private static JsonValue WithBoxes(BfrpFile file, string variant) {
         var json = variant == "" ? file.Segment : file.VariantSegment(variant);
         var copy = Copy(json, "boxes", "end");
@@ -644,8 +697,7 @@ public static class PracticeServer {
         return boxes;
     }
 
-    // The page's copy replaces the file's, is written out, and a live session runs the
-    // new rules at once.
+    // the page's copy replaces the file's, is saved, and the live session re-parses it
     private static string WriteSegment(string text) {
         var file = PracticeController.File;
         if (file == null) {
@@ -658,24 +710,47 @@ public static class PracticeServer {
             throw new Exception("segment must be an object");
         }
 
-        file.SetBoxes("", TakeBoxes(segment, true));
+        // all of it is built and checked before the file changes, so a refusal leaves the file whole
+        var boxes = TakeBoxes(segment, true);
         var stored = Copy(segment, "boxes", "end");
         stored.Set("end", Copy(segment["end"], "box"));
-        file.Segment = stored;
+        for (var g = 0; g < stored["shuffle"].Count; g++) {
+            CheckPickups(stored["shuffle"][g]["give"]);
+        }
+
+        var ids = new List<string>();
+        var variantBoxes = new List<List<RandomizerBox>>();
+        var variantJson = new List<JsonValue>();
         var variants = incoming["variants"];
-        if (variants.IsObject) {
-            foreach (var id in variants.Keys) {
-                if (variants[id].IsObject) {
-                    file.SetBoxes(id, TakeBoxes(variants[id], false));
-                    file.SetVariantSegment(id, Copy(variants[id], "boxes"));
-                }
+        foreach (var id in variants.Keys) {
+            if (variants[id].IsObject) {
+                ids.Add(id);
+                variantBoxes.Add(TakeBoxes(variants[id], false));
+                variantJson.Add(Copy(variants[id], "boxes"));
+                CheckPickups(variants[id]["inventory"]);
             }
+        }
+
+        file.SetBoxes("", boxes);
+        file.Segment = stored;
+        for (var i = 0; i < ids.Count; i++) {
+            file.SetBoxes(ids[i], variantBoxes[i]);
+            file.SetVariantSegment(ids[i], variantJson[i]);
         }
 
         file.Save();
         PracticeController.Reparse();
         Randomizer.log("practice: segment saved from the editor page");
         return "{\"ok\":true}";
+    }
+
+    // a code the parse would log and skip is the page's to fix, so it is refused here
+    private static void CheckPickups(JsonValue codes) {
+        for (var i = 0; i < codes.Count; i++) {
+            if (codes[i].IsString && !PracticeSegment.IsPickup(codes[i].Str)) {
+                throw new Exception("'" + codes[i].Str + "' is not a pickup");
+            }
+        }
     }
 
     private static string DeleteVariant(string id) {
@@ -686,6 +761,10 @@ public static class PracticeServer {
 
         if (id == file.Variant) {
             throw new Exception("this variant is the one running; exit the session first");
+        }
+
+        if (!file.Variants.Contains(id)) {
+            throw new Exception("there is no variant " + id);
         }
 
         file.RemoveVariant(id);
@@ -736,6 +815,10 @@ public static class PracticeServer {
             throw new Exception("no practice session is running");
         }
 
+        if (file.GetGhost(file.Variant, slot) == null) {
+            throw new Exception("there is no ghost " + slot);
+        }
+
         file.RemoveGhost(file.Variant, slot);
         file.Save();
         Randomizer.log("practice: ghost " + slot + " removed from the editor page");
@@ -754,9 +837,12 @@ public static class PracticeServer {
                 continue;
             }
 
+            // the header only, as the file select reads it: this runs on the main thread
             JsonValue entry;
             try {
-                entry = Header(File.ReadAllBytes(saves.GetSaveFilePath(slot)));
+                using (var reader = new BinaryReader(File.Open(saves.GetSaveFilePath(slot), FileMode.Open, FileAccess.Read, FileShare.ReadWrite))) {
+                    entry = Header(reader);
+                }
             } catch (Exception) {
                 continue;
             }
@@ -777,25 +863,29 @@ public static class PracticeServer {
             return null;
         }
 
-        try {
-            using (var reader = new BinaryReader(new MemoryStream(bytes))) {
-                var info = new SaveSlotInfo();
-                if (!info.LoadFromReader(reader)) {
-                    return null;
-                }
+        using (var reader = new BinaryReader(new MemoryStream(bytes))) {
+            return Header(reader);
+        }
+    }
 
-                var shots = SaveSlotsScreenshotManager.Instance;
-                var entry = JsonValue.NewObject();
-                entry.Set("area", JsonValue.Of(shots != null ? shots.FindAreaName(info.AreaName) : info.AreaName));
-                entry.Set("completion", JsonValue.Of(info.Completion));
-                entry.Set("health", JsonValue.Of(info.Health));
-                entry.Set("maxHealth", JsonValue.Of(info.MaxHealth));
-                entry.Set("energy", JsonValue.Of(info.Energy));
-                entry.Set("maxEnergy", JsonValue.Of(info.MaxEnergy));
-                entry.Set("seconds", JsonValue.Of(info.TotalSeconds));
-                entry.Set("difficulty", JsonValue.Of(info.Difficulty.ToString()));
-                return entry;
+    private static JsonValue Header(BinaryReader reader) {
+        try {
+            var info = new SaveSlotInfo();
+            if (!info.LoadFromReader(reader)) {
+                return null;
             }
+
+            var shots = SaveSlotsScreenshotManager.Instance;
+            var entry = JsonValue.NewObject();
+            entry.Set("area", JsonValue.Of(shots != null ? shots.FindAreaName(info.AreaName) : info.AreaName));
+            entry.Set("completion", JsonValue.Of(info.Completion));
+            entry.Set("health", JsonValue.Of(info.Health));
+            entry.Set("maxHealth", JsonValue.Of(info.MaxHealth));
+            entry.Set("energy", JsonValue.Of(info.Energy));
+            entry.Set("maxEnergy", JsonValue.Of(info.MaxEnergy));
+            entry.Set("seconds", JsonValue.Of(info.TotalSeconds));
+            entry.Set("difficulty", JsonValue.Of(info.Difficulty.ToString()));
+            return entry;
         } catch (Exception) {
             return null;
         }
@@ -825,8 +915,7 @@ public static class PracticeServer {
         return reply.Serialize(false);
     }
 
-    // the running segment starts from another of the game's saves from now on, and the
-    // attempt begins again from it
+    // the running segment starts from another of the game's saves, and the attempt restarts on it
     private static string ReplaceSave(string text) {
         var file = PracticeController.File;
         if (file == null) {
@@ -835,8 +924,7 @@ public static class PracticeServer {
 
         file.SetBaseSave(SaveBytes(JsonValue.Parse(text)));
         file.Save();
-        // parked behind the title there is nothing to reload into, and the slot holds the run
-        // the player left: the new save is theirs the next time the segment starts
+        // parked behind the title the slot holds the run the player left: no restart, the new save waits
         var game = GameController.Instance;
         var parked = game == null || game.GameInTitleScreen;
         if (!parked) {

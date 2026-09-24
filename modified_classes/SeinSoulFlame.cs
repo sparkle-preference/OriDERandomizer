@@ -269,7 +269,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
         Characters.Sein.Position = position;
         GameController.Instance.SaveGameController.PerformSave();
         GameController.Instance.PerformSaveGameSequence();
-        // the sequence's own box, in the colour of whose link this was
+        // tint the save sequence's box with the link owner's colour
         if (UI.Hints.CurrentHint) {
             UI.Hints.CurrentHint.TintBackground(RandomizerGhost.ShadeOf(m_allyPlayer), AllyHintTint);
         }
@@ -545,7 +545,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
     // the game's own exit radius for standing at a link
     private const float AllyLinkRadius = 2f;
 
-    // how far a box goes from the game's black toward the link owner's colour: dark, but theirs
+    // lerp from the game's black box toward the link owner's colour
     internal static float AllyHintTint = 0.075f;
 
     private Vector3 m_allyLink;

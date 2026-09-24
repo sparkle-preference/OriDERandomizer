@@ -2,11 +2,8 @@ using System;
 using System.Collections.Specialized;
 using System.Text;
 
-// Managed face of the sidecar's async HTTP, which unlike System.Net can speak
-// modern TLS and so reach the canonical https host.
-//
-// Requests never block: start one, poll Done, then read Status/Body. Every
-// request must reach Done or be Abandoned, or its response is held until exit.
+// The sidecar's async HTTP as an object: start, poll Done, read Status/Body.
+// A request that never reaches Done or Abandon holds its response until exit.
 public class RandomizerHttp {
     public static bool Available => NativeWebSocket.AsyncHttpAvailable;
 
@@ -86,8 +83,7 @@ public class RandomizerHttp {
         return sb.ToString();
     }
 
-    // Uri.EscapeDataString throws past ~32k chars and seeds get there; chunking
-    // is safe because seed text is ASCII.
+    // EscapeDataString throws past ~32k chars; chunking is safe unless a chunk splits a surrogate pair
     public static string EscapeLong(string s) {
         var sb = new StringBuilder();
         for (var i = 0; i < s.Length; i += 16000) {

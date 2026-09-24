@@ -14,7 +14,7 @@ public class KeybindControl : MonoBehaviour {
         editing = true;
         owner.Editing = true;
         exit = 0;
-        // how to work the edit is the legend's job now; the tooltip names what is being edited
+        // the legend says how to edit; the tooltip names what is being edited
         owner.BindLegend();
         Tooltip("Editing binds for " + label + "...");
     }
@@ -44,7 +44,11 @@ public class KeybindControl : MonoBehaviour {
             SuspensionManager.ResumeAll();
             SetKeys(currentKeys.ToArray());
             PlayerInputRebinding.WriteKeyRebindSettings();
-            PlayerInput.Instance.RefreshControlScheme();
+            var input = PlayerInput.Instance;
+            if (input != null) {
+                input.RefreshControlScheme();
+            }
+
             owner.BindLegend();
             Tooltip(owner.DefaultTooltip);
             return;
@@ -66,8 +70,7 @@ public class KeybindControl : MonoBehaviour {
         }
     }
 
-    // Back held long enough abandons the edit. A tap of it is still a key, so it binds on the
-    // release -- at the press there is no telling the two apart yet.
+    // A Back hold cancels the edit; a tap is a key like any other and binds on release.
     private bool Cancelling() {
         var down = CustomSettingsScreen.BackHeld();
         if (down == KeyCode.None) {
@@ -107,8 +110,7 @@ public class KeybindControl : MonoBehaviour {
         }
     }
 
-    // Nothing was written on the way in, so abandoning is just putting the row's own keys back
-    // on screen and standing down.
+    // nothing is applied until Enter, so cancelling only redraws the row and stands down
     private void Cancel() {
         held = -1f;
         editing = false;
@@ -142,8 +144,7 @@ public class KeybindControl : MonoBehaviour {
         owner.Editing = false;
     }
 
-    // Binds apply as they are made, so leaving without keeping them is a restore, not a
-    // commit. The snapshot is what the screen was entered with.
+    // the keys the screen was entered with; Restore puts them back
     public void Snapshot() {
         snapshot = (KeyCode[])GetKeys().Clone();
     }

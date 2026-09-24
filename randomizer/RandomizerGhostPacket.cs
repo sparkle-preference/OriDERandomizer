@@ -4,8 +4,7 @@ using UnityEngine;
 
 using Sample = RandomizerGhost.Sample;
 
-// The motion packet, versioned from the first byte. Little-endian, written by hand rather than
-// with BitConverter so the layout is the same wherever it runs.
+// The motion packet, versioned from the first byte, little-endian.
 //
 //   u8   version        u16  clipId        u8   flags2      optional, per flags:
 //   u8   playerId       u8   clipTime                         u8  bashAngle
@@ -14,8 +13,7 @@ using Sample = RandomizerGhost.Sample;
 //   f32  x, y                                                 u8  wallAngle
 //                                                             f32 soulX, soulY   (flags2)
 //
-// 22 bytes for ordinary movement, 48 with every optional field present. Position stays float32:
-// the world spans roughly 9,700 x 12,700 units, too wide for i16 at a useful precision.
+// 22 bytes for ordinary movement, 48 (MaxSize) with every optional field present.
 public static class RandomizerGhostPacket {
     public const byte Version = 1;
 
@@ -34,8 +32,7 @@ public static class RandomizerGhostPacket {
     private const int InMenu = 1 << 1;
     private const int OnTitle = 1 << 2;
 
-    // Ori's sprite mirrors by turning 180 degrees about Y rather than by a negative scale --
-    // Transform.lossyScale cannot report a mirror, which is why the recording never shows one.
+    // Ori's sprite mirrors by turning 180 degrees about Y, not by a negative scale.
     private static readonly Quaternion Flip = Quaternion.Euler(0f, 180f, 0f);
 
     public static int Encode(byte[] into, Sample sample, byte playerId, ushort seq) {
@@ -70,8 +67,7 @@ public static class RandomizerGhostPacket {
 
         if ((flags & Bashing) != 0) {
             into[at++] = Degrees(sample.BashAngle);
-            // the arrow belongs on the thing being bashed, not on Ori; full floats, since it
-            // rides only on bash packets
+            // the arrow sits on the bash target, not on Ori
             at = F32(into, at, sample.BashTarget.x);
             at = F32(into, at, sample.BashTarget.y);
         }
@@ -93,13 +89,12 @@ public static class RandomizerGhostPacket {
         return at;
     }
 
-    // Returns false for a packet from a version we do not speak. Everything else is either
-    // present or flagged absent, so there is nothing else to reject.
+    // False for a short or oversize packet, another version, or any non-finite float.
     public static bool Decode(byte[] from, int length, out Sample sample, out byte playerId, out ushort seq) {
         sample = new Sample();
         playerId = 0;
         seq = 0;
-        if (length < 22 || from[0] != Version) {
+        if (length < 22 || length > MaxSize || from[0] != Version) {
             return false;
         }
 
@@ -110,6 +105,10 @@ public static class RandomizerGhostPacket {
         sample.Time = Float(from, ref at);
         var x = Float(from, ref at);
         var y = Float(from, ref at);
+        if (!Finite(sample.Time) || !Finite(x) || !Finite(y)) {
+            return false;
+        }
+
         sample.Position = new Vector3(x, y, 0f);
         var clip = (ushort)(from[at] | (from[at + 1] << 8));
         at += 2;
@@ -121,8 +120,7 @@ public static class RandomizerGhostPacket {
         sample.Animation = RandomizerGhostAnimations.NameOf(clip) ?? "";
         sample.AnimationTime = clipTime / 255f * RandomizerGhost.Duration(sample.Animation);
         sample.Rotation = Quaternion.Euler(0f, (flags & FaceLeft) != 0 ? 180f : 0f, roll);
-        // scale is not sent: it is Ori's own, the same for every player, and a mirror lives in
-        // the rotation rather than in a sign here
+        // scale is not sent: it is Ori's own, the same for every player
         sample.Scale = RandomizerGhost.GhostScale();
         sample.Charge = (flags & Charged) != 0 ? 2 : ((flags & Charging) != 0 ? 1 : 0);
         sample.Triple = (flags & Triple) != 0;
@@ -136,11 +134,19 @@ public static class RandomizerGhostPacket {
             sample.BashAngle = from[at++] * 360f / 256f;
             var bx = Float(from, ref at);
             var by = Float(from, ref at);
+            if (!Finite(bx) || !Finite(by)) {
+                return false;
+            }
+
             sample.BashTarget = new Vector2(bx, by);
         }
         if ((flags & Aiming) != 0 && at + 8 <= length) {
             var ax = Float(from, ref at);
             var ay = Float(from, ref at);
+            if (!Finite(ax) || !Finite(ay)) {
+                return false;
+            }
+
             sample.GrenadeAim = new Vector2(ax, ay);
         } else {
             sample.GrenadeAim = new Vector2(float.NaN, float.NaN);
@@ -152,14 +158,22 @@ public static class RandomizerGhostPacket {
         if ((flags2 & SoulLinked) != 0 && at + 8 <= length) {
             var sx = Float(from, ref at);
             var sy = Float(from, ref at);
+            if (!Finite(sx) || !Finite(sy)) {
+                return false;
+            }
+
             sample.SoulLink = new Vector2(sx, sy);
         }
 
         return true;
     }
 
-    // A .ghost file: u8 version, u32 sample count, f32 seconds, then every packet behind a u8
-    // length. The packets are the wire format, so a file ghost costs the same precision.
+    private static bool Finite(float value) {
+        return !float.IsNaN(value) && !float.IsInfinity(value);
+    }
+
+    // A .ghost file: u8 version, u32 sample count, f32 seconds, then every wire packet behind a
+    // u8 length. Unpack goes through Decode, so a Version bump must still read version 1.
     public const byte FileVersion = 1;
 
     public static byte[] Pack(List<Sample> samples) {
@@ -208,8 +222,7 @@ public static class RandomizerGhostPacket {
         return samples;
     }
 
-    // The mirror is a rotation, so it has to come back out before the roll underneath it means
-    // anything. Euler decomposition would do it too, but it is free to pick a different triple.
+    // The mirror is a rotation, so it comes back out before the roll underneath means anything.
     private static float Roll(Quaternion rotation, bool faceLeft) {
         var flat = faceLeft ? Quaternion.Inverse(Flip) * rotation : rotation;
         return Mathf.Repeat(2f * Mathf.Atan2(flat.z, flat.w) * Mathf.Rad2Deg, 360f);

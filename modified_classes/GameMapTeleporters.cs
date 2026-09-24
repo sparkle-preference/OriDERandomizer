@@ -40,7 +40,7 @@ public class GameMapTeleporters : MonoBehaviour {
     private int TeleporterUnderMouse() {
         var result = -1;
         if (Teleporters.Count <= 12) {
-            // There are no custom teleporters, so use the default behaviour.
+            // vanilla: the last activated teleporter within 1
             if (GameMapTransitionManager.Instance.InWorldMapMode) {
                 for (var i = 0; i < Teleporters.Count; i++) {
                     var gameMapTeleporter = Teleporters[i];
@@ -59,10 +59,7 @@ public class GameMapTeleporters : MonoBehaviour {
                 }
             }
         } else {
-            // There are custom teleporters, so use our mouse algorithm.
-            // The default algorithm only finds the *last* teleporter within 1f, we find the closest.
-            // The gameMapTeleporter.WorldMapIconPosition is centered left and right, but is at the
-            // top of the teleporter icon, so we remove roughly half the height to centre it.
+            // with custom warps: the closest within 1, measured from mid-icon (the icon position is its top)
             var minimum = 1f;
             for (var k = 0; k < Teleporters.Count; k++) {
                 var gameMapTeleporter3 = Teleporters[k];

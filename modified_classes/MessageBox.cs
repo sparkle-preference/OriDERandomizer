@@ -150,19 +150,19 @@ public class MessageBox : MonoBehaviour {
             if (text.StartsWith("PADDING")) {
                 var p = new Queue<string>(text.Split('_'));
                 p.Dequeue();
-                TextBox.paddingBottom = float.Parse(p.Dequeue());
-                TextBox.paddingLeft = float.Parse(p.Dequeue());
-                TextBox.paddingRight = float.Parse(p.Dequeue());
-                TextBox.paddingTop = float.Parse(p.Dequeue());
+                TextBox.paddingBottom = Number(p.Dequeue());
+                TextBox.paddingLeft = Number(p.Dequeue());
+                TextBox.paddingRight = Number(p.Dequeue());
+                TextBox.paddingTop = Number(p.Dequeue());
                 text = string.Join("_", p.ToArray());
             }
 
             if (text.StartsWith("PARAMS")) {
                 var p = new Queue<string>(text.Split('_'));
                 p.Dequeue();
-                TextBox.maxHeight = float.Parse(p.Dequeue());
-                TextBox.width = float.Parse(p.Dequeue());
-                TextBox.TabSize = float.Parse(p.Dequeue());
+                TextBox.maxHeight = Number(p.Dequeue());
+                TextBox.width = Number(p.Dequeue());
+                TextBox.TabSize = Number(p.Dequeue());
                 text = string.Join("_", p.ToArray());
             }
 
@@ -170,10 +170,10 @@ public class MessageBox : MonoBehaviour {
             if (text.StartsWith("BGCOLOR")) {
                 var p = new Queue<string>(text.Split('_'));
                 p.Dequeue();
-                r = float.Parse(p.Dequeue());
-                g = float.Parse(p.Dequeue());
-                b = float.Parse(p.Dequeue());
-                a = float.Parse(p.Dequeue());
+                r = Number(p.Dequeue());
+                g = Number(p.Dequeue());
+                b = Number(p.Dequeue());
+                a = Number(p.Dequeue());
                 text = string.Join("_", p.ToArray());
                 SetBackgroundColor(new Color(r / 510f, g / 510f, b / 510f, a / 510f));
                 m_hasBackgroundColor = true;
@@ -231,6 +231,11 @@ public class MessageBox : MonoBehaviour {
         }
     }
 
+    // prefix numbers are written with invariant decimals, whatever the player's locale
+    private static float Number(string text) {
+        return float.Parse(text, CultureInfo.InvariantCulture);
+    }
+
     private static readonly Regex StyleTagRegex = new(
         @"(?inx)
         <style
@@ -268,12 +273,28 @@ public class MessageBox : MonoBehaviour {
         }
     }
 
+    // the tag regex admits strings float cannot read, such as "-" or "1.2.3"
+    private static bool StyleNumber(string text, out float value) {
+        if (float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value)) {
+            return true;
+        }
+
+        Randomizer.log($"Invalid style number: \"{text}\"");
+        return false;
+    }
+
+    // tags that failed to parse, dropped on later refreshes without another parse or log line
+    private static readonly HashSet<string> RejectedStyles = new HashSet<string>();
+
     private void ProcessStyleTags(TextStyleCollection styleCollection, string message) {
         List<TextStyle> styles = null;
         Dictionary<string, TextFont> fonts = null;
 
         foreach (Match match in StyleTagRegex.Matches(message)) {
             var styleName = match.Groups[0].Value.Substring(1, match.Groups[0].Value.Length - 2);
+            if (RejectedStyles.Contains(styleName)) {
+                continue;
+            }
 
             if (styles == null) {
                 if (styleCollection.styles.Any(s => s.name == styleName)) {
@@ -292,6 +313,7 @@ public class MessageBox : MonoBehaviour {
             if (match.Groups["color"] is { Success: true, Value: var colorString }) {
                 var stops = ParseColors(colorString);
                 if (stops == null) {
+                    RejectedStyles.Add(styleName);
                     continue;
                 }
 
@@ -306,6 +328,7 @@ public class MessageBox : MonoBehaviour {
 
                 if (!fonts.TryGetValue(fontName, out var textFont)) {
                     Randomizer.log($"Invalid font: \"{fontName}\". Available: {string.Join(", ", fonts.Keys.Select(n => $"'{n}'").ToArray())}");
+                    RejectedStyles.Add(styleName);
                     continue;
                 }
 
@@ -314,17 +337,29 @@ public class MessageBox : MonoBehaviour {
             }
 
             if (match.Groups["letter_spacing"] is { Success: true, Value: var letterSpacing }) {
-                style.letterSpacing = float.Parse(letterSpacing, CultureInfo.InvariantCulture);
+                if (!StyleNumber(letterSpacing, out style.letterSpacing)) {
+                    RejectedStyles.Add(styleName);
+                    continue;
+                }
+
                 style.hasLetterSpacing = true;
             }
 
             if (match.Groups["font_scale"] is { Success: true, Value: var fontScale }) {
-                style.fontScale = float.Parse(fontScale, CultureInfo.InvariantCulture);
+                if (!StyleNumber(fontScale, out style.fontScale)) {
+                    RejectedStyles.Add(styleName);
+                    continue;
+                }
+
                 style.hasFontScale = true;
             }
 
             if (match.Groups["line_scale"] is { Success: true, Value: var lineScale }) {
-                style.lineScale = float.Parse(lineScale, CultureInfo.InvariantCulture);
+                if (!StyleNumber(lineScale, out style.lineScale)) {
+                    RejectedStyles.Add(styleName);
+                    continue;
+                }
+
                 style.hasLineScale = true;
             }
 

@@ -101,7 +101,8 @@ namespace Protogen {
                 // Accumulate progressive map locations
                 var mapstonesReachable = Math.Min(inventory.Mapstones, accessibleMapstones.Count);
                 if (accessedMapstones < mapstonesReachable) {
-                    foreach (var connection in graph.OutgoingConnections[startNode].Where(conn =>
+                    // the Map nodes hang off Origin whatever the spawn
+                    foreach (var connection in graph.OutgoingConnections[graph.Origin.Name].Where(conn =>
                             conn.Requirement.Mapstones > accessedMapstones &&
                             conn.Requirement.Mapstones <= mapstonesReachable
                         )) {

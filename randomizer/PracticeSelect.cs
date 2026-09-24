@@ -4,10 +4,8 @@ using System.IO;
 using CatlikeCoding.TextBox;
 using UnityEngine;
 
-// The practice chooser: the file select with a segment on every card. A container's
-// save.sav is a real save, so the card's area, health, energy and art are the segment's
-// own start; only the name, time and variant line are written over. Variants use the
-// rows a card unfolds for its backups: Up opens them, Up/Down picks one.
+// The practice chooser: the file select with a segment on every card, its header read off the
+// container's save.sav. A card's backup rows are its variants; the last card makes a new segment.
 public static class PracticeSelect {
     // a name inside the game folder or a full path, from the settings file
     public static string Folder {
@@ -71,6 +69,7 @@ public static class PracticeSelect {
 
         if (exitLabelled != PracticeController.Active) {
             LabelExit(PracticeController.Active);
+            LabelPractice(PracticeController.Active);
         }
 
         if (reopen && screen == TitleScreenManager.Screen.MainMenu) {
@@ -78,8 +77,7 @@ public static class PracticeSelect {
             Open();
         }
 
-        // A run parked behind the title is picked back up by loading its slot, so the menu
-        // opens pointing at the way there rather than at whatever was last used.
+        // with a run parked, the main menu opens on START GAME, the way back into it
         if (screen == TitleScreenManager.Screen.MainMenu && PracticeController.Active) {
             if (!pointed) {
                 pointed = true;
@@ -121,7 +119,16 @@ public static class PracticeSelect {
         }
     }
 
+    private static void LabelPractice(bool active) {
+        var box = practiceItem == null ? null : practiceItem.GetComponentInChildren<MessageBox>(true);
+        if (box != null) {
+            box.SetMessage(new MessageDescriptor(active ? "CONTINUE PRACTICE" : "PRACTICE"));
+        }
+    }
+
     private static CleverMenuItemSelectionManager mainMenu;
+
+    private static CleverMenuItem practiceItem;
 
     private static MessageProvider exitLabel;
 
@@ -200,6 +207,7 @@ public static class PracticeSelect {
         var menu = titleScreen == null ? null : titleScreen.MainMenuScreen;
         exitScreen = titleScreen == null ? null : titleScreen.ExitGameScreen;
         mainMenu = menu;
+        practiceItem = null;
         armed = false;
         exitTitle = null;
         exitQuestion = null;
@@ -217,10 +225,10 @@ public static class PracticeSelect {
         // a run parked behind the title is continued from here, through its three slots
         menu.AddMenuItem(PracticeController.Active ? "CONTINUE PRACTICE" : "PRACTICE", 2, Open);
         var item = menu.MenuItems[2];
-        // AddMenuItem reparents keeping world scale, and its clone of "start game" keeps
-        // that entry's own press
+        // AddMenuItem keeps world scale and START GAME's own press; undo both
         item.transform.localScale = template.transform.localScale;
         item.Pressed = null;
+        practiceItem = item;
     }
 
     public static void Open() {
@@ -294,15 +302,13 @@ public static class PracticeSelect {
         if (Choosing) {
             Rewind(screen, Mathf.Clamp(chosen, 0, Mathf.Max(0, Count - 1)));
         } else if (PracticeController.Active) {
-            // the run's own slot, the middle card: proceed twice from the title is the way
-            // back into a quit-out
+            // the run's own slot, the middle card
             screen.SetCurrentItemAndScroll(PracticeController.LoadedSlot - PracticeController.FirstSlot);
             screen.ItemsUI.SnapScroll();
         }
     }
 
-    // The screen keeps the saves' scroll position; a short segment list seen from slot 7 looks
-    // empty. The chooser keeps its own, so it comes back on the segment you left it on.
+    // the chooser's own position, kept apart from the saves' scroll
     private static void Rewind(SaveSlotsUI screen, int index) {
         if (savedIndex < 0) {
             savedIndex = screen.CurrentSlotIndex;
@@ -322,8 +328,7 @@ public static class PracticeSelect {
             return;
         }
 
-        // the slot list was the segments; give the next screen the saves back, rebuilt
-        // now, while nothing is shown
+        // the slot list held segments: rebuild the saves now, while nothing is shown
         Choosing = false;
         chosen = screen.CurrentSlotIndex;
         Legend(screen, true);
@@ -336,7 +341,7 @@ public static class PracticeSelect {
         }
     }
 
-    // copy and delete mean nothing on a segment card, and the backups row is the variants
+    // copy means nothing on a segment card, and the backups entry is the variants
     private static void Legend(SaveSlotsUI screen, bool saves) {
         // the legend is a sibling: the component lives one level under the screen
         var root = screen.transform.parent != null ? screen.transform.parent : screen.transform;
@@ -376,8 +381,7 @@ public static class PracticeSelect {
         }
     }
 
-    // Called after a card applies its slot. Cards are numbered by position: a practice
-    // slot is 51 on disk and 2 on screen.
+    // after a card applies its slot; cards number by position (slot 51 on disk is card 2)
     public static void Decorate(SaveSlotUI card, int position) {
         if (card == null) {
             return;
@@ -430,8 +434,7 @@ public static class PracticeSelect {
         }
     }
 
-    // The variants as a card's backup list: one row each, the first nearest the card.
-    // Rows are laid out by descending Order, so the order counts down.
+    // the variants as a card's backup rows; rows lay out by descending Order, so it counts down
     public static SaveSlotBackup Backup(int index) {
         var backup = new SaveSlotBackup(index);
         backup.IsLoaded = true;
@@ -620,8 +623,7 @@ public static class PracticeSelect {
         Start(screen, file, pendingVariant, row == 1);
     }
 
-    // The page does the making: it lists the game's saves and asks for a name. The chooser
-    // holds a prompt meanwhile, so the screen says what it is waiting for and can call it off.
+    // The page makes the segment; the chooser holds a CANCEL prompt meanwhile to call it off.
     private static void CreateNew(SaveSlotsUI screen) {
         PracticeServer.Open();
         // without the prompt there is nothing to call the waiting off with, so do not wait
@@ -653,8 +655,7 @@ public static class PracticeSelect {
 
     private static Action<int> chose;
 
-    // The difficulty screen with our own rows: two words about the segment you just picked.
-    // Rows past the ones we want leave the menu entirely, so navigation cannot land on them.
+    // the difficulty screen with our own rows; rows past ours leave the menu so navigation skips them
     private static bool Prompt(SaveSlotsUI screen, string[] rows, Action<int> pressed) {
         var manager = screen.ShowPrompt();
         if (manager == null) {
@@ -759,8 +760,7 @@ public static class PracticeSelect {
         return Choosing && index >= 0 && index < Files.Count;
     }
 
-    // Named when the prompt goes up, not when it is answered: the list underneath can be
-    // rebuilt by the page while the question is on screen.
+    // named when asked, not when answered: the page can rebuild the list under the prompt
     public static void Erasing(int index) {
         erasing = Deletable(index) ? Files[index].Path : null;
     }
@@ -825,8 +825,7 @@ public static class PracticeSelect {
         return "New Segment " + (taken + 1);
     }
 
-    // The N in "New Segment N", or zero for a name that is not one. A trailing " (2)" is the
-    // file name dodging one already taken, not a segment of its own.
+    // N in "New Segment N", else 0; a trailing " (2)" is PathFor dodging a taken name
     private static int Numbered(string name) {
         var bracket = name.IndexOf(" (");
         var stem = bracket > 0 ? name.Substring(0, bracket) : name;
@@ -854,8 +853,7 @@ public static class PracticeSelect {
         return path;
     }
 
-    // A segment the page just made, started the way its card would start it. Only from the
-    // chooser: anywhere else the file simply waits in the list.
+    // starts a segment the page just made, as its card would; only while the chooser is up
     public static bool StartPath(string path) {
         var screen = SaveSlotsUI.Instance;
         if (!Choosing || screen == null || PracticeController.Active) {

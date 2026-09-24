@@ -107,10 +107,35 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         SuspensionManager.Unregister(this);
     }
 
-    // A row the scroll window is hiding is still somewhere the selection may go; the
-    // window follows it there.
-    private static bool Navigable(CleverMenuItem item) {
-        return item.IsActivated || RandomizerScrollHide.Hiding(item);
+    // A row the scroll window is hiding is still somewhere the selection may go, if it could be
+    // chosen once shown; the window follows it there.
+    public static bool Navigable(CleverMenuItem item) {
+        return item.IsActivated ||
+               (RandomizerScrollHide.Hiding(item) && (item.Activated == null || item.Activated.Validate(null)));
+    }
+
+    // The first navigable row at or after index within lo..hi, else the last one before it; -1 if none.
+    public int NavigableFrom(int index, int lo, int hi) {
+        lo = Mathf.Max(lo, 0);
+        hi = Mathf.Min(hi, MenuItems.Count - 1);
+        if (lo > hi) {
+            return -1;
+        }
+
+        index = Mathf.Clamp(index, lo, hi);
+        for (var i = index; i <= hi; i++) {
+            if (Navigable(MenuItems[i])) {
+                return i;
+            }
+        }
+
+        for (var i = index - 1; i >= lo; i--) {
+            if (Navigable(MenuItems[i])) {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     public void MoveSelection(bool forward) {
@@ -523,8 +548,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         cleverMenuItem.ApplyColors();
         MenuItems.Insert(index, cleverMenuItem);
         layout.AddItem(cleverMenuItem, index);
-        // a fresh clone carries whatever opacity the prefab was left at, and only the first
-        // highlight-and-leave used to fix it; prime it the way panel rows are primed
+        // a fresh clone keeps the prefab's leftover opacity; prime it as panel rows are
         cleverMenuItem.SetOpacity(1f);
         cleverMenuItem.OnUnhighlight();
     }

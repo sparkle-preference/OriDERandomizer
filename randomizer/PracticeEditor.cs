@@ -3,10 +3,8 @@ using System.IO;
 using Game;
 using UnityEngine;
 
-// The in-engine half of the segment editor: boxes drawn with the mouse over the frozen
-// world, the camera panned with WASD, written back into the container's segment.json.
-// Names, hint text and colors are the companion page's job. Creating a segment from a
-// normal game snapshots the current save into a new container in the practice folder.
+// The in-game half of the segment editor: boxes drawn with the mouse over the frozen world,
+// kept as BX lines in the container's placements.bfr. Create snapshots a save into a new container.
 public static class PracticeEditor {
     public static bool Active;
 
@@ -32,8 +30,7 @@ public static class PracticeEditor {
     // a box smaller than this is a click
     private const float MinSide = 0.5f;
 
-    // From the practice pause menu: the attempt stops where it is and the boxes are
-    // edited over it; saving restarts the attempt with the new boxes.
+    // the attempt freezes where it is and boxes are drawn over it; Enter saves and retries
     public static void Begin() {
         if (!PracticeController.Active || PracticeController.File == null) {
             return;
@@ -294,8 +291,7 @@ public static class PracticeEditor {
         return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
     }
 
-    // The goal is always shared and there is one; everything else joins the variant's
-    // list or the shared one.
+    // The goal is shared and single; other boxes join the target list.
     private static void Commit(Rect area) {
         var file = PracticeController.File;
         var target = tool != "goal" && TargetVariant ? file.Variant : "";
@@ -365,8 +361,7 @@ public static class PracticeEditor {
         }
     }
 
-    // From a normal game: the current state becomes a new segment's save, and the
-    // segment starts empty. Nothing about the seed changes.
+    // from a normal game: the current state becomes a new, empty segment's save; the seed carries on
     public static void Create() {
         if (Characters.Sein == null) {
             return;
@@ -389,8 +384,7 @@ public static class PracticeEditor {
         }
     }
 
-    // A new container in the practice folder around a save, with nothing to end it yet.
-    // The name is the next "New Segment N" unless one is given.
+    // a new container around a save, with no end yet, named "New Segment N" unless given a name
     public static string CreateFrom(byte[] save, string name) {
         if (string.IsNullOrEmpty(name)) {
             name = PracticeSelect.NextName();

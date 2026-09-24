@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using UnityEngine;
 using Input = Core.Input;
@@ -112,10 +113,7 @@ public static class RandomizerSettings {
         }
     }
 
-    // Tap used to be a word on the Double Bash bind line, where it was a setting wearing a
-    // binding's clothes. It moves here the first time a file that still says it is read, and
-    // the bind line loses it on the way out -- after the setting has taken it, so an interrupted
-    // run leaves the preference somewhere rather than nowhere.
+    // Moves a legacy Tap word off the Double Bash bind line; the setting takes it before the line drops it.
     private static void ImportDoubleBashTap() {
         if (!RandomizerRebinding.TapWasBound) {
             return;
@@ -161,6 +159,11 @@ public static class RandomizerSettings {
     // The boot-time parse runs before the message queue exists, and initialize() makes a
     // fresh queue anyway, so notices wait for the next parse that can show them.
     private static void Notice(string message, int frames) {
+        // boot reads the file twice before the first flush; one bad line is one notice
+        if (pendingNotices.Exists(n => n.Key == message)) {
+            return;
+        }
+
         pendingNotices.Add(new KeyValuePair<string, int>(message, frames));
     }
 
@@ -179,7 +182,7 @@ public static class RandomizerSettings {
             writer.WriteLine("");
             writer.WriteLine("// Words in square brackets ([]) are Ori base game binds (e.g. [Jump], [Climb])");
             writer.WriteLine("//    These binds can be changed in the in-game rebinding editor, or using the editor at orirando.com/rebinds");
-            writer.WriteLine("// Words double square brackets ([[]]) are rando-specific binds (e.g. [[Grenade Jump]])");
+            writer.WriteLine("// Words in double square brackets ([[]]) are rando-specific binds (e.g. [[Grenade Jump]])");
             writer.WriteLine("//    and can be changed in RandomizerRebinding.txt");
             writer.WriteLine("");
             writer.WriteLine("// If you have any questions, please ask for help in the discord (orirando.com/discord, #bf-randomizer)");
@@ -234,7 +237,7 @@ public static class RandomizerSettings {
         Controls.GrenadeAimSpeed = new FloatSetting("Grenade Aim Speed", 1.0f, "(Default 1.0 - higher numbers are faster): The speed at which controller/wsad inputs move the Grenade target.");
         Controls.InvertSwim = new BoolSetting("Invert Swim", false, "True: Ori swims fast by default, and slows down while pressing [Jump].\nFalse (default): Vanilla behavior (hold [Jump] to swim faster).");
         Controls.InvertClimb = new BoolSetting("Invert Climb", false, "True: Ori Climbs on walls by default, and lets go when holding [Climb]\nFalse (default): Vanilla behavior (hold [Climb] to Climb).");
-        Controls.GrenadeJump = new EnumSetting<GrenadeJumpMode>("Grenade Jump Mode", GrenadeJumpMode.Auto, "Auto (default): Grenade Jump by pressing [[Grenade Jump]] (Default [LightSpheres]+[Jump]).\nManual: Vanilla behavior (Grenade Jump by by pressing [Grenade], then [Jump] 1 frame later).");
+        Controls.GrenadeJump = new EnumSetting<GrenadeJumpMode>("Grenade Jump Mode", GrenadeJumpMode.Auto, "Auto (default): Grenade Jump by pressing [[Grenade Jump]] (Default [LightSpheres]+[Jump]).\nManual: Vanilla behavior (Grenade Jump by pressing [Grenade], then [Jump] 1 frame later).");
         Controls.DoubleBash = new EnumSetting<DoubleBashMode>("Double Bash Mode", DoubleBashMode.Hold, "Hold (default): Hold [[Double Bash]] while Bashing to queue the next Bash.\nTap: Press [[Double Bash]] to Bash again, without holding it.");
         Controls.WallChargeMouseAim = new BoolSetting("Wall Charge Mouse Aim", true, "True (default): On Keyboard+Mouse, allows aiming Wall Charge Jumps with the mouse.\nFalse: Vanilla behavior.");
         Controls.SwimmingMouseAim = new BoolSetting("Swimming Mouse Aim", false, "True: On Keyboard+Mouse, Ori will swim towards the mouse cursor.\nFalse (default): Vanilla behavior.");
@@ -242,8 +245,8 @@ public static class RandomizerSettings {
         Controls.Autofire = new EnumSetting<AutofireMode>("Autofire", AutofireMode.Off, "Hold: When [Listen] is held, autofire. Charge Flame by holding [[Suppress Autofire]] and [Listen].\nToggle: Press [Listen] to start autofiring. Press it again to stop. (Charge Flame as normal).\nOff: Vanilla behavior (no autofire).");
         Controls.LongerBashAimTime = new BoolSetting("Longer Bash Aim Time", false, "True: Allows holding [Bash] for about 3x as long, giving you more time to aim.\nFalse (default): Vanilla behavior (about 1.7 seconds of Bash aiming time).");
 
-        Customization.ColdColor = new ColorSetting("Cold Color", new Color(0f, 0.5f, 0.5f, 0.5f), HeadroomScale, "Red, Blue, Green, Transparency (0-255 for each): The color Ori turns when Sensing an item at max range.");
-        Customization.HotColor = new ColorSetting("Hot Color", new Color(0.5f, 0.1666667f, 0f, 0.5f), HeadroomScale, "Red, Blue, Green, Transparency (0-255 for each): The color Ori turns when Sensing an item at range 0.");
+        Customization.ColdColor = new ColorSetting("Cold Color", new Color(0f, 0.5f, 0.5f, 0.5f), HeadroomScale, "Red, Green, Blue, Transparency (0-255 for each): The color Ori turns when Sensing an item at max range.");
+        Customization.HotColor = new ColorSetting("Hot Color", new Color(0.5f, 0.1666667f, 0f, 0.5f), HeadroomScale, "Red, Green, Blue, Transparency (0-255 for each): The color Ori turns when Sensing an item at range 0.");
         Customization.DiscoSense = new BoolSetting("Disco Sense", false, "True: Ignore sense colors, and instead speed up the Color.txt rotation when sense is active (if you have one).\nFalse (default): Color.txt rotation is overwritten by Sense colors.", false);
         Customization.RainbowDash = new BoolSetting("Rainbow Dash", false, "True: Enhance your dashes (cosmetically) with sparkles and rainbows.\nFalse (default): Vanilla dashes.", false);
         Customization.TouchedVisibility = new FloatSetting("Touched Pickup Visibility", 0.5f, "(0.0-1.0, Default=0.5): Transparency for pickup icons that have been touched but are not currently collected (usually because they were lost on death). Set to 0 to hide completely; the Uncollected filter still shows them faintly.");
@@ -251,14 +254,14 @@ public static class RandomizerSettings {
         Customization.ShowOtherPlayers = new BoolSetting("Show Other Players", true, "True (default): In multiplayer games, other players show up as translucent ghosts when on the same screen and are marked on the map.\nFalse: disables this functionality.", true);
         Customization.MultiplePickupMessages = new BoolSetting("Display Multiple Pickup Messages", false, "True: Shows up to 5 pickup messages at once on the left side of the screen. Hold [[Replay Message]] to show more.\nFalse (default): New pickup messages display one at a time at the top center of the screen.", false);
         Customization.AlwaysShowLastFivePickups = new BoolSetting("Always Show Last Five Pickup Messages", false, "True: Always show the last 5 pickup messages. Only works if Display Multiple Pickups is set to True.\nFalse (default): Only show pickups when found or on pressing [[Replay Message]].", false);
-        Customization.WarpTeleporterColor = new ColorSetting("Warp Teleporter Color", new Color(202f / 255f, 57f / 255f, 243f / 255f, 1f), FullScale, "Red, Blue, Green, Transparency (0-255 for each): The color that Warp-created Teleporters are on the map.");
+        Customization.WarpTeleporterColor = new ColorSetting("Warp Teleporter Color", new Color(202f / 255f, 57f / 255f, 243f / 255f, 1f), FullScale, "Red, Green, Blue, Transparency (0-255 for each): The color that Warp-created Teleporters are on the map.");
         Customization.DefaultMapFilter = new EnumSetting<MapFilterMode>("Default Map Filter", MapFilterMode.InLogic, "InLogic (default): Select the In Logic map filter when first opening the map.\nUncollected: Select the Uncollected map filter when first opening the map.", false);
         Customization.HintLevel = new EnumSetting<HintLevels>("Hints", HintLevels.NewPlayer, "NewPlayer (default): Show loading tips intended for new rando players.\nExperienced: Show loading tips intended for more experienced rando players.\nDisabled: Do not show loading screen tips.", false);
         Customization.RandomizedExpNames = new BoolSetting("Randomized Experience Names", false, "True: Replace the word \"Experience\" with a random currency name whenever you gain experience from a pickup.\nFalse (default): Experience pickups are just called Experience.", false);
         Customization.AlwaysShowDoorHints = new BoolSetting("Always Show Keysanity Door Hints", false, "True: Always show any unlocked Keysanity door hints when viewing the map.\nFalse (default): Only show Keysanity door hints in the map when hovering a door.");
         Customization.KeyLockWarnings = new BoolSetting("Keystone Door Logic Warnings", true, "True (default): Warn when touching a keystone door that is not currently in logic, since opening it early could make the seed uncompletable.\nFalse: no warning.");
-        Customization.PickupMessageBgColor = new ColorSetting("Pickup Message Background Color", new Color(0f, 0f, 0f, 0.5f), HeadroomScale, "Red, Blue, Green, Transparency (0-255 for each): Background color for pickup messages.\nDefault: 0, 0, 0, 255", false);
-        Customization.MwPickupMessageBgColor = new ColorSetting("Multiworld Outbound Message Background Color", new Color(64f / 510f, 64f / 510f, 64f / 510f, 255f / 510f), HeadroomScale, "Red, Blue, Green, Transparency (0-255 for each): Background color for pickup messages sent to another Player.\nBoth local pickups and pickups received from another player will use the \"Pickup Message Background Color\" color.\nThis is for pickups that you find in your seed and send to another player.\nDefault: 64, 64, 64, 255", false);
+        Customization.PickupMessageBgColor = new ColorSetting("Pickup Message Background Color", new Color(0f, 0f, 0f, 0.5f), HeadroomScale, "Red, Green, Blue, Transparency (0-255 for each): Background color for pickup messages.\nDefault: 0, 0, 0, 255", false);
+        Customization.MwPickupMessageBgColor = new ColorSetting("Multiworld Outbound Message Background Color", new Color(64f / 510f, 64f / 510f, 64f / 510f, 255f / 510f), HeadroomScale, "Red, Green, Blue, Transparency (0-255 for each): Background color for pickup messages sent to another Player.\nBoth local pickups and pickups received from another player will use the \"Pickup Message Background Color\" color.\nThis is for pickups that you find in your seed and send to another player.\nDefault: 64, 64, 64, 255", false);
         Customization.DisableTempResourceRows = new BoolSetting("Disable Temporary Resource Rows", false, "True: temporary health and energy draw inline past your normal cells, as older versions did.\nFalse (default): temporary health and energy get their own smaller row above each bar.", false);
         Customization.TempRowSpacing = new FloatSetting("Temp Row Spacing", 0.8f, "Vertical gap between a HUD bar and its temporary-resource row, in strip heights.", false);
         Customization.TempRowHorizontalOffset = new FloatSetting("Temp Row Horizontal Offset", 0f, "Horizontal shift of the temporary-resource rows, in strip heights. Positive pushes away from the experience wheel.", false);
@@ -292,9 +295,7 @@ public static class RandomizerSettings {
         DevSettings.EchoSpacing = new FloatSetting("Echo Spacing", 0.5f, "Seconds each further echo trails the one before it.", false, true);
     }
 
-    // 0-255 is the "normal" range and lands at half intensity, leaving room above 255 to
-    // over-saturate. The seed format's BGCOLOR string documents the same headroom, so a
-    // message color written in a seed and one written here mean the same thing.
+    // 0-255 lands at half intensity, leaving room above 255 to over-saturate; seed BGCOLOR uses the same scale
     public const float HeadroomScale = 510f;
 
     // a plain color, full intensity at 255
@@ -530,8 +531,13 @@ public static class RandomizerSettings {
         public FloatSetting(string name, float defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
         }
 
+        // either decimal mark reads and a dot is written, whatever the player's locale
         public override void Parse(string value) {
-            Value = float.Parse(value);
+            Value = float.Parse(value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture);
+        }
+
+        public override string ToString() {
+            return Value.ToString(CultureInfo.InvariantCulture);
         }
 
         public override string ValidValues() => "A decimal number";
@@ -576,7 +582,8 @@ public static class RandomizerSettings {
 
         public override void Parse(string value) {
             var parts = value.Split(',');
-            Value = new Color(float.Parse(parts[0]) / divisor, float.Parse(parts[1]) / divisor, float.Parse(parts[2]) / divisor, float.Parse(parts[3]) / divisor);
+            Func<string, float> part = p => float.Parse(p, NumberStyles.Float, CultureInfo.InvariantCulture) / divisor;
+            Value = new Color(part(parts[0]), part(parts[1]), part(parts[2]), part(parts[3]));
         }
 
         public override string ToString() {

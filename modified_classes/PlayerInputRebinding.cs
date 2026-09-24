@@ -125,7 +125,7 @@ public class PlayerInputRebinding {
     }
 
     public static void WriteKeyRebindSettings() {
-        using (var streamWriter = new StreamWriter(new FileStream(KeyRebindingFile, FileMode.OpenOrCreate))) {
+        using (var streamWriter = new StreamWriter(new FileStream(KeyRebindingFile, FileMode.Create))) {
             var keyRebindings = m_keyRebindings;
             streamWriter.WriteLine("Keyboard Rebindings");
             streamWriter.WriteLine("--------");
@@ -431,7 +431,7 @@ public class PlayerInputRebinding {
     }
 
     public static void WriteControllerButtonRemappings() {
-        using (var streamWriter = new StreamWriter(new FileStream(ControllerRemappingFile, FileMode.OpenOrCreate))) {
+        using (var streamWriter = new StreamWriter(new FileStream(ControllerRemappingFile, FileMode.Create))) {
             streamWriter.WriteLine("Controller Button Remapping - remaps controller buttons to different DirectInput button IDs");
             streamWriter.WriteLine("Only for DirectInput controllers");
             streamWriter.WriteLine("--------");
@@ -594,7 +594,7 @@ public class PlayerInputRebinding {
     }
 
     public static void WriteControllerRebindSettings() {
-        using (var streamWriter = new StreamWriter(new FileStream(ControllerRebindingFile, FileMode.OpenOrCreate))) {
+        using (var streamWriter = new StreamWriter(new FileStream(ControllerRebindingFile, FileMode.Create))) {
             var controllerRebindings = m_controllerRebindings;
             streamWriter.WriteLine("Controller Rebindings");
             streamWriter.WriteLine("--------");

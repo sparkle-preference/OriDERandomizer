@@ -67,9 +67,7 @@ public class RandomizerTitleScreen {
         }
     }
 
-    // Logo sprites cannot be re-textured: their UberShader variants have the
-    // atlas rect baked in. The hint background's variant maps a whole texture,
-    // so borrow that material. Stock shaders are stripped from this build.
+    // a RandomizerQuad of its own, since the logo sprites cannot be re-textured
     private static Transform BuildWordmark(Transform banner, Transform parent, float width, float height) {
         var bannerRenderer = banner.GetComponent<Renderer>();
         if (bannerRenderer == null) {

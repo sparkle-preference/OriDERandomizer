@@ -1,22 +1,23 @@
-# Type-checks randomizer/*.cs with Roslyn, without dnSpy.
+# Type-checks randomizer/, menu/ and bingo/ with the newest SDK's Roslyn, without dnSpy.
 #
 #   powershell -ExecutionPolicy Bypass -File typecheck.ps1
 #
-# Errors in typecheck-baseline.txt are expected; anything outside it is real. -Rebaseline
-# rewrites that file from the current errors, so read them before you run it.
-# Roslyn skips every method body while any declaration fails to resolve, and only the built
-# dll has all the types randomizer/ names, so that is the reference: modified_classes/ are
-# seen as of the last build.ps1, and a member added there since fails here until the next.
+# Errors in typecheck-baseline.txt are expected; -Rebaseline rewrites it, so read them first.
+# The built dll is the reference, so modified_classes/ are seen as of the last build.ps1.
 
 param([switch]$Rebaseline)
 
 $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $MyInvocation.MyCommand.Path
-$csc = "C:\Program Files\dotnet\sdk\7.0.306\Roslyn\bincore\csc.dll"
+$sdks = "C:\Program Files\dotnet\sdk"
+$csc = Get-ChildItem $sdks -Directory -ErrorAction SilentlyContinue |
+    Where-Object { Test-Path (Join-Path $_.FullName "Roslyn\bincore\csc.dll") } |
+    Sort-Object { [version]($_.Name -replace "-.*$", "") } | Select-Object -Last 1 |
+    ForEach-Object { Join-Path $_.FullName "Roslyn\bincore\csc.dll" }
 $baselineFile = Join-Path $repo "typecheck-baseline.txt"
 
-if (-not (Test-Path $csc)) {
-    Write-Host "Roslyn not found at $csc" -ForegroundColor Red
+if (-not $csc) {
+    Write-Host "Roslyn not found under $sdks" -ForegroundColor Red
     exit 2
 }
 
@@ -38,8 +39,8 @@ $refs = @(Get-ChildItem -Path $managed -Filter *.dll |
     Where-Object { $_.Name -ne "Assembly-CSharp.dll" -and $_.Name -notlike "*.rando.*" } |
     ForEach-Object { "-r:" + $_.FullName }) + @("-r:" + $built)
 
-$sources = @(Get-ChildItem -Path (Join-Path $repo "randomizer") -Filter *.cs -Recurse |
-    ForEach-Object { $_.FullName })
+$sources = @("randomizer", "menu", "bingo" | ForEach-Object {
+    Get-ChildItem -Path (Join-Path $repo $_) -Filter *.cs -Recurse | ForEach-Object { $_.FullName } })
 # internal to the game and named in randomizer/ signatures, so it has to be ours
 $sources += Join-Path $repo "modified_classes\BashAttackGame.cs"
 
@@ -48,7 +49,14 @@ $cmdArgs = @($csc, "-nologo", "-t:library", "-langversion:latest",
              "-out:$env:TEMP\randomizer-typecheck.dll") + $refs + $sources
 
 Write-Host "Type-checking $($sources.Count) sources against $($refs.Count) assemblies..."
-$raw = (& dotnet $cmdArgs 2>&1 | Out-String) -split "`r?`n" | Where-Object { $_ -match "error CS" }
+$said = & dotnet $cmdArgs 2>&1 | Out-String
+$code = $LASTEXITCODE
+$raw = $said -split "`r?`n" | Where-Object { $_ -match "error CS" }
+if ($code -ne 0 -and -not $raw) {
+    Write-Host "csc failed (exit $code) without a compiler error:" -ForegroundColor Red
+    Write-Host $said
+    exit 2
+}
 
 # Baseline key is filename + code + message: directory, line and column shift with edits and
 # invocation, and so does the line number of a source location quoted inside a message.

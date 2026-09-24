@@ -3,9 +3,7 @@ using System.Linq;
 
 // TODO: delete after 10-02-2026 -- ORL season 12 ends then, and so does all of this.
 //
-// A beta build refuses to load a league seed. The rules require submissions on the live
-// dll, and a warning was not enough: the failure mode is someone disqualifying a run they
-// have already finished. Nothing here resists a determined cheater and it is not meant to.
+// A beta build refuses to load a league seed: submissions must be on the live dll. Not anti-cheat.
 public static class RandomizerLeague {
     private static readonly DateTime SeasonEnds = new DateTime(2026, 10, 2);
 
@@ -14,8 +12,7 @@ public static class RandomizerLeague {
         0x372616F4, 0x0A7F9074, 0x29AC7AD1, 0x0AF54EAD, 0x07BDE29D
     };
 
-    // The settings every league seed shares. Checked as well as the id so a mistyped entry
-    // above cannot refuse somebody's unrelated seed.
+    // the settings every league seed shares, checked too so a mistyped id cannot refuse an unrelated seed
     private static readonly string[] Settings = { "master", "clues", "forcetrees" };
 
     public static string Refusal =>
@@ -36,7 +33,7 @@ public static class RandomizerLeague {
         return Settings.All(lower.Contains);
     }
 
-    // Reads only the flag line, so a refused seed is never parsed.
+    // looks only at the flag line, so a refused seed is never parsed
     public static bool RefusesFile(string path) {
         try {
             var lines = System.IO.File.ReadAllLines(path);

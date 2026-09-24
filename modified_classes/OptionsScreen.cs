@@ -70,9 +70,8 @@ public class OptionsScreen : MenuScreen, ISuspendable {
 
     public bool IsSuspended { get; set; }
 
-    // The screen object stays, so Steam's leaderboard code keeps its references; only the
-    // way in goes. Put it to sleep first: the group deactivates its screens in Awake, and
-    // one dropped from Options before that runs would otherwise stay awake and polling.
+    // Drops the nav entry but keeps the screen, which Steam's leaderboard code references. Put it
+    // to sleep first: the group's Awake only deactivates screens still in Options.
     public void RemoveSubscreen(int index) {
         var item = Navigation.MenuItems[index];
         var group = GetComponent<CleverMenuItemGroup>();

@@ -9,37 +9,29 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public override void Serialize(Archive ar) {
-        // By default we just serialize 12 booleans, one for each default teleporter.
-        // So if we only get 12 bytes of information or only have default teleporters then
-        // we stick to that.
-        // If there are more than 12 teleporters immediately after the 12 default teleporters
-        // we serialize the number of extra teleporters, and then for each teleporter
-        // serialise the name, location, and activation status.
+        // Save format: 12 activation bools, then, only when custom warps exist, their count and
+        // name, position, activated for each.
         if (ar.Reading) {
             var readLength = ar.MemoryStream.Length;
             if (readLength < 12) {
                 return;
             }
 
-            // Read default teleporters.
             for (var i = 0; i < 12; i++) {
                 var gameMapTeleporter = Teleporters[i];
                 ar.Serialize(ref gameMapTeleporter.Activated);
             }
 
-            // Determine extra teleporter count.
             var requiredCustomTeleporterCount = 0;
             if (readLength > 12) {
                 ar.Serialize(ref requiredCustomTeleporterCount);
             }
 
-            // Remove excess teleporters.
             while (Teleporters.Count > 12 + requiredCustomTeleporterCount) {
                 Teleporters.RemoveAt(Teleporters.Count - 1);
             }
 
             customWarps.Clear();
-            // Create or modify teleporters.
             for (var i = 0; i < requiredCustomTeleporterCount; i++) {
                 var name = "???";
                 var position = new Vector3(0, 0, 0);
@@ -49,10 +41,8 @@ public class TeleporterController : SaveSerialize, ISuspendable {
                 ar.Serialize(ref activated);
                 var currentTeleporterIndex = 12 + i;
                 if (currentTeleporterIndex < Teleporters.Count) {
-                    // Alter the existing teleporter.
                     Teleporters[currentTeleporterIndex].SetInfo(name, position, activated);
                 } else {
-                    // Create a new teleporter.
                     var gameMapTeleporter = new GameMapTeleporter(name, position, activated);
                     Teleporters.Add(gameMapTeleporter);
                 }
@@ -60,18 +50,15 @@ public class TeleporterController : SaveSerialize, ISuspendable {
                 customWarps.Add(name);
             }
         } else {
-            // Writing.
             if (Teleporters.Count < 12) {
                 return;
             }
 
-            // Default teleporters.
             for (var i = 0; i < 12; i++) {
                 var gameMapTeleporter = Teleporters[i];
                 ar.Serialize(ref gameMapTeleporter.Activated);
             }
 
-            // Extra teleporters.
             var customTeleporterCount = Teleporters.Count - 12;
             if (customTeleporterCount > 0) {
                 ar.Serialize(ref customTeleporterCount);
@@ -184,7 +171,9 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         }
 
         BingoController.OnWarp();
-        if (selectedTeleporter.Area.Area.AreaNameString == "Forlorn Ruins") {
+        // null where no area cage covers the spot, as for some custom warps
+        var area = selectedTeleporter.Area;
+        if (area != null && area.Area != null && area.Area.AreaNameString == "Forlorn Ruins") {
             Randomizer.NightBerryWarpPosition = selectedTeleporter.WorldPosition;
             Characters.Sein.Inventory.SetRandomizerItem(82, 1);
         }
@@ -258,6 +247,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         if (m_isBlooming) {
             m_bloomCurrentTime += !IsSuspended ? Time.deltaTime : 0f;
             if (m_bloomCurrentTime > BloomFadeDuration) {
+                // still m_isBlooming here: the sweep gate reads that as a covered screen
                 OnFadedToBlack();
                 m_isBlooming = false;
             }
@@ -352,7 +342,6 @@ public class TeleporterController : SaveSerialize, ISuspendable {
             return;
         }
 
-        // If we already have that teleporter don't add it.
         if (Instance.customWarps.Contains(name)) {
             return;
         }

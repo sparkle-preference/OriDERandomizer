@@ -18,12 +18,12 @@ thornfeltSwampActTwoStart/musicZones/musicActivation OnSceneStartRunAction 56069
 sunkenGladesRunaway/*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction SetCharacterPosition 2033807637 1102752838 351348109 1564353675
 sunkenGladesRunaway/*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction RandomizerLoadSceneAtPositionAction 312294723 1208247507 -1126220927 892221029
 sunkenGladesRunaway/*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction RegisterStringTriggerAction -1155166006 1231229756 -1377750093 -1595379638
-sunkenGladesRunaway/*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction RandomizerMoveCameraAction 364836396 1208058425 -863601485 -145251505
 ???/randomSpawnSequence ActionSequence -575420461 1101990088 178133408 2022995693
 ???/randomSpawnSequence TriggerByString 596688283 1150590864 217824902 525971548
+???/randomSpawnSequence RandomizerMoveCameraAction 364836396 1208058425 -863601485 -145251505
 ???/randomSpawnSequence FaderBFadeOutAction 60245356 1204775850 1483324304 -1342617812
 ???/randomSpawnSequence WaitAction -1216854977 1204243132 2020710590 1091515233
-???/randomSpawnSequence LockPlayerInputManualAction -803450664 1167049334 1107280285 7264171
+???/randomSpawnSequence LockPlayerInputManualAction -803450664 1167049334 1107280285 72641712
 ???/randomSpawnSequence/WaitAction2 WaitAction -1491006181 1224537196 1919780772 1173563805
 ???/randomSpawnSequence ShowSeinUIAction 1954200174 1280244692 -1636812609 1089206021
 ???/randomSpawnSequence CreateCheckpointAction -960421049 1184624848 1067937201 1937397131

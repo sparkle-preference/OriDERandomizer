@@ -41,10 +41,8 @@ public class RandomizerInventory : SaveSerialize {
         randomizerItems.Clear();
     }
 
-    // Ids that survive a death or a reload. One range, so that "does this persist" is a
-    // property of where an id lives rather than a list to remember: 4000-4599 stats, 4501 up
-    // warmth fragments (one each, no fixed end), 7000-7099 bingo goals that record something
-    // that HAPPENED rather than something you hold. Anything a save should forget goes below.
+    // Survive death and reload: 4000-4499 stats, 4500+ warmth fragments, 7000-7099 bingo deaths,
+    // 8000-8999 plando. Anything a save should forget goes below 4000.
     public static bool KeptOnDeath(int code) {
         return code >= 4000 && code < 10000;
     }
@@ -56,9 +54,8 @@ public class RandomizerInventory : SaveSerialize {
     // End of the internally-reserved range.
     private const int LastRandoSlot = 20000;
 
-    // A seed may not write the multiworld grant bitfields -- the tick redelivers items by
-    // diffing them, so a forged bit loses an item silently -- nor the slot stamp and the
-    // practice block above it, which the save machinery reads back as truth.
+    // Seeds may not write the MW grant bitfields (a forged bit silently eats an item) nor
+    // 10000-19999, the slot stamp and practice block the save reads back as truth.
     public static bool Writable(int id) {
         return id >= 0 && (id < SlotStamp || id >= LastRandoSlot)
             && (id < RandomizerMW.GrantedSlotsBase || id > RandomizerMW.GrantedSlotsLast);
@@ -187,7 +184,15 @@ public class RandomizerInventory : SaveSerialize {
             return text;
         }
 
-        return SlotRef.Replace(text, m => Read(int.Parse(m.Groups[1].Value)).ToString());
+        return SlotRef.Replace(text, m => {
+            int id;
+            if (!int.TryParse(m.Groups[1].Value, out id)) {
+                Randomizer.log("{" + m.Groups[1].Value + "}: no such slot, using 0");
+                return "0";
+            }
+
+            return Read(id).ToString();
+        });
     }
 
     public override void Serialize(Archive ar) {

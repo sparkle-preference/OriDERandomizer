@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
-// A .bfrp practice container: segment.json + base save + run history +
-// optional placements and ghosts, all inside one ZipStore. Everything is
-// held in memory; Save() rewrites the file (atomically, via the store).
+// A .bfrp practice container: segment.json, base save, run history, placements and ghosts in one
+// ZipStore, held in memory; Save() rewrites the whole file atomically.
 public class BfrpFile {
     public const string SegmentEntry = "segment.json";
 
@@ -111,11 +110,11 @@ public class BfrpFile {
         return boxes;
     }
 
-    // the box lines replaced, everything else in the file kept as it was
+    // every box line that parses is replaced; one that does not stays as written, like any other line
     public void SetBoxes(string variant, List<RandomizerBox> boxes) {
         var lines = new List<string>();
         foreach (var line in PlacementLines(variant)) {
-            if (!RandomizerBox.IsLine(line)) {
+            if (!RandomizerBox.IsLine(line) || !Parses(line)) {
                 lines.Add(line);
             }
         }
@@ -127,9 +126,17 @@ public class BfrpFile {
         SetPlacementLines(variant, lines);
     }
 
+    private static bool Parses(string line) {
+        try {
+            RandomizerBox.Parse(line);
+            return true;
+        } catch (Exception) {
+            return false;
+        }
+    }
+
     // --- variants ---
-    // Every attempt belongs to one. They share this file's save and global boxes, and
-    // each keeps its own json, run history and ghosts under variants/<id>/.
+    // With variants every attempt runs one; each keeps its own json, history and ghosts under variants/<id>/.
     public List<string> Variants {
         get {
             var found = new List<string>();
@@ -210,8 +217,7 @@ public class BfrpFile {
         }
     }
 
-    // header plus lines that parse; anything else in the csv is someone's
-    // hand edit and stays untouched until the next full rewrite
+    // the csv rows that parse; any other line is kept as written
     public List<Run> Runs {
         get { return RunsFor(Variant); }
     }

@@ -8,15 +8,24 @@ using UnityEngine;
 using Input = Core.Input;
 
 public static class RandomizerRebinding {
-    // In the game folder, beside the other things a run leaves behind.
+    // relative, so it lands in the game folder
     public const string BindsFile = "RandomizerRebinding.txt";
 
-    // A file still carrying the old Tap word on its Double Bash line. The settings parse picks
-    // this up and clears it; nothing here reads it, and nothing writes the word back out.
+    // the Double Bash line still said Tap; RandomizerSettings imports it and clears this
     public static bool TapWasBound;
 
+    // A failed write is logged, not thrown: the binds in memory apply either way.
     public static void WriteBindsToFile() {
-        var streamWriter = new StreamWriter(BindsFile);
+        try {
+            using (var streamWriter = new StreamWriter(BindsFile)) {
+                WriteBinds(streamWriter);
+            }
+        } catch (Exception e) {
+            Randomizer.log("Could not write " + BindsFile + ": " + e.Message);
+        }
+    }
+
+    private static void WriteBinds(StreamWriter streamWriter) {
         streamWriter.WriteLine("Bind syntax: Key1+Key2, Key1+Key3+Key4, ... Syntax errors will load default binds.");
         streamWriter.WriteLine("Alt, Shift, Control, Command and Windows mean either side; name a side to want only that one.");
         streamWriter.WriteLine("Functions are unbound if the binding is empty or the word Unbound.");
@@ -35,9 +44,13 @@ public static class RandomizerRebinding {
                 streamWriter.WriteLine($"{bindparts.Key}: {Unbound}");
             }
         }
+    }
 
-        streamWriter.Flush();
-        streamWriter.Close();
+    // every action to its default, in memory; the caller writes the file
+    public static void UseDefaults() {
+        foreach (var pair in DefaultBinds) {
+            SetBinds(pair.Key, pair.Value);
+        }
     }
 
 
@@ -46,6 +59,7 @@ public static class RandomizerRebinding {
 
         try {
             if (!File.Exists(BindsFile)) {
+                UseDefaults();
                 WriteBindsToFile();
             }
 
@@ -124,11 +138,13 @@ public static class RandomizerRebinding {
                 WriteBindsToFile();
             }
         } catch (Exception e) {
-            Randomizer.LogError("Error parsing bindings: " + e.Message);
+            // queued: at boot this runs before the UI can draw a message
+            Randomizer.log("Error parsing bindings: " + e.Message);
+            Randomizer.Print("Error parsing bindings: " + e.Message, 15, false, false, true, false);
         }
     }
 
-    // An action nothing can be done without takes its default back rather than stay unbound.
+    // a Required action left empty gets its default back
     private static bool Restore(string action, List<string> writeList) {
         if (!Required.Contains(action) || !rebindMap.ContainsKey(action) || rebindMap[action].HasBind()) {
             return false;
@@ -221,8 +237,7 @@ public static class RandomizerRebinding {
         { "Select", Input.Select }
     };
 
-    // The settings screen's way in. The live BindSet is what every FixedUpdate reads, so
-    // replacing its binds is the whole of applying them; the file is written separately.
+    // Applies at once; the caller writes the file.
     public static void SetBinds(string action, string bindingString) {
         var set = BindNamed(action);
         if (set == null) {
@@ -238,10 +253,8 @@ public static class RandomizerRebinding {
         return rebindMap.TryGetValue(name.Trim(), out bind) ? bind : null;
     }
 
-    // "[[Map Warp]]" -> the keys bound to it, the way the game resolves "[Jump]". Run before
-    // the game's own parser, so a rando bind that is itself a game action -- Double Bash
-    // defaults to Grenade -- resolves to "[Grenade]" and then picks up the button glyph.
-    // An unknown name is left alone rather than blanked: a typo should be visible.
+    // "[[Map Warp]]" -> its first bind. Must run before the game's parser, which resolves the
+    // "[Grenade]" a game-action bind turns into; unknown names stay as written.
     public static string ResolveBindNames(string text) {
         if (String.IsNullOrEmpty(text) || text.IndexOf("[[") < 0) {
             return text;
@@ -255,13 +268,10 @@ public static class RandomizerRebinding {
 
     private static readonly Regex bindPattern = new Regex(@"\[\[([^\[\]]+)\]\]");
 
-    // What a binding says to mean "deliberately nothing", so an action cleared on purpose does
-    // not read as one the file forgot and pick its default back up.
+    // deliberately empty, which the parse must not refill with the default
     public const string Unbound = "Unbound";
 
-    // Without these there is no way back to a menu or a seed, so they keep a bind whatever the
-    // file says: the settings screen will not clear the last one, and a file that has lost one
-    // gets its default back on read.
+    // Never left empty: the menu keeps the last bind and the parse restores the default.
     public static readonly List<string> Required = new List<string> {
         "Warp", "Map Warp", "Reload Seed"
     };
@@ -359,14 +369,13 @@ public static class RandomizerRebinding {
     public static BindSet Bonus8 = new BindSet(new List<SingleBind>());
     public static BindSet Bonus9 = new BindSet(new List<SingleBind>());
 
-    // What to press, for text that has to say so: the settings file's own name for the bind.
+    // the first bind as display text (key caps where there are any), for messages
     public static string NameOf(string action) {
         BindSet set;
         return rebindMap.TryGetValue(action, out set) ? set.FirstBindName() : "<NO BIND>";
     }
 
-    // Old names carried forward so a rebinding file keeps its binds. Matching one marks the
-    // file dirty, which rewrites it whole and drops whatever else has gone stale in it.
+    // old action names; a match marks the file dirty so it is rewritten under the new one
     private static Dictionary<string, string> renamed = new Dictionary<string, string> {
         { "Save Select Back 3", "Menu Skip Backwards" },
         { "Save Select Forward 3", "Menu Skip Forwards" },
@@ -432,6 +441,10 @@ public static class RandomizerRebinding {
             if (input.StartsWith("_")) {
                 Type = ActionType.ControllerButton;
                 Button = (PlayerInputRebinding.ControllerButton)Enum.Parse(typeof(PlayerInputRebinding.ControllerButton), input.Substring(1), true);
+                // Enum.Parse takes any number, which no pad button answers to
+                if (!Enum.IsDefined(typeof(PlayerInputRebinding.ControllerButton), Button)) {
+                    throw new ArgumentException("no controller button " + input);
+                }
             } else if (CoreInputMap.ContainsKey(input)) {
                 Type = ActionType.CoreInput;
                 CoreInput = CoreInputMap[input];
@@ -446,8 +459,7 @@ public static class RandomizerRebinding {
             }
         }
 
-        // A modifier written without a side means either one: which of the two the player
-        // reaches for is not information. Unity spells the sides "Left"/"Right" + the name.
+        // written without a side, these match either; Unity's names are "Left"/"Right" + these
         private static readonly string[] Unsided = {
             "Alt", "Shift", "Control", "Command", "Windows"
         };
@@ -481,7 +493,12 @@ public static class RandomizerRebinding {
                     Update(CoreInput.Pressed);
                     break;
                 case ActionType.ControllerButton:
-                    Update(PlayerInput.Instance.ControllerButtonToButtonInput(Button).GetButton());
+                    // built on first use: PlayerInput may not exist yet when the file is parsed
+                    if (pad == null && PlayerInput.Instance != null) {
+                        pad = PlayerInput.Instance.ControllerButtonToButtonInput(Button);
+                    }
+
+                    Update(pad != null && pad.GetButton());
                     break;
                 case ActionType.KeyCode:
                     Update(MoonInput.GetKey(Key));
@@ -536,6 +553,8 @@ public static class RandomizerRebinding {
 
         public PlayerInputRebinding.ControllerButton Button;
 
+        private SmartInput.IButtonInput pad;
+
         public ActionType Type;
 
         public enum ActionType {
@@ -584,9 +603,8 @@ public static class RandomizerRebinding {
             return HasBind() ? Binds[0].ToString() : "<NO BIND>";
         }
 
-        // A file that spells both sides of a modifier out becomes one bind meaning either, and
-        // says so on the way out. Only when the mirrored bind is actually there, so a
-        // deliberately one-sided bind still says which side.
+        // Binds differing only in one modifier's side merge into the unsided form; a lone sided
+        // bind stays sided. True if anything merged, so the file is rewritten.
         public bool Collapse() {
             var changed = false;
             while (CollapseOnce()) {
@@ -642,7 +660,7 @@ public static class RandomizerRebinding {
 
         public bool HasBind() => Binds.Count > 0;
 
-        // IsPressed below reports the edge. A hold wants to know it is still down.
+        // level; IsPressed() below is the consuming edge
         public bool Held() {
             foreach (var bind in Binds) {
                 if (bind.Pressed) {

@@ -3,21 +3,11 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Game;
 
-// Multiworld client logic: the owner-side half of the slot-bitfield grant
-// transport. Our seed's manifest lines (pseudo-locations -2..-257) describe
-// what each of our 256 slots contains and whose world it sits in; the tick
-// response's field 6 carries which of our slots other players have found.
-// We grant ourselves the difference.
-//
-// Granted-slot bookkeeping lives in ordinary save items, which roll back on
-// death/reload: a death after a grant reverts the item and the bookkeeping
-// together, and the next tick simply re-grants. This is the whole design --
-// see MULTIWORLD_NOTES.md (server repo era) for why the alternatives lose
-// items to rollbacks.
+// Multiworld, owner side. Manifest lines (pseudo-locations -2..-257) say what each of our 256
+// slots holds; tick field 6 says which ones others found; we grant the difference. Granted bits
+// are ordinary save items, so a rollback reverts item and bit together and the next tick re-grants.
 public static class RandomizerMW {
-    // save item ids 940-947 hold the granted-slots bitfields (8 x 32 bits).
-    // NOTE: must stay OUTSIDE the range RandomizerInventory preserves through
-    // death/reload -- granted bits have to roll back with the save.
+    // granted-slot bitfields, 8 x 32 bits: must stay outside KeptOnDeath so they roll back with the save
     public const int GrantedSlotsBase = 940;
 
     public const int GrantedSlotsLast = 947;
@@ -34,20 +24,17 @@ public static class RandomizerMW {
 
     private static HashSet<int> warnedSlots = new HashSet<int>();
 
-    // tick field 7: ";"-joined "{pid}.{name}" pairs (name for unclaimed
-    // players is just "Player N")
+    // tick field 7: ";"-joined "<pid>.<name>" pairs
     public static Dictionary<int, string> PlayerNames = new Dictionary<int, string>();
 
     // --- Archipelago ---
-    // coord -> {recipient token, bare item name}, from a reserved line's 5th
-    // field. Empty until the seed is re-downloaded with the room connected.
+    // coord -> {recipient token, bare item name}, from reserved lines
     public static Dictionary<int, string[]> ApItems = new Dictionary<int, string[]>();
 
     // slot -> who found it, from the apfrom tick signal. "" means you did.
     public static Dictionary<int, string> SlotSenders = new Dictionary<int, string>();
 
-    // slot -> the hint Archipelago sold us for it, from tick field 8. Only
-    // ever answers to our own requests, so it is empty on every other seed.
+    // slot -> the hint Archipelago sold us for it, from tick field 8
     public static Dictionary<int, string> ApHints = new Dictionary<int, string>();
 
     // only AP grants straddle ticks; native multiworld grants immediately
@@ -81,8 +68,7 @@ public static class RandomizerMW {
     private static readonly Regex NameRef = new Regex(@"(?<![A-Za-z0-9])P(\d+)");
     private static readonly Regex PidToken = new Regex(@"^P(\d+)$");
 
-    // an AP token is either "P<pid>" -- a world of this same game, whose
-    // real name arrives on the tick -- or a room name to print verbatim
+    // an AP token: "P<pid>" (a world of this game, named by the tick) or a room name, verbatim
     public static string ApName(string token) {
         var m = PidToken.Match(token ?? "");
         return m.Success ? PlayerName(int.Parse(m.Groups[1].Value)) : token;
@@ -124,12 +110,8 @@ public static class RandomizerMW {
     public static Dictionary<int, int> ApSelfSlots = new Dictionary<int, int>();
 
     /// <summary>
-    /// Contact with a reserved location holding our own item. Grants it now
-    /// rather than waiting for the room to hand it back: the bridge fills
-    /// this check into exactly the promised slot, so the granted bit doubles
-    /// as the location's spent marker — server-backed, redelivered by the
-    /// tick after any rollback (death, quit-to-menu, restart).
-    /// Returns false when there is nothing to grant here.
+    /// Contact with a reserved location holding our own item: grant it now. The bridge fills this
+    /// check into the promised slot, so the granted bit doubles as the spent marker. False if none.
     /// </summary>
     public static bool GrantSelfItem(int coords) {
         if (!ApSelfSlots.TryGetValue(coords, out var slot) || !Manifest.ContainsKey(slot)) {
@@ -143,18 +125,15 @@ public static class RandomizerMW {
             return true;
         }
 
-        // "" is the apfrom token for "you found this yourself", so the grant
-        // message carries no "from" suffix -- it reads as an ordinary pickup
+        // "" = found it yourself: the grant message gets no "from" suffix
         SlotSenders[slot] = "";
         Grant(new List<int> { slot }, ApBatchMessageThreshold);
         return true;
     }
 
     /// <summary>
-    /// True when this location holds our own Archipelago item and that item is
-    /// already in the save. Its coord bit rolls back on death, but the granted
-    /// slot does not stay lost -- the server re-sets it -- so the map should
-    /// treat the location as spent.
+    /// Our own Archipelago item here is already in the save. Its coord bit rolls back on death but
+    /// the server re-sets the slot, so the map treats the location as spent.
     /// </summary>
     public static bool SelfItemCollected(int coords) {
         return ApSelfSlots.TryGetValue(coords, out var slot) && SlotGranted(slot);
@@ -185,8 +164,7 @@ public static class RandomizerMW {
         }
     }
 
-    // who to name on a grant: the apfrom signal when Archipelago sent it,
-    // the manifest's finder otherwise (plain multiworld). "" = yourself.
+    // who to name on a grant: apfrom's sender for AP, else the manifest's finder; "" = yourself
     private static string SenderFor(ManifestEntry entry) {
         if (SlotSenders.TryGetValue(entry.Slot, out var token)) {
             return token == "" ? "" : ApName(token);
@@ -195,8 +173,7 @@ public static class RandomizerMW {
         return PlayerName(entry.Finder);
     }
 
-    // display-time substitution for clue/hint strings baked as "P<n>" at seed
-    // parse (names arrive later, via the tick).
+    // display-time "P<n>" -> name for clues baked at seed parse; names arrive later on the tick
     public static string ResolveNames(string text) {
         try {
             return NameRef.Replace(text, m => int.TryParse(m.Groups[1].Value, out var pid) ? PlayerName(pid, true) + "'s" : m.Value);
@@ -207,15 +184,10 @@ public static class RandomizerMW {
     }
 
     // --- progressive Archipelago hints ---
-    //
-    // Ori reveals its clues as you play: dungeon keys at 3/6/9 trees, a
-    // keysanity door hint when you touch the door, Stomp and Grenade when the
-    // Forlorn escape ends. All three are save state only we can see, so we
-    // name the slots we need (tick field aph) and the server buys the hint;
-    // the answer arrives on field 8 and stands in for the baked clue.
+    // Clues that reveal as you play name their slots in the tick's aph field; the server buys the
+    // hint and field 8 carries the answer, which stands in for the baked clue.
 
-    // manifest slots we have told the server about, and the countdown to
-    // repeating that for the ones it has not answered
+    // slots already told to the server, and the countdown to repeating unanswered ones
     private static HashSet<int> hintsAsked = new HashSet<int>();
     private static int hintResendTicks;
     public const int HintResendPeriod = 30;
@@ -235,9 +207,7 @@ public static class RandomizerMW {
         }
     }
 
-    // the bought hint for a manifest slot, or the clue baked at seed parse.
-    // Every display site reads through here, so a seed with no AP hints shows
-    // exactly what it always showed.
+    // the bought hint for a slot, else the baked clue; every display site reads through here
     public static bool HasApHint(int slot) {
         return slot >= 0 && ApHints.TryGetValue(slot, out var text) && text != "";
     }
@@ -253,10 +223,8 @@ public static class RandomizerMW {
         }
     }
 
-    // "<slot>.<slot>" for the tick, or null when there is nothing to ask.
-    // The needed set is a level (it survives death and Alt+L, because it is
-    // derived from the save), so a newly revealed slot goes out at once and
-    // an unanswered one is only repeated every HintResendPeriod ticks.
+    // "<slot>.<slot>" for the tick, or null. The needed set is a level derived from the save: a new
+    // slot goes out at once, an unanswered one again every HintResendPeriod ticks.
     public static string HintRequestField() {
         try {
             if (Randomizer.SyncMode != 5 || Manifest.Count == 0 || !Characters.Sein) {
@@ -264,8 +232,7 @@ public static class RandomizerMW {
             }
 
             var needed = new List<int>();
-            // the two bounded sets go first: keysanity alone can offer 40 rows
-            // and would otherwise fill the budget before these are ever asked
+            // bounded sets first: keysanity alone can fill the budget
             if (Randomizer.CluesMode) {
                 RandomizerClues.WantHints(needed);
             }
@@ -320,20 +287,15 @@ public static class RandomizerMW {
     }
 
     // --- release ---
-    //
-    // tick field 9: "1" once this world has been released. Finishing hands every item in it that
-    // belonged to someone else to its owner, so those locations have nothing left to give even
-    // though their coord bit is unset. Read from the server every tick rather than remembered,
-    // because being released is the server's fact: a save scummed back past the credits would
-    // otherwise forget it while the world stays released.
+    // tick field 9: "1" once this world is released (other owners' items handed out). Read every
+    // tick, not remembered: a save scummed back past the credits must not forget it.
     public static bool Released;
 
     public static void OnReleasedField(string field) {
         Released = field.Trim() == "1";
     }
 
-    // Our own items are not part of a release -- whether the room hands them back is its own
-    // policy, which SelfItemCollected already answers. Only somebody else's is spent by this.
+    // only other owners' items are spent by a release; our own follow SelfItemCollected
     public static bool ReleasedAway(RandomizerAction pickup) {
         if (!Released || pickup == null || pickup.Action != "MW") {
             return false;
@@ -367,8 +329,7 @@ public static class RandomizerMW {
         return SlotGranted(-coords - 2);
     }
 
-    // manifest line: <-(slot+2)>|MW|<finder>,<holder>,<code>,<id>|<zone>
-    // (id may itself contain commas, e.g. TW warps, so the split is bounded)
+    // manifest line: <-(slot+2)>|MW|<finder>,<holder>,<code>,<id>|<zone>; bounded split, TW ids hold commas
     public static void AddManifestEntry(int coords, string value, string zone) {
         try {
             var slot = -coords - 2;
@@ -386,8 +347,7 @@ public static class RandomizerMW {
             var who = string.IsNullOrEmpty(holder) ? $"P{entry.Finder}" : holder;
             var clue = string.IsNullOrEmpty(zone) ? who : $"{who} {zone}";
 
-            // an exported warp still needs its logic node registered: the
-            // seed-parse path that does that only sees plain TW lines
+            // an exported warp still needs its logic node; seed parse registers plain TW lines only
             if (entry.Code == "TW") {
                 var warp = entry.Id.Split(',');
                 if (warp.Length > 3 && !Randomizer.WarpLogicLocations.ContainsKey(warp[0])) {
@@ -395,17 +355,14 @@ public static class RandomizerMW {
                 }
             }
 
-            // our dungeon keys living in someone else's world still get
-            // clues: the manifest knows whose world and which zone
+            // clues for our dungeon keys placed in other worlds
             if (Randomizer.CluesMode && entry.Code == "EV") {
                 if (int.TryParse(entry.Id, out var evId) && evId % 2 == 0) {
                     RandomizerClues.AddClue(clue, evId / 2, slot);
                 }
             }
 
-            // the Forlorn escape names where Stomp and Grenade went, and one in
-            // another world has no local SK line to read that from. The clue names
-            // that world, the same way the key and door clues below do.
+            // the Forlorn escape names where Stomp and Grenade went; one in another world has no SK line
             if (entry.Code == "SK" && (entry.Id == "4" || entry.Id == "51")) {
                 if (entry.Id == "4") {
                     Randomizer.StompSlot = slot;
@@ -416,8 +373,7 @@ public static class RandomizerMW {
                 }
             }
 
-            // same for keysanity door keys; the clue's coords are the manifest
-            // pseudo-location, resolved as found via the granted-slot bits
+            // keysanity door keys too; the clue's coords are the pseudo-loc, found via the granted bits
             if (Randomizer.Keysanity.IsActive && entry.Code == "RB") {
                 if (int.TryParse(entry.Id, out var rbId)) {
                     Randomizer.Keysanity.AddClue(rbId, coords, clue);
@@ -428,26 +384,18 @@ public static class RandomizerMW {
         }
     }
 
-    // grants beyond this in one tick get one grouped summary instead of a
-    // message per item (a release can dump dozens of slots at once). Five is
-    // what alt+T holds, so nothing printed individually is unrecoverable.
+    // more grants than this in one tick get one grouped summary; five is what alt+T holds
     public const int BatchMessageThreshold = 5;
 
-    // Archipelago hands one batch over as several ReceivedItems (a room's
-    // collect runs once per source world), and the bridge only coalesces
-    // what arrives inside its own window -- the rest straddles the tick
-    // boundary. One quiet tick catches those.
+    // AP splits one batch over several ReceivedItems; one quiet tick collects the stragglers
     public const int ApGrantWindowTicks = 1;
 
-    // same five as above: a handful of messages back to back reads better
-    // than a summary, and alt+T can still fetch every one of them
     public const int ApBatchMessageThreshold = 5;
 
     private static List<int> pendingSlots = new List<int>();
     private static int windowTicks;
 
-    // tick field 6: 8 ";"-joined 32-bit uints. Returns true if anything was
-    // granted, so the caller can refresh logic.
+    // tick field 6: 8 ";"-joined uints; true if anything was granted
     public static bool OnSlotsField(string field) {
         try {
             if (string.IsNullOrEmpty(field) || !Characters.Sein || Characters.Sein.Inventory == null) {
@@ -477,8 +425,7 @@ public static class RandomizerMW {
                 return pending.Count > 0 && Grant(pending, BatchMessageThreshold);
             }
 
-            // pending is a level, not an edge: it stays set until we grant, so
-            // only a NEW slot may re-arm the window
+            // pending is a level, not an edge: only a NEW slot re-arms the window
             var grew = false;
             foreach (var slot in pending) {
                 if (!pendingSlots.Contains(slot)) {
@@ -513,7 +460,8 @@ public static class RandomizerMW {
         var silent = Randomizer.CreditsActive;
         var batched = new List<ManifestEntry>();
         foreach (var slot in slots) {
-            if (!GrantSlot(slot, batch || silent, batched)) {
+            // a slot can be granted between the tick that saw it and this one: never twice
+            if (SlotGranted(slot) || !GrantSlot(slot, batch || silent, batched)) {
                 continue;
             }
 
@@ -553,8 +501,7 @@ public static class RandomizerMW {
 
             batched.Add(entry);
         } else {
-            // one combined line: "[pickup] from [player]", or just the
-            // pickup when Archipelago handed back something we found
+            // "[pickup] from [player]", or just the pickup when it was our own find
             var sender = SenderFor(entry);
             RandomizerSwitch.MessageSuffix = sender == "" ? null : $" from {sender}";
             try {
@@ -574,9 +521,7 @@ public static class RandomizerMW {
 
     private static readonly string[] DungeonWells = { "Ginso", "Forlorn", "Horu" };
 
-    // The three dungeons first, in the order the game opens them, then the rest as they arrived.
-    // Every teleporter is named "<id> Teleporter", so the id alone is the short form, and the
-    // color still has to be looked up from the full name.
+    // dungeons first in game order, then the rest as they came; colours come from "<id> Teleporter"
     private static List<string> Wells(List<string> ids) {
         var order = new List<string>();
         foreach (var want in DungeonWells) {
@@ -763,14 +708,11 @@ public static class RandomizerMW {
                     finderNames.Add("self");
                 }
 
-                // no names at all means Archipelago handed back only things
-                // we found ourselves
+                // no names: Archipelago handed back only our own finds
                 var header = finderNames.Count > 0
                     ? $"Received from {string.Join(", ", finderNames.ToArray())}:\n"
                     : "Received:\n";
-                // Anchored to the top so a tall list grows downwards; centred, it grows off the
-                // top of the screen and the first thing lost is who sent it. A release can be
-                // hundreds of items, so it also gets a second per ten to read -- up to a point.
+                // top-anchored so a tall list grows down, not off the top; a second per ten items, capped
                 var frames = 480 + 60 * (entries.Count / 10);
                 RandomizerSwitch.PickupMessage(
                     "ANCHORTOP" + header + string.Join("\n", lines.ToArray()),

@@ -47,8 +47,7 @@ public class CleverMenuItemLayout : MonoBehaviour {
             Selection = GetComponent<CleverMenuItemSelectionManager>();
         }
 
-        // navigation walks hidden rows (MoveSelection tests IsActivated, not IsVisible),
-        // so the window follows the selection rather than gating it
+        // navigation may step onto hidden rows (see Navigable), so the window follows the selection
         var focus = Selection != null ? Mathf.Max(0, Selection.Index) : ScrollTop;
         ScrollTop = Mathf.Clamp(ScrollTop, focus - MaxVisible + 1, focus);
         ScrollTop = Mathf.Clamp(ScrollTop, 0, MenuItems.Count - MaxVisible);
@@ -57,8 +56,7 @@ public class CleverMenuItemLayout : MonoBehaviour {
             Show(i, i >= ScrollTop && i < ScrollTop + MaxVisible);
         }
 
-        // a half-lit row at either edge says there is more past it, unless it is the one
-        // being pointed at -- the row you are on is always fully lit
+        // a half-lit edge row means more past it; the selected row always stays fully lit
         if (EdgeFade <= 0f) {
             return;
         }
@@ -97,8 +95,7 @@ public class CleverMenuItemLayout : MonoBehaviour {
         ScrollTo(ScrollTop + rows);
     }
 
-    // The window normally follows the selection, so a mouse-driven scroll carries the
-    // selection with it rather than leaving the two disagreeing.
+    // The window follows the selection, so a mouse scroll carries the selection into it.
     public void ScrollTo(int top) {
         if (MaxVisible <= 0 || MenuItems.Count <= MaxVisible) {
             return;
@@ -111,9 +108,12 @@ public class CleverMenuItemLayout : MonoBehaviour {
 
         ScrollTop = wanted;
         if (Selection != null) {
-            var inside = Mathf.Clamp(Selection.Index, ScrollTop, ScrollTop + MaxVisible - 1);
+            var bottom = ScrollTop + MaxVisible - 1;
+            var inside = Mathf.Clamp(Selection.Index, ScrollTop, bottom);
             if (inside != Selection.Index) {
-                Selection.SetCurrentItem(inside);
+                // a header cannot hold the selection: the nearest row inside the window that can
+                var row = Selection.NavigableFrom(inside, ScrollTop, bottom);
+                Selection.SetCurrentItem(row >= 0 ? row : inside);
                 return;
             }
         }
@@ -135,7 +135,7 @@ public class CleverMenuItemLayout : MonoBehaviour {
 
     public Alignment VerticalAlignment;
 
-    // 0 lays out every row, which is what every layout that has not opted in wants
+    // 0 = no window: every row laid out
     [NonSerialized] public int MaxVisible;
 
     [NonSerialized] public CleverMenuItemSelectionManager Selection;

@@ -52,7 +52,7 @@ Randomizer inventory ids.
 80 - Spent AP Counter
 81 - Stomp/Grenade Hint
 82 - Move Nightberry
-83 - Active Bonus Skill
+83 - (unused; was Active Bonus Skill, now 4089)
 84 - Last AltR x position
 85 - Last AltR y position
 86 - Last Soul Link x position
@@ -357,6 +357,7 @@ Enhanced mode -- April Fools :)
 4083 - Longest drought end time
 
 4087 - Warp to Credits Bonus Skill (was 1587)
+4089 - Active Bonus Skill (was 83)
 
 4090 - (Archipelago) DeathLink deaths
 4091 - (Archipelago) DeathLink linked deaths

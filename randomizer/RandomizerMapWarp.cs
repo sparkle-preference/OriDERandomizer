@@ -4,18 +4,15 @@ using Core;
 using Game;
 using UnityEngine;
 
-// Ori 2 style warping: hover a spirit well on the area map, hold the bind, a ring fills, you
-// warp. The list walked is TeleporterController's own, so custom warps come along for free, and
-// the warp itself is the one the teleporter screen already uses.
+// Hover a spirit well on the area map and hold the bind to warp there, via the teleporter screen's
+// own BeginTeleportation; TeleporterController's list includes custom warps.
 public static class RandomizerMapWarp {
-    // How far from the cursor a well counts, in world units. Tighter than the map's own icons
-    // reach, because a well takes the hover from every pickup sitting under it.
+    // world units from the cursor; tight, since a well takes the hover from every pickup under it
     private const float Reach = 6f;
 
     private const float PadReach = 25f;
 
-    // Ring radius in map units: the icons are children of MapPivot, so sizing from its scale is
-    // what keeps the ring proportional to them at every zoom.
+    // ring radius in map units, scaled by MapPivot like the icons so it tracks every zoom
     private const float RingSpan = 7.04f;
 
     // a warp icon, and its drop onto the ring's center, as shares of the ring and of itself
@@ -26,19 +23,16 @@ public static class RandomizerMapWarp {
     // a locked well has no ring to clear, only its own icon
     private const float IconClearance = 0.5f;
 
-    // Measured at 270 labels: no frame cost once they exist, so this is only a guard against a
-    // seed with far more locations than any real one has.
+    // a guard against seeds with far more locations than any real one
     private const int MostLabels = 400;
 
     // below this the icon is gone rather than merely faint
     private const float Vanished = 0.02f;
 
-    // How bright a well you have not lit is drawn. Absolute, not a share: these icons sit at
-    // 0.5 already, and the map fade drives the same channel, so a ceiling is what sticks.
+    // alpha ceiling for an unlit well; absolute, since the map fade drives the same channel
     private const float LockedAlpha = 0.125f;
 
-    // How far into the borrowed animation the ring reads as full. The rest of its five seconds is
-    // the flourish the soul link plays once ready, which a hold has no use for.
+    // animation time at which the borrowed ring reads full; the rest of its 5 s is the ready flourish
     private const float SoulFull = 1f;
 
     // roughly twelve frames either way
@@ -57,7 +51,7 @@ public static class RandomizerMapWarp {
         } catch (System.Exception e) {
             if (!Complained) {
                 Complained = true;
-                Randomizer.log("map warp: threw, no warp prompt this session -- " + e);
+                Randomizer.log("map warp: threw (logged once, retried every frame) -- " + e);
             }
 
             return false;
@@ -114,15 +108,12 @@ public static class RandomizerMapWarp {
         return true;
     }
 
-    // Rides the legend bind: the gesture that explains the map's symbols, extended to the things
-    // on it you can act on. Named only -- the second line is an instruction, and an instruction
-    // repeated a dozen times over is noise.
+    // Toggled with the legend; labels carry names only, never the hold instruction.
     public static void Labels() {
         Listing = !Listing;
     }
 
-    // Hides what the legend put up. The toggle itself is left alone, so reopening the map restores
-    // the labels the same way it restores the legend.
+    // Hides the labels but keeps the toggle, so reopening the map restores them like the legend.
     public static void Closed() {
         Clear();
         Blank(0);
@@ -144,7 +135,7 @@ public static class RandomizerMapWarp {
                     continue;
                 }
 
-                // the one thing a full listing can say that hover already says: this one is shut
+                // of hover's second lines, only "(not activated)" belongs in a listing
                 shown = Put(map, navigation, textScale, offset, shown, well.WorldPosition,
                     well.Activated ? Title(well) : Title(well) + "\n(not activated)");
             }
@@ -200,6 +191,11 @@ public static class RandomizerMapWarp {
 
     // Cloned from the same legend entry the map's other randomizer labels come from.
     private static MessageBox Label(int index, AreaMapUI map) {
+        // the clones die with the legend they were parented to
+        if (index < Labeled.Count && Labeled[index] == null) {
+            Labeled.RemoveRange(index, Labeled.Count - index);
+        }
+
         while (Labeled.Count <= index) {
             var legend = map.transform.FindChild("legend");
             var source = legend == null ? null : legend.FindChild("player");
@@ -219,15 +215,13 @@ public static class RandomizerMapWarp {
         return Labeled[index];
     }
 
-    // A pad has no cursor to point with, so what it is pointing at is whatever the map is
-    // centred on. The scheme is the game's own answer to this, and the one Bash aiming uses.
+    // A mouse points with the cursor, a pad at the map's centre; the same scheme test Bash aiming uses.
     public static bool Pointing() {
         return GameSettings.Instance == null ||
             GameSettings.Instance.CurrentControlScheme == ControlScheme.KeyboardAndMouse;
     }
 
-    // Activated wells only, and never the one Ori is standing on -- BeginTeleportation refuses a
-    // target within ten units and would swallow the hold without saying why.
+    // BeginTeleportation silently refuses a target within 10 units, so those never charge.
     private static bool Warpable(GameMapTeleporter well) {
         return well.Activated && Characters.Sein != null &&
             Vector3.Distance(well.WorldPosition, Characters.Sein.Position) >= 10f;
@@ -279,8 +273,7 @@ public static class RandomizerMapWarp {
         box.gameObject.SetActive(true);
     }
 
-    // Teleporter identifiers that are not zone keys, or whose zone name is not what the well is
-    // called. Everything else reads out of the stats page's own table.
+    // Ids that are not zone keys, or whose zone name is not the well's; the rest use ZonePrettyNames.
     private static readonly Dictionary<string, string> WellNames = new Dictionary<string, string> {
         { "swamp", "Swamp" },
         { "forlorn", "Forlorn" },
@@ -333,8 +326,7 @@ public static class RandomizerMapWarp {
         return string.IsNullOrEmpty(area) ? id : area;
     }
 
-    // A custom warp is one the randomizer added: the game's own teleporters carry the game's own
-    // message provider, and only ours carry the randomizer's.
+    // Only warps the randomizer added carry a RandomizerMessageProvider (RemoveCustomTeleporters' test).
     private static bool Custom(GameMapTeleporter well) {
         return well.Name != null && well.Name.GetType() == typeof(RandomizerMessageProvider);
     }
@@ -349,9 +341,7 @@ public static class RandomizerMapWarp {
         return (name.StartsWith("Warp to ") ? name.Substring(8) : name) + " Warp";
     }
 
-    // Custom warps are not in the game's map data, so nothing on the area map draws them. Show is
-    // the game's own recipe -- the spirit well prefab, the warp tint, both maps -- and Update
-    // keeps it where the map has scrolled to, so neither is worth reimplementing.
+    // Nothing in the map data draws custom warps; GameMapTeleporter.Show and Update do, on both maps.
     public static void Icons(AreaMapUI map) {
         try {
             var controller = TeleporterController.Instance;
@@ -382,9 +372,7 @@ public static class RandomizerMapWarp {
         }
     }
 
-    // A well you have not lit looks exactly like one you have. The icon object belongs to
-    // RuntimeWorldMapIcon and is private, so it is read the way the rest of this file reads the
-    // game: by asking rather than by rebuilding.
+    // An unlit well looks lit unless faded here; the icon object is private to RuntimeWorldMapIcon.
     private static readonly FieldInfo IconObject = typeof(RuntimeWorldMapIcon).GetField(
         "m_iconGameObject", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -428,8 +416,7 @@ public static class RandomizerMapWarp {
         return loc != null && loc.Touched;
     }
 
-    // The slider's word, except that the Uncollected filter never loses a touched icon
-    // entirely: a slider left at zero is more often a mistake than a wish.
+    // The slider's alpha, floored under the Uncollected filter so a touched icon never vanishes there.
     private static float TouchedAlpha() {
         var alpha = RandomizerSettings.Customization.TouchedVisibility.Value;
         return RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.Uncollected
@@ -438,8 +425,7 @@ public static class RandomizerMapWarp {
 
     private const float FailSafeAlpha = 0.1f;
 
-    // At the bottom of the slider it is not drawn at all, since an invisible icon is still a
-    // thing the cursor can catch on.
+    // Not drawn at all near zero: an invisible icon would still catch the cursor.
     public static bool Hidden(RandomizerLocationManager.Location loc) {
         return Spent(loc) && TouchedAlpha() <= Vanished;
     }
@@ -460,8 +446,7 @@ public static class RandomizerMapWarp {
         return true;
     }
 
-    // Written every frame rather than on a change: the map's own fade drives these same colors
-    // while it opens, and a value set once would be painted over.
+    // Every frame, not on change: the map's opening fade drives these colours and would paint over it.
     private static void Paint(GameObject icon, float alpha) {
         List<Material> paints;
         List<string> keys;
@@ -499,8 +484,7 @@ public static class RandomizerMapWarp {
         }
     }
 
-    // Show parents its icon to the fade group rather than to the map, so it keeps one size while
-    // the map scales underneath -- which reads as enormous zoomed out.
+    // Show parents icons to the fade group, not the map, so they are rescaled with MapPivot here.
     private static void Fit(AreaMapUI map) {
         var pivot = map.Navigation == null || map.Navigation.MapPivot == null
             ? 0f : map.Navigation.MapPivot.lossyScale.x;
@@ -526,8 +510,7 @@ public static class RandomizerMapWarp {
 
             var fit = want / PinNatural;
             child.localScale = map.TeleportPrefab.transform.localScale * fit;
-            // Show hangs the icon above the well so its base sits on the spot; the ring is drawn
-            // on the spot itself, so one of them has to move for the two to agree.
+            // Show hangs the icon above the well; the ring is centred on the well itself
             child.position -= Vector3.up * (PinTall * fit * PinDrop);
         }
     }
@@ -560,8 +543,7 @@ public static class RandomizerMapWarp {
         soul.Progress(progress);
     }
 
-    // Taken while the menu's prefabs are certainly still loaded. The clone holds a reference to
-    // the material and its texture, which is what keeps UnloadUnusedAssets from taking them.
+    // Cloned at Awake; the clone's references are what keep UnloadUnusedAssets off its art.
     public static void Preload(AreaMapUI map) {
         try {
             var soul = Soul(map);
@@ -604,8 +586,7 @@ public static class RandomizerMapWarp {
         return SoulRing;
     }
 
-    // The layer things on this map are drawn on, which is not the one the group holding them
-    // sits on.
+    // The map's renderers' layer; the group object holding them sits on another.
     private static int MapLayer(AreaMapUI map) {
         foreach (var renderer in map.FadeOutGroup.GetComponentsInChildren<Renderer>(true)) {
             if (renderer != null) {
@@ -616,8 +597,7 @@ public static class RandomizerMapWarp {
         return map.FadeOutGroup.gameObject.layer;
     }
 
-    // The player's own marker is the thing on this map guaranteed to draw over the terrain, so
-    // its sorting is the sorting to have.
+    // The player marker always draws over the terrain, so its sorting is the one to copy.
     private static Renderer Sorting(AreaMapUI map) {
         var marker = map.PlayerPositionMarker == null
             ? null : map.PlayerPositionMarker.GetComponentInChildren<Renderer>(true);
@@ -634,8 +614,7 @@ public static class RandomizerMapWarp {
         return null;
     }
 
-    // The soul link's own charge loop. It belongs to the live ability rather than to the cloned
-    // widget, so it is started and stopped, never copied.
+    // The live soul link's charge loop, started and stopped, never cloned.
     private static void Charging(bool on) {
         var sein = Characters.Sein;
         var flame = sein == null ? null : sein.SoulFlame;
@@ -666,8 +645,7 @@ public static class RandomizerMapWarp {
         }
     }
 
-    // Every way this gesture can end comes through here, the map closing included -- a charge
-    // loop with nothing left to stop it would play forever.
+    // Every exit, map close included, must come through here or the charge loop keeps playing.
     public static void Clear() {
         Charging(false);
         Held = null;

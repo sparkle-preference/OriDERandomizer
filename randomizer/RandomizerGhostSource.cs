@@ -3,25 +3,21 @@ using UnityEngine;
 
 using Sample = RandomizerGhost.Sample;
 
-// Where a ghost's samples come from. A recording is complete and seekable; a peer's stream
-// arrives late, out of order and may stop. The renderer wants the same two things from both:
-// a list in time order, and where in it to be right now.
+// Where a ghost's samples come from: a finished recording or a peer's stream. The view needs a
+// time-ordered list and where in it to draw.
 public interface IGhostSource {
     List<Sample> Samples { get; }
 
-    // The point in the sample timeline to draw. Not wall-clock: a live source subtracts its
-    // interpolation delay here, which is the only place that delay needs to exist.
+    // Where in the sample timeline to draw; a live source subtracts its interpolation delay here.
     float At { get; }
 
     // Finished, and the view should be torn down.
     bool Done { get; }
 
-    // Seconds since the newest sample turned up. A recording never stalls and answers zero;
-    // a peer that has gone quiet is the only thing that makes this grow.
+    // Seconds since the newest sample arrived; zero for a recording.
     float Silence { get; }
 
-    // The multiworld player this ghost is, which is what its color comes from. Zero means
-    // nobody -- your own replay -- and takes the practice blue instead.
+    // The multiworld player, which picks the color; zero is your own replay (practice blue).
     int PlayerId { get; }
 
     string Label { get; }
@@ -54,8 +50,8 @@ public class RecordedGhostSource : IGhostSource {
     private readonly float Started;
 }
 
-// A real peer: samples arrive on the sender's clock, so the offset to ours is followed packet
-// by packet. Being wrong by a constant is invisible; varying is what looks like stutter.
+// A peer's stream. Samples carry the sender's clock and the offset to ours is followed per
+// packet: a constant error is invisible, a varying one is stutter.
 public class LiveGhostSource : IGhostSource {
     public LiveGhostSource(string label, int who, float delay) {
         Name = label;
@@ -66,11 +62,10 @@ public class LiveGhostSource : IGhostSource {
 
     public List<Sample> Samples { get { return Received; } }
 
-    // Their clock, estimated, minus the interpolation delay. Offset is theirs-minus-ours, so
-    // it is added; subtracting lands twice the clock difference in the past.
+    // Their clock minus the interpolation delay; Offset is theirs-minus-ours, so it is added.
     public float At { get { return Time.time + Offset - Delay; } }
 
-    // A peer is finished when it is retired for silence, which the coordinator decides.
+    // Never: the coordinator retires a peer for silence.
     public bool Done { get { return false; } }
 
     public float Silence { get { return Time.time - Arrived; } }
@@ -80,36 +75,39 @@ public class LiveGhostSource : IGhostSource {
     public string Label { get { return Name; } }
 
     public void Accept(Sample sample) {
+        // a non-finite time would poison Offset and the timeline for good
+        if (float.IsNaN(sample.Time) || float.IsInfinity(sample.Time)) {
+            return;
+        }
+
         Arrived = Time.time;
 
-        // Followed rather than read off one packet, which would inherit that packet's latency
-        // and leave At permanently ahead of everything received -- a jump per packet, not motion.
+        // eased toward each packet's implied offset; a jump past Resync is a new clock and snaps
         var implied = sample.Time - Time.time;
         if (Received.Count == 0 || Mathf.Abs(implied - Offset) > Resync) {
             Offset = implied;
+            // the old clock's samples would outrank every sample on the new one
+            Received.Clear();
         } else {
             Offset += (implied - Offset) * Follow;
         }
 
         if (Received.Count > 0 && sample.Time <= Received[Received.Count - 1].Time) {
-            // unordered delivery is the point of the channel; a packet behind the newest one
-            // has already been interpolated past and is worth nothing
+            // the channel is unordered; a packet behind the newest is already interpolated past
             return;
         }
 
         Received.Add(sample);
-        // Bounded, or a long session grows without limit. The view re-seeks when its cursor
-        // stops making sense, so dropping from the front is safe.
+        // trimming the front is safe: the view re-seeks when its cursor falls off
         if (Received.Count > MaxSamples) {
             Received.RemoveRange(0, Received.Count - KeepSamples);
         }
     }
 
-    // per-packet pull toward the implied offset: slow enough to ignore jitter, quick enough to
-    // settle in about a second at 30 Hz
+    // per-packet pull toward the implied offset; settles in about a second at 30 Hz
     private const float Follow = 0.05f;
 
-    // a gap this big is a different clock, not jitter -- a reconnect or a game restart
+    // a jump this big is a new clock (a reconnect or a restart), not jitter
     private const float Resync = 1f;
 
     // a couple of minutes at 30 Hz, trimmed back to one when it fills
@@ -130,8 +128,7 @@ public class LiveGhostSource : IGhostSource {
     private float Arrived;
 }
 
-// Stands in for a networked peer using a recording as its script: samples arrive on the schedule
-// a peer's would, behind an interpolation delay, and the view cannot tell the difference.
+// A recording fed on a peer's schedule, behind the interpolation delay: echoes are these.
 public class LoopbackGhostSource : IGhostSource {
     public LoopbackGhostSource(List<Sample> script, string label, int who, float delay) {
         Script = script;
@@ -149,8 +146,7 @@ public class LoopbackGhostSource : IGhostSource {
 
     public List<Sample> Samples { get { return Received; } }
 
-    // Held back by the interpolation delay, so the view is always drawing between two samples
-    // that have already arrived rather than extrapolating past the newest one.
+    // held back by the delay, so the view interpolates between samples that have arrived
     public float At { get { return Elapsed - Delay; } }
 
     public bool Done { get { return Script.Count > 0 && Elapsed >= RandomizerGhost.Length(Script) + Delay; } }
@@ -161,12 +157,10 @@ public class LoopbackGhostSource : IGhostSource {
 
     public int PlayerId { get { return Who; } }
 
-    // Simulates the peer going quiet without disconnecting, which is the failure the render
-    // side has to handle gracefully and the only one that is awkward to produce on demand.
+    // cuts the feed, as a peer going quiet without disconnecting would
     public bool Stalled;
 
-    // Moves everything the peer would have sent by now into the received list. Real packets
-    // arrive in their own time; this arrives on the script's schedule, which is the same shape.
+    // Moves everything the peer would have sent by now into the received list.
     public void Feed() {
         if (Stalled) {
             return;

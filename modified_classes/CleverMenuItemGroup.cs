@@ -6,8 +6,7 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase {
     public override bool IsVisible {
         get => SelectionManager.IsVisible;
         set {
-            // Hiding on a fade leaves the outgoing screen on top of the incoming one for a
-            // few frames. Opt a group in and its screens leave at once; the fade in stays.
+            // HideImmediately: screens leave at once rather than fading over the incoming one
             var alreadyGone = SelectionManager.FadeAnimator && SelectionManager.FadeAnimator.FinalOpacity < 0.05f;
             if (!value && (HideImmediately || alreadyGone)) {
                 SelectionManager.SetVisibleImmediate(false);
@@ -118,9 +117,7 @@ public class CleverMenuItemGroup : CleverMenuItemGroupBase {
     }
 
     public void OnMenuItemChange() {
-        // Hide first, then show. One pass in list order shows the incoming screen before
-        // the outgoing one goes if it happens to sit earlier in Options, and the two
-        // overlap for a frame.
+        // hide every outgoing screen before showing the incoming one, or they overlap a frame
         foreach (var going in Options) {
             if (SelectionManager.CurrentMenuItem != going.MenuItem || !ExpandOnHighlight) {
                 going.ItemGroup.IsVisible = false;

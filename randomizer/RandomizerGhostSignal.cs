@@ -5,9 +5,8 @@ using UnityEngine;
 
 using Sample = RandomizerGhost.Sample;
 
-// Ghost multiplayer over the game's own websocket. The server passes two strings between two
-// players and never looks inside them, so everything about who connects to whom is decided
-// here, from a roster every client computes the same way.
+// Ghost multiplayer: WebRTC links signalled over the game's websocket, which relays descriptions
+// verbatim and never looks inside them.
 //
 //   out  ghosts:1                 join (or 0 to leave)
 //   in   ghosts:<host>:<pids>     the roster, pushed whenever it changes
@@ -16,13 +15,11 @@ using Sample = RandomizerGhost.Sample;
 //   out  ghostice:<peer>          a peer no direct attempt could reach
 //   in   ice:<json>               relay credentials for this game
 //
-// The lowest participating player id hosts and offers to everyone else; everyone else answers.
-// No negotiation round, and both sides derive the same answer from the same list. The type
-// rides inside the payload rather than in the frame, so the server stays a dumb relay.
+// The roster names the host (the server picks the lowest directly reachable id); the host
+// offers to everyone else and they answer.
 //
-// Motion is a star: the host hands every packet it receives to every other peer, so one link is
-// enough to see everyone. Packets carry their sender, ghosts are keyed by it, and a client drops
-// its own row on the way back in.
+// Motion is a star: the host relays every packet to every other open link. Ghosts are keyed by
+// the sender id the packet carries, and a client drops its own.
 public static class RandomizerGhostSignal {
     private class Link {
         public int Handle;
@@ -34,8 +31,7 @@ public static class RandomizerGhostSignal {
         public int Attempt;
     }
 
-    // How long a peer may sit in connecting before the handshake counts as lost; the roster
-    // still lists the player, so nothing else would ever re-offer.
+    // seconds in connecting before a handshake counts as lost and is retried
     private const float RetryAfter = 15f;
 
     private const string StunServers = "stun:stun.l.google.com:19302";
@@ -44,12 +40,10 @@ public static class RandomizerGhostSignal {
 
     public static bool Joined { get; private set; }
 
-    // participation dies with the socket it was announced on, and that socket can be
-    // replaced without this code seeing it
+    // re-announced this often: the socket it was said on can be replaced unseen
     private const float ReassertAfter = 15f;
 
-    // Told, not polled: the roster lives on the socket, so a socket that closes takes
-    // participation with it and a new one has never been told.
+    // Every frame: announces on a change of mind or a new socket, and re-asserts periodically.
     public static void Apply() {
         var want = RandomizerSyncManager.WsOpen && NativeWebSocket.RtcAvailable &&
             RandomizerSettings.Customization.ShowOtherPlayers.Value;
@@ -57,6 +51,11 @@ public static class RandomizerGhostSignal {
         var told = announcedOn == RandomizerSyncManager.WsGeneration && now - announcedAt < ReassertAfter;
         if (want == Joined && (!want || told)) {
             return;
+        }
+
+        // echoes are for playing alone, and echo n would wear real player n+1's colour
+        if (want && !Joined) {
+            RandomizerGhost.ClearEchoes();
         }
 
         Joined = want;
@@ -70,8 +69,7 @@ public static class RandomizerGhostSignal {
             DropAll();
         }
 
-        // A flapping socket rejoins on every reconnect, which is correct and not worth saying.
-        // Only a change of mind -- the setting, or a sidecar that cannot do this at all -- is.
+        // logged on a change of mind (the setting, or a sidecar without rtc), not per reconnect
         var mind = NativeWebSocket.RtcAvailable &&
             RandomizerSettings.Customization.ShowOtherPlayers.Value;
         if (mind != Minded) {
@@ -80,8 +78,7 @@ public static class RandomizerGhostSignal {
         }
     }
 
-    // "ghosts:<host>:<pids>" -- who is here and who offers. Arrives on every change, so this
-    // is also how a peer leaving is noticed.
+    // "ghosts:<host>:<pids>" -- on every change and in reply to each announce.
     public static void OnRoster(string body) {
         var sep = body.IndexOf(':');
         if (sep < 0) {
@@ -102,6 +99,7 @@ public static class RandomizerGhostSignal {
         }
 
         Host = host;
+        Roster = present;
         Randomizer.log("ghost signal: roster host=" + host + " players=" + present.Count);
 
         // anyone who left takes their peer and their ghost with them
@@ -118,7 +116,21 @@ public static class RandomizerGhostSignal {
             }
         }
 
-        if (!Joined || Me <= 0 || host != Me) {
+        if (!Joined || Me <= 0) {
+            return;
+        }
+
+        // a star has one centre: everyone else's links go to the host and nowhere else
+        if (host != Me) {
+            for (var i = Links.Count - 1; i >= 0; i--) {
+                if (Links[i].PlayerId != host) {
+                    Randomizer.log("ghost signal: dropping the link to " + Links[i].PlayerId +
+                        ", host is " + host);
+                    Drop(Links[i]);
+                    Links.RemoveAt(i);
+                }
+            }
+
             return;
         }
 
@@ -154,6 +166,10 @@ public static class RandomizerGhostSignal {
 
         Randomizer.log("ghost signal: got " + payload.Substring(0, bar) + " from " + from +
             ", " + payload.Length + " chars, joined " + Joined);
+        // in flight when we left: answering it would open a link nobody wants
+        if (!Joined) {
+            return;
+        }
 
         var type = payload.Substring(0, bar);
         string sdp;
@@ -203,14 +219,14 @@ public static class RandomizerGhostSignal {
         var mine = new Sample();
         var haveMine = due && RandomizerGhost.SampleLive(out mine);
         if (due) {
-            LastSent = now;
+            // stepped, not reset to now, so a frame a hair short of the interval is not skipped
+            LastSent = Mathf.Max(LastSent + SendInterval, now - SendInterval);
         }
 
         for (var i = Links.Count - 1; i >= 0; i--) {
             var link = Links[i];
 
-            // the roster only speaks when it changes, so a peer that restarts keeps its place
-            // in the list and nothing would ever re-offer
+            // a closed channel is re-offered here: a quick restart leaves the roster unchanged
             if (link.Announced && !NativeWebSocket.RtcIsOpen(link.Handle)) {
                 var was = link.PlayerId;
                 var host = link.Offering;
@@ -225,10 +241,8 @@ public static class RandomizerGhostSignal {
                 continue;
             }
 
-            // a lost handshake tells neither side; only the offerer can restart one, and the
-            // answerer's link is replaced when the next offer arrives. Openness is asked of the
-            // channel, not of Announced: a frame gap longer than the timeout would otherwise
-            // report a peer that came up fine.
+            // a lost handshake tells neither side: the offerer retries, the answerer waits for the
+            // next offer. Ask the channel, not Announced: a long frame must not fail a live link.
             if (!link.Announced && !NativeWebSocket.RtcIsOpen(link.Handle) &&
                 now - link.Since > RetryAfter) {
                 var pid = link.PlayerId;
@@ -250,8 +264,7 @@ public static class RandomizerGhostSignal {
                 continue;
             }
 
-            // a description is only worth sending once ICE has finished; non-trickle means one
-            // string each way and no candidate plumbing
+            // non-trickle: the description goes once gathering is complete
             if (!link.Sent && NativeWebSocket.RtcLocalReady(link.Handle)) {
                 link.Sent = true;
                 var sdp = NativeWebSocket.RtcLocalDescription(link.Handle);
@@ -269,14 +282,16 @@ public static class RandomizerGhostSignal {
 
             while (NativeWebSocket.RtcHasMessage(link.Handle)) {
                 var packet = NativeWebSocket.RtcGetMessage(link.Handle);
+                // a message that cannot be read may not have been popped either: never spin on it
                 if (packet == null) {
-                    continue;
+                    break;
                 }
 
                 Sample got;
                 byte who;
                 ushort seq;
-                if (!RandomizerGhostPacket.Decode(packet, packet.Length, out got, out who, out seq) || who == Me) {
+                if (!RandomizerGhostPacket.Decode(packet, packet.Length, out got, out who, out seq) ||
+                    who == Me || !Speaks(link, who)) {
                     continue;
                 }
 
@@ -298,8 +313,7 @@ public static class RandomizerGhostSignal {
     }
 
     private static Link Open(int pid, bool offering) {
-        // Only a peer a direct attempt already failed against: gathering is non-trickle,
-        // so a slow relay in the list would stall every handshake.
+        // the relay only for peers a direct attempt failed against: gathering waits on every server
         var relayed = RelayUrl != null && Relayed.Contains(pid);
         var handle = NativeWebSocket.RtcCreate(offering, relayed ? StunServers + "," + RelayUrl : StunServers);
         if (handle == 0) {
@@ -406,6 +420,7 @@ public static class RandomizerGhostSignal {
         }
 
         Links.Clear();
+        Roster.Clear();
         Relayed.Clear();
         // credentials are named for the game we just left
         RelayUrl = null;
@@ -426,6 +441,11 @@ public static class RandomizerGhostSignal {
         }
 
         if (!showing) {
+            // no Ori to clone yet (a death, a load): wait for a packet that finds one
+            if (RandomizerGhost.Sprite() == null) {
+                return;
+            }
+
             ghost = new LiveGhostSource("p" + who, who, RandomizerGhost.InterpolationDelay);
             Ghosts[who] = ghost;
             RandomizerGhost.AddLive(ghost);
@@ -433,6 +453,11 @@ public static class RandomizerGhostSignal {
         }
 
         ghost.Accept(got);
+    }
+
+    // Only the host's link carries other players; anyone else speaks for themselves alone.
+    private static bool Speaks(Link link, int who) {
+        return link.PlayerId == Host ? Roster.Contains(who) : who == link.PlayerId;
     }
 
     // the host's half of the star: every packet in goes out again on every other open link
@@ -471,6 +496,9 @@ public static class RandomizerGhostSignal {
     }
 
     private static readonly List<Link> Links = new List<Link>();
+
+    // the players in the last roster; a packet naming anyone else is dropped
+    private static List<int> Roster = new List<int>();
 
     // peers a direct attempt has already failed against; their next link gets the relay
     private static readonly HashSet<int> Relayed = new HashSet<int>();

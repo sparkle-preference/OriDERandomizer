@@ -157,8 +157,7 @@ public static class RandomizerSwitch {
                 break;
         }
 
-        // after the ability is set, so Enhanced Mode's own grant above and an Enhanced that
-        // arrived at spawn both get their line here rather than talking too early
+        // after SetAbility, so no Enhanced line (Enhanced Mode's, or one held from spawn) comes early
         RandomizerBonus.AnnounceEnhancedSkill(Ability);
         RandomizerStatsManager.FoundSkill(Ability);
     }
@@ -394,7 +393,7 @@ public static class RandomizerSwitch {
                     RandomizerBoxes.EvalBM((string)action.Value);
                     break;
                 case "TW":
-                    // TW entries are coord|TW|name,x,y
+                    // TW entries are coord|TW|name,x,y,logicnode
                     var pieces2 = ((string)action.Value).Split(',');
                     int.TryParse(pieces2[1], out var warpX);
                     int.TryParse(pieces2[2], out var warpY);
@@ -411,21 +410,14 @@ public static class RandomizerSwitch {
                     Characters.Sein.Inventory.SetRandomizerItem(82, 1);
                     break;
                 case "MW":
-                    // MW entries are coord|MW|owner,slot,code,id -- another
-                    // player's item. Nothing to grant locally: the
-                    // found_locally send below tells the server, which flips
-                    // the owner's slot bit and their client self-grants.
+                    // coord|MW|owner,slot,code,id: another player's item, granted by the server, not here
                     var mwPieces = ((string)action.Value).Split(new[] { ',' }, 3);
                     if (RandomizerMW.ApItems.TryGetValue(coords, out var apItem)) {
-                        // Archipelago reserved location: the owner here is our
-                        // own shadow player, so field 5 is the only thing that
-                        // knows who is actually getting this
+                        // AP reserved location: the owner is our shadow, so the recipient field says who gets it
                         if (!RandomizerMW.IsSelf(apItem[0])) {
                             SentMwPickupMessage($"{RandomizerMW.ApName(apItem[0])}'s {RandomizerItems.ColorWrap(apItem[1])}");
                         }
-                        // ours: grant it here so it reads like an in-seed find.
-                        // The room still hands it back; that arrives to find the
-                        // slot already granted and does nothing.
+                        // ours: granted now; the room's later copy finds the slot granted and does nothing
                         else {
                             RandomizerMW.GrantSelfItem(coords);
                         }
@@ -453,17 +445,33 @@ public static class RandomizerSwitch {
         }
 
         if (found_locally && Randomizer.Sync) {
-            // the wire hears NO|1 for a seed writing its own slots or boxes: servers
-            // must not learn invented slot ids
-            var wire = action.Action == "RI" || action.Action == "BM"
-                ? new RandomizerAction("NO", "1")
-                : action;
-            RandomizerSyncManager.FoundPickup(wire, coords);
+            RandomizerSyncManager.FoundPickup(WireSafe(action), coords);
         }
 
         if (found_locally) {
             Randomizer.OnCoord(coords);
         }
+    }
+
+    // RI and BM go out as NO|1, bare or inside a multipickup: servers must not learn invented slot ids
+    private static RandomizerAction WireSafe(RandomizerAction action) {
+        if (action.Action == "RI" || action.Action == "BM") {
+            return new RandomizerAction("NO", "1");
+        }
+
+        if (action.Action != "MU" && action.Action != "RP") {
+            return action;
+        }
+
+        var value = (string)action.Value;
+        if (!value.Contains("RI/") && !value.Contains("BM/")) {
+            return action;
+        }
+
+        var parts = action.Decompose();
+        return parts.Any(p => p.Action == "RI" || p.Action == "BM")
+            ? RandomizerAction.AsMulti(parts.Select(WireSafe).ToList(), action.Action == "RP")
+            : action;
     }
 
     public static void LoseHC() {
@@ -505,8 +513,7 @@ public static class RandomizerSwitch {
     // true only while Autoplayer.Drop grants from pickup.tmp; bingo looks away
     public static bool FromFile;
 
-    // when set, appended to every pickup message; RandomizerMW uses it to
-    // render multiworld grants as "[pickup] from Player N" in one line
+    // appended to every pickup message while set (RandomizerMW's " from Player N")
     public static string MessageSuffix = null;
 
     public static void PickupMessage(string text, int frames = 120) {

@@ -1,9 +1,7 @@
 using System.Collections.Generic;
 
-// Enemies grouped the way players talk about them. Keys are prefab names, which is what a
-// spawned enemy's GameObject is called; every name a placeholder in the game can spawn is
-// here. The swarm's small and tiny splits are the only spawned enemies with no placeholder,
-// and they stay unmapped so they count no more than they do for KillEnemies.
+// Enemies grouped the way players talk about them, keyed by prefab name (a spawned enemy's
+// GameObject name). The swarm's small/tiny splits stay unmapped, as they are for KillEnemies.
 public static class BingoEnemyKinds {
     // index = the kind's defeat bitfield (BingoController.DefeatBaseId + index), which is
     // in the save file: never reorder, append only

@@ -4,8 +4,8 @@ using Core;
 using Game;
 using UnityEngine;
 
-// The unused-asset sweep freezes the game for a moment and the next loads re-read what it freed, so
-// it runs behind a fade or the teleport bloom once the process has grown, in the open only at a ceiling.
+// Sweeps stall and make the next loads re-read what they freed, so with the setting on they wait
+// for GrowthMb behind a fade or bloom, and for CeilingMb in the open.
 public static class UberGCManager {
     private const float MinInterval = 10f;
     private const float GrowthMb = 256f;
@@ -54,7 +54,9 @@ public static class UberGCManager {
         var op = Resources.UnloadUnusedAssets();
         op.priority = 0;
         s_lastUnload = Time.realtimeSinceStartup;
-        s_sweptAtMb = PrivateMb();
+        // a failed sample must not put the next covered sweep out of reach
+        var after = PrivateMb();
+        s_sweptAtMb = after == float.MaxValue ? 0f : after;
         Swept++;
     }
 

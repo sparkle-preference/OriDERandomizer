@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -55,25 +56,27 @@ public static class RandomizerSyncManager {
             var parts = Randomizer.SyncId.Split('.');
             RootUrl = $"{WebBase()}/netcode/game/{parts[0]}/player/{parts[1]}";
             var url = $"{WsBase()}/netcode/game/{parts[0]}/player/{parts[1]}/ws";
+            DropSidecarHandles();
+            if (url != wsUrl) {
+                // another game's finds, signals and credits must not reach this one
+                PickupQueue.Clear();
+                CurrentSignals.Clear();
+                completePending = false;
+            }
+
             wsUrl = url;
-            // alt+L doubles as the user's "retry the websocket" button:
-            // a socket written off earlier this session gets a fresh
-            // shot on every seed reload
+            // clears the give-up latches; the socket restarts only for a new url or after a write-off
             wsDead = false;
             wsLoadAttempts = 0;
             wsFoundUnsupported = false;
             wsNoHttp = false; // the server re-sends nohttp on connect
             wsWasOpen = false;
-            DropSidecarHandles();
             StartWebsocket(url);
         }
     }
 
-    // Idempotent: alt+L re-runs Initialize, but the socket only restarts
-    // when the game/player id actually changed. Reconnects within a game
-    // are the native side's job (auto-reconnect with backoff); *load*
-    // failures are retried from Update — a freshly extracted dll can lose
-    // a race with the AV scanner and be loadable moments later.
+    // Restarts the socket only for a new url; within a game the native side reconnects.
+    // Load failures retry from Update: a fresh extract can lose a race with the AV scanner.
     public static void StartWebsocket(string url) {
         try {
             wsNextTry = Time.realtimeSinceStartup + 3f;
@@ -85,7 +88,7 @@ public static class RandomizerSyncManager {
                 wsLoadAttempts++;
                 if (wsLoadAttempts >= 3) {
                     wsDead = true;
-                    Randomizer.log("ws diag: native load failed 3 times; using http this session");
+                    Randomizer.log("ws diag: native load failed 3 times; no netcode this session (no sidecar, no http either)");
                 }
 
                 return;
@@ -104,13 +107,14 @@ public static class RandomizerSyncManager {
             NativeWebSocket.SetUrl(url);
             NativeWebSocket.SetPingInterval(30);
             NativeWebSocket.SetAutoReconnect(true);
+            wsOpensBefore = NativeWebSocket.GetOpenCount();
+            wsErrorsBefore = NativeWebSocket.GetErrorCount();
             NativeWebSocket.Start();
             wsStartedUrl = url;
             WsGeneration++;
             Randomizer.log($"ws diag: socket started for {url} (ca: {NativeWebSocket.CaPath ?? "none"})");
         } catch (Exception e) {
-            // file-only: LogError renders on-screen and itself NREs during
-            // early seed parse (no UI yet) — that cascade broke seed loading
+            // file-only: this runs during line-0 seed parse, before LogError can render
             Randomizer.log($"StartWebsocket: {e}");
             wsDead = true;
         }
@@ -123,8 +127,7 @@ public static class RandomizerSyncManager {
 
     public static void Update() {
         try {
-            // silence is measured in ticking time: a menu or a tab-out stops the ticks the
-            // server would have answered, and must not read as the server going quiet
+            // silence counts ticking time only: a menu or tab-out must not read as the server going quiet
             var now = Time.realtimeSinceStartup;
             if (now - lastTick > TickGap && Answered > 0f) {
                 Answered = now;
@@ -132,8 +135,7 @@ public static class RandomizerSyncManager {
 
             lastTick = now;
 
-            // pickups wait in the queue until a transport exists (with the
-            // http fallback gone, that means until the socket reconnects)
+            // pickups wait in the queue until a transport exists
             if (SendingPickup == null && PickupQueue.Count > 0 && !Refused
                 && Time.realtimeSinceStartup >= foundRetryAt
                 && ((WsOpen && !wsFoundUnsupported) || HttpLaneOpen)) {
@@ -146,9 +148,7 @@ public static class RandomizerSyncManager {
                     SendFoundHttp();
                 }
             }
-            // a ws-sent pickup whose ack never came retries — via http if
-            // that's still allowed, else over the socket. The server dedups
-            // replayed pickups, so double delivery is as safe as a retry
+            // an unacked ws pickup retries after 5s; the server dedups replays
             else if (SendingPickup != null && wsFoundToken != 0
                 && Time.realtimeSinceStartup - wsFoundSentAt > 5f) {
                 FoundFallback();
@@ -172,8 +172,7 @@ public static class RandomizerSyncManager {
                 TrySendComplete();
             }
 
-            // websocket frames are drained every frame, not at tick
-            // cadence — pushed signals should land with frame latency
+            // drained every frame so pushed signals land with frame latency
             CheckWebsocketHealth();
             if (WsOpen) {
                 string frame;
@@ -186,15 +185,13 @@ public static class RandomizerSyncManager {
                 NativeWebSocket.SendText("goals:");
             }
 
-            // every frame, not on the open/closed edge: a socket can be replaced without this
-            // ever reading false, and Apply returns immediately once it has nothing to say
+            // every frame, not on the open edge: a replaced socket may never read closed here
             RandomizerGhostSignal.Apply();
             wsWasOpen = WsOpen;
             Silent();
             PumpSidecar();
 
-            // a refused game does not tick again until Alt+L: the answer would be the same and
-            // the server closes the socket on every one
+            // a refused game stops ticking until Alt+L; the server closes the socket on each refusal
             if (Refused) {
                 return;
             }
@@ -234,12 +231,14 @@ public static class RandomizerSyncManager {
     private static int foundHandle;
     private static readonly List<int> sidecarForget = new List<int>();
 
-    // alt+L moves RootUrl; a stale reply must not land in the new game
+    // alt+L: a stale reply must not land in the new game; the in-flight pickup goes back in line
     private static void DropSidecarHandles() {
         SidecarForget(tickHandle);
         SidecarForget(foundHandle);
         tickHandle = 0;
         foundHandle = 0;
+        wsFoundToken = 0;
+        RequeuePickup();
     }
 
     public static void SidecarForget(int handle) {
@@ -282,8 +281,7 @@ public static class RandomizerSyncManager {
                 foundHandle = 0;
                 FoundSidecarDone(status);
             } else if (Time.realtimeSinceStartup - foundSentAt > SidecarLimit) {
-                // nothing else clears SendingPickup, so a request the sidecar never
-                // finishes would hold the queue shut for the rest of the run
+                // nothing else clears SendingPickup: a request that never finishes would wedge the queue
                 SidecarForget(foundHandle);
                 foundHandle = 0;
                 RequeuePickup();
@@ -291,8 +289,7 @@ public static class RandomizerSyncManager {
         }
     }
 
-    // Gone revokes RBs and drops, NotAcceptable and success drop, PreconditionFailed is
-    // the server refusing the game, anything else goes back in the queue after a gap
+    // 410 revokes RBs and drops; 406 and 2xx drop; 412 refuses the game; anything else requeues after a gap
     private static void FoundSidecarDone(int status) {
         if (SendingPickup == null) {
             return;
@@ -324,10 +321,15 @@ public static class RandomizerSyncManager {
 
         SidecarForget(foundHandle);
         foundSentAt = Time.realtimeSinceStartup;
-        foundHandle = NativeWebSocket.HttpBegin("GET", SendingPickup.GetURL().ToString(), null, null);
+        foundHandle = NativeWebSocket.HttpBegin("GET", SendingPickup.GetURL(), null, null);
         if (foundHandle == 0) {
             RequeuePickup();
         }
+    }
+
+    // the sidecar writes the url into its request line as given, so path text must arrive escaped
+    public static string RequestUrl(string url) {
+        return new Uri(url).AbsoluteUri;
     }
 
     // no transport for this one right now: back in line, never dropped
@@ -366,9 +368,7 @@ public static class RandomizerSyncManager {
         }
     }
 
-    // Uri.EscapeDataString throws past ~32k chars and seeds can get there
-    // (plandos especially, escaped commas inflate 3x). Chunked escaping is
-    // character-wise safe: seed text is ASCII.
+    // EscapeDataString throws past ~32k chars; chunking is safe unless a chunk splits a surrogate pair
     public static string EscapeLong(string s) {
         var sb = new StringBuilder();
         for (var i = 0; i < s.Length; i += 16000) {
@@ -386,15 +386,8 @@ public static class RandomizerSyncManager {
         return bf >> 2 * taste & 3;
     }
 
-    // One frame off the websocket. Kinds: "tick:<body>" (<body> is
-    // byte-identical to a /tick/ http response, whether replied or pushed),
-    // "foundack:<token>|<status>" (our pickup ack), "nohttp:" (server says
-    // the http fallback routes are gone — websocket-only from here on),
-    // "err:<what>" (server didn't understand one of our frames — old
-    // server). Unknown kinds are logged and dropped so older dlls survive
-    // newer servers. Only tick/foundack need Sein (they touch the
-    // inventory); the rest must land even at the title screen — nohttp
-    // in particular arrives right after connect.
+    // One websocket frame: "tick:<body>" (same body as an http /tick/ reply, replied or pushed),
+    // "foundack:<token>|<status>", "nohttp:", "err:<what>", ghost kinds; unknown kinds are dropped.
     public static void ProcessFrame(string frame) {
         try {
             var sep = frame.IndexOf(':');
@@ -429,8 +422,7 @@ public static class RandomizerSyncManager {
                 wsNoHttp = true;
                 Randomizer.log("ws: server flagged http fallback unavailable; websocket-only mode");
             } else if (kind == "err" && sep >= 0) {
-                // a server that errs one of our frame kinds predates it:
-                // route that channel back to http
+                // an err'd frame kind means an older server: that channel goes back to http
                 var what = frame.Substring(sep + 1);
                 if (what.StartsWith("found")) {
                     wsFoundUnsupported = true;
@@ -457,10 +449,8 @@ public static class RandomizerSyncManager {
         }
     }
 
-    // Same statuses as the http door: Gone revokes RBs and stops,
-    // NotAcceptable drops, anything else transient retries (ws up to 3
-    // attempts, then http). Stale acks (token mismatch: we already fell
-    // back to http) are ignored — the server dedups the replay.
+    // Same statuses as the http door; transient failures retry up to 3 times on ws, then http.
+    // A stale token means we already fell back, and the server dedups the replay.
     private static void OnFoundAck(string body) {
         var parts = body.Split('|');
         var token = int.Parse(parts[0]);
@@ -487,9 +477,7 @@ public static class RandomizerSyncManager {
         }
     }
 
-    // The in-flight pickup needs another route: http if allowed, else keep
-    // working the socket (resend now if it's open, or re-arm the timeout
-    // and wait out the reconnect — the retry loop re-fires every 5s).
+    // http if allowed, else resend on an open socket, else re-arm the 5s timeout and wait
     private static void FoundFallback() {
         if (HttpLaneOpen) {
             wsFoundToken = 0;
@@ -552,10 +540,15 @@ public static class RandomizerSyncManager {
                         }
 
                         Randomizer.LogError($"Unknown ?Warp? {rawUpgrade}");
+                        continue;
                     }
 
-                    var id = int.Parse(splitpair[0]);
-                    var cnt = int.Parse(splitpair[1]);
+                    // a token this dll cannot read costs only itself, not the rest of the tick
+                    int id, cnt;
+                    if (splitpair.Length < 2 || !int.TryParse(splitpair[0], out id) || !int.TryParse(splitpair[1], out cnt)) {
+                        continue;
+                    }
+
                     // 900-909: tree progress
                     if (id >= 900 && id < 910) {
                         var tree = id - 899;
@@ -578,16 +571,14 @@ public static class RandomizerSyncManager {
                     } else if (RandomizerBonus.UpgradeCount(id) < cnt) {
                         GrantUpgrade(id);
                         mustRefreshLogic = true;
-                    } else if (!PickupQueue.Where(p => p.type == "RB" && p.id == splitpair[0]).Any() && RandomizerBonus.UpgradeCount(id) > cnt) {
+                    } else if (!UnsentUpgrade(splitpair[0]) && RandomizerBonus.UpgradeCount(id) > cnt) {
                         RandomizerBonus.UpgradeID(-id);
                         mustRefreshLogic = true;
                     }
                 }
             }
 
-            // signals ride at index 5. In multiworld games the field is
-            // always present (possibly empty) so the slot bitfields can
-            // sit at a fixed index 6; legacy games omit it when empty.
+            // field 5, signals: multiworld always sends it (maybe empty) so slots sit at 6
             if (array.Length > 5 && array[5] != "") {
                 foreach (var text in array[5].Split('|')) {
                     if (text == "" || CurrentSignals.Contains(text)) {
@@ -618,8 +609,7 @@ public static class RandomizerSyncManager {
                         // archipelago death link: "<token>;<source>"
                         RandomizerDeathLink.OnSignal(text.Substring(3));
                     } else if (text.StartsWith("apfrom:")) {
-                        // who found the slots this tick is about to grant;
-                        // the slot field is read further down, after this
+                        // who found the slots this tick grants; must precede the slot field below
                         RandomizerMW.OnApFromSignal(text.Substring(7));
                     } else if (text == "spawnChaos") {
                         Randomizer.ChaosVerbose = true;
@@ -630,12 +620,10 @@ public static class RandomizerSyncManager {
                     if (WsOpen) {
                         NativeWebSocket.SendText("conf:" + text);
                     } else if (HttpLaneOpen) {
-                        SidecarForget(NativeWebSocket.HttpBegin("GET", RootUrl + "/callback/" + text, null, null));
+                        SidecarForget(NativeWebSocket.HttpBegin("GET", RequestUrl(RootUrl + "/callback/" + text), null, null));
                     }
 
-                    // (no transport right now: the confirm is lost, same
-                    // as a failed fire-and-forget GET today — the signal
-                    // lingers server-side until the next seed reload)
+                    // no transport: this confirm is lost, and nothing re-sends it
                     CurrentSignals.Add(text);
                 }
             } else {
@@ -643,8 +631,7 @@ public static class RandomizerSyncManager {
             }
 
             if (Randomizer.SyncMode == 5 && array.Length > 7) {
-                // multiworld: player names first, so slot grant messages
-                // on this same tick can already use them
+                // names before slots, so this tick's grant messages can use them
                 RandomizerMW.OnNamesField(array[7]);
             }
 
@@ -661,9 +648,7 @@ public static class RandomizerSyncManager {
             }
 
             if (Randomizer.SyncMode == 5 && array.Length > 8 && array[8] != "") {
-                // archipelago: hints bought for the slots we asked about.
-                // Present only once something has been bought, so every
-                // other multiworld tick still ends at field 7.
+                // AP hints for the slots we asked about; absent until one is bought
                 RandomizerMW.OnApHintsField(array[8]);
             }
 
@@ -673,6 +658,12 @@ public static class RandomizerSyncManager {
         } finally {
             RandomizerSwitch.SilentMode = false;
         }
+    }
+
+    // queued or in flight: the server's count cannot include it yet
+    private static bool UnsentUpgrade(string id) {
+        return (SendingPickup != null && SendingPickup.type == "RB" && SendingPickup.id == id)
+            || PickupQueue.Any(p => p.type == "RB" && p.id == id);
     }
 
     // a teammate's upgrade has no location and never passes through GivePickup
@@ -694,12 +685,8 @@ public static class RandomizerSyncManager {
         }
     }
 
-    // credits-roll ping: the server treats it as the real game end, and in
-    // multiworld it releases our world's leftovers to their owners — so it
-    // is no longer fire-and-forget (game 134478 stranded 62 items when this
-    // died with the process during credits). Retries until the server acks
-    // (completeack frame); the http path can't ack, so it just gets a few
-    // spaced attempts. game_complete is idempotent server-side.
+    // Credits ping: the server's game end, which in multiworld releases our leftovers to their owners.
+    // Retries until completeack; the http path cannot ack, so it gets five spaced tries.
     public static void SendGameComplete() {
         if (!Randomizer.Sync || Randomizer.SyncId == "") {
             return;
@@ -730,8 +717,7 @@ public static class RandomizerSyncManager {
         }
     }
 
-    // A sync seed whose server never answers is silently solo: pickups do not reach anyone and
-    // nothing on screen says so. Said once, after long enough that a slow start cannot trigger it.
+    // warns once when a sync seed's server never answers; long enough to outlast a slow start
     private const float SilenceLimit = 30f;
 
     private static void Silent() {
@@ -744,8 +730,7 @@ public static class RandomizerSyncManager {
         Randomizer.printInfo("@Not syncing@: no reply from the server. Check your Netcode URLs.", 480);
     }
 
-    // 412 is the server saying this game is not its. Nothing more goes out until Alt+L; the
-    // pickup in flight waits in the queue with the rest.
+    // 412: the server does not know this game. Nothing goes out until Alt+L; pickups stay queued.
     private static void Refuse() {
         if (Refused) {
             return;
@@ -833,28 +818,25 @@ public static class RandomizerSyncManager {
 
     public static bool NetworkFree => Randomizer.SyncId == "" || (PickupQueue.Count == 0 && SendingPickup == null);
 
-    // Same fields the http tick sends, as a form-encoded body. The server's
-    // ws adapter must parse this identically to request.form.
+    // form-encoded; the ws tick and the http /tick/ POST carry the same body
     private static string TickPayload() {
         var pos = Characters.Sein.Position;
         var sb = new StringBuilder();
-        sb.Append("x=").Append(pos.x.ToString());
-        sb.Append("&y=").Append(pos.y.ToString());
+        sb.Append("x=").Append(pos.x.ToString(CultureInfo.InvariantCulture));
+        sb.Append("&y=").Append(pos.y.ToString(CultureInfo.InvariantCulture));
         sb.Append("&version=").Append(Uri.EscapeDataString(Randomizer.VERSION));
         for (var i = 0; i < 8; i++) {
             sb.Append("&seen_").Append(i).Append('=').Append(fixInt(Characters.Sein.Inventory.GetRandomizerItem(SeenBase + i)));
             sb.Append("&have_").Append(i).Append('=').Append(fixInt(Characters.Sein.Inventory.GetRandomizerItem(930 + i)));
         }
 
-        // archipelago: the manifest slots our own reveals want a hint for.
-        // Absent on every other seed, and older servers ignore the key.
+        // AP: manifest slots our own reveals want hinted; absent on other seeds
         var apHints = RandomizerMW.HintRequestField();
         if (apHints != null) {
             sb.Append("&aph=").Append(apHints);
         }
 
-        // archipelago death link: this run's death counters, which the
-        // server diffs. Absent on every seed without the option.
+        // AP DeathLink counters, which the server diffs; absent without the option
         var deaths = RandomizerDeathLink.Field();
         if (deaths != null) {
             sb.Append("&dl=").Append(deaths);
@@ -863,18 +845,19 @@ public static class RandomizerSyncManager {
         return sb.ToString();
     }
 
-    // A socket that has never connected and keeps erroring is written off
-    // for the session (bad TLS, old server, blocked port — http covers us).
-    // A socket that connected once keeps auto-reconnecting forever.
+    // Write-off at 8 errors and no open since this socket started; one that opened reconnects forever.
+    // The native counters run for the whole process, hence the baselines.
     private static void CheckWebsocketHealth() {
         if (wsDead || wsStartedUrl == null || !NativeWebSocket.Loaded) {
             return;
         }
 
-        if (NativeWebSocket.GetOpenCount() == 0 && NativeWebSocket.GetErrorCount() >= 8) {
+        var errors = NativeWebSocket.GetErrorCount() - wsErrorsBefore;
+        if (NativeWebSocket.GetOpenCount() == wsOpensBefore && errors >= 8) {
             wsDead = true;
             NativeWebSocket.Stop();
-            Randomizer.log($"websocket: giving up after {NativeWebSocket.GetErrorCount()} failures ({NativeWebSocket.GetLastError()}); using http");
+            wsStartedUrl = null; // so alt+L starts it again
+            Randomizer.log($"websocket: giving up after {errors} failures ({NativeWebSocket.GetLastError()}); using http");
         }
     }
 
@@ -885,11 +868,11 @@ public static class RandomizerSyncManager {
 
     private const float TickGap = 2f;
 
-    private static bool Refused;
+    public static bool Refused { get; private set; }
 
     private static bool Warned;
 
-    // Which coords have been seen, eight bitfields. Sent by name, so only the slots moved.
+    // eight seen-coords bitfields; the wire names them seen_i, so the ids are free to move
     public const int SeenBase = 4060;
 
     private static string wsStartedUrl;
@@ -901,6 +884,10 @@ public static class RandomizerSyncManager {
     private static int wsLoadAttempts;
 
     private static float wsNextTry;
+
+    private static int wsOpensBefore;
+
+    private static int wsErrorsBefore;
 
     private static int wsFoundCounter;
 
@@ -934,7 +921,6 @@ public static class RandomizerSyncManager {
 
     private static float completeNextAt;
 
-    // BingoController checks this before its own http fallback
     public static bool WsNoHttp => wsNoHttp;
 
     public static string fixInt(int stupidFuckingSignedInt) {
@@ -991,15 +977,14 @@ public static class RandomizerSyncManager {
             }
         }
 
-        public Uri GetURL() {
+        public string GetURL() {
             var url = RootUrl + "/found/" + coords + "/" + type + "/" + CleanedId;
             url += "?zone=" + RandomizerStatsManager.CurrentZone();
 
-            return new Uri(url);
+            return RequestUrl(url);
         }
 
-        // found:<token>|<qs>|<coords>|<kind>|<id> — id last, the server
-        // parses it greedily (TW ids carry commas)
+        // found:<token>|<qs>|<coords>|<kind>|<id>; id last, the server splits at most four times
         public string WsBody(int token) {
             return "found:" + token + "|zone=" + Uri.EscapeDataString(RandomizerStatsManager.CurrentZone()) + "|" + coords + "|" + type + "|" + CleanedId;
         }

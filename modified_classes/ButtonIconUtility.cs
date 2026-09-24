@@ -158,7 +158,7 @@ public static class ButtonIconUtility {
         { XboxOneController.Axis.Gamepad1LeftTrigger, "<icon>m</>" }, { XboxOneController.Axis.Gamepad1RightTrigger, "<icon>k</>" }
     };
 
-    // The same answer the game gives its own messages, for text of the randomizer's own.
+    // the game's own answer for a key, for the randomizer's text
     public static string IconFor(KeyCode keyCode) {
         return KeyCodeToString(keyCode);
     }
@@ -171,9 +171,8 @@ public static class ButtonIconUtility {
             return m_keycodeToIconString[keyCode];
         }
 
-        // A cap borrowed for a key the game shipped without one. Neither answer is remembered
-        // until the caps are in: the table below is a cache of misses as well as hits, and a
-        // name cached before then is a name for the rest of the session.
+        // A borrowed cap, if any. The table caches misses too, so nothing is cached until the
+        // borrowed caps are registered.
         var borrowed = RandomizerKeyIcons.Glyph(keyCode);
         if (borrowed != null) {
             return borrowed;

@@ -135,11 +135,15 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
         if (!GameMapUI.Instance.ShowingObjective) {
             var msg = $"#{ObjectiveMessageProvider}#: {RandomizerText.GetObjectiveText()}\n{RandomizerText.MapFilterText}";
-            if (msg.Count(c => c == '\n') > 1) {
-                msg = "\n" + msg; // paddingu paddingu...
+            if (msg != m_objectiveShown) {
+                m_objectiveShown = msg;
+                if (msg.Count(c => c == '\n') > 1) {
+                    msg = "\n" + msg; // paddingu paddingu...
+                }
+
+                ObjectiveText.SetMessage(new MessageDescriptor(msg));
             }
 
-            ObjectiveText.SetMessage(new MessageDescriptor(msg));
             ObjectiveText.gameObject.SetActive(true);
         } else {
             ObjectiveText.gameObject.SetActive(false);
@@ -237,9 +241,12 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
     public Vector3 PlayerPositionOffset;
 
+    // NonSerialized: built scenes have no type tree, so a new serialized field misreads the asset
     [NonSerialized] public MessageBox RandomizerTooltip;
 
     [NonSerialized] public MessageBox WarpPrompt;
 
     [NonSerialized] public List<MessageBox> KeysanityDoorTooltips = new List<MessageBox>();
+
+    [NonSerialized] private string m_objectiveShown;
 }

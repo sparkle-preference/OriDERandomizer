@@ -135,10 +135,8 @@ public class RandomizerKeysanity {
 
     private static int apSlot(int coords) => coords <= -2 && coords >= -257 ? -coords - 2 : -1;
 
-    // Archipelago's fill decides where exported keys really are, so the baked
-    // zone is just the pre-export roll: show progress, not a confident wrong
-    // answer. The bridge's reply (real zone, or "Archipelago" for a key held
-    // outside the Ori worlds) lands in ApHints and takes over from there.
+    // an exported key's baked zone is only the pre-export roll: show "loading" until the
+    // bridge's hint (ApHints) says where it really is
     private string clueArea(RandomizerKeysanityHintInfo rkhi) {
         var slot = apSlot(rkhi.Coords);
         if (RandomizerMW.ApGrants && slot >= 0) {

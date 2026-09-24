@@ -1,6 +1,6 @@
 public class ControlsSettingsScreen : CustomSettingsScreen {
     public override void InitScreen() {
-        AddSlider(RandomizerSettings.Controls.BashDeadzone, 0f, 1f, 0.05f, "The size of the stick deadzone when aiming Bash on controller (0% - 200%).");
+        AddSlider(RandomizerSettings.Controls.BashDeadzone, 0f, 1f, 0.05f, "The size of the stick deadzone when aiming Bash on controller (0% - 100%).");
         AddToggle(RandomizerSettings.Controls.FastGrenadeAim, "Toggles fast grenade aim.");
         AddSlider(RandomizerSettings.Controls.GrenadeAimSpeed, 0f, 2f, 0.1f, "Allows adjusting the speed at which the grenade will aim on controller (0% - 200%).");
         AddToggle(RandomizerSettings.Controls.SwimmingMouseAim, "Toggles directing Ori through water with the mouse.");

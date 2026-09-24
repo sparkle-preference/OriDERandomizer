@@ -581,10 +581,17 @@ public static class RandomizerBoxes {
         SetOff(bit, on <= 0);
     }
 
-    public static void ClearOff() {
+    // true when any box was off
+    public static bool ClearOff() {
+        var cleared = false;
         for (var id = FirstBitId; id <= LastBitId; id++) {
-            Randomizer.Inventory.SetRandomizerItem(id, 0);
+            if (Randomizer.Inventory.GetRandomizerItem(id) != 0) {
+                Randomizer.Inventory.SetRandomizerItem(id, 0);
+                cleared = true;
+            }
         }
+
+        return cleared;
     }
 
     public static void SaveLoaded() {

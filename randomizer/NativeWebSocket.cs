@@ -5,25 +5,10 @@ using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
 
-// Managed face of the native websocket sidecar. The dll is built from
-// github.com/timoschwarzer/dotnet-native-websocket (our changes are PR'd
-// upstream; the built binary lives in resource_files/ — see the README
-// there for the build recipe). The native dll and the CA bundle mbedtls
-// needs ride inside Assembly-CSharp.dll as embedded resources (named
-// exactly DllResource / CaResource); Load() extracts both next to
-// oriDE.exe.
-//
-// No [DllImport("NativeWebSocket.dll")] anywhere: this Mono can't resolve a
-// native dll that appeared on disk after process start (kernel32 LoadLibrary
-// by full path succeeded while the managed-to-native wrapper threw
-// DllNotFound; a pre-existing file worked on relaunch). Every export is
-// bound by hand off the module handle instead — GetProcAddress +
-// GetDelegateForFunctionPointer — which cannot be affected by Mono's
-// search behavior.
-//
-// Logging rule for this file: Randomizer.log ONLY. Load() runs during
-// line-0 seed parsing, before the UI exists, and Randomizer.LogError
-// renders on-screen — it writes its line and then NREs at that phase.
+// Managed face of the native sidecar (build: resource_files/NativeWebSocket.README.md). The dll and
+// cacert.pem are embedded resources, extracted next to oriDE.exe. Exports are bound by hand: this Mono
+// cannot [DllImport] a dll that appeared mid-run. Wrapper and dll are an ABI pair: ship them together.
+// Randomizer.log only in this file: Load() runs during line-0 seed parse, before LogError can render.
 public static class NativeWebSocket {
     public enum SocketState {
         Connecting = 0,
@@ -132,12 +117,10 @@ public static class NativeWebSocket {
     private static IntFn rtc_release;
     private static PtrLenFn rtc_last_error;
 
-    // false when the extracted sidecar predates the updater; netcode is
-    // unaffected, the update option just stays hidden
+    // false when the extracted sidecar predates the updater: only the update option hides
     public static bool HttpAvailable => http_download != null;
 
-    // false when it predates data channels; ghost multiplayer stays off and
-    // everything else carries on
+    // false when it predates data channels: only ghost multiplayer is off
     public static bool RtcAvailable => rtc_create != null;
 
     // false when it predates the async request api: no http lane without it
@@ -215,7 +198,7 @@ public static class NativeWebSocket {
             }
 
             if (http_begin == null) {
-                Randomizer.log("ws diag: sidecar has no async http; falling back to System.Net");
+                Randomizer.log("ws diag: sidecar has no async http; no http lane");
             }
 
             initialize_network();
@@ -242,8 +225,7 @@ public static class NativeWebSocket {
         return Marshal.GetDelegateForFunctionPointer(fn, t);
     }
 
-    // Application.dataPath is <install root>/oriDE_Data and never flakes;
-    // Process.MainModule on this Mono is not so dependable.
+    // dataPath is <install root>/oriDE_Data; Process.MainModule is unreliable on this Mono
     private static string ExeDir() {
         try {
             var dataPath = Application.dataPath;
@@ -258,9 +240,7 @@ public static class NativeWebSocket {
         return Environment.CurrentDirectory;
     }
 
-    // Writes the resource to disk if missing or stale. A locked stale file
-    // (second game instance) is used as-is — versions only drift across
-    // dll updates, and both instances then hold the same Assembly-CSharp.
+    // Writes the resource if missing or stale; a locked stale file (a second instance) is used as-is.
     private static string Extract(string resource, string target, Func<string, byte[], bool> current) {
         var bytes = RandomizerResources.ReadResource(resource);
         if (bytes == null) {
@@ -275,7 +255,11 @@ public static class NativeWebSocket {
             } else {
                 Randomizer.log($"ws diag: {target} already current ({bytes.Length} bytes)");
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
+            if (!(e is IOException || e is UnauthorizedAccessException)) {
+                throw;
+            }
+
             Randomizer.log($"ws diag: can't write {target} ({e.Message}); {(File.Exists(target) ? "using existing file" : "giving up")}");
             if (!File.Exists(target)) {
                 return null;
@@ -408,9 +392,8 @@ public static class NativeWebSocket {
         return http_download(url, CaPath ?? "", outPath);
     }
 
-    // Async request handles. Returns 0 if the request could not be started;
-    // poll HttpStatus until it stops returning HttpPending, then read the body
-    // and always HttpRelease.
+    // Returns 0 if the request could not start. Poll HttpStatus past HttpPending, read the body,
+    // then always HttpRelease.
     public static int HttpBegin(string method, string url, string body, string contentType) {
         if (http_begin == null) {
             return 0;
@@ -452,19 +435,24 @@ public static class NativeWebSocket {
         return Encoding.UTF8.GetString(bytes);
     }
 
+    private static readonly object httpErrorLock = new object();
+
+    // the native side hands every caller one shared buffer, so callers on other threads take turns
     public static string GetLastHttpError() {
         if (get_last_http_error == null) {
             return "sidecar has no http support";
         }
 
-        var ptr = get_last_http_error(out var length);
-        if (ptr == IntPtr.Zero || length == 0) {
-            return "";
-        }
+        lock (httpErrorLock) {
+            var ptr = get_last_http_error(out var length);
+            if (ptr == IntPtr.Zero || length == 0) {
+                return "";
+            }
 
-        var bytes = new byte[length];
-        Marshal.Copy(ptr, bytes, 0, length);
-        return Encoding.UTF8.GetString(bytes);
+            var bytes = new byte[length];
+            Marshal.Copy(ptr, bytes, 0, length);
+            return Encoding.UTF8.GetString(bytes);
+        }
     }
 
     public static bool HasPendingMessage() {
@@ -484,9 +472,8 @@ public static class NativeWebSocket {
         return Encoding.UTF8.GetString(bytes);
     }
 
-    // Peer connections. Signalling is non-trickle: create, poll RtcLocalReady, hand the one
-    // description to the far side through the website, feed back what it answers. Always
-    // RtcRelease -- the native side holds a peer connection and its threads until you do.
+    // Peer connections, non-trickle: create, poll RtcLocalReady, send the one description through the
+    // website, feed back the answer. Always RtcRelease: the native side holds threads until then.
     public enum RtcState {
         New = 0,
         Connecting = 1,
@@ -496,8 +483,7 @@ public static class NativeWebSocket {
         Closed = 5,
     }
 
-    // Returns 0 if a peer could not be created. The offerer opens the data channel; the
-    // answerer waits for it to arrive.
+    // 0 if no peer could be created; the offerer opens the data channel, the answerer waits for it
     public static int RtcCreate(bool offerer, string iceServers) {
         return rtc_create == null ? 0 : rtc_create(offerer ? 1 : 0, iceServers ?? "");
     }
@@ -534,19 +520,23 @@ public static class NativeWebSocket {
         return rtc_has_message != null && rtc_has_message(handle) != 0;
     }
 
-    // Returns null when the queue is empty. Binary, because motion packets are.
+    // Returns null when the queue is empty; an empty message is popped like any other.
+    // Binary, because motion packets are.
     public static byte[] RtcGetMessage(int handle) {
         if (rtc_get_message == null) {
             return null;
         }
 
         var ptr = rtc_get_message(handle, out var length);
-        if (ptr == IntPtr.Zero || length == 0) {
+        if (ptr == IntPtr.Zero) {
             return null;
         }
 
         var bytes = new byte[length];
-        Marshal.Copy(ptr, bytes, 0, length);
+        if (length > 0) {
+            Marshal.Copy(ptr, bytes, 0, length);
+        }
+
         rtc_pop_message(handle);
         return bytes;
     }

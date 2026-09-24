@@ -6,8 +6,7 @@ using UnityEngine;
 
 using Sample = RandomizerGhost.Sample;
 
-// One rendered ghost. Everything here is per-ghost state, which is why it is an instance:
-// multiplayer draws one of these per peer, practice mode draws one.
+// One rendered ghost: one per peer or echo, or practice mode's replay.
 public class RandomizerGhostView {
     public RandomizerGhostView(string label, Color tint) {
         Label = label;
@@ -31,8 +30,7 @@ public class RandomizerGhostView {
         GhostObject = Object.Instantiate(sprite.gameObject);
         GhostObject.name = "randomizerGhost";
         GhostObject.transform.parent = null;
-        // Instantiate keeps the local transform but drops the parent, so the sprite's offset
-        // within Ori would become a world position near the origin; seat it on the live Ori
+        // Instantiate drops the parent but keeps the local offset: seat it on the live Ori
         GhostObject.transform.position = sprite.position;
         GhostObject.transform.rotation = sprite.rotation;
         Object.DontDestroyOnLoad(GhostObject);
@@ -44,8 +42,7 @@ public class RandomizerGhostView {
             }
         }
 
-        // true asks for the instance material: false hands back the one the live Ori is
-        // still rendering with, and tinting that tints them both
+        // true: the instance material; false is the shared one the live Ori renders with
         foreach (var renderer in GhostObject.GetComponentsInChildren<Renderer>(true)) {
             UberShaderAPI.SetColor(renderer, new Color(Shade.r, Shade.g, Shade.b, 0f), true);
         }
@@ -60,6 +57,7 @@ public class RandomizerGhostView {
         Faded = 1f;
         // it fades up from nothing the same way it will fade away
         Veil = 0f;
+        Placed = false;
         Leaving = false;
         WarpUntil = 0f;
         return true;
@@ -67,7 +65,7 @@ public class RandomizerGhostView {
 
     public void Despawn() {
         if (GhostObject != null) {
-            // one line a ghost, so a QA pass can tell "the effect is broken" from "it never fired"
+            // tells a broken effect from one that never fired
             Randomizer.log("ghost " + Label + ": used " + Used.Aura + " auras, " + Used.Arrow +
                 " arrows, " + Used.Aim + " aim lines, " + Used.WallArrow + " wall arrows, " +
                 Used.Burst + " bursts, " + Used.Link + " links");
@@ -89,8 +87,7 @@ public class RandomizerGhostView {
         Labelled = null;
     }
 
-    // Hiding is SetActive, which also stops the animator, most of what a distant ghost costs;
-    // transforms still apply to an inactive object, so it does not snap when it comes back.
+    // Hiding is SetActive: it stops the animator, and transforms still apply while inactive.
     public void Cull(bool hidden) {
         if (GhostObject == null || Hidden == hidden) {
             return;
@@ -98,7 +95,8 @@ public class RandomizerGhostView {
 
         Hidden = hidden;
         if (!hidden) {
-            GhostObject.SetActive(true);
+            // a corpse stays down: Dead only acts when the death flag changes
+            GhostObject.SetActive(!DeadShown);
             if (LabelObject != null) {
                 LabelObject.SetActive(Labelled != null);
                 LabelFresh = true;
@@ -117,14 +115,13 @@ public class RandomizerGhostView {
 
     public bool Gone { get { return GhostObject == null || (Leaving && Veil <= 0f); } }
 
-    // Walks the veil towards where this ghost belongs and repaints if it moved. Every frame,
-    // for ghosts on screen and ghosts on their way out alike.
+    // Steps the veil toward shown or hidden and repaints; every frame, leaving ghosts included.
     public void Sink() {
         if (GhostObject == null) {
             return;
         }
 
-        var want = Leaving || Hidden || Time.time < WarpUntil ? 0f : 1f;
+        var want = Leaving || Hidden || !Placed || Time.time < WarpUntil ? 0f : 1f;
         if (Veil != want) {
             var span = want < Veil ? FadeOut : FadeIn;
             Veil = span > 0.001f
@@ -171,8 +168,7 @@ public class RandomizerGhostView {
         target = null;
     }
 
-    // Walks the cursor to the source's current time and draws that pose. The cursor only ever
-    // moves forward, so a long recording costs no more per frame than a short one.
+    // Walks the cursor forward to the source's time and draws that pose; it rewinds only to seek.
     public void Tick(IGhostSource source) {
         var samples = source.Samples;
         if (GhostTransform == null || samples.Count < 2) {
@@ -180,19 +176,16 @@ public class RandomizerGhostView {
         }
 
         var at = source.At;
-        // a live source trims old samples out from under the cursor; walking back to the start
-        // must not replay every effect on the way
+        // trimmed under the cursor, or At moved back: re-seek from the start without effects
         var reseek = false;
         if (Cursor > samples.Count - 2 || samples[Cursor].Time > at) {
             Cursor = 0;
             reseek = true;
         }
 
-        // A one-shot effect hangs off the sample where its clip began, and a slow frame can step
-        // over several samples at once, so every sample crossed has to be checked.
+        // every sample crossed is checked: a slow frame can step over the one where a clip began
         while (Cursor < samples.Count - 2 && samples[Cursor + 1].Time <= at) {
             Cursor++;
-            // a burst nobody can see is the exact cost culling exists to avoid
             if (!reseek && !Hidden && RandomizerGhost.Began(samples[Cursor], samples[Cursor - 1])) {
                 Effects(samples[Cursor], VelocityAt(samples, Cursor));
             }
@@ -203,8 +196,7 @@ public class RandomizerGhostView {
         var span = to.Time - from.Time;
         var t = span > 0.0001f ? Mathf.Clamp01((at - from.Time) / span) : 0f;
 
-        // A teleport -- soul link, spirit well, death -- puts the next sample across the map,
-        // and interpolating into it sails the ghost there instead of cutting.
+        // a gap past WarpDistance is a teleport, cut rather than interpolated
         var warp = (to.Position - from.Position).sqrMagnitude >
             RandomizerGhost.WarpDistance * RandomizerGhost.WarpDistance;
         if (warp && Cursor != Warped) {
@@ -216,19 +208,16 @@ public class RandomizerGhostView {
             WarpHold = from.Position;
         }
 
-        // facing is a 180 degree turn about Y: slerping through it takes the sprite edge-on, so
-        // any large step is a flip and is cut rather than swept
+        // a facing flip is cut: slerping through 180 degrees about Y goes edge-on
         var flip = Quaternion.Angle(from.Rotation, to.Rotation) > RandomizerGhost.FlipAngle;
         GhostTransform.position = Time.time < WarpUntil
             ? WarpHold
             : (warp ? from.Position : Vector3.Lerp(from.Position, to.Position, t));
         GhostTransform.rotation = warp || flip
             ? from.Rotation : Quaternion.Slerp(from.Rotation, to.Rotation, t);
-        // constant in practice -- Ori's own scale -- but never interpolated, so it stays right
-        // if that ever stops being true
         GhostTransform.localScale = from.Scale;
-        // the retire clock has to keep time for a culled ghost too, or a distant peer coming
-        // back from the title is taken down as if they never came back
+        Placed = true;
+        // kept for a culled ghost too, or a distant peer back from the title still retires
         TitleSince = from.OnTitle ? (TitleSince < 0f ? Time.time : TitleSince) : -1f;
         if (Hidden) {
             return;
@@ -254,8 +243,7 @@ public class RandomizerGhostView {
             : (samples[index + 1].Position - samples[index].Position) / span;
     }
 
-    // The clone animates itself but nothing tells it what Ori was doing; driving the clip and
-    // the time into it is what keeps the ghost from sliding along in one pose.
+    // Drives the sample's clip and playhead into the clone's animator.
     private void Pose(Sample from) {
         if (GhostAnimator == null || string.IsNullOrEmpty(from.Animation)) {
             return;
@@ -266,8 +254,8 @@ public class RandomizerGhostView {
             return;
         }
 
-        // Only where a clip begins -- a per-frame SetAnimation traps the ghost mid-transition.
-        // A re-triggered clip keeps its name, so time stepping backwards is the only marker.
+        // only where a clip begins (a per-frame SetAnimation traps it mid-transition); a
+        // re-trigger keeps its name, so time stepping back is the only marker
         if (clip == Posed && (RandomizerGhost.Loops(clip) ||
                 from.AnimationTime >= PosedTime - RandomizerGhost.Rewind)) {
             PosedTime = from.AnimationTime;
@@ -281,8 +269,8 @@ public class RandomizerGhostView {
         PosedTime = from.AnimationTime;
     }
 
-    // Ori is switched off on death rather than animated, so the ghost does the same. The held
-    // sample's aims are all NaN, so the arrows and lines clear themselves.
+    // Ori is switched off on death, not animated, and so is the ghost. The held sample's aims
+    // are NaN, so arrows and lines clear themselves.
     private void Dead(bool died) {
         if (died == DeadShown || GhostObject == null) {
             return;
@@ -303,8 +291,7 @@ public class RandomizerGhostView {
         GhostObject.SetActive(!died);
     }
 
-    // Followed by position rather than parented: the ghost transform carries Ori's own scale,
-    // and a parented effect inherits it.
+    // Followed by position, not parented: the ghost transform carries Ori's scale.
     private void Aura(int charge) {
         if (charge != AuraShown) {
             AuraShown = charge;
@@ -327,8 +314,7 @@ public class RandomizerGhostView {
         }
     }
 
-    // The arrow's own script reads the live player's stick, so it goes and the recorded angle
-    // drives the parent transform instead. It belongs on the bash target, not on Ori.
+    // BashAttackGame reads the live stick, so it goes; the angle drives the arrow's parent instead.
     private void Arrow(float angle, Vector2 target) {
         if (float.IsNaN(angle)) {
             Drop(ref ArrowObject);
@@ -362,8 +348,7 @@ public class RandomizerGhostView {
         }
     }
 
-    // Drawn rather than cloned: a cloned trajectory keeps a LineRenderer reference that lives
-    // outside the clone, so it redraws the live player's line. The arc is six lines of arithmetic.
+    // Drawn, not cloned: a cloned trajectory still drives the live player's LineRenderer.
     private void AimLine(Vector2 velocity) {
         if (float.IsNaN(velocity.x)) {
             Drop(ref AimObject);
@@ -383,8 +368,7 @@ public class RandomizerGhostView {
             AimRenderer = AimObject.AddComponent<LineRenderer>();
             AimRenderer.material = new Material(source.LineRenderer.sharedMaterial);
             AimRenderer.SetWidth(RandomizerGhost.AimWidth, RandomizerGhost.AimWidth);
-            // the default sorting layer at order zero is behind the scenery here; borrow the
-            // real line's place in the stack along with its material
+            // the default sorting layer draws behind the scenery; borrow the real line's
             AimRenderer.sortingLayerID = source.LineRenderer.sortingLayerID;
             AimRenderer.sortingOrder = source.LineRenderer.sortingOrder;
             AimObject.layer = source.LineRenderer.gameObject.layer;
@@ -392,8 +376,7 @@ public class RandomizerGhostView {
             RandomizerGhost.Dim(AimObject, RandomizerGhost.AimAlpha);
         }
 
-        // read every frame: these come from our own trajectory object, whose LinePoints is
-        // near zero until it has initialised
+        // read every frame: our own trajectory's LinePoints is near zero until it initialises
         var live = RandomizerGhost.Grenader();
         var shape = live == null ? null : live.Trajectory;
         var gravity = shape == null ? 0f : shape.Gravity;
@@ -431,8 +414,7 @@ public class RandomizerGhostView {
         }
     }
 
-    // Same shape as the bash arrow, only the aim is already a world rotation rather than a
-    // number the game turns into one.
+    // Like the bash arrow, but the angle is already a world rotation.
     private void WallArrow(float angle) {
         if (float.IsNaN(angle)) {
             Drop(ref WallObject);
@@ -447,12 +429,10 @@ public class RandomizerGhostView {
 
             Used.WallArrow++;
             WallObject = (GameObject)Object.Instantiate(wall.Arrow.gameObject);
-            // the arrow renders at its parent's scale; unparented, its localScale alone leaves
-            // it about 3.4 times too small
+            // unparented, so the parent's scale is baked in
             WallObject.transform.localScale =
                 wall.Arrow.transform.lossyScale * RandomizerGhost.WallArrowScale;
-            // same reasoning as the aim line: keep the drawing, drop everything that thinks it
-            // is still attached to a player
+            // keep the drawing, drop everything still wired to the player
             RandomizerGhost.Strip(WallObject, null);
             RandomizerGhost.Quiet(WallObject);
             WallObject.SetActive(true);
@@ -464,8 +444,7 @@ public class RandomizerGhostView {
         WallObject.transform.eulerAngles = new Vector3(0f, 0f, angle);
     }
 
-    // Their link stands where they put it, so a death reads as a return to it. The marker is the
-    // game's own prefab: its animators run, its gameplay component goes.
+    // The game's own link marker: its animators run, its SoulFlame component goes.
     private void SoulLink(Vector2 at) {
         if (float.IsNaN(at.x)) {
             Drop(ref LinkObject);
@@ -495,7 +474,7 @@ public class RandomizerGhostView {
             }
 
             RandomizerGhost.Quiet(LinkObject);
-            // theirs, not yours: it wears their colour and stays faint
+            // theirs, not yours: it wears their color and stays faint
             RandomizerGhost.Paint(LinkObject, RandomizerGhost.LinkShade(Shade));
             RandomizerGhost.Dim(LinkObject, RandomizerGhost.LinkAlpha);
         }
@@ -637,11 +616,10 @@ public class RandomizerGhostView {
         if (sample.Animation == "doubleJump") {
             var ability = RandomizerGhost.Jumper();
             if (ability != null) {
-                // the burst is turned to face the way Ori was travelling, which the recorded
-                // positions give us without having to store it
+                // faces the way Ori was travelling
                 var facing = Quaternion.Euler(0f, 0f, -Mathf.Atan2(velocity.x, velocity.y) * Mathf.Rad2Deg);
                 // TrippleJumpAfterShock will not start outside the game's own spawn path, and
-                // the two bursts differ only by audio, which a ghost has none of.
+                // the two bursts differ only by audio
                 Burst(ability.DoubleJumpAfterShock, GhostTransform.position, facing,
                     RandomizerGhost.JumpBurstAlpha);
             }
@@ -661,8 +639,8 @@ public class RandomizerGhostView {
         }
 
         Used.Burst++;
-        // A private clone, never a pooled one: everything below mutates what it is handed, and
-        // a pooled object goes back damaged. OnPoolSpawned is what starts these, so call it here.
+        // A private clone, never a pooled one: everything below mutates it. OnPoolSpawned is
+        // what starts these, so call it here.
         var spawned = (GameObject)Object.Instantiate(prefab, at, facing);
         foreach (var behavior in spawned.GetComponentsInChildren<MonoBehaviour>(true)) {
             var pooled = behavior as IPooled;
@@ -671,11 +649,9 @@ public class RandomizerGhostView {
             }
         }
 
-        // OnPoolSpawned only reaches IPooled. What fades and scales these in are BaseAnimators,
-        // and a fresh clone's driver sits where the prefab left it -- for a fade, invisible.
+        // BaseAnimators fade these in, and a fresh clone's driver sits where the prefab left it
         foreach (var animator in spawned.GetComponentsInChildren<BaseAnimator>(true)) {
-            // UberPost* animators drive the full-screen post stack, so a clone's would paint the
-            // whole screen; Destroy lands at end of frame, too late for a driver about to start
+            // UberPost* drive the full-screen post; Destroy would land after the driver starts
             if (animator.GetType().Name.StartsWith("UberPost")) {
                 Object.DestroyImmediate(animator);
                 continue;
@@ -686,8 +662,7 @@ public class RandomizerGhostView {
             }
         }
 
-        // An effect reaches the whole screen by grabbing it or by being bigger than it. Shrink
-        // rather than drop, and take the scale animators above it or they undo the shrink.
+        // Pieces wider than EffectSpan shrink; the scale animators above them go or undo it.
         foreach (var renderer in spawned.GetComponentsInChildren<Renderer>(true)) {
             if (renderer == null) {
                 continue;
@@ -711,8 +686,7 @@ public class RandomizerGhostView {
             renderer.transform.localScale *= RandomizerGhost.EffectSpan / span;
         }
 
-        // a grab pass redraws the whole screen wherever the effect sits; nothing else in the
-        // child is worth keeping, so the whole child goes
+        // a grab pass redraws the whole screen; its child goes with it
         foreach (var grab in spawned.GetComponentsInChildren<UberShaderBlockGrabPass>(true)) {
             if (grab.gameObject == spawned) {
                 Object.DestroyImmediate(grab);
@@ -721,8 +695,7 @@ public class RandomizerGhostView {
             }
         }
 
-        // a ghost landing is not something the camera should feel. The action null-checks its
-        // own target, so emptying it is quieter than tearing the action out of its sequence.
+        // no camera shake: the action null-checks its target, so emptying it keeps the sequence
         foreach (var shake in spawned.GetComponentsInChildren<CameraShakeAction>(true)) {
             shake.ShakeCamera = null;
         }
@@ -735,8 +708,7 @@ public class RandomizerGhostView {
             Object.Destroy(rumble);
         }
 
-        // only the sound comes out: spawned through the pool, the game's own animators run
-        // the show
+        // only the sound comes out; the effect's own animators run the rest
         RandomizerGhost.Hush(spawned);
         RandomizerGhost.Dim(spawned, alpha);
     }
@@ -807,6 +779,9 @@ public class RandomizerGhostView {
 
     // 1 on screen, 0 not there: the cull, the warp and the retire all ride this one alpha
     private float Veil;
+
+    // the clone spawns on the live Ori, so it stays veiled until a sample has moved it
+    private bool Placed;
 
     private bool Leaving;
 

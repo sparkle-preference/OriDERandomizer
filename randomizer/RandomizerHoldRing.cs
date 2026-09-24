@@ -1,28 +1,22 @@
 using UnityEngine;
 
-// A piece of the game's own art, borrowed and scrubbed as a fill: clone it, take the driver
-// that normally feeds it away, force it visible, and sample its timeline at a progress. The
-// map's warp ring and the settings screens' hold gesture are this recipe over different art.
+// Borrowed game art driven as a progress fill: clone it, remove its driver, force it visible,
+// sample its timeline. The map warp ring and the settings screens' hold gesture use it.
 public class RandomizerHoldRing {
-    // How long a hold runs, and how long a press may be before it counts as one. Past the tap
-    // window and let go early is neither, so a hesitant press leaves nothing behind it.
+    // hold length, and the longest press that is still a tap; a press between the two is neither
     public const float Seconds = 0.6f;
 
     public const float Tap = 0.2f;
 
-    // Any of these can be the channel a clone was left invisible on, and with only _Color you
-    // get the parts that never move and none of the rest. The widget is many colors, so only
-    // the alpha is overruled -- flattening it to one tint throws away the thing worth having.
+    // any of these may carry a clone's zero alpha; only the alpha is overruled, never the colour
     private static readonly string[] Alphas = {
         "_Color", "_TintColor", "_MaskDissolveColor", "_AdditiveLayerColor"
     };
 
     public GameObject Object { get; private set; }
 
-    // Clone and take manual control. The driver has to go -- it is reading whatever the art was
-    // built to follow -- and from then on the timeline is sampled directly, because
-    // AnimatorDriver.Sample asks for forceSample false and skips a scrub that lands where the
-    // animator believes it already is.
+    // Clone and take manual control: the driver goes and the timeline is sampled with force,
+    // since AnimatorDriver.Sample skips a scrub to where the animator thinks it already is.
     public bool Adopt(GameObject source, Transform parent, string name) {
         if (source == null) {
             return false;
@@ -56,8 +50,7 @@ public class RandomizerHoldRing {
         return true;
     }
 
-    // Drawn where the reference draws, and over it. The layer is passed separately because the
-    // thing whose sorting is worth copying is not always on the layer its group sits on.
+    // Sorted just over `sorting`; the layer is separate because the two do not always agree.
     public void Match(Renderer sorting, int layer) {
         if (Object == null) {
             return;
@@ -106,9 +99,8 @@ public class RandomizerHoldRing {
         }
     }
 
-    // Hidden while it plays and an inactive renderer has no bounds, so the size is not knowable
-    // until the frame it is first shown. The ring halves are the ring; everything else is glow
-    // and background reaching well past it.
+    // Width of the ring halves, not the glow. Read only while shown: hidden renderers have no
+    // bounds, and the fallback it then caches sticks.
     public float Span {
         get {
             if (span > 0.0001f || Object == null) {
@@ -142,8 +134,7 @@ public class RandomizerHoldRing {
         }
     }
 
-    // How much of the timeline the fill occupies; the rest is whatever flourish the art plays
-    // once it is full, which a hold has no use for.
+    // timeline position where the fill is full; any flourish after it goes unused
     public float Full = 1f;
 
     private void Collect(Material material) {

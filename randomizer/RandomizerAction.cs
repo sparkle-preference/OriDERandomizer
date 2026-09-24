@@ -46,7 +46,7 @@ public class RandomizerAction {
                             if (firstPiece == null) {
                                 firstPiece = cur.ToString();
                             } else {
-                                ret.Add(new RandomizerAction(firstPiece, cur.ToString()));
+                                AddPiece(ret, firstPiece, cur.ToString());
                                 firstPiece = null;
                             }
 
@@ -62,7 +62,7 @@ public class RandomizerAction {
                     throw new ArgumentException("MU/RP Pickup doesn't have an even number of pieces");
                 }
 
-                ret.Add(new RandomizerAction(firstPiece, cur.ToString()));
+                AddPiece(ret, firstPiece, cur.ToString());
             } catch (Exception e) {
                 Randomizer.LogError($"Malformed Multipickup {Action}|{Value}, treating as {String.Join(",", ret.Select(r => $"{r}").ToArray())}\nError Msg: {e.Message}");
             }
@@ -71,6 +71,15 @@ public class RandomizerAction {
         }
 
         return ret;
+    }
+
+    // a malformed piece is dropped alone, not with the rest of its multipickup
+    private static void AddPiece(List<RandomizerAction> into, string code, string value) {
+        try {
+            into.Add(new RandomizerAction(code, value));
+        } catch (Exception e) {
+            Randomizer.LogError($"Malformed Multipickup piece {code}/{value}, skipping it: {e.Message}");
+        }
     }
 
     public static RandomizerAction AsMulti(List<RandomizerAction> actions, bool repeatable = false) =>

@@ -302,9 +302,8 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
             SetCurrentItemAndScroll(CurrentSlotIndex + 1);
         }
 
-        // all four read every frame, so a plain bind's edge is spent under its shifted one.
-        // Ten slots rather than the ends: this list is long enough that the ends are rarely
-        // where you are going.
+        // all four read every tick, so a plain bind's edge is spent under its shifted one;
+        // Home/End jump ten slots, not to the ends
         var home = RandomizerRebinding.MenuHome.IsPressed();
         var back = RandomizerRebinding.MenuSkipBackwards.IsPressed();
         var end = RandomizerRebinding.MenuEnd.IsPressed();

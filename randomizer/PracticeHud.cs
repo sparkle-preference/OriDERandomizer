@@ -2,9 +2,8 @@ using CatlikeCoding.TextBox;
 using Game;
 using UnityEngine;
 
-// Two boxes of our own on the UI camera, cloned from the game's hint box the way the
-// pickup notifications are: the clock in the top right, and the tally over the finish
-// screen. Neither goes through UI.Hints, which any menu opening hides.
+// The clock (top right) and the finish tally: hint-box clones like the pickup notifications,
+// never UI.Hints, which any menu opening hides.
 public static class PracticeHud {
     private static GameObject clockObj;
 
@@ -16,17 +15,15 @@ public static class PracticeHud {
 
     private static string shown;
 
-    // the line under the clock: the time to beat, fixed for the attempt
+    // the time to beat, after the clock on its line; fixed for the attempt
     private static string reference = "";
 
-    // UI camera units, the anchored edge of each box: the clock's top right corner in
-    // the screen's, the tally's top center in the finish screen's left column
+    // UI units, each box's anchor: the clock's top right, the tally's top centre (left column)
     private static readonly Vector3 ClockAt = new Vector3(6.9f, 3.8f, 0f);
 
     private static readonly Vector3 TallyAt = new Vector3(-4.2f, 2.4f, 0f);
 
-    // a run that survives a quit to menu is still running while the title is up, and its clock
-    // is the reason to hurry back
+    // a quit-to-menu run is still running on the title, so its clock stays up there
     private static bool Parked {
         get {
             return PracticeController.Current == PracticeController.Phase.Running

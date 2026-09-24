@@ -21,7 +21,7 @@ public class ControllerBindControl : MonoBehaviour {
             buttonsPressed[i] = true;
         }
 
-        // how to work the edit is the legend's job now; the tooltip names what is being edited
+        // the legend says how to edit; the tooltip names what is being edited
         owner.BindLegend();
         Tooltip("Editing binds for " + label + "...");
     }
@@ -45,6 +45,13 @@ public class ControllerBindControl : MonoBehaviour {
             return;
         }
 
+        // the edit starts empty, so finishing before any button would unbind the action
+        if (tapped && currentKeys.Count == 0) {
+            tapped = false;
+            Cancel();
+            return;
+        }
+
         if (tapped || (WasPressed(XboxControllerInput.Button.Start) && currentKeys.Count > 0)) {
             tapped = false;
             editing = false;
@@ -52,7 +59,11 @@ public class ControllerBindControl : MonoBehaviour {
             SuspensionManager.ResumeAll();
             SetKeys(currentKeys.ToArray());
             PlayerInputRebinding.WriteControllerRebindSettings();
-            PlayerInput.Instance.RefreshControlScheme();
+            var input = PlayerInput.Instance;
+            if (input != null) {
+                input.RefreshControlScheme();
+            }
+
             owner.BindLegend();
             Tooltip(owner.DefaultTooltip);
             return;
@@ -69,8 +80,7 @@ public class ControllerBindControl : MonoBehaviour {
         }
     }
 
-    // Back held long enough abandons the edit, where a tap of it finishes one -- so the tap
-    // lands on the release, which is the first moment the two can be told apart.
+    // A Back hold cancels the edit; a tap finishes it, on release.
     private bool Cancelling() {
         var down = CustomSettingsScreen.BackHeld();
         if (down == KeyCode.None) {
@@ -96,8 +106,7 @@ public class ControllerBindControl : MonoBehaviour {
         return true;
     }
 
-    // Nothing was written on the way in, so abandoning is just putting the row's own buttons
-    // back on screen and standing down.
+    // nothing is applied until the edit finishes, so cancelling only redraws the row
     private void Cancel() {
         held = -1f;
         editing = false;
@@ -135,7 +144,8 @@ public class ControllerBindControl : MonoBehaviour {
         return !buttonsPressed[(int)button] && XboxControllerInput.GetButton(button);
     }
 
-    private PlayerInputRebinding.ControllerButton ToBind(XboxControllerInput.Button button) {
+    // null for a button no ControllerButton names
+    private PlayerInputRebinding.ControllerButton? ToBind(XboxControllerInput.Button button) {
         switch (button) {
             case XboxControllerInput.Button.ButtonA:
                 return PlayerInputRebinding.ControllerButton.A;
@@ -162,14 +172,15 @@ public class ControllerBindControl : MonoBehaviour {
             case XboxControllerInput.Button.Start:
                 return PlayerInputRebinding.ControllerButton.Start;
             default:
-                return PlayerInputRebinding.ControllerButton.A;
+                return null;
         }
     }
 
     public PlayerInputRebinding.ControllerButton? GetPressedButtonAsBind() {
         foreach (var button in allButtons) {
-            if (WasPressed(button)) {
-                return ToBind(button);
+            var bind = WasPressed(button) ? ToBind(button) : null;
+            if (bind != null) {
+                return bind;
             }
         }
 
@@ -237,8 +248,7 @@ public class ControllerBindControl : MonoBehaviour {
         owner.tooltipController.UpdateTooltip();
     }
 
-    // Binds apply as they are made, so leaving without keeping them is a restore, not a
-    // commit. The snapshot is what the screen was entered with.
+    // the buttons the screen was entered with; Restore puts them back
     public void Snapshot() {
         snapshot = (PlayerInputRebinding.ControllerButton[])GetKeys().Clone();
     }

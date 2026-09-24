@@ -7,7 +7,7 @@ using Game;
 public static class RandomizerHints {
     public delegate String StringMaker();
 
-    // Shown to everybody. Kept apart so the two lists cannot drift, which they had.
+    // shown at every hint level; one copy so the two lists can't drift
     private static readonly List<StringMaker> CommonTips = new List<StringMaker> {
         () => "Extra Double Jump lets you jump an additional time in the air.\nIt requires $Double Jump$ and stacks with #Triple Jump# in the *Blue* Ability Tree\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
         () => "Extra Air Dash lets you dash an additional time in the air.\nIt requires $Dash$ and the ability #Air Dash#\n(See all Bonus Item Descriptions in the Bonus Item Glossary at orirando.com/faq)",
@@ -32,7 +32,7 @@ public static class RandomizerHints {
         () => "The @Red@ Ability Tree is rarely worth investing in. (*Stomp*, *Charge Jump*, and #Charge Dash# are extremely effective against enemies)",
         () => "You can Warp ([[Warp]]) to avoid damage from enemies, poison water, or spikes",
         () => "You can Warp ([[Warp]]) out of #Kuro's Nest# to avoid getting chased",
-        () => "Hold [[Double Bash]] while Bashing to *Double Bash*",
+        () => (RandomizerSettings.Controls.DoubleBash.Value == RandomizerSettings.DoubleBashMode.Tap ? "Tap" : "Hold") + " [[Double Bash]] while Bashing to *Double Bash*",
         () => "In addition to Skills and World Events, #Sense# will also help you find some teleporters! (Valley, Sorrow, and all three dungeons)",
         () => "Warmth Returned is the only pickup in the game that has no effect",
         () => "After picking up the upper Blackroot orb, you can immediately put it down and go back across the lower path instead of waiting for the platforms above,\nor even warp back to Sunken Glades! The orb will come find Ori anywhere in upper Blackroot",
@@ -154,9 +154,8 @@ public static class RandomizerHints {
     }
 
 
-    // A tip that does not apply to this seed returns null, so the walk continues past it
-    // rather than showing an empty box. Unshown tips get marked as seen so that a hint
-    // not valid for the current situation can't sit unseen and prevent the refresh.
+    // A tip that doesn't apply returns null and is skipped, but still marked seen so the cycle
+    // can refresh.
     private static void ShowFrom(List<StringMaker> tips, HashSet<int> seen) {
         if (seen.Count >= tips.Count) {
             seen.Clear();

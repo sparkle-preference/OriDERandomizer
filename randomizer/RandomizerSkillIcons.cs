@@ -90,10 +90,8 @@ public static class RandomizerSkillIcons {
         return rect;
     }
 
-    // Cave plus one find, composited on the CPU: both layers are full-canvas PNGs already in
-    // position, and LoadImage leaves them readable. The cave draws OVER the find, so a symbol
-    // that overruns the opening is trimmed by the cave rather than pasted on top of it.
-    // One composite per find, kept: a material may still be showing the last one.
+    // The cave over one find, composited on the CPU from full-canvas PNGs, so the cave trims a find
+    // that overruns the opening. Composites are kept: a material may still be showing one.
     private static Texture2D ComposeSense() {
         var name = SenseFinds[UnityEngine.Random.Range(0, SenseFinds.Length)];
         Texture2D made;
@@ -163,9 +161,8 @@ public static class RandomizerSkillIcons {
         return texture;
     }
 
-    // A node's art is drawn by several renderers with their own materials: the node itself,
-    // the large hover art, and LearntSkillGlow once the node is earned. They share the
-    // texture, so matching on it is what reaches all three.
+    // A node's art is drawn by several renderers (the node, the hover art, LearntSkillGlow once
+    // earned) with their own materials but one texture, so matching the texture reaches them all.
     private static void Replace(SkillTreeManager tree, Texture replacement, Bounds rect, params Texture[] matches) {
         foreach (var renderer in tree.GetComponentsInChildren<Renderer>(true)) {
             Retexture(renderer, replacement, rect, matches);

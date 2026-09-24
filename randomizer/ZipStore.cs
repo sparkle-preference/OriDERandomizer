@@ -4,11 +4,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 
-// A zip file as a name->bytes dictionary, for the .bfrp practice container.
-// This runtime has no ZipArchive, so the container format is done by hand:
-// reads follow the central directory and accept stored or deflated entries
-// (hand-edited files come back from 7-Zip and Explorer deflated); writes
-// emit stored-only entries and replace the target file atomically.
+// A zip as a name->bytes dictionary for the .bfrp container; this runtime has no ZipArchive.
+// Writes are stored-only and atomic. Deflated entries need MonoPosixHelper, which the game lacks.
 public class ZipStore {
     private readonly List<string> order = new List<string>();
 
@@ -45,8 +42,7 @@ public class ZipStore {
         var raw = File.ReadAllBytes(path);
         var store = new ZipStore();
 
-        // the end-of-central-directory record sits at most 65535 comment bytes
-        // plus its own 22 from the end; the last signature wins
+        // the end record is within its own 22 bytes plus a 65535-byte comment of the end; last one wins
         var eocd = -1;
         var floor = Math.Max(0, raw.Length - 65557);
         for (var i = raw.Length - 22; i >= floor; i--) {
@@ -93,13 +89,26 @@ public class ZipStore {
                 throw new IOException(path + ": bad local header for " + name);
             }
 
+            // sizes are checked against the file before anything is allocated for them
             var dataAt = local + 30 + U16(raw, local + 26) + U16(raw, local + 28);
+            if (csize < 0 || size < 0 || (long)dataAt + csize > raw.Length) {
+                throw new IOException(path + ": " + name + " runs past the end of the file");
+            }
+
             byte[] data;
             if (method == 0) {
+                if (size != csize) {
+                    throw new IOException(path + ": " + name + " is stored but its two sizes differ");
+                }
+
                 data = new byte[size];
                 Array.Copy(raw, dataAt, data, 0, size);
             } else if (method == 8) {
-                data = Inflate(raw, dataAt, csize, size);
+                if (size > (long)csize * MaxDeflateRatio + 1024) {
+                    throw new IOException(path + ": " + name + " claims more bytes than deflate can pack into it");
+                }
+
+                data = Inflate(name, raw, dataAt, csize, size);
             } else {
                 throw new IOException(path + ": " + name + " uses unsupported compression method " + method);
             }
@@ -180,7 +189,24 @@ public class ZipStore {
         }
     }
 
-    private static byte[] Inflate(byte[] raw, int at, int csize, int size) {
+    // deflate's ceiling: no stream unpacks to more than 1032 times its size
+    private const long MaxDeflateRatio = 1032;
+
+    private static byte[] Inflate(string name, byte[] raw, int at, int csize, int size) {
+        try {
+            return Unpack(raw, at, csize, size);
+        } catch (DllNotFoundException) {
+            throw Unreadable(name);
+        } catch (TypeInitializationException) {
+            throw Unreadable(name);
+        }
+    }
+
+    private static IOException Unreadable(string name) {
+        return new IOException(name + " is compressed, which the game cannot read; re-zip it with no compression (Store)");
+    }
+
+    private static byte[] Unpack(byte[] raw, int at, int csize, int size) {
         var packed = new MemoryStream(raw, at, csize);
         var flate = new DeflateStream(packed, CompressionMode.Decompress);
         var data = new byte[size];
@@ -210,21 +236,23 @@ public class ZipStore {
         return (uint)(b[at] | (b[at + 1] << 8) | (b[at + 2] << 16) | (b[at + 3] << 24));
     }
 
-    private static uint[] crcTable;
+    private static readonly uint[] crcTable = CrcTable();
 
-    public static uint Crc32(byte[] data) {
-        if (crcTable == null) {
-            crcTable = new uint[256];
-            for (uint i = 0; i < 256; i++) {
-                var c = i;
-                for (var k = 0; k < 8; k++) {
-                    c = (c & 1) != 0 ? 0xEDB88320u ^ (c >> 1) : c >> 1;
-                }
-
-                crcTable[i] = c;
+    private static uint[] CrcTable() {
+        var table = new uint[256];
+        for (uint i = 0; i < 256; i++) {
+            var c = i;
+            for (var k = 0; k < 8; k++) {
+                c = (c & 1) != 0 ? 0xEDB88320u ^ (c >> 1) : c >> 1;
             }
+
+            table[i] = c;
         }
 
+        return table;
+    }
+
+    public static uint Crc32(byte[] data) {
         var crc = 0xFFFFFFFFu;
         for (var i = 0; i < data.Length; i++) {
             crc = crcTable[(crc ^ data[i]) & 0xFF] ^ (crc >> 8);

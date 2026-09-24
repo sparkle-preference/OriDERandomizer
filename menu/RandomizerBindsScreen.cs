@@ -56,8 +56,7 @@ public class RandomizerBindsScreen : CustomSettingsScreen {
         AddRandomizerBind("Force Chaos Effect", "Trigger a chaos effect right now");
 
 
-        // Test rigging rather than play: shown to whoever has already said they want the rest
-        // of the dev settings.
+        // test rigging, shown only with the dev settings on
         if (RandomizerSettings.Dev != null && RandomizerSettings.Dev.Value) {
             AddHeader("DEV");
             AddRandomizerBind("Spawn Echo", "Spawn in a ghost echo");

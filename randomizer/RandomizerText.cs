@@ -15,9 +15,7 @@ public static class RandomizerText {
     // Blue leads so that a rainbow and a bit comes back round to blue rather than past it.
     private static readonly string[] RainbowStops = { "4f8cff", "35cdd6", "4fd44f", "ffe94f", "ff8c2b", "ff3b3b" };
 
-    // The text under one gradient, the rainbow crossing it once every repeatEvery characters.
-    // Text shorter than that still gets a whole rainbow rather than a truncated one; longer text
-    // rounds to a whole colour, so the ramp always ends on a stop.
+    // One gradient, a full rainbow per repeatEvery characters (at least one); ends on a stop.
     public static string Rainbowify(string text, int repeatEvery = 0) {
         var stops = RainbowStops.Length;
         if (repeatEvery > 0 && text.Length > repeatEvery) {

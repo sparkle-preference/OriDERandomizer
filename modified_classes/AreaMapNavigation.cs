@@ -250,8 +250,7 @@ public class AreaMapNavigation : MonoBehaviour {
             var offset = .45f * (float)Math.Pow(zoomScaleFactor, 1.5f); // it's kind of a dumb story
             var textScale = new Vector3(0.3f * zoomScaleFactor, 0.3f * zoomScaleFactor, 0.3f); // but they work well i prommy
 
-            // A spirit well takes the cursor from whatever sits under it: it is the one thing
-            // on this map you can act on, and its prompt has to win to be reachable at all.
+            // a well's prompt beats any tooltip under it, or it could never be reached
             if (RandomizerMapWarp.Update(m_areaMapUi, this, cursorPositionWorld, textScale, offset)) {
                 AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(false);
                 return;

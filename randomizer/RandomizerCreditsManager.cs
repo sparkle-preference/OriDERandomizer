@@ -65,8 +65,7 @@ Winners:	Team StoryTime (Dedew and Covert_Muffin)
         // Credits.Add(new KeyValuePair<string, int>("In memory of Grandma Irine", 5));
 
         try {
-            // A goal mode adds a page, so every page gets shorter rather than the roll longer.
-            // Without one, nothing has changed and the old pacing stands.
+            // a goal mode's extra page shortens every page rather than lengthening the roll
             var pages = RandomizerStatsManager.PageCount;
             var each = pages > 3 ? 35 : 45;
             for (var page = 0; page < pages; page++) {

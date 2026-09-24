@@ -2,10 +2,8 @@ using CatlikeCoding.TextBox;
 using Game;
 using UnityEngine;
 
-// Version stamp in the bottom-right of the menus, absent during gameplay.
-//
-// The pause screen dims the world in its own camera pass, so the stamp has to
-// follow the menu's layer and camera while the menu is up, not the world's.
+// Version stamp in the menus' bottom-right corner. While a menu is up it follows the menu's layer
+// and camera, since the pause screen dims the world in its own camera pass.
 public class RandomizerVersionLabel : MonoBehaviour {
     // fraction of the hint message's text size
     private const float Scale = 0.1f;
@@ -195,9 +193,8 @@ public class RandomizerVersionLabel : MonoBehaviour {
         m_label.transform.rotation = camera.transform.rotation;
     }
 
-    // the menu camera is manually driven, so it is disabled and Camera.allCameras
-    // never lists it
-    // the menu camera does not move, so the FindObjectsOfTypeAll walk runs once per layer
+    // The menu camera is disabled (manually driven), so Camera.allCameras never lists it; it does
+    // not move, so the FindObjectsOfTypeAll walk is cached per layer.
     private static Camera MenuCamera(int layer) {
         if (s_menuCamera != null && s_menuCameraLayer == layer && s_menuCamera.gameObject.activeInHierarchy) {
             return s_menuCamera;

@@ -104,12 +104,8 @@ public static class RandomizerItems {
     private static readonly HashSet<string> orangeStuff = new HashSet<string> { "Gumon Seal", "Forlorn Teleporter", "Wind Restored" };
     private static readonly HashSet<string> redStuff = new HashSet<string> { "Sunstone", "Horu Teleporter", "Warmth Returned" };
 
-    /// <summary>
-    /// The item a cross-world line carries, out of its comma field. An owner
-    /// above the player count is an Archipelago shadow, and its line names a
-    /// recipient and a promised slot before the item. A player count of 0 means
-    /// the seed never said, so every line reads as an ordinary cross-world one.
-    /// </summary>
+    /// <summary>The item in a cross-world line's comma field. An owner above the player count is an AP
+    /// shadow, whose line has recipient and promised slot first; 0 players reads every line as plain.</summary>
     public static bool Inner(string value, int players, out string code, out string id) {
         code = null;
         id = null;
@@ -215,12 +211,8 @@ public static class RandomizerItems {
         }
     }
 
-    /// <summary>
-    /// What a player sees on picking the item up: the name in its colors, or
-    /// the phrasing that item announces itself with. Variants that depend on
-    /// game state -- a teleporter still short its shards, a clue-locked one --
-    /// belong to the caller, which is what keeps this class game-free.
-    /// </summary>
+    /// <summary>What a player sees on pickup: the coloured name or the item's own phrasing.
+    /// Game-state variants (shard-short or clue-locked teleporters) belong to the caller.</summary>
     public static string Message(string code, string id) {
         // "X Lost!" is what the player wants told to them as it happens; a log
         // or a map wants Name's third-person "Remove X" instead

@@ -98,6 +98,7 @@ public static class Randomizer {
             GrenadeSlot = -1;
             StompSlot = -1;
             StompTriggers = false;
+            AltRDisabled = false;
             GoalModeFinish = false;
             SpawnWith = "";
             IgnoreEnemyExp = false;
@@ -147,8 +148,7 @@ public static class Randomizer {
                     var doBingo = ParseFlags(s, flags);
                     if (doBingo) {
                         Message = "Good luck on your bingo!";
-                        // 4.3 seeds carry no baked goals; the server answers over the
-                        // goals: channel, and a legacy file ending in one still loads
+                        // goals arrive over the goals: channel; a legacy trailing Goals line still loads
                         var goalsLine = allLines[allLines.Count - 1];
                         if (goalsLine.StartsWith("Goals")) {
                             BingoController.Init(goalsLine);
@@ -165,49 +165,30 @@ public static class Randomizer {
                     }
 
                     RandomizerBoxes.Seed.Clear();
+                    RandomizerLocationManager.ClearPickups();
+                    var badLines = 0;
+                    var firstBad = "";
                     foreach (var line in allLines.Skip(1)) {
-                        lastLine = line;
                         lastLineNum += 1;
-
-                        if (line.StartsWith("//")) {
-                            ParseMetaLine(line.Substring(2).Trim());
+                        if (line.Trim().Length == 0) {
                             continue;
                         }
 
-                        if (RandomizerBox.IsLine(line)) {
-                            RandomizerBoxes.Seed.Add(RandomizerBox.Parse(line));
-                            continue;
+                        // a bad line costs only itself
+                        try {
+                            ParseSeedLine(line);
+                        } catch (Exception e) {
+                            if (badLines++ == 0) {
+                                firstBad = $"line {lastLineNum + 1}: {e.Message}";
+                            }
+
+                            log($"Couldn't parse \"{line}\" (line {lastLineNum + 1} of {SeedFilePath}): {e.Message}");
                         }
+                    }
 
-                        var lineParts = line.Split('|');
-                        int.TryParse(lineParts[0], out var coords);
-
-                        // MW lines are only readable under format 2; a format 1 one mis-parses silently
-                        if (lineParts[1] == "MW" && SeedFormat < 2) {
-                            throw new Exception(
-                                "this seed's multiworld lines are too old - re-download it");
-                        }
-
-                        if (RandomizerMW.IsManifestLine(coords, lineParts[1])) {
-                            // multiworld slot manifest: what our slots hold,
-                            // not a map location
-                            RandomizerMW.AddManifestEntry(coords, lineParts[2], lineParts[3]);
-                            continue;
-                        }
-
-                        if (lineParts[1] == "MW") {
-                            RandomizerMW.AddApLine(coords, lineParts[2]);
-                        }
-
-                        GetDataFromSeedLine(coords, lineParts[1], lineParts[2], lineParts[3]);
-
-                        if (coords == 2) {
-                            SpawnWith = lineParts[1] + lineParts[2];
-                            GetSpawnInformation();
-                        } else if (lineParts[1] != "EN") {
-                            var repeatable = lineParts[1] == "RP";
-                            RandomizerLocationManager.PlacePickup(coords, lineParts[1], lineParts[2], repeatable);
-                        }
+                    if (badLines > 0) {
+                        var more = badLines > 1 ? $" (and {badLines - 1} more, see randomizer.log)" : "";
+                        printInfo($"Error parsing {SeedFilePath} at {firstBad}{more}", 300);
                     }
 
                     RandomizerBoxes.SeedLoaded();
@@ -226,14 +207,59 @@ public static class Randomizer {
                     SeedFilePath = DefaultSeedFilePath();
                 }
             } catch (Exception e) {
-                printInfo($"Error parsing {SeedFilePath} at line {lastLineNum}: {e.Message}", 300);
-                log($"Couldn't parse \"{lastLine}\" (line {lastLineNum} of {SeedFilePath}): {e.Message}\n{e.StackTrace}");
+                printInfo($"Error parsing {SeedFilePath} at line {lastLineNum + 1}: {e.Message}", 300);
+                log($"Couldn't parse \"{lastLine}\" (line {lastLineNum + 1} of {SeedFilePath}): {e.Message}\n{e.StackTrace}");
                 SeedFilePath = DefaultSeedFilePath();
             }
 
             RandomizerBonusSkill.Reset();
         } catch (Exception e) {
             log("init: " + e.Message);
+        }
+    }
+
+    private static void ParseSeedLine(string line) {
+        if (line.StartsWith("//")) {
+            ParseMetaLine(line.Substring(2).Trim());
+            return;
+        }
+
+        if (RandomizerBox.IsLine(line)) {
+            RandomizerBoxes.Seed.Add(RandomizerBox.Parse(line));
+            return;
+        }
+
+        var lineParts = line.Split('|');
+        if (lineParts.Length < 4) {
+            throw new FormatException("expected coords|code|id|zone");
+        }
+
+        int.TryParse(lineParts[0], out var coords);
+
+        // MW lines are only readable under format 2; a format 1 one mis-parses silently
+        if (lineParts[1] == "MW" && SeedFormat < 2) {
+            throw new Exception(
+                "this seed's multiworld lines are too old - re-download it");
+        }
+
+        if (RandomizerMW.IsManifestLine(coords, lineParts[1])) {
+            // multiworld slot manifest: what our slots hold, not a map location
+            RandomizerMW.AddManifestEntry(coords, lineParts[2], lineParts[3]);
+            return;
+        }
+
+        if (lineParts[1] == "MW") {
+            RandomizerMW.AddApLine(coords, lineParts[2]);
+        }
+
+        GetDataFromSeedLine(coords, lineParts[1], lineParts[2], lineParts[3]);
+
+        if (coords == 2) {
+            SpawnWith = lineParts[1] + lineParts[2];
+            GetSpawnInformation();
+        } else if (lineParts[1] != "EN") {
+            var repeatable = lineParts[1] == "RP";
+            RandomizerLocationManager.PlacePickup(coords, lineParts[1], lineParts[2], repeatable);
         }
     }
 
@@ -280,8 +306,7 @@ public static class Randomizer {
         BackupPreBetaFiles();
         RandomizerSettings.ParseSettings();
 
-        // before the location manager starts the logic thread: extracting the
-        // sidecar reads Unity paths only the main thread may touch
+        // main thread only, so before the location manager starts the logic thread
         NativeWebSocket.Load();
 
         RandomizerLayers.Initialize();
@@ -304,17 +329,22 @@ public static class Randomizer {
         UnityDragAndDropHook.UninstallHook();
     }
 
+    // runs inside the native message hook, so nothing may throw out of it
     public static void OnDroppedFiles(List<string> aFiles, POINT aPos) {
-        if (aFiles.Count > 1) {
-            return;
-        }
+        try {
+            if (aFiles == null || aFiles.Count != 1) {
+                return;
+            }
 
-        var filePath = aFiles[0];
-        var fileName = filePath.Substring(filePath.LastIndexOf('\\') + 1);
-        if (fileName.StartsWith("randomizer") && (fileName.EndsWith(".bfr") || fileName.EndsWith(".dat"))) {
-            SeedFilePath = aFiles[0];
-            initialize();
-            showSeedInfo();
+            var filePath = aFiles[0];
+            var fileName = filePath.Substring(filePath.LastIndexOf('\\') + 1);
+            if (fileName.StartsWith("randomizer") && (fileName.EndsWith(".bfr") || fileName.EndsWith(".dat"))) {
+                SeedFilePath = aFiles[0];
+                initialize();
+                showSeedInfo();
+            }
+        } catch (Exception e) {
+            log("drop: " + e);
         }
     }
 
@@ -482,8 +512,7 @@ public static class Randomizer {
         }
 
         if (pinnedBox != null && UI.Hints.CurrentHint == pinnedBox && pinnedBox.Visibility != null) {
-            // re-arms the box's own hide timer, which is set when it is shown and counts down
-            // from there; its show curve is already at the end, so nothing moves
+            // re-arms the box's hide timer; its show curve has already finished, so nothing moves
             pinnedBox.Visibility.ShowMessageScreen();
             return;
         }
@@ -590,8 +619,7 @@ public static class Randomizer {
         }
     }
 
-    // Lines are buffered and written once a second rather than one file open,
-    // write, flush and close per line. The logic thread logs too, hence the lock.
+    // Flushed once a second by Tick; locked because the logic thread logs too.
     private static readonly List<string> pendingLog = new List<string>();
 
     private static readonly object logGate = new object();
@@ -636,8 +664,7 @@ public static class Randomizer {
     }
 
     public static void Update() {
-        // before anything asks for a key's icon: the game caches the answer it gives for a key
-        // it has no cap for, and would go on giving the bare name all session
+        // before anything asks for a key's icon: the game caches a missing cap for the session
         RandomizerKeyIcons.Register();
         PracticeController.Tick();
         PracticeSelect.Tick();
@@ -957,8 +984,7 @@ public static class Randomizer {
         printInfo(message);
     }
 
-    // where the escape says Stomp and Grenade are: the Archipelago hint when
-    // one was bought, otherwise whatever the seed baked (often "MIA")
+    // the bought Archipelago hint if any, else the seed's baked zone (often "MIA")
     public static string StompHint() {
         return RandomizerMW.ApHintOr(StompSlot, StompZone);
     }
@@ -1076,10 +1102,7 @@ public static class Randomizer {
         }
     }
 
-    // Win messages wait for the player to be upright and in control: the box is
-    // torn down by the death/respawn sequence, and a death goal wins you the game
-    // at the exact moment you die. Deliberately NOT cleared by initialize(), so a
-    // mid-death alt+L can't eat it; NewGameAction clears it instead.
+    // Held until Ori is upright and in control. Survives initialize(); NewGameAction clears it.
     public static void QueueWinMessage(string message) {
         PendingWinMessage = message;
         WinMessageStableFrames = 0;
@@ -1092,8 +1115,7 @@ public static class Randomizer {
 
         var stable = Characters.Sein && Characters.Sein.Active && Characters.Sein.Controller.CanMove
             && !Characters.Sein.IsSuspended && !UI.MainMenuVisible;
-        // count stable frames, not just one: CanMove goes true before the respawn
-        // fade finishes, and a message printed under the fade is a message unseen
+        // a run of stable frames: CanMove returns before the respawn fade ends
         WinMessageStableFrames = stable ? WinMessageStableFrames + 1 : 0;
         if (WinMessageStableFrames >= 60) {
             PrintImmediately(PendingWinMessage, 15, false, true, false);
@@ -1160,7 +1182,10 @@ public static class Randomizer {
                     hush.enabled = true;
                 }
 
-                msgBox.SetBackgroundColor(MessageBgColor);
+                // null while a story message or a higher hint layer holds the screen
+                if (msgBox != null) {
+                    msgBox.SetBackgroundColor(MessageBgColor);
+                }
             }
         }
 
@@ -1664,8 +1689,7 @@ public static class Randomizer {
         }
     }
 
-    // seed metadata: "//Key=Value" lines after the flagline, invisible to the
-    // pickup parse. Unknown keys are ignored, like unknown flags.
+    // "//key: value" or "//key=value" lines after the flagline; unknown keys are ignored
     public static void ParseMetaLine(string meta) {
         // "// SEED_FORMAT: n" -- seed file layout, not a dll version
         if (meta.ToLower().StartsWith("seed_format:")) {
@@ -1749,7 +1773,7 @@ public static class Randomizer {
         if (code == "TW") {
             //6399872|TW|Warp to Spirit Cavern AC,-219,-176,SpiritCavernsACWarp|Swamp
             var Pieces = id.Split(',');
-            if (Pieces.Length > 3) {
+            if (Pieces.Length > 3 && !WarpLogicLocations.ContainsKey(Pieces[0])) {
                 WarpLogicLocations.Add(Pieces[0], Pieces[3]);
             }
         }
@@ -1905,15 +1929,14 @@ public static class Randomizer {
         if (!Randomizer.SpawnWith.Contains("WS")) {
             return;
         }
-        if (Core.Scenes.Manager is null) {
+        if (Core.Scenes.Manager == null) {
             return;
         }
-        var wsLocation = Randomizer.SpawnWith.IndexOf("WS");
-        var wsLength = 2;
-        if (Randomizer.SpawnWith.Contains("WS/")) {
-            wsLength = 3;
+        var warp = new RandomizerAction(SpawnWith.Substring(0, 2), SpawnWith.Substring(2)).Decompose().FirstOrDefault(a => a.Action == "WS");
+        if (warp == null) {
+            return;
         }
-        string[] pieces = Randomizer.SpawnWith.Substring(wsLocation + wsLength).Split(',');
+        string[] pieces = ((string)warp.Value).Split(',');
         int warpX;
         int warpY;
         if ((pieces.Length < 2) || !int.TryParse(pieces[0], out warpX) || !int.TryParse(pieces[1], out warpY)) {

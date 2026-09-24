@@ -3,11 +3,8 @@ using System.Collections.Generic;
 using Game;
 using UnityEngine;
 
-// Temporary (over-max) health and energy get their own smaller row directly
-// above each HUD bar: every vanilla fill layer is re-capped at the permanent
-// max, and each row is a clone of the bar's full layer stack (fill + min +
-// glows) driven by only the overflow. Builds lazily from Randomizer.Update;
-// the Temp Row settings apply on file save + reload.
+// Over-max health and energy get their own row above each HUD bar: the vanilla fill layers are
+// capped at the permanent max, and each row clones the bar's layer stack, fed only the overflow.
 public static class RandomizerTempResourceUI {
     private static FloatProviderAnimatorDriver healthFill;
 
@@ -30,8 +27,7 @@ public static class RandomizerTempResourceUI {
 
         try {
             if (RandomizerSettings.Customization.DisableTempResourceRows) {
-                // installed caps return vanilla values while disabled (see the
-                // provider); untouched HUDs stay untouched. Just drop the rows.
+                // installed caps pass vanilla values through while disabled; only the rows go
                 if (healthRow != null) {
                     UnityEngine.Object.Destroy(healthRow);
                     healthRow = null;
@@ -50,8 +46,7 @@ public static class RandomizerTempResourceUI {
             }
 
             if (builtScale != TempRowScale && (healthRow != null || energyRow != null)) {
-                // scale changed: tear down, rebuild next pass with the new
-                // size (Destroy lands at end of frame)
+                // scale changed: rebuild next pass (Destroy lands at end of frame)
                 if (healthRow != null) {
                     UnityEngine.Object.Destroy(healthRow);
                 }
@@ -137,9 +132,8 @@ public static class RandomizerTempResourceUI {
         overflow.DivideBy = divideBy;
         clone.GetComponent<FloatProviderAnimatorDriver>().Value = overflow;
 
-        // base cells are drawn by fill + min + glow layers stacked; a lone
-        // fill clone reads washed out. Clone every driver-bearing sibling
-        // layer except the background slots, all on the overflow value.
+        // a lone fill clone reads washed out: clone every driver-bearing sibling layer but the
+        // background slots, all on the overflow value
         var sources = new List<Renderer> { fill.GetComponent<Renderer>() };
         var targets = new List<Renderer> { clone.GetComponent<Renderer>() };
         for (var i = 0; i < orig.parent.childCount; i++) {
@@ -187,10 +181,8 @@ public static class RandomizerTempResourceUI {
         return clone;
     }
 
-    // keeps a temp row glued above its bar in screen space. The HUD renders
-    // through a manually-driven camera, so screen axes come from the HUD
-    // itself: the line between the two strips is screen-right, its cross with
-    // the strip's plane normal is screen-up — one shared frame for both rows.
+    // Keeps a temp row above its bar in screen space. The HUD camera is manual, so screen-right is
+    // the line between the two strips and screen-up its cross with the strip's normal.
     public class RowAnchor : MonoBehaviour {
         public Transform Strip;
 
@@ -217,9 +209,8 @@ public static class RandomizerTempResourceUI {
             var mid = PairMidpoint(Strip);
             var side = Mathf.Sign(Vector3.Dot(Strip.position - mid, right));
 
-            // start on the strip, align the wheelward mesh corner through both
-            // transforms (sign-proof against each bar's rotation/mirror), then
-            // one shared lift for both rows plus the user's outward offset
+            // start on the strip, align the wheelward mesh corner through both transforms (sign-proof
+            // against each bar's rotation and mirror), then add the shared lift and outward offset
             transform.localPosition = BaseLocal;
             var shift = 0f;
             if (EdgeMin != EdgeMax) {
@@ -233,10 +224,8 @@ public static class RandomizerTempResourceUI {
             transform.position += right * (shift + side * height * RandomizerSettings.Customization.TempRowHorizontalOffset)
                 + up * (height * RandomizerSettings.Customization.TempRowSpacing);
 
-            // the HUD's fades (TransparencyAnimator) only write alpha to
-            // renderers cached at startup, never these clones: a row built
-            // mid-fade would keep that alpha forever. Mirror each clone's live
-            // tint (scaled by the brightness setting) and enabled flag.
+            // HUD fades never reach these clones, so each mirrors its source's live tint (times
+            // brightness) and enabled flag
             if (LayerSources != null && LayerTargets != null) {
                 for (var i = 0; i < LayerSources.Length && i < LayerTargets.Length; i++) {
                     MirrorTint(LayerSources[i], LayerTargets[i]);

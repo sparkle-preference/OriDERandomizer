@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using Game;
 using UnityEngine;
 
-// The parts of a container that act during a run: its boxes, the condition that
-// ends the attempt, a variant's loadout, and what the locations hold. Parsed at
-// Begin, the boxes again whenever they are edited, and checked against Ori's
-// position every frame.
+// What a container does during a run: boxes, the end condition, a variant's loadout, placements.
+// Parsed at Begin and on every edit; Check and Met run every frame.
 public class PracticeSegment {
     public List<RandomizerBox> Boxes = new List<RandomizerBox>();
 
@@ -22,8 +20,7 @@ public class PracticeSegment {
         get { return GoalArea.HasValue || EndItems.Count > 0 || EndLocations.Count > 0 || EndCount >= 0; }
     }
 
-    // What a variant adds to its segment: its own items to start with and its own
-    // boxes on top of the shared ones. The ending is shared.
+    // a variant's own loadout; its boxes join the shared ones, and the ending stays shared
     public List<RandomizerAction> StartingItems = new List<RandomizerAction>();
 
     // the pause menu stays the game's own, and Exit keeps the session, when this is set
@@ -72,13 +69,32 @@ public class PracticeSegment {
             return null;
         }
 
-        var bar = value.Str.IndexOf('|');
-        if (bar < 1) {
+        var action = Pickup(value.Str);
+        if (action == null) {
             Randomizer.LogError("practice: '" + value.Str + "' is not a pickup");
-            return null;
         }
 
-        return new RandomizerAction(value.Str.Substring(0, bar), value.Str.Substring(bar + 1));
+        return action;
+    }
+
+    public static bool IsPickup(string code) {
+        return Pickup(code) != null;
+    }
+
+    // null for a code RandomizerAction cannot build, like SK|abc or EX|1.5
+    private static RandomizerAction Pickup(string code) {
+        var bar = code.IndexOf('|');
+        return bar < 1 ? null : Pickup(code.Substring(0, bar), code.Substring(bar + 1));
+    }
+
+    private static RandomizerAction Pickup(string kind, string value) {
+        try {
+            return new RandomizerAction(kind, value);
+        } catch (FormatException) {
+            return null;
+        } catch (OverflowException) {
+            return null;
+        }
     }
 
     public static PracticeSegment Parse(JsonValue json) {
@@ -86,16 +102,22 @@ public class PracticeSegment {
         seg.QuitToMenu = json["qtm_enabled"].IsBool && json["qtm_enabled"].Flag;
         var end = json["end"];
         if (end.IsObject) {
+            // validated here, never per frame: Met must neither throw nor make HaveCoord print
             for (var i = 0; i < end["items"].Count; i++) {
-                seg.EndItems.Add(end["items"][i].Str);
+                var item = end["items"][i];
+                if (item.IsString && Holdable(item.Str)) {
+                    seg.EndItems.Add(item.Str);
+                } else {
+                    Randomizer.LogError("practice: segment wants item " + item.Serialize(false) + ", which is not a skill or world event");
+                }
             }
 
-            // Checked once here rather than every frame: an unknown coord makes
-            // HaveCoord shout, and a typo would bury the screen in it.
             for (var i = 0; i < end["locations"].Count; i++) {
                 var key = (int)end["locations"][i].Num;
-                if (RandomizerLocationManager.LocationsByKey.ContainsKey(key)) {
+                if (RandomizerTrackedDataManager.CoordsMap.ContainsKey(key)) {
                     seg.EndLocations.Add(key);
+                } else if (RandomizerLocationManager.LocationsByKey.ContainsKey(key)) {
+                    Randomizer.LogError("practice: segment wants location " + key + ", which cannot end a segment");
                 } else {
                     Randomizer.LogError("practice: segment wants location " + key + ", which is not a place");
                 }
@@ -109,9 +131,8 @@ public class PracticeSegment {
         return seg;
     }
 
-    // What the attempt's locations hold: the placement lines, shared then the
-    // variant's, and then each shuffle group's pickups scattered over its
-    // locations, chosen fresh.
+    // What the attempt's locations hold: placement lines, shared then the variant's, then each
+    // shuffle group's gives scattered afresh over its candidates, overriding a line.
     public static Dictionary<int, RandomizerAction> ResolvePlacements(BfrpFile file, string variant) {
         var table = new Dictionary<int, RandomizerAction>();
         var lines = file.PlacementLines("");
@@ -123,12 +144,13 @@ public class PracticeSegment {
 
             var parts = line.Split('|');
             int coord;
-            if (parts.Length < 3 || !int.TryParse(parts[0], out coord)) {
+            RandomizerAction action;
+            if (parts.Length < 3 || !int.TryParse(parts[0], out coord) || (action = Pickup(parts[1], parts[2])) == null) {
                 Randomizer.LogError("practice: '" + line + "' is not a placement");
                 continue;
             }
 
-            table[coord] = new RandomizerAction(parts[1], parts[2]);
+            table[coord] = action;
         }
 
         var random = new System.Random();
@@ -138,7 +160,7 @@ public class PracticeSegment {
             var among = groups[g]["among"];
             var spots = new List<int>();
             for (var i = 0; i < among.Count; i++) {
-                if (among[i].IsNumber) {
+                if (among[i].IsNumber && !spots.Contains((int)among[i].Num)) {
                     spots.Add((int)among[i].Num);
                 }
             }
@@ -161,8 +183,7 @@ public class PracticeSegment {
         return table;
     }
 
-    // Every clause present must hold at once; a goal box is only satisfied
-    // while Ori is standing in it.
+    // every clause present must hold at once; the goal box only while Ori is inside it
     public bool Met(Vector2 at) {
         if (!HasEnd) {
             return false;
@@ -201,9 +222,22 @@ public class PracticeSegment {
         { 8, AbilityType.ChargeJump },
         { 12, AbilityType.Climb },
         { 14, AbilityType.Glide },
+        { 15, AbilityType.SpiritFlame },
         { 50, AbilityType.Dash },
         { 51, AbilityType.Grenade }
     };
+
+    // what Holds can answer: a skill in Abilities or one of the six world events
+    private static bool Holdable(string item) {
+        var bar = item.IndexOf('|');
+        int id;
+        if (bar < 1 || !int.TryParse(item.Substring(bar + 1), out id)) {
+            return false;
+        }
+
+        var kind = item.Substring(0, bar);
+        return kind == "SK" ? Abilities.ContainsKey(id) : kind == "EV" && id >= 0 && id <= 5;
+    }
 
     // "SK|3" and "EV|0" shaped: the two families v1 lets a segment ask for
     private static bool Holds(string item) {

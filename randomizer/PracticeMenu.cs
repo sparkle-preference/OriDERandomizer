@@ -4,10 +4,9 @@ using fsm;
 using Game;
 using UnityEngine;
 
-// The pause menu (the inventory screen) dressed for a session, undressed on every show:
-// Difficulty becomes Retry, the cutscene Skip row becomes Pin once a run has finished,
-// Exit leads back to the chooser. Rows are re-dressed, never added: the screen navigates
-// by a cage of edges. Where quitting is allowed the vanilla screen stays; a keybind opens this.
+// The pause menu (the inventory screen) re-dressed for a session and undressed on every show.
+// Rows are relabelled, never added: the screen navigates by a cage of edges. A quit-to-menu
+// segment keeps the vanilla pause; the Practice Menu bind opens this one.
 public static class PracticeMenu {
     private class Row {
         public CleverMenuItem Item;
@@ -39,8 +38,7 @@ public static class PracticeMenu {
         try {
             Restore(screen);
             var segment = PracticeController.Segment;
-            // a segment that keeps the vanilla pause for its quit trick still wants the
-            // editor's rows while it is being edited: there is no run to quit out of
+            // the editor dresses it even on a quit-to-menu segment: there is no run to quit
             if (PracticeController.Active
                     && (wanted || PracticeEditor.Active || segment == null || !segment.QuitToMenu)) {
                 Decorate(screen);
@@ -67,8 +65,10 @@ public static class PracticeMenu {
 
             Game.UI.Menu.ShowInventoryOrPauseMenu();
         } catch (Exception e) {
-            wanted = false;
             Randomizer.LogError("practice menu: " + e.Message);
+        } finally {
+            // the inventory's Show runs inside that call; a show that did not happen never will
+            wanted = false;
         }
     }
 
@@ -106,13 +106,11 @@ public static class PracticeMenu {
             }
         }
 
-        // Mid-run the vanilla press stays, prompt and all; a finished run leaves without
-        // being asked, along the same path.
+        // mid-run Exit keeps the vanilla prompt; a finished run leaves without asking
         var exit = finished ? Take(manager, "exit", ExitNow, false) : Take(manager, "exit", RequestExit, true);
         Label(exit, "EXIT TO PRACTICE MENU");
 
-        // the cutscene skip row is the practice row: edit mid-run, save while editing,
-        // pin once the run is over; editing borrows Resume and Options as well
+        // Skip is the practice row (edit / save and retry / pin); editing borrows Resume and Options
         if (editing) {
             Label(Take(manager, "continue", null, true), "BACK TO EDITING");
             Label(Take(manager, "options", Reload, false), "RELOAD FROM DISK");
@@ -130,8 +128,8 @@ public static class PracticeMenu {
             PracticeHud.ShowTally(PracticeController.LastTally ?? "");
         }
 
-        // What is left is help and options, which a run keeps out of reach; a finished
-        // run has no Resume either. The layout lists the rows, the manager everything.
+        // Hide what is left (help, options; Resume once finished). Walk the layout: it lists
+        // only the rows, where the manager also holds the skill wheel.
         var layout = manager.GetComponentInChildren<CleverMenuItemLayout>(true);
         if (layout != null) {
             foreach (var item in layout.MenuItems) {
@@ -178,9 +176,8 @@ public static class PracticeMenu {
 
     private static List<CleverMenuItemSelectionManager.NavigationData> navigation;
 
-    // The layout lists rows top to bottom, so moving one is moving it in that list.
-    // The cage's edges are replaced with plain up/down ones between the visible rows:
-    // an edge into a hidden row is a dead end.
+    // Reorders the layout's list (top to bottom) and swaps the cage for plain up/down edges
+    // between visible rows: a cage edge into a hidden row is a dead end.
     private static void Arrange(CleverMenuItemSelectionManager manager, CleverMenuItem bottom, CleverMenuItem move, CleverMenuItem after) {
         var layout = manager.GetComponentInChildren<CleverMenuItemLayout>(true);
         if (layout == null) {
@@ -223,8 +220,7 @@ public static class PracticeMenu {
         }
 
         manager.Navigation = edges;
-        // The screen picks its opening row as the first activated one in the manager's
-        // list, which is not the layout's order; the top visible row goes first there.
+        // SetIndexToFirst opens on the first activated row in the manager's list, not the layout's
         if (first != null && manager.MenuItems.Count > 0 && manager.MenuItems[0] != first) {
             if (managerOrder == null) {
                 managerOrder = new List<CleverMenuItem>(manager.MenuItems);
@@ -299,8 +295,7 @@ public static class PracticeMenu {
         dressed.Add(row);
     }
 
-    // Takes a row for the session: its press replaced or kept, a hiding condition
-    // lifted, its text remembered for later.
+    // takes a row for the session: press replaced or kept, hiding conditions lifted, text saved
     private static Row Take(CleverMenuItemSelectionManager manager, string name, Action handler, bool keepPress) {
         var item = Find(manager, name);
         if (item == null) {
@@ -443,6 +438,8 @@ public static class PracticeMenu {
 
     private static void Edit() {
         Game.UI.Menu.HideMenuScreen(true);
+        // before the editor's legend goes up, or taking the pin down would clear it too
+        PracticeController.DropBriefing();
         PracticeEditor.Begin();
     }
 

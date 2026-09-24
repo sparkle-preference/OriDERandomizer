@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 
-// The shared clip table the wire format indexes into, fixed at build time because a runtime
-// sweep depends on what the game has loaded; Hash goes in the handshake so a mismatch is
-// detectable. Regenerate with Dev on: the ghost sweep writes ghost-animations.txt beside the
-// seed. A name missing here encodes as Unknown, which renders but does not animate.
+// The clip table packets index into, fixed at build time since a sweep finds only what is loaded.
+// Nothing exchanges Hash, so changing the table needs a packet Version bump. Dev on regenerates it
+// (the ghost sweep writes ghost-animations.txt); a name missing here renders but does not animate.
 public static class RandomizerGhostAnimations {
     public const int Unknown = 0xFFFF;
 
@@ -26,7 +25,7 @@ public static class RandomizerGhostAnimations {
         return index >= 0 && index < Names.Length ? Names[index] : null;
     }
 
-    // FNV-1a over the table, computed rather than pasted so it cannot drift from the array.
+    // FNV-1a over the table.
     public static uint Hash {
         get {
             if (Hashed == 0u) {

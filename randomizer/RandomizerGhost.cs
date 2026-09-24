@@ -6,10 +6,9 @@ using Core;
 using Game;
 using UnityEngine;
 
-// Translucent replays, to race against or to watch other players by. Samples carry their own
-// timestamp so a ghost recorded at one framerate plays back correctly at another, and they
-// store the sprite's transform rather than Ori's state: facing, roll and bash spin come along
-// for free. RandomizerGhost owns recording and the shared lookups; RandomizerGhostView renders.
+// Translucent replays, to race against or to watch other players by. Samples are timestamped
+// sprite transforms, so framerate does not matter and facing, roll and bash spin come free.
+// RandomizerGhost owns recording and the shared lookups; RandomizerGhostView renders.
 public static class RandomizerGhost {
     public struct Sample {
         public float Time;
@@ -28,21 +27,20 @@ public static class RandomizerGhost {
         public bool Died;
         // where their soul link stands; NaN when there is none
         public Vector2 SoulLink;
-        // a menu is up on their side, so nothing there is moving
+        // a menu is up on their side
         public bool InMenu;
         // no Ori to sample: they are on the title screen
         public bool OnTitle;
     }
 
     public static void Update() {
-        if (Recording) {
-            Record();
-        }
-
         try {
             RandomizerGhostNet.Update();
             RandomizerGhostSignal.Update();
             Drive();
+            if (Recording) {
+                Record();
+            }
         } catch (System.Exception e) {
             if (!Complained) {
                 Complained = true;
@@ -51,8 +49,7 @@ public static class RandomizerGhost {
         }
     }
 
-    // Every ghost on screen, whatever is feeding it. Walked backwards so a source that finishes
-    // can be dropped without disturbing the ones after it.
+    // Every ghost on screen, walked backwards so a finished one can be removed in place.
     private static void Drive() {
         var here = Sprite();
 
@@ -76,8 +73,7 @@ public static class RandomizerGhost {
                 continue;
             }
 
-            // a stalled peer holds its pose (the cursor runs out of samples): full opacity
-            // while it might come back, then a fade, then gone
+            // a stalled peer holds its pose at full opacity for Retire seconds, then fades
             view.Tick(source);
             var fade = FadeOut > 0.001f ? (silence - Retire) / FadeOut : 1f;
             view.Fade(keep || silence <= Retire ? 1f : 1f - fade);
@@ -293,8 +289,7 @@ public static class RandomizerGhost {
         Add(new RecordedGhostSource(Ghost, "replay", 0f));
     }
 
-    // Adds a ghost fed the way a networked peer's would be, to exercise the multi-ghost path
-    // without a transport. Stacks: press it again for another.
+    // A loopback peer replaying the stored ghost; each call adds another.
     public static void TogglePeer() {
         if (!Stored()) {
             return;
@@ -307,8 +302,7 @@ public static class RandomizerGhost {
         }
     }
 
-    // Cuts every loopback peer off mid-run, to watch the hold-fade-retire path happen. The one
-    // failure that matters most and the one hardest to produce on purpose.
+    // Stalls every loopback peer mid-run, to watch the hold-fade-retire path.
     public static void ToggleStall() {
         var stalled = 0;
         foreach (var source in Sources) {
@@ -339,14 +333,12 @@ public static class RandomizerGhost {
         return true;
     }
 
-    // Adds a ghost driven by a peer. Same render path as everything else -- the source is the
-    // only thing that differs, which is what the refactor was for.
+    // Adds a ghost for any source; false when Ori is not in the world.
     public static bool AddLive(IGhostSource source) {
         return Add(source);
     }
 
-    // A peer retired for silence is dropped from here but its data channel is still open, so
-    // the transport has to be able to ask whether the ghost it fed is still on screen.
+    // Whether a source still has a view; a peer retired for silence keeps its channel open.
     public static bool Showing(IGhostSource source) {
         return Sources.Contains(source);
     }
@@ -468,8 +460,7 @@ public static class RandomizerGhost {
         return true;
     }
 
-    // Death switches Ori off without destroying it, so Sprite() keeps handing back a corpse;
-    // ask whether Ori is on its feet, not whether it exists.
+    // Death switches Ori off without destroying it, so Sprite() keeps handing back the corpse.
     private const float DeathHold = 5f;
 
     private static bool Downed() {
@@ -506,8 +497,7 @@ public static class RandomizerGhost {
         return true;
     }
 
-    // No Ori on the title screen, so the last pose stands in, flagged. Held for TitleHold
-    // seconds: long enough for peers to say so and let go, not forever for a player who stays.
+    // No Ori on the title screen, so the last pose stands in, flagged, for TitleHold seconds.
     private const float TitleHold = 12f;
 
     private static float TitleSince = -1f;
@@ -555,8 +545,7 @@ public static class RandomizerGhost {
         }
     }
 
-    // Only worth a scene scan while a bash animation is up. The object sits on the bash target,
-    // so it carries the position; BashAttackGame is internal, so both come back as plain values.
+    // Scans for the bash game only during a bash clip; it sits on the target, so it gives both.
     private static float BashAim(string animation, out Vector2 target) {
         target = new Vector2(float.NaN, float.NaN);
         try {
@@ -569,8 +558,7 @@ public static class RandomizerGhost {
 
     private static float BashAimInner(string animation, out Vector2 target) {
         target = new Vector2(float.NaN, float.NaN);
-        // the aiming clips only. The bash game hangs around through its own disappear
-        // animation, so its mere existence keeps the arrow up well past the launch.
+        // the aiming clips only: the bash game outlives the launch in its disappear animation
         if (animation == null || !(animation.StartsWith("bashCharge") || animation.StartsWith("swimBash"))) {
             return float.NaN;
         }
@@ -584,8 +572,7 @@ public static class RandomizerGhost {
         return game.Angle;
     }
 
-    // The trajectory object is shown by being switched on, so its own activeSelf is the
-    // whole question of whether Ori is aiming.
+    // The grenade's launch velocity while its trajectory is showing, else NaN.
     private static Vector2 Aim(string animation) {
         try {
             return AimInner(animation);
@@ -595,8 +582,7 @@ public static class RandomizerGhost {
     }
 
     private static Vector2 AimInner(string animation) {
-        // activeInHierarchy, not activeSelf: the trajectory is switched on from above it, so its
-        // own flag stays set once anything has shown it. Every grenade animation is named grenade*.
+        // activeInHierarchy: the trajectory is switched on from a parent, so activeSelf stays set
         var grenade = Grenader();
         if (grenade == null || grenade.Trajectory == null ||
                 !grenade.Trajectory.gameObject.activeInHierarchy ||
@@ -607,11 +593,9 @@ public static class RandomizerGhost {
         return grenade.Trajectory.InitialVelocity;
     }
 
-    // The counter the game tests is private and stays where the jump left it until Ori lands,
-    // so any time in the clip gives the same answer. ExtraJumpsAvailable is the max, not the rest.
+    // ExtraJumpsAvailable is the max; the private counter stays put from the jump until landing.
     private static bool OnLastAirJump() {
-        // FindObjectsOfTypeAll hands back prefabs and half-wired instances too; a skill flag
-        // is never worth throwing over, sampling has to survive anywhere in the game
+        // a skill flag is never worth a throw out of sampling
         try {
             var ability = Jumper();
             if (ability == null || ability.ExtraJumpsAvailable != 2) {
@@ -629,8 +613,7 @@ public static class RandomizerGhost {
         }
     }
 
-    // IsCharged and CanChargeJump throw here (Sein.Abilities is half empty); the arrow's
-    // animator says the same thing, running backwards when the aim goes away.
+    // IsCharged and CanChargeJump can throw here; the arrow's animator gives the same answer.
     private static float WallArrowAim(string animation) {
         try {
             return WallArrowAimInner(animation);
@@ -646,8 +629,7 @@ public static class RandomizerGhost {
             return float.NaN;
         }
 
-        // CurrentTime is how far the arrow has faded in, zero until the aim starts; IsReversed
-        // is false from boot and only says which way it is heading
+        // CurrentTime is how far the arrow has faded in; IsReversed only gives the direction
         var driver = wall.Arrow.AnimatorDriver;
         if (driver == null || driver.CurrentTime <= 0.01f || !wall.Arrow.gameObject.activeInHierarchy) {
             return float.NaN;
@@ -757,8 +739,7 @@ public static class RandomizerGhost {
         return fallback;
     }
 
-    // A cloned effect brings its object's whole cast of components, and any of them that reads
-    // input or spawns things will happily go on doing so for a ghost. Only `keep` survives.
+    // Every MonoBehaviour but `keep` goes: on a clone they go on reading input and spawning.
     internal static void Strip(GameObject target, string keep) {
         var removed = new List<string>();
         foreach (var behavior in target.GetComponentsInChildren<MonoBehaviour>(true)) {
@@ -775,8 +756,7 @@ public static class RandomizerGhost {
             Object.Destroy(behavior);
         }
 
-        // a clone whose drawing lives outside the cloned object comes out empty: the renderer
-        // count is the tell, said once per prefab
+        // once per prefab; zero renderers means the drawing lives outside the cloned object
         if (Cloned.Add(target.name)) {
             Randomizer.log("ghost: cloned " + target.name + " with " +
                 target.GetComponentsInChildren<Renderer>(true).Length + " renderers, stripped " +
@@ -800,8 +780,7 @@ public static class RandomizerGhost {
     internal static void Quiet(GameObject target) {
         Hush(target);
         foreach (var fade in target.GetComponentsInChildren<TransparencyAnimator>(true)) {
-            // disabled as well as destroyed: Destroy lands at the end of the frame, and until
-            // then the component still gets its turn and switches the renderers back off
+            // disabled too: Destroy lands at end of frame, and the fader would still run this one
             fade.enabled = false;
             Object.Destroy(fade);
         }
@@ -815,16 +794,14 @@ public static class RandomizerGhost {
         Paint(target, EffectTint);
     }
 
-    // TransparencyAnimator drives opacity through whichever of these its Mode selects, so a
-    // clone repainted on _Color alone can still be sitting at whatever alpha its fader left it.
+    // TransparencyAnimator may drive opacity through any of these, so all of them are painted.
     private static readonly string[] ColorProperties = {
         "_Color", "_TintColor", "_MaskDissolveColor", "_AdditiveLayerColor"
     };
 
     internal static void Paint(GameObject target, Color color) {
         foreach (var renderer in target.GetComponentsInChildren<Renderer>(true)) {
-            // TransparencyAnimator switches renderers off when it fades out, so a clone taken
-            // while hidden arrives dark and nothing turns it back on once the fader is gone
+            // a clone taken mid-fade arrives with its renderers switched off
             renderer.enabled = true;
             var material = renderer.material;
             if (material == null) {
@@ -839,8 +816,7 @@ public static class RandomizerGhost {
         }
     }
 
-    // Multiplied rather than replaced: these effects are a dozen pieces with their own colors.
-    // Color scales along with alpha because additive blending never consults the alpha channel.
+    // Multiplied, so each piece keeps its color; rgb scales too: additive blending ignores alpha.
     internal static void Dim(GameObject target, float factor) {
         foreach (var renderer in target.GetComponentsInChildren<Renderer>(true)) {
             var material = renderer.material;
@@ -873,8 +849,7 @@ public static class RandomizerGhost {
         return sprite == null ? null : sprite.transform;
     }
 
-    // A clip begins by replacing another or by re-triggering under its own name -- the triple
-    // jump replays doubleJump. Only one-shot clips re-trigger; a loop's time wraps every cycle.
+    // A clip begins on a new name, or when a one-shot rewinds (the triple jump replays doubleJump).
     internal static bool Began(Sample now, Sample prev) {
         if (now.Animation != prev.Animation) {
             return true;
@@ -887,8 +862,7 @@ public static class RandomizerGhost {
         return clip != null && clip.Animation != null && clip.Animation.Loop;
     }
 
-    // Recording keeps a reference to every clip it sees, which covers a ghost replayed in the
-    // session that made it. One off a file needs the whole loaded set, swept once.
+    // Clips seen while capturing, else one sweep of everything loaded (once per session).
     internal static TextureAnimationWithTransitions Resolve(string name) {
         if (Animations.ContainsKey(name)) {
             return Animations[name];
@@ -912,8 +886,7 @@ public static class RandomizerGhost {
             return Animations[name];
         }
 
-        // a ghost that cannot find its clips still moves, it just idles the whole way, which
-        // looks like a bug in the recording rather than a missing animation
+        // said once: a missing clip idles, which otherwise looks like a bad recording
         if (Missing.Add(name)) {
             Randomizer.log("ghost: no animation named " + name + ", that stretch will idle");
         }
@@ -921,8 +894,7 @@ public static class RandomizerGhost {
         return null;
     }
 
-    // Regenerates the wire table's input. Which clips a sweep finds depends on what the game has
-    // loaded, so this is a dev tool run deliberately, not something the packet layer consults.
+    // Input for regenerating RandomizerGhostAnimations; a dev tool, never read back.
     private static void DumpTable() {
         try {
             var names = new List<string>(Animations.Keys);
@@ -948,15 +920,13 @@ public static class RandomizerGhost {
         return clip == null || clip.Animation == null ? 0f : clip.Animation.Duration;
     }
 
-    // Ori's own sprite scale, which is the same for every player, so nobody sends it. A mirror
-    // lives in the rotation rather than in a sign here -- lossyScale cannot report one.
+    // Ori's own sprite scale, which is the same for every player, so nobody sends it.
     internal static Vector3 GhostScale() {
         var sprite = Sprite();
         return sprite == null ? DefaultScale : sprite.lossyScale;
     }
 
-    // With Dev on, the first ghost of a session round-trips its recording through the packet
-    // codec and reports the worst error each lossy field introduced.
+    // Dev: round-trips a recording through the codec and logs the worst error per lossy field.
     private static void CheckCodec(List<Sample> samples) {
         var buffer = new byte[RandomizerGhostPacket.MaxSize];
         var worstPosition = 0f;
@@ -1145,12 +1115,10 @@ public static class RandomizerGhost {
 
     private static readonly HashSet<string> Missing = new HashSet<string>();
 
-    // how far behind a peer's newest sample to draw it, so there is always something to
-    // interpolate towards rather than past
+    // how far behind a peer's newest sample to draw it
     internal const float InterpolationDelay = 0.12f;
 
-    // a peer this quiet is not coming back; short enough that a dead ghost does not loiter,
-    // long enough to ride out a bad stretch of connection
+    // seconds of silence before a peer's ghost starts fading out
     private const float Retire = 5f;
 
     // one knob for every fade-out, tuned live on the view
@@ -1165,26 +1133,24 @@ public static class RandomizerGhost {
     // slack on the backwards-time test, so sampling jitter alone never reads as a re-trigger
     internal const float Rewind = 0.001f;
 
-    // ordinary rotation peaks around 15 degrees between samples; a facing flip is 180
+    // a facing flip is 180 degrees; ordinary turns between samples are far smaller
     internal const float FlipAngle = 90f;
 
     // further than Ori can travel between samples, so only a teleport crosses it
     internal const float WarpDistance = 8f;
 
-    // the game's own line is thinner than a clone of it looked; tune here
     internal const float AimWidth = 0.15f;
 
-    // thin but strong reads louder than the real one, which is drawn faint
     internal const float AimAlpha = 0.5f;
 
     internal const float WallArrowAlpha = 0.5f;
 
     internal const float WallArrowScale = 0.85f;
 
-    // a link is furniture, not a player: well under what the ghost's own effects get
+    // Dim scales color with alpha, so this is also the link's brightness
     internal const float LinkAlpha = 0.3125f;
 
-    // how far a link's colour goes from the effect tint toward its player's shade
+    // how far a link's color goes from the effect tint toward its player's shade
     internal const float LinkTintStrength = 0.8f;
 
     internal static Color LinkShade(Color shade) {
@@ -1197,16 +1163,12 @@ public static class RandomizerGhost {
 
     internal const float StompBurstAlpha = 0.5f;
 
-    // The jump burst fires several times a second where the others fire once, so it carries the
-    // room and wants to sit further back than they do.
+    // fainter than the other bursts: it fires several times a second
     internal const float JumpBurstAlpha = 0.4f;
 
-    // A death is the loudest thing Ori's effects do, and a ghost dying is not the player's
-    // emergency: it wants to read as something that happened, not something happening to you.
     internal const float DeathBurstAlpha = 0.5f;
 
-    // How wide a ghost's effect may be, in world units: the camera sees about twenty and the
-    // death glows are authored at up to 150; dimming cannot help, their animators rewrite color.
+    // widest a ghost's effect piece may be, in world units; wider pieces are shrunk, not dimmed
     internal const float EffectSpan = 12f;
 
     internal const float Tick = 1f / 60f;
@@ -1216,8 +1178,7 @@ public static class RandomizerGhost {
 
     internal static readonly Color Tint = new Color(0.55f, 0.8f, 1f, 0.35f);
 
-    // Hues are the website's, from player_icons() in map/src/common.js, so a ghost and its map
-    // icon agree; saturation and value are ours. Past six players the hues start colliding.
+    // Hues follow the website's player_icons() (map/src/common.js) so ghost and map icon agree.
     private static readonly Color[] Palette = {
         new Color(0.17f, 0.43f, 1.00f, 0.35f),   // 1 blue
         new Color(1.00f, 0.40f, 0.41f, 0.35f),   // 2 red
@@ -1242,8 +1203,7 @@ public static class RandomizerGhost {
     // the aura is a big bloom and reads far stronger than the rest of the ghost
     internal const float AuraAlpha = 0.35f;
 
-    // both repaint the sprite every frame, which is the tint's whole problem. The animator
-    // stays: it is what keeps the ghost running rather than sliding along frozen.
+    // both repaint the sprite every frame over the tint; the animator stays
     internal static readonly HashSet<string> Detach = new HashSet<string> {
         "EnvironmentTintModifier", "LegacyColorFlashAnimator"
     };

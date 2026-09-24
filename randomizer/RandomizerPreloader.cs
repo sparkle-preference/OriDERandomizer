@@ -3,9 +3,8 @@ using Core;
 using Game;
 using UnityEngine;
 
-// A scroll lock into a room that is still loading fades to black and freezes the game until
-// it arrives (InstantLoadScenesController). This asks for the far side of every nearby lock
-// early and asynchronously, exactly what the lock itself would load, pinned until it is far.
+// A fader scroll lock into a room still loading freezes the game until it arrives, so the far
+// side of every lock within Near is requested early, async and pinned, and unpinned past Far.
 public static class RandomizerPreloader {
     public const float Near = 40f;
     public const float Far = 80f;
@@ -22,12 +21,21 @@ public static class RandomizerPreloader {
     private static readonly List<SceneManagerScene> s_done = new List<SceneManagerScene>();
 
     public static void Tick() {
-        if (!RandomizerPerf.On || Time.realtimeSinceStartup < s_next) {
+        if (Time.realtimeSinceStartup < s_next) {
             return;
         }
 
         s_next = Time.realtimeSinceStartup + Every;
         var manager = Scenes.Manager;
+        if (!RandomizerPerf.On) {
+            // off is vanilla, so pins taken while on are handed back
+            if (s_pinned.Count > 0 && manager) {
+                Release(manager, null);
+            }
+
+            return;
+        }
+
         var sein = Characters.Sein;
         var state = GameStateMachine.Instance;
         if (!manager || !sein || state == null || state.CurrentState != GameStateMachine.State.Game || !manager.AutoLoadingUnloading
@@ -86,12 +94,14 @@ public static class RandomizerPreloader {
         }
     }
 
-    private static void Release(ScenesManager manager, Rect keep) {
+    // keep null releases every pin
+    private static void Release(ScenesManager manager, Rect? keep) {
         s_done.Clear();
         foreach (var scene in s_pinned) {
             if (!scene.PreventUnloading || !manager.ActiveScenes.Contains(scene)) {
                 s_done.Add(scene);
-            } else if (!scene.KeepLoadedForCheckpoint && scene.MetaData != null && !scene.MetaData.IsInsideSceneBounds(keep)) {
+            } else if (!scene.KeepLoadedForCheckpoint && scene.MetaData != null
+                    && (keep == null || !scene.MetaData.IsInsideSceneBounds(keep.Value))) {
                 scene.PreventUnloading = false;
                 Released++;
                 s_done.Add(scene);

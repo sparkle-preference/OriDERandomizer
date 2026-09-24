@@ -14,10 +14,10 @@ public class RuntimeWorldMapIcon {
 
     public bool IsVisible(AreaMapUI areaMap) {
         // Sein.
-        if (Guid == new MoonGuid(-550456551, 1312223365, -251340902, -293109681)) {
-            var fronkeyFight = new MoonGuid(686741138, 1236491904, -1735338082, 532353037);
-            var loc = RandomizerLocationManager.LocationsByGuid[fronkeyFight];
-            return !(Characters.Sein.PlayerAbilities.SpiritFlame.HasAbility && loc.Collected);
+        if (Guid == SeinIcon) {
+            RandomizerLocationManager.Location loc;
+            RandomizerLocationManager.LocationsByGuid.TryGetValue(FronkeyFight, out loc);
+            return !(Characters.Sein.PlayerAbilities.SpiritFlame.HasAbility && loc != null && loc.Collected);
         }
 
         // show randomizer pickup icons only if they're reachable and not yet collected
@@ -27,7 +27,7 @@ public class RuntimeWorldMapIcon {
         }
 
         // There are two Ginso Trees, with apparently different Guids. This is the second one that doesn't get automatically turned off.
-        if (Guid == new MoonGuid(-1906535857, 1336220761, 1768076162, -2078859709)) {
+        if (Guid == SecondGinsoTree) {
             return false;
         }
 
@@ -125,8 +125,7 @@ public class RuntimeWorldMapIcon {
 
     private void CreateIconFromInventory(string name, float scale) {
         if (!inventoryTemplate) {
-            // The visible inventory on the pause screen has transparency animations affecting the cloned icons
-            // So clone from the permanently disabled inventory that the visible one is cloned from
+            // the disabled template, since clones of the live inventory carry its fade animations
             inventoryTemplate = SceneManager.GetSceneByName("loadBootstrap").GetRootGameObjects().First(go => go.name == "inventoryScreen").transform;
         }
 
@@ -169,6 +168,12 @@ public class RuntimeWorldMapIcon {
     public RandomizerWorldMapIconType RandomizerIconType;
 
     private static Transform inventoryTemplate;
+
+    private static readonly MoonGuid SeinIcon = new MoonGuid(-550456551, 1312223365, -251340902, -293109681);
+
+    private static readonly MoonGuid FronkeyFight = new MoonGuid(686741138, 1236491904, -1735338082, 532353037);
+
+    private static readonly MoonGuid SecondGinsoTree = new MoonGuid(-1906535857, 1336220761, 1768076162, -2078859709);
 
     private static Texture2D PlantTexture {
         get {
