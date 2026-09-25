@@ -115,7 +115,7 @@ public static class PracticeEditor {
         Draft?.DeInit();
         Draft = null;
 
-        if (!Active) {
+        if (!Active || Characters.Sein == null || GameController.Instance == null || GameController.Instance.GameInTitleScreen) {
             return;
         }
 
