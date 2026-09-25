@@ -44,7 +44,7 @@ public class RandomizerBox {
     public bool IsOff => BoxNumber >= 0 && RandomizerBoxes.IsOff(BoxNumber);
 
     public void Collect() {
-        if (Once) {
+        if (Once && BoxNumber >= 0) {
             RandomizerBoxes.BoxOffStates.Set(BoxNumber);
         }
 
@@ -128,7 +128,7 @@ public class RandomizerBox {
                         break;
                     }
 
-                    DamageAmount = float.Parse(parts[0], CultureInfo.InvariantCulture);
+                    DamageAmount = damageAmount;
 
                     if (parts.Length > 1) {
                         if (!parts[1].TryParseEnum(true, out DamageType damageType)) {
@@ -170,6 +170,11 @@ public class RandomizerBox {
                     Unsafe = true;
                     break;
                 case "renderdepth": {
+                    if (flag.Length == 1) {
+                        Randomizer.log("box flag \"renderDepth\" requires a value");
+                        break;
+                    }
+
                     if (!float.TryParse(flag[1], NumberStyles.Number, CultureInfo.InvariantCulture, out var renderDepth)) {
                         Randomizer.log($"box flag \"renderDepth\" has invalid value \"{flag[1]}\" (must be a number) in line {line}");
                         break;
@@ -179,6 +184,11 @@ public class RandomizerBox {
                     break;
                 }
                 case "parallaxdepth": {
+                    if (flag.Length == 1) {
+                        Randomizer.log("box flag \"parallaxDepth\" requires a value");
+                        break;
+                    }
+
                     if (!float.TryParse(flag[1], NumberStyles.Number, CultureInfo.InvariantCulture, out var parallaxDepth)) {
                         Randomizer.log($"box flag \"parallaxDepth\" has invalid value \"{flag[1]}\" (must be a number) in line {line}");
                         break;
@@ -351,7 +361,6 @@ public class RandomizerBox {
 
     public RandomizerBoxPrefab? UnityObject;
 
-    // the consumed bit of a one-shot item box; -1 for every other kind
     public int BoxNumber = -1;
 
     public const string Prefix = "BX|";

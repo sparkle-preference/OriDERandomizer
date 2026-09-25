@@ -16,11 +16,11 @@ BX|ritem|170,-240,175,-230||SH|jump here
 Example: a red block to stand on, that's always visible, unaffected by the BRB darkness
 BX|solid,renderDepth=-99|190,-258.5,217,-258|ff6b6b
 
-Example: a box that gives bash, if you have enough health
-BX|once,damage=36/Drowning/Player|185,-206,195,-204|00a2e8|SH|0
-
 Example: a box of spikes
-BX|damage=1|158.9,-220.4,164.9,-212.4
+BX|damage=1,solid|158.9,-220.4,164.9,-212.4
+
+Example: a box that gives bash, if you have enough health
+BX|once,damage=36/Drowning/Player|185,-206,195,-204|00a2e8|SK|0
 
 Example: a force field that's lethal to enemies, but doesn't affect Ori
 BX|damage=1000/LevelUp,renderDepth=399|135,-220,136,-196|ffffffff
@@ -126,14 +126,14 @@ Available flags:
 
 - "renderDepth=<depth>"
     This value specifies the depth at which the box is rendered and has a purely visual effect.
-    The value must be between -99 and 399.
+    The value must be between -99 and 399 (may contain decimal places).
     The default is 0.5, which is behind the terrain, but in front of most background objects.
 
-    The depth determines how visible the box is, where lower numbers are *generally* in front
-    and higher numbers are *generally* further back / behind other objects.
+    The depth determines how visible the box is, where lower numbers are generally in front
+    and higher numbers are generally further back, behind other objects.
 
-    I say "generally," because the game uses the value in somewhat confusing ways,
-    where objects are grouped based on cutoff values in the depth (-5, -1, 1, 5).
+    "Generally," because the game uses the value in somewhat confusing ways.
+    Objects are grouped based on cutoff values in the depth (-5, -1, 1, 5).
     Within each group higher values are further back, but the interaction between groups is less clear.
 
     The depth also determines lighting: Boxes with a high value will get full lighting
@@ -146,7 +146,7 @@ Available flags:
 
 - "parallaxDepth=<depth>"
     This value specifies the depth used for parallax calculations and has a purely visual effect.
-    The value must be between -19 and 4979.
+    The value must be between -19 and 4979 (may contain decimal places).
     The default value is 0 (no parallax).
 
     Lower values correspond to the foreground, making the box appear bigger and move faster (like foreground objects).

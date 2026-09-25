@@ -86,6 +86,10 @@ public class RandomizerBoxPrefab : MonoBehaviour {
             return;
         }
 
+        if (Box.BoxNumber < 0) {
+            return;
+        }
+
         RandomizerBoxes.MarkActive(Box.BoxNumber);
     }
 
