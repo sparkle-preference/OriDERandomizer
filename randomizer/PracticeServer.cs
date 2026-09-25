@@ -683,18 +683,24 @@ public static class PracticeServer {
         reply.Set("rev", JsonValue.Of(hash.ToString("x16")));
     }
 
-    // The page's shape: boxes as an array and the goal as end.box, on a shallow copy so none
-    // of it lands in the file's own json.
+    // The page's shape: boxes as an array, tombstones too, the first goal's corners as end.box and the
+    // rest of it as end.goal, on a shallow copy so none of it lands in the file's own json.
     private static JsonValue WithBoxes(BfrpFile file, string variant) {
         var json = variant == "" ? file.Segment : file.VariantSegment(variant);
         var copy = Copy(json, "boxes", "end");
-        var end = Copy(json["end"], "box");
+        var end = Copy(json["end"], "box", "goal");
         var list = JsonValue.NewArray();
-        foreach (var box in file.Boxes(variant)) {
-            if (box.Goal) {
-                end.Set("box", box.ToJson()["box"]);
+        var boxes = file.Boxes(variant);
+        for (var i = 0; i < boxes.Count; i++) {
+            var box = boxes[i].ToJson();
+            if (variant == "" && boxes[i].Goal && !boxes[i].Deleted && !end["box"].IsArray) {
+                end.Set("box", box["box"]);
+                var goal = Copy(box, "box");
+                // its place among the box lines, which TakeBoxes puts it back in
+                goal.Set("at", JsonValue.Of(i));
+                end.Set("goal", goal);
             } else {
-                list.Add(box.ToJson());
+                list.Add(box);
             }
         }
 
@@ -721,20 +727,30 @@ public static class PracticeServer {
         return copy;
     }
 
-    // the page's boxes as lines; the goal first, from end.box
+    // the page's boxes as lines, end.goal back in its place at end.box's corners
     private static List<RandomizerBox> TakeBoxes(JsonValue json, bool goal) {
         var boxes = new List<RandomizerBox>();
-        var corners = json["end"]["box"];
-        if (goal && corners.IsArray && corners.Count == 4) {
-            var line = JsonValue.NewObject();
-            line.Set("type", JsonValue.Of("goal"));
-            line.Set("box", corners);
-            boxes.Add(RandomizerBox.FromJson(line));
-        }
-
         var list = json["boxes"];
         for (var i = 0; i < list.Count; i++) {
             boxes.Add(RandomizerBox.FromJson(list[i]));
+        }
+
+        var corners = json["end"]["box"];
+        if (goal && corners.IsArray && corners.Count == 4) {
+            var line = Copy(json["end"]["goal"]);
+            if (!line["type"].IsString) {
+                line.Set("type", JsonValue.Of("goal"));
+            }
+
+            line.Set("box", corners);
+            var box = RandomizerBox.FromJson(line);
+            if (!box.Goal || box.Deleted) {
+                throw new Exception("end.goal is not a goal box: " + box.Line);
+            }
+
+            // a goal the page added goes last, so no other box's number moves
+            var at = line["at"];
+            boxes.Insert(at.IsNumber ? (int)Math.Max(0, Math.Min(at.Num, boxes.Count)) : boxes.Count, box);
         }
 
         return boxes;
@@ -765,7 +781,7 @@ public static class PracticeServer {
         // all of it is built and checked before the file changes, so a refusal leaves the file whole
         var boxes = TakeBoxes(segment, true);
         var stored = Copy(segment, "boxes", "end");
-        stored.Set("end", Copy(segment["end"], "box"));
+        stored.Set("end", Copy(segment["end"], "box", "goal"));
         for (var g = 0; g < stored["shuffle"].Count; g++) {
             CheckPickups(stored["shuffle"][g]["give"]);
         }

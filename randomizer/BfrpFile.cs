@@ -126,6 +126,111 @@ public class BfrpFile {
         SetPlacementLines(variant, lines);
     }
 
+    // trailing tombstones go, but not up to a number a BM| names, nor the shared ones while variant boxes count on from them
+    private void TrimTombstones() {
+        var named = HighestBoxNamed();
+        var shared = QuietBoxes("");
+        var live = false;
+        foreach (var id in Variants) {
+            var own = QuietBoxes(id);
+            live |= own.Exists(box => !box.Deleted);
+            Trim(id, own, named - shared.Count);
+        }
+
+        if (!live) {
+            Trim("", shared, named);
+        }
+    }
+
+    // keeps every box up to the last live one and up to number `named` in this list's own count
+    private void Trim(string variant, List<RandomizerBox> boxes, int named) {
+        var keep = Math.Max(boxes.FindLastIndex(box => !box.Deleted), named) + 1;
+        if (keep < boxes.Count) {
+            SetBoxes(variant, boxes.GetRange(0, keep));
+        }
+    }
+
+    // Boxes without reporting a bad line, which Boxes has done already
+    private List<RandomizerBox> QuietBoxes(string variant) {
+        var boxes = new List<RandomizerBox>();
+        foreach (var line in PlacementLines(variant)) {
+            if (RandomizerBox.IsLine(line) && Parses(line)) {
+                boxes.Add(RandomizerBox.Parse(line));
+            }
+        }
+
+        return boxes;
+    }
+
+    // the highest box number a BM| anywhere in the container names, or -1
+    private int HighestBoxNamed() {
+        var ids = Variants;
+        ids.Insert(0, "");
+        var named = -1;
+        foreach (var id in ids) {
+            foreach (var line in PlacementLines(id)) {
+                if (RandomizerBox.IsLine(line)) {
+                    var box = Parses(line) ? RandomizerBox.Parse(line) : null;
+                    if (box != null && !box.Deleted && box.Item != null) {
+                        named = Math.Max(named, Named(box.Item));
+                    }
+                } else if (!line.StartsWith("//")) {
+                    var parts = line.Split('|');
+                    named = parts.Length < 3 ? named : Math.Max(named, Named(parts[1], parts[2]));
+                }
+            }
+
+            var json = id == "" ? Segment : VariantSegment(id);
+            named = Math.Max(named, Math.Max(Named(json["inventory"]), Named(json["end"]["items"])));
+            for (var g = 0; g < json["shuffle"].Count; g++) {
+                named = Math.Max(named, Named(json["shuffle"][g]["give"]));
+            }
+        }
+
+        return named;
+    }
+
+    private static int Named(JsonValue codes) {
+        var named = -1;
+        for (var i = 0; i < codes.Count; i++) {
+            var bar = codes[i].IsString ? codes[i].Str.IndexOf('|') : -1;
+            if (bar > 0) {
+                named = Math.Max(named, Named(codes[i].Str.Substring(0, bar), codes[i].Str.Substring(bar + 1)));
+            }
+        }
+
+        return named;
+    }
+
+    private static int Named(string code, string value) {
+        try {
+            return Named(new RandomizerAction(code, value));
+        } catch (Exception) {
+            return -1;
+        }
+    }
+
+    // BM|n, BM|n=... name box n; MU and RP name what their pieces do
+    private static int Named(RandomizerAction action) {
+        if (action.Action == "MU" || action.Action == "RP") {
+            var named = -1;
+            foreach (var piece in action.Decompose()) {
+                named = Math.Max(named, Named(piece));
+            }
+
+            return named;
+        }
+
+        if (action.Action != "BM") {
+            return -1;
+        }
+
+        var value = (string)action.Value;
+        var eq = value.IndexOf('=');
+        int n;
+        return int.TryParse((eq < 0 ? value : value.Substring(0, eq)).Trim(), out n) ? n : -1;
+    }
+
     private static bool Parses(string line) {
         try {
             RandomizerBox.Parse(line);
@@ -285,7 +390,24 @@ public class BfrpFile {
         return count == 0 ? -1L : total / count;
     }
 
+    private void ModernTombstones() {
+        var ids = Variants;
+        ids.Insert(0, "");
+        foreach (var id in ids) {
+            var lines = PlacementLines(id);
+            var modern = lines.ConvertAll(RandomizerBox.Modern);
+            for (var i = 0; i < lines.Count; i++) {
+                if (modern[i] != lines[i]) {
+                    SetPlacementLines(id, modern);
+                    break;
+                }
+            }
+        }
+    }
+
     public void Save() {
+        TrimTombstones();
+        ModernTombstones();
         zip.Set(SegmentEntry, Encoding.UTF8.GetBytes(Segment.Serialize(true)));
         zip.Write(Path);
     }

@@ -69,7 +69,7 @@ public class PracticeSegment {
             }
 
             var own = file.Boxes(variant);
-            if (own.RemoveAll(box => box.Goal) > 0) {
+            if (own.RemoveAll(box => box.Goal && !box.Deleted) > 0) {
                 Report("variants share the segment's goal box; ignoring this one's");
             }
 
@@ -84,7 +84,7 @@ public class PracticeSegment {
         }
 
         foreach (var box in seg.Boxes) {
-            if (box.Goal) {
+            if (box.Goal && !box.Deleted) {
                 seg.GoalArea = box.Rect;
                 break;
             }

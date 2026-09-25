@@ -309,7 +309,11 @@ public static class PracticeEditor {
 
         var boxes = file.Boxes(target);
         if (box.Goal) {
-            boxes.RemoveAll(b => b.Goal);
+            for (var i = 0; i < boxes.Count; i++) {
+                if (boxes[i].Goal && !boxes[i].Deleted) {
+                    boxes[i] = Buried(boxes[i]);
+                }
+            }
         }
 
         boxes.Add(box);
@@ -353,14 +357,19 @@ public static class PracticeEditor {
         foreach (var target in targets) {
             var boxes = file.Boxes(target);
             for (var i = boxes.Count - 1; i >= 0; i--) {
-                if (boxes[i].Rect.Contains(at)) {
-                    boxes.RemoveAt(i);
+                if (!boxes[i].Deleted && boxes[i].Rect.Contains(at)) {
+                    boxes[i] = Buried(boxes[i]);
                     file.SetBoxes(target, boxes);
                     PracticeController.Reparse();
                     return;
                 }
             }
         }
+    }
+
+    // a deleted box keeps a line, so the boxes after it keep their numbers
+    private static RandomizerBox Buried(RandomizerBox box) {
+        return RandomizerBox.Parse(RandomizerBox.Prefix + "tombstone|" + box.Line.Split('|')[2]);
     }
 
     // from a normal game: the current state becomes a new, empty segment's save; the seed carries on

@@ -30,12 +30,13 @@
   button.on { background: #2f9e6a; }
   button.icon { padding: 4px 7px; line-height: 1; }
   button.icon svg { width: 13px; height: 13px; fill: currentColor; display: block; }
+  button.icon.on { background: #e6e9ee; color: #111; }
   button:disabled { opacity: .45; cursor: default; }
   table { border-collapse: collapse; width: 100%; }
   th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #2b333d; vertical-align: top; }
   th { color: #8b95a3; font-weight: normal; }
   td .pick { min-width: 190px; }
-  /* nine columns in half a page: let it scroll rather than push into the next one */
+  /* ten columns in half a page: let it scroll rather than push into the next one */
   #boxes, .variant table { min-width: 0; }
   .boxwrap { overflow-x: auto; }
   tr.goal td { background: #184323; }
@@ -64,6 +65,13 @@
   .pick .opt { padding: 3px 12px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pick .opt.hi, .pick .opt:hover { background: #2f6fd6; }
   .pick .opt small { color: #b8c2cf; margin-left: 8px; }
+  .pick .opt.hi small, .pick .opt:hover small { color: #e6e9ee; }
+  td .pick { min-width: 280px; }
+  .pick .chip.odd { background-color: #ffd27f; background-image: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0 2px, transparent 2px 6px); color: #222; }
+  .pick input.odd { color: #ffd27f; box-shadow: inset 0 0 0 1px #ffd27f; }
+  .pick .opt small.odd { color: #ffd27f; }
+  .pick.flags .menu { right: auto; min-width: 100%; width: max-content; }
+  .pick .opt i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
   .saves .save { padding: 4px 8px; cursor: pointer; border-radius: 4px; }
   .saves .save:hover { background: #2a323c; }
   .saves .save.picked { background: #2f6fd6; }
@@ -152,8 +160,8 @@
 <section>
   <h2>Boxes</h2>
   <div class="row"><button class="quiet" id="addBox">add box</button> <button class="quiet" id="addGoal">add goal box</button></div>
-  <div class="muted">Drawn boxes appear here after a save in the game. An item box gives its pickup once, a repeat item box every time, a solid box is a block in the world, and a hidden box works unseen. The goal box is part of the end condition.</div>
-  <div class="boxwrap"><table id="boxes"><thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th></th><th></th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="muted">Drawn boxes appear here after a save in the game; the goal box is part of the end condition. The eye hides a box in game. Flags are explained in Boxes.txt, which comes with the randomizer.</div>
+  <div class="boxwrap"><table id="boxes"><thead><tr><th>type/flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th></th><th></th><th></th></tr></thead><tbody></tbody></table></div>
 </section>
 
 <div class="stack">
@@ -220,6 +228,7 @@
       state.base = s.base || null;
       // a save names the revision it was made from; a stale one merges against these two copies
       state.rev = s.rev; state.loaded = JSON.stringify({ segment: s.segment, variants: state.variants });
+      boxLists(state).forEach(function (l) { l.boxes.forEach(settle); });
       render(); state.shown = JSON.stringify(collect()); say('Loaded.', 'ok');
       return loadGhosts();
     }).catch(function (e) { say('Could not reach the game: ' + e.message, 'bad'); });
@@ -326,7 +335,7 @@
     });
   };
 
-  function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : Math.round(n * 10) / 10; }
+  function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : Math.round(n * 100) / 100; }
 
   // ---- pickups: the site's item table and names ---------------------------------
   var GROUPS = {
@@ -466,11 +475,12 @@
   function pickSelect(cfg) {
     var root = document.createElement('span'); root.className = 'pick';
     var chips = document.createElement('span');
-    var input = document.createElement('input'); input.type = 'text'; input.placeholder = cfg.placeholder || 'type to search items';
+    var input = document.createElement('input'); input.type = 'text'; input.placeholder = placeholder();
     var menu = document.createElement('div'); menu.className = 'menu';
     root.appendChild(chips); root.appendChild(input); root.appendChild(menu);
     var hi = -1, shown = [];
 
+    function placeholder() { return (typeof cfg.placeholder === 'function' ? cfg.placeholder() : cfg.placeholder) || 'type to search items'; }
     function list() { return cfg.get() || []; }
     function commit(l) { cfg.set(l); drawChips(); }
     function drawChips() {
@@ -482,7 +492,7 @@
         s.onclick = function () { var l = list().slice(); l.splice(i, 1); commit(l); input.value = v; input.focus(); open(); };
         s.appendChild(b); chips.appendChild(s);
       });
-      input.placeholder = list().length ? '' : (cfg.placeholder || 'type to search items');
+      input.placeholder = list().length ? '' : placeholder();
     }
     function add(value) { var l = list().slice(); l.push(value); commit(l); input.value = ''; close(); input.focus(); }
     function open() {
@@ -533,7 +543,99 @@
       else if (ev.key === 'Backspace' && input.value === '' && list().length) { var l = list().slice(); l.pop(); commit(l); }
     };
     root.onclick = function () { input.focus(); };
+    root.refresh = drawChips;
     drawChips();
+    return root;
+  }
+
+  // A box's flags as chips, with a menu of the usual ones; cfg.get(), cfg.set(list) and cfg.describe(flag).
+  function flagSelect(cfg) {
+    var root = document.createElement('span'); root.className = 'pick flags';
+    var chips = document.createElement('span');
+    var input = document.createElement('input'); input.type = 'text';
+    var menu = document.createElement('div'); menu.className = 'menu';
+    root.appendChild(chips); root.appendChild(input); root.appendChild(menu);
+    var hi = -1, shown = [];
+
+    function list() { return cfg.get(); }
+    function has(f) { return list().some(function (x) { return x.toLowerCase() === f.toLowerCase(); }); }
+    function commit(l) { cfg.set(l); draw(); }
+    function draw() {
+      chips.innerHTML = '';
+      list().forEach(function (f, i) {
+        var s = document.createElement('span'); s.className = 'chip'; s.textContent = f;
+        var d = cfg.describe(f), color = DEFAULT_COLOR[f.toLowerCase()];
+        s.title = d.text;
+        if (d.warn) s.classList.add('odd');
+        if (color) { s.style.backgroundColor = color; s.style.color = '#222'; }
+        var b = document.createElement('b'); b.textContent = '×';
+        b.onclick = function (ev) { ev.stopPropagation(); var l = list(); l.splice(i, 1); commit(l); };
+        s.onclick = function () { var l = list(); l.splice(i, 1); commit(l); input.value = f; input.focus(); };
+        s.appendChild(b); chips.appendChild(s);
+      });
+      input.placeholder = list().length ? '' : 'flags';
+    }
+    // a typed tombstone would delete the box
+    function add(f) {
+      f = (f === undefined ? input.value : f).trim(); if (!f) return;
+      var why = f.toLowerCase() === 'tombstone' ? 'To delete the box, use its ×.' : /[,|]/.test(f) ? 'One flag at a time, without , or |' : '';
+      if (why) { input.classList.add('odd'); input.title = why; return; }
+      input.value = ''; close();
+      if (!has(f)) { var l = list(); l.push(f); commit(l); }
+    }
+    function line(text, what, warn, color) {
+      var d = document.createElement('div'); d.className = 'opt';
+      if (color) { var sw = document.createElement('i'); sw.style.background = color; d.appendChild(sw); }
+      d.appendChild(document.createTextNode(text));
+      if (what) { var w = document.createElement('small'); w.textContent = what; if (warn) w.className = 'odd'; d.appendChild(w); }
+      return d;
+    }
+    function offer(d, entry) { d.onmousedown = function (ev) { ev.preventDefault(); pick(entry); }; entry.el = d; return entry; }
+    // a completion that more can follow goes to the text box; anything else is added
+    function pick(entry) { if (entry.fill) { input.value = entry.flag; input.focus(); open(); } else add(entry.flag); }
+    function known(f) { return has(f) || SUGGEST.some(function (o) { return o[0].toLowerCase() === f.toLowerCase(); }); }
+    // A flag that's whole as typed keeps the usual lines first, so Enter adds it; one that isn't
+    // puts its completions first.
+    function open() {
+      var typed = input.value.trim(), q = typed.toLowerCase(), own = [], usual = [], next = [];
+      menu.innerHTML = ''; shown = []; hi = -1;
+      if (typed && !known(typed)) { var d0 = cfg.describe(typed); own.push(offer(line('add ' + typed, d0.text, d0.warn), { flag: typed })); }
+      SUGGEST.forEach(function (o) {
+        if (!has(o[0]) && (!q || o[0].toLowerCase().indexOf(q) >= 0)) usual.push(offer(line(o[0], o[1], false, DEFAULT_COLOR[o[0]]), { flag: o[0] }));
+      });
+      flagCompletions(typed).forEach(function (c) {
+        if (c.next) next.push(offer(line(c.value + '<' + c.next.hint + '>', c.next.fallback ? c.next.fallback + ' if left out' : ''), { flag: c.value, fill: true }));
+        else if (!known(c.value)) next.push(offer(line(c.value, lower(describeFlag(c.value).text)), { flag: c.value, fill: c.fill }));
+      });
+      var whole = typed && !cfg.describe(typed).warn;
+      (whole ? own.concat(usual, next) : next.concat(usual, own)).forEach(function (x) { menu.appendChild(x.el); shown.push(x); });
+      menu.classList.toggle('open', shown.length > 0);
+      if (typed) highlight(0);
+    }
+    function close() { menu.classList.remove('open'); hi = -1; }
+    function highlight(n) {
+      if (!shown.length) return;
+      hi = (n + shown.length) % shown.length;
+      shown.forEach(function (x, i) { x.el.classList.toggle('hi', i === hi); });
+      shown[hi].el.scrollIntoView({ block: 'nearest' });
+    }
+    input.onkeydown = function (ev) {
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); if (!menu.classList.contains('open')) open(); highlight(hi + 1); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); highlight(hi - 1); }
+      else if (ev.key === 'Enter') { ev.preventDefault(); if (hi >= 0 && shown[hi]) pick(shown[hi]); else add(); }
+      else if (ev.key === 'Escape') close();
+      else if (ev.key === 'Backspace' && input.value === '' && list().length) { var l = list(); l.pop(); commit(l); }
+    };
+    // a typed comma adds what came before it; leaving the field adds what is typed
+    input.oninput = function () {
+      input.classList.remove('odd'); input.title = '';
+      if (/,$/.test(input.value)) add(input.value.slice(0, -1)); else open();
+    };
+    input.onfocus = open;
+    input.onblur = function () { setTimeout(close, 120); add(); };
+    root.onclick = function () { input.focus(); };
+    root.refresh = draw;
+    draw();
     return root;
   }
 
@@ -606,20 +708,114 @@
     return !q || (loc.name + ' ' + loc.zone + ' ' + loc.type).toLowerCase().indexOf(q) >= 0;
   }
 
-  var DEFAULT_COLOUR = { goal: '#8fe3a0', kill: '#ff6b6b', solid: '#9aa0aa', item: '#40c0ff', ritem: '#7fd8ff' };
+  var DEFAULT_COLOR = { goal: '#8fe3a0', kill: '#ff6b6b', solid: '#9aa0aa', item: '#40c0ff', ritem: '#7fd8ff', none: '#808080' };
+  // a box's type is the first of these among its flags; in game each one sets the color in turn
+  var TYPE_FLAGS = ['goal', 'kill', 'solid', 'item', 'ritem', 'none', 'tombstone'];
+  var NAMES = { ritem: 'repeat item', none: 'plain' };
+  // the flags menu, presets first; goal and none still load and show, but aren't offered
+  var SUGGEST = [['kill', 'box kills Ori'], ['item', 'grants an item once'], ['solid', 'box with collision'],
+    ['ritem', 'grants an item repeatedly'], ['once', 'box toggles off when collected'], ['unsafe', 'saves disabled inside box'],
+    ['on=Tick', 'grant 60 times a second while inside box'], ['on=Frame', 'grant every frame while inside box'],
+    ['damage=1', 'box damages entities touching it'], ['renderDepth=-99', 'draw box over terrain']];
+  // the flags the game reads; any other is kept, and the game logs it
+  var FLAGS = ['once', 'on', 'damage', 'solid', 'unsafe', 'renderdepth', 'parallaxdepth', 'goal', 'kill', 'item', 'ritem', 'none', 'tombstone'];
+  var VALUED = ['on', 'damage', 'renderdepth', 'parallaxdepth'];
+  var FLAG_TEXT = { kill: 'box kills Ori', item: 'grants an item once', solid: 'box with collision', ritem: 'grants an item repeatedly',
+    once: 'box toggles off when collected', unsafe: 'saves disabled inside box', goal: 'ends a practice segment', none: 'plain gray' };
+  var TRIGGER_TEXT = { Enter: 'grants when Ori enters the box', Tick: 'grants 60 times a second while Ori is inside',
+    Frame: 'grants every frame while Ori is inside' };
+  // the game's DamageType names, which it matches case-insensitively
+  var DAMAGE_TYPES = ['Acid', 'Bash', 'Bat', 'ChargeFlame', 'Crush', 'Drowning', 'Enemy', 'Explosion', 'Grenade', 'GrenadeSplatter',
+    'Heat', 'HitSurface', 'Ice', 'Laser', 'Lava', 'LevelUp', 'NightBerryDied', 'Nova', 'Projectile', 'SlugSpike',
+    'Spikes', 'SpiritFlame', 'SpiritFlameSplatter', 'Stomp', 'StompBlast', 'Water'];
+  // the parts after a value flag's "=", in order, and what the game uses for one left out
+  var FLAG_PARTS = {
+    on: [{ names: ['Enter', 'Tick', 'Frame'] }],
+    damage: [{ hint: 'amount' }, { names: DAMAGE_TYPES, hint: 'damage type', fallback: 'Spikes' },
+      { names: ['All', 'Player'], hint: 'target', fallback: 'All' }, { names: ['Normal', 'Extended'], hint: 'hitboxes', fallback: 'Extended' }]
+  };
+  // Ways to go on with a value flag being typed, as flag_completions in the plando builder's boxes.js:
+  // the names its current part can take, those starting with what's typed first, then the next part
+  // once this one is whole. fill marks one that more can follow.
+  function flagCompletions(text) {
+    var eq = text.indexOf('='), parts = eq < 0 ? null : FLAG_PARTS[text.slice(0, eq).trim().toLowerCase()];
+    var typed = text.slice(eq + 1).split('/'), at = typed.length - 1;
+    if (!parts || !parts[at]) return [];
+    var part = parts[at], partial = typed[at].trim().toLowerCase(), head = text.slice(0, text.length - typed[at].length), out = [];
+    var whole = part.names ? part.names.some(function (n) { return n.toLowerCase() === partial; }) : numeric(typed[at]);
+    if (part.names && !whole) {
+      var hits = part.names.filter(function (n) { return n.toLowerCase().indexOf(partial) === 0; })
+        .concat(part.names.filter(function (n) { return n.toLowerCase().indexOf(partial) > 0; }));
+      out = hits.map(function (n) { return { value: head + n, fill: at < parts.length - 1 }; });
+    }
+    if (whole && parts[at + 1]) out.push({ value: text + '/', fill: true, next: parts[at + 1] });
+    return out;
+  }
+  var KILL_GIVES = 'Won\'t kill Ori (grants an item)';
+  function capital(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+  function lower(t) { return t.charAt(0).toLowerCase() + t.slice(1); }
+  function oneOf(names, t) { return names.filter(function (n) { return n.toLowerCase() === t.trim().toLowerCase(); })[0]; }
+  function numeric(t) { return t.trim() !== '' && isFinite(Number(t)); }
+  // What a flag does, or with warn, why the game won't do what it says: its bad values are
+  // the game's own parse errors, which it only logs.
+  function describeFlag(f) {
+    var eq = f.indexOf('='), name = (eq < 0 ? f : f.slice(0, eq)).trim(), value = eq < 0 ? '' : f.slice(eq + 1).trim(), key = name.toLowerCase();
+    function bad(t) { return { text: t, warn: true }; }
+    if (FLAGS.indexOf(key) < 0) return bad('Unknown flag (will be ignored)');
+    if (VALUED.indexOf(key) >= 0 && !value) return bad('Needs a value: ' + name + '=...');
+    if (key === 'on') {
+      var when = oneOf(Object.keys(TRIGGER_TEXT), value);
+      return when ? { text: capital(TRIGGER_TEXT[when]) } : bad('One of: Enter, Tick, Frame');
+    }
+    if (key === 'renderdepth' || key === 'parallaxdepth') {
+      var low = key === 'renderdepth' ? -99 : -19, high = key === 'renderdepth' ? 399 : 4979;
+      if (!numeric(value) || Number(value) < low || Number(value) > high) return bad(name + ' takes a number from ' + low + ' to ' + high);
+      return { text: key === 'renderdepth' ? 'Draws the box at depth ' + value + '; lower is further in front' : 'Box moves as if it was at depth ' + value + ' (lower is nearer)' };
+    }
+    if (key === 'damage') {
+      var parts = value.split('/');
+      if (!numeric(parts[0])) return bad('Damage needs an amount first: ' + name + '=1');
+      var kind = parts.length > 1 ? oneOf(DAMAGE_TYPES, parts[1]) : 'Spikes';
+      if (!kind) return bad('Not a damage type: ' + parts[1]);
+      var who = parts.length > 2 ? oneOf(['All', 'Player'], parts[2]) : 'All';
+      if (!who) return bad('Target must be All or Player');
+      var hits = parts.length > 3 ? oneOf(['Normal', 'Extended'], parts[3]) : 'Extended';
+      if (!hits || parts.length > 4) return bad('The hitboxes are Normal or Extended');
+      return { text: 'Does ' + parts[0] + ' ' + kind + ' damage to ' + (who === 'All' ? 'anything' : 'Ori and grenades') + ' inside the box' + (hits === 'Normal' ? ', by normal hitboxes' : '') };
+    }
+    return { text: FLAG_TEXT[key] ? capital(FLAG_TEXT[key]) : '' };
+  }
+  // a deleted box keeps its line so later boxes keep their BM|n numbers; the old builder's was a bare none
+  function settle(b) { if (b.type === 'none' && !b.extra && !b.color) b.type = 'tombstone'; }
   // colors travel as rrggbb; none is an invisible box
   function hidden(b) { return b.color === 'none' || b.color === '0'; }
-  function colorOf(b) { return b.color && !hidden(b) ? '#' + b.color.replace('#', '').slice(0, 6) : (DEFAULT_COLOUR[b.type] || DEFAULT_COLOUR.item); }
-  function boxLabel(b) { return b.type === 'item' || b.type === 'ritem' ? (b.type === 'ritem' ? 'repeat item box: ' : 'item box: ') + (nameOf(b.give) || 'nothing yet') : (b.type || 'kill') + ' box'; }
+  function flagsOf(b) { return [b.type].concat((b.extra || '').split(',')).map(function (f) { return f.trim(); }).filter(Boolean); }
+  function hasFlag(b, flag) { return flagsOf(b).some(function (f) { return f.toLowerCase() === flag; }); }
+  // chips back to type and extra: the first type flag is the type, the rest keep their order
+  function setFlags(b, l) {
+    var t = -1;
+    l.forEach(function (f, k) { if (t < 0 && TYPE_FLAGS.indexOf(f.toLowerCase()) >= 0) t = k; });
+    b.type = t < 0 ? '' : l[t].toLowerCase();
+    b.extra = l.filter(function (f, k) { return k !== t; }).join(',');
+  }
+  function colorOf(b) {
+    var preset = flagsOf(b).map(function (f) { return f.toLowerCase(); }).filter(function (f) { return DEFAULT_COLOR[f]; }).pop();
+    return b.color && !hidden(b) ? '#' + b.color.replace('#', '').slice(0, 6) : (DEFAULT_COLOR[preset] || DEFAULT_COLOR.item);
+  }
+  function boxLabel(b) {
+    var type = typeof b.type === 'string' ? b.type : 'kill';
+    if (type === 'item' || type === 'ritem') return (type === 'ritem' ? 'repeat item box: ' : 'item box: ') + (nameOf(b.give) || 'nothing yet');
+    return (type ? (NAMES[type] || type) + ' box' : 'box') + (b.give ? ': ' + nameOf(b.give) : '');
+  }
 
   // every box on the map, with where it lives: the goal, the shared list, each variant's
   function allBoxes() {
     var out = [];
     var end = state.segment.end || {};
-    if (end.box && end.box.length === 4) out.push({ b: { type: 'goal', box: end.box }, label: 'goal box', rowId: 'box-shared-goal', owner: 'shared' });
-    (state.segment.boxes || []).forEach(function (b, i) { out.push({ b: b, label: boxLabel(b) + ' · shared', rowId: 'box-shared-' + i, owner: 'shared' }); });
+    if (end.box && end.box.length === 4) out.push({ b: { type: 'goal', box: end.box, color: (end.goal || {}).color }, label: 'goal box', rowId: 'box-shared-goal', owner: 'shared' });
+    (state.segment.boxes || []).forEach(function (b, i) { if (b.type !== 'tombstone') out.push({ b: b, label: boxLabel(b) + ' · shared', rowId: 'box-shared-' + i, owner: 'shared' }); });
     Object.keys(state.variants).forEach(function (id) {
-      (state.variants[id].boxes || []).forEach(function (b, i) { out.push({ b: b, label: boxLabel(b) + ' · variant ' + id, rowId: 'box-' + id + '-' + i, owner: id }); });
+      (state.variants[id].boxes || []).forEach(function (b, i) { if (b.type !== 'tombstone') out.push({ b: b, label: boxLabel(b) + ' · variant ' + id, rowId: 'box-' + id + '-' + i, owner: id }); });
     });
     return out;
   }
@@ -826,48 +1022,43 @@
     var end = state.segment.end || {};
     if (withGoal && end.box && end.box.length === 4) {
       var tr0 = document.createElement('tr'); tr0.id = 'box-shared-goal'; tr0.className = 'goal';
-      var goalType = document.createElement('select'); var op0 = document.createElement('option'); op0.textContent = 'goal'; goalType.appendChild(op0); goalType.disabled = true;
-      tr0.appendChild(td(goalType));
+      var goalFlags = document.createElement('span'); goalFlags.className = 'chips';
+      flagsOf({ type: 'goal', extra: (end.goal || {}).extra }).forEach(function (f) {
+        var s = document.createElement('span'); s.textContent = f;
+        if (DEFAULT_COLOR[f]) { s.style.background = DEFAULT_COLOR[f]; s.style.color = '#222'; }
+        goalFlags.appendChild(s);
+      });
+      tr0.appendChild(td(goalFlags));
       for (var g = 0; g < 4; g++) (function (g) { tr0.appendChild(td(numInput(end.box[g], function (v) { end.box[g] = v; moveBox(end.box); $('goalBox').textContent = end.box.join(', '); }))); })(g);
       var ends = document.createElement('span'); ends.className = 'muted'; ends.textContent = 'ends the run'; tr0.appendChild(td(ends));
       tr0.appendChild(td(document.createElement('span'))); tr0.appendChild(td(document.createElement('span')));
       var clear = document.createElement('button'); clear.className = 'danger icon'; clear.innerHTML = '&times;'; clear.title = 'Remove the goal box';
-      clear.onclick = function () { delete end.box; render(); };
+      clear.onclick = function () { delete end.box; delete end.goal; render(); };
       tr0.appendChild(td(clear));
       tbody.appendChild(tr0);
     }
     boxes.map(function (b, i) { return [b, i]; }).reverse().forEach(function (pair) {
       var b = pair[0], i = pair[1];
-      var tr = document.createElement('tr'); tr.id = 'box-' + owner + '-' + i;
-      var types = { kill: 'kill', item: 'item', ritem: 'repeat item', solid: 'solid' };
-      var typeSel = document.createElement('select');
-      Object.keys(types).forEach(function (k) { var op = document.createElement('option'); op.value = k; op.textContent = types[k]; typeSel.appendChild(op); });
       if (typeof b.type !== 'string') b.type = 'kill';
-      // a type this page does not edit (a none tombstone) is listed and kept as it is
-      var known = Object.prototype.hasOwnProperty.call(types, b.type);
-      if (!known) { var own = document.createElement('option'); own.value = b.type; own.textContent = b.type; typeSel.appendChild(own); }
-      typeSel.value = b.type;
-      typeSel.onchange = function () { b.type = typeSel.value; render(); };
-      tr.appendChild(td(typeSel));
+      if (b.type === 'tombstone') return;
+      var tr = document.createElement('tr'); tr.id = 'box-' + owner + '-' + i;
       var coords = b.box && b.box.length === 4 ? b.box : [0, 0, 0, 0];
       b.box = coords;
+      var flags = flagSelect({ get: function () { return flagsOf(b); }, set: function (l) { setFlags(b, l); drawEye(); gives.refresh(); rebuildShapes(); },
+        describe: function (f) { return f.toLowerCase() === 'kill' && b.give ? { text: KILL_GIVES, warn: true } : describeFlag(f); } });
+      var gives = pickSelect({ get: function () { return splitCode(b.give); }, set: function (l) { b.give = joinCodes(l); flags.refresh(); rebuildShapes(); },
+        placeholder: function () { return hasFlag(b, 'kill') ? 'kills Ori' : 'what it gives; a message is SH|text'; } });
+      tr.appendChild(td(flags));
       for (var k = 0; k < 4; k++) (function (k) { tr.appendChild(td(numInput(coords[k], function (v) { coords[k] = v; moveBox(coords); }))); })(k);
-      if (b.type === 'kill' || b.type === 'solid') {
-        var none = document.createElement('span'); none.className = 'muted'; none.textContent = b.type === 'solid' ? 'stand on it, climb it, jump off it' : 'kills Ori';
-        tr.appendChild(td(none));
-      } else if (!known) {
-        tr.appendChild(td(document.createElement('span')));
-      } else {
-        tr.appendChild(td(pickSelect({ get: function () { return splitCode(b.give); }, set: function (l) { b.give = joinCodes(l); rebuildShapes(); }, placeholder: 'what it gives; a message is SH|text' })));
-      }
-      // any box can wear its own color; the type's is the default
-      var color = document.createElement('input'); color.type = 'color'; color.title = b.color ? 'own color' : 'the default for a ' + (known ? types[b.type] : b.type) + ' box';
+      tr.appendChild(td(gives));
+      // any box can wear its own color; its flags pick the default
+      var color = document.createElement('input'); color.type = 'color'; color.title = b.color ? 'own color' : 'the default for its flags';
       color.onchange = function () { b.color = color.value.replace('#', ''); recolorBox(coords); };
       tr.appendChild(td(color));
       // invisible: it still works, nobody sees it
       var hide = document.createElement('button'); hide.className = 'quiet icon';
       var drawEye = function () {
-        hide.innerHTML = hidden(b) ? EYE_OFF : EYE;
+        hide.innerHTML = hidden(b) ? EYE_OFF : EYE; hide.classList.toggle('on', hidden(b));
         hide.title = hidden(b) ? 'Invisible in game. Click to make it visible.' : 'Visible in game. Click to make it invisible (it stays dashed here).';
         color.value = colorOf(b); color.disabled = hidden(b);
       };
@@ -875,14 +1066,14 @@
       hide.onclick = function () { if (hidden(b)) delete b.color; else b.color = 'none'; drawEye(); recolorBox(coords); };
       tr.appendChild(td(hide));
       var del = document.createElement('button'); del.className = 'danger icon'; del.innerHTML = '&times;'; del.title = 'Remove this box';
-      del.onclick = function () { boxes.splice(i, 1); render(); };
+      del.onclick = function () { if (state.lastBox === b) state.lastBox = null; boxes[i] = { type: 'tombstone', box: coords }; render(); };
       tr.appendChild(td(del));
       tbody.appendChild(tr);
     });
   }
 
   function td(child) { var c = document.createElement('td'); c.appendChild(child); return c; }
-  function numInput(v, on) { var n = document.createElement('input'); n.type = 'number'; n.step = '0.1'; n.value = v; n.onchange = function () { on(num(n.value)); }; return n; }
+  function numInput(v, on) { var n = document.createElement('input'); n.type = 'number'; n.step = '0.01'; n.value = v; n.onchange = function () { on(num(n.value)); }; return n; }
 
   function renderGroups() {
     var root = $('groups'); root.innerHTML = '';
@@ -944,10 +1135,10 @@
       inv.appendChild(pickSelect({ get: function () { return v.inventory || []; }, set: function (l) { v.inventory = l; }, placeholder: 'given at the start' }));
       box.appendChild(inv);
       var h = document.createElement('div'); h.className = 'muted'; h.style.marginTop = '6px'; h.textContent = 'Boxes only this variant has'; box.appendChild(h);
-      var add = document.createElement('button'); add.className = 'quiet'; add.textContent = 'add box'; add.style.margin = '6px 0'; add.onclick = function () { v.boxes.push(freshBox('kill')); render(); };
+      var add = document.createElement('button'); add.className = 'quiet'; add.textContent = 'add box'; add.style.margin = '6px 0'; add.onclick = function () { v.boxes.push(freshBox()); render(); };
       box.appendChild(add);
       var table = document.createElement('table');
-      table.innerHTML = '<thead><tr><th>type</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th></th><th></th><th></th></tr></thead><tbody></tbody>';
+      table.innerHTML = '<thead><tr><th>type/flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th></th><th></th><th></th></tr></thead><tbody></tbody>';
       renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id, false);
       var wrap = document.createElement('div'); wrap.className = 'boxwrap'; wrap.appendChild(table);
       box.appendChild(wrap);
@@ -956,12 +1147,19 @@
   }
 
   // a new box lands where the map is looking, so it can be dragged into place
-  function freshBox(type) {
+  function lookingAt() {
     var c = state.map ? state.map.getCenter() : { lng: 0, lat: 0 };
-    return { box: [num(c.lng - 2), num(c.lat - 2), num(c.lng + 2), num(c.lat + 2)], type: type };
+    return [num(c.lng - 2), num(c.lat - 2), num(c.lng + 2), num(c.lat + 2)];
   }
-  $('addBox').onclick = function () { (state.segment.boxes = state.segment.boxes || []).push(freshBox('kill')); render(); };
-  $('addGoal').onclick = function () { var end = state.segment.end = state.segment.end || {}; end.box = freshBox('goal').box; render(); };
+  // with the flags of the box added before it
+  function freshBox() {
+    var last = state.lastBox, b = { box: lookingAt(), type: last ? last.type : 'kill' };
+    if (last && last.extra) b.extra = last.extra;
+    state.lastBox = b;
+    return b;
+  }
+  $('addBox').onclick = function () { (state.segment.boxes = state.segment.boxes || []).push(freshBox()); render(); };
+  $('addGoal').onclick = function () { var end = state.segment.end = state.segment.end || {}; end.box = lookingAt(); render(); };
   $('addGroup').onclick = function () { (state.segment.shuffle = state.segment.shuffle || []).push({ give: [], among: [] }); state.target = String(state.segment.shuffle.length - 1); render(); };
   $('addVariant').onclick = function () {
     var name = prompt('Variant name'); if (!name) return;
@@ -991,7 +1189,8 @@
     Object.keys(state.variants).forEach(function (id) { (state.variants[id].boxes || []).forEach(tidy); });
     return { segment: seg, variants: state.variants };
   }
-  function tidy(b) { if (b.type === 'kill' || b.type === 'solid') delete b.give; delete b.text; delete b.repeat; }
+  // a bare plain box would read as the old builder's tombstone
+  function tidy(b) { if (b.type === 'none' && !b.color) b.color = '808080'; delete b.text; delete b.repeat; }
 
   function put(doc, rev) {
     return api('/api/segment', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ segment: doc.segment, variants: doc.variants, rev: rev }) });
@@ -1031,7 +1230,7 @@
   }
   function withoutBoxes(doc) {
     var d = JSON.parse(JSON.stringify({ segment: doc.segment, variants: doc.variants || {} }));
-    delete d.segment.boxes; if (d.segment.end) delete d.segment.end.box;
+    delete d.segment.boxes; if (d.segment.end) { delete d.segment.end.box; delete d.segment.end.goal; }
     Object.keys(d.variants).forEach(function (id) { delete d.variants[id].boxes; });
     return canon(d);
   }

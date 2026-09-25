@@ -25,7 +25,7 @@ public class RandomizerBox {
             Object.Destroy(UnityObject.gameObject);
         }
 
-        UnityObject = RandomizerBoxPrefab.Create(this);
+        UnityObject = Deleted ? null : RandomizerBoxPrefab.Create(this);
     }
 
     public void DeInit() {
@@ -44,6 +44,10 @@ public class RandomizerBox {
     public bool IsOff => BoxNumber >= 0 && RandomizerBoxes.IsOff(BoxNumber);
 
     public void Collect() {
+        if (Deleted) {
+            return;
+        }
+
         // a practice save left loaded after its session is never the seed's game
         if (PracticeController.InPracticeSave && !PracticeController.Active) {
             return;
@@ -85,6 +89,8 @@ public class RandomizerBox {
         box.Rect = Between(c[0], c[1], c[2], c[3]);
         if (fields.Length > 3 && !string.IsNullOrEmpty(fields[3])) {
             box.SetColor(fields[3], line);
+        } else if (OldTombstone(fields)) {
+            box.Deleted = true;
         }
 
         if (fields.Length > 4 && !string.IsNullOrEmpty(fields[4])) {
@@ -220,6 +226,11 @@ public class RandomizerBox {
                 case "none":
                     Color = new Color(0.5f, 0.5f, 0.5f, 0.25f);
                     break;
+                case "tombstone":
+                    Deleted = true;
+                    break;
+                case "":
+                    break;
                 default:
                     Randomizer.log($"Invalid box flag \"{flag[0]}\" in box line {line}");
                     break;
@@ -227,35 +238,10 @@ public class RandomizerBox {
         }
     }
 
-    private string GetName() {
-        if (Goal) {
-            return "goal";
-        }
-
-        var payload = GetPayloadString();
-        if (payload == "RB|3") {
-            return "kill";
-        }
-
-        if (Solid) {
-            return "solid";
-        }
-
-        if (Once) {
-            return "item";
-        }
-
-        if (payload != "") {
-            return "ritem";
-        }
-
-        return "none";
-    }
-
     public string GetPayloadString() => Item == null ? "" : Item.Action + "|" + Item.Value;
 
     private static string Num(float value) {
-        return Math.Round(value, 1).ToString(CultureInfo.InvariantCulture);
+        return Math.Round(value, 2).ToString(CultureInfo.InvariantCulture);
     }
 
     public static Rect Between(float x1, float y1, float x2, float y2) {
@@ -263,7 +249,7 @@ public class RandomizerBox {
     }
 
     public void SetColor(string text, string line) {
-        if (text == "none") {
+        if (text == "none" || text == "0") {
             Invisible = true;
             return;
         }
@@ -285,33 +271,50 @@ public class RandomizerBox {
         }
     }
 
+    // the editors' {type, extra, box, color, give}, from the line as written:
+    // type is its first type flag, extra the other flags in order
     public JsonValue ToJson() {
-        var json = JsonValue.NewObject();
-        var type = GetName();
-        json.Set("type", JsonValue.Of(type));
-        var corners = JsonValue.NewArray();
-        corners.Add(JsonValue.Of(Math.Round(Rect.xMin, 1)));
-        corners.Add(JsonValue.Of(Math.Round(Rect.yMin, 1)));
-        corners.Add(JsonValue.Of(Math.Round(Rect.xMax, 1)));
-        corners.Add(JsonValue.Of(Math.Round(Rect.yMax, 1)));
-        json.Set("box", corners);
-        json.Set("color", JsonValue.Of(Invisible ? "none" : $"{Color.r:X2}{Color.g:X2}{Color.b:X2}{Color.a:X2}"));
-
-        if (Item != null && type != "kill") {
-            json.Set("give", JsonValue.Of(GetPayloadString()));
+        var fields = Line.Split(['|'], 5);
+        var type = "";
+        var extra = new List<string>();
+        foreach (var flag in fields[1].Split(',').Select(f => f.Trim())) {
+            if (type == "" && TypeFlags.Contains(flag.ToLowerInvariant())) {
+                type = flag.ToLowerInvariant();
+            } else if (flag != "") {
+                extra.Add(flag);
+            }
         }
 
+        // the editors hide a tombstone by its type, and FromJson gives a bare none the plain colour
+        if (Deleted) {
+            type = "tombstone";
+            extra.RemoveAll(f => f.ToLowerInvariant() == "tombstone");
+        }
+
+        var json = JsonValue.NewObject();
+        json.Set("type", JsonValue.Of(type));
+        json.Set("extra", JsonValue.Of(string.Join(",", extra.ToArray())));
+        var corners = JsonValue.NewArray();
+        corners.Add(JsonValue.Of(Math.Round(Rect.xMin, 2)));
+        corners.Add(JsonValue.Of(Math.Round(Rect.yMin, 2)));
+        corners.Add(JsonValue.Of(Math.Round(Rect.xMax, 2)));
+        corners.Add(JsonValue.Of(Math.Round(Rect.yMax, 2)));
+        json.Set("box", corners);
+        json.Set("color", JsonValue.Of(fields.Length > 3 ? fields[3] : ""));
+        json.Set("give", JsonValue.Of(fields.Length > 4 ? fields[4] : ""));
         return json;
     }
 
     public static RandomizerBox FromJson(JsonValue json) {
         var type = json["type"].IsString ? json["type"].Str : "kill";
+        var extra = json["extra"].IsString ? json["extra"].Str : "";
         var corners = json["box"];
         if (!corners.IsArray || corners.Count != 4) {
             throw new FormatException("a box needs four corners");
         }
 
-        var line = Prefix + type + "|" + string.Join(
+        var flags = type == "" || extra == "" ? type + extra : type + "," + extra;
+        var line = Prefix + flags + "|" + string.Join(
             ",",
             new[] {
                 Num((float)corners[0].Num), Num((float)corners[1].Num), Num((float)corners[2].Num), Num((float)corners[3].Num)
@@ -319,6 +322,11 @@ public class RandomizerBox {
         );
         var color = json["color"].IsString ? json["color"].Str.TrimStart('#') : "";
         var give = json["give"].IsString ? json["give"].Str : "";
+        // a plain box with no colour would read as the old tombstone
+        if (color == "" && (type == "none" || flags.Trim().ToLowerInvariant() == "none")) {
+            color = "808080";
+        }
+
         if (color != "" || give != "") {
             line += "|" + color;
         }
@@ -328,6 +336,17 @@ public class RandomizerBox {
         }
 
         return Parse(line);
+    }
+
+    // the builder's old tombstone: flags exactly none and no colour
+    private static bool OldTombstone(string[] fields) {
+        return fields[1].Trim().ToLowerInvariant() == "none" && (fields.Length < 4 || fields[3] == "");
+    }
+
+    // an old tombstone as the editors write one now; any other line as it was
+    public static string Modern(string line) {
+        var fields = line.Split('|');
+        return IsLine(line) && fields.Length > 2 && OldTombstone(fields) ? Prefix + "tombstone|" + fields[2] : line;
     }
 
     // Keep the original parsed line to be able to save it again.
@@ -364,11 +383,16 @@ public class RandomizerBox {
 
     public bool Goal { get; private set; }
 
+    // a tombstone: a deleted box, kept only so the boxes after it keep their numbers
+    public bool Deleted { get; private set; }
+
     public RandomizerBoxPrefab? UnityObject;
 
     public int BoxNumber = -1;
 
     public const string Prefix = "BX|";
+
+    private static readonly string[] TypeFlags = ["goal", "kill", "solid", "item", "ritem", "none", "tombstone"];
 
     public enum BoxTrigger {
         Enter,
@@ -447,17 +471,17 @@ public static class RandomizerBoxes {
 
             lastN = n;
 
+            var box = At(n);
             var wasActive = ActiveStates.Get(n);
-            var active = NewActiveStates.Get(n) && !BoxOffStates.Get(n);
+            var active = box != null && NewActiveStates.Get(n) && !BoxOffStates.Get(n);
             // Because OnCollisionExit is not guaranteed to be called
             // we instead mark each active box to be deactivated the next tick
             // unless the collision persists
             NewActiveStates.Clear(n);
             ActiveStates.Set(n, active);
-            if (active) {
+            if (box != null && active) {
                 RequiresTick.Add(n);
 
-                var box = ActiveBoxes[n];
                 switch (box.Trigger) {
                     case RandomizerBox.BoxTrigger.Enter:
                         if (!wasActive) {
@@ -519,14 +543,17 @@ public static class RandomizerBoxes {
 
             lastN = n;
 
-            var box = ActiveBoxes[n];
+            var box = At(n);
 
-            if (box.Trigger == RandomizerBox.BoxTrigger.Frame && ActiveStates.Get(n)) {
+            if (box != null && box.Trigger == RandomizerBox.BoxTrigger.Frame && ActiveStates.Get(n)) {
                 RequiresUpdate.Add(n);
                 box.Collect();
             }
         }
     }
+
+    // numbers left over from the last set in force can point past this one's end
+    private static RandomizerBox? At(int n) => n < ActiveBoxes.Length ? ActiveBoxes[n] : null;
 
     public static void Use(List<RandomizerBox>? boxes) {
         foreach (var box in ActiveBoxes) {
@@ -570,6 +597,10 @@ public static class RandomizerBoxes {
         var name = (eq < 0 ? value : value.Substring(0, eq)).Trim();
         if (!int.TryParse(name, out var bit) || bit < 0 || bit >= ActiveBoxes.Length) {
             Randomizer.LogError("BM|" + value + ": this seed has no box " + name);
+            return;
+        }
+
+        if (ActiveBoxes[bit].Deleted) {
             return;
         }
 
