@@ -87,6 +87,24 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         // skips a leading header
         selectionManager.SetIndexToFirst();
         selectionManager.BackGuard = KeepOrDiscard;
+        // any move of the selection chooses its row, a mouse hover included
+        selectionManager.OptionChangeCallback += delegate { chosenIn = menuSession; };
+        selectionManager.EnterRow = ReturnRow;
+    }
+
+    // Entering returns to the page's row if one was chosen since the options screen opened, else to
+    // the first row the window shows. A row that left the page gives way to its nearest neighbour.
+    private int ReturnRow() {
+        if (chosenIn != menuSession) {
+            return -1;
+        }
+
+        return selectionManager.NavigableFrom(selectionManager.Index, 0, selectionManager.MenuItems.Count - 1);
+    }
+
+    // the options screen went away, from the pause menu or the title: every page forgets its row
+    public static void MenusClosed() {
+        menuSession++;
     }
 
     // Back from a dirty page asks first; either answer clears the change, then lands the back.
@@ -191,14 +209,14 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         optionalShown = wanted;
         // Off a leaving row without SetCurrentItem, whose callbacks would enter the page from its OnEnable;
-        // entry would pick the window's top row, so it is told where to land.
+        // the neighbour counts as chosen, so entry lands there even after the menus closed.
         if (!wanted && selectionManager.Index >= optionalFrom) {
             if (selectionManager.CurrentMenuItem != null) {
                 selectionManager.CurrentMenuItem.OnUnhighlight();
             }
 
             selectionManager.Index = selectionManager.NavigableFrom(optionalFrom - 1, 0, optionalFrom - 1);
-            selectionManager.EnterAt = selectionManager.Index;
+            chosenIn = menuSession;
             if (selectionManager.IsHighlightVisible && selectionManager.CurrentMenuItem != null) {
                 selectionManager.CurrentMenuItem.OnHighlight();
             }
@@ -1277,6 +1295,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     private List<CleverMenuItem> optionalRows;
 
     private bool optionalShown = true;
+
+    // counts closings of the options screen; a page's row is remembered within one
+    private static int menuSession;
+
+    private int chosenIn = -1;
 
     // Measured: the vanilla legend sits here, panel rows start here and step by this. The
     // camera has a fixed vertical FOV, so these are the same at every resolution and aspect.

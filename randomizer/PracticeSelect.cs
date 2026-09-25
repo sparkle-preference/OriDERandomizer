@@ -135,7 +135,7 @@ public static class PracticeSelect {
     private static void LabelPractice(bool active) {
         var box = practiceItem == null ? null : practiceItem.GetComponentInChildren<MessageBox>(true);
         if (box != null) {
-            box.SetMessage(new MessageDescriptor(active ? "CONTINUE PRACTICE" : "PRACTICE"));
+            box.SetMessage(new MessageDescriptor(active ? "CONTINUE PRACTICE" : "PRACTICE MODE"));
         }
     }
 
@@ -236,7 +236,7 @@ public static class PracticeSelect {
 
         var template = menu.MenuItems[0];
         // a run parked behind the title is continued from here, through its three slots
-        menu.AddMenuItem(PracticeController.Active ? "CONTINUE PRACTICE" : "PRACTICE", 2, Open);
+        menu.AddMenuItem(PracticeController.Active ? "CONTINUE PRACTICE" : "PRACTICE MODE", 2, Open);
         var item = menu.MenuItems[2];
         // AddMenuItem keeps world scale and START GAME's own press; undo both
         item.transform.localScale = template.transform.localScale;

@@ -6,14 +6,14 @@ What it is
 ===
 A segment is a save file plus rules: where the attempt ends, boxes that kill, hint or give items, an optional loadout, and variants of the same segment with different loadouts or boxes.
 Segments are .bfrp files in the practice folder next to the game (practice/ by default), one per segment. They are safe to copy, rename and share.
-PRACTICE on the title menu lists them. You race a clock, and a ghost of one of your earlier attempts if you have one.
+PRACTICE MODE on the title menu lists them. You race a clock, and a ghost of one of your earlier attempts if you have one.
 
 
 
 Making a segment
 ===
 In a normal game, get to the spot you want to practice from and press Alt+M. The current state is saved as a new segment, named New Segment 1, 2, 3 and so on; rename it on the page.
-Or choose NEW SEGMENT at the end of the PRACTICE list: the editor page opens in your browser, you pick one of your saves to start from, and the game opens the new segment in the editor.
+Or choose NEW SEGMENT at the end of the PRACTICE MODE list: the editor page opens in your browser, you pick one of your saves to start from, and the game opens the new segment in the editor.
 A segment with nothing to end it yet says "Unfinished" and "click to edit" in the list and opens straight in the editor.
 On a finished segment, pause and choose EDIT PRACTICE SEGMENT. The world freezes and you draw boxes with the mouse.
 
@@ -54,7 +54,7 @@ Example: one variant starts with Charge Jump and another with Double Jump, and e
 
 Running a segment
 ===
-PRACTICE on the title menu lists your segments. Up and Down pick a variant, Space starts.
+PRACTICE MODE on the title menu lists your segments. Up and Down pick a variant, Space starts.
 After a three second countdown the clock runs in real time through everything: pauses, deaths, quitting to the menu.
 A segment can open with a briefing (its "about" text on the page); the countdown waits until you press Retry Practice Segment.
 Every run is kept in the segment's history.
@@ -105,5 +105,5 @@ Alt+L               Retry Practice Segment: start the attempt over, or start aft
 Files
 ===
 A .bfrp is a zip: segment.json (the rules), save.sav (the start), placements.bfr (the boxes, and what the locations hold), variants/<id>/segment.json and placements.bfr, and runs.csv and ghosts/ per variant.
-Its entries must be stored uncompressed: if you re-zip one by hand, choose Store (no compression), or PRACTICE skips the file.
+Its entries must be stored uncompressed: if you re-zip one by hand, choose Store (no compression), or PRACTICE MODE skips the file.
 The page is the reference for what segment.json can say.

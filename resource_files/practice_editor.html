@@ -86,7 +86,7 @@
   <summary>How this works</summary>
   <div class="muted" style="margin-top:6px; max-width: 900px">
     <p><b>Practice Segments:</b> A <i>practice segment</i> is a save file plus some rules: where you start, what the end condition is, what pickups are in the world.
-    <b>PRACTICE</b> on the title screen to enter the segment select menu. Pick a finished segment to <b>run</b> or <b>edit</b> it. Unfinished segments jump straight to the editor.</p>
+    <b>PRACTICE MODE</b> on the title screen to enter the segment select menu. Pick a finished segment to <b>run</b> or <b>edit</b> it. Unfinished segments jump straight to the editor.</p>
 
     <p><b>Editor:</b> The editor freezes the world and gives you several control options:
     <b>Drag the left mouse</b> to create a box (<b>1</b> goal, <b>2</b> kill, <b>3</b> hint, <b>4</b> solid), <b>Z</b> to undo a placement, <b>X</b> to delete a box under the cursor.
@@ -211,7 +211,7 @@
       if (!s.session) {
         $('path').textContent = s.awaiting ? 'The game is waiting for a starting save. Pick one below.'
           : s.choosing ? 'No segment is open. Make one below and the game starts it in the editor.'
-          : 'No practice session is running. Make a segment below, or start one from PRACTICE in the game.';
+          : 'No practice session is running. Make a segment below, or start one from PRACTICE MODE in the game.';
         say('');
         return renderCreate(s);
       }
@@ -271,7 +271,7 @@
       api('/api/segment').then(function (s) {
         if (s.session) return load();
         if (s.awaiting) { awaitTimer = setTimeout(tick, 1500); return; }
-        $('path').textContent = 'The game stopped waiting for a save. Make the segment here and start it from PRACTICE.';
+        $('path').textContent = 'The game stopped waiting for a save. Make the segment here and start it from PRACTICE MODE.';
       }).catch(function () { awaitTimer = setTimeout(tick, 3000); });
     };
     awaitTimer = setTimeout(tick, 1500);
@@ -289,7 +289,7 @@
     $('create').disabled = true; say('Creating…');
     api('/api/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slot: newSlot, name: $('newName').value.trim() }) })
       .then(function (r) {
-        if (!r.started) { say('Created ' + r.path + '. Start it from PRACTICE in the game; it opens in the editor.', 'ok'); $('create').disabled = false; return; }
+        if (!r.started) { say('Created ' + r.path + '. Start it from PRACTICE MODE in the game; it opens in the editor.', 'ok'); $('create').disabled = false; return; }
         say('Created ' + r.path + '. The game is loading it into the editor…', 'ok');
         return waitForSession(20);
       })

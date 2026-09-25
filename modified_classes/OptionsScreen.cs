@@ -36,7 +36,9 @@ public class OptionsScreen : MenuScreen, ISuspendable {
         }
     }
 
+    // also runs for every other menu screen shown, which is harmless for the pages
     public override void Hide() {
+        CustomSettingsScreen.MenusClosed();
         Navigation.SetVisible(false);
         foreach (var cleverMenuItemGroupItem in GetComponent<CleverMenuItemGroup>().Options) {
             if (cleverMenuItemGroupItem.ItemGroup) {
@@ -51,6 +53,7 @@ public class OptionsScreen : MenuScreen, ISuspendable {
     }
 
     public override void HideImmediate() {
+        CustomSettingsScreen.MenusClosed();
         Navigation.SetVisibleImmediate(false);
     }
 

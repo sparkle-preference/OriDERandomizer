@@ -175,7 +175,7 @@ public static class PracticeEditor {
             return;
         }
 
-        Draft = CreateBox(Between(dragFrom, at), "", "ffff99", "");
+        Draft = CreateBox(Between(dragFrom, at), "renderDepth=-99", "ffff99", "");
         Draft!.Init(-1);
         if (Core.Input.LeftClick.OnReleased) {
             dragging = false;
@@ -375,14 +375,40 @@ public static class PracticeEditor {
         }
 
         try {
-            var game = GameController.Instance;
-            game.CreateCheckpoint();
-            game.SaveGameController.PerformSave();
-            var bytes = File.ReadAllBytes(game.SaveGameController.GetSaveFilePath(SaveSlotsManager.CurrentSlotIndex));
-            var path = CreateFrom(bytes, null);
-            Randomizer.printInfo("Practice segment saved: " + path + "\nStart it from PRACTICE: it opens in the editor", 600);
+            var path = CreateFrom(CheckpointHere(), null);
+            Randomizer.printInfo("Practice segment saved: " + path + "\nStart it from PRACTICE MODE: it opens in the editor", 600);
         } catch (Exception e) {
             Randomizer.LogError("practice: could not create a segment: " + e.Message);
+        }
+    }
+
+    // The save a checkpoint here would write, box contact cleared; the game's checkpoint and save file stay as they were.
+    private static byte[] CheckpointHere() {
+        var checkpoint = Game.Checkpoint.SaveGameData;
+        // SaveToWriter disposes its writer, and the stream with it; ToArray still works after that
+        var stream = new MemoryStream();
+        checkpoint.SaveToWriter(new BinaryWriter(stream));
+        var kept = stream.ToArray();
+
+        var touching = new System.Collections.Generic.Dictionary<int, int>();
+        for (var id = RandomizerBoxes.FirstActiveId; id <= RandomizerBoxes.LastActiveId; id++) {
+            var bits = Randomizer.Inventory.GetRandomizerItem(id);
+            if (bits != 0) {
+                touching[id] = bits;
+                Randomizer.Inventory.SetRandomizerItem(id, 0);
+            }
+        }
+
+        try {
+            GameController.Instance.CreateCheckpoint();
+            SaveSlotsManager.CurrentSaveSlot.FillData();
+            return GameController.Instance.SaveGameController.SaveToBytes();
+        } finally {
+            foreach (var pair in touching) {
+                Randomizer.Inventory.SetRandomizerItem(pair.Key, pair.Value);
+            }
+
+            checkpoint.LoadFromReader(new BinaryReader(new MemoryStream(kept)));
         }
     }
 
