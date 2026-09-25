@@ -228,7 +228,7 @@ public static class Randomizer {
                 }
             } catch (Exception e) {
                 printInfo($"Error parsing {SeedFilePath} at line {lastLineNum}: {e.Message}", 300);
-                log($"Couldn't parse \"{lastLine}\" (line {lastLineNum} of {SeedFilePath}): {e.Message}");
+                log($"Couldn't parse \"{lastLine}\" (line {lastLineNum} of {SeedFilePath}): {e.Message}\n{e.StackTrace}");
                 SeedFilePath = DefaultSeedFilePath();
             }
 
@@ -285,6 +285,7 @@ public static class Randomizer {
         // sidecar reads Unity paths only the main thread may touch
         NativeWebSocket.Load();
 
+        RandomizerLayers.Initialize();
         RandomizerLocationManager.Initialize();
         RandomizerUI.Initialize();
         RandomizerVersionLabel.Initialize();
@@ -631,11 +632,15 @@ public static class Randomizer {
         log(message);
     }
 
+    public static void FixedUpdate() {
+        RandomizerBoxes.FixedUpdate();
+    }
+
     public static void Update() {
         PracticeController.Tick();
         PracticeSelect.Tick();
         PracticeServer.Tick();
-        RandomizerBoxes.Tick();
+        RandomizerBoxes.Update();
         RandomizerGhost.Update();
         UpdateMessages();
         UpdatePendingWin();

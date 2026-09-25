@@ -11,7 +11,7 @@ public static class PracticeEditor {
     public static bool Active;
 
     // the rectangle being dragged, in world units
-    public static Rect? Draft;
+    public static RandomizerBox? Draft;
 
     private static Vector2 dragFrom;
 
@@ -112,7 +112,10 @@ public static class PracticeEditor {
     }
 
     public static void Tick() {
-        if (!Active || Characters.Sein == null || GameController.Instance == null || GameController.Instance.GameInTitleScreen) {
+        Draft?.DeInit();
+        Draft = null;
+
+        if (!Active) {
             return;
         }
 
@@ -173,10 +176,12 @@ public static class PracticeEditor {
             return;
         }
 
-        Draft = Between(dragFrom, at);
+        Draft = CreateBox(Between(dragFrom, at), "", "ffff99", "");
+        Draft!.Init(-1);
         if (Core.Input.LeftClick.OnReleased) {
             dragging = false;
-            var drawn = Draft.Value;
+            var drawn = Draft!.Rect;
+            Draft.DeInit();
             Draft = null;
             if (drawn.width >= MinSide && drawn.height >= MinSide) {
                 Commit(drawn);
@@ -290,32 +295,23 @@ public static class PracticeEditor {
     }
 
     // The goal is always shared and there is one; everything else joins the variant's
-    // list or the shared one. A hint is an item box that prints, until the page says
-    // what it gives.
+    // list or the shared one.
     private static void Commit(Rect area) {
         var file = PracticeController.File;
-        var box = new RandomizerBox();
-        box.Area = area;
-        var target = "";
-        if (tool == "goal") {
-            box.Type = RandomizerBox.Kind.Goal;
-        } else {
-            target = TargetVariant ? file.Variant : "";
-            if (tool == "kill") {
-                box.Type = RandomizerBox.Kind.Kill;
-                box.Give = new RandomizerAction("RB", "3");
-            } else if (tool == "solid") {
-                box.Type = RandomizerBox.Kind.Solid;
-            } else {
-                box.Type = RandomizerBox.Kind.Item;
-                box.Give = new RandomizerAction("SH", "hint");
-            }
-        }
+        var target = tool != "goal" && TargetVariant ? file.Variant : "";
 
-        box.SetColor("");
+        var (boxFlags, boxItem) = tool switch {
+            "goal" => ("goal", ""),
+            "kill" => ("kill", ""),
+            "solid" => ("solid", ""),
+            _ => ("item", "SH|hint"),
+        };
+
+        var box = CreateBox(area, boxFlags, "", boxItem);
+
         var boxes = file.Boxes(target);
-        if (box.Type == RandomizerBox.Kind.Goal) {
-            boxes.RemoveAll(b => b.Type == RandomizerBox.Kind.Goal);
+        if (box.Goal) {
+            boxes.RemoveAll(b => b.Goal);
         }
 
         boxes.Add(box);
@@ -325,6 +321,12 @@ public static class PracticeEditor {
         PracticeController.Reparse();
     }
 
+    private static RandomizerBox CreateBox(Rect area, string flags, string color, string item) {
+        var areaString = $"{area.min.x:0.#},{area.min.y:0.#},{area.max.x:0.#},{area.max.y:0.#}";
+
+        return RandomizerBox.Parse($"BX|{flags}|{areaString}|{color}|{item}");
+    }
+
     private static void Undo() {
         if (lastBox == null) {
             return;
@@ -332,9 +334,9 @@ public static class PracticeEditor {
 
         var file = PracticeController.File;
         var boxes = file.Boxes(lastTarget);
-        var line = lastBox.ToLine();
+        var line = lastBox.Line;
         for (var i = boxes.Count - 1; i >= 0; i--) {
-            if (boxes[i].ToLine() == line) {
+            if (boxes[i].Line == line) {
                 boxes.RemoveAt(i);
                 break;
             }
@@ -353,7 +355,7 @@ public static class PracticeEditor {
         foreach (var target in targets) {
             var boxes = file.Boxes(target);
             for (var i = boxes.Count - 1; i >= 0; i--) {
-                if (boxes[i].Area.Contains(at)) {
+                if (boxes[i].Rect.Contains(at)) {
                     boxes.RemoveAt(i);
                     file.SetBoxes(target, boxes);
                     PracticeController.Reparse();

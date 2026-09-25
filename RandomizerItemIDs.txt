@@ -267,7 +267,7 @@ Enhanced mode -- April Fools :)
 1650 - LevelUpKills
 
 
-1700-1999 - Box bitfields: which one-shot item boxes (BX lines) were taken, in file order, as bitfields
+1700-1999 - Box bitfields: which boxes (BX lines) are turned off (e.g., one-shot item boxes taken)
 
 2000-2256 - reserved IDs for Sense pickups
 
@@ -275,6 +275,8 @@ Enhanced mode -- April Fools :)
 2626 - Bingo last touched square
 2627-2638 - Bingo journey bitfields by origin well
 2639-2650 - Bingo defeat bitfields by enemy kind (BingoEnemyKinds.Kinds order), bits = zones (RandomizerTrackedDataManager.Zones order)
+
+2651-2950 - Box bitfields: which boxes are active (i.e., intersect with ori)
 
 ==== Begin Persists Through Death Zone ===
 4000 - Deaths everywhere

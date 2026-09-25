@@ -493,7 +493,6 @@ public static class PracticeController {
         }
 
         Vector2 at = Characters.Sein.Position;
-        Segment.Check(at);
         if (Segment.Met(at)) {
             Finish();
         }

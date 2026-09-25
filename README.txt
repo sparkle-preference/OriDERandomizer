@@ -58,8 +58,10 @@ Its randomness comes from the system clock rather than the seed, so it differs b
 
 OTHER FILES HERE
 
-Practice Mode.txt   Practice segments, boxes, variants and ghosts, in full
-SH Format.txt       The seed file format
+Practice Mode.txt   Practice segments, variants and ghosts, in full
+SH Format.txt       SH/Message pickup format
+Boxes.txt           Format for box pickups
+RI Format.txt       Format for RI/BM pickups
 
 ----------------------------
 

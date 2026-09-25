@@ -1,0 +1,210 @@
+﻿RANDOMIZER BOXES
+
+Boxes are specified in a seed via BX lines in seed files, with the following format:
+BX|<flags>|<rect>|<color>|<item>
+
+
+
+EXAMPLES
+=====
+Example: a kill box
+BX|kill|213,-242.7,221,-202.7
+
+Example: a message every time Ori enters
+BX|ritem|170,-240,175,-230||SH|jump here
+
+Example: a red block to stand on, that's always visible, unaffected by the BRB darkness
+BX|solid,renderDepth=-99|190,-258.5,217,-258|ff6b6b
+
+Example: a box that gives bash, if you have enough health
+BX|once,damage=36/Drowning/Player|185,-206,195,-204|00a2e8|SH|0
+
+Example: a box of spikes
+BX|damage=1|158.9,-220.4,164.9,-212.4
+
+Example: a force field that's lethal to enemies, but doesn't affect Ori
+BX|damage=1000/LevelUp,renderDepth=399|135,-220,136,-196|ffffffff
+
+Example: Disallow saving anywhere in Ginso
+BX|unsafe|400,-15,640,1000|none
+
+
+
+RECT
+=====
+The rect is defined as "x1,y1,x2,y2" and defines the position and size of the box.
+Both (x1,y1) and (x2,y2) are points in the game's coordinate system and define two opposing corners of the box
+(any two corners in any order).
+
+
+
+COLOR
+=====
+The color of the boxes interior.
+The edge of the box uses the same color, but 45% more opaque (i.e., with 114 added to the alpha component).
+
+Specified as rrggbb or rrggbbaa where rr,gg,bb,aa are two-digit hexadecimal numbers.
+"aa" specifies the alpha component or how opaque the box is.
+
+Special values:
+- "none": Makes the box invisible
+- "" (empty): The box derives its color from the flags.
+
+
+
+ITEM
+=====
+The item/pickup given to the player when the box is collected (see the COLLECTION section for more details on that).
+Can be empty, in which no item is given.
+
+
+
+FLAGS
+=====
+The flags specify the type of box. Multiple flags can be combined by separating them with a ",".
+
+Available flags:
+- "once": Disables the box upon collection (see COLLECTION for more details)
+
+- "solid": Makes the box solid. The item is still collected whenever Ori touches the box.
+    Implies color 8c949e8c (unless an explicit color is specified)
+
+- "unsafe": Marks the inside of the box as an unsafe zone, where the game cannot be saved.
+
+- "goal": Marks the box as the goal box for a practice segment. Has no effect outside practice mode.
+    Implies color 33e65940 (unless an explicit color is specified)
+
+- "kill": Implies an item of "RB|3" (kill Ori). Has no effect if an item is specified explicitly.
+    Implies color e6333340 (unless an explicit color is specified)
+
+- "item": Implies "once" and implies color 40bfff40 (unless an explicit color is specified)
+
+- "ritem": Implies color 80d9ff40 (unless an explicit color is specified)
+
+- "none": Implies color 80808040 (unless an explicit color is specified)
+
+- "on=<trigger>": Specifies when the box is collected. Possible values are "Enter" (default), "Tick", "Frame"
+    "Enter" collects the box on the first tick ori collides with the box.
+    "Tick" collects the box on every (physics) tick while ori collides with the box.
+    "Frame" collects the box on every frame while ori collides with the box.
+    (see COLLECTION section for more details)
+
+- "damage=<amount>"
+  "damage=<amount>/<type>"
+  "damage=<amount>/<type>/<target>"
+  "damage=<amount>/<type>/<target>/<hitboxes>"
+    Deals damage to entities inside the box, similar to spikes.
+    The different flags are:
+
+    amount
+        The amount of damage dealt (may contain decimal places).
+        Note that this is the raw amount, before the regular processing by the game.
+        For example, damage to Ori is always rounded up to the nearest multiple of 4.
+
+    type (default: "Spikes")
+        The type of damage dealt, can be any type defined by the game.
+        Different damage types are processed differently by the game, for example:
+        - "Drowning" damage doesn't respect nor gives i-frames to Ori
+        - Enemies die instantly to any amount of "Spikes" or "Lava" damage, but are immune to "Enemy" damage
+        - Grenades are immune to everything except "Spikes", "Lava", "Laser", or "Bash" damage
+        The full list of damage types is: Acid, Bash, Bat, ChargeFlame, Crush, Drowning, Enemy, Explosion, Grenade, GrenadeSplatter, Heat, HitSurface, Ice, Laser, Lava, LevelUp, NightBerryDied, Nova, Projectile, SlugSpike, Spikes, SpiritFlame, SpiritFlameSplatter, Stomp, StompBlast, Water
+
+    target (default: "All")
+        What to give damage to. Possible values:
+        - "All" (default): Damage everything
+        - "Player": Only damage Ori and Grenades (but not enemies etc.)
+
+    hitboxes (default: "Extended")
+        Type of hitboxes to use. Possible values:
+        - "Normal":
+            Use the games normal hitboxes.
+            Note that damage hitboxes are often slightly smaller than movement hitboxes, so this may cause unexpected behavior.
+            For example, collecting a damage box may not deal any damage, and Ori will be able to walk on solid damage boxes.
+        - "Extended" (default):
+            Also consider hits to the movement hitboxes of entities as hits.
+            This guarantees that collecting a damage box deals damage to Ori, and makes solid damage boxes reliably behave like spikes.
+
+- "renderDepth=<depth>"
+    This value specifies the depth at which the box is rendered and has a purely visual effect.
+    The value must be between -99 and 399.
+    The default is 0.5, which is behind the terrain, but in front of most background objects.
+
+    The depth determines how visible the box is, where lower numbers are *generally* in front
+    and higher numbers are *generally* further back / behind other objects.
+
+    I say "generally," because the game uses the value in somewhat confusing ways,
+    where objects are grouped based on cutoff values in the depth (-5, -1, 1, 5).
+    Within each group higher values are further back, but the interaction between groups is less clear.
+
+    The depth also determines lighting: Boxes with a high value will get full lighting
+    while boxes with a value lower than a certain threshold (threshold depends on the depth group)
+    are affected by no lighting, or only ambient / sky lighting.
+
+    Note that lighting is always drawn somewhere in the middle, so for very high values the box itself may be invisible,
+    but the lighting will still be visible, leading to a glass-like look.
+    (If you want a box to be truly invisible, specify "none" as the color instead.)
+
+- "parallaxDepth=<depth>"
+    This value specifies the depth used for parallax calculations and has a purely visual effect.
+    The value must be between -19 and 4979.
+    The default value is 0 (no parallax).
+
+    Lower values correspond to the foreground, making the box appear bigger and move faster (like foreground objects).
+    Higher values make the box appear smaller and move slower (like background objects).
+    The boxes position is also affected, so it may appear higher or lower than it should
+    (Ori may "float" on the box when standing on it).
+
+    Note: this value is separate from renderDepth, so you *can* have an always visible box that moves as if it was in the background
+    or a box that gets obscured by most background objects, yet moves as if it was in front of everything.
+
+
+
+COLLECTION
+=====
+This is a mostly technical section that describes when and how boxes are collected.
+
+TERMINOLOGY:
+Tick: A "tick" refers to a physics tick. The game always processes 60 physics ticks each second,
+    during which collisions are calculated.
+
+Frame: Most of the game's code is executed during a "frame", after which a new frame is rendered.
+    Depending on the framerate, there may be more or fewer frames than ticks.
+
+    When VSync is OFF, the game always tries to process 60 frames each second.
+    Note however, that frames and ticks are never in lock-step, so even with VSync OFF and no performance issues,
+    ticks and frames may not (will not) perfectly interleave.
+
+Active: A box is considered "active", when it is enabled and Ori collides with it.
+    This value is only updated once every tick.
+
+
+TRIGGERS
+
+Boxes can specify one of three triggers, which determine when the item of a box is collected:
+
+Enter: The box is collected on the first tick it is active.
+    Technical description: The item is collected on a tick, if the box is active this tick, but was not active last tick.
+
+Tick: The item is collected every tick on which the box is active.
+
+Update: The box is collected on all frames while it is active.
+    Technical description: The item is collected on every frame, if the box was active on the most recent tick before this frame.
+
+
+UPDATE ORDER
+
+Each tick, collisions between boxes and ori are calculated and boxes collected.
+
+First in each tick, the "active" states of all boxes are recalculated (and saved)
+based on physics collisions and the enabled/disabled state of the boxes.
+At the same time, a list of collected boxes is created.
+
+Then, after that is done, the items of all collected boxes are given, in the order the boxes appear in the seed file.
+
+If a box is marked as "once", it is disabled right before the box is collected
+(as if the item was an MU multi-pickup, and disabling the box was the first pickup inside).
+
+Importantly, this means that if a (box) pickup disables a box the same tick it was collected,
+that box will still be collected.
+Likewise, if a (box) pickup teleports Ori, the rest of the boxes will still be collected,
+as if the teleport only happened at the end of the tick.
