@@ -389,7 +389,7 @@ public class SeinStomp : CharacterState, ISeinReceiver {
 
     private Vector2 m_stompDirection;
 
-    public float SpriteRotation;
+    [NonSerialized] public float SpriteRotation;
 
     public class States {
         public IState Inactive;
