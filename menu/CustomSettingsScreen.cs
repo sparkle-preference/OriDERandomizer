@@ -93,7 +93,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     }
 
     // Entering returns to the page's row if one was chosen since the options screen opened, else to
-    // the first row the window shows. A row that left the page gives way to its nearest neighbour.
+    // the first row the window shows. A row that left the page gives way to its nearest neighbor.
     private int ReturnRow() {
         if (chosenIn != menuSession) {
             return -1;
@@ -209,7 +209,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         optionalShown = wanted;
         // Off a leaving row without SetCurrentItem, whose callbacks would enter the page from its OnEnable;
-        // the neighbour counts as chosen, so entry lands there even after the menus closed.
+        // the neighbor counts as chosen, so entry lands there even after the menus closed.
         if (!wanted && selectionManager.Index >= optionalFrom) {
             if (selectionManager.CurrentMenuItem != null) {
                 selectionManager.CurrentMenuItem.OnUnhighlight();
@@ -764,7 +764,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         var cleverMenuItem = AddItem(caption);
         cleverMenuItem.gameObject.name = "Header (" + caption + ")";
         cleverMenuItem.Size = Vector2.zero;
-        // the row's tint beats a <style> tag; one colour in every state
+        // the row's tint beats a <style> tag; one color in every state
         cleverMenuItem.Transition.NormalColor = HeaderColor;
         cleverMenuItem.Transition.HighlightedColor = HeaderColor;
         cleverMenuItem.Transition.DisabledColor = HeaderColor;
@@ -861,11 +861,11 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         if (swatch != null) {
             placed = swatch.transform;
             placed.SetParent(cleverMenuItem.transform, false);
-            // a message background previews as a wide tile, like the message it colours
+            // a message background previews as a wide tile, like the message it colors
             var wide = asMessage ? MessageSwatchWidth : 1f;
             var width = SwatchSize * wide;
             placed.localScale = new Vector3(width, SwatchSize * 0.55f, 1f);
-            // centred quad: the message art fades in from its edge, a painted swatch does not
+            // centered quad: the message art fades in from its edge, a painted swatch does not
             var margin = asMessage ? SwatchMargin : 0f;
             placed.localPosition = new Vector3(ValueColumnX(cleverMenuItem) + (0.5f - margin) * width, 0f, 0f);
         }
@@ -927,7 +927,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         FlyoutTooltips(flyout, setting, members, tooltip);
     }
 
-    // Resizes and re-centres the language panel on the rows actually there, measured off their
+    // Resizes and re-centers the language panel on the rows actually there, measured off their
     // transforms. The panel is rotated 270 degrees: its local x is the screen's vertical.
     private void FitBackground(Transform flyout, float spacing, int selected) {
         var bg = flyout.FindChild("abilityMessageBackground");

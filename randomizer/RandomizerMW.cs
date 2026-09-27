@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Game;
 
-// Multiworld, owner side. Manifest lines (pseudo-locations -2..-257) say what each of our 256
-// slots holds; tick field 6 says which ones others found; we grant the difference. Granted bits
-// are ordinary save items, so a rollback reverts item and bit together and the next tick re-grants.
+// Multiworld, owner side: manifest lines (pseudo-locations -2..-257) say what our 256 slots hold and tick field 6
+// which were found, and we grant the difference. Granted bits are save items: rollbacks revert item and bit together.
 public static class RandomizerMW {
     // granted-slot bitfields, 8 x 32 bits: must stay outside KeptOnDeath so they roll back with the save
     public const int GrantedSlotsBase = 940;
@@ -615,7 +614,7 @@ public static class RandomizerMW {
 
     private static readonly string[] DungeonWells = { "Ginso", "Forlorn", "Horu" };
 
-    // dungeons first in game order, then the rest as they came; colours come from "<id> Teleporter"
+    // dungeons first in game order, then the rest as they came; colors come from "<id> Teleporter"
     private static List<string> Wells(List<string> ids) {
         var order = new List<string>();
         foreach (var want in DungeonWells) {

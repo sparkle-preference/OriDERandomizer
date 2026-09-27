@@ -271,7 +271,7 @@
     }).catch(function (e) { root.textContent = 'Could not list the saves: ' + e.message; });
   }
 
-  // the game's waiting prompt can be cancelled in the game too, so poll until it goes away
+  // the game's waiting prompt can be canceled in the game too, so poll until it goes away
   var awaitTimer = null;
   function awaitCancel(awaiting) {
     if (awaitTimer) { clearTimeout(awaitTimer); awaitTimer = null; }
@@ -740,9 +740,8 @@
     damage: [{ hint: 'amount' }, { names: DAMAGE_TYPES, hint: 'damage type', fallback: 'Spikes' },
       { names: ['All', 'Player'], hint: 'target', fallback: 'All' }, { names: ['Normal', 'Extended'], hint: 'hitboxes', fallback: 'Extended' }]
   };
-  // Ways to go on with a value flag being typed, as flag_completions in the plando builder's boxes.js:
-  // the names its current part can take, those starting with what's typed first, then the next part
-  // once this one is whole. fill marks one that more can follow.
+  // Completions for a value flag being typed, as the plando builder's flag_completions (boxes.js): its current part's
+  // names, prefix matches first, then the next part once this one is whole. fill marks one that more can follow.
   function flagCompletions(text) {
     var eq = text.indexOf('='), parts = eq < 0 ? null : FLAG_PARTS[text.slice(0, eq).trim().toLowerCase()];
     var typed = text.slice(eq + 1).split('/'), at = typed.length - 1;

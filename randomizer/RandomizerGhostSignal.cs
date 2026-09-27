@@ -5,8 +5,7 @@ using UnityEngine;
 
 using Sample = RandomizerGhost.Sample;
 
-// Ghost multiplayer: WebRTC links signalled over the game's websocket, which relays descriptions
-// verbatim and never looks inside them.
+// Ghost multiplayer: WebRTC links signaled over the game's websocket, which relays descriptions verbatim, unread.
 //
 //   out  ghosts:1                         join (or 0 to leave)
 //   in   ghosts:<host>:<pids>             the roster, pushed whenever it changes
@@ -15,11 +14,8 @@ using Sample = RandomizerGhost.Sample;
 //   out  ghostice:<peer>                  a peer no direct attempt could reach
 //   in   ice:<json>                       relay credentials for this game
 //
-// The roster names the host (the server picks the lowest directly reachable id); the host
-// offers to everyone else and they answer.
-//
-// Motion is a star: the host relays every packet to every other open link. Ghosts are keyed by
-// the sender id the packet carries, and a client drops its own.
+// The roster names the host (the lowest directly reachable id), which offers to everyone else. Motion is a star: the
+// host relays every packet to every other open link. Ghosts key on the packet's sender id; a client drops its own.
 public static class RandomizerGhostSignal {
     private class Link {
         public int Handle;
@@ -56,7 +52,7 @@ public static class RandomizerGhostSignal {
             return;
         }
 
-        // echoes are for playing alone, and echo n would wear real player n+1's colour
+        // echoes are for playing alone, and echo n would wear real player n+1's color
         if (want && !Joined) {
             RandomizerGhost.ClearEchoes();
         }
@@ -123,7 +119,7 @@ public static class RandomizerGhostSignal {
             return;
         }
 
-        // a star has one centre: everyone else's links go to the host and nowhere else
+        // a star has one center: everyone else's links go to the host and nowhere else
         if (host != Me) {
             for (var i = Links.Count - 1; i >= 0; i--) {
                 if (Links[i].PlayerId != host) {

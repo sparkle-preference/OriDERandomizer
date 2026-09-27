@@ -1,6 +1,6 @@
 This repository contains the client code (distributed as a modified Assembly-CSharp.dll) for the OriDE randomizer.
 
-The website (with seed generator, bingo and other web tools) source can be found at https://github.com/sparke-preference/ori_rando_server
+The website (with seed generator, bingo and other web tools) source can be found at https://github.com/sparkle-preference/ori_rando_server
 
 Built on top of Torin's (@tksstepan) incredible work.
 

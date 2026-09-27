@@ -6,9 +6,8 @@ using Core;
 using Game;
 using UnityEngine;
 
-// Translucent replays, to race against or to watch other players by. Samples are timestamped
-// sprite transforms, so framerate does not matter and facing, roll and bash spin come free.
-// RandomizerGhost owns recording and the shared lookups; RandomizerGhostView renders.
+// Translucent replays, to race against or to watch other players by. Samples are timestamped sprite transforms,
+// so framerate does not matter and facing, roll and bash spin come free. RandomizerGhostView renders.
 public static class RandomizerGhost {
     public struct Sample {
         public float Time;

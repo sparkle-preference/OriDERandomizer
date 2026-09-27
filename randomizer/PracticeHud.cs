@@ -18,7 +18,7 @@ public static class PracticeHud {
     // the time to beat, after the clock on its line; fixed for the attempt
     private static string reference = "";
 
-    // UI units, each box's anchor: the clock's top right, the tally's top centre (left column)
+    // UI units, each box's anchor: the clock's top right, the tally's top center (left column)
     private static readonly Vector3 ClockAt = new Vector3(6.9f, 3.8f, 0f);
 
     private static readonly Vector3 TallyAt = new Vector3(-4.2f, 2.4f, 0f);

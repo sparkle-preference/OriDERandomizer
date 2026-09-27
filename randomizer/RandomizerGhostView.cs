@@ -376,7 +376,7 @@ public class RandomizerGhostView {
             RandomizerGhost.Dim(AimObject, RandomizerGhost.AimAlpha);
         }
 
-        // read every frame: our own trajectory's LinePoints is near zero until it initialises
+        // read every frame: our own trajectory's LinePoints is near zero until it initializes
         var live = RandomizerGhost.Grenader();
         var shape = live == null ? null : live.Trajectory;
         var gravity = shape == null ? 0f : shape.Gravity;
@@ -616,7 +616,7 @@ public class RandomizerGhostView {
         if (sample.Animation == "doubleJump") {
             var ability = RandomizerGhost.Jumper();
             if (ability != null) {
-                // faces the way Ori was travelling
+                // faces the way Ori was traveling
                 var facing = Quaternion.Euler(0f, 0f, -Mathf.Atan2(velocity.x, velocity.y) * Mathf.Rad2Deg);
                 // TrippleJumpAfterShock will not start outside the game's own spawn path, and
                 // the two bursts differ only by audio

@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using CatlikeCoding.TextBox;
 using UnityEngine;
 
-// Key caps the icon font lacks, borrowed from Ori's sequel. Each needs an entry in the icon
-// generator (its prefab) and in the <icon> style's BitmapFont (its spacing; without one it draws
-// as the missing-glyph box). They live in the private use area.
+// Key caps the icon font lacks, borrowed from Ori's sequel into the private use area. Each needs an icon generator
+// entry (its prefab) and an <icon> BitmapFont entry (its spacing), without which it draws as the missing-glyph box.
 public static class RandomizerKeyIcons {
     private class Cap {
         public Cap(string name, int x, int y, int width, int height, float trim = 0f) {
@@ -299,7 +298,7 @@ public static class RandomizerKeyIcons {
         quad.AddComponent<UberShaderRuntimeRenderOrder>();
         var paint = quad.GetComponent<Renderer>();
         if (paint != null) {
-            // softened like the game's caps, in the colour: over the dark plate alpha barely shows
+            // softened like the game's caps, in the color: over the dark plate alpha barely shows
             paint.material.color = new Color(Softened, Softened, Softened, 1f);
         }
 

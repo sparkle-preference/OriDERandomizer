@@ -215,7 +215,7 @@ public static class RandomizerItems {
         }
     }
 
-    /// <summary>What a player sees on pickup: the coloured name or the item's own phrasing.
+    /// <summary>What a player sees on pickup: the colored name or the item's own phrasing.
     /// Game-state variants (shard-short or clue-locked teleporters) belong to the caller.</summary>
     public static string Message(string code, string id) {
         // "X Lost!" is what the player wants told to them as it happens; a log

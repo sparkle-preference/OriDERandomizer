@@ -5,10 +5,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
 
-// Managed face of the native sidecar (build: resource_files/NativeWebSocket.README.md). The dll and
-// cacert.pem are embedded resources, extracted next to oriDE.exe. Exports are bound by hand: this Mono
-// cannot [DllImport] a dll that appeared mid-run. Wrapper and dll are an ABI pair: ship them together.
-// Randomizer.log only in this file: Load() runs during line-0 seed parse, before LogError can render.
+// Managed face of the native sidecar (resource_files/NativeWebSocket.README.md); the two are an ABI pair, ship both.
+// Hand-bound exports: this Mono can't [DllImport] a mid-run dll. Randomizer.log only: Load() runs before LogError can.
 public static class NativeWebSocket {
     public enum SocketState {
         Connecting = 0,

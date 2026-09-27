@@ -51,7 +51,7 @@ namespace CatlikeCoding.TextBox {
 
         public Color32 color;
 
-        // a ramp whose first stop is color; null when the colour is flat
+        // a ramp whose first stop is color; null when the color is flat
         public Color32[] gradient;
 
         public BitmapFont font;

@@ -285,7 +285,7 @@ public class RandomizerBox {
             }
         }
 
-        // the editors hide a tombstone by its type, and FromJson gives a bare none the plain colour
+        // the editors hide a tombstone by its type, and FromJson gives a bare none the plain color
         if (Deleted) {
             type = "tombstone";
             extra.RemoveAll(f => f.ToLowerInvariant() == "tombstone");
@@ -322,7 +322,7 @@ public class RandomizerBox {
         );
         var color = json["color"].IsString ? json["color"].Str.TrimStart('#') : "";
         var give = json["give"].IsString ? json["give"].Str : "";
-        // a plain box with no colour would read as the old tombstone
+        // a plain box with no color would read as the old tombstone
         if (color == "" && (type == "none" || flags.Trim().ToLowerInvariant() == "none")) {
             color = "808080";
         }
@@ -338,7 +338,7 @@ public class RandomizerBox {
         return Parse(line);
     }
 
-    // the builder's old tombstone: flags exactly none and no colour
+    // the builder's old tombstone: flags exactly none and no color
     private static bool OldTombstone(string[] fields) {
         return fields[1].Trim().ToLowerInvariant() == "none" && (fields.Length < 4 || fields[3] == "");
     }
@@ -474,9 +474,7 @@ public static class RandomizerBoxes {
             var box = At(n);
             var wasActive = ActiveStates.Get(n);
             var active = box != null && NewActiveStates.Get(n) && !BoxOffStates.Get(n);
-            // Because OnCollisionExit is not guaranteed to be called
-            // we instead mark each active box to be deactivated the next tick
-            // unless the collision persists
+            // OnCollisionExit may never come: an active box deactivates next tick unless its collision persists
             NewActiveStates.Clear(n);
             ActiveStates.Set(n, active);
             if (box != null && active) {
@@ -589,9 +587,7 @@ public static class RandomizerBoxes {
         BoxOffStates.Set(boxNumber, off);
     }
 
-    // BM|n switches a box off or on by its place in the seed's box lines; =1 and =0
-    // say which, ={slot} is on when that slot holds anything but zero, and =(a OP b)
-    // is on when the comparison holds (RandomizerInventory.Value)
+    // BM|n toggles the seed's nth box line; BM|n=v turns it on if v > 0, else off (v: 1, 0, {slot} or (a OP b))
     public static void EvalBM(string value) {
         var eq = value.IndexOf('=');
         var name = (eq < 0 ? value : value.Substring(0, eq)).Trim();

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Edits a colour on its settings row: up/down picks a channel, left/right moves it, Enter commits,
+// Edits a color on its settings row: up/down picks a channel, left/right moves it, Enter commits,
 // Backspace restores the default. Steps are in the setting's file units, not 0..1.
 public class ColorControl : MonoBehaviour {
     public void Init(RandomizerSettings.ColorSetting setting, CustomSettingsScreen owner, Transform swatch, string tooltip, bool asMessage) {
@@ -199,7 +199,7 @@ public class ColorControl : MonoBehaviour {
 
         float h, s, v;
         Color.RGBToHSV(setting.Value, out h, out s, out v);
-        // a drag keeps the colour's value, so the disc is dimmed to it
+        // a drag keeps the color's value, so the disc is dimmed to it
         var lit = Mathf.Max(v, 0.15f);
         var discRenderer = wheel.GetComponent<Renderer>();
         if (discRenderer != null && discRenderer.sharedMaterial != null) {
@@ -260,7 +260,7 @@ public class ColorControl : MonoBehaviour {
         Paint();
     }
 
-    // Each bar sweeps its channel across the live colour, showing what moving it would do.
+    // Each bar sweeps its channel across the live color, showing what moving it would do.
     private void Paint() {
         var v = setting.Value;
         if (asMessage && swatch != null) {

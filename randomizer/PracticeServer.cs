@@ -8,8 +8,7 @@ using System.Threading;
 using UnityEngine;
 
 // The companion page's back end: a loopback listener speaking just enough HTTP for one page.
-// Anything touching the game runs as a job on the main thread. Map tiles are cached beside the
-// segments once, and redirected to the site until then.
+// Anything touching the game is a main-thread job; map tiles redirect to the site until cached beside the segments.
 public static class PracticeServer {
     public const int FirstPort = 47826;
 

@@ -88,7 +88,7 @@ public class ControllerBindControl : MonoBehaviour {
         }
     }
 
-    // nothing is applied until the edit finishes, so cancelling only redraws the row
+    // nothing is applied until the edit finishes, so canceling only redraws the row
     private void Cancel() {
         editing = false;
         owner.Editing = false;

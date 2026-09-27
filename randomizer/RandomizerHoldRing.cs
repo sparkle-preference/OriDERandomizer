@@ -8,7 +8,7 @@ public class RandomizerHoldRing {
 
     public const float Tap = 0.2f;
 
-    // any of these may carry a clone's zero alpha; only the alpha is overruled, never the colour
+    // any of these may carry a clone's zero alpha; only the alpha is overruled, never the color
     private static readonly string[] Alphas = {
         "_Color", "_TintColor", "_MaskDissolveColor", "_AdditiveLayerColor"
     };

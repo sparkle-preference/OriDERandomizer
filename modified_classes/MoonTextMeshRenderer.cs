@@ -196,7 +196,7 @@ namespace CatlikeCoding.TextBox {
 
         protected int[] triangles;
 
-        // one entry per character slot, null where that character's colour is flat
+        // one entry per character slot, null where that character's color is flat
         protected Color32[][] gradients;
 
         protected bool meshResized;

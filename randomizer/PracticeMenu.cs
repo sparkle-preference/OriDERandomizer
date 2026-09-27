@@ -4,9 +4,8 @@ using fsm;
 using Game;
 using UnityEngine;
 
-// The pause menu (the inventory screen) re-dressed for a session and undressed on every show.
-// Rows are relabelled, never added: the screen navigates by a cage of edges. A quit-to-menu
-// segment keeps the vanilla pause; the Practice Menu bind opens this one.
+// The pause menu (the inventory screen) re-dressed for a session, undressed on every show; a quit-to-menu segment
+// keeps the vanilla one. Rows are relabeled, never added: the screen navigates by a cage of edges.
 public static class PracticeMenu {
     private class Row {
         public CleverMenuItem Item;

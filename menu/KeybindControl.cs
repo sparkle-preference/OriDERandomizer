@@ -84,7 +84,7 @@ public class KeybindControl : MonoBehaviour {
         }
     }
 
-    // nothing is applied until Enter, so cancelling only redraws the row and stands down
+    // nothing is applied until Enter, so canceling only redraws the row and stands down
     private void Cancel() {
         editing = false;
         owner.Editing = false;

@@ -2,10 +2,8 @@ using System;
 using Game;
 using UnityEngine;
 
-// Archipelago DeathLink, armed by the seed's DeathLink flag.
-// OUT: death counters ride the tick as dl=<total>.<linked>; the server diffs them.
-// IN: a dl:<token>;<source> signal queues a kill applied on a stable frame. Every kill we cause
-// bumps linked as well as total, so it never echoes back out.
+// Archipelago DeathLink. OUT: the tick carries dl=<total>.<linked> for the server to diff; kills we cause bump both,
+// so they never echo. IN: a dl:<token>;<source> signal queues a kill, applied on a stable frame.
 public static class RandomizerDeathLink {
     // KeptOnDeath ids: they must not roll back under the server's last-seen count
     public const int Deaths = 4090;

@@ -319,7 +319,7 @@ public class MessageBox : MonoBehaviour {
 
                 style.color = stops[0];
                 style.hasColor = true;
-                // one stop is a flat colour; more is a ramp the renderer spreads across the run
+                // one stop is a flat color; more is a ramp the renderer spreads across the run
                 style.gradient = stops.Length > 1 ? stops : null;
             }
 

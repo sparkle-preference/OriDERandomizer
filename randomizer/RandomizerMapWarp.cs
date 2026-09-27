@@ -228,7 +228,7 @@ public static class RandomizerMapWarp {
         return Labeled[index];
     }
 
-    // A mouse points with the cursor, a pad at the map's centre; the same scheme test Bash aiming uses.
+    // A mouse points with the cursor, a pad at the map's center; the same scheme test Bash aiming uses.
     public static bool Pointing() {
         return GameSettings.Instance == null ||
             GameSettings.Instance.CurrentControlScheme == ControlScheme.KeyboardAndMouse;
@@ -465,7 +465,7 @@ public static class RandomizerMapWarp {
         return true;
     }
 
-    // Every frame, not on change: the map's opening fade drives these colours and would paint over it.
+    // Every frame, not on change: the map's opening fade drives these colors and would paint over it.
     private static void Paint(GameObject icon, float alpha) {
         List<Material> paints;
         List<string> keys;
@@ -529,7 +529,7 @@ public static class RandomizerMapWarp {
 
             var fit = want / PinNatural;
             child.localScale = map.TeleportPrefab.transform.localScale * fit;
-            // Show hangs the icon above the well; the ring is centred on the well itself
+            // Show hangs the icon above the well; the ring is centered on the well itself
             child.position -= Vector3.up * (PinTall * fit * PinDrop);
         }
     }

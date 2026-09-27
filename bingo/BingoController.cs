@@ -179,8 +179,7 @@ public static class BingoController {
         return owner == null ? null : owner.MoonGuid;
     }
 
-    // Logs everything OnDeath can key off, for authoring DieTo goals; with or without a board,
-    // but only while Mark is held (Mark is its switch).
+    // Logs everything OnDeath can key off, for authoring DieTo goals: board or not, only while Mark is held.
     public static void DeathDebugLog(Damage damage) {
         if (!RandomizerBonusSkill.HasMark) {
             return;

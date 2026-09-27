@@ -3,9 +3,8 @@ Randomizer inventory ids.
 1 - Mega Energy*
 2 - Forceably Alt+R*
 3 - Kill Ori*
-4 - Air Refresh* (double jumps and air dashes back, as if Ori had landed)
-5 - Save Game* (once the pickup has landed; not in a practice save)
-
+4 - Air Refresh* 
+5 - Save Game* 
 6 - Attack Upgrade
 8 - Explosion Power Upgrade (deprecated)
 9 - Spirit Light Efficiency
@@ -146,7 +145,7 @@ Randomizer inventory ids.
 258 - Remove Triple Jump
 259 - Remove Ultra Defense
 
-=== Event removal (never shared) ===
+=== Event removal ===
 260 - Lose Water Vein
 261 - Lose Clean Water
 262 - Lose Gumon Seal
@@ -249,17 +248,17 @@ Enhanced mode -- April Fools :)
 1025 - shard forlorn TP
 1026 - shard horu TP
 
-1100 - Enable Frag-Sense variant
-1101 - Frag-Sense variant online
+1100 - Enable Mapstone-Sense variant
+1101 - Mapstone-Sense variant online
 1102 - Free Level Explosion
 1103 - Disable Alt-R soft-lock fixes
 1104 - Use old Alt-R behavior
 1105 - Don't grant Bashnade hint on forlorn escape complete
 1106 - Forlorn Escape has been started / allow warp into escape
-1107 - Enable Debug Movement (DebugMenuB.DebugControlsEnabled)
+1107 - Enable Debug Movement
 1108 - Enable Autoplayer (collects one in-logic location per second)
 1109 - Enable Pickup Drop (grants and deletes pickup.tmp)
-1110 - Save at allies' soul links (ghosts): the soul flame button at a ghost link saves there without moving your own, and their links show on the map
+1110 - Save at allies' soul links (ghosts)
 
 
 1600 - Pickups found everywhere
@@ -277,7 +276,7 @@ Enhanced mode -- April Fools :)
 1612 - Mapstones
 
 1650 - LevelUpKills
-1651 - Practice: pickups held this attempt, for a segment's pickup count (rolls back with the checkpoint)
+1651 - Practice pickups collected this attempt
 
 
 1700-1999 - Box bitfields: which boxes (BX lines) are turned off (e.g., one-shot item boxes taken)

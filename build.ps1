@@ -2,8 +2,7 @@
 #
 #   powershell -ExecutionPolicy Bypass -File build.ps1 [-DnSpy <path>] [-TimeoutSeconds 180] [-Visible]
 #
-# A new dll timestamp is the completion signal once the file settles or dnSpy exits 0:
-# dnSpy has wedged on a modal dialog rather than closing, in both directions, across versions.
+# Done is a new dll timestamp once the file settles or dnSpy exits 0: dnSpy can wedge on a modal dialog.
 
 param(
     [string]$DnSpy = $(if ($env:DNSPY) { $env:DNSPY } else { "E:\dnspy-fork\dnSpy.exe" }),
