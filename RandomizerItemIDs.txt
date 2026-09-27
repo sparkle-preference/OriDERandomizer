@@ -4,6 +4,7 @@ Randomizer inventory ids.
 2 - Forceably Alt+R*
 3 - Kill Ori*
 4 - Air Refresh* (double jumps and air dashes back, as if Ori had landed)
+5 - Save Game* (once the pickup has landed; not in a practice save)
 
 6 - Attack Upgrade
 8 - Explosion Power Upgrade (deprecated)
@@ -144,6 +145,16 @@ Randomizer inventory ids.
 257 - Remove Soul Link Efficiency
 258 - Remove Triple Jump
 259 - Remove Ultra Defense
+
+=== Event removal (never shared) ===
+260 - Lose Water Vein
+261 - Lose Clean Water
+262 - Lose Gumon Seal
+263 - Lose Wind Restored
+264 - Lose Sunstone
+265 - Lose Warmth Returned
+266 - Lose Darkness Lifted (EV|6)
+267 - Lose Forlorn Energy Restored (EV|7)
 
 === Keysanity ===
 300 - Glades Pool (2)

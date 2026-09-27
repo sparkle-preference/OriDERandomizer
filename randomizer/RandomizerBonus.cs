@@ -55,6 +55,17 @@ public static class RandomizerBonus {
             return;
         }
 
+        // 260-267 take EV|(ID - 260) away
+        if (ID >= 260 && ID <= 267) {
+            if (!Characters.Sein || flag) {
+                return;
+            }
+
+            RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", ID.ToString()), 240);
+            RandomizerSwitch.LoseEvent(ID - 260);
+            return;
+        }
+
         switch (ID) {
             // A pickup that kills: straight to OnKill, since damage can be refused or scaled to nothing.
             case 3:
@@ -77,6 +88,13 @@ public static class RandomizerBonus {
                     }
 
                     RandomizerSwitch.PickupMessage("Air Refresh");
+                }
+
+                return;
+            // Save Game: once the pickup it came in has landed, so the save holds that location too
+            case 5:
+                if (!flag) {
+                    Randomizer.SaveSoon = true;
                 }
 
                 return;

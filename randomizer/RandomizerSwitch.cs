@@ -194,9 +194,47 @@ public static class RandomizerSwitch {
                 PickupMessage(RandomizerItems.Message("EV", "5"), 300);
                 Events.WarmthReturned = true;
                 break;
+            case 6:
+                PickupMessage(RandomizerItems.Message("EV", "6"), 300);
+                Events.DarknessLifted = true;
+                break;
+            case 7:
+                PickupMessage(RandomizerItems.Message("EV", "7"), 300);
+                Events.GravityActivated = true;
+                break;
         }
 
         RandomizerStatsManager.FoundEvent(Value);
+    }
+
+    // the state EventPickup sets, cleared
+    public static void LoseEvent(int Value) {
+        switch (Value) {
+            case 0:
+                Keys.GinsoTree = false;
+                break;
+            case 1:
+                Events.WaterPurified = false;
+                break;
+            case 2:
+                Keys.ForlornRuins = false;
+                break;
+            case 3:
+                Events.WindRestored = false;
+                break;
+            case 4:
+                Keys.MountHoru = false;
+                break;
+            case 5:
+                Events.WarmthReturned = false;
+                break;
+            case 6:
+                Events.DarknessLifted = false;
+                break;
+            case 7:
+                Events.GravityActivated = false;
+                break;
+        }
     }
 
     public static void TeleportPickup(string Value) {

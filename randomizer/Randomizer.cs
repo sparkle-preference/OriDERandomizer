@@ -765,6 +765,16 @@ public static class Randomizer {
                     Returning = false;
                 }
             }
+
+            // a practice save is not the run's to overwrite
+            if (SaveSoon && Warping == 0) {
+                SaveSoon = false;
+                if (!PracticeController.InPracticeSave) {
+                    GameController.Instance.CreateCheckpoint();
+                    GameController.Instance.SaveGameController.PerformSave();
+                    GameController.Instance.PerformSaveGameSequence();
+                }
+            }
         }
 
         if (CreditsActive) {
@@ -1664,6 +1674,11 @@ public static class Randomizer {
             return;
         }
 
+        // past EV|5 are plando's world-state switches, which sense has no business finding
+        if (code == "EV" && int.TryParse(id, out var ev) && ev > 5) {
+            return;
+        }
+
         if (HotColdTypes.Contains(code) || HotColdTypes.Any(t => (code + id).StartsWith(t))) {
             if (Math.Abs(coords) > 100) {
                 if (!HotColdItems.ContainsKey(coords)) {
@@ -1762,7 +1777,8 @@ public static class Randomizer {
             }
         }
 
-        if (CluesMode && code == "EV" && id_number % 2 == 0) {
+        // the dungeon keys are EV 0, 2 and 4
+        if (CluesMode && code == "EV" && id_number % 2 == 0 && id_number <= 4) {
             RandomizerClues.AddClue(area, id_number / 2);
         }
 
@@ -2062,6 +2078,9 @@ public static class Randomizer {
     public static bool DelayedWarp;
 
     public static bool SaveAfterWarp;
+
+    // set by the Save Game pickup, RB|5
+    public static bool SaveSoon;
 
     public static bool IgnoreEnemyExp;
 

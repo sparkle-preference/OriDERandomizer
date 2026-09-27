@@ -11,7 +11,8 @@ public static class RandomizerItems {
     };
 
     public static readonly Dictionary<string, string> EventNames = new Dictionary<string, string> {
-        { "0", "Water Vein" }, { "1", "Clean Water" }, { "2", "Gumon Seal" }, { "3", "Wind Restored" }, { "4", "Sunstone" }, { "5", "Warmth Returned" }
+        { "0", "Water Vein" }, { "1", "Clean Water" }, { "2", "Gumon Seal" }, { "3", "Wind Restored" }, { "4", "Sunstone" }, { "5", "Warmth Returned" },
+        { "6", "Darkness Lifted" }, { "7", "Forlorn Energy Restored" }
     };
 
     // RB names; the ids and what they mean live in RandomizerItemIDs.txt.
@@ -19,7 +20,7 @@ public static class RandomizerItems {
         { "17", "Water Vein Shard" }, { "19", "Gumon Seal Shard" }, { "21", "Sunstone Shard" },
         { "28", "Warmth Fragment" }, { "1108", "Autoplayer" }, { "1109", "Pickup Drop" },
         { "0", "Mega Health" }, { "1", "Mega Energy" }, { "2", "Go Home" },
-        { "3", "Kill Ori" }, { "4", "Air Refresh" },
+        { "3", "Kill Ori" }, { "4", "Air Refresh" }, { "5", "Save Game" },
         { "6", "Attack Upgrade" }, { "8", "Explosion Power Upgrade" }, { "9", "Spirit Light Efficiency" },
         { "10", "Extra Air Dash" }, { "11", "Charge Dash Efficiency" }, { "12", "Extra Double Jump" },
         { "13", "Health Regeneration" }, { "15", "Energy Regeneration" }, { "30", "Bleeding" },
@@ -49,7 +50,10 @@ public static class RandomizerItems {
         { "249", "Remove Sense" }, { "250", "Remove Rekindle" }, { "251", "Remove Regroup" },
         { "252", "Remove Charge Flame Efficiency" }, { "253", "Remove Air Dash" }, { "254", "Remove Ultra Soul Link" },
         { "255", "Remove Charge Dash" }, { "256", "Remove Water Breath" }, { "257", "Remove Soul Link Efficiency" },
-        { "258", "Remove Triple Jump" }, { "259", "Remove Ultra Defense" }, { "300", "Glades Pool Keystone" },
+        { "258", "Remove Triple Jump" }, { "259", "Remove Ultra Defense" }, { "260", "Remove Water Vein" },
+        { "261", "Remove Clean Water" }, { "262", "Remove Gumon Seal" }, { "263", "Remove Wind Restored" },
+        { "264", "Remove Sunstone" }, { "265", "Remove Warmth Returned" }, { "266", "Remove Darkness Lifted" },
+        { "267", "Remove Forlorn Energy Restored" }, { "300", "Glades Pool Keystone" },
         { "301", "Lower Spirit Caverns Keystone" }, { "302", "Grotto Keystone" }, { "303", "Swamp Keystone" },
         { "304", "Upper Spirit Caverns Keystone" }, { "305", "Lower Ginso Keystone" }, { "306", "Upper Ginso Keystone" },
         { "307", "Misty Keystone" }, { "308", "Forlorn Keystone" }, { "309", "Lower Sorrow Keystone" },
@@ -94,10 +98,10 @@ public static class RandomizerItems {
         { 4087, "Warp to Credits" },
     };
 
-    // RB 40-49 take a skill away. A log wants Name's "Remove Bash"; the
-    // player wants the red "@Bash Lost!!@" for the same id.
+    // RB 40-49 take a skill away and 260-267 an event. A log wants Name's "Remove Bash";
+    // the player wants the red "@Bash Lost!!@" for the same id.
     private static readonly HashSet<string> SkillLossIds = new HashSet<string> {
-        "40", "41", "42", "43", "44", "45", "46", "47", "48", "49"
+        "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "260", "261", "262", "263", "264", "265", "266", "267"
     };
 
     private static readonly HashSet<string> blueStuff = new HashSet<string> { "Water Vein", "Ginso Teleporter", "Clean Water" };

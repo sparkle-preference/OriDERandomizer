@@ -303,7 +303,7 @@ public class PracticeSegment {
         { 51, AbilityType.Grenade }
     };
 
-    // what Holds can answer: a skill in Abilities or one of the six world events
+    // what Holds can answer: a skill in Abilities or one of the eight world events
     private static bool Holdable(string item) {
         var bar = item.IndexOf('|');
         int id;
@@ -312,7 +312,7 @@ public class PracticeSegment {
         }
 
         var kind = item.Substring(0, bar);
-        return kind == "SK" ? Abilities.ContainsKey(id) : kind == "EV" && id >= 0 && id <= 5;
+        return kind == "SK" ? Abilities.ContainsKey(id) : kind == "EV" && id >= 0 && id <= 7;
     }
 
     // "SK|3" and "EV|0" shaped: the two families v1 lets a segment ask for
@@ -344,6 +344,8 @@ public class PracticeSegment {
             case 3: return Sein.World.Events.WindRestored;
             case 4: return Sein.World.Keys.MountHoru;
             case 5: return Sein.World.Events.WarmthReturned;
+            case 6: return Sein.World.Events.DarknessLifted;
+            case 7: return Sein.World.Events.GravityActivated;
         }
 
         return false;
