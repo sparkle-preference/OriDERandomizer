@@ -23,6 +23,7 @@ public static class Randomizer {
     public static string DisplayVersion => IsBeta ? "5.0 beta v" + VERSION.Substring(4) : VERSION;
 
     public static void initialize() {
+        SaveSoon = false;
         try {
             OHKO = false;
             ZeroXP = false;
@@ -766,10 +767,10 @@ public static class Randomizer {
                 }
             }
 
-            // a practice save is not the run's to overwrite
-            if (SaveSoon && Warping == 0) {
+            // a practice save is not the run's to overwrite, nor a death the save to keep
+            if (SaveSoon && Warping == 0 && !GameController.Instance.IsLoadingGame) {
                 SaveSoon = false;
-                if (!PracticeController.InPracticeSave) {
+                if (!PracticeController.InPracticeSave && Characters.Sein.Mortality.Health.Amount > 0f) {
                     GameController.Instance.CreateCheckpoint();
                     GameController.Instance.SaveGameController.PerformSave();
                     GameController.Instance.PerformSaveGameSequence();
@@ -1778,7 +1779,7 @@ public static class Randomizer {
         }
 
         // the dungeon keys are EV 0, 2 and 4
-        if (CluesMode && code == "EV" && id_number % 2 == 0 && id_number <= 4) {
+        if (CluesMode && code == "EV" && id_number % 2 == 0 && id_number >= 0 && id_number <= 4) {
             RandomizerClues.AddClue(area, id_number / 2);
         }
 

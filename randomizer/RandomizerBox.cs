@@ -322,8 +322,8 @@ public class RandomizerBox {
         );
         var color = json["color"].IsString ? json["color"].Str.TrimStart('#') : "";
         var give = json["give"].IsString ? json["give"].Str : "";
-        // a plain box with no color would read as the old tombstone
-        if (color == "" && (type == "none" || flags.Trim().ToLowerInvariant() == "none")) {
+        // a plain box with no color or give would read as the old tombstone
+        if (color == "" && give == "" && (type == "none" || flags.Trim().ToLowerInvariant() == "none")) {
             color = "808080";
         }
 
@@ -340,7 +340,7 @@ public class RandomizerBox {
 
     // the builder's old tombstone: flags exactly none and no color
     private static bool OldTombstone(string[] fields) {
-        return fields[1].Trim().ToLowerInvariant() == "none" && (fields.Length < 4 || fields[3] == "");
+        return fields[1].Trim().ToLowerInvariant() == "none" && (fields.Length < 4 || fields[3] == "") && (fields.Length < 5 || fields[4] == "");
     }
 
     // an old tombstone as the editors write one now; any other line as it was

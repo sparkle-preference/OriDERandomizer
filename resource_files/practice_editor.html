@@ -356,7 +356,8 @@
     ],
     "Events": [
       { label: "Water Vein", value: "EV|0" }, { label: "Clean Water", value: "EV|1" }, { label: "Gumon Seal", value: "EV|2" },
-      { label: "Wind Restored", value: "EV|3" }, { label: "Sunstone", value: "EV|4" }, { label: "Warmth Returned", value: "EV|5" }
+      { label: "Wind Restored", value: "EV|3" }, { label: "Sunstone", value: "EV|4" }, { label: "Warmth Returned", value: "EV|5" },
+      { label: "Darkness Lifted", value: "EV|6" }, { label: "Forlorn Energy Restored", value: "EV|7" }
     ],
     "Upgrades": [
       { label: "Mega Health", value: "RB|0", desc: "Restores health to full, then grants 5 temporary health." },
@@ -364,6 +365,7 @@
       { label: "Mini Health", value: "RB|38", desc: "Restores health to full, then grants 1 temporary health. Stacks." },
       { label: "Mini Energy", value: "RB|39", desc: "Restores energy to full, then grants 1 temporary energy. Stacks." },
       { label: "Air Refresh", value: "RB|4", desc: "Double jumps and air dashes back, as if Ori had landed." },
+      { label: "Save Game", value: "RB|5", desc: "Saves the game when collected." },
       { label: "Attack Upgrade", value: "RB|6", desc: "Increases Spirit Flame's damage and maximum number of targets by 1. Stacks." },
       { label: "Spirit Light Efficiency", value: "RB|9", desc: "Doubles all incoming experience." },
       { label: "Extra Air Dash", value: "RB|10", desc: "Grants a second Air Dash." },
@@ -409,7 +411,10 @@
       { label: "Remove Energy Regen (Ability)", value: "RB|248" }, { label: "Remove Sense", value: "RB|249" }, { label: "Remove Rekindle", value: "RB|250" },
       { label: "Remove Regroup", value: "RB|251" }, { label: "Remove Charge Flame Efficiency", value: "RB|252" }, { label: "Remove Air Dash", value: "RB|253" },
       { label: "Remove Ultra Soul Link", value: "RB|254" }, { label: "Remove Charge Dash", value: "RB|255" }, { label: "Remove Water Breath", value: "RB|256" },
-      { label: "Remove Soul Link Efficiency", value: "RB|257" }, { label: "Remove Triple Jump", value: "RB|258" }, { label: "Remove Ultra Defense", value: "RB|259" }
+      { label: "Remove Soul Link Efficiency", value: "RB|257" }, { label: "Remove Triple Jump", value: "RB|258" }, { label: "Remove Ultra Defense", value: "RB|259" },
+      { label: "Remove Water Vein", value: "RB|260" }, { label: "Remove Clean Water", value: "RB|261" }, { label: "Remove Gumon Seal", value: "RB|262" },
+      { label: "Remove Wind Restored", value: "RB|263" }, { label: "Remove Sunstone", value: "RB|264" }, { label: "Remove Warmth Returned", value: "RB|265" },
+      { label: "Remove Darkness Lifted", value: "RB|266" }, { label: "Remove Forlorn Energy Restored", value: "RB|267" }
     ],
     // typed in: picking one loads it into the box for editing
     "Misc": [
@@ -794,7 +799,7 @@
     return { text: FLAG_TEXT[key] ? capital(FLAG_TEXT[key]) : '' };
   }
   // a deleted box keeps its line so later boxes keep their BM|n numbers; the old builder's was a bare none
-  function settle(b) { if (b.type === 'none' && !b.extra && !b.color) b.type = 'tombstone'; }
+  function settle(b) { if (b.type === 'none' && !b.extra && !b.color && !b.give) b.type = 'tombstone'; }
   // colors travel as rrggbb; none is an invisible box
   function hidden(b) { return b.color === 'none' || b.color === '0'; }
   function flagsOf(b) { return [b.type].concat((b.extra || '').split(',')).map(function (f) { return f.trim(); }).filter(Boolean); }
@@ -1041,7 +1046,15 @@
       var ends = document.createElement('span'); ends.className = 'muted'; ends.textContent = 'ends the run'; tr0.appendChild(td(ends));
       tr0.appendChild(td(document.createElement('span'))); tr0.appendChild(td(document.createElement('span')));
       var clear = document.createElement('button'); clear.className = 'danger icon'; clear.innerHTML = '&times;'; clear.title = 'Remove the goal box';
-      clear.onclick = function () { delete end.box; delete end.goal; render(); };
+      // a goal the file placed leaves a tombstone in its line, so the boxes after it keep their numbers
+      clear.onclick = function () {
+        var at = end.goal && typeof end.goal.at === 'number' ? end.goal.at : null;
+        if (at !== null) {
+          var list = state.segment.boxes = state.segment.boxes || [];
+          list.splice(Math.max(0, Math.min(at, list.length)), 0, { type: 'tombstone', box: end.box.slice() });
+        }
+        delete end.box; delete end.goal; render();
+      };
       tr0.appendChild(td(clear));
       tbody.appendChild(tr0);
     }
@@ -1198,7 +1211,7 @@
     return { segment: seg, variants: state.variants };
   }
   // a bare plain box would read as the old builder's tombstone
-  function tidy(b) { if (b.type === 'none' && !b.color) b.color = '808080'; delete b.text; delete b.repeat; }
+  function tidy(b) { if (b.type === 'none' && !b.color && !b.give) b.color = '808080'; delete b.text; delete b.repeat; }
 
   function put(doc, rev) {
     return api('/api/segment', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ segment: doc.segment, variants: doc.variants, rev: rev }) });

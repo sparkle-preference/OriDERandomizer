@@ -369,7 +369,7 @@ public static class RandomizerMW {
 
             // clues for our dungeon keys placed in other worlds
             if (Randomizer.CluesMode && entry.Code == "EV") {
-                if (int.TryParse(entry.Id, out var evId) && evId % 2 == 0 && evId <= 4) {
+                if (int.TryParse(entry.Id, out var evId) && evId % 2 == 0 && evId >= 0 && evId <= 4) {
                     RandomizerClues.AddClue(clue, evId / 2, slot);
                 }
             }

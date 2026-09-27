@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using Game;
 using UnityEngine;
@@ -324,7 +325,7 @@ public static class PracticeEditor {
     }
 
     private static RandomizerBox CreateBox(Rect area, string flags, string color, string item) {
-        var areaString = $"{area.min.x:0.#},{area.min.y:0.#},{area.max.x:0.#},{area.max.y:0.#}";
+        var areaString = string.Format(CultureInfo.InvariantCulture, "{0:0.##},{1:0.##},{2:0.##},{3:0.##}", area.min.x, area.min.y, area.max.x, area.max.y);
 
         return RandomizerBox.Parse($"BX|{flags}|{areaString}|{color}|{item}");
     }
@@ -398,6 +399,8 @@ public static class PracticeEditor {
         var stream = new MemoryStream();
         checkpoint.SaveToWriter(new BinaryWriter(stream));
         var kept = stream.ToArray();
+        // scenes left since the last checkpoint: SaveToWriter skips them and LoadFromReader clears them
+        var pending = new System.Collections.Generic.Dictionary<MoonGuid, SaveScene>(checkpoint.PendingScenes);
 
         var touching = new System.Collections.Generic.Dictionary<int, int>();
         for (var id = RandomizerBoxes.FirstActiveId; id <= RandomizerBoxes.LastActiveId; id++) {
@@ -409,7 +412,15 @@ public static class PracticeEditor {
         }
 
         try {
-            GameController.Instance.CreateCheckpoint();
+            // CreateCheckpoint without its OnPostCreate, which would move the scenes kept loaded for the real one
+            SaveSceneManager.Master.SaveWithoutClearing(checkpoint.Master);
+            checkpoint.ApplyPendingScenes();
+            foreach (var scene in Core.Scenes.Manager.ActiveScenes) {
+                if (scene.IsVisible && scene.HasStartBeenCalled && scene.SceneRoot.SaveSceneManager) {
+                    scene.SceneRoot.SaveSceneManager.Save(checkpoint.InsertScene(scene.MetaData.SceneMoonGuid));
+                }
+            }
+
             SaveSlotsManager.CurrentSaveSlot.FillData();
             return GameController.Instance.SaveGameController.SaveToBytes();
         } finally {
@@ -418,6 +429,9 @@ public static class PracticeEditor {
             }
 
             checkpoint.LoadFromReader(new BinaryReader(new MemoryStream(kept)));
+            foreach (var pair in pending) {
+                checkpoint.PendingScenes[pair.Key] = pair.Value;
+            }
         }
     }
 

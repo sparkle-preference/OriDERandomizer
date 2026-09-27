@@ -128,7 +128,14 @@ public class BfrpFile {
 
     // trailing tombstones go, but not up to a number a BM| names, nor the shared ones while variant boxes count on from them
     private void TrimTombstones() {
-        var named = HighestBoxNamed();
+        int named;
+        try {
+            named = HighestBoxNamed();
+        } catch (Exception) {
+            // an unreadable segment might name any box
+            return;
+        }
+
         var shared = QuietBoxes("");
         var live = false;
         foreach (var id in Variants) {
