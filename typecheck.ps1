@@ -68,7 +68,7 @@ function Key($line) {
 if ($Rebaseline) {
     $keys = @($raw | ForEach-Object { Key $_ } | Sort-Object -Unique)
     $header = @(
-        "# Errors typecheck.ps1 expects: artefacts of compiling outside the assembly (types the game keeps",
+        "# Errors typecheck.ps1 expects: artifacts of compiling outside the assembly (types the game keeps",
         "# internal, the built dll's copies of randomizer types colliding with these sources).",
         "# Keyed on filename + error code + message; line, column and directory are stripped."
     )
