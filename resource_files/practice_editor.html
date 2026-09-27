@@ -600,11 +600,17 @@
       var typed = input.value.trim(), q = typed.toLowerCase(), own = [], usual = [], next = [];
       menu.innerHTML = ''; shown = []; hi = -1;
       if (typed && !known(typed)) { var d0 = cfg.describe(typed); own.push(offer(line('add ' + typed, d0.text, d0.warn), { flag: typed })); }
+      var usualBy = {};
       SUGGEST.forEach(function (o) {
-        if (!has(o[0]) && (!q || o[0].toLowerCase().indexOf(q) >= 0)) usual.push(offer(line(o[0], o[1], false, DEFAULT_COLOR[o[0]]), { flag: o[0] }));
+        if (has(o[0]) || (q && o[0].toLowerCase().indexOf(q) < 0)) return;
+        var x = offer(line(o[0], o[1], false, DEFAULT_COLOR[o[0]]), { flag: o[0] });
+        usual.push(x); usualBy[o[0].toLowerCase()] = x;
       });
+      // a completion the menu already has keeps that line, moved to the completion's place
       flagCompletions(typed).forEach(function (c) {
+        var mine = usualBy[c.value.toLowerCase()];
         if (c.next) next.push(offer(line(c.value + '<' + c.next.hint + '>', c.next.fallback ? c.next.fallback + ' if left out' : ''), { flag: c.value, fill: true }));
+        else if (mine) { next.push(mine); usual.splice(usual.indexOf(mine), 1); }
         else if (!known(c.value)) next.push(offer(line(c.value, lower(describeFlag(c.value).text)), { flag: c.value, fill: c.fill }));
       });
       var whole = typed && !cfg.describe(typed).warn;
@@ -743,9 +749,11 @@
     if (!parts || !parts[at]) return [];
     var part = parts[at], partial = typed[at].trim().toLowerCase(), head = text.slice(0, text.length - typed[at].length), out = [];
     var whole = part.names ? part.names.some(function (n) { return n.toLowerCase() === partial; }) : numeric(typed[at]);
-    if (part.names && !whole) {
+    // a whole name still offers the longer ones it starts (Stomp, StompBlast)
+    if (part.names) {
       var hits = part.names.filter(function (n) { return n.toLowerCase().indexOf(partial) === 0; })
-        .concat(part.names.filter(function (n) { return n.toLowerCase().indexOf(partial) > 0; }));
+        .concat(part.names.filter(function (n) { return n.toLowerCase().indexOf(partial) > 0; }))
+        .filter(function (n) { return n.toLowerCase() !== partial; });
       out = hits.map(function (n) { return { value: head + n, fill: at < parts.length - 1 }; });
     }
     if (whole && parts[at + 1]) out.push({ value: text + '/', fill: true, next: parts[at + 1] });
@@ -755,7 +763,8 @@
   function capital(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
   function lower(t) { return t.charAt(0).toLowerCase() + t.slice(1); }
   function oneOf(names, t) { return names.filter(function (n) { return n.toLowerCase() === t.trim().toLowerCase(); })[0]; }
-  function numeric(t) { return t.trim() !== '' && isFinite(Number(t)); }
+  // what the game's float parse takes: no exponents, no hex
+  function numeric(t) { return /^[+-]?(\d+\.?\d*|\.\d+)$/.test(t.trim()); }
   // What a flag does, or with warn, why the game won't do what it says: its bad values are
   // the game's own parse errors, which it only logs.
   function describeFlag(f) {

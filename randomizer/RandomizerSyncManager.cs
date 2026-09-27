@@ -724,7 +724,8 @@ public static class RandomizerSyncManager {
         if (WsOpen) {
             NativeWebSocket.SendText("conf:" + text);
         } else if (HttpLaneOpen) {
-            SidecarForget(NativeWebSocket.HttpBegin("GET", RequestUrl(RootUrl + "/callback/" + text), null, null));
+            // escaped, or a "?" in the text would end the path and the server would confirm a different string
+            SidecarForget(NativeWebSocket.HttpBegin("GET", RequestUrl(RootUrl + "/callback/" + Uri.EscapeDataString(text)), null, null));
         }
     }
 
