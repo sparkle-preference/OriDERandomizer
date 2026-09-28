@@ -39,8 +39,11 @@ $refs = @(Get-ChildItem -Path $managed -Filter *.dll |
     Where-Object { $_.Name -ne "Assembly-CSharp.dll" -and $_.Name -notlike "*.rando.*" } |
     ForEach-Object { "-r:" + $_.FullName }) + @("-r:" + $built)
 
+# extension methods seen in both the source and the built dll make every call ambiguous (CS0121), so
+# RandomizerExtensions is checked as built
 $sources = @("randomizer", "menu", "bingo" | ForEach-Object {
-    Get-ChildItem -Path (Join-Path $repo $_) -Filter *.cs -Recurse | ForEach-Object { $_.FullName } })
+    Get-ChildItem -Path (Join-Path $repo $_) -Filter *.cs -Recurse |
+        Where-Object { $_.Name -ne "RandomizerExtensions.cs" } | ForEach-Object { $_.FullName } })
 # internal to the game and named in randomizer/ signatures, so it has to be ours
 $sources += Join-Path $repo "modified_classes\BashAttackGame.cs"
 

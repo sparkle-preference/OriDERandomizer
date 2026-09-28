@@ -5,4 +5,3 @@ CustomSettingsScreen.cs: error CS0029: Cannot implicitly convert type 'Randomize
 RandomizerBootstrap.cs: error CS0122: 'ShowHintAction' is inaccessible due to its protection level
 RandomizerBootstrap.cs: error CS0122: 'ShowHintAction.Duration' is inaccessible due to its protection level
 RandomizerBootstrap.cs: error CS0122: 'ShowHintAction.HintMessage' is inaccessible due to its protection level
-RandomizerText.cs: error CS0121: The call is ambiguous between the following methods or properties: 'RandoExts.RandomizerExtensions.Desc(System.Enum)' and 'RandoExts.RandomizerExtensions.Desc(System.Enum)'
