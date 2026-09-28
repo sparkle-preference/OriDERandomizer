@@ -420,7 +420,7 @@ public static class RandomizerBoxes {
 
     public const int Capacity = (LastBitId - FirstBitId + 1) * 32;
 
-    public const int FirstActiveId = 2651;
+    public const int FirstActiveId = 2700;
 
     public const int LastActiveId = FirstActiveId + LastBitId - FirstBitId;
 

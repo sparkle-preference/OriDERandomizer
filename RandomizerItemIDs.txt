@@ -288,7 +288,7 @@ Enhanced mode -- April Fools :)
 2627-2638 - Bingo journey bitfields by origin well
 2639-2650 - Bingo defeat bitfields by enemy kind (BingoEnemyKinds.Kinds order), bits = zones (RandomizerTrackedDataManager.Zones order)
 
-2651-2950 - Box bitfields: which boxes are active (i.e., intersect with ori)
+2700-2999 - Box bitfields: which boxes are active (i.e., intersect with ori)
 
 ==== Begin Persists Through Death Zone ===
 4000 - Deaths everywhere
