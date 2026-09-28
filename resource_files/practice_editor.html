@@ -720,14 +720,13 @@
   }
 
   var DEFAULT_COLOR = { goal: '#8fe3a0', kill: '#ff6b6b', solid: '#9aa0aa', item: '#40c0ff', ritem: '#7fd8ff', none: '#808080' };
-  // a box's type is the first of these among its flags; in game each one sets the color in turn
-  var TYPE_FLAGS = ['goal', 'kill', 'solid', 'item', 'ritem', 'none', 'tombstone'];
   var NAMES = { ritem: 'repeat item', none: 'plain' };
   // the flags menu, presets first; goal and none still load and show, but aren't offered
   var SUGGEST = [['kill', 'box kills Ori'], ['item', 'grants an item once'], ['solid', 'box with collision'],
     ['ritem', 'grants an item repeatedly'], ['once', 'box toggles off when collected'], ['unsafe', 'saves disabled inside box'],
     ['on=Tick', 'grant 60 times a second while inside box'], ['on=Frame', 'grant every frame while inside box'],
-    ['damage=1', 'box damages entities touching it'], ['renderDepth=-99', 'draw box over terrain']];
+    ['damage=1', 'box damages entities touching it'], ['renderDepth=-99', 'draw box over terrain'],
+    ['parallaxDepth=10', 'box scrolls like background art']];
   // the flags the game reads; any other is kept, and the game logs it
   var FLAGS = ['once', 'on', 'damage', 'solid', 'unsafe', 'renderdepth', 'parallaxdepth', 'goal', 'kill', 'item', 'ritem', 'none', 'tombstone'];
   var VALUED = ['on', 'damage', 'renderdepth', 'parallaxdepth'];
@@ -799,36 +798,35 @@
     return { text: FLAG_TEXT[key] ? capital(FLAG_TEXT[key]) : '' };
   }
   // a deleted box keeps its line so later boxes keep their BM|n numbers; the old builder's was a bare none
-  function settle(b) { if (b.type === 'none' && !b.extra && !b.color && !b.give) b.type = 'tombstone'; }
+  function settle(b) { if (isPlain(b) && !b.color && !b.give) b.flags = 'tombstone'; }
   // colors travel as rrggbb; none is an invisible box
   function hidden(b) { return b.color === 'none' || b.color === '0'; }
-  function flagsOf(b) { return [b.type].concat((b.extra || '').split(',')).map(function (f) { return f.trim(); }).filter(Boolean); }
+  // every flag counts the same; the list keeps the order it was written in
+  function flagsOf(b) { return (b.flags || '').split(',').map(function (f) { return f.trim(); }).filter(Boolean); }
   function hasFlag(b, flag) { return flagsOf(b).some(function (f) { return f.toLowerCase() === flag; }); }
-  // chips back to type and extra: the first type flag is the type, the rest keep their order
-  function setFlags(b, l) {
-    var t = -1;
-    l.forEach(function (f, k) { if (t < 0 && TYPE_FLAGS.indexOf(f.toLowerCase()) >= 0) t = k; });
-    b.type = t < 0 ? '' : l[t].toLowerCase();
-    b.extra = l.filter(function (f, k) { return k !== t; }).join(',');
-  }
+  function setFlags(b, l) { b.flags = l.join(','); }
+  function gone(b) { return hasFlag(b, 'tombstone'); }
+  function isPlain(b) { return (b.flags || '').trim().toLowerCase() === 'none'; }
+  // in game each preset flag sets the color in turn, so the last one shows
+  function presetOf(b) { return flagsOf(b).map(function (f) { return f.toLowerCase(); }).filter(function (f) { return DEFAULT_COLOR[f]; }).pop() || ''; }
   function colorOf(b) {
-    var preset = flagsOf(b).map(function (f) { return f.toLowerCase(); }).filter(function (f) { return DEFAULT_COLOR[f]; }).pop();
+    var preset = presetOf(b);
     return b.color && !hidden(b) ? '#' + b.color.replace('#', '').slice(0, 6) : (DEFAULT_COLOR[preset] || DEFAULT_COLOR.item);
   }
   function boxLabel(b) {
-    var type = typeof b.type === 'string' ? b.type : 'kill';
-    if (type === 'item' || type === 'ritem') return (type === 'ritem' ? 'repeat item box: ' : 'item box: ') + (nameOf(b.give) || 'nothing yet');
-    return (type ? (NAMES[type] || type) + ' box' : 'box') + (b.give ? ': ' + nameOf(b.give) : '');
+    var preset = presetOf(b);
+    if (preset === 'item' || preset === 'ritem') return (preset === 'ritem' ? 'repeat item box: ' : 'item box: ') + (nameOf(b.give) || 'nothing yet');
+    return (preset ? (NAMES[preset] || preset) + ' box' : 'box') + (b.give ? ': ' + nameOf(b.give) : '');
   }
 
   // every box on the map, with where it lives: the goal, the shared list, each variant's
   function allBoxes() {
     var out = [];
     var end = state.segment.end || {};
-    if (end.box && end.box.length === 4) out.push({ b: { type: 'goal', box: end.box, color: (end.goal || {}).color }, label: 'goal box', rowId: 'box-shared-goal', owner: 'shared' });
-    (state.segment.boxes || []).forEach(function (b, i) { if (b.type !== 'tombstone') out.push({ b: b, label: boxLabel(b) + ' · shared', rowId: 'box-shared-' + i, owner: 'shared' }); });
+    if (end.box && end.box.length === 4) out.push({ b: { flags: 'goal', box: end.box, color: (end.goal || {}).color }, label: 'goal box', rowId: 'box-shared-goal', owner: 'shared' });
+    (state.segment.boxes || []).forEach(function (b, i) { if (!gone(b)) out.push({ b: b, label: boxLabel(b) + ' · shared', rowId: 'box-shared-' + i, owner: 'shared' }); });
     Object.keys(state.variants).forEach(function (id) {
-      (state.variants[id].boxes || []).forEach(function (b, i) { if (b.type !== 'tombstone') out.push({ b: b, label: boxLabel(b) + ' · variant ' + id, rowId: 'box-' + id + '-' + i, owner: id }); });
+      (state.variants[id].boxes || []).forEach(function (b, i) { if (!gone(b)) out.push({ b: b, label: boxLabel(b) + ' · variant ' + id, rowId: 'box-' + id + '-' + i, owner: id }); });
     });
     return out;
   }
@@ -1036,7 +1034,7 @@
     if (withGoal && end.box && end.box.length === 4) {
       var tr0 = document.createElement('tr'); tr0.id = 'box-shared-goal'; tr0.className = 'goal';
       var goalFlags = document.createElement('span'); goalFlags.className = 'chips';
-      flagsOf({ type: 'goal', extra: (end.goal || {}).extra }).forEach(function (f) {
+      flagsOf({ flags: (end.goal || {}).flags || 'goal' }).forEach(function (f) {
         var s = document.createElement('span'); s.textContent = f;
         if (DEFAULT_COLOR[f]) { s.style.background = DEFAULT_COLOR[f]; s.style.color = '#222'; }
         goalFlags.appendChild(s);
@@ -1051,7 +1049,7 @@
         var at = end.goal && typeof end.goal.at === 'number' ? end.goal.at : null;
         if (at !== null) {
           var list = state.segment.boxes = state.segment.boxes || [];
-          list.splice(Math.max(0, Math.min(at, list.length)), 0, { type: 'tombstone', box: end.box.slice() });
+          list.splice(Math.max(0, Math.min(at, list.length)), 0, { flags: 'tombstone', box: end.box.slice() });
         }
         delete end.box; delete end.goal; render();
       };
@@ -1060,8 +1058,8 @@
     }
     boxes.map(function (b, i) { return [b, i]; }).reverse().forEach(function (pair) {
       var b = pair[0], i = pair[1];
-      if (typeof b.type !== 'string') b.type = 'kill';
-      if (b.type === 'tombstone') return;
+      if (typeof b.flags !== 'string') b.flags = '';
+      if (gone(b)) return;
       var tr = document.createElement('tr'); tr.id = 'box-' + owner + '-' + i;
       var coords = b.box && b.box.length === 4 ? b.box : [0, 0, 0, 0];
       b.box = coords;
@@ -1087,7 +1085,7 @@
       hide.onclick = function () { if (hidden(b)) delete b.color; else b.color = 'none'; drawEye(); recolorBox(coords); };
       tr.appendChild(td(hide));
       var del = document.createElement('button'); del.className = 'danger icon'; del.innerHTML = '&times;'; del.title = 'Remove this box';
-      del.onclick = function () { if (state.lastBox === b) state.lastBox = null; boxes[i] = { type: 'tombstone', box: coords }; render(); };
+      del.onclick = function () { if (state.lastBox === b) state.lastBox = null; boxes[i] = { flags: 'tombstone', box: coords }; render(); };
       tr.appendChild(td(del));
       tbody.appendChild(tr);
     });
@@ -1174,8 +1172,7 @@
   }
   // with the flags of the box added before it
   function freshBox() {
-    var last = state.lastBox, b = { box: lookingAt(), type: last ? last.type : 'kill' };
-    if (last && last.extra) b.extra = last.extra;
+    var last = state.lastBox, b = { box: lookingAt(), flags: last ? last.flags : 'kill' };
     state.lastBox = b;
     return b;
   }
@@ -1211,7 +1208,7 @@
     return { segment: seg, variants: state.variants };
   }
   // a bare plain box would read as the old builder's tombstone
-  function tidy(b) { if (b.type === 'none' && !b.color && !b.give) b.color = '808080'; delete b.text; delete b.repeat; }
+  function tidy(b) { if (isPlain(b) && !b.color && !b.give) b.color = '808080'; delete b.text; delete b.repeat; }
 
   function put(doc, rev) {
     return api('/api/segment', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ segment: doc.segment, variants: doc.variants, rev: rev }) });

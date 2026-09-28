@@ -271,29 +271,17 @@ public class RandomizerBox {
         }
     }
 
-    // the editors' {type, extra, box, color, give}, from the line as written:
-    // type is its first type flag, extra the other flags in order
+    // the editors' {flags, box, color, give}, from the line as written
     public JsonValue ToJson() {
         var fields = Line.Split(['|'], 5);
-        var type = "";
-        var extra = new List<string>();
-        foreach (var flag in fields[1].Split(',').Select(f => f.Trim())) {
-            if (type == "" && TypeFlags.Contains(flag.ToLowerInvariant())) {
-                type = flag.ToLowerInvariant();
-            } else if (flag != "") {
-                extra.Add(flag);
-            }
-        }
-
-        // the editors hide a tombstone by its type, and FromJson gives a bare none the plain color
-        if (Deleted) {
-            type = "tombstone";
-            extra.RemoveAll(f => f.ToLowerInvariant() == "tombstone");
+        var flags = string.Join(",", fields[1].Split(',').Select(f => f.Trim()).Where(f => f != "").ToArray());
+        // the old builder's bare none is a tombstone too, and the editors hide a box by that flag
+        if (Deleted && !flags.Split(',').Any(f => f.ToLowerInvariant() == "tombstone")) {
+            flags = "tombstone";
         }
 
         var json = JsonValue.NewObject();
-        json.Set("type", JsonValue.Of(type));
-        json.Set("extra", JsonValue.Of(string.Join(",", extra.ToArray())));
+        json.Set("flags", JsonValue.Of(flags));
         var corners = JsonValue.NewArray();
         corners.Add(JsonValue.Of(Math.Round(Rect.xMin, 2)));
         corners.Add(JsonValue.Of(Math.Round(Rect.yMin, 2)));
@@ -306,14 +294,12 @@ public class RandomizerBox {
     }
 
     public static RandomizerBox FromJson(JsonValue json) {
-        var type = json["type"].IsString ? json["type"].Str : "kill";
-        var extra = json["extra"].IsString ? json["extra"].Str : "";
         var corners = json["box"];
         if (!corners.IsArray || corners.Count != 4) {
             throw new FormatException("a box needs four corners");
         }
 
-        var flags = type == "" || extra == "" ? type + extra : type + "," + extra;
+        var flags = json["flags"].IsString ? json["flags"].Str : LegacyFlags(json);
         var line = Prefix + flags + "|" + string.Join(
             ",",
             new[] {
@@ -323,7 +309,7 @@ public class RandomizerBox {
         var color = json["color"].IsString ? json["color"].Str.TrimStart('#') : "";
         var give = json["give"].IsString ? json["give"].Str : "";
         // a plain box with no color or give would read as the old tombstone
-        if (color == "" && give == "" && (type == "none" || flags.Trim().ToLowerInvariant() == "none")) {
+        if (color == "" && give == "" && flags.Trim().ToLowerInvariant() == "none") {
             color = "808080";
         }
 
@@ -336,6 +322,13 @@ public class RandomizerBox {
         }
 
         return Parse(line);
+    }
+
+    // a page from before flat flags sent {type, extra}; no type at all meant kill
+    private static string LegacyFlags(JsonValue json) {
+        var type = json["type"].IsString ? json["type"].Str : "kill";
+        var extra = json["extra"].IsString ? json["extra"].Str : "";
+        return type == "" || extra == "" ? type + extra : type + "," + extra;
     }
 
     // the builder's old tombstone: flags exactly none and no color
@@ -391,8 +384,6 @@ public class RandomizerBox {
     public int BoxNumber = -1;
 
     public const string Prefix = "BX|";
-
-    private static readonly string[] TypeFlags = ["goal", "kill", "solid", "item", "ritem", "none", "tombstone"];
 
     public enum BoxTrigger {
         Enter,

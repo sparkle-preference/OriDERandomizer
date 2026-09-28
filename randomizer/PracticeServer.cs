@@ -737,8 +737,8 @@ public static class PracticeServer {
         var corners = json["end"]["box"];
         if (goal && corners.IsArray && corners.Count == 4) {
             var line = Copy(json["end"]["goal"]);
-            if (!line["type"].IsString) {
-                line.Set("type", JsonValue.Of("goal"));
+            if (!line["flags"].IsString && !line["type"].IsString) {
+                line.Set("flags", JsonValue.Of("goal"));
             }
 
             line.Set("box", corners);
