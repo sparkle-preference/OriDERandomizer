@@ -31,7 +31,7 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         transform.position = rect.center;
 
         collider.isTrigger = !box.Solid;
-        collider.size = new Vector3(rect.width, rect.height, 1f);
+        collider.size = new Vector3(rect.width, rect.height, 100f);
 
         if (box.Invisible) {
             renderer.enabled = false;
@@ -57,7 +57,7 @@ public class RandomizerBoxPrefab : MonoBehaviour {
 
                 var ddCollider = ddGo.AddComponent<BoxCollider>();
                 ddCollider.isTrigger = true;
-                ddCollider.size = new Vector3(rect.width, rect.height, 1f);
+                ddCollider.size = new Vector3(rect.width, rect.height, 100f);
             }
 
             var dd = ddGo.AddComponent<DamageDealer>();
