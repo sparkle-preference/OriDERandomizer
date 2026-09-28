@@ -154,53 +154,6 @@ public static class PracticeController {
     // the next Begin lands in the editor whatever the segment says
     public static bool EditNext;
 
-    // Loads practice/debug.bfrp and starts it, or ends a running session.
-    public static void BeginDebug() {
-        if (Current == Phase.Ending) {
-            return;
-        }
-
-        if (Active && Current != Phase.Finished) {
-            var ms = Elapsed;
-            End();
-            Randomizer.printInfo("Practice session ended at " + Clock(ms));
-            return;
-        }
-
-        // a finished attempt is over; the next press is the next variant
-        if (Active) {
-            End();
-        }
-
-        var path = Path.Combine("practice", "debug.bfrp");
-        if (!System.IO.File.Exists(path)) {
-            Randomizer.printInfo("No " + path + " to practice");
-            return;
-        }
-
-        try {
-            var file = BfrpFile.Load(path);
-            // each start takes the next variant, so the bench can walk all of them
-            var variants = file.Variants;
-            var variant = "";
-            if (variants.Count > 0) {
-                variant = variants[debugVariant % variants.Count];
-                debugVariant++;
-            }
-
-            Begin(file, variant);
-            var named = File.Segment["name"].Str;
-            if (variant != "") {
-                var vname = file.VariantSegment(variant)["name"];
-                named += " [" + (vname.IsString ? vname.Str : variant) + "]";
-            }
-
-            Randomizer.printInfo("Practice: " + named);
-        } catch (Exception e) {
-            Randomizer.LogError("practice: " + path + " would not load: " + e.Message);
-        }
-    }
-
     public static void Retry() {
         if (!Active || Current == Phase.Ending) {
             return;
@@ -328,8 +281,6 @@ public static class PracticeController {
     private static bool suspended;
 
     private static bool pendingSetup;
-
-    private static int debugVariant;
 
     private static int shownCount;
 

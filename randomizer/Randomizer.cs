@@ -1145,12 +1145,6 @@ public static class Randomizer {
             return false;
         }
 
-        // the dev bench: practice/debug.bfrp without the chooser
-        if (RandomizerRebinding.StartPracticeDebug.IsPressed()) {
-            PracticeController.BeginDebug();
-            return true;
-        }
-
         if (RandomizerRebinding.OpenPracticeMenu.IsPressed()) {
             PracticeMenu.Open();
             return true;

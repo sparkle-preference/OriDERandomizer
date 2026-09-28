@@ -308,7 +308,6 @@ public static class RandomizerRebinding {
         { "Show Stats", "Alt+Alpha5" },
         { "Show Keysanity Progress", "Alt+K" },
         { "Grant Test Pickup", "" },
-        { "Start Practice Debug", "" },
         { "Practice Menu", "" },
         { "Create Practice Segment", "Alt+M" },
         { "Open Practice Editor Page", "" },
@@ -355,7 +354,6 @@ public static class RandomizerRebinding {
     public static BindSet ShowKeysanityProgress = new BindSet(new List<SingleBind>());
     public static BindSet GrantTestPickup = new BindSet(new List<SingleBind>());
 
-    public static BindSet StartPracticeDebug = new BindSet(new List<SingleBind>());
     public static BindSet OpenPracticeMenu = new BindSet(new List<SingleBind>());
     public static BindSet CreatePracticeSegment = new BindSet(new List<SingleBind>());
     public static BindSet OpenPracticeEditorPage = new BindSet(new List<SingleBind>());
@@ -412,7 +410,6 @@ public static class RandomizerRebinding {
         { "Show Stats", ShowStats },
         { "Show Keysanity Progress", ShowKeysanityProgress },
         { "Grant Test Pickup", GrantTestPickup },
-        { "Start Practice Debug", StartPracticeDebug },
         { "Practice Menu", OpenPracticeMenu },
         { "Create Practice Segment", CreatePracticeSegment },
         { "Open Practice Editor Page", OpenPracticeEditorPage },

@@ -48,11 +48,6 @@ public class RandomizerBox {
             return;
         }
 
-        // a practice save left loaded after its session is never the seed's game
-        if (PracticeController.InPracticeSave && !PracticeController.Active) {
-            return;
-        }
-
         if (Once && BoxNumber >= 0) {
             RandomizerBoxes.BoxOffStates.Set(BoxNumber);
         }

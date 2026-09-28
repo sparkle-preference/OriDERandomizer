@@ -64,7 +64,6 @@ public class RandomizerBindsScreen : CustomSettingsScreen {
         AddRandomizerBind("Spawn Echo", "Spawn in a ghost echo");
         AddRandomizerBind("Clear All Echoes", "Remove all echoes");
         AddRandomizerBind("Grant Test Pickup", "Grant the contents of test_pickup.txt");
-        AddRandomizerBind("Start Practice Debug", "Load into practice/debug.bfrp");
 
         ScrollAfter(Footer());
         BindLegend();
