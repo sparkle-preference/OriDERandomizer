@@ -81,8 +81,6 @@ Available flags:
 
 - "ritem": Implies color 80d9ff40 (unless an explicit color is specified)
 
-- "none": Implies color 80808040 (unless an explicit color is specified)
-
 - "on=<trigger>": Specifies when the box is collected. Possible values are "Enter" (default), "Tick", "Frame"
     "Enter" collects the box on the first tick ori collides with the box.
     "Tick" collects the box on every (physics) tick while ori collides with the box.

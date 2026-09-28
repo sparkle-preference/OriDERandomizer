@@ -84,8 +84,6 @@ public class RandomizerBox {
         box.Rect = Between(c[0], c[1], c[2], c[3]);
         if (fields.Length > 3 && !string.IsNullOrEmpty(fields[3])) {
             box.SetColor(fields[3], line);
-        } else if (OldTombstone(fields)) {
-            box.Deleted = true;
         }
 
         if (fields.Length > 4 && !string.IsNullOrEmpty(fields[4])) {
@@ -218,9 +216,8 @@ public class RandomizerBox {
                 case "ritem":
                     Color = new Color(0.5f, 0.85f, 1f, 0.25f);
                     break;
+                // none is the tombstone's first name
                 case "none":
-                    Color = new Color(0.5f, 0.5f, 0.5f, 0.25f);
-                    break;
                 case "tombstone":
                     Deleted = true;
                     break;
@@ -266,22 +263,18 @@ public class RandomizerBox {
         }
     }
 
-    // the editors' {flags, box, color, give}, from the line as written
+    // the editors' {flags, box, color, give}, from the line as written; a deleted box is only a tombstone
     public JsonValue ToJson() {
-        var fields = Line.Split(['|'], 5);
+        var fields = (Deleted ? Tombstone : Line).Split(['|'], 5);
         var flags = string.Join(",", fields[1].Split(',').Select(f => f.Trim()).Where(f => f != "").ToArray());
-        // the old builder's bare none is a tombstone too, and the editors hide a box by that flag
-        if (Deleted && !flags.Split(',').Any(f => f.ToLowerInvariant() == "tombstone")) {
-            flags = "tombstone";
-        }
-
         var json = JsonValue.NewObject();
         json.Set("flags", JsonValue.Of(flags));
+        var rect = Deleted ? new Rect(0f, 0f, 0f, 0f) : Rect;
         var corners = JsonValue.NewArray();
-        corners.Add(JsonValue.Of(Math.Round(Rect.xMin, 2)));
-        corners.Add(JsonValue.Of(Math.Round(Rect.yMin, 2)));
-        corners.Add(JsonValue.Of(Math.Round(Rect.xMax, 2)));
-        corners.Add(JsonValue.Of(Math.Round(Rect.yMax, 2)));
+        corners.Add(JsonValue.Of(Math.Round(rect.xMin, 2)));
+        corners.Add(JsonValue.Of(Math.Round(rect.yMin, 2)));
+        corners.Add(JsonValue.Of(Math.Round(rect.xMax, 2)));
+        corners.Add(JsonValue.Of(Math.Round(rect.yMax, 2)));
         json.Set("box", corners);
         json.Set("color", JsonValue.Of(fields.Length > 3 ? fields[3] : ""));
         json.Set("give", JsonValue.Of(fields.Length > 4 ? fields[4] : ""));
@@ -295,6 +288,10 @@ public class RandomizerBox {
         }
 
         var flags = json["flags"].IsString ? json["flags"].Str : LegacyFlags(json);
+        if (Deleting(flags)) {
+            return Parse(Tombstone);
+        }
+
         var line = Prefix + flags + "|" + string.Join(
             ",",
             new[] {
@@ -303,11 +300,6 @@ public class RandomizerBox {
         );
         var color = json["color"].IsString ? json["color"].Str.TrimStart('#') : "";
         var give = json["give"].IsString ? json["give"].Str : "";
-        // a plain box with no color or give would read as the old tombstone
-        if (color == "" && give == "" && flags.Trim().ToLowerInvariant() == "none") {
-            color = "808080";
-        }
-
         if (color != "" || give != "") {
             line += "|" + color;
         }
@@ -326,15 +318,17 @@ public class RandomizerBox {
         return type == "" || extra == "" ? type + extra : type + "," + extra;
     }
 
-    // the builder's old tombstone: flags exactly none and no color
-    private static bool OldTombstone(string[] fields) {
-        return fields[1].Trim().ToLowerInvariant() == "none" && (fields.Length < 4 || fields[3] == "") && (fields.Length < 5 || fields[4] == "");
+    // how every editor writes a deleted box
+    public const string Tombstone = "BX|tombstone|0,0,0,0";
+
+    private static bool Deleting(string flags) {
+        return flags.Split(',').Select(f => f.Trim().ToLowerInvariant()).Any(f => f == "none" || f == "tombstone");
     }
 
-    // an old tombstone as the editors write one now; any other line as it was
+    // any deleted box as the editors write one now; any other line as it was
     public static string Modern(string line) {
         var fields = line.Split('|');
-        return IsLine(line) && fields.Length > 2 && OldTombstone(fields) ? Prefix + "tombstone|" + fields[2] : line;
+        return IsLine(line) && fields.Length > 1 && Deleting(fields[1]) ? Tombstone : line;
     }
 
     // Keep the original parsed line to be able to save it again.

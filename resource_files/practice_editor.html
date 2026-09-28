@@ -580,10 +580,10 @@
       });
       input.placeholder = list().length ? '' : 'flags';
     }
-    // a typed tombstone would delete the box
+    // a typed tombstone (or none, its old name) would delete the box
     function add(f) {
       f = (f === undefined ? input.value : f).trim(); if (!f) return;
-      var why = f.toLowerCase() === 'tombstone' ? 'To delete the box, use its ×.' : /[,|]/.test(f) ? 'One flag at a time, without , or |' : '';
+      var why = f.toLowerCase() === 'tombstone' || f.toLowerCase() === 'none' ? 'To delete the box, use its ×.' : /[,|]/.test(f) ? 'One flag at a time, without , or |' : '';
       if (why) { input.classList.add('odd'); input.title = why; return; }
       input.value = ''; close();
       if (!has(f)) { var l = list(); l.push(f); commit(l); }
@@ -719,19 +719,19 @@
     return !q || (loc.name + ' ' + loc.zone + ' ' + loc.type).toLowerCase().indexOf(q) >= 0;
   }
 
-  var DEFAULT_COLOR = { goal: '#8fe3a0', kill: '#ff6b6b', solid: '#9aa0aa', item: '#40c0ff', ritem: '#7fd8ff', none: '#808080' };
-  var NAMES = { ritem: 'repeat item', none: 'plain' };
-  // the flags menu, presets first; goal and none still load and show, but aren't offered
+  var DEFAULT_COLOR = { goal: '#8fe3a0', kill: '#ff6b6b', solid: '#9aa0aa', item: '#40c0ff', ritem: '#7fd8ff' };
+  var NAMES = { ritem: 'repeat item' };
+  // the flags menu, presets first; goal still loads and shows, but isn't offered
   var SUGGEST = [['kill', 'box kills Ori'], ['item', 'grants an item once'], ['solid', 'box with collision'],
     ['ritem', 'grants an item repeatedly'], ['once', 'box toggles off when collected'], ['unsafe', 'saves disabled inside box'],
     ['on=Tick', 'grant 60 times a second while inside box'], ['on=Frame', 'grant every frame while inside box'],
     ['damage=1', 'box damages entities touching it'], ['renderDepth=-99', 'draw box over terrain'],
     ['parallaxDepth=10', 'box scrolls like background art']];
   // the flags the game reads; any other is kept, and the game logs it
-  var FLAGS = ['once', 'on', 'damage', 'solid', 'unsafe', 'renderdepth', 'parallaxdepth', 'goal', 'kill', 'item', 'ritem', 'none', 'tombstone'];
+  var FLAGS = ['once', 'on', 'damage', 'solid', 'unsafe', 'renderdepth', 'parallaxdepth', 'goal', 'kill', 'item', 'ritem', 'tombstone'];
   var VALUED = ['on', 'damage', 'renderdepth', 'parallaxdepth'];
   var FLAG_TEXT = { kill: 'box kills Ori', item: 'grants an item once', solid: 'box with collision', ritem: 'grants an item repeatedly',
-    once: 'box toggles off when collected', unsafe: 'saves disabled inside box', goal: 'ends a practice segment', none: 'plain gray' };
+    once: 'box toggles off when collected', unsafe: 'saves disabled inside box', goal: 'ends a practice segment' };
   var TRIGGER_TEXT = { Enter: 'grants when Ori enters the box', Tick: 'grants 60 times a second while Ori is inside',
     Frame: 'grants every frame while Ori is inside' };
   // the game's DamageType names, which it matches case-insensitively
@@ -797,8 +797,8 @@
     }
     return { text: FLAG_TEXT[key] ? capital(FLAG_TEXT[key]) : '' };
   }
-  // a deleted box keeps its line so later boxes keep their BM|n numbers; the old builder's was a bare none
-  function settle(b) { if (isPlain(b) && !b.color && !b.give) b.flags = 'tombstone'; }
+  // a deleted box keeps its line so later boxes keep their BM|n numbers; none is the tombstone's old name
+  function settle(b) { if (hasFlag(b, 'none')) { b.flags = 'tombstone'; b.box = [0, 0, 0, 0]; } }
   // colors travel as rrggbb; none is an invisible box
   function hidden(b) { return b.color === 'none' || b.color === '0'; }
   // every flag counts the same; the list keeps the order it was written in
@@ -806,7 +806,6 @@
   function hasFlag(b, flag) { return flagsOf(b).some(function (f) { return f.toLowerCase() === flag; }); }
   function setFlags(b, l) { b.flags = l.join(','); }
   function gone(b) { return hasFlag(b, 'tombstone'); }
-  function isPlain(b) { return (b.flags || '').trim().toLowerCase() === 'none'; }
   // in game each preset flag sets the color in turn, so the last one shows
   function presetOf(b) { return flagsOf(b).map(function (f) { return f.toLowerCase(); }).filter(function (f) { return DEFAULT_COLOR[f]; }).pop() || ''; }
   function colorOf(b) {
@@ -1049,7 +1048,7 @@
         var at = end.goal && typeof end.goal.at === 'number' ? end.goal.at : null;
         if (at !== null) {
           var list = state.segment.boxes = state.segment.boxes || [];
-          list.splice(Math.max(0, Math.min(at, list.length)), 0, { flags: 'tombstone', box: end.box.slice() });
+          list.splice(Math.max(0, Math.min(at, list.length)), 0, { flags: 'tombstone', box: [0, 0, 0, 0] });
         }
         delete end.box; delete end.goal; render();
       };
@@ -1085,7 +1084,7 @@
       hide.onclick = function () { if (hidden(b)) delete b.color; else b.color = 'none'; drawEye(); recolorBox(coords); };
       tr.appendChild(td(hide));
       var del = document.createElement('button'); del.className = 'danger icon'; del.innerHTML = '&times;'; del.title = 'Remove this box';
-      del.onclick = function () { if (state.lastBox === b) state.lastBox = null; boxes[i] = { flags: 'tombstone', box: coords }; render(); };
+      del.onclick = function () { if (state.lastBox === b) state.lastBox = null; boxes[i] = { flags: 'tombstone', box: [0, 0, 0, 0] }; render(); };
       tr.appendChild(td(del));
       tbody.appendChild(tr);
     });
@@ -1207,8 +1206,7 @@
     Object.keys(state.variants).forEach(function (id) { (state.variants[id].boxes || []).forEach(tidy); });
     return { segment: seg, variants: state.variants };
   }
-  // a bare plain box would read as the old builder's tombstone
-  function tidy(b) { if (isPlain(b) && !b.color && !b.give) b.color = '808080'; delete b.text; delete b.repeat; }
+  function tidy(b) { delete b.text; delete b.repeat; }
 
   function put(doc, rev) {
     return api('/api/segment', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ segment: doc.segment, variants: doc.variants, rev: rev }) });
