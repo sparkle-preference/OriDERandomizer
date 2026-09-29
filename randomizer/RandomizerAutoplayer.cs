@@ -23,6 +23,16 @@ public static class RandomizerAutoplayer {
         idle = false;
     }
 
+    // the debug menu's switch: holding the item is what turns it on
+    public static bool On {
+        get { return Holding(AutoplayId); }
+        set {
+            if (Characters.Sein && Characters.Sein.Inventory != null) {
+                Characters.Sein.Inventory.SetRandomizerItem(AutoplayId, value ? 1 : 0);
+            }
+        }
+    }
+
     private static bool Holding(int id) {
         return Characters.Sein && Characters.Sein.Inventory != null
             && Characters.Sein.Inventory.GetRandomizerItem(id) > 0;
@@ -66,6 +76,7 @@ public static class RandomizerAutoplayer {
     // off the books like a Drop. The file stays put; a keypress cannot loop.
     public static void GrantTestPickup() {
         if (!File.Exists(TestPickupFile)) {
+            Randomizer.printInfo("No pickup in " + TestPickupFile, 180);
             return;
         }
 
@@ -79,6 +90,7 @@ public static class RandomizerAutoplayer {
 
         var bar = content.IndexOf('|');
         if (bar < 1) {
+            Randomizer.printInfo("No pickup in " + TestPickupFile, 180);
             return;
         }
 

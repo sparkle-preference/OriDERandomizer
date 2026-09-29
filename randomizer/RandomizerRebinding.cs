@@ -310,6 +310,8 @@ public static class RandomizerRebinding {
         { "Grant Test Pickup", "" },
         { "Practice Menu", "" },
         { "Create Practice Segment", "Alt+M" },
+        { "Create Practice Segment With Seed", "" },
+        { "Edit Seed Boxes", "" },
         { "Open Practice Editor Page", "" },
         { "Retry Practice Segment", "Alt+L" },
         { "Spawn Echo", "" },
@@ -356,6 +358,8 @@ public static class RandomizerRebinding {
 
     public static BindSet OpenPracticeMenu = new BindSet(new List<SingleBind>());
     public static BindSet CreatePracticeSegment = new BindSet(new List<SingleBind>());
+    public static BindSet CreatePracticeSegmentWithSeed = new BindSet(new List<SingleBind>());
+    public static BindSet EditSeedBoxes = new BindSet(new List<SingleBind>());
     public static BindSet OpenPracticeEditorPage = new BindSet(new List<SingleBind>());
     public static BindSet RetryPracticeSegment = new BindSet(new List<SingleBind>());
     public static BindSet SpawnEcho = new BindSet(new List<SingleBind>());
@@ -412,6 +416,8 @@ public static class RandomizerRebinding {
         { "Grant Test Pickup", GrantTestPickup },
         { "Practice Menu", OpenPracticeMenu },
         { "Create Practice Segment", CreatePracticeSegment },
+        { "Create Practice Segment With Seed", CreatePracticeSegmentWithSeed },
+        { "Edit Seed Boxes", EditSeedBoxes },
         { "Open Practice Editor Page", OpenPracticeEditorPage },
         { "Retry Practice Segment", RetryPracticeSegment },
         { "Spawn Echo", SpawnEcho },

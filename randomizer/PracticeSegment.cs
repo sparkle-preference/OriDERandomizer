@@ -242,6 +242,66 @@ public class PracticeSegment {
         return table;
     }
 
+    // pasted text as the lines an attempt can use; the rest go to skipped, except a seed file's flag line
+    public static List<string> ReadPlacements(string text, bool variant, List<string> skipped) {
+        var kept = new List<string>();
+        var number = 0;
+        var first = true;
+        foreach (var raw in (text ?? "").Split('\n')) {
+            number++;
+            var line = raw.Trim();
+            if (line.Length == 0) {
+                continue;
+            }
+
+            var why = Unusable(line, variant);
+            var header = first && why != null && SeedHeader(line);
+            first = false;
+            if (why == null) {
+                kept.Add(line);
+            } else if (!header) {
+                skipped.Add("line " + number + " (" + why + "): " + line);
+            }
+        }
+
+        return kept;
+    }
+
+    // why an attempt could not use a line, or null
+    private static string Unusable(string line, bool variant) {
+        if (line.StartsWith("//")) {
+            return null;
+        }
+
+        if (RandomizerBox.IsLine(line)) {
+            try {
+                var box = RandomizerBox.Parse(line);
+                return variant && box.Goal && !box.Deleted ? "a variant's goal box is ignored" : null;
+            } catch (Exception e) {
+                return e.Message;
+            }
+        }
+
+        var parts = line.Split('|');
+        int coord;
+        if (parts.Length < 3 || !int.TryParse(parts[0], out coord)) {
+            return "not a placement";
+        }
+
+        // doors and other players' items belong to the seed's own game
+        if (parts[1] == "EN" || parts[1] == "MW") {
+            return "not a pickup";
+        }
+
+        return Pickup(parts[1], parts[2]) == null ? "not a pickup" : null;
+    }
+
+    private static bool SeedHeader(string line) {
+        var bar = line.IndexOf('|');
+        int n;
+        return bar > 0 && !RandomizerBox.IsLine(line) && !int.TryParse(line.Substring(0, bar), out n);
+    }
+
     // every clause present must hold at once; the goal box only while Ori is inside it
     public bool Met(Vector2 at) {
         if (!HasEnd) {

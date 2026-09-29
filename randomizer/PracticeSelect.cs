@@ -257,10 +257,8 @@ public static class PracticeSelect {
                 Directory.CreateDirectory(Folder);
             }
 
-            var paths = Directory.GetFiles(Folder, "*.bfrp");
-            Array.Sort(paths, StringComparer.OrdinalIgnoreCase);
             var skipped = new List<string>();
-            foreach (var path in paths) {
+            foreach (var path in PracticeFolder.List(Folder)) {
                 try {
                     Files.Add(BfrpFile.Load(path));
                 } catch (Exception e) {
@@ -345,7 +343,13 @@ public static class PracticeSelect {
     private static int chosen;
 
     public static void Hidden(SaveSlotsUI screen) {
+        LetGo();
         if (!Choosing) {
+            // a segment that started kept the chooser's legend through the fade
+            if (chooserLegend) {
+                Legend(screen, true);
+            }
+
             return;
         }
 
@@ -362,20 +366,25 @@ public static class PracticeSelect {
         }
     }
 
-    // copy means nothing on a segment card, and the backups entry is the variants
+    // on segment cards the copy entry is Edit, set per card by EditLegend, and backups is Variants
     private static void Legend(SaveSlotsUI screen, bool saves) {
-        // the legend is a sibling: the component lives one level under the screen
-        var root = screen.transform.parent != null ? screen.transform.parent : screen.transform;
-        var legend = root.FindChild("legend");
+        chooserLegend = !saves;
+        var legend = LegendOf(screen);
         if (legend == null) {
-            Randomizer.log("practice: no legend under " + root.name);
             return;
         }
 
         var copy = legend.FindChild("copy");
+        var copyBox = copy == null ? null : copy.GetComponentInChildren<MessageBox>(true);
         if (copy != null) {
             copy.gameObject.SetActive(saves);
         }
+
+        if (saves && copyBox != null && screen.CopyLegendMessageProvider != null) {
+            copyBox.SetMessageProvider(screen.CopyLegendMessageProvider);
+        }
+
+        editWords = null;
 
         // a segment is a file: delete means the same thing it means for a save
         var erase = legend.FindChild("delete");
@@ -398,9 +407,64 @@ public static class PracticeSelect {
                 backupsLegend = box.MessageProvider;
             }
 
-            box.SetMessage(new MessageDescriptor("Variants"));
+            if (variantsLabel == null) {
+                variantsLabel = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
+                variantsLabel.SetMessage("[SaveSlotBackup] Variants");
+            }
+
+            box.SetMessageProvider(variantsLabel);
         }
     }
+
+    // the legend is a sibling: the component lives one level under the screen
+    private static Transform LegendOf(SaveSlotsUI screen) {
+        var root = screen.transform.parent != null ? screen.transform.parent : screen.transform;
+        var legend = root.FindChild("legend");
+        if (legend == null) {
+            Randomizer.log("practice: no legend under " + root.name);
+        }
+
+        return legend;
+    }
+
+    // Edit's hint: pressed for a folder, held for a given file, and none on the new-segment card
+    private static void EditLegend(SaveSlotsUI screen) {
+        var index = screen.CurrentSlotIndex;
+        var file = index >= 0 && index < Files.Count ? Files[index] : null;
+        var words = file == null ? "" : file.IsFolder ? "[SaveSlotCopy] Edit"
+            : "[SaveSlotCopy]" + RandomizerKeyIcons.Thin + "(Hold) Extract & Edit";
+        if (words == editWords) {
+            return;
+        }
+
+        editWords = words;
+        var legend = LegendOf(screen);
+        var copy = legend == null ? null : legend.FindChild("copy");
+        if (copy == null) {
+            return;
+        }
+
+        copy.gameObject.SetActive(words.Length > 0);
+        var box = copy.GetComponentInChildren<MessageBox>(true);
+        if (box != null && words.Length > 0) {
+            if (editLabel == null) {
+                editLabel = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
+            }
+
+            editLabel.SetMessage(words);
+            box.SetMessageProvider(editLabel);
+        }
+    }
+
+    // what the copy entry says on the chooser, "" when hidden; null until set
+    private static string editWords;
+
+    // the legend is the chooser's, and the saves want theirs back
+    private static bool chooserLegend;
+
+    private static RandomizerMessageProvider editLabel;
+
+    private static RandomizerMessageProvider variantsLabel;
 
     // after a card applies its slot; cards number by position (slot 51 on disk is card 2)
     public static void Decorate(SaveSlotUI card, int position) {
@@ -532,7 +596,7 @@ public static class PracticeSelect {
     // how it has gone: nothing to run yet, nothing run yet, or the count and the best of them
     private static string Tally(BfrpFile file, bool unfinished) {
         if (unfinished) {
-            return "click to edit";
+            return file.IsFolder ? "click to edit" : "extract to edit";
         }
 
         var runs = 0;
@@ -561,7 +625,7 @@ public static class PracticeSelect {
             return name.Str;
         }
 
-        return Path.GetFileNameWithoutExtension(file.Path);
+        return PracticeFolder.NameOf(file.Path);
     }
 
     private static string VariantName(BfrpFile file, string variant) {
@@ -589,6 +653,7 @@ public static class PracticeSelect {
         return best;
     }
 
+    // A card runs its segment, or the variant picked; one with nothing to end it opens in the editor instead.
     public static void Choose(SaveSlotsUI screen) {
         var card = screen.CurrentSaveSlot;
         var index = screen.CurrentSlotIndex;
@@ -603,45 +668,122 @@ public static class PracticeSelect {
 
         var file = Files[index];
         var variants = file.Variants;
-        var variant = "";
-        if (variants.Count > 0) {
-            // a variant is always a choice; pressing the card itself unfolds them
-            var picked = card.BackupIndex;
-            if (picked < 0 || picked >= variants.Count) {
-                SaveSlotBackupsManager.RequestReadBackups(index, card.OnFinishedReadingBackups);
-                if (card.BackupsAnimator) {
-                    card.BackupsAnimator.AnimatorDriver.ContinueForward();
-                }
-
-                card.ChangeSelectionIndex(0);
-                return;
-            }
-
-            variant = variants[picked];
-        }
-
-        chosen = index;
-        // a segment with nothing to end it has nothing to run: it goes straight to the editor
-        if (!Ended(file, variant)) {
-            Start(screen, file, variant, true);
+        var picked = card.BackupIndex;
+        // a variant is always a choice; pressing the card itself unfolds them
+        if (variants.Count > 0 && (picked < 0 || picked >= variants.Count)) {
+            Unfold(card, index);
             return;
         }
 
-        pending = file;
-        pendingVariant = variant;
-        Prompt(screen, new[] { "RUN", "EDIT" }, RunOrEdit);
+        var variant = variants.Count > 0 ? variants[picked] : "";
+        var ended = Ended(file, variant);
+        if (ended || file.IsFolder) {
+            chosen = index;
+            Start(screen, file, variant, !ended);
+        } else {
+            Randomizer.printInfo("Nothing ends this segment yet: extract it to edit it", 300);
+        }
     }
 
-    private static void RunOrEdit(int row) {
-        var screen = SaveSlotsUI.Instance;
-        var file = pending;
-        pending = null;
-        if (screen == null || file == null) {
+    private static void Unfold(SaveSlotUI card, int index) {
+        SaveSlotBackupsManager.RequestReadBackups(index, card.OnFinishedReadingBackups);
+        if (card.BackupsAnimator) {
+            card.BackupsAnimator.AnimatorDriver.ContinueForward();
+        }
+
+        card.ChangeSelectionIndex(0);
+    }
+
+    // the given file whose card Copy is held on
+    private static BfrpFile held;
+
+    private static string heldVariant;
+
+    private static int heldIndex;
+
+    private static float heldSince;
+
+    // Every chooser frame: Copy opens a folder in the editor at once, and extracts a given file once held.
+    public static bool Edit(SaveSlotsUI screen) {
+        EditLegend(screen);
+        var now = Time.realtimeSinceStartup;
+        if (held == null) {
+            var card = screen.CurrentSaveSlot;
+            var index = screen.CurrentSlotIndex;
+            if (!Core.Input.Copy.OnPressed || Core.Input.Copy.Used || card == null || card.SaveSlot == null
+                    || index < 0 || index >= Files.Count) {
+                return false;
+            }
+
+            Core.Input.Copy.Used = true;
+            var file = Files[index];
+            var variants = file.Variants;
+            var picked = card.BackupIndex;
+            // on the card itself rather than a variant's row, the first variant
+            var variant = picked >= 0 && picked < variants.Count ? variants[picked] : variants.Count > 0 ? variants[0] : "";
+            if (file.IsFolder) {
+                chosen = index;
+                Start(screen, file, variant, true);
+                return true;
+            }
+
+            held = file;
+            heldVariant = variant;
+            heldIndex = index;
+            heldSince = now;
+            return true;
+        }
+
+        if (!Choosing || screen.CurrentSlotIndex != heldIndex) {
+            LetGo();
+            return false;
+        }
+
+        if (!Core.Input.Copy.IsPressed) {
+            LetGo();
+            return true;
+        }
+
+        var progress = (now - heldSince) / RandomizerHoldRing.Seconds;
+        if (progress < 1f) {
+            var legend = LegendOf(screen);
+            RandomizerHoldRing.Around(RandomizerHoldRing.Glyph(legend == null ? null : legend.FindChild("copy")), progress);
+            return true;
+        }
+
+        var given = held;
+        LetGo();
+        Extract(screen, given, heldVariant);
+        return true;
+    }
+
+    private static void LetGo() {
+        held = null;
+        RandomizerHoldRing.Hide();
+    }
+
+    // the given file unpacked into a folder that takes its card, opened in the editor
+    private static void Extract(SaveSlotsUI screen, BfrpFile file, string variant) {
+        string folder;
+        try {
+            folder = PracticeFolder.Extract(file.Path);
+        } catch (Exception e) {
+            Randomizer.LogError("practice: could not extract " + file.Path + ": " + e.Message);
             return;
         }
 
-        screen.ClosePrompt();
-        Start(screen, file, pendingVariant, row == 1);
+        Randomizer.log("practice: extracted " + file.Path + " to " + folder);
+        Open();
+        var at = IndexOf(folder);
+        if (at < 0) {
+            return;
+        }
+
+        var copy = Files[at];
+        var variants = copy.Variants;
+        screen.SetCurrentItemAndScroll(at);
+        chosen = at;
+        Start(screen, copy, variants.Contains(variant) ? variant : variants.Count > 0 ? variants[0] : "", true);
     }
 
     // The page makes the segment; the chooser holds a CANCEL prompt meanwhile to call it off.
@@ -669,10 +811,6 @@ public static class PracticeSelect {
 
     // The page asks about this: it stops offering to make one when the game stops waiting.
     public static bool Waiting;
-
-    private static BfrpFile pending;
-
-    private static string pendingVariant = "";
 
     private static Action<int> chose;
 
@@ -744,7 +882,6 @@ public static class PracticeSelect {
     // Back on the prompt, or anything else that takes it down.
     public static void PromptCancelled() {
         chose = null;
-        pending = null;
         if (!Waiting) {
             return;
         }
@@ -797,7 +934,12 @@ public static class PracticeSelect {
             return;
         }
         try {
-            System.IO.File.Delete(path);
+            if (Directory.Exists(path)) {
+                Directory.Delete(path, true);
+            } else {
+                System.IO.File.Delete(path);
+            }
+
             Randomizer.log("practice: deleted " + path);
         } catch (Exception e) {
             Randomizer.LogError("practice: could not delete " + path + ": " + e.Message);
@@ -823,55 +965,28 @@ public static class PracticeSelect {
 
     // "New Segment N", past every N already in the folder
     public static string NextName() {
-        var taken = 0;
+        var names = new List<string>();
         try {
             // the names on the cards, which is what the player is counting
             if (Choosing) {
-                foreach (var file in Files) {
-                    taken = Math.Max(taken, Numbered(Name(file)));
-                }
-
-                return "New Segment " + (taken + 1);
-            }
-
-            if (Directory.Exists(Folder)) {
-                foreach (var path in Directory.GetFiles(Folder, "*.bfrp")) {
-                    taken = Math.Max(taken, Numbered(Path.GetFileNameWithoutExtension(path)));
-                }
+                names = Files.ConvertAll(Name);
+            } else if (Directory.Exists(Folder)) {
+                names = PracticeFolder.List(Folder).ConvertAll(PracticeFolder.NameOf);
             }
         } catch (Exception e) {
             Randomizer.log("practice: could not number the new segment: " + e.Message);
         }
 
-        return "New Segment " + (taken + 1);
+        return PracticeFolder.NextName(names);
     }
 
-    // N in "New Segment N", else 0; a trailing " (2)" is PathFor dodging a taken name
-    private static int Numbered(string name) {
-        var bracket = name.IndexOf(" (");
-        var stem = bracket > 0 ? name.Substring(0, bracket) : name;
-        int n;
-        return stem.StartsWith("New Segment ", StringComparison.OrdinalIgnoreCase)
-            && int.TryParse(stem.Substring("New Segment ".Length).Trim(), out n) ? n : 0;
-    }
-
-    // a file name from a segment name, unique in the folder
+    // a new segment's folder, named after it and taken by no other folder or file
     public static string PathFor(string name) {
-        var safe = name;
-        foreach (var bad in Path.GetInvalidFileNameChars()) {
-            safe = safe.Replace(bad, '-');
-        }
-
         if (!Directory.Exists(Folder)) {
             Directory.CreateDirectory(Folder);
         }
 
-        var path = Path.Combine(Folder, safe + ".bfrp");
-        for (var n = 2; System.IO.File.Exists(path); n++) {
-            path = Path.Combine(Folder, safe + " (" + n + ").bfrp");
-        }
-
-        return path;
+        return PracticeFolder.FreePath(Folder, PracticeFolder.SafeName(name));
     }
 
     // starts a segment the page just made, as its card would; only while the chooser is up
@@ -885,27 +1000,31 @@ public static class PracticeSelect {
         screen.ClosePrompt();
         PromptCancelled();
         Open();
-        for (var i = 0; i < Files.Count; i++) {
-            if (string.Equals(Path.GetFullPath(Files[i].Path), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase)) {
-                screen.SetCurrentItemAndScroll(i);
-                chosen = i;
-                Start(screen, Files[i], "", false);
-                return true;
-            }
+        var at = IndexOf(path);
+        if (at < 0) {
+            return false;
         }
 
-        return false;
+        screen.SetCurrentItemAndScroll(at);
+        chosen = at;
+        Start(screen, Files[at], "", false);
+        return true;
+    }
+
+    private static int IndexOf(string path) {
+        var full = Path.GetFullPath(path).TrimEnd('\\', '/');
+        return Files.FindIndex(file => string.Equals(Path.GetFullPath(file.Path).TrimEnd('\\', '/'), full, StringComparison.OrdinalIgnoreCase));
     }
 
     // The session seeds its slot; the title screen's own load sequence takes it from there.
     private static void Start(SaveSlotsUI screen, BfrpFile file, string variant, bool edit) {
         Choosing = false;
-        Legend(screen, true);
         PracticeController.EditNext = PracticeController.EditNext || edit;
         try {
             PracticeController.Begin(file, variant, true);
         } catch (Exception e) {
             Randomizer.LogError("practice: " + file.Path + " would not start: " + e.Message);
+            Legend(screen, true);
             SaveSlotsManager.PrepareSlots();
             return;
         }

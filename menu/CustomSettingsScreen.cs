@@ -639,68 +639,13 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         return false;
     }
 
-    // Fills a ring over the held key's glyph; one static ring, as only one hold runs at a time.
+    // Fills the hold ring over the held hint's key glyph.
     public void DrawHold(float progress, string slot = "back") {
-        var glyph = HoldGlyph(slot);
-        if (glyph == null || ringless) {
-            return;
-        }
-
-        // the holder is a plain object and never goes null with the scene its clone was in
-        if (ring == null || ring.Object == null) {
-            ring = new RandomizerHoldRing();
-            if (!ring.Adopt(LoadingBar(), null, "randomizerHoldRing")) {
-                Randomizer.log("hold ring: no loading bar to borrow; holds will have no ring");
-                ring = null;
-                ringless = true;
-                return;
-            }
-
-            ring.Match(glyph, glyph.gameObject.layer);
-            ring.Fade(1f);
-        }
-
-        ring.Show(true);
-        var at = glyph.transform.position;
-        ring.Place(new Vector3(at.x, at.y, at.z - RingLift));
-        ring.Widen(glyph.bounds.size.y * RingSpan);
-        ring.Progress(progress);
+        RandomizerHoldRing.Around(RandomizerHoldRing.Glyph(transform.FindChild("highlightFade/legend/pcLegend/" + slot)), progress);
     }
 
     public void HideHold() {
-        if (ring != null) {
-            ring.Show(false);
-        }
-    }
-
-    // the boot loading bar: the one soul-flame ring alive outside gameplay
-    private static GameObject LoadingBar() {
-        foreach (var progress in Resources.FindObjectsOfTypeAll<UberShaderPrewarmerProgress>()) {
-            if (progress != null && progress.GetComponent<TimelineSequence>() != null) {
-                return progress.gameObject;
-            }
-        }
-
-        return null;
-    }
-
-    // The slot's leftmost key glyph, as a hold's hint is written first. Not the first child:
-    // icon clones keep their creation order when the text changes.
-    public Renderer HoldGlyph(string name) {
-        var slot = transform.FindChild("highlightFade/legend/pcLegend/" + name);
-        var icons = slot == null ? null : slot.GetComponentInChildren<CatlikeCoding.TextBox.MoonIconRenderer>(true);
-        if (icons == null) {
-            return null;
-        }
-
-        Renderer leftmost = null;
-        foreach (var renderer in icons.GetComponentsInChildren<Renderer>(true)) {
-            if (leftmost == null || renderer.transform.position.x < leftmost.transform.position.x) {
-                leftmost = renderer;
-            }
-        }
-
-        return leftmost;
+        RandomizerHoldRing.Hide();
     }
 
     private static void Nudge(Transform legend, string name, float by) {
@@ -1246,15 +1191,6 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     private static readonly Color HeaderColor = new Color(0.85f, 0.72f, 0.42f, 0.55f);
 
     private GameObject prompt;
-
-    // by eye against a key glyph: the ring reads as around it rather than behind it
-    private const float RingSpan = 1.875f;
-
-    private const float RingLift = 0.1f;
-
-    private static RandomizerHoldRing ring;
-
-    private static bool ringless;
 
     // long enough to cover the manager's next FixedUpdate whichever order the two run in
     private const int SettleFrames = 3;

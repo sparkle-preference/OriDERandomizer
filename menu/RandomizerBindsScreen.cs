@@ -41,6 +41,8 @@ public class RandomizerBindsScreen : CustomSettingsScreen {
 
         AddHeader("PRACTICE MODE");
         AddRandomizerBind("Create Practice Segment", "Create a practice segment from your current location");
+        AddRandomizerBind("Create Practice Segment With Seed", "Create a practice segment from your current location, with the seed's pickups and boxes");
+        AddRandomizerBind("Edit Seed Boxes", "Draw and edit the loaded seed's boxes; press again to leave");
         AddRandomizerBind("Practice Menu", "Opens the practice menu"); // TODO: what do we use this for?
         AddRandomizerBind("Retry Practice Segment", "Restart a currently-running segment you are practicing");
         AddRandomizerBind("Open Practice Editor Page", "Opens the practice editor in your browser"); // TODO: what do we use this for?

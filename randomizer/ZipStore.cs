@@ -4,9 +4,24 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 
+// What a practice container keeps its entries in: a .bfrp zip or a folder. Names use '/'.
+public interface IEntryStore {
+    List<string> Names { get; }
+
+    bool Has(string name);
+
+    byte[] Get(string name);
+
+    void Set(string name, byte[] data);
+
+    void Remove(string name);
+
+    void Write(string path);
+}
+
 // A zip as a name->bytes dictionary for the .bfrp container; this runtime has no ZipArchive.
 // Writes are stored-only and atomic. Deflated entries need MonoPosixHelper, which the game lacks.
-public class ZipStore {
+public class ZipStore : IEntryStore {
     private readonly List<string> order = new List<string>();
 
     private readonly Dictionary<string, byte[]> entries = new Dictionary<string, byte[]>();

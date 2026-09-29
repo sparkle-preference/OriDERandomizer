@@ -230,6 +230,7 @@ public static class PracticeController {
     }
 
     public static void End() {
+        ExportIfEdited();
         DropBriefing();
         RandomizerBoxes.Use(null);
         ResetGhosts();
@@ -244,6 +245,42 @@ public static class PracticeController {
         MenuElapsed = 0;
         InMenu = false;
         RandomizerStatsManager.Active = true;
+    }
+
+    // a folder this session changed leaves its shareable copy in export/, from what is saved on disk
+    private static void ExportIfEdited() {
+        if (File == null || !File.IsFolder || !File.Edited) {
+            return;
+        }
+
+        try {
+            var to = PracticeFolder.ExportPath(File.Path);
+            if (PracticeFolder.Export(File.Path, to, true)) {
+                Randomizer.log("practice: exported " + to);
+            }
+        } catch (Exception e) {
+            Randomizer.LogError("practice: could not export " + File.Path + ": " + e.Message);
+        }
+    }
+
+    // Edits never land in a given .bfrp: the session carries on in the folder it is extracted to.
+    public static bool MakeEditable() {
+        if (File == null || File.IsFolder) {
+            return File != null;
+        }
+
+        try {
+            var copy = BfrpFile.Load(PracticeFolder.Extract(File.Path));
+            var variants = copy.Variants;
+            copy.Variant = variants.Contains(File.Variant) ? File.Variant : variants.Count > 0 ? variants[0] : "";
+            File = copy;
+            Reparse();
+            Randomizer.log("practice: extracted to " + copy.Path);
+            return true;
+        } catch (Exception e) {
+            Randomizer.LogError("practice: could not extract " + File.Path + ": " + e.Message);
+            return false;
+        }
     }
 
     // everything the player sees goes now; End waits for the title, which unloads the practice save
@@ -608,6 +645,7 @@ public static class PracticeController {
 
     // the vanilla Exit: a quit-to-menu segment keeps the session and its clock; others end
     public static void OnReturnToTitle() {
+        PracticeEditor.OnReturnToTitle();
         if (!Active || Current == Phase.Ending) {
             return;
         }

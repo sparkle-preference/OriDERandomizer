@@ -1,12 +1,92 @@
 using UnityEngine;
 
 // Borrowed game art driven as a progress fill: clone it, remove its driver, force it visible,
-// sample its timeline. The map warp ring and the settings screens' hold gesture use it.
+// sample its timeline. The map warp ring and the menus' hold gestures use it.
 public class RandomizerHoldRing {
     // hold length, and the longest press that is still a tap; a press between the two is neither
     public const float Seconds = 0.6f;
 
     public const float Tap = 0.2f;
+
+    // one ring for every legend's held hint, as only one hold runs at a time
+    private static RandomizerHoldRing shared;
+
+    private static bool ringless;
+
+    // the glyph the shared ring was last sorted against
+    private static Renderer sortedBy;
+
+    // by eye against a key glyph: the ring reads as around it rather than behind it
+    private const float GlyphSpan = 1.875f;
+
+    private const float GlyphLift = 0.1f;
+
+    // Fills the shared ring round a legend's key glyph.
+    public static void Around(Renderer glyph, float progress) {
+        if (glyph == null || ringless) {
+            return;
+        }
+
+        // the holder is a plain object and never goes null with the scene its clone was in
+        if (shared == null || shared.Object == null) {
+            shared = new RandomizerHoldRing();
+            if (!shared.Adopt(LoadingBar(), null, "randomizerHoldRing")) {
+                Randomizer.log("hold ring: no loading bar to borrow; holds will have no ring");
+                shared = null;
+                ringless = true;
+                return;
+            }
+
+            shared.Fade(1f);
+            sortedBy = null;
+        }
+
+        if (glyph != sortedBy) {
+            sortedBy = glyph;
+            shared.Match(glyph, glyph.gameObject.layer);
+        }
+
+        shared.Show(true);
+        var at = glyph.transform.position;
+        shared.Place(new Vector3(at.x, at.y, at.z - GlyphLift));
+        shared.Widen(glyph.bounds.size.y * GlyphSpan);
+        shared.Progress(progress);
+    }
+
+    public static void Hide() {
+        if (shared != null) {
+            shared.Show(false);
+        }
+    }
+
+    // A legend slot's leftmost key glyph, as a held hint's key is written first. Not the first child:
+    // icon clones keep their creation order when the text changes.
+    public static Renderer Glyph(Transform slot) {
+        var icons = slot == null ? null : slot.GetComponentInChildren<CatlikeCoding.TextBox.MoonIconRenderer>(true);
+        if (icons == null) {
+            return null;
+        }
+
+        Renderer leftmost = null;
+        foreach (var renderer in icons.GetComponentsInChildren<Renderer>(true)) {
+            if (leftmost == null || renderer.transform.position.x < leftmost.transform.position.x) {
+                leftmost = renderer;
+            }
+        }
+
+        return leftmost;
+    }
+
+    // the boot loading bar: the one soul-flame ring alive outside gameplay
+    private static GameObject LoadingBar() {
+        foreach (var progress in Resources.FindObjectsOfTypeAll<UberShaderPrewarmerProgress>()) {
+            if (progress != null && progress.GetComponent<TimelineSequence>() != null) {
+                return progress.gameObject;
+            }
+        }
+
+        return null;
+    }
 
     // any of these may carry a clone's zero alpha; only the alpha is overruled, never the color
     private static readonly string[] Alphas = {

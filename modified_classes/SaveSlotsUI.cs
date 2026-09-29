@@ -383,8 +383,13 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
             return;
         }
 
+        // Copy edits a segment card, and holds the chooser still while it is held on a given file's
+        if (PracticeSelect.Choosing && PracticeSelect.Edit(this)) {
+            return;
+        }
+
         HandleNavigation();
-        // a segment card has nothing to copy: pick it, delete it, or leave
+        // on a segment card: run it, delete it, or leave
         if (PracticeSelect.Choosing) {
             if (ClickedCurrentItem || (Core.Input.ActionButtonA.OnPressed && !Core.Input.ActionButtonA.Used)) {
                 PracticeSelect.Choose(this);

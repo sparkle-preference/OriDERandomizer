@@ -168,6 +168,9 @@ public static class Randomizer {
                     }
 
                     RandomizerBoxes.Seed.Clear();
+                    if (!PracticeEditor.Seed) {
+                        SeedBoxes.Current = null;
+                    }
                     RandomizerLocationManager.ClearPickups();
                     var badLines = 0;
                     var firstBad = "";
@@ -670,6 +673,10 @@ public static class Randomizer {
         // before anything asks for a key's icon: the game caches a missing cap for the session
         RandomizerKeyIcons.Register();
         PracticeController.Tick();
+        if (PracticeEditor.Seed) {
+            PracticeEditor.Tick();
+        }
+
         PracticeSelect.Tick();
         PracticeServer.Tick();
         RandomizerBoxes.Update();
@@ -1155,6 +1162,16 @@ public static class Randomizer {
             return true;
         }
 
+        if (RandomizerRebinding.CreatePracticeSegmentWithSeed.IsPressed()) {
+            PracticeEditor.Create(true);
+            return true;
+        }
+
+        if (RandomizerRebinding.EditSeedBoxes.IsPressed()) {
+            PracticeEditor.ToggleSeed();
+            return true;
+        }
+
         if (RandomizerRebinding.OpenPracticeEditorPage.IsPressed()) {
             if (!PracticeServer.Open()) {
                 printInfo("Refreshed the editor page you already have open", 180);
@@ -1163,10 +1180,17 @@ public static class Randomizer {
             return true;
         }
 
-        // shares Alt+L with Reload Seed, which is off during a session anyway
-        if (RandomizerRebinding.RetryPracticeSegment.IsPressed() && PracticeController.Active) {
-            PracticeController.RetryOrStart();
-            return true;
+        // shares Alt+L with Reload Seed, which is off during a session and in the seed editor anyway
+        if (RandomizerRebinding.RetryPracticeSegment.IsPressed()) {
+            if (PracticeController.Active) {
+                PracticeController.RetryOrStart();
+                return true;
+            }
+
+            if (PracticeEditor.Seed) {
+                PracticeEditor.LeaveUnsaved();
+                return true;
+            }
         }
 
         return false;

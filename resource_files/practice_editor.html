@@ -15,14 +15,14 @@
   .cols section { margin-bottom: 0; }
   .cols + .cols, .cols + section, section + .cols { margin-top: 14px; }
   @media (max-width: 1300px) { .cols { grid-template-columns: 1fr; } }
-  /* the box list grows without limit, so everything else shares the other column */
+  /* sections sharing one column */
   .stack { display: grid; gap: 14px; align-content: start; min-width: 0; }
   .row { margin: 6px 0; }
   label { display: inline-block; margin: 4px 14px 4px 0; }
   input[type=text], input[type=number], select { background: #0f1317; color: #e6e9ee; border: 1px solid #3a4553; border-radius: 4px; padding: 4px 6px; }
   input[type=number] { width: 66px; }
-  #boxes input[type=number], .variant input[type=number] { width: 54px; -moz-appearance: textfield; }
-  #boxes input[type=number]::-webkit-inner-spin-button, .variant input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  table.boxes input[type=number] { width: 54px; -moz-appearance: textfield; }
+  table.boxes input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=color] { vertical-align: middle; }
   button { background: #2f6fd6; color: #fff; border: 0; border-radius: 4px; padding: 6px 12px; cursor: pointer; margin-right: 6px; }
   button.quiet { background: #3a4553; }
@@ -36,11 +36,18 @@
   th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #2b333d; vertical-align: top; }
   th { color: #8b95a3; font-weight: normal; }
   td .pick { min-width: 190px; }
-  /* ten columns in half a page: let it scroll rather than push into the next one */
-  #boxes, .variant table { min-width: 0; }
-  .boxwrap { overflow-x: auto; }
-  tr.goal td { background: #184323; }
-  tr.flash td { background: #2f4f7a; transition: background 1.5s; }
+  /* fixed columns line the tables up; no scrolling wrapper, which would clip a picker's menu */
+  table.boxes { table-layout: fixed; }
+  table.boxes th:nth-child(1) { width: 36%; }
+  table.boxes th:nth-child(n+2):nth-child(-n+5) { width: 70px; }
+  table.boxes th:nth-child(7) { width: 52px; }
+  table.boxes th:nth-child(n+8) { width: 36px; }
+  table.boxes .pick { min-width: 0; }
+  /* every row banded, so the goal's green band sits like the rest */
+  table.boxes tbody tr:nth-child(odd) td { background: #232b34; }
+  table.boxes tbody tr:nth-child(even) td { background: #20272f; }
+  table.boxes tbody tr.goal td { background: #1c3a26; }
+  table.boxes tbody tr.flash td { background: #2f4f7a; transition: background 1.5s; }
   .chips span { display: inline-block; background: #2b333d; border-radius: 12px; padding: 2px 10px; margin: 2px 4px 2px 0; }
   .chips span b { cursor: pointer; margin-left: 6px; color: #ff9a9a; }
   .mapgrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 14px; }
@@ -51,7 +58,7 @@
   .handle { width: 10px; height: 10px; background: #fff; border: 1px solid #000; border-radius: 2px; }
   #status { position: fixed; bottom: 0; left: 0; right: 0; background: #0f1317; padding: 10px 24px; border-top: 1px solid #2b333d; }
   .ok { color: #8fe3a0; } .bad { color: #ff9a9a; }
-  .variant, .group { border: 1px dashed #3a4553; border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
+  .variant, .group, .boxlist { border: 1px dashed #3a4553; border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
   details summary { cursor: pointer; color: #9fc6ff; }
   /* the pickup picker: chips and a typed search over the site's item groups */
   .pick { position: relative; display: flex; flex-wrap: wrap; align-items: center; vertical-align: middle; min-width: 340px; max-width: 100%; background: #0f1317; border: 1px solid #3a4553; border-radius: 4px; padding: 2px 4px; }
@@ -75,11 +82,16 @@
   .saves .save { padding: 4px 8px; cursor: pointer; border-radius: 4px; }
   .saves .save:hover { background: #2a323c; }
   .saves .save.picked { background: #2f6fd6; }
+  #placeText { width: 100%; box-sizing: border-box; font: 12px/1.4 Consolas, monospace; background: #0f1317; color: #e6e9ee; border: 1px solid #3a4553; border-radius: 4px; padding: 6px; }
   body.nosession .cols, body.nosession > section:not(#createSection), body.nosession #status { display: none; }
+  /* the seed's own boxes: everything a segment has beyond them is hidden */
+  .seedonly { display: none; }
+  body.seedmode .seedonly { display: block; }
+  body.seedmode .segonly { display: none !important; }
 </style>
 </head>
 <body>
-<h1>Practice segment editor</h1>
+<h1 id="title">Practice segment editor</h1>
 <div class="muted" id="path">Talking to the game…</div>
 
 <section id="createSection" hidden>
@@ -90,14 +102,21 @@
   <div class="row"><button id="create" disabled>Create and open in the game</button> <span class="muted" id="createNote"></span></div>
 </section>
 
-<details style="margin: 10px 0">
+<div class="seedonly muted" style="margin: 10px 0; max-width: 900px">
+  These are the boxes in the seed you have loaded. Give them items and flags here, then <b>Save to game</b>: it writes them
+  into the seed file (the first save keeps a copy of the original next to it). Flags are explained in Boxes.txt.
+  In the game, <b>M</b> moves and resizes boxes and <b>Ctrl+C</b> copies their lines for the plando builder.
+</div>
+
+<details class="segonly" style="margin: 10px 0">
   <summary>How this works</summary>
   <div class="muted" style="margin-top:6px; max-width: 900px">
     <p><b>Practice Segments:</b> A <i>practice segment</i> is a save file plus some rules: where you start, what the end condition is, what pickups are in the world.
-    <b>PRACTICE MODE</b> on the title screen to enter the segment select menu. Pick a finished segment to <b>run</b> or <b>edit</b> it. Unfinished segments jump straight to the editor.</p>
+    <b>PRACTICE MODE</b> on the title screen to enter the segment select menu. Pick a segment to <b>run</b> it, or press Copy (<b>C</b> by default) on it to <b>edit</b> it. Unfinished segments jump straight to the editor.
+    A <b>.bfrp</b> someone gave you only runs until you hold Copy on its card to extract it into a folder.</p>
 
     <p><b>Editor:</b> The editor freezes the world and gives you several control options:
-    <b>Drag the left mouse</b> to create a box (<b>1</b> goal, <b>2</b> kill, <b>3</b> hint, <b>4</b> solid), <b>Z</b> to undo a placement, <b>X</b> to delete a box under the cursor.
+    <b>Drag the left mouse</b> to create a box (<b>1</b> item, <b>2</b> solid, <b>3</b> kill, <b>4</b> goal), <b>Z</b> to undo a placement, <b>X</b> to delete a box under the cursor.
     <b>WASD</b> pans the view and <b>right click</b> warps Ori to the mouse and loads nearby scenes. <b>Ctrl+S</b> saves, <b>Ctrl+R</b> reloads from disk, 
     <b>Enter</b> saves and begins a run on the segment, and <b>5</b> opens this page.
     While you are editing, the randomizer's other keybinds are off, and the pause menu is replaced with practice-specific options.</p>
@@ -109,12 +128,12 @@
     <p><b>The map:</b> Pick locations from the zone and location lists or click them on the map to select locations required to finish the segment or to include in a shuffle group.
     With <i>edit boxes on the map</i> on, drag a box to move it and its corners to resize it.</p>
 
-    <p><b>Misc Info:</b> A run ends when ALL of its end conditions are satisfied and needs to have at least one. The Retry Practice Segment Randomizer Bind (default Alt+L) restarts an attempt, and dismisses an open briefing if one exists. Quitting to menu ends a practice run unless it is QTM-enabled - ending a QTM-enabled run can be done from the main menu. Practice files are stored as .bfrp files in <span id="folder">[Your Ori Install]\practice</span> and can be copied and shared with other players.</p>
+    <p><b>Misc Info:</b> A run ends when ALL of its end conditions are satisfied and needs to have at least one. The Retry Practice Segment Randomizer Bind (default Alt+L) restarts an attempt, and dismisses an open briefing if one exists. Quitting to menu ends a practice run unless it is QTM-enabled - ending a QTM-enabled run can be done from the main menu. Segments you make are folders in <span id="folder">[Your Ori Install]\practice</span>. To share one, send its <b>export\&lt;name&gt;.bfrp</b>: it is written when a session that changed the segment ends, or by <b>Export .bfrp</b> below. Exports keep a pinned ghost but not your runs.</p>
   </div>
 </details>
 
 <div class="cols">
-<section id="segmentSection">
+<section id="segmentSection" class="segonly">
   <h2>Segment</h2>
   <div class="row"><label>Name <input type="text" id="name" size="40"></label></div>
   <div class="row"><label>Timing
@@ -130,9 +149,9 @@
   <div id="changeSaves" class="saves" hidden></div>
 </section>
 
-<section>
+<section class="segonly">
   <h2>End condition(s) <span class="muted">(need at least 1)</span></h2>
-  <div class="row">Goal box <span id="goalBox" class="muted">none</span> <span class="muted">— edit it in the Boxes table, or draw one in the game with the 1 key</span></div>
+  <div class="row">Goal box <span id="goalBox" class="muted">none</span> <span class="muted">— edit it in the Boxes table, or draw one in the game with the 4 key</span></div>
   <div class="row">Items held <span id="endItems"></span></div>
   <div class="row">Pickup count <input type="number" id="count" min="0" placeholder="any"> <span class="muted">blank for none</span></div>
   <div class="row">Locations <span id="locChips" class="chips"></span> <button class="quiet" id="pickEnd">pick</button></div>
@@ -144,24 +163,37 @@
   <div class="mapgrid">
     <div id="map"></div>
     <div>
+      <div class="segonly">
       <div class="row">Locations go to <select id="locTarget"></select></div>
       <div class="row">Zone <select id="zone"></select></div>
       <div class="row">Location <select id="loc"></select> <button class="quiet" id="addLoc">add</button></div>
       <div class="row"><input type="text" id="locSearch" placeholder="search every zone" size="26"> <span class="muted">dims the map to the matches</span></div>
       <div class="row muted">Or click a marker. Clicking a box jumps to its row.</div>
       <div id="targetChips" class="chips"></div>
+      </div>
       <div class="row" style="margin-top:14px"><button class="quiet" id="editBoxes">edit boxes on the map</button> <span class="muted">drag a box to move it, a corner to resize it</span></div>
       <div id="tileStatus" class="muted"></div>
     </div>
   </div>
 </section>
 
-<div class="cols">
 <section>
   <h2>Boxes</h2>
-  <div class="row"><button class="quiet" id="addBox">add box</button> <button class="quiet" id="addGoal">add goal box</button></div>
-  <div class="muted">Drawn boxes appear here after a save in the game; the goal box is part of the end condition. The eye hides a box in game. Flags are explained in Boxes.txt, which comes with the randomizer.</div>
-  <div class="boxwrap"><table id="boxes"><thead><tr><th>type/flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th></th><th></th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="muted segonly">Drawn boxes appear here after a save in the game; the goal box is part of the end condition. The eye hides a box in game. Flags are explained in Boxes.txt, which comes with the randomizer.</div>
+  <div id="sharedBoxes">
+    <div class="row" id="sharedHead" hidden>Shared <span class="muted">every variant has these</span></div>
+    <div class="row"><button class="quiet" id="addBox">add box</button> <button class="quiet segonly" id="addGoal">add goal box</button></div>
+    <table id="boxes" class="boxes"><thead><tr><th>type/flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th></th><th></th><th></th></tr></thead><tbody></tbody></table>
+  </div>
+  <div id="variantBoxes" class="segonly"></div>
+</section>
+
+<div class="cols segonly">
+<section>
+  <h2>Variants</h2>
+  <div id="variants"></div>
+  <button class="quiet" id="addVariant">add variant</button>
+  <div class="muted">A segment with variants always runs one of them: they share the start and the end condition, and each keeps its own loadout, boxes, history and ghosts. Its boxes are under Boxes.</div>
 </section>
 
 <div class="stack">
@@ -173,13 +205,6 @@
 </section>
 
 <section>
-  <h2>Variants</h2>
-  <div id="variants"></div>
-  <button class="quiet" id="addVariant">add variant</button>
-  <div class="muted">A segment with variants always runs one of them: they share the start and the end condition, and each keeps its own loadout, boxes, history and ghosts.</div>
-</section>
-
-<section>
   <h2>Ghosts <span class="muted" id="ghostVariant"></span></h2>
   <div id="ghosts" class="muted">none</div>
   <div class="row"><button class="quiet" id="pinGhost">pin the most recent run</button></div>
@@ -188,9 +213,17 @@
 </div>
 </div>
 
+<section class="segonly">
+  <h2>Placements</h2>
+  <div class="row">List of <select id="placeTarget"></select> <button class="quiet" id="placePick">load a file</button><input type="file" id="placeFile" accept=".bfr,.dat,.txt" hidden></div>
+  <textarea id="placeText" rows="10" spellcheck="false" placeholder="-1560188|SK|0|Swamp"></textarea>
+  <div class="row"><button class="quiet" id="placeReplace">Replace placements</button> <span class="muted">Placement and box lines; a whole seed file works too. This replaces the list, boxes included.</span></div>
+</section>
+
 <div id="status">
   <button id="save">Save to game</button>
   <button class="quiet" id="reload">Reload from game</button>
+  <button class="quiet" id="export" hidden>Export .bfrp</button>
   <span id="message" class="muted"></span>
 </div>
 
@@ -199,7 +232,7 @@
 (function () {
   var state = { segment: null, variants: {}, catalog: null, map: null, markers: {}, shapes: [], target: 'end', playing: '', editing: false, ghosts: [] };
   var $ = function (id) { return document.getElementById(id); };
-  var say = function (text, cls) { var m = $('message'); m.textContent = text; m.className = cls || 'muted'; };
+  var say = function (text, cls) { var m = $('message'); m.textContent = text; m.className = cls || 'muted'; m.title = ''; };
 
   function api(url, opts) {
     return fetch(url, Object.assign({ cache: 'no-store' }, opts || {})).then(function (r) {
@@ -215,6 +248,9 @@
     return api('/api/catalog').then(function (c) { state.catalog = c; return api('/api/segment'); }).then(function (s) {
       if (s.folder) { $('folder').textContent = shortPath(s.folder, 60); $('folder').title = s.folder; }
       document.body.classList.toggle('nosession', !s.session);
+      state.seed = !!s.seed;
+      document.body.classList.toggle('seedmode', state.seed);
+      $('title').textContent = state.seed ? 'Seed box editor' : 'Practice segment editor';
       $('createSection').hidden = !!s.session;
       if (!s.session) {
         $('path').textContent = s.awaiting ? 'The game is waiting for a starting save. Pick one below.'
@@ -223,14 +259,16 @@
         say('');
         return renderCreate(s);
       }
-      $('path').textContent = s.path + (s.variant ? '  (playing variant ' + s.variant + ')' : '');
+      $('path').textContent = state.seed ? 'Boxes in ' + s.path + (s.editing ? '  (editing in the game)' : '')
+        : s.path + (s.variant ? '  (playing variant ' + s.variant + ')' : '') + (s.given ? '  (a .bfrp: saving here extracts it to a folder)' : '');
+      $('export').hidden = state.seed || !s.export; $('export').title = s.export || '';
       state.segment = s.segment; state.variants = s.variants || {}; state.playing = s.variant || '';
-      state.base = s.base || null;
+      state.base = s.base || null; state.placements = s.placements || {};
       // a save names the revision it was made from; a stale one merges against these two copies
       state.rev = s.rev; state.loaded = JSON.stringify({ segment: s.segment, variants: state.variants });
       boxLists(state).forEach(function (l) { l.boxes.forEach(settle); });
-      render(); state.shown = JSON.stringify(collect()); say('Loaded.', 'ok');
-      return loadGhosts();
+      render(); if (!state.seed) renderPlacements(); state.shown = JSON.stringify(collect()); say('Loaded.', 'ok');
+      return state.seed ? null : loadGhosts();
     }).catch(function (e) { say('Could not reach the game: ' + e.message, 'bad'); });
   }
 
@@ -964,7 +1002,7 @@
     renderTargets();
     renderChips($('locChips'), end.locations || [], locName);
     renderLocationPicker();
-    renderBoxes($('boxes').querySelector('tbody'), seg.boxes || (seg.boxes = []), 'shared', true);
+    renderBoxLists();
     $('addGoal').style.display = end.box && end.box.length === 4 ? 'none' : '';
     renderGroups();
     renderVariants();
@@ -1090,6 +1128,33 @@
     });
   }
 
+  // the shared list and each variant's, every one bounded once there are variants
+  function renderBoxLists() {
+    var ids = Object.keys(state.variants);
+    $('sharedBoxes').classList.toggle('boxlist', ids.length > 0);
+    $('sharedHead').hidden = ids.length === 0;
+    renderBoxes($('boxes').querySelector('tbody'), state.segment.boxes || (state.segment.boxes = []), 'shared', true);
+    $('boxes').hidden = !$('boxes').querySelector('tbody').rows.length;
+    var root = $('variantBoxes'); root.innerHTML = '';
+    ids.forEach(function (id) {
+      var v = state.variants[id];
+      var part = document.createElement('div'); part.className = 'boxlist';
+      var head = document.createElement('div'); head.className = 'row';
+      head.appendChild(asText('Variant ' + (v.name || id) + (id === state.playing ? ' (running) ' : ' ')));
+      var note = document.createElement('span'); note.className = 'muted'; note.textContent = 'only this variant has these';
+      head.appendChild(note);
+      part.appendChild(head);
+      var add = document.createElement('button'); add.className = 'quiet'; add.textContent = 'add box'; add.style.margin = '6px 0'; add.onclick = function () { v.boxes.push(freshBox()); render(); };
+      part.appendChild(add);
+      var table = document.createElement('table'); table.className = 'boxes';
+      table.innerHTML = '<thead><tr><th>type/flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th></th><th></th><th></th></tr></thead><tbody></tbody>';
+      renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id, false);
+      table.hidden = !table.querySelector('tbody').rows.length;
+      part.appendChild(table);
+      root.appendChild(part);
+    });
+  }
+
   function td(child) { var c = document.createElement('td'); c.appendChild(child); return c; }
   function numInput(v, on) { var n = document.createElement('input'); n.type = 'number'; n.step = '0.01'; n.value = v; n.onchange = function () { on(num(n.value)); }; return n; }
 
@@ -1141,7 +1206,7 @@
       var box = document.createElement('div'); box.className = 'variant';
       var head = document.createElement('div');
       head.appendChild(document.createTextNode('Variant ' + id + (id === state.playing ? ' (running) ' : '  ') + ' name '));
-      var name = document.createElement('input'); name.type = 'text'; name.size = 30; name.value = v.name || ''; name.onchange = function () { v.name = name.value; };
+      var name = document.createElement('input'); name.type = 'text'; name.size = 30; name.value = v.name || ''; name.onchange = function () { v.name = name.value; renderBoxLists(); };
       head.appendChild(name);
       if (id !== state.playing) {
         var del = document.createElement('button'); del.className = 'danger'; del.textContent = 'remove variant'; del.style.marginLeft = '8px';
@@ -1152,14 +1217,6 @@
       var inv = document.createElement('div'); inv.className = 'row'; inv.appendChild(document.createTextNode('Starting items '));
       inv.appendChild(pickSelect({ get: function () { return v.inventory || []; }, set: function (l) { v.inventory = l; }, placeholder: 'given at the start' }));
       box.appendChild(inv);
-      var h = document.createElement('div'); h.className = 'muted'; h.style.marginTop = '6px'; h.textContent = 'Boxes only this variant has'; box.appendChild(h);
-      var add = document.createElement('button'); add.className = 'quiet'; add.textContent = 'add box'; add.style.margin = '6px 0'; add.onclick = function () { v.boxes.push(freshBox()); render(); };
-      box.appendChild(add);
-      var table = document.createElement('table');
-      table.innerHTML = '<thead><tr><th>type/flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th></th><th></th><th></th></tr></thead><tbody></tbody>';
-      renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id, false);
-      var wrap = document.createElement('div'); wrap.className = 'boxwrap'; wrap.appendChild(table);
-      box.appendChild(wrap);
       root.appendChild(box);
     });
   }
@@ -1181,6 +1238,8 @@
   $('addVariant').onclick = function () {
     var name = prompt('Variant name'); if (!name) return;
     var id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'variant';
+    // the id is a folder name, and Windows keeps these for devices
+    if (/^(con|prn|aux|nul|com\d|lpt\d)$/.test(id)) id += '-v';
     while (state.variants[id]) id += '-2';
     state.variants[id] = { name: name, inventory: [], boxes: [] };
     render();
@@ -1216,7 +1275,7 @@
     var mine = collect();
     put(mine, state.rev)
       .then(function () { return load(); })
-      .then(function () { say('Saved. A running attempt uses the new rules now; a changed start needs a retry.', 'ok'); })
+      .then(function () { say(state.seed ? 'Saved to the seed file.' : 'Saved. A running attempt uses the new rules now; a changed start needs a retry.', 'ok'); })
       .catch(function (e) { if (e.status === 409) return saveOver(mine, e.body); say('Save failed: ' + e.message, 'bad'); });
   };
 
@@ -1281,6 +1340,56 @@
     return doc;
   }
   $('reload').onclick = load;
+
+  // edits on the page the game has not saved, which an export or a placements swap would leave out
+  function dirty() { return !!state.shown && JSON.stringify(collect()) !== state.shown; }
+
+  $('export').onclick = function () {
+    if (dirty()) { say('Save to game first: the export takes what the game has saved.', 'bad'); return; }
+    say('Exporting…');
+    api('/api/export', { method: 'POST' })
+      .then(function (r) { say('Exported to ' + r.path, 'ok'); })
+      .catch(function (e) { say('Export failed: ' + e.message, 'bad'); });
+  };
+
+  // ---- placements: pasted or read from a local file, then sent as the whole list -----
+  function renderPlacements() {
+    var sel = $('placeTarget'), keep = sel.value;
+    sel.innerHTML = '';
+    var add = function (v, t) { var o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+    add('', 'the segment');
+    Object.keys(state.variants).forEach(function (id) { add(id, 'variant ' + (state.variants[id].name || id)); });
+    sel.value = keep; if (sel.value !== keep) sel.value = '';
+    $('placeText').value = state.placements[sel.value] || '';
+  }
+  $('placeTarget').onchange = function () { $('placeText').value = state.placements[$('placeTarget').value] || ''; };
+  $('placePick').onclick = function () { $('placeFile').value = ''; $('placeFile').click(); };
+  $('placeFile').onchange = function () {
+    var f = $('placeFile').files[0]; if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () { $('placeText').value = reader.result; say('Loaded ' + f.name + '. Replace placements to send it to the game.'); };
+    reader.onerror = function () { say('Could not read ' + f.name, 'bad'); };
+    reader.readAsText(f);
+  };
+  function boxCount(text) { return (text || '').split('\n').filter(function (l) { return /^\s*BX\|/i.test(l); }).length; }
+  $('placeReplace').onclick = function () {
+    if (dirty()) { say('Save to game first: the page has changes the game has not saved.', 'bad'); return; }
+    var variant = $('placeTarget').value, text = $('placeText').value;
+    var lost = boxCount(state.placements[variant]) - boxCount(text);
+    // box numbers are positional, so a list with fewer boxes renumbers what BM| lines point at
+    if (lost > 0 && !confirm('The new list has ' + lost + ' fewer box line(s) than the one in the game. Replace it anyway?')) return;
+    say('Replacing placements…');
+    api('/api/placements', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ variant: variant, text: text, rev: state.rev }) })
+      .then(function (r) {
+        return load().then(function () {
+          var skipped = r.skipped || [];
+          say('Placements replaced: ' + r.kept + ' line(s)' + (skipped.length ? '; left out ' + skipped.length + ' the game cannot use, ' + skipped[0]
+            + (skipped.length > 1 ? ' (hover for the rest)' : '') : '') + '.', skipped.length ? 'bad' : 'ok');
+          $('message').title = skipped.join('\n');
+        });
+      })
+      .catch(function (e) { if (e.status === 409) return offerReload(); say('Could not replace them: ' + e.message, 'bad'); });
+  };
 
   // checking in keeps this tab the game's editor pane, which the game reloads instead of opening another
   var pane = Math.random().toString(36).slice(2);

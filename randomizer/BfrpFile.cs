@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
-// A .bfrp practice container: segment.json, base save, run history, placements and ghosts in one
-// ZipStore, held in memory; Save() rewrites the whole file atomically.
+// A practice container: segment.json, base save, run history, placements and ghosts, held in memory.
+// A .bfrp is a ZipStore that Save() rewrites whole; a folder is a FolderStore that writes what changed.
 public class BfrpFile {
     public const string SegmentEntry = "segment.json";
 
@@ -18,7 +18,14 @@ public class BfrpFile {
 
     public JsonValue Segment;
 
-    private ZipStore zip;
+    private IEntryStore store;
+
+    // a save since loading wrote something an export carries; only a folder ever says so
+    public bool Edited;
+
+    public bool IsFolder {
+        get { return store is FolderStore; }
+    }
 
     public struct Run {
         public string Date;
@@ -31,40 +38,41 @@ public class BfrpFile {
     public static BfrpFile Load(string path) {
         var file = new BfrpFile();
         file.Path = path;
-        file.zip = ZipStore.Read(path);
-        if (!file.zip.Has(SegmentEntry) || !file.zip.Has(SaveEntry)) {
-            throw new System.IO.IOException(path + ": not a practice file (missing "
-                + (file.zip.Has(SegmentEntry) ? SaveEntry : SegmentEntry) + ")");
+        file.store = System.IO.Directory.Exists(path) ? (IEntryStore)FolderStore.Read(path) : ZipStore.Read(path);
+        if (!file.store.Has(SegmentEntry) || !file.store.Has(SaveEntry)) {
+            throw new System.IO.IOException(path + ": not a practice segment (missing "
+                + (file.store.Has(SegmentEntry) ? SaveEntry : SegmentEntry) + ")");
         }
 
-        file.Segment = JsonValue.Parse(Encoding.UTF8.GetString(file.zip.Get(SegmentEntry)));
+        file.Segment = JsonValue.Parse(Encoding.UTF8.GetString(file.store.Get(SegmentEntry)));
         return file;
     }
 
+    // a path ending in .bfrp makes a zip, any other a folder
     public static BfrpFile Create(string path, JsonValue segment, byte[] baseSave) {
         var file = new BfrpFile();
         file.Path = path;
-        file.zip = new ZipStore();
+        file.store = path.EndsWith(".bfrp", StringComparison.OrdinalIgnoreCase) ? (IEntryStore)new ZipStore() : new FolderStore();
         file.Segment = segment;
-        file.zip.Set(SegmentEntry, new byte[0]);
-        file.zip.Set(SaveEntry, baseSave);
+        file.store.Set(SegmentEntry, new byte[0]);
+        file.store.Set(SaveEntry, baseSave);
         return file;
     }
 
     public byte[] BaseSave {
-        get { return zip.Get(SaveEntry); }
+        get { return store.Get(SaveEntry); }
     }
 
     // a new start for every attempt from here on; history and ghosts stay as they were
     public void SetBaseSave(byte[] save) {
-        zip.Set(SaveEntry, save);
+        store.Set(SaveEntry, save);
     }
 
     // --- placements.bfr, the root's or a variant's: seed lines and box lines ---
 
     public List<string> PlacementLines(string variant) {
         var lines = new List<string>();
-        var raw = zip.Get(Where(variant, PlacementsEntry));
+        var raw = store.Get(Where(variant, PlacementsEntry));
         if (raw == null) {
             return lines;
         }
@@ -82,14 +90,14 @@ public class BfrpFile {
     public void SetPlacementLines(string variant, List<string> lines) {
         var entry = Where(variant, PlacementsEntry);
         if (lines.Count == 0) {
-            if (zip.Has(entry)) {
-                zip.Remove(entry);
+            if (store.Has(entry)) {
+                store.Remove(entry);
             }
 
             return;
         }
 
-        zip.Set(entry, Encoding.UTF8.GetBytes(string.Join("\n", lines.ToArray()) + "\n"));
+        store.Set(entry, Encoding.UTF8.GetBytes(string.Join("\n", lines.ToArray()) + "\n"));
     }
 
     // a bad box line is reported and skipped, never fatal to the file
@@ -252,7 +260,7 @@ public class BfrpFile {
     public List<string> Variants {
         get {
             var found = new List<string>();
-            foreach (var name in zip.Names) {
+            foreach (var name in store.Names) {
                 if (!name.StartsWith(VariantRoot) || !name.EndsWith("/" + SegmentEntry)) {
                     continue;
                 }
@@ -277,12 +285,12 @@ public class BfrpFile {
             return JsonValue.Null();
         }
 
-        var raw = zip.Get(Where(variant, SegmentEntry));
+        var raw = store.Get(Where(variant, SegmentEntry));
         return raw == null ? JsonValue.Null() : JsonValue.Parse(Encoding.UTF8.GetString(raw));
     }
 
     public void SetVariantSegment(string variant, JsonValue json) {
-        zip.Set(Where(variant, SegmentEntry), Encoding.UTF8.GetBytes(json.Serialize(true)));
+        store.Set(Where(variant, SegmentEntry), Encoding.UTF8.GetBytes(json.Serialize(true)));
     }
 
     // where a variant's own files live; the root when there is no variant
@@ -291,28 +299,44 @@ public class BfrpFile {
     }
 
     public byte[] GetGhost(string variant, string slot) {
-        return zip.Get(Where(variant, "ghosts/" + slot + ".ghost"));
+        return store.Get(Where(variant, "ghosts/" + slot + ".ghost"));
     }
 
     public void SetGhost(string variant, string slot, byte[] data) {
-        zip.Set(Where(variant, "ghosts/" + slot + ".ghost"), data);
+        store.Set(Where(variant, "ghosts/" + slot + ".ghost"), data);
     }
 
     public void RemoveGhost(string variant, string slot) {
-        zip.Remove(Where(variant, "ghosts/" + slot + ".ghost"));
+        store.Remove(Where(variant, "ghosts/" + slot + ".ghost"));
     }
 
     // the slot names with a ghost stored, for this variant
     public List<string> GhostSlots(string variant) {
         var prefix = Where(variant, "ghosts/");
         var slots = new List<string>();
-        foreach (var name in zip.Names) {
+        foreach (var name in store.Names) {
             if (name.StartsWith(prefix) && name.EndsWith(".ghost") && name.IndexOf('/', prefix.Length) < 0) {
                 slots.Add(name.Substring(prefix.Length, name.Length - prefix.Length - ".ghost".Length));
             }
         }
 
         return slots;
+    }
+
+    // An export shares the segment, not its history: no runs.csv, and of the ghosts only the pinned ones.
+    public static bool Exported(string entry) {
+        var own = entry;
+        if (own.StartsWith(VariantRoot)) {
+            var slash = own.IndexOf('/', VariantRoot.Length);
+            own = slash < 0 ? own : own.Substring(slash + 1);
+        }
+
+        if (own == RunsEntry) {
+            return false;
+        }
+
+        var ghost = own.StartsWith("ghosts/") && own.EndsWith(".ghost") && own.IndexOf('/', "ghosts/".Length) < 0;
+        return !ghost || own == "ghosts/pinned.ghost";
     }
 
     // everything the variant owns: its json, history and ghosts
@@ -322,9 +346,9 @@ public class BfrpFile {
         }
 
         var prefix = VariantRoot + variant + "/";
-        foreach (var name in new List<string>(zip.Names)) {
+        foreach (var name in new List<string>(store.Names)) {
             if (name.StartsWith(prefix)) {
-                zip.Remove(name);
+                store.Remove(name);
             }
         }
     }
@@ -339,7 +363,7 @@ public class BfrpFile {
 
     public List<Run> RunsFor(string variant) {
         var runs = new List<Run>();
-        var raw = zip.Get(Where(variant, RunsEntry));
+        var raw = store.Get(Where(variant, RunsEntry));
         if (raw == null) {
             return runs;
         }
@@ -363,7 +387,7 @@ public class BfrpFile {
     }
 
     public void AppendRun(DateTime when, int pickups, long ms) {
-        var raw = zip.Get(Where(Variant, RunsEntry));
+        var raw = store.Get(Where(Variant, RunsEntry));
         var text = raw == null ? "date,pickups,ms\n" : Encoding.UTF8.GetString(raw);
         if (!text.EndsWith("\n")) {
             text += "\n";
@@ -372,7 +396,7 @@ public class BfrpFile {
         text += when.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
             + "," + pickups.ToString(CultureInfo.InvariantCulture)
             + "," + ms.ToString(CultureInfo.InvariantCulture) + "\n";
-        zip.Set(Where(Variant, RunsEntry), Encoding.UTF8.GetBytes(text));
+        store.Set(Where(Variant, RunsEntry), Encoding.UTF8.GetBytes(text));
     }
 
     public long BestMs() {
@@ -415,7 +439,9 @@ public class BfrpFile {
     public void Save() {
         TrimTombstones();
         ModernTombstones();
-        zip.Set(SegmentEntry, Encoding.UTF8.GetBytes(Segment.Serialize(true)));
-        zip.Write(Path);
+        store.Set(SegmentEntry, Encoding.UTF8.GetBytes(Segment.Serialize(true)));
+        store.Write(Path);
+        var folder = store as FolderStore;
+        Edited |= folder != null && folder.Wrote.Exists(Exported);
     }
 }

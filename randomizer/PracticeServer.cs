@@ -290,6 +290,15 @@ public static class PracticeServer {
             if (stale) {
                 status = 409;
             }
+        } else if (method == "PUT" && path == "/api/placements") {
+            var text = Encoding.UTF8.GetString(body);
+            var stale = false;
+            content = Reply(OnMain(delegate { return WritePlacements(text, ref stale); }, out error), error, out status);
+            if (stale) {
+                status = 409;
+            }
+        } else if (method == "POST" && path == "/api/export") {
+            content = Reply(OnMain(Export, out error), error, out status);
         } else if (method == "GET" && path == "/api/pane") {
             content = Encoding.UTF8.GetBytes(Pane(Arg(args, "id"), Arg(args, "new") == "1",
                 Arg(args, "see") == "1"));
@@ -562,13 +571,15 @@ public static class PracticeServer {
 
     private static void FetchTiles() {
         try {
+            // the folder as it was at the start: a settings reload mid-run must not send tiles elsewhere
+            var root = TileDir;
             var missing = new List<int[]>();
             var total = 0;
             for (var z = 0; z < TileZooms; z++) {
                 for (var x = 0; x < Cols(z); x++) {
                     for (var y = 0; y < Rows(z); y++) {
                         total++;
-                        var file = Path.Combine(Path.Combine(Path.Combine(TileDir, z.ToString()), x.ToString()), y + ".png");
+                        var file = Path.Combine(Path.Combine(Path.Combine(root, z.ToString()), x.ToString()), y + ".png");
                         if (!File.Exists(file)) {
                             missing.Add(new[] { z, x, y });
                         }
@@ -590,17 +601,22 @@ public static class PracticeServer {
             }
 
             tilesNote = "fetching the map";
-            Randomizer.log("practice: fetching " + missing.Count + " map tiles into " + TileDir);
+            Randomizer.log("practice: fetching " + missing.Count + " map tiles into " + root);
             var failures = 0;
             foreach (var tile in missing) {
-                var dir = Path.Combine(Path.Combine(TileDir, tile[0].ToString()), tile[1].ToString());
+                var dir = Path.Combine(Path.Combine(root, tile[0].ToString()), tile[1].ToString());
                 Directory.CreateDirectory(dir);
                 // written beside the tile and moved in whole, since Tile serves whatever file is there
                 var file = Path.Combine(dir, tile[2] + ".png");
                 var part = file + ".part";
                 var status = NativeWebSocket.HttpDownload(TileHost + tile[0] + "/" + tile[1] + "/" + tile[2] + ".png", part);
                 if (status == 200 && File.Exists(part) && new FileInfo(part).Length > 0) {
-                    File.Move(part, file);
+                    if (File.Exists(file)) {
+                        File.Delete(part);
+                    } else {
+                        File.Move(part, file);
+                    }
+
                     tilesHave++;
                     continue;
                 }
@@ -631,6 +647,10 @@ public static class PracticeServer {
     // what the page edits: the root json and every variant's, in the page's shape
     private static string ReadSegment() {
         var file = PracticeController.File;
+        if (file == null && PracticeEditor.Seed) {
+            return ReadSeed();
+        }
+
         var reply = JsonValue.NewObject();
         reply.Set("session", JsonValue.Of(file != null));
         reply.Set("folder", JsonValue.Of(FolderPath()));
@@ -643,6 +663,12 @@ public static class PracticeServer {
         }
 
         reply.Set("path", JsonValue.Of(file.Path));
+        // a given .bfrp is extracted on its first save; only a folder has an export
+        reply.Set("given", JsonValue.Of(!file.IsFolder));
+        if (file.IsFolder) {
+            reply.Set("export", JsonValue.Of(PracticeFolder.ExportPath(file.Path)));
+        }
+
         var header = Header(file.BaseSave);
         if (header != null) {
             reply.Set("base", header);
@@ -650,7 +676,20 @@ public static class PracticeServer {
         reply.Set("variant", JsonValue.Of(file.Variant ?? ""));
         reply.Set("editing", JsonValue.Of(PracticeEditor.Active));
         Current(file, reply);
+        reply.Set("placements", Placements(file));
         return reply.Serialize(false);
+    }
+
+    // each placements.bfr as text, the shared one under ""
+    private static JsonValue Placements(BfrpFile file) {
+        var texts = JsonValue.NewObject();
+        var ids = file.Variants;
+        ids.Insert(0, "");
+        foreach (var id in ids) {
+            texts.Set(id, JsonValue.Of(string.Join("\n", file.PlacementLines(id).ToArray())));
+        }
+
+        return texts;
     }
 
     // for the page's help; a folder setting the path API refuses is shown as written
@@ -673,7 +712,7 @@ public static class PracticeServer {
 
         // FNV-1a of exactly what the page is shown
         var hash = 14695981039346656037UL;
-        foreach (var b in Encoding.UTF8.GetBytes(segment.Serialize(false) + variants.Serialize(false))) {
+        foreach (var b in Encoding.UTF8.GetBytes(segment.Serialize(false) + variants.Serialize(false) + Placements(file).Serialize(false))) {
             hash = (hash ^ b) * 1099511628211UL;
         }
 
@@ -757,11 +796,16 @@ public static class PracticeServer {
 
     // the page's copy replaces the file's, is saved, and the live session re-parses it
     private static string WriteSegment(string text, ref bool stale) {
-        var file = PracticeController.File;
-        if (file == null) {
-            throw new Exception("no practice session is running");
+        if (PracticeController.File == null && PracticeEditor.Seed) {
+            return WriteSeed(text, ref stale);
         }
 
+        // a seed page left open after its editor closed
+        if (PracticeController.File == null && SeedBoxes.Current != null) {
+            throw new Exception("the seed box editor is closed; open it in the game again to save boxes from here");
+        }
+
+        var file = Editable();
         var incoming = JsonValue.Parse(text);
         // a copy made before the game changed the segment gets the current one back, to merge
         var now = JsonValue.NewObject();
@@ -791,6 +835,11 @@ public static class PracticeServer {
         var variants = incoming["variants"];
         foreach (var id in variants.Keys) {
             if (variants[id].IsObject) {
+                // an id names a folder inside the container
+                if (FolderStore.Parts(id).Length != 1) {
+                    throw new Exception("'" + id + "' is not a variant id");
+                }
+
                 ids.Add(id);
                 variantBoxes.Add(TakeBoxes(variants[id], false));
                 variantJson.Add(Copy(variants[id], "boxes"));
@@ -811,6 +860,75 @@ public static class PracticeServer {
         return "{\"ok\":true}";
     }
 
+    // --- the loaded seed's boxes, while the box editor has them open outside practice ---
+
+    // the page's shape with a boxes list and nothing else: no end, no variants
+    private static string ReadSeed() {
+        var reply = JsonValue.NewObject();
+        reply.Set("session", JsonValue.Of(true));
+        reply.Set("seed", JsonValue.Of(true));
+        reply.Set("folder", JsonValue.Of(FolderPath()));
+        reply.Set("path", JsonValue.Of(Path.GetFullPath(SeedBoxes.Current.Path)));
+        reply.Set("editing", JsonValue.Of(PracticeEditor.Active));
+        SeedCurrent(reply);
+        return reply.Serialize(false);
+    }
+
+    private static void SeedCurrent(JsonValue reply) {
+        var segment = JsonValue.NewObject();
+        var list = JsonValue.NewArray();
+        foreach (var box in SeedBoxes.Current.Boxes) {
+            list.Add(box.ToJson());
+        }
+
+        segment.Set("boxes", list);
+        // FNV-1a of exactly what the page is shown
+        var hash = 14695981039346656037UL;
+        foreach (var b in Encoding.UTF8.GetBytes(segment.Serialize(false))) {
+            hash = (hash ^ b) * 1099511628211UL;
+        }
+
+        reply.Set("segment", segment);
+        reply.Set("variants", JsonValue.NewObject());
+        reply.Set("rev", JsonValue.Of(hash.ToString("x16")));
+    }
+
+    // the page's list becomes the seed's box lines, each in its place, and goes straight to the file
+    private static string WriteSeed(string text, ref bool stale) {
+        var incoming = JsonValue.Parse(text);
+        var now = JsonValue.NewObject();
+        SeedCurrent(now);
+        if (incoming["rev"].IsString && incoming["rev"].Str != now["rev"].Str) {
+            stale = true;
+            now.Set("error", JsonValue.Of("the game changed these boxes since the page loaded them"));
+            return now.Serialize(false);
+        }
+
+        var segment = incoming["segment"];
+        if (!segment.IsObject) {
+            throw new Exception("segment must be an object");
+        }
+
+        SeedBoxes.Current.SetBoxes(TakeBoxes(segment, false));
+        SeedBoxes.Current.Save();
+        SeedBoxes.Current.Apply();
+        Randomizer.log("seed boxes: saved from the editor page");
+        return "{\"ok\":true}";
+    }
+
+    // the running segment, extracted to a folder first if it is a given .bfrp
+    private static BfrpFile Editable() {
+        if (PracticeController.File == null) {
+            throw new Exception("no practice session is running");
+        }
+
+        if (!PracticeController.MakeEditable()) {
+            throw new Exception("could not make an editable copy of the .bfrp; see randomizer.log");
+        }
+
+        return PracticeController.File;
+    }
+
     // a code the parse would log and skip is the page's to fix, so it is refused here
     private static void CheckPickups(JsonValue codes) {
         for (var i = 0; i < codes.Count; i++) {
@@ -821,11 +939,7 @@ public static class PracticeServer {
     }
 
     private static string DeleteVariant(string id) {
-        var file = PracticeController.File;
-        if (file == null) {
-            throw new Exception("no practice session is running");
-        }
-
+        var file = Editable();
         if (id == file.Variant) {
             throw new Exception("this variant is the one running; exit the session first");
         }
@@ -838,6 +952,61 @@ public static class PracticeServer {
         file.Save();
         Randomizer.log("practice: variant " + id + " removed from the editor page");
         return "{\"ok\":true}";
+    }
+
+    // Pasted lines replace the shared or one variant's placements.bfr; what an attempt cannot use is left out and named.
+    private static string WritePlacements(string text, ref bool stale) {
+        var incoming = JsonValue.Parse(text);
+        var variant = incoming["variant"].IsString ? incoming["variant"].Str : "";
+        var skipped = new List<string>();
+        var lines = PracticeSegment.ReadPlacements(incoming["text"].IsString ? incoming["text"].Str : "", variant != "", skipped);
+        var file = Editable();
+        var now = JsonValue.NewObject();
+        Current(file, now);
+        if (incoming["rev"].IsString && incoming["rev"].Str != now["rev"].Str) {
+            stale = true;
+            now.Set("error", JsonValue.Of("the game changed this segment since the page loaded it"));
+            return now.Serialize(false);
+        }
+
+        if (variant != "" && !file.Variants.Contains(variant)) {
+            throw new Exception("there is no variant " + variant);
+        }
+
+        file.SetPlacementLines(variant, lines);
+        file.Save();
+        PracticeController.Reparse();
+        Randomizer.log("practice: " + lines.Count + " placement lines replaced from the editor page, " + skipped.Count + " skipped");
+        var reply = JsonValue.NewObject();
+        reply.Set("ok", JsonValue.Of(true));
+        reply.Set("kept", JsonValue.Of(lines.Count));
+        var list = JsonValue.NewArray();
+        foreach (var line in skipped) {
+            list.Add(JsonValue.Of(line));
+        }
+
+        reply.Set("skipped", list);
+        return reply.Serialize(false);
+    }
+
+    // the running folder's shareable .bfrp, from what it has saved
+    private static string Export() {
+        var file = PracticeController.File;
+        if (file == null) {
+            throw new Exception("no practice session is running");
+        }
+
+        if (!file.IsFolder) {
+            throw new Exception("this segment is a .bfrp already: share it as it is");
+        }
+
+        var to = PracticeFolder.ExportPath(file.Path);
+        PracticeFolder.Export(file.Path, to, false);
+        Randomizer.log("practice: exported " + to + " from the editor page");
+        var reply = JsonValue.NewObject();
+        reply.Set("ok", JsonValue.Of(true));
+        reply.Set("path", JsonValue.Of(to));
+        return reply.Serialize(false);
     }
 
     // --- ghosts ----------------------------------------------------------------------
@@ -984,12 +1153,9 @@ public static class PracticeServer {
 
     // the running segment starts from another of the game's saves, and the attempt restarts on it
     private static string ReplaceSave(string text) {
-        var file = PracticeController.File;
-        if (file == null) {
-            throw new Exception("no practice session is running");
-        }
-
-        file.SetBaseSave(SaveBytes(JsonValue.Parse(text)));
+        var save = SaveBytes(JsonValue.Parse(text));
+        var file = Editable();
+        file.SetBaseSave(save);
         file.Save();
         // parked behind the title the slot holds the run the player left: no restart, the new save waits
         var game = GameController.Instance;

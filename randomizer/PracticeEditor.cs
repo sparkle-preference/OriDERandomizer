@@ -1,13 +1,18 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using Game;
 using UnityEngine;
 
-// The in-game half of the segment editor: boxes drawn with the mouse over the frozen world,
-// kept as BX lines in the container's placements.bfr. Create snapshots a save into a new container.
+// The in-game box editor: boxes drawn with the mouse over the frozen world, kept as BX lines in a practice
+// container's placements.bfr or, outside practice, the loaded seed. Create snapshots a save into a new container.
 public static class PracticeEditor {
     public static bool Active;
+
+    // editing the loaded seed's boxes rather than a practice segment's
+    public static bool Seed;
 
     // the rectangle being dragged, in world units
     public static RandomizerBox? Draft;
@@ -21,10 +26,68 @@ public static class PracticeEditor {
     // with a variant running its own list takes the boxes, unless V says the shared one
     private static bool toVariant = true;
 
-    // what Z takes back: the box just placed, and whose list it went to
-    private static RandomizerBox lastBox;
+    // M: the mouse moves and resizes boxes instead of drawing them
+    private static bool adjusting;
 
-    private static string lastTarget;
+    // an adjust drag's box: its list, index and rect when grabbed, and the edges that move
+    private static string grabTarget;
+
+    private static int grabIndex = -1;
+
+    private static RandomizerBox grabBox;
+
+    private static Rect grabFrom;
+
+    private static int grabEdges;
+
+    // what the cursor was last over while moving, read again only once it moves or the boxes change
+    private static Vector2 hoverAt;
+
+    // the lists hover reads, and what they were read from: a reparse makes a new segment, a seed edit a new revision
+    private static Dictionary<string, List<RandomizerBox>> hoverLists;
+
+    private static object hoverSource;
+
+    private static RandomizerBox hoverBox;
+
+    private static int hoverEdges;
+
+    // what the highlight shows, which outlives the hover while it fades out, and how strongly
+    private static RandomizerBox lit;
+
+    private static int litEdges;
+
+    private static float glow;
+
+    // when the fade in finished and the pulse began; negative while fading
+    private static float fullAt = -1f;
+
+    // the fade in and out, and the pulse between full and half after it
+    private const float FadeSeconds = 0.5f;
+
+    private const float PulseSeconds = 1f;
+
+    // the hover's tint, and the resize preview's fill when its box is invisible
+    private static readonly Color Tint = new Color(1f, 1f, 1f, 0.35f);
+
+    private static readonly Color DraftFill = new Color32(255, 255, 153, 64);
+
+    private const int Left = 1, Right = 2, Bottom = 4, Top = 8;
+
+    // what Z takes back: a box's list and index, and the box it replaced (null: it was added)
+    private static string undoTarget;
+
+    private static int undoIndex = -1;
+
+    private static RandomizerBox undoOld;
+
+    // Ori's place when the seed editor opened, and whether right click has moved Ori since
+    private static Vector3 seedFrom;
+
+    private static bool seedMoved;
+
+    // the bind pressed with unsaved edits asks first; pressed again it drops them
+    private static bool leaveArmed;
 
     private const float PanSpeed = 24f;
 
@@ -37,21 +100,143 @@ public static class PracticeEditor {
             return;
         }
 
+        var given = !PracticeController.File.IsFolder;
+        if (!PracticeController.MakeEditable()) {
+            return;
+        }
+
         PracticeController.Current = PracticeController.Phase.Editing;
         PracticeController.Freeze();
-        Active = true;
-        Draft = null;
-        dragging = false;
-        lastBox = null;
+        Seed = false;
+        Open();
         // the server first, so the help can say where the page is
         PracticeServer.OpenOnce();
         Help();
+        if (given) {
+            Say("Extracted to the folder " + PracticeFolder.NameOf(PracticeController.File.Path) + " for editing", 300);
+        }
     }
 
-    public static void Stop() {
-        Active = false;
+    // The loaded seed's boxes, from the Edit Seed Boxes bind or the debug menu; the bind again leaves.
+    public static void ToggleSeed() {
+        if (Active && Seed) {
+            if (SeedBoxes.Current != null && SeedBoxes.Current.Dirty && !leaveArmed) {
+                leaveArmed = true;
+                Say("Unsaved box edits: Enter saves them, " + RandomizerRebinding.EditSeedBoxes + " again throws them away", 360);
+                return;
+            }
+
+            LeaveSeed();
+            return;
+        }
+
+        BeginSeed();
+    }
+
+    public static void BeginSeed() {
+        if (Active) {
+            return;
+        }
+
+        if (PracticeController.Active) {
+            Randomizer.printInfo("Seed boxes can't be edited during a practice session", 300);
+            return;
+        }
+
+        if (Characters.Sein == null || GameController.Instance == null || GameController.Instance.GameInTitleScreen
+                || GameController.Instance.IsLoadingGame) {
+            return;
+        }
+
+        if (SeedBoxes.Synced) {
+            Randomizer.printInfo("This seed is synced with the server, so its boxes can't be edited here.\n"
+                + "Remove the Sync flag from the seed's first line if you want to do this.", 480);
+            return;
+        }
+
+        try {
+            SeedBoxes.Current = SeedBoxes.Load(Randomizer.SeedFilePath);
+        } catch (Exception e) {
+            Randomizer.LogError("seed boxes: could not read " + Randomizer.SeedFilePath + ": " + e.Message);
+            Randomizer.printInfo("Could not read the seed file; see randomizer.log", 300);
+            return;
+        }
+
+        Seed = true;
+        seedFrom = Characters.Sein.Position;
+        seedMoved = false;
+        tool = "item";
+        PracticeController.Freeze();
+        Open();
+        SeedBoxes.Current.Apply();
+        Help();
+    }
+
+    private static void Open() {
+        Active = true;
         Draft = null;
         dragging = false;
+        adjusting = false;
+        grabIndex = -1;
+        undoIndex = -1;
+        leaveArmed = false;
+        hoverLists = null;
+    }
+
+    // what is drawn over the world goes with the editor, whichever way it is left
+    public static void Stop() {
+        DropGrab();
+        Draft?.DeInit();
+        Draft = null;
+        Highlight.Hide();
+        lit = null;
+        Active = false;
+        dragging = false;
+    }
+
+    // the retry bind in the seed editor: back to the game, unsaved edits dropped
+    public static void LeaveUnsaved() {
+        if (!Active || !Seed) {
+            return;
+        }
+
+        var dropped = SeedBoxes.Current != null && SeedBoxes.Current.Dirty;
+        LeaveSeed();
+        if (dropped) {
+            Randomizer.printInfo("Unsaved box edits thrown away", 180);
+        }
+    }
+
+    // back to the game where it froze, the file's own boxes in force
+    private static void LeaveSeed() {
+        if (SeedBoxes.Current != null && SeedBoxes.Current.Dirty) {
+            SeedBoxes.Current.Reload();
+            SeedBoxes.Current.Apply();
+        }
+
+        Stop();
+        Seed = false;
+        PracticeController.Resume();
+        Randomizer.clearMessage();
+        if (seedMoved && Characters.Sein != null) {
+            Randomizer.WarpTo(seedFrom, 0);
+        }
+    }
+
+    // quitting to the title mid-edit: nothing is saved and the freeze must not ride along
+    public static void OnReturnToTitle() {
+        if (!Seed) {
+            return;
+        }
+
+        if (SeedBoxes.Current != null && SeedBoxes.Current.Dirty) {
+            SeedBoxes.Current.Reload();
+            SeedBoxes.Current.Apply();
+        }
+
+        Stop();
+        Seed = false;
+        PracticeController.Resume();
     }
 
     // save what was drawn and run it; with nothing to end the run yet, stay
@@ -65,8 +250,13 @@ public static class PracticeEditor {
             return;
         }
 
+        if (Seed) {
+            LeaveSeed();
+            return;
+        }
+
         if (PracticeController.Segment != null && !PracticeController.Segment.HasEnd) {
-            Say("Saved. Nothing ends this segment yet: draw a goal box with 1, or set the end condition on the page", 600);
+            Say("Saved. Nothing ends this segment yet: draw a goal box with 4, or set the end condition on the page", 600);
             return;
         }
 
@@ -77,16 +267,27 @@ public static class PracticeEditor {
     // save what was drawn and keep editing
     public static void Save() {
         if (Active && Write()) {
-            Say("Segment saved", 180);
+            leaveArmed = false;
+            Say(Seed ? "Boxes saved to " + Path.GetFileName(SeedBoxes.Current.Path) : "Segment saved", 180);
         }
     }
 
     private static bool Write() {
         try {
-            PracticeController.File.Save();
+            if (Seed) {
+                // with nothing unsaved the file is left alone, so reload and Enter leave it as found
+                if (SeedBoxes.Current.Dirty) {
+                    SeedBoxes.Current.Save();
+                }
+
+                SeedBoxes.Current.Apply();
+            } else {
+                PracticeController.File.Save();
+            }
+
             return true;
         } catch (Exception e) {
-            Randomizer.LogError("practice: could not save the segment: " + e.Message);
+            Randomizer.LogError("practice: could not save the " + (Seed ? "seed's boxes" : "segment") + ": " + e.Message);
             return false;
         }
     }
@@ -98,15 +299,23 @@ public static class PracticeEditor {
         }
 
         try {
-            var fresh = BfrpFile.Load(PracticeController.File.Path);
-            fresh.Variant = PracticeController.File.Variant;
-            PracticeController.File = fresh;
-            lastBox = null;
-            PracticeController.Reparse();
-            Say("Segment reloaded from disk", 180);
+            if (Seed) {
+                SeedBoxes.Current.Reload();
+                SeedBoxes.Current.Apply();
+            } else {
+                var fresh = BfrpFile.Load(PracticeController.File.Path);
+                fresh.Variant = PracticeController.File.Variant;
+                fresh.Edited = PracticeController.File.Edited;
+                PracticeController.File = fresh;
+                PracticeController.Reparse();
+            }
+
+            undoIndex = -1;
+            leaveArmed = false;
+            Say(Seed ? "Boxes reloaded from the seed file" : "Segment reloaded from disk", 180);
             return true;
         } catch (Exception e) {
-            Randomizer.LogError("practice: could not reload the segment: " + e.Message);
+            Randomizer.LogError("practice: could not reload the " + (Seed ? "seed's boxes" : "segment") + ": " + e.Message);
             return false;
         }
     }
@@ -114,6 +323,7 @@ public static class PracticeEditor {
     public static void Tick() {
         Draft?.DeInit();
         Draft = null;
+        Highlight.Hide();
 
         if (!Active || Characters.Sein == null || GameController.Instance == null || GameController.Instance.GameInTitleScreen) {
             return;
@@ -126,6 +336,8 @@ public static class PracticeEditor {
                 Save();
             } else if (UnityEngine.Input.GetKeyDown(KeyCode.R)) {
                 Reload();
+            } else if (UnityEngine.Input.GetKeyDown(KeyCode.C)) {
+                CopyLines();
             }
         } else {
             Pan();
@@ -133,16 +345,22 @@ public static class PracticeEditor {
 
         // number keys: the letters are taken by the pan
         if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha1) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad1)) {
-            Tool("goal");
+            Tool("item");
         } else if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha2) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad2)) {
-            Tool("kill");
-        } else if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha3) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad3)) {
-            Tool("hint");
-        } else if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha4) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad4)) {
             Tool("solid");
+        } else if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha3) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad3)) {
+            Tool("kill");
+        } else if ((UnityEngine.Input.GetKeyDown(KeyCode.Alpha4) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad4)) && !Seed) {
+            Tool("goal");
         } else if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha5) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad5)) {
             PracticeServer.Open();
-        } else if (UnityEngine.Input.GetKeyDown(KeyCode.V)) {
+        } else if (UnityEngine.Input.GetKeyDown(KeyCode.M)) {
+            adjusting = !adjusting;
+            DropGrab();
+            dragging = false;
+            Randomizer.clearMessage();
+            Help();
+        } else if (UnityEngine.Input.GetKeyDown(KeyCode.V) && !Seed) {
             toVariant = !toVariant;
             Randomizer.clearMessage();
             Help();
@@ -165,11 +383,27 @@ public static class PracticeEditor {
         // right click stands Ori where you are looking, which is how the scenes there load
         if (Core.Input.RightClick.OnPressed && !Game.UI.MainMenuVisible) {
             Characters.Sein.Position = at;
+            seedMoved = Seed;
         }
 
         if (Core.Input.LeftClick.OnPressed && !Game.UI.MainMenuVisible) {
-            dragFrom = at;
-            dragging = true;
+            if (adjusting) {
+                Grab(at);
+            } else {
+                dragFrom = at;
+                dragging = true;
+            }
+        }
+
+        if (grabIndex >= 0) {
+            Adjust(at);
+            return;
+        }
+
+        if (adjusting && !Game.UI.MainMenuVisible) {
+            Hover(at);
+        } else {
+            lit = null;
         }
 
         if (!dragging) {
@@ -191,17 +425,44 @@ public static class PracticeEditor {
 
     private static void Tool(string name) {
         tool = name;
+        adjusting = false;
         // the legend is what says which box you are drawing, so it changes as you change it
         Randomizer.clearMessage();
         Help();
     }
 
     private static bool HasVariant {
-        get { return PracticeController.File != null && !string.IsNullOrEmpty(PracticeController.File.Variant); }
+        get { return !Seed && PracticeController.File != null && !string.IsNullOrEmpty(PracticeController.File.Variant); }
     }
 
     private static bool TargetVariant {
         get { return toVariant && HasVariant; }
+    }
+
+    // the list a new box joins
+    private static string Target {
+        get { return TargetVariant ? PracticeController.File.Variant : ""; }
+    }
+
+    // the lists the cursor finds boxes in, the variant's first
+    private static string[] Targets {
+        get { return HasVariant ? new[] { PracticeController.File.Variant, "" } : new[] { "" }; }
+    }
+
+    // a segment's shared list or a variant's, or the seed's own
+    private static List<RandomizerBox> BoxesOf(string target) {
+        return Seed ? new List<RandomizerBox>(SeedBoxes.Current.Boxes) : PracticeController.File.Boxes(target);
+    }
+
+    private static void Put(string target, List<RandomizerBox> boxes) {
+        leaveArmed = false;
+        if (Seed) {
+            SeedBoxes.Current.SetBoxes(boxes);
+            SeedBoxes.Current.Apply();
+        } else {
+            PracticeController.File.SetBoxes(target, boxes);
+            PracticeController.Reparse();
+        }
     }
 
     // the legend's own duration, less a moment, so it never blinks out between showings
@@ -218,12 +479,33 @@ public static class PracticeEditor {
 
     private static void Help() {
         helped = Time.unscaledTime;
+        var doing = adjusting ? "MOVING BOXES   M: draw instead"
+            : "drag to draw " + (tool == "item" ? "an " : "a ") + tool + " box   M: move and resize";
+        // moving has no tools, so their row says how to move instead
+        var keys = (adjusting ? "click&drag to move/resize boxes"
+            : Seed ? "1: item   2: solid   3: kill" : "1: item   2: solid   3: kill   4: goal")
+            + "   Z: undo   X: delete under cursor   Ctrl+C: copy box lines\n";
+        if (Seed) {
+            Randomizer.printQuiet("EDITING SEED BOXES - " + doing + "\n" + keys
+                + "WASD: pan   right click: look here   Ctrl+S: save   Ctrl+R: reload from the file   Enter: save and play\n"
+                + "[[Retry Practice Segment]]: leave without saving   5: fill in the boxes in a browser"
+                + (PracticeServer.Running ? "   " + PracticeServer.Url : ""), 1800);
+            return;
+        }
+
         var where = !HasVariant ? "" : "\n"
-            + (TargetVariant ? "boxes go to this variant" : "boxes go to the shared list") + "   V: switch";
-        Randomizer.printQuiet("EDITING - drag to draw a " + tool + " box" + where + "\n"
-            + "1: goal   2: kill   3: hint   4: solid   Z: undo   X: delete under cursor\n"
+            + (TargetVariant ? "adding boxes to variant " + VariantLabel() : "adding boxes to the shared list") + "   V: switch";
+        Randomizer.printQuiet("EDITING - " + doing + where + "\n" + keys
             + "WASD: pan   right click: stand Ori here   Ctrl+S: save   Ctrl+R: reload from disk   Enter: save and retry\n"
             + "5: open the segment editor in a browser" + (PracticeServer.Running ? "   " + PracticeServer.Url : ""), 1800);
+    }
+
+    // the running variant's name, or its id, cut to fit the legend
+    private static string VariantLabel() {
+        var id = PracticeController.File.Variant;
+        var name = PracticeController.File.VariantSegment(id)["name"];
+        var label = name.IsString && name.Str.Trim().Length > 0 ? name.Str.Trim() : id;
+        return label.Length > 16 ? label.Substring(0, 16) : label;
     }
 
     // WASD walks the camera's own root, which the frozen chase leaves alone
@@ -296,19 +578,11 @@ public static class PracticeEditor {
 
     // The goal is shared and single; other boxes join the target list.
     private static void Commit(Rect area) {
-        var file = PracticeController.File;
-        var target = tool != "goal" && TargetVariant ? file.Variant : "";
+        var target = tool != "goal" ? Target : "";
+        // each tool is named for its box's flag
+        var box = CreateBox(area, tool, "", "");
 
-        var (boxFlags, boxItem) = tool switch {
-            "goal" => ("goal", ""),
-            "kill" => ("kill", ""),
-            "solid" => ("solid", ""),
-            _ => ("item", "SH|hint"),
-        };
-
-        var box = CreateBox(area, boxFlags, "", boxItem);
-
-        var boxes = file.Boxes(target);
+        var boxes = BoxesOf(target);
         if (box.Goal) {
             for (var i = 0; i < boxes.Count; i++) {
                 if (boxes[i].Goal && !boxes[i].Deleted) {
@@ -318,50 +592,360 @@ public static class PracticeEditor {
         }
 
         boxes.Add(box);
-        file.SetBoxes(target, boxes);
-        lastBox = box;
-        lastTarget = target;
-        PracticeController.Reparse();
+        Put(target, boxes);
+        Remember(target, boxes.Count - 1, null);
     }
 
+    // empty trailing fields are left off, as the page writes them
     private static RandomizerBox CreateBox(Rect area, string flags, string color, string item) {
-        var areaString = string.Format(CultureInfo.InvariantCulture, "{0:0.##},{1:0.##},{2:0.##},{3:0.##}", area.min.x, area.min.y, area.max.x, area.max.y);
-
-        return RandomizerBox.Parse($"BX|{flags}|{areaString}|{color}|{item}");
-    }
-
-    private static void Undo() {
-        if (lastBox == null) {
-            return;
+        var line = $"BX|{flags}|{Corners(area)}";
+        if (color != "" || item != "") {
+            line += "|" + color;
         }
 
-        var file = PracticeController.File;
-        var boxes = file.Boxes(lastTarget);
-        var line = lastBox.Line;
-        for (var i = boxes.Count - 1; i >= 0; i--) {
-            if (boxes[i].Line == line) {
-                boxes.RemoveAt(i);
-                break;
+        if (item != "") {
+            line += "|" + item;
+        }
+
+        return RandomizerBox.Parse(line);
+    }
+
+    private static string Corners(Rect area) {
+        return string.Format(CultureInfo.InvariantCulture, "{0:0.##},{1:0.##},{2:0.##},{3:0.##}", area.min.x, area.min.y, area.max.x, area.max.y);
+    }
+
+    // the same line at new corners
+    private static RandomizerBox Moved(RandomizerBox box, Rect area) {
+        var fields = box.Line.Split('|');
+        fields[2] = Corners(area);
+        return RandomizerBox.Parse(string.Join("|", fields));
+    }
+
+    // about a dozen pixels, in world units at the current zoom
+    private static float Reach() {
+        var a = World(new Vector2(0f, 0f));
+        var b = World(new Vector2(12f / Screen.width, 0f));
+        return Mathf.Max(0.05f, Mathf.Abs(b.x - a.x));
+    }
+
+    // the topmost box under the cursor, by an edge or corner when the cursor is near one (edges), else whole
+    private static bool Hit(Vector2 at, Func<string, List<RandomizerBox>> read, out string target, out int index, out RandomizerBox box, out int edges) {
+        var reach = Reach();
+        foreach (var each in Targets) {
+            var boxes = read(each);
+            for (var i = boxes.Count - 1; i >= 0; i--) {
+                var r = boxes[i].Rect;
+                if (boxes[i].Deleted || at.x < r.xMin - reach || at.x > r.xMax + reach || at.y < r.yMin - reach || at.y > r.yMax + reach) {
+                    continue;
+                }
+
+                target = each;
+                index = i;
+                box = boxes[i];
+                edges = 0;
+                // a box too small for three grips only moves
+                if (r.width > 3 * reach) {
+                    edges |= Mathf.Abs(at.x - r.xMin) < reach ? Left : Mathf.Abs(at.x - r.xMax) < reach ? Right : 0;
+                }
+
+                if (r.height > 3 * reach) {
+                    edges |= Mathf.Abs(at.y - r.yMin) < reach ? Bottom : Mathf.Abs(at.y - r.yMax) < reach ? Top : 0;
+                }
+
+                return true;
             }
         }
 
-        file.SetBoxes(lastTarget, boxes);
-        lastBox = null;
-        PracticeController.Reparse();
+        target = "";
+        index = -1;
+        box = null;
+        edges = 0;
+        return false;
+    }
+
+    private static void Grab(Vector2 at) {
+        if (Hit(at, BoxesOf, out grabTarget, out grabIndex, out grabBox, out grabEdges)) {
+            grabFrom = grabBox.Rect;
+            dragFrom = at;
+        }
+    }
+
+    // what a click would take: the whole box tinted, or the edges it would drag lit
+    private static void Hover(Vector2 at) {
+        var source = Seed ? (object)SeedBoxes.Current.Revision : PracticeController.Segment;
+        var fresh = hoverLists == null || !Equals(source, hoverSource);
+        if (fresh) {
+            hoverSource = source;
+            hoverLists = new Dictionary<string, List<RandomizerBox>>();
+            foreach (var target in Targets) {
+                hoverLists[target] = BoxesOf(target);
+            }
+        }
+
+        // fresh lists re-hit where the cursor is; no NaN sentinel for that, as Unity's != is false against NaN
+        if (fresh || at != hoverAt) {
+            hoverAt = at;
+            Hit(at, target => hoverLists[target], out _, out _, out hoverBox, out hoverEdges);
+        }
+
+        Glow(hoverBox, hoverEdges);
+    }
+
+    // Fades the highlight in on what the cursor is on, pulses it there, and fades it out once the cursor leaves.
+    private static void Glow(RandomizerBox box, int edges) {
+        var step = Time.unscaledDeltaTime / FadeSeconds;
+        if (box != null && (lit == null || box.Line != lit.Line || edges != litEdges)) {
+            lit = box;
+            litEdges = edges;
+            glow = 0f;
+            fullAt = -1f;
+        }
+
+        if (box == null) {
+            fullAt = -1f;
+            glow = Mathf.Max(0f, glow - step);
+        } else if (fullAt < 0f) {
+            glow = Mathf.Min(1f, glow + step);
+            if (glow >= 1f) {
+                fullAt = Time.unscaledTime;
+            }
+        } else {
+            glow = 0.75f + 0.25f * Mathf.Cos((Time.unscaledTime - fullAt) * 2f * Mathf.PI / PulseSeconds);
+        }
+
+        if (lit == null || glow <= 0f) {
+            lit = null;
+            return;
+        }
+
+        Highlight.Show(lit.Rect, litEdges == 0 ? Tint : Color.clear, litEdges, lit.ParallaxDepth, glow);
+    }
+
+    // an adjust drag dropped before its release: the box it hid comes back
+    private static void DropGrab() {
+        if (grabIndex >= 0) {
+            Conceal(null);
+        }
+
+        grabIndex = -1;
+    }
+
+    // the live boxes drawn from this line hide while a resize draws it; null brings every box back
+    private static void Conceal(string line) {
+        foreach (var box in RandomizerBoxes.ActiveBoxes) {
+            if (box.UnityObject == null) {
+                continue;
+            }
+
+            if (line != null && box.Line == line) {
+                box.UnityObject.gameObject.SetActive(false);
+            } else {
+                box.UnityObject.UpdateActive();
+            }
+        }
+    }
+
+    private static void Adjust(Vector2 at) {
+        var d = at - dragFrom;
+        float x1 = grabFrom.xMin, y1 = grabFrom.yMin, x2 = grabFrom.xMax, y2 = grabFrom.yMax;
+        if (grabEdges == 0) {
+            x1 += d.x;
+            x2 += d.x;
+            y1 += d.y;
+            y2 += d.y;
+        } else {
+            if ((grabEdges & Left) != 0) { x1 += d.x; }
+            if ((grabEdges & Right) != 0) { x2 += d.x; }
+            if ((grabEdges & Bottom) != 0) { y1 += d.y; }
+            if ((grabEdges & Top) != 0) { y2 += d.y; }
+        }
+
+        var area = Between(new Vector2(x1, y1), new Vector2(x2, y2));
+        if (grabEdges == 0) {
+            Draft = CreateBox(area, "renderDepth=-99", "ffff99", "");
+            Draft!.Init(-1);
+        } else {
+            // a resize shows the box itself with only the edges it drags, in white
+            Conceal(grabBox.Line);
+            Highlight.Show(area, grabBox.Invisible ? DraftFill : (Color)grabBox.Color, grabEdges, grabBox.ParallaxDepth);
+        }
+
+        if (!Core.Input.LeftClick.OnReleased) {
+            return;
+        }
+
+        Draft?.DeInit();
+        Draft = null;
+        Highlight.Hide();
+        if (grabEdges != 0) {
+            Conceal(null);
+        }
+
+        var target = grabTarget;
+        var index = grabIndex;
+        grabIndex = -1;
+        var boxes = BoxesOf(target);
+        if (index >= boxes.Count || area.width < MinSide || area.height < MinSide || area == grabFrom) {
+            return;
+        }
+
+        var old = boxes[index];
+        boxes[index] = Moved(old, area);
+        Put(target, boxes);
+        Remember(target, index, old);
+    }
+
+    // Drawn over the boxes on a mesh of its own: a fill, and white strips along the chosen edges.
+    private static class Highlight {
+        private static GameObject shown;
+
+        private static Mesh mesh;
+
+        private static Rect rect;
+
+        private static Color fill;
+
+        private static int edges = -1;
+
+        private static float depth;
+
+        // each vertex's full color, and the strength last applied to them
+        private static readonly List<Color> paints = new List<Color>();
+
+        private static float applied = -1f;
+
+        // over the new-box draft's depth
+        private const float Depth = -99f;
+
+        public static void Show(Rect area, Color tint, int sides, float z, float strength = 1f) {
+            if (shown == null) {
+                // the scene took the object; the mesh is an asset and outlives it
+                if (mesh != null) {
+                    UnityEngine.Object.Destroy(mesh);
+                }
+
+                shown = new GameObject("practiceEditorHighlight") { layer = RandomizerLayers.Solids };
+                mesh = new Mesh();
+                shown.AddComponent<MeshFilter>().sharedMesh = mesh;
+                shown.AddComponent<MeshRenderer>().sharedMaterial = RandomizerBoxPrefab.GetMaterial(Depth);
+                UberShaderRenderQueue.SetRenderQueueExplicit(shown, Depth);
+                edges = -1;
+            }
+
+            shown.SetActive(true);
+            if (!(area == rect && tint == fill && sides == edges && z == depth)) {
+                Build(area, tint, sides, z);
+            }
+
+            if (strength != applied) {
+                applied = strength;
+                var colors = new Color[paints.Count];
+                for (var i = 0; i < colors.Length; i++) {
+                    colors[i] = new Color(paints[i].r, paints[i].g, paints[i].b, paints[i].a * strength);
+                }
+
+                mesh.colors = colors;
+            }
+        }
+
+        private static void Build(Rect area, Color tint, int sides, float z) {
+            rect = area;
+            fill = tint;
+            edges = sides;
+            depth = z;
+            shown.transform.position = area.center;
+            var verts = new List<Vector3>();
+            paints.Clear();
+            var tris = new List<int>();
+            float x = area.width * 0.5f, y = area.height * 0.5f;
+            // the box's own edge width, inside it, as long as the box is wide enough
+            var w = Mathf.Min(RandomizerBoxPrefab.EdgeWidth, x, y);
+            if (tint.a > 0f) {
+                Quad(verts, paints, tris, -x, -y, x, y, z, tint);
+            }
+
+            if ((sides & Left) != 0) {
+                Quad(verts, paints, tris, -x, -y, -x + w, y, z, Color.white);
+            }
+
+            if ((sides & Right) != 0) {
+                Quad(verts, paints, tris, x - w, -y, x, y, z, Color.white);
+            }
+
+            if ((sides & Bottom) != 0) {
+                Quad(verts, paints, tris, -x, -y, x, -y + w, z, Color.white);
+            }
+
+            if ((sides & Top) != 0) {
+                Quad(verts, paints, tris, -x, y - w, x, y, z, Color.white);
+            }
+
+            mesh.Clear();
+            mesh.SetVertices(verts);
+            mesh.triangles = tris.ToArray();
+            mesh.RecalculateBounds();
+            applied = -1f;
+        }
+
+        public static void Hide() {
+            if (shown != null) {
+                shown.SetActive(false);
+            }
+        }
+
+        private static void Quad(List<Vector3> verts, List<Color> colors, List<int> tris, float x0, float y0, float x1, float y1, float z, Color color) {
+            var at = verts.Count;
+            verts.Add(new Vector3(x0, y0, z));
+            verts.Add(new Vector3(x0, y1, z));
+            verts.Add(new Vector3(x1, y1, z));
+            verts.Add(new Vector3(x1, y0, z));
+            for (var i = 0; i < 4; i++) {
+                colors.Add(color);
+            }
+
+            tris.AddRange(new[] { at, at + 2, at + 1, at, at + 3, at + 2 });
+        }
+    }
+
+    private static void Remember(string target, int index, RandomizerBox old) {
+        undoTarget = target;
+        undoIndex = index;
+        undoOld = old;
+    }
+
+    // an added box goes; a moved or deleted one comes back as it was
+    private static void Undo() {
+        if (undoIndex < 0) {
+            return;
+        }
+
+        var boxes = BoxesOf(undoTarget);
+        if (undoOld == null) {
+            if (undoIndex != boxes.Count - 1) {
+                undoIndex = -1;
+                return;
+            }
+
+            boxes.RemoveAt(undoIndex);
+        } else if (undoIndex < boxes.Count) {
+            boxes[undoIndex] = undoOld;
+        }
+
+        Put(undoTarget, boxes);
+        undoIndex = -1;
     }
 
     // the variant's boxes first, then the shared ones, the goal among them
     private static void DeleteUnderCursor() {
-        var file = PracticeController.File;
         var at = World(Core.Input.CursorPosition);
-        var targets = HasVariant ? new[] { file.Variant, "" } : new[] { "" };
-        foreach (var target in targets) {
-            var boxes = file.Boxes(target);
+        foreach (var target in Targets) {
+            var boxes = BoxesOf(target);
             for (var i = boxes.Count - 1; i >= 0; i--) {
                 if (!boxes[i].Deleted && boxes[i].Rect.Contains(at)) {
+                    var old = boxes[i];
                     boxes[i] = Buried();
-                    file.SetBoxes(target, boxes);
-                    PracticeController.Reparse();
+                    Put(target, boxes);
+                    Remember(target, i, old);
                     return;
                 }
             }
@@ -373,8 +957,20 @@ public static class PracticeEditor {
         return RandomizerBox.Parse(RandomizerBox.Tombstone);
     }
 
+    // for pasting into the plando builder: the list being drawn into, tombstones and all
+    private static void CopyLines() {
+        var boxes = BoxesOf(Target);
+        GUIUtility.systemCopyBuffer = string.Join("\n", boxes.Select(box => box.Line).ToArray());
+        Say("Copied " + boxes.Count + " box line" + (boxes.Count == 1 ? "" : "s"), 180);
+    }
+
     // from a normal game: the current state becomes a new, empty segment's save; the seed carries on
     public static void Create() {
+        Create(false);
+    }
+
+    // withSeed: the seed's pickups and boxes become the new segment's own placements
+    public static void Create(bool withSeed) {
         if (Characters.Sein == null) {
             return;
         }
@@ -386,10 +982,28 @@ public static class PracticeEditor {
 
         try {
             var path = CreateFrom(CheckpointHere(), null);
-            Randomizer.printInfo("Practice segment saved: " + path + "\nStart it from PRACTICE MODE: it opens in the editor", 600);
+            if (withSeed) {
+                var file = BfrpFile.Load(path);
+                file.SetPlacementLines("", SeedPlacements());
+                file.Save();
+            }
+
+            Randomizer.printInfo("Practice segment saved: " + path + (withSeed ? ", with the seed's placements" : "")
+                + "\nStart it from PRACTICE MODE: it opens in the editor", 600);
         } catch (Exception e) {
             Randomizer.LogError("practice: could not create a segment: " + e.Message);
         }
+    }
+
+    // the seed file's lines an attempt can use, as the page's paste takes them: no flags, doors or other players' items
+    private static List<string> SeedPlacements() {
+        var skipped = new List<string>();
+        var kept = PracticeSegment.ReadPlacements(File.ReadAllText(Randomizer.SeedFilePath), false, skipped);
+        if (skipped.Count > 0) {
+            Randomizer.log("practice: the new segment leaves out " + skipped.Count + " seed line(s), first " + skipped[0]);
+        }
+
+        return kept;
     }
 
     // The save a checkpoint here would write, box contact cleared; the game's checkpoint and save file stay as they were.
@@ -400,9 +1014,9 @@ public static class PracticeEditor {
         checkpoint.SaveToWriter(new BinaryWriter(stream));
         var kept = stream.ToArray();
         // scenes left since the last checkpoint: SaveToWriter skips them and LoadFromReader clears them
-        var pending = new System.Collections.Generic.Dictionary<MoonGuid, SaveScene>(checkpoint.PendingScenes);
+        var pending = new Dictionary<MoonGuid, SaveScene>(checkpoint.PendingScenes);
 
-        var touching = new System.Collections.Generic.Dictionary<int, int>();
+        var touching = new Dictionary<int, int>();
         for (var id = RandomizerBoxes.FirstActiveId; id <= RandomizerBoxes.LastActiveId; id++) {
             var bits = Randomizer.Inventory.GetRandomizerItem(id);
             if (bits != 0) {
@@ -435,7 +1049,7 @@ public static class PracticeEditor {
         }
     }
 
-    // a new container around a save, with no end yet, named "New Segment N" unless given a name
+    // a new segment folder around a save, with no end yet, named "New Segment N" unless given a name
     public static string CreateFrom(byte[] save, string name) {
         if (string.IsNullOrEmpty(name)) {
             name = PracticeSelect.NextName();

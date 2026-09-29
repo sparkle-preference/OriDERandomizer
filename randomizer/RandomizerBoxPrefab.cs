@@ -159,7 +159,7 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         return rb;
     }
 
-    private static Material GetMaterial(float renderDepth) {
+    public static Material GetMaterial(float renderDepth) {
         if (MaterialsByDepth.TryGetValue(renderDepth, out var material)) {
             return material;
         }
@@ -181,7 +181,7 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         return material;
     }
 
-    private const float EdgeWidth = 0.25f;
+    public const float EdgeWidth = 0.25f;
 
     private static RandomizerBoxPrefab? _instance;
 

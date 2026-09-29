@@ -301,7 +301,7 @@ public static class RandomizerSettings {
         QOL.CursorLock = new BoolSetting("Cursor Lock", false, "True: Locks the mouse cursor inside the window\nFalse (default): Vanilla behavior (cursor can leave the Ori window in borderless / windowed mode).", false);
         QOL.PerformanceOptimizations = new BoolSetting("Performance Optimizations", true, "True (default): fewer loading freezes and steadier frame pacing.\nFalse: vanilla behavior.", false);
 
-        Practice.Folder = new StringSetting("Practice Folder", "practice", "Where practice segments (.bfrp files) are kept: a folder name inside the game folder, or a full path.", false);
+        Practice.Folder = new StringSetting("Practice Folder", "practice", "Where practice segments are kept: a folder name inside the game folder, or a full path.", false);
         Practice.Ghost = new EnumSetting<PracticeGhost>("Practice Ghost", PracticeGhost.Segment, "Which ghost to race in practice mode.\nSegment (default): Pinned run if there is one; fastest otherwise.\nFastest, Pinned, Recent: always that one. None: no ghosts in practice mode.", false);
         Practice.Timer = new BoolSetting("Practice Timer", true, "Show time elapsed and the time to beat in the top right during a practice run.", false);
 

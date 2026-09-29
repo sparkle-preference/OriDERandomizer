@@ -332,11 +332,13 @@
 		"protogen/OriReachable.cs",
 		"randomizer/BfrpFile.cs",
 		"randomizer/Bitfield.cs",
+		"randomizer/FolderStore.cs",
 		"randomizer/HashCode.cs",
 		"randomizer/JsonValue.cs",
 		"randomizer/NativeWebSocket.cs",
 		"randomizer/PracticeController.cs",
 		"randomizer/PracticeEditor.cs",
+		"randomizer/PracticeFolder.cs",
 		"randomizer/PracticeHud.cs",
 		"randomizer/PracticeMenu.cs",
 		"randomizer/PracticeSegment.cs",
@@ -419,6 +421,7 @@
 		"randomizer/RandomizerWallJumpHintCondition.cs",
 		"randomizer/RandomizerWorldMapIconManager.cs",
 		"randomizer/RandomizerWorldMapIconType.cs",
+		"randomizer/SeedBoxes.cs",
 		"randomizer/ZipStore.cs"
 	],
 	"resourceFiles": [

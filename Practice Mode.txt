@@ -5,7 +5,7 @@ Practicing a stretch of the game (practice mode)
 What it is
 ===
 A segment is a save file plus rules: where the attempt ends, boxes that kill, hint or give items, an optional loadout, and variants of the same segment with different loadouts or boxes.
-Segments are .bfrp files in the practice folder next to the game (practice/ by default), one per segment. They are safe to copy, rename and share.
+Segments live in the practice folder next to the game (practice/ by default). One you make is a folder there; one someone gives you is a .bfrp file. Drop a .bfrp in the folder to play it.
 PRACTICE MODE on the title menu lists them. You race a clock, and a ghost of one of your earlier attempts if you have one.
 
 
@@ -15,13 +15,16 @@ Making a segment
 In a normal game, get to the spot you want to practice from and press Alt+M. The current state is saved as a new segment, named New Segment 1, 2, 3 and so on; rename it on the page.
 Or choose NEW SEGMENT at the end of the PRACTICE MODE list: the editor page opens in your browser, you pick one of your saves to start from, and the game opens the new segment in the editor.
 A segment with nothing to end it yet says "Unfinished" and "click to edit" in the list and opens straight in the editor.
-On a finished segment, pause and choose EDIT PRACTICE SEGMENT. The world freezes and you draw boxes with the mouse.
+To edit a segment, press Copy on its card (C, or X on a controller), or pause mid-run and choose EDIT PRACTICE SEGMENT. The world freezes and you draw boxes with the mouse.
+A .bfrp you were given only runs until you extract it: hold Copy on its card. It unpacks into a folder of the same name, which takes its place in the list, and the .bfrp moves inside that folder. Editing a .bfrp mid-run (pause menu or page) extracts it too.
 
 Editor keys:
-1 / 2 / 3 / 4       Goal, kill, hint or solid tool
+1 / 2 / 3 / 4       Item, solid, kill or goal tool
 Drag                Draw a box
-Z                   Undo the last box
+M                   Switch between drawing boxes and moving them: drag a box to move it, an edge or corner to resize it
+Z                   Undo the last box drawn, moved or deleted
 X                   Delete the box under the cursor
+Ctrl+C              Copy the box lines, to paste into the plando builder
 WASD                Pan the camera
 Right click         Stand Ori at the cursor (loads the scenes there)
 5                   Open the segment editor page in a browser
@@ -34,7 +37,15 @@ The pause menu while editing: BACK TO EDITING, SAVE, RELOAD FROM DISK, EXIT TO P
 Everything else is on the segment editor page, which opens in your browser the first time you edit: the name, what ends the run, hint text, item boxes, shuffle groups, variants and ghosts.
 Save to game writes it back, and a running attempt uses the new rules at once.
 The page can also swap the segment's starting save for another of your saves ("Starts from ... change"); the game reloads from it.
+Its Placements box takes placement and box lines pasted in or loaded from a file (a whole seed file works) and replaces the segment's list with them.
 The page's map downloads the world map tiles once (about 20 MB) into the practice folder.
+
+
+
+Sharing a segment
+===
+Send the .bfrp in practice/export/. Ending a session that changed a segment writes it there, named after the segment's folder, and the page's Export .bfrp button writes it any time.
+An export carries the segment and a pinned ghost; your run history and other ghosts stay in your folder.
 
 
 
@@ -96,14 +107,24 @@ RandomizerSettings.txt:
 
 RandomizerRebinding.txt:
 Alt+M               Create Practice Segment
+(unbound)           Create Practice Segment With Seed: the same, and the new segment starts with the seed's pickups and boxes
 Alt+L               Retry Practice Segment: start the attempt over, or start after a briefing
 (unbound)           Practice Menu: the practice pause, for quit-to-menu segments
 (unbound)           Open Practice Editor Page: the page, from anywhere in a session
 
 
 
+Editing a seed's boxes
+===
+Outside practice, the Edit Seed Boxes bind (unbound by default) or "Edit Seed Boxes" in the debug menu opens the same editor on the boxes of the seed you have loaded.
+1 / 2 / 3 draw item, solid or kill boxes, and 5 opens a page in your browser for giving them items and flags.
+Saving writes the boxes into the seed file; the first save keeps a copy of the original next to it (.before-boxes). Enter saves and plays on; Alt+L (Retry Practice Segment) or the bind again leaves without saving.
+A seed with a Sync flag (an online game) can't be edited this way: remove the flag from the seed's first line if you want to.
+
+
+
 Files
 ===
-A .bfrp is a zip: segment.json (the rules), save.sav (the start), placements.bfr (the boxes, and what the locations hold), variants/<id>/segment.json and placements.bfr, and runs.csv and ghosts/ per variant.
-Its entries must be stored uncompressed: if you re-zip one by hand, choose Store (no compression), or PRACTICE MODE skips the file.
+A segment folder holds segment.json (the rules), save.sav (the start), placements.bfr (the boxes, and what the locations hold), variants/<id>/segment.json and placements.bfr, and runs.csv and ghosts/ per variant. The text files can be edited by hand; Ctrl+R in the editor reads them again.
+A .bfrp is the same files in a zip. Its entries must be stored uncompressed: if you zip one by hand, choose Store (no compression), or PRACTICE MODE skips the file.
 The page is the reference for what segment.json can say.
