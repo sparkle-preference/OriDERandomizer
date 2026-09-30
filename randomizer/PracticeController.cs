@@ -319,6 +319,22 @@ public static class PracticeController {
 
     private static bool pendingSetup;
 
+    // A load keeps a charge jump's charge, where a restored checkpoint clears a charge flame's; every attempt starts uncharged.
+    private static void Uncharge() {
+        var abilities = Characters.Sein == null ? null : Characters.Sein.Abilities;
+        if (abilities == null) {
+            return;
+        }
+
+        if (abilities.ChargeJumpCharging && abilities.ChargeJumpCharging.CurrentState != SeinChargeJumpCharging.State.Normal) {
+            abilities.ChargeJumpCharging.ChangeState(SeinChargeJumpCharging.State.Normal);
+        }
+
+        if (abilities.ChargeJump && abilities.ChargeJump.CurrentState != SeinChargeJump.State.Normal) {
+            abilities.ChargeJump.ChangeState(SeinChargeJump.State.Normal);
+        }
+    }
+
     private static int shownCount;
 
     public static void Freeze() {
@@ -448,6 +464,7 @@ public static class PracticeController {
                     Inc(Attempts, 1);
                 }
 
+                Uncharge();
                 // the base save may carry a seed's taken boxes or a held count; this attempt starts clear
                 var changed = RandomizerBoxes.ClearOff();
                 if (Get(Held) != 0) {
@@ -507,6 +524,8 @@ public static class PracticeController {
 
             if (Countdown <= 0f) {
                 Current = Phase.Running;
+                // the run starts uncharged, whatever the countdown let through
+                Uncharge();
                 Resume();
                 StartGhosts();
             }
