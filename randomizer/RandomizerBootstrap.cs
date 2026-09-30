@@ -53,12 +53,16 @@ public class RandomizerBootstrap {
     }
 
     private static void BootstrapSceneAfterSerialize(SceneRoot sceneRoot) {
-        if (s_bootstrappedScenesAfterSerialize.Contains(sceneRoot.name)) {
+        var again = s_bootstrappedScenesAfterSerialize.Contains(sceneRoot.name);
+        if (again && !s_afterSerializeOnEveryEnable.Contains(sceneRoot.name)) {
             return;
         }
 
         if (s_bootstrapAfterSerialize.ContainsKey(sceneRoot.name)) {
-            s_bootstrappedScenesAfterSerialize.Add(sceneRoot.name);
+            if (!again) {
+                s_bootstrappedScenesAfterSerialize.Add(sceneRoot.name);
+            }
+
             s_bootstrapAfterSerialize[sceneRoot.name].Invoke(sceneRoot);
             // also rerun after serializes that aren't scene loads (death), via the save manager's hook
             sceneRoot.SaveSceneManager.sceneRoot = sceneRoot;
@@ -650,7 +654,139 @@ public class RandomizerBootstrap {
         rhino.RespawnTime = 10f;
     }
 
+    // With dungeons open the lower Ginso miniboss's right door stays open until Ori walks into the room, from
+    // either side, and then shuts with the left one.
+    private static void BootstrapGinsoLowerMinibossDoors(SceneRoot sceneRoot) {
+        if (Randomizer.Inventory.GetRandomizerItem(801) != 0) {
+            return;
+        }
+
+        var setup = sceneRoot.transform.FindChild("ginsoTreeMultiMortar");
+        // the left door's trigger spans the room between the doors, so coming in on the right starts the fight too
+        var trigger = setup.FindChild("doorASetup/triggerCollider");
+        trigger.position = new Vector3(524.4f, 247.5f, trigger.position.z);
+        trigger.localScale = new Vector3(37.2f, 9f, 1f);
+
+        var sequence = setup.FindChild("doorASetup/action").GetComponent<ActionSequence>();
+        // the fight's checkpoint keeps Ori where they stand rather than moving them to the left door
+        foreach (var action in sequence.Actions) {
+            if (action is CreateCheckpointAction) {
+                ((CreateCheckpointAction)action).RespawnPosition = Vector2.zero;
+            }
+        }
+
+        var door = setup.FindChild("mortarEnemySetup/doorSetup/sidewaysDoor");
+        var keyrings = door.FindChild("keyrings");
+        var halves = new LegacyAnimator[] {
+            door.FindChild("puzzleDoorLeftGinso").GetComponent<LegacyTranslateAnimator>(),
+            door.FindChild("puzzleDoorRightGinso").GetComponent<LegacyTranslateAnimator>()
+        };
+        var spins = keyrings.GetComponentsInChildren<LegacyRotateAnimator>(true);
+        var fades = FadeIns(keyrings, RingFade);
+        PinToSpins(setup.FindChild("mortarEnemySetup/doorSetup/*openDoorSequence").GetComponent<ActionSequence>(), keyrings);
+
+        // the right door's own timeline runs alongside the left door's cutscene rather than holding it up
+        var closing = new GameObject("closeRightDoor");
+        closing.transform.parent = sequence.transform;
+        var closeSequence = closing.AddComponent<ActionSequence>();
+        Animate(Step<AnimatorAction>(closeSequence, "close"), door, halves, AnimatorAction.PlayMode.ContinueReversed);
+        // just before the halves meet, the rings slowly fade in, already locked in place
+        var closed = 0f;
+        foreach (var half in halves) {
+            closed = Mathf.Max(closed, half.TimeOfLastCurvePoint / half.Speed);
+        }
+
+        Step<WaitAction>(closeSequence, "wait").Duration = Mathf.Max(0f, closed - RingLead);
+        var show = Step<ActivateAction>(closeSequence, "show");
+        show.Target = keyrings.gameObject;
+        show.Save = false;
+        Animate(Step<AnimatorAction>(closeSequence, "lock"), keyrings, spins, AnimatorAction.PlayMode.StopAtStart);
+        Animate(Step<AnimatorAction>(closeSequence, "fade"), keyrings, fades, AnimatorAction.PlayMode.Restart);
+        ActionSequence.Rename(closeSequence.Actions);
+
+        // right after the left door starts closing
+        sequence.Actions.Insert(3, closeSequence);
+        ActionSequence.Rename(sequence.Actions);
+    }
+
+    // how long before the right door shuts its rings start fading in, and how long they take
+    private const float RingLead = 0.25f;
+
+    private const float RingFade = 2f;
+
+    private static T Step<T>(ActionSequence sequence, string name) where T : ActionMethod {
+        var step = new GameObject(name);
+        step.transform.parent = sequence.transform;
+        var action = step.AddComponent<T>();
+        sequence.Actions.Add(action);
+        return action;
+    }
+
+    private static void Animate(AnimatorAction action, Transform target, LegacyAnimator[] animators, AnimatorAction.PlayMode command) {
+        action.Target = target.gameObject;
+        action.AnimatorsMode = AnimatorAction.FindAnimatorsMode.SpecifyAnimators;
+        action.Animators = animators;
+        action.Command = command;
+    }
+
+    // A fade in on every mesh under root; each keeps its own look until played.
+    private static LegacyAnimator[] FadeIns(Transform root, float seconds) {
+        var fades = new List<LegacyAnimator>();
+        foreach (var mesh in root.GetComponentsInChildren<MeshRenderer>(true)) {
+            var fade = mesh.gameObject.AddComponent<LegacyTransparancyAnimator>();
+            var curve = AnimationCurve.Linear(0f, 0f, seconds, 1f);
+            curve.preWrapMode = WrapMode.ClampForever;
+            curve.postWrapMode = WrapMode.ClampForever;
+            fade.SetAnimationCurve(curve);
+            fade.SampleFirstFrameOnStart = false;
+            fades.Add(fade);
+        }
+
+        return fades.ToArray();
+    }
+
+    // The opening's own spin actions find their animators by object, which would now take the fades along.
+    private static void PinToSpins(ActionSequence opening, Transform keyrings) {
+        foreach (var action in opening.Actions) {
+            var animate = action as AnimatorAction;
+            if (animate == null || animate.Target == null || animate.AnimatorsMode == AnimatorAction.FindAnimatorsMode.SpecifyAnimators
+                    || !animate.Target.transform.IsChildOf(keyrings)) {
+                continue;
+            }
+
+            animate.Animators = animate.AnimatorsMode == AnimatorAction.FindAnimatorsMode.GameObject
+                ? animate.Target.GetComponents<LegacyRotateAnimator>()
+                : animate.Target.GetComponentsInChildren<LegacyRotateAnimator>(true);
+            animate.AnimatorsMode = AnimatorAction.FindAnimatorsMode.SpecifyAnimators;
+        }
+    }
+
     private static void BootstrapGinsoLowerMiniboss(SceneRoot sceneRoot) {
+        var minibossRoom = Rect.MinMaxRect(504f, 235.5f, 545f, 255f);
+        var isInRoom = minibossRoom.Contains(Characters.Sein.Position);
+        if (Randomizer.Inventory.GetRandomizerItem(801) == 0) {
+            var setup = sceneRoot.transform.FindChild("ginsoTreeMultiMortar");
+            var door = setup.FindChild("mortarEnemySetup/doorSetup/sidewaysDoor");
+            var left = door.FindChild("puzzleDoorLeftGinso").GetComponent<LegacyTranslateAnimator>();
+            var right = door.FindChild("puzzleDoorRightGinso").GetComponent<LegacyTranslateAnimator>();
+            var keyrings = door.FindChild("keyrings").gameObject;
+            if (!isInRoom) {
+                // with dungeons open the right door is open whenever Ori is outside the room, fought or not
+                left.StopAndSampleAtEnd();
+                right.StopAndSampleAtEnd();
+                keyrings.active = false;
+            } else if (left.Reversed || left.AtStart) {
+                // the fight's checkpoint catches both doors mid-close; a respawn brings them back already shut
+                setup.FindChild("doorASetup/ginsoTreeBlockingWallA").GetComponent<LegacyTranslateAnimator>().StopAndSampleAtEnd();
+                left.StopAndSampleAtStart();
+                right.StopAndSampleAtStart();
+                keyrings.active = true;
+                foreach (var fade in keyrings.GetComponentsInChildren<LegacyTransparancyAnimator>(true)) {
+                    fade.StopAndSampleAtEnd();
+                }
+            }
+        }
+
         // no softlock after an alt-r out of the lower Ginso miniboss before the kill; item 1103 turns it off
         if (Characters.Sein.Inventory.GetRandomizerItem(1103) != 0) {
             return;
@@ -659,8 +795,6 @@ public class RandomizerBootstrap {
         var firstDoorAnimator = sceneRoot.transform.FindChild("ginsoTreeMultiMortar/doorASetup/ginsoTreeBlockingWallA").GetComponent<LegacyTranslateAnimator>();
         var firstDoorTrigger = sceneRoot.transform.FindChild("ginsoTreeMultiMortar/doorASetup/triggerCollider").GetComponent<PlayerCollisionStayTrigger>();
         var firstDoorShut = !firstDoorAnimator.AtStart; // Or shutting.
-        var minibossRoom = Rect.MinMaxRect(504f, 235.5f, 545f, 255f);
-        var isInRoom = minibossRoom.Contains(Characters.Sein.Position);
         if (firstDoorShut && !isInRoom) {
             firstDoorAnimator.Stopped = true;
             firstDoorAnimator.Reversed = false;
@@ -903,6 +1037,7 @@ public class RandomizerBootstrap {
         { "sunkenGladesEnemyIntroductionC", BootstrapRhinoBeforeSein },
         { "sorrowPassForestB", BootstrapMistyPedestal },
         { "ginsoTreeResurrection", BootstrapGinsoUpperMiniboss },
+        { "ginsoTreePuzzles", BootstrapGinsoLowerMinibossDoors },
         { "forlornRuinsC", BootstrapForlornRuinsBridge },
         { "horuFieldsB", BootstrapHoruFieldsPushBlock },
         { "mountHoruMovingLaser", BootstrapL4 },
@@ -924,4 +1059,8 @@ public class RandomizerBootstrap {
     };
 
     private static List<string> s_bootstrappedScenesAfterSerialize = new List<string>();
+
+    // A scene kept in memory for a checkpoint comes back without a reload, as after an Alt+R out of a fight;
+    // these scenes' AfterSerialize patches run again each time it does.
+    private static readonly HashSet<string> s_afterSerializeOnEveryEnable = new HashSet<string> { "ginsoTreePuzzles", "moonGrottoEnemyPuzzle" };
 }
