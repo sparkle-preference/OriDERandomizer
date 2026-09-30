@@ -21,7 +21,7 @@ public static class PracticeEditor {
 
     private static bool dragging;
 
-    private static string tool = "kill";
+    private static string tool = "item";
 
     // with a variant running its own list takes the boxes, unless V says the shared one
     private static bool toVariant = true;
@@ -65,7 +65,7 @@ public static class PracticeEditor {
     // the fade in and out, and the pulse between full and half after it
     private const float FadeSeconds = 0.5f;
 
-    private const float PulseSeconds = 1f;
+    private const float PulseSeconds = 3f;
 
     // the hover's tint, and the resize preview's fill when its box is invisible
     private static readonly Color Tint = new Color(1f, 1f, 1f, 0.35f);
@@ -91,7 +91,7 @@ public static class PracticeEditor {
 
     private const float PanSpeed = 24f;
 
-    // a box smaller than this is a click
+    // the thinnest side a drawn box or a resize leaves
     private const float MinSide = 0.5f;
 
     // the attempt freezes where it is and boxes are drawn over it; Enter saves and retries
@@ -410,14 +410,19 @@ public static class PracticeEditor {
             return;
         }
 
-        Draft = CreateBox(Between(dragFrom, at), "renderDepth=-99", "ffff99", "");
-        Draft!.Init(-1);
+        // a press that barely moved is a click, not a box
+        var moved = Mathf.Max(Mathf.Abs(at.x - dragFrom.x), Mathf.Abs(at.y - dragFrom.y)) >= Least();
+        var drawn = Drawn(dragFrom, at);
+        if (moved) {
+            Draft = CreateBox(drawn, "renderDepth=-99", "ffff99", "");
+            Draft!.Init(-1);
+        }
+
         if (Core.Input.LeftClick.OnReleased) {
             dragging = false;
-            var drawn = Draft!.Rect;
-            Draft.DeInit();
+            Draft?.DeInit();
             Draft = null;
-            if (drawn.width >= MinSide && drawn.height >= MinSide) {
+            if (moved) {
                 Commit(drawn);
             }
         }
@@ -480,7 +485,7 @@ public static class PracticeEditor {
     private static void Help() {
         helped = Time.unscaledTime;
         var doing = adjusting ? "MOVING BOXES   M: draw instead"
-            : "drag to draw " + (tool == "item" ? "an " : "a ") + tool + " box   M: move and resize";
+            : "drag to draw " + (tool == "item" ? "an " : "a ") + "*" + tool + "* box   M: move and resize";
         // moving has no tools, so their row says how to move instead
         var keys = (adjusting ? "click&drag to move/resize boxes"
             : Seed ? "1: item   2: solid   3: kill" : "1: item   2: solid   3: kill   4: goal")
@@ -493,11 +498,11 @@ public static class PracticeEditor {
             return;
         }
 
-        var where = !HasVariant ? "" : "\n"
-            + (TargetVariant ? "adding boxes to variant " + VariantLabel() : "adding boxes to the shared list") + "   V: switch";
-        Randomizer.printQuiet("EDITING - " + doing + where + "\n" + keys
+        var where = !HasVariant ? "" : "\n("
+            + (TargetVariant ? "adding boxes to variant " + VariantLabel() : "adding boxes to the shared list") + "   V: switch)";
+        Randomizer.printQuiet("EDITING - " + doing + "\n" + keys
             + "WASD: pan   right click: stand Ori here   Ctrl+S: save   Ctrl+R: reload from disk   Enter: save and retry\n"
-            + "5: open the segment editor in a browser" + (PracticeServer.Running ? "   " + PracticeServer.Url : ""), 1800);
+            + "5: open the segment editor in a browser" + (PracticeServer.Running ? "   " + PracticeServer.Url : "") + where, 1800);
     }
 
     // the running variant's name, or its id, cut to fit the legend
@@ -570,6 +575,15 @@ public static class PracticeEditor {
         return new Vector2(point.x, point.y);
     }
 
+    // the dragged rect, a side too thin grown to MinSide the way the drag went
+    private static Rect Drawn(Vector2 from, Vector2 to) {
+        return Between(from, new Vector2(Stretch(from.x, to.x), Stretch(from.y, to.y)));
+    }
+
+    private static float Stretch(float from, float to) {
+        return Mathf.Abs(to - from) >= MinSide ? to : from + (to < from ? -MinSide : MinSide);
+    }
+
     private static Rect Between(Vector2 a, Vector2 b) {
         var min = Vector2.Min(a, b);
         var max = Vector2.Max(a, b);
@@ -621,37 +635,39 @@ public static class PracticeEditor {
         return RandomizerBox.Parse(string.Join("|", fields));
     }
 
-    // about a dozen pixels, in world units at the current zoom
+    // a grip's reach either side of an edge: about a dozen pixels, down to four on a thin box
     private static float Reach() {
+        return Mathf.Max(0.05f, Pixels(12f));
+    }
+
+    private static float Least() {
+        return Mathf.Min(Reach(), Pixels(4f));
+    }
+
+    // n screen pixels in world units at the current zoom
+    private static float Pixels(float n) {
         var a = World(new Vector2(0f, 0f));
-        var b = World(new Vector2(12f / Screen.width, 0f));
-        return Mathf.Max(0.05f, Mathf.Abs(b.x - a.x));
+        var b = World(new Vector2(n / Screen.width, 0f));
+        return Mathf.Abs(b.x - a.x);
     }
 
     // the topmost box under the cursor, by an edge or corner when the cursor is near one (edges), else whole
     private static bool Hit(Vector2 at, Func<string, List<RandomizerBox>> read, out string target, out int index, out RandomizerBox box, out int edges) {
-        var reach = Reach();
+        float reach = Reach(), least = Least();
         foreach (var each in Targets) {
             var boxes = read(each);
             for (var i = boxes.Count - 1; i >= 0; i--) {
                 var r = boxes[i].Rect;
-                if (boxes[i].Deleted || at.x < r.xMin - reach || at.x > r.xMax + reach || at.y < r.yMin - reach || at.y > r.yMax + reach) {
+                var x = Grip(at.x, r.xMin, r.xMax, reach, least, Left, Right);
+                var y = Grip(at.y, r.yMin, r.yMax, reach, least, Bottom, Top);
+                if (boxes[i].Deleted || x < 0 || y < 0) {
                     continue;
                 }
 
                 target = each;
                 index = i;
                 box = boxes[i];
-                edges = 0;
-                // a box too small for three grips only moves
-                if (r.width > 3 * reach) {
-                    edges |= Mathf.Abs(at.x - r.xMin) < reach ? Left : Mathf.Abs(at.x - r.xMax) < reach ? Right : 0;
-                }
-
-                if (r.height > 3 * reach) {
-                    edges |= Mathf.Abs(at.y - r.yMin) < reach ? Bottom : Mathf.Abs(at.y - r.yMax) < reach ? Top : 0;
-                }
-
+                edges = x | y;
                 return true;
             }
         }
@@ -661,6 +677,27 @@ public static class PracticeEditor {
         box = null;
         edges = 0;
         return false;
+    }
+
+    // One axis of a grab, or -1: grips straddle each edge, shrinking with the box to `least`;
+    // a box too thin for three of those gets three centered on it.
+    private static int Grip(float at, float min, float max, float reach, float least, int low, int high) {
+        var size = max - min;
+        var grip = Mathf.Clamp(size / 3f, least, reach);
+        if (size >= 3f * grip) {
+            if (at < min - grip || at > max + grip) {
+                return -1;
+            }
+
+            return Mathf.Abs(at - min) < grip ? low : Mathf.Abs(at - max) < grip ? high : 0;
+        }
+
+        var from = (min + max) * 0.5f - 1.5f * least;
+        if (at < from || at > from + 3f * least) {
+            return -1;
+        }
+
+        return at < from + least ? low : at > from + 2f * least ? high : 0;
     }
 
     private static void Grab(Vector2 at) {
@@ -718,7 +755,14 @@ public static class PracticeEditor {
             return;
         }
 
-        Highlight.Show(lit.Rect, litEdges == 0 ? Tint : Color.clear, litEdges, lit.ParallaxDepth, glow);
+        // a box too thin to show its middle lights its whole outline instead
+        var sides = litEdges != 0 ? litEdges : Slight(lit.Rect) ? Left | Right | Bottom | Top : 0;
+        Highlight.Show(lit.Rect, sides == 0 ? Tint : Color.clear, sides, lit.ParallaxDepth, glow);
+    }
+
+    // the middle inside a box's drawn edges is narrower than an edge
+    private static bool Slight(Rect area) {
+        return Mathf.Min(area.width, area.height) < 3f * RandomizerBoxPrefab.EdgeWidth;
     }
 
     // an adjust drag dropped before its release: the box it hid comes back
@@ -754,10 +798,13 @@ public static class PracticeEditor {
             y1 += d.y;
             y2 += d.y;
         } else {
-            if ((grabEdges & Left) != 0) { x1 += d.x; }
-            if ((grabEdges & Right) != 0) { x2 += d.x; }
-            if ((grabEdges & Bottom) != 0) { y1 += d.y; }
-            if ((grabEdges & Top) != 0) { y2 += d.y; }
+            // a dragged side stops where the box would get thinner than MinSide, or than it already was
+            var w = Mathf.Min(MinSide, grabFrom.width);
+            var h = Mathf.Min(MinSide, grabFrom.height);
+            if ((grabEdges & Left) != 0) { x1 = Mathf.Min(x1 + d.x, x2 - w); }
+            if ((grabEdges & Right) != 0) { x2 = Mathf.Max(x2 + d.x, x1 + w); }
+            if ((grabEdges & Bottom) != 0) { y1 = Mathf.Min(y1 + d.y, y2 - h); }
+            if ((grabEdges & Top) != 0) { y2 = Mathf.Max(y2 + d.y, y1 + h); }
         }
 
         var area = Between(new Vector2(x1, y1), new Vector2(x2, y2));
@@ -785,7 +832,7 @@ public static class PracticeEditor {
         var index = grabIndex;
         grabIndex = -1;
         var boxes = BoxesOf(target);
-        if (index >= boxes.Count || area.width < MinSide || area.height < MinSide || area == grabFrom) {
+        if (index >= boxes.Count || area == grabFrom) {
             return;
         }
 
@@ -858,26 +905,27 @@ public static class PracticeEditor {
             paints.Clear();
             var tris = new List<int>();
             float x = area.width * 0.5f, y = area.height * 0.5f;
-            // the box's own edge width, inside it, as long as the box is wide enough
-            var w = Mathf.Min(RandomizerBoxPrefab.EdgeWidth, x, y);
+            // strips are the box's own edge width, inside it, or just outside a box too thin to hold two
+            var w = RandomizerBoxPrefab.EdgeWidth;
+            float left = x > w ? -x : -x - w, right = x > w ? x - w : x, bottom = y > w ? -y : -y - w, top = y > w ? y - w : y;
             if (tint.a > 0f) {
                 Quad(verts, paints, tris, -x, -y, x, y, z, tint);
             }
 
             if ((sides & Left) != 0) {
-                Quad(verts, paints, tris, -x, -y, -x + w, y, z, Color.white);
+                Quad(verts, paints, tris, left, -y, left + w, y, z, Color.white);
             }
 
             if ((sides & Right) != 0) {
-                Quad(verts, paints, tris, x - w, -y, x, y, z, Color.white);
+                Quad(verts, paints, tris, right, -y, right + w, y, z, Color.white);
             }
 
             if ((sides & Bottom) != 0) {
-                Quad(verts, paints, tris, -x, -y, x, -y + w, z, Color.white);
+                Quad(verts, paints, tris, -x, bottom, x, bottom + w, z, Color.white);
             }
 
             if ((sides & Top) != 0) {
-                Quad(verts, paints, tris, -x, y - w, x, y, z, Color.white);
+                Quad(verts, paints, tris, -x, top, x, top + w, z, Color.white);
             }
 
             mesh.Clear();
@@ -936,20 +984,19 @@ public static class PracticeEditor {
     }
 
     // the variant's boxes first, then the shared ones, the goal among them
+    // the box a click would take, thin ones included
     private static void DeleteUnderCursor() {
-        var at = World(Core.Input.CursorPosition);
-        foreach (var target in Targets) {
-            var boxes = BoxesOf(target);
-            for (var i = boxes.Count - 1; i >= 0; i--) {
-                if (!boxes[i].Deleted && boxes[i].Rect.Contains(at)) {
-                    var old = boxes[i];
-                    boxes[i] = Buried();
-                    Put(target, boxes);
-                    Remember(target, i, old);
-                    return;
-                }
-            }
+        string target;
+        int index;
+        RandomizerBox old;
+        if (!Hit(World(Core.Input.CursorPosition), BoxesOf, out target, out index, out old, out _)) {
+            return;
         }
+
+        var boxes = BoxesOf(target);
+        boxes[index] = Buried();
+        Put(target, boxes);
+        Remember(target, index, old);
     }
 
     // a deleted box keeps a line, so the boxes after it keep their numbers

@@ -319,7 +319,7 @@ public static class PracticeController {
 
     private static bool pendingSetup;
 
-    // A load keeps a charge jump's charge, where a restored checkpoint clears a charge flame's; every attempt starts uncharged.
+    // a load keeps a charge jump's charge, unlike a charge flame's; every attempt starts without one
     private static void Uncharge() {
         var abilities = Characters.Sein == null ? null : Characters.Sein.Abilities;
         if (abilities == null) {
