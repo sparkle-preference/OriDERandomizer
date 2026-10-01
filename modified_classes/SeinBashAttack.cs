@@ -141,6 +141,8 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
             Game.Checkpoint.Events.OnPostRestore.Remove(OnRestoreCheckpoint);
             CharacterLeftRightMovement.ModifyHorizontalPlatformMovementSettingsEvent -= ModifyHorizontalPlatformMovementSettings;
             Gravity.ModifyGravityPlatformMovementSettingsEvent -= ModifyGravityPlatformMovementSettings;
+            // losing Bash destroys this, and only its update runs out a launch's slowdown
+            ApplyFrictionToSpeed.SpeedFactor = 0f;
         }
     }
 
@@ -166,9 +168,8 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
     }
 
     public void OnDisable() {
-        if (IsBashing) {
-            ExitBash();
-        }
+        CancelBash();
+        UpdateTargetHighlight(null);
     }
 
     public void ExitBash() {
@@ -179,6 +180,20 @@ public class SeinBashAttack : CharacterState, ISeinReceiver {
         ApplyFrictionToSpeed.SpeedFactor = 0f;
         IsBashing = false;
         m_isEnhancedBashing = false;
+    }
+
+    // Ends a bash with no launch, and the arrow can't fire one later from where Ori was.
+    public void CancelBash() {
+        if (!IsBashing) {
+            return;
+        }
+
+        if (!InstantiateUtility.IsDestroyed(m_bashAttackGame)) {
+            m_bashAttackGame.BashGameComplete -= BashGameComplete;
+            m_bashAttackGame.ChangeState(BashAttackGame.State.Disappearing);
+        }
+
+        ExitBash();
     }
 
     public void MovePlayerToTargetAndCreateEffect() {

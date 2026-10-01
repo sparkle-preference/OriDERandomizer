@@ -370,6 +370,10 @@ public static class Randomizer {
             Characters.Sein.Abilities.Dash.StopDashing();
         }
 
+        if (SafeIsBashing) {
+            Characters.Sein.Abilities.Bash.CancelBash();
+        }
+
         BingoController.OnWarp();
         Characters.Sein.Position = position;
         Characters.Sein.Speed = new Vector3(0f, 0f);
@@ -1479,7 +1483,7 @@ public static class Randomizer {
 
                         if (Characters.Sein.Position.y > 935f && Inventory.FinishedGinsoEscape && Scenes.Manager.CurrentScene.Scene == "ginsoTreeWaterRisingEnd") {
                             if (SafeIsBashing) {
-                                Characters.Sein.Abilities.Bash.BashGameComplete(0f);
+                                Characters.Sein.Abilities.Bash.CancelBash();
                             }
 
                             Characters.Sein.Position = new Vector3(750f, -120f);
@@ -1488,7 +1492,7 @@ public static class Randomizer {
 
                         if (get(1106) > 0 && Characters.Sein.Position.y > -235f && Scenes.Manager.CurrentScene.Scene == "forlornRuinsResurrection") {
                             if (SafeIsBashing) {
-                                Characters.Sein.Abilities.Bash.BashGameComplete(0f);
+                                Characters.Sein.Abilities.Bash.CancelBash();
                             }
 
                             Characters.Sein.Position = new Vector3(-1350f, -410f);
