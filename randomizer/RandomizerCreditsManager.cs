@@ -74,8 +74,8 @@ Winners:	Team StoryTime (Dedew and Covert_Muffin)
             }
             Credits.Add(new KeyValuePair<string, int>(
                 "ANCHORTOPPARAMS_20_12_2_Thanks for playing!\n" +
-                $"Website: {RandomizerSettings.DevSettings.BuiltinHost}\n" +
-                $"Join the Ori community: {RandomizerSettings.DevSettings.BuiltinHost}/discord",
+                $"Website: {RandomizerSettings.DevSettings.BuiltinHost.Value}\n" +
+                $"Join the Ori community: {RandomizerSettings.DevSettings.BuiltinHost.Value}/discord",
                 pages > 3 ? 45 : 50));
         } catch (Exception e) {
             Randomizer.LogError("Init credits: " + e.Message);
