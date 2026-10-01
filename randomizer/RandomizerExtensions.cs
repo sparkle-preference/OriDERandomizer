@@ -24,6 +24,8 @@ namespace RandoExts {
 
             return GenericEnum.ToString();
         }
+        public static bool IsNullOrWhitespace(this string value) => string.IsNullOrEmpty(value) || value.Trim().Length == 0;
+        public static bool IsWhitespace(this char value) => value.ToString().Trim().Length == 0;
 
         public static bool TryParseEnum<T>(this string stringValue, bool ignoreCase, out T parsedValue)
             where T : Enum {

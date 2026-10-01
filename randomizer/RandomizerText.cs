@@ -11,8 +11,7 @@ public static class RandomizerText {
         return m_abilityOverrides[ability].NameOverride;
     }
 
-    // Cool to warm and no further: indigo and violet are unreadable on a dark message box.
-    // Blue leads so that a rainbow and a bit comes back round to blue rather than past it.
+    // Indigo and violet are hard to read so it's a bit of a ROYGB situation. (well more precisely it's BCGYOR)
     private static readonly string[] RainbowStops = { "4f8cff", "35cdd6", "4fd44f", "ffe94f", "ff8c2b", "ff3b3b" };
 
     // One gradient, a full rainbow per repeatEvery characters (at least one); ends on a stop.
@@ -34,20 +33,16 @@ public static class RandomizerText {
         return built.Append('>').Append(text).Append("</>").ToString();
     }
 
-    // Letters take turns being blue, yellow and green; spaces stay plain.
-    public static string Alternating(string text) {
+    public static string RainbowifyByChar(string text) {
         var built = new System.Text.StringBuilder();
-        var marked = 0;
-        foreach (var c in text) {
-            if (c == ' ') {
+        var i = 0;
+        foreach(var c in text) {
+            if(c.IsWhitespace()) {
                 built.Append(c);
                 continue;
             }
-
-            var mark = "*#$"[marked++ % 3];
-            built.Append(mark).Append(c).Append(mark);
+            built.Append($"<style color={RainbowStops[i++ % RainbowStops.Length]}>{c}</>");
         }
-
         return built.ToString();
     }
 

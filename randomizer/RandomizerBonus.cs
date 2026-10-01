@@ -945,7 +945,7 @@ public static class RandomizerBonus {
         string line;
         if (EnhancedLines.TryGetValue(id, out line)) {
             RandomizerSwitch.PickupMessage(
-                RandomizerText.Alternating(RandomizerItems.Name("RB", id.ToString())) + "\n" + line, 300);
+                RandomizerText.RainbowifyByChar(RandomizerItems.Name("RB", id.ToString())) + "\n" + line, 300);
         }
     }
 
