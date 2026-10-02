@@ -13,7 +13,7 @@ public static class RandomizerSettings {
     }
 
     // move this with every new setting, or existing installs take the nag path on update
-    public static string LastAddedSetting = "Performance Optimizations";
+    public static string LastAddedSetting = "Dirty Water";
 
     private static string StripComment(string line) {
         var at = line.IndexOf("//");
@@ -277,6 +277,7 @@ public static class RandomizerSettings {
         Customization.HotColor = new ColorSetting("Hot Color", new Color(0.5f, 0.1666667f, 0f, 0.5f), HeadroomScale, "Red, Green, Blue, Transparency (0-255 for each): The color Ori turns when Sensing an item at range 0.");
         Customization.DiscoSense = new BoolSetting("Disco Sense", false, "True: Ignore sense colors, and instead speed up the Color.txt rotation when sense is active (if you have one).\nFalse (default): Color.txt rotation is overwritten by Sense colors.", false);
         Customization.RainbowDash = new BoolSetting("Rainbow Dash", false, "True: Enhance your dashes (cosmetically) with sparkles and rainbows.\nFalse (default): Vanilla dashes.", false);
+        Customization.DirtyWater = new BoolSetting("Dirty Water", true, "True (default): water that hurts Ori looks poisoned until you find Clean Water.\nFalse: vanilla water.", false);
         Customization.TouchedVisibility = new FloatSetting("Touched Pickup Visibility", 0.5f, "(0.0-1.0, Default=0.5): Transparency for pickup icons that have been touched but are not currently collected (usually because they were lost on death). Set to 0 to hide completely; the Uncollected filter still shows them faintly.");
         Customization.MapWarpHold = new FloatSetting("Map Warp Hold", 1f, "(0.01-3.0, Default=1.0): How long [[Map Warp]] must be held to start a warp on the area map.");
         Customization.ShowOtherPlayers = new BoolSetting("Show Other Players", true, "True (default): In multiplayer games, other players show up as translucent ghosts when on the same screen and are marked on the map.\nFalse: disables this functionality.", true);
@@ -406,6 +407,8 @@ public static class RandomizerSettings {
         public static BoolSetting DiscoSense;
 
         public static BoolSetting RainbowDash;
+
+        public static BoolSetting DirtyWater;
 
         public static BoolSetting ShowOtherPlayers;
 

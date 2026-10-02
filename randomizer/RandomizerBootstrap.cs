@@ -47,6 +47,8 @@ public class RandomizerBootstrap {
             RandomizerEnhancedMode.BootstrapSceneWater(sceneRoot);
         }
 
+        RandomizerDirtyWater.OnScene(sceneRoot);
+
         if (sceneRoot.name == Randomizer.SpawnScene) {
             BootstrapRandomSpawnTeleportLocation(sceneRoot);
         }

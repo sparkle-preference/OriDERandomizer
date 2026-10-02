@@ -371,6 +371,7 @@
 		"randomizer/RandomizerCreditsManager.cs",
 		"randomizer/RandomizerCustomNames.cs",
 		"randomizer/RandomizerDeathLink.cs",
+		"randomizer/RandomizerDirtyWater.cs",
 		"randomizer/RandomizerEnhancedCleanWaterCondition.cs",
 		"randomizer/RandomizerEnhancedMode.cs",
 		"randomizer/RandomizerExtensions.cs",

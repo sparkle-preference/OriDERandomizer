@@ -686,6 +686,7 @@ public static class Randomizer {
         PracticeServer.Tick();
         RandomizerBoxes.Update();
         RandomizerPreloader.Tick();
+        RandomizerDirtyWater.Tick();
         RandomizerGhost.Update();
         UpdateMessages();
         UpdatePendingWin();
