@@ -118,7 +118,7 @@ Editing a seed's boxes
 ===
 Outside practice, the Edit Seed Boxes bind (unbound by default) or "Edit Seed Boxes" in the debug menu opens the same editor on the boxes of the seed you have loaded.
 1 / 2 / 3 draw item, solid or kill boxes, and 5 opens a page in your browser for giving them items and flags.
-Saving writes the boxes into the seed file; the first save keeps a copy of the original next to it (.before-boxes). Enter saves and plays on; Alt+L (Retry Practice Segment) or the bind again leaves without saving.
+Saving writes the boxes into the seed file; the first save keeps a copy of the original next to it (.before-boxes). Enter saves and plays on; Alt+L (Retry Practice Segment) or the bind again leaves without saving. Either way you play on from wherever right click left Ori.
 A seed with a Sync flag (an online game) can't be edited this way: remove the flag from the seed's first line if you want to.
 
 

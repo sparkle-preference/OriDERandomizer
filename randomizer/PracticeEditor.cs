@@ -81,9 +81,7 @@ public static class PracticeEditor {
 
     private static RandomizerBox undoOld;
 
-    // Ori's place when the seed editor opened, and whether right click has moved Ori since
-    private static Vector3 seedFrom;
-
+    // whether right click has moved Ori since the seed editor opened
     private static bool seedMoved;
 
     // the bind pressed with unsaved edits asks first; pressed again it drops them
@@ -163,7 +161,6 @@ public static class PracticeEditor {
         }
 
         Seed = true;
-        seedFrom = Characters.Sein.Position;
         seedMoved = false;
         tool = "item";
         PracticeController.Freeze();
@@ -207,7 +204,7 @@ public static class PracticeEditor {
         }
     }
 
-    // back to the game where it froze, the file's own boxes in force
+    // back to the game, from wherever right click left Ori, the file's own boxes in force
     private static void LeaveSeed() {
         if (SeedBoxes.Current != null && SeedBoxes.Current.Dirty) {
             SeedBoxes.Current.Reload();
@@ -218,8 +215,9 @@ public static class PracticeEditor {
         Seed = false;
         PracticeController.Resume();
         Randomizer.clearMessage();
+        // settles the camera and the scenes on Ori's new spot
         if (seedMoved && Characters.Sein != null) {
-            Randomizer.WarpTo(seedFrom, 0);
+            Randomizer.WarpTo(Characters.Sein.Position, 0);
         }
     }
 
@@ -492,7 +490,7 @@ public static class PracticeEditor {
             + "   Z: undo   X: delete under cursor   Ctrl+C: copy box lines\n";
         if (Seed) {
             Randomizer.printQuiet("EDITING SEED BOXES - " + doing + "\n" + keys
-                + "WASD: pan   right click: look here   Ctrl+S: save   Ctrl+R: reload from the file   Enter: save and play\n"
+                + "WASD: pan   right click: stand Ori here   Ctrl+S: save   Ctrl+R: reload from the file   Enter: save and play\n"
                 + "[[Retry Practice Segment]]: leave without saving   5: fill in the boxes in a browser"
                 + (PracticeServer.Running ? "   " + PracticeServer.Url : ""), 1800);
             return;
