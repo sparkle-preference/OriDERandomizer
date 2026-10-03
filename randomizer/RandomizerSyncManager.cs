@@ -816,7 +816,7 @@ public static class RandomizerSyncManager {
             return;
         }
 
-        Randomizer.printInfo("@Not syncing@: no reply from the server. Check your Netcode URLs.", 480);
+        Randomizer.printInfo(RandomizerText.Error("Not syncing") + ": no reply from the server. Check your Netcode URLs.", 480);
     }
 
     // 412: the server does not know this game. Nothing goes out until Alt+L; pickups stay queued.
@@ -829,7 +829,7 @@ public static class RandomizerSyncManager {
         Warned = true;
         wsFoundToken = 0;
         RequeuePickup();
-        Randomizer.printInfo("@Not syncing@: the server does not know this game. Reload the seed (Alt+L) to retry.", 480);
+        Randomizer.printInfo(RandomizerText.Error("Not syncing") + ": the server does not know this game. Reload the seed (Alt+L) to retry.", 480);
     }
 
     public static void FoundTP(string identifier) {

@@ -219,11 +219,11 @@ public static class RandomizerBonus {
                 if (flag) {
                     if (WaterVeinShards() > 0) {
                         Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                        RandomizerSwitch.PickupMessage("*Water Vein Shard (" + WaterVeinShards() + "/3)*");
+                        RandomizerSwitch.PickupMessage(ShardMessage("*", "Water Vein", WaterVeinShards()));
                     }
                 } else {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("*Water Vein Shard (" + WaterVeinShards() + "/3)*", 300);
+                    RandomizerSwitch.PickupMessage(ShardMessage("*", "Water Vein", WaterVeinShards()), 300);
                 }
 
                 Keys.GinsoTree = WaterVeinShards() >= 3;
@@ -236,11 +236,11 @@ public static class RandomizerBonus {
                 if (flag) {
                     if (GumonSealShards() > 0) {
                         Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                        RandomizerSwitch.PickupMessage("#Gumon Seal Shard (" + GumonSealShards() + "/3)#");
+                        RandomizerSwitch.PickupMessage(ShardMessage("#", "Gumon Seal", GumonSealShards()));
                     }
                 } else {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("#Gumon Seal Shard (" + GumonSealShards() + "/3)#", 300);
+                    RandomizerSwitch.PickupMessage(ShardMessage("#", "Gumon Seal", GumonSealShards()), 300);
                 }
 
                 Keys.ForlornRuins = GumonSealShards() >= 3;
@@ -253,11 +253,11 @@ public static class RandomizerBonus {
                 if (flag) {
                     if (SunstoneShards() > 0) {
                         Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                        RandomizerSwitch.PickupMessage("@Sunstone Shard (" + SunstoneShards() + "/3)@");
+                        RandomizerSwitch.PickupMessage(ShardMessage("@", "Sunstone", SunstoneShards()));
                     }
                 } else {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("@Sunstone Shard (" + SunstoneShards() + "/3)@", 300);
+                    RandomizerSwitch.PickupMessage(ShardMessage("@", "Sunstone", SunstoneShards()), 300);
                 }
 
                 Keys.MountHoru = SunstoneShards() >= 3;
@@ -686,6 +686,10 @@ public static class RandomizerBonus {
 
     public static int GumonSealShards() {
         return Characters.Sein.Inventory.GetRandomizerItem(19);
+    }
+
+    private static string ShardMessage(string color, string key, int count) {
+        return RandomizerItems.Cue(color + key + " Shard (" + count + "/3)" + color, "Shard");
     }
 
     public static int SpiritFlameLevel() {

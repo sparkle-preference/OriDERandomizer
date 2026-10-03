@@ -723,15 +723,15 @@ public static class RandomizerMW {
             }
 
             if (wvs > 0) {
-                events.Add(Counted(wvs, "Water Vein Shard", "Water Vein Shards", "*"));
+                events.Add(RandomizerItems.Cue(Counted(wvs, "Water Vein Shard", "Water Vein Shards", "*"), "Shard"));
             }
 
             if (gss > 0) {
-                events.Add(Counted(gss, "Gumon Seal Shard", "Gumon Seal Shards", "#"));
+                events.Add(RandomizerItems.Cue(Counted(gss, "Gumon Seal Shard", "Gumon Seal Shards", "#"), "Shard"));
             }
 
             if (sss > 0) {
-                events.Add(Counted(sss, "Sunstone Shard", "Sunstone Shards", "@"));
+                events.Add(RandomizerItems.Cue(Counted(sss, "Sunstone Shard", "Sunstone Shards", "@"), "Shard"));
             }
 
             if (wfg > 0) {

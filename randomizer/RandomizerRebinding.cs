@@ -174,7 +174,7 @@ public static class RandomizerRebinding {
         try {
             return ParseBinds(action, bindingString);
         } catch (Exception) {
-            Randomizer.printInfo("@" + action + ": failed to parse '" + bindingString + "'. Using default value: '" + defaultBinds + "'@", 240);
+            Randomizer.printInfo(RandomizerText.Error(action + ": failed to parse '" + bindingString + "'. Using default value: '" + defaultBinds + "'"), 240);
             bindingString = defaultBinds;
         }
 

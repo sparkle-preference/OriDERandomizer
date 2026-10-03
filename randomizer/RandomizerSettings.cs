@@ -132,7 +132,7 @@ public static class RandomizerSettings {
             }
         } catch (Exception) {
             All[setting].Reset();
-            Notice("@" + setting + ": failed to parse value '" + value + "'. Using default value: '" + All[setting].ToString() + "'@", 240);
+            Notice(RandomizerText.Error(setting + ": failed to parse value '" + value + "'. Using default value: '" + All[setting].ToString() + "'"), 240);
         }
     }
 
@@ -313,6 +313,9 @@ public static class RandomizerSettings {
         Accessibility.SoundCompressionFactor = new FloatSetting("Sound Compression Factor", 0.6f, "(0.0-1.0) Higher values mean more sound compression (fewer sounds louder than the rest of them).", false, min: 0f, max: 1f);
         Accessibility.CameraShakeFactor = new FloatSetting("Camera Shake Factor", 1f, "(0.0-1.0) Reduce the intensity of camera shake effects in the game. Set to 0 to disable camera shake entirely.", false);
         Accessibility.DisableMenuBlur = new BoolSetting("Disable Menu Blur", false, "True: Disables the blur effect applied to the game during Save Anywhere.\nFalse (default): Vanilla behavior.", false);
+        Accessibility.ColorlessText = new BoolSetting("Colorless Text", false, "True: text is shown without colors.\nFalse (default): colored text.", false);
+        Accessibility.TextCues = new BoolSetting("Text Cues", false, "True: names say what their color means, like (Skill) or (Key).\nFalse (default): no cues.", false);
+        RandomizerItems.Cues = () => Accessibility.TextCues.Value;
 
         Dev = new BoolSetting("Dev", false, "", false, true);
 
@@ -486,6 +489,10 @@ public static class RandomizerSettings {
         public static FloatSetting CameraShakeFactor;
 
         public static BoolSetting DisableMenuBlur;
+
+        public static BoolSetting ColorlessText;
+
+        public static BoolSetting TextCues;
     }
 
 

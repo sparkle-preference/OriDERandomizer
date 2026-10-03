@@ -46,6 +46,20 @@ public static class RandomizerText {
         return built.ToString();
     }
 
+    // the styles the #, *, $ and @ wrappers become; Colorless Text drops their color and any <style color=...>
+    private static readonly HashSet<string> WrapperStyles = new HashSet<string> { "yellow", "blue", "green", "red" };
+
+    public static bool Uncolored(string style) {
+        var colorless = RandomizerSettings.Accessibility.ColorlessText;
+        return colorless != null && colorless.Value && style != null
+            && (WrapperStyles.Contains(style) || style.StartsWith("style ", System.StringComparison.Ordinal));
+    }
+
+    // red, and with Text Cues said in words too
+    public static string Error(string text) {
+        return RandomizerItems.Cue("@" + text + "@", "Error");
+    }
+
     public static RandomizerMessageProvider GetAbilityDescription(AbilityType ability) {
         if (!m_abilityOverrides.ContainsKey(ability)) {
             return null;
@@ -59,7 +73,7 @@ public static class RandomizerText {
             var text = $"Current Filter ({RandomizerRebinding.ToggleMapMode.FirstBindName()}): *{RandomizerSettings.CurrentFilter.Desc()}*";
             if (RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.InLogic) {
                 if (RandomizerLocationManager.Areas == null) {
-                    return $"{text}\n@Logic filter unavailable; areas.ori missing@";
+                    return $"{text}\n{Error("Logic filter unavailable; areas.ori missing")}";
                 }
             }
 

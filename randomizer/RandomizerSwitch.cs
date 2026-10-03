@@ -406,7 +406,7 @@ public static class RandomizerSwitch {
                         relicStr = "$" + relicStr + "$";
                     }
 
-                    PickupMessage((string)action.Value + relicStr, 480);
+                    PickupMessage(RandomizerItems.Cue((string)action.Value, "Relic") + relicStr, 480);
                     break;
                 case "WS":
                 case "WP":

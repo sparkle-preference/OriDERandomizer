@@ -104,6 +104,12 @@ public static class RandomizerItems {
         "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "260", "261", "262", "263", "264", "265", "266", "267"
     };
 
+    private static readonly HashSet<string> KeyEvents = new HashSet<string> { "Water Vein", "Gumon Seal", "Sunstone" };
+    private static readonly HashSet<string> WorldEvents = new HashSet<string> { "Clean Water", "Wind Restored", "Warmth Returned" };
+
+    // the Text Cues setting, kept behind a delegate so this file stays free of game types
+    public static Func<bool> Cues = () => false;
+
     private static readonly HashSet<string> blueStuff = new HashSet<string> { "Water Vein", "Ginso Teleporter", "Clean Water" };
     private static readonly HashSet<string> orangeStuff = new HashSet<string> { "Gumon Seal", "Forlorn Teleporter", "Wind Restored" };
     private static readonly HashSet<string> redStuff = new HashSet<string> { "Sunstone", "Horu Teleporter", "Warmth Returned" };
@@ -245,7 +251,26 @@ public static class RandomizerItems {
     // the color belongs to the item; what is written may be shorter than its name
     public static string ColorWrapAs(string name, string shown) {
         var color = ColorOf(name);
-        return color + shown + color;
+        var cue = CueOf(name);
+        return cue == null ? color + shown + color : Cue(color + shown + color, cue);
+    }
+
+    // what a color says, put into words ahead of the text, for players who turn on Text Cues
+    public static string Cue(string text, string cue) {
+        return Cues() ? "(" + cue + ") " + text : text;
+    }
+
+    // teleporters only borrow their dungeon's color, so they get no cue
+    private static string CueOf(string name) {
+        if (SkillNames.ContainsValue(name)) {
+            return "Skill";
+        }
+
+        if (KeyEvents.Contains(name)) {
+            return "Key";
+        }
+
+        return WorldEvents.Contains(name) ? "World" : null;
     }
 
     // the cue a pickup's usual message carries, for a renamed one to keep
