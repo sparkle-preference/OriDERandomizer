@@ -53,9 +53,9 @@ public static class RandomizerAutoplayer {
             return;
         }
 
-        // Touched, not Collected: a repeatable never reports collected and would be picked forever
+        // Spent, not Collected: a repeatable never reports collected and would be picked forever
         var open = RandomizerLocationManager.LocationsByKey.Values
-            .Where(loc => loc.Reachable && !loc.Touched && loc.Pickup != null)
+            .Where(loc => loc.Reachable && !loc.Spent && loc.Pickup != null)
             .ToList();
         if (open.Count == 0) {
             if (!idle) {

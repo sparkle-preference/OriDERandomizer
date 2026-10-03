@@ -628,9 +628,12 @@ public class RandomizerLocationManager {
 
         public bool Collected => Repeatable ? false : Type == LocationType.Map ? RandomizerTrackedDataManager.GetMapstone(SpecialIndex) : Randomizer.HaveCoord(Key);
 
-        // a granted self-AP slot counts as touched even after a death rolls the coord bit back
-        public bool Touched => Collected || Repeatable && Randomizer.HaveCoord(Key)
+        // nothing left to give; a granted self-AP slot stays spent even after a death rolls the coord bit back
+        public bool Spent => Collected || Repeatable && Randomizer.HaveCoord(Key)
             || RandomizerMW.SelfItemCollected(Key) || RandomizerMW.ReleasedAway(Pickup);
+
+        // collected at some point, a death since or not: only a marker for the map (mapstones aren't coords)
+        public bool Touched => Spent || Type != LocationType.Map && Randomizer.SeenCoord(Key);
 
         public MoonGuid MoonGuid;
 

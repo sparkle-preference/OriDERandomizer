@@ -414,7 +414,7 @@ public static class RandomizerMapWarp {
                 if (icon.Icon == WorldMapIconType.SavePedestal) {
                     alpha = Open(icon.Position) ? 1f : LockedAlpha;
                 } else if (RandomizerLocationManager.LocationsByWorldMapGuid.TryGetValue(
-                        icon.Guid, out var loc) && Spent(loc)) {
+                        icon.Guid, out var loc) && loc.Touched) {
                     alpha = TouchedAlpha();
                 }
 
@@ -430,11 +430,6 @@ public static class RandomizerMapWarp {
         }
     }
 
-    // Already granted: an icon still on the map for it (the world forgot on death, or it repeats) gives nothing.
-    public static bool Spent(RandomizerLocationManager.Location loc) {
-        return loc != null && loc.Touched;
-    }
-
     // The slider's alpha, floored under the Uncollected filter so a touched icon never vanishes there.
     private static float TouchedAlpha() {
         var alpha = RandomizerSettings.Customization.TouchedVisibility.Value;
@@ -446,7 +441,7 @@ public static class RandomizerMapWarp {
 
     // Not drawn at all near zero: an invisible icon would still catch the cursor.
     public static bool Hidden(RandomizerLocationManager.Location loc) {
-        return Spent(loc) && TouchedAlpha() <= Vanished;
+        return loc != null && loc.Touched && TouchedAlpha() <= Vanished;
     }
 
     // Wells sit on their own scenery, so a loose match is enough to tell which one an icon is.
