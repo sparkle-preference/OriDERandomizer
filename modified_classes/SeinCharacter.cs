@@ -41,7 +41,9 @@ public class SeinCharacter : MonoBehaviour, ICharacter {
     }
 
     public void MakeBelongToSein(GameObject go) {
-        go.BroadcastMessage("SetReferenceToSein", this, SendMessageOptions.DontRequireReceiver);
+        foreach (var mb in go.GetComponentsInChildren<ISeinReceiver>(true)) {
+            mb.SetReferenceToSein(this);
+        }
     }
 
     public void FixedUpdate() {
