@@ -540,6 +540,10 @@ public static class Randomizer {
     private static float pinnedTry;
 
     private static void ShowPinned() {
+        if (!HintsReady) {
+            return;
+        }
+
         MessageProvider.SetMessage(Bound(Pinned));
         var hush = Hush();
         pinnedBox = UI.Hints.Show(MessageProvider, HintLayer.Randomizer, 4f);
@@ -1202,10 +1206,28 @@ public static class Randomizer {
         return false;
     }
 
+    // a hint shown before the game's screen anchors load makes a bare stand-in, and the real ones then destroy themselves
+    private static bool HintsReady {
+        get {
+            if (!screenAnchors) {
+                var found = UnityEngine.Object.FindObjectOfType<OnScreenPositions>();
+                screenAnchors = found && found.TopCenterTransform ? found : null;
+            }
+
+            return screenAnchors;
+        }
+    }
+
+    private static OnScreenPositions screenAnchors;
+
     public static void UpdateMessages() {
         if (MessageQueueTime <= 0f) {
             if (MessageQueue.Count == 0) {
                 HoldPinned();
+                return;
+            }
+
+            if (!HintsReady) {
                 return;
             }
 
@@ -1372,7 +1394,7 @@ public static class Randomizer {
             return;
         }
 
-        if (immediate) {
+        if (immediate && HintsReady) {
             MessageProvider.SetMessage(text);
             var hush = mute ? Hush() : null;
             UI.Hints.Show(MessageProvider, HintLayer.Randomizer, seconds);
