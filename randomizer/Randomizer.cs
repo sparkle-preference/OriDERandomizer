@@ -89,7 +89,8 @@ public static class Randomizer {
             RandomizerColorManager.Initialize();
             RandomizerRebinding.ParseRebinding();
             RandomizerSettings.ParseSettings();
-            RandomizerExpNames.ParseExpNames();
+            RandomizerCustomNames.ParseExpNames();
+            RandomizerCustomNames.ParsePickupNames();
             RelicZoneLookup = new Dictionary<string, string>();
             RandomizerTrackedDataManager.Initialize();
             RandomizerStatsManager.Initialize();

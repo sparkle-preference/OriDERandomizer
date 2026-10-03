@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Game;
 using Sein.World;
@@ -28,7 +29,7 @@ public static class RandomizerSwitch {
     }
 
     public static void ExpOrbPickup(int Value, int coords) {
-        PickupMessage(Value + " " + RandomizerExpNames.ExpName(coords));
+        PickupMessage(Value + " " + RandomizerCustomNames.ExpName(coords));
         if (Randomizer.ZeroXP) {
             return;
         }
@@ -301,6 +302,7 @@ public static class RandomizerSwitch {
 
         // Reentrant: a nested grant keeps the outermost pickup's zone.
         var outerZone = RandomizerStatsManager.PickupZone;
+        granting.Add(new KeyValuePair<RandomizerAction, int>(action, coords));
         if (outerZone == null) {
             RandomizerStatsManager.PickupZone = RandomizerStatsManager.ZoneForPickup(coords);
         }
@@ -464,10 +466,10 @@ public static class RandomizerSwitch {
                         var known = int.TryParse(mwPieces[0], out var pid);
                         // an AP reserved line not scouted yet: its owner is our shadow, not a player
                         if (known && Randomizer.PlayerCount > 0 && pid > Randomizer.PlayerCount) {
-                            SentMwPickupMessage($"{RandomizerItems.ColorWrap(mwItem)} (Archipelago)");
+                            SentMwPickupMessage($"{RandomizerCustomNames.Rename(mwCode, mwId, coords, RandomizerItems.ColorWrap(mwItem))} (Archipelago)");
                         } else {
                             var playerName = known ? RandomizerMW.PlayerName(pid) : $"Player {mwPieces[0]}";
-                            SentMwPickupMessage($"{playerName}'s {RandomizerItems.ColorWrap(mwItem)}");
+                            SentMwPickupMessage($"{playerName}'s {RandomizerCustomNames.Rename(mwCode, mwId, coords, RandomizerItems.ColorWrap(mwItem))}");
                         }
                     } else {
                         SentMwPickupMessage("Unknown Foreign Item");
@@ -486,6 +488,7 @@ public static class RandomizerSwitch {
             Randomizer.LogError($"Give Pickup({action}, {coords}): {e.Message}");
         } finally {
             RandomizerStatsManager.PickupZone = outerZone;
+            granting.RemoveAt(granting.Count - 1);
         }
 
         if (found_locally && Randomizer.Sync) {
@@ -561,10 +564,18 @@ public static class RandomizerSwitch {
     // true only while Autoplayer.Drop grants from pickup.tmp; bingo looks away
     public static bool FromFile;
 
+    // the pickups being granted, innermost last: each multipickup piece renames its own message
+    private static readonly List<KeyValuePair<RandomizerAction, int>> granting = new List<KeyValuePair<RandomizerAction, int>>();
+
     // appended to every pickup message while set (RandomizerMW's " from Player N")
     public static string MessageSuffix = null;
 
     public static void PickupMessage(string text, int frames = 120) {
+        if (granting.Count > 0) {
+            var pickup = granting[granting.Count - 1];
+            text = RandomizerCustomNames.Rename(pickup.Key.Action, pickup.Key.ValAsStr(), pickup.Value, text);
+        }
+
         if (MessageSuffix != null) {
             text += MessageSuffix;
         }

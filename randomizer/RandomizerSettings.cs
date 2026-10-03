@@ -285,6 +285,7 @@ public static class RandomizerSettings {
         Customization.WarpTeleporterColor = new ColorSetting("Warp Teleporter Color", new Color(202f / 255f, 57f / 255f, 243f / 255f, 1f), FullScale, "Red, Green, Blue, Transparency (0-255 for each): The color that Warp-created Teleporters are on the map.");
         Customization.DefaultMapFilter = new EnumSetting<MapFilterMode>("Default Map Filter", MapFilterMode.InLogic, "InLogic (default): Select the In Logic map filter when first opening the map.\nUncollected: Select the Uncollected map filter when first opening the map.", false);
         Customization.HintLevel = new EnumSetting<HintLevels>("Hints", HintLevels.NewPlayer, "NewPlayer (default): Show loading tips intended for new rando players.\nExperienced: Show loading tips intended for more experienced rando players.\nDisabled: Do not show loading screen tips.", false);
+        Customization.CustomPickupNames = new BoolSetting("Custom Pickup Names", false, "True: pickup messages use your names from PickupNames.txt.\nFalse (default): the usual names.", false);
         Customization.RandomizedExpNames = new BoolSetting("Randomized Experience Names", false, "True: Replace the word \"Experience\" with a random currency name whenever you gain experience from a pickup.\nFalse (default): Experience pickups are just called Experience.", false);
         Customization.AlwaysShowDoorHints = new BoolSetting("Always Show Keysanity Door Hints", false, "True: Always show any unlocked Keysanity door hints when viewing the map.\nFalse (default): Only show Keysanity door hints in the map when hovering a door.");
         Customization.KeyLockWarnings = new BoolSetting("Keystone Door Logic Warnings", true, "True (default): Warn when touching a keystone door that is not currently in logic, since opening it early could make the seed uncompletable.\nFalse: no warning.");
@@ -423,6 +424,8 @@ public static class RandomizerSettings {
         public static EnumSetting<HintLevels> HintLevel;
 
         public static BoolSetting RandomizedExpNames;
+
+        public static BoolSetting CustomPickupNames;
 
         public static BoolSetting AlwaysShowDoorHints;
 

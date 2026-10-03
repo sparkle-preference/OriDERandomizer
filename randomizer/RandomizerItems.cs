@@ -248,6 +248,22 @@ public static class RandomizerItems {
         return color + shown + color;
     }
 
+    // the cue a pickup's usual message carries, for a renamed one to keep
+    public static string CueFor(string code, string id) {
+        switch (code) {
+            case "SK":
+                return "Skill";
+            case "EV":
+                return id == "0" || id == "2" || id == "4" ? "Key" : id == "1" || id == "3" || id == "5" ? "World" : null;
+            case "RB":
+                return id == "17" || id == "19" || id == "21" ? "Shard" : null;
+            case "WT":
+                return "Relic";
+            default:
+                return null;
+        }
+    }
+
     private static string ColorOf(string name) {
         if (SkillNames.ContainsValue(name)) {
             return "$"; // skill names are green
@@ -266,5 +282,126 @@ public static class RandomizerItems {
         }
 
         return ""; // this could have been a poem
+    }
+}
+
+/// <summary>PickupNames.txt: "KEY, KEY: name | name", where a key is CODE|ID, CODE|LO-HI or CODE|*.
+/// The most specific key wins (an id, then the narrowest range, then *); a later rule wins a tie.</summary>
+public class PickupNameRules {
+    private class Key {
+        public string Code;
+        public string Id;
+        public int Lo;
+        public int Hi;
+        public bool Any;
+        public string[] Names;
+
+        // lower is more specific: an exact id 0, a range its width, * last
+        public long Width => Id != null ? 0 : Any ? long.MaxValue : (long)Hi - Lo + 1;
+    }
+
+    private readonly List<Key> keys = new List<Key>();
+
+    public int Count => keys.Count;
+
+    public static PickupNameRules Parse(IEnumerable<string> lines, List<string> problems) {
+        var rules = new PickupNameRules();
+        var number = 0;
+        foreach (var raw in lines) {
+            number++;
+            var line = raw.Trim();
+            if (line.Length == 0 || line.StartsWith("//")) {
+                continue;
+            }
+
+            var colon = line.IndexOf(':');
+            if (colon < 0) {
+                problems.Add("line " + number + " has no ':' between its keys and names");
+                continue;
+            }
+
+            var names = Names(line.Substring(colon + 1));
+            if (names.Length == 0) {
+                problems.Add("line " + number + " has no names after its ':'");
+                continue;
+            }
+
+            foreach (var text in line.Substring(0, colon).Split(',')) {
+                var key = ParseKey(text.Trim(), names);
+                if (key == null) {
+                    problems.Add("line " + number + ": '" + text.Trim() + "' is not CODE|ID, CODE|LO-HI or CODE|*");
+                } else {
+                    rules.keys.Add(key);
+                }
+            }
+        }
+
+        return rules;
+    }
+
+    // names split on |, with \| a literal one
+    private static string[] Names(string text) {
+        var names = new List<string>();
+        var current = new StringBuilder();
+        for (var i = 0; i < text.Length; i++) {
+            if (text[i] == '\\' && i + 1 < text.Length && text[i + 1] == '|') {
+                current.Append('|');
+                i++;
+            } else if (text[i] == '|') {
+                names.Add(current.ToString().Trim());
+                current.Length = 0;
+            } else {
+                current.Append(text[i]);
+            }
+        }
+
+        names.Add(current.ToString().Trim());
+        return names.Where(n => n.Length > 0).ToArray();
+    }
+
+    private static Key ParseKey(string text, string[] names) {
+        var bar = text.IndexOf('|');
+        if (bar <= 0 || bar == text.Length - 1) {
+            return null;
+        }
+
+        var key = new Key { Code = text.Substring(0, bar).Trim().ToUpperInvariant(), Names = names };
+        var id = text.Substring(bar + 1).Trim();
+        if (id == "*") {
+            key.Any = true;
+            return key;
+        }
+
+        // a leading - is a negative id, so a range's dash comes later
+        var dash = id.IndexOf('-', 1);
+        if (dash > 0) {
+            if (!int.TryParse(id.Substring(0, dash), out key.Lo) || !int.TryParse(id.Substring(dash + 1), out key.Hi) || key.Lo > key.Hi) {
+                return null;
+            }
+
+            return key;
+        }
+
+        key.Id = id;
+        return key;
+    }
+
+    /// <summary>The names the most specific matching key offers, or null when none matches.</summary>
+    public string[] For(string code, string id) {
+        Key best = null;
+        int number;
+        var numeric = int.TryParse(id, out number);
+        foreach (var key in keys) {
+            if (key.Code != code) {
+                continue;
+            }
+
+            var matches = key.Any || (key.Id != null ? key.Id == id : numeric && number >= key.Lo && number <= key.Hi);
+            if (matches && (best == null || key.Width <= best.Width)) {
+                best = key;
+            }
+        }
+
+        return best?.Names;
     }
 }
