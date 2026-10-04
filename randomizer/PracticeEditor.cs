@@ -19,6 +19,8 @@ public static class PracticeEditor {
 
     private static Vector2 dragFrom;
 
+    private static bool doMotionBlur;
+
     private static bool dragging;
 
     private static string tool = "item";
@@ -178,6 +180,11 @@ public static class PracticeEditor {
         undoIndex = -1;
         leaveArmed = false;
         hoverLists = null;
+
+        if (UberPostProcess.Instance != null) {
+            doMotionBlur = UberPostProcess.Instance.DoMotionBlur;
+            UberPostProcess.Instance.DoMotionBlur = false;
+        }
     }
 
     // what is drawn over the world goes with the editor, whichever way it is left
@@ -189,6 +196,10 @@ public static class PracticeEditor {
         lit = null;
         Active = false;
         dragging = false;
+
+        if (UberPostProcess.Instance != null) {
+            UberPostProcess.Instance.DoMotionBlur = doMotionBlur;
+        }
     }
 
     // the retry bind in the seed editor: back to the game, unsaved edits dropped
