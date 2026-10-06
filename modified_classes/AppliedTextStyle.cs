@@ -16,7 +16,7 @@ namespace CatlikeCoding.TextBox {
 
         public void ApplyOnTop(TextStyle style) {
             var refreshDescent = false;
-            if (style.hasColor && !RandomizerText.Uncolored(style.name)) {
+            if (style.hasColor && !RandomizerText.Colorless) {
                 color = style.color;
                 gradient = style.gradient;
             }

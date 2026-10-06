@@ -46,13 +46,12 @@ public static class RandomizerText {
         return built.ToString();
     }
 
-    // the styles the #, *, $ and @ wrappers become; Colorless Text drops their color and any <style color=...>
-    private static readonly HashSet<string> WrapperStyles = new HashSet<string> { "yellow", "blue", "green", "red" };
-
-    public static bool Uncolored(string style) {
-        var colorless = RandomizerSettings.Accessibility.ColorlessText;
-        return colorless != null && colorless.Value && style != null
-            && (WrapperStyles.Contains(style) || style.StartsWith("style ", System.StringComparison.Ordinal));
+    // Colorless Text: styles keep their font and size, never their color
+    public static bool Colorless {
+        get {
+            var colorless = RandomizerSettings.Accessibility.ColorlessText;
+            return colorless != null && colorless.Value;
+        }
     }
 
     // red, and with Text Cues said in words too
