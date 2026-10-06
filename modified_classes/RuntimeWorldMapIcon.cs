@@ -176,16 +176,5 @@ public class RuntimeWorldMapIcon {
 
     private static readonly MoonGuid SecondGinsoTree = new MoonGuid(-1906535857, 1336220761, 1768076162, -2078859709);
 
-    private static Texture2D PlantTexture {
-        get {
-            if (_plantTexture == null) {
-                _plantTexture = new Texture2D(0, 0);
-                _plantTexture.LoadImage(RandomizerResources.ReadResource("plant.png"));
-            }
-
-            return _plantTexture;
-        }
-    }
-
-    private static Texture2D _plantTexture;
+    private static Texture2D PlantTexture => field ??= RandomizerResources.LoadTexture("plant.png");
 }

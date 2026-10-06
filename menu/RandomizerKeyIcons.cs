@@ -151,7 +151,7 @@ public static class RandomizerKeyIcons {
                 return;
             }
 
-            var sheet = Sheet();
+            var sheet = RandomizerResources.LoadTexture(Art);
             if (sheet == null) {
                 GiveUp("no " + Art);
                 return;
@@ -470,17 +470,6 @@ public static class RandomizerKeyIcons {
 
         Array.Sort(chars, (a, b) => a.id.CompareTo(b.id));
         font.otherChars = chars;
-    }
-
-    private static Texture2D Sheet() {
-        var bytes = RandomizerResources.ReadResource(Art);
-        if (bytes == null) {
-            return null;
-        }
-
-        var sheet = new Texture2D(0, 0);
-        sheet.LoadImage(bytes);
-        return sheet;
     }
 
     private static TextBoxIconsFontGenerator Font() {

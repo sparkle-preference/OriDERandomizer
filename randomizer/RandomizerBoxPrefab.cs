@@ -13,7 +13,7 @@ public class RandomizerBoxPrefab : MonoBehaviour {
     }
 
     public static RandomizerBoxPrefab Create(RandomizerBox box) {
-        var go = Instantiate(Instance.gameObject);
+        var go = Instantiate(PrefabInstance.gameObject);
         var rb = go.GetComponent<RandomizerBoxPrefab>();
         rb.Init(box);
         rb.UpdateActive();
@@ -182,29 +182,9 @@ public class RandomizerBoxPrefab : MonoBehaviour {
 
     public const float EdgeWidth = 0.25f;
 
-    private static RandomizerBoxPrefab? _instance;
+    private static RandomizerBoxPrefab PrefabInstance => field ??= CreatePrefab();
 
-    public static RandomizerBoxPrefab Instance {
-        get {
-            if (_instance == null) {
-                _instance = CreatePrefab();
-            }
-
-            return _instance;
-        }
-    }
-
-    private static Material? _material;
-
-    private static Material Material {
-        get {
-            if (_material == null) {
-                _material = CreateMaterial();
-            }
-
-            return _material;
-        }
-    }
+    private static Material Material => field ??= CreateMaterial();
 
     private static readonly Dictionary<float, Material> MaterialsByDepth = new();
 

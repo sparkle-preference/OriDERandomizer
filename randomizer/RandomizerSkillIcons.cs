@@ -148,14 +148,11 @@ public static class RandomizerSkillIcons {
             return texture;
         }
 
-        var bytes = RandomizerResources.ReadResource(resource);
-        if (bytes == null) {
+        texture = RandomizerResources.LoadTexture(resource);
+        if (texture == null) {
             return null;
         }
 
-        texture = new Texture2D(2, 2, TextureFormat.ARGB32, true);
-        texture.LoadImage(bytes);
-        texture.name = resource;
         texture.wrapMode = TextureWrapMode.Clamp;
         loaded[resource] = texture;
         return texture;

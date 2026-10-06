@@ -76,18 +76,11 @@ public static class RandomizerQuad {
     }
 
     public static Texture2D Texture(string resource) {
-        Texture2D cached;
-        if (textures.TryGetValue(resource, out cached) && cached != null) {
+        if (textures.TryGetValue(resource, out var cached) && cached != null) {
             return cached;
         }
 
-        var bytes = RandomizerResources.ReadResource(resource);
-        if (bytes == null) {
-            return null;
-        }
-
-        cached = new Texture2D(0, 0);
-        cached.LoadImage(bytes);
+        cached = RandomizerResources.LoadTexture(resource);
         textures[resource] = cached;
         return cached;
     }

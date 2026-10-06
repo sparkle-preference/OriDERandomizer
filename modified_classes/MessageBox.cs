@@ -482,20 +482,7 @@ public class MessageBox : MonoBehaviour {
         return background ? background.GetComponent<Renderer>() : null;
     }
 
-    private static Texture2D _hintMessageBackgroundWhite;
-
-    private static Texture2D WhiteBackground {
-        get {
-            if (_hintMessageBackgroundWhite == null) {
-                _hintMessageBackgroundWhite = new Texture2D(0, 0);
-                _hintMessageBackgroundWhite.LoadImage(
-                    RandomizerResources.ReadResource("hintMessageBackgroundWhite.png")
-                );
-            }
-
-            return _hintMessageBackgroundWhite;
-        }
-    }
+    private static Texture2D WhiteBackground => field ??= RandomizerResources.LoadTexture("hintMessageBackgroundWhite.png");
 
     public const float WaitTimeBetweenMessages = 0.3f;
 
