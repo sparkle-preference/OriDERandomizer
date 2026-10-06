@@ -315,7 +315,6 @@ public static class RandomizerSettings {
         Accessibility.DisableMenuBlur = new BoolSetting("Disable Menu Blur", false, "True: Disables the blur effect applied to the game during Save Anywhere.\nFalse (default): Vanilla behavior.", false);
         Accessibility.ColorlessText = new BoolSetting("Colorless Text", false, "True: text is shown without colors.\nFalse (default): colored text.", false);
         Accessibility.TextCues = new BoolSetting("Text Cues", false, "True: names say what their color means, like (Skill) or (Key).\nFalse (default): no cues.", false);
-        RandomizerItems.Cues = () => Accessibility.TextCues.Value;
 
         Dev = new BoolSetting("Dev", false, "", false, true);
 

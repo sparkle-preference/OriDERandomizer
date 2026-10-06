@@ -46,15 +46,10 @@ public static class RandomizerText {
         return built.ToString();
     }
 
-    // Colorless Text: styles keep their font and size, never their color
     public static bool Colorless {
-        get {
-            var colorless = RandomizerSettings.Accessibility.ColorlessText;
-            return colorless != null && colorless.Value;
-        }
+        get => RandomizerSettings.Accessibility.ColorlessText.Value;
     }
 
-    // red, and with Text Cues said in words too
     public static string Error(string text) {
         return RandomizerItems.Cue("@" + text + "@", "Error");
     }
