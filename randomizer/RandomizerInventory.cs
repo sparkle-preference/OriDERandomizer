@@ -220,7 +220,7 @@ public class RandomizerInventory : SaveSerialize {
 
             randomizerItems[SlotStamp] = slot;
 
-            RandomizerBoxes.SaveLoaded();
+            RandomizerBoxes.Serialize(randomizerItems.Remove(1_000_000_001) ? ar : null);
         } else {
             randomizerItems[SlotStamp] = SaveSlotsManager.CurrentSlotIndex + 1;
             ar.Serialize(randomizerItems.Count);
@@ -229,5 +229,9 @@ public class RandomizerInventory : SaveSerialize {
                 ar.Serialize(kvp.Value);
             }
         }
+
+        ar.Serialize(1_000_000_001);
+        ar.Serialize(0);
+        RandomizerBoxes.Serialize(ar);
     }
 }

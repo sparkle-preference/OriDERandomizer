@@ -443,6 +443,10 @@ public class GameController : SaveSerialize, ISuspendable {
     }
 
     public void CreateCheckpoint() {
+        CreateCheckpoint(true);
+    }
+
+    public void CreateCheckpoint(bool callOnPostCreate) {
         SaveGameData saveGameData = Game.Checkpoint.SaveGameData;
         SaveSceneManager.Master.SaveWithoutClearing(saveGameData.Master);
         saveGameData.ApplyPendingScenes();
@@ -454,7 +458,9 @@ public class GameController : SaveSerialize, ISuspendable {
             }
         }
 
-        Game.Checkpoint.Events.OnPostCreate.Call();
+        if (callOnPostCreate) {
+            Game.Checkpoint.Events.OnPostCreate.Call();
+        }
     }
 
     public void ClearCheckpointData() {

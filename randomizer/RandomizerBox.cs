@@ -13,19 +13,21 @@ using Object = UnityEngine.Object;
 //   BX|<flags>|x1,y1,x2,y2|<color>|<pickup>
 // split on | at most four times, so a pickup keeps its own pipes.
 public class RandomizerBox {
-    public void Update() {
+    public void UpdateActive() {
         if (UnityObject != null) {
             UnityObject.UpdateActive();
         }
     }
 
     public void Init(int boxNumber) {
-        BoxNumber = boxNumber;
-        if (UnityObject != null) {
-            Object.Destroy(UnityObject.gameObject);
+        DeInit();
+
+        if (Deleted) {
+            return;
         }
 
-        UnityObject = Deleted ? null : RandomizerBoxPrefab.Create(this);
+        BoxNumber = boxNumber;
+        UnityObject = RandomizerBoxPrefab.Create(this);
     }
 
     public void DeInit() {
@@ -112,12 +114,48 @@ public class RandomizerBox {
                         break;
                     }
 
-                    if (!flag[1].TryParseEnum(true, out BoxTrigger trigger)) {
-                        Randomizer.log($"invalid value for box on= flag \"{flag[1]}\". Must be one of (Enter, Tick, Frame)");
+                    var parts = flag[1].Split(['/'], 3);
+                    if (parts[0].Equals("Enter", StringComparison.OrdinalIgnoreCase)) {
+                        Trigger = BoxTrigger.Tick;
+                        RecollectCooldown = int.MaxValue;
+                        InitialCollectCooldown = 1;
+                        break;
+                    }
+
+                    if (!parts[0].TryParseEnum(true, out BoxTrigger trigger)) {
+                        Randomizer.log($"invalid value for box on= flag \"{parts[0]}\". Must be one of (Enter, Tick, Frame)");
                         break;
                     }
 
                     Trigger = trigger;
+
+                    if (trigger == BoxTrigger.Tick) {
+                        RecollectCooldown = 1;
+                        InitialCollectCooldown = 1;
+
+                        if (parts.Length > 1) {
+                            if (parts[1].Equals("never", StringComparison.OrdinalIgnoreCase)) {
+                                InitialCollectCooldown = int.MaxValue;
+                            } else if (int.TryParse(parts[1], out var cooldown)) {
+                                InitialCollectCooldown = cooldown;
+                            } else {
+                                Randomizer.log($"box flag \"on\" has invalid delay value \"{parts[1]}\" (must be an integer) in line {line}");
+                                break;
+                            }
+                        }
+
+                        if (parts.Length > 2) {
+                            if (parts[2].Equals("never", StringComparison.OrdinalIgnoreCase)) {
+                                RecollectCooldown = int.MaxValue;
+                            } else if (int.TryParse(parts[2], out var cooldown)) {
+                                RecollectCooldown = cooldown;
+                            } else {
+                                Randomizer.log($"box flag \"on\" has invalid repeat value \"{parts[2]}\" (must be an integer) in line {line}");
+                                break;
+                            }
+                        }
+                    }
+
                     break;
                 }
                 case "damage": {
@@ -155,8 +193,7 @@ public class RandomizerBox {
                     if (parts.Length > 3) {
                         if (parts[3].Equals("normal", StringComparison.InvariantCultureIgnoreCase)) {
                             ExtendedHitboxes = false;
-                        }
-                        else if (parts[3].Equals("extended", StringComparison.InvariantCultureIgnoreCase)) {
+                        } else if (parts[3].Equals("extended", StringComparison.InvariantCultureIgnoreCase)) {
                             ExtendedHitboxes = true;
                         } else {
                             Randomizer.log($"box flag \"damage\" has invalid hitbox value \"{parts[3]}\" (must be normal,extended) in line {line}");
@@ -216,7 +253,6 @@ public class RandomizerBox {
                 case "ritem":
                     Color = new Color(0.5f, 0.85f, 1f, 0.25f);
                     break;
-                // none is the tombstone's first name
                 case "none":
                 case "tombstone":
                     Deleted = true;
@@ -230,7 +266,6 @@ public class RandomizerBox {
         }
     }
 
-    public string GetPayloadString() => Item == null ? "" : Item.Action + "|" + Item.Value;
 
     private static string Num(float value) {
         return Math.Round(value, 2).ToString(CultureInfo.InvariantCulture);
@@ -347,6 +382,10 @@ public class RandomizerBox {
 
     public BoxTrigger Trigger { get; private set; }
 
+    public int InitialCollectCooldown { get; private set; } = 1;
+
+    public int RecollectCooldown { get; private set; } = int.MaxValue;
+
     public float DamageAmount { get; private set; }
 
     public BoxDamageTarget DamageTarget { get; private set; } = BoxDamageTarget.All;
@@ -375,7 +414,6 @@ public class RandomizerBox {
     public const string Prefix = "BX|";
 
     public enum BoxTrigger {
-        Enter,
         Tick,
         Frame,
     }
@@ -392,7 +430,7 @@ public class RandomizerBox {
 public static class RandomizerBoxes {
     public static readonly List<RandomizerBox> Seed = new();
 
-    public static RandomizerBox[] ActiveBoxes = [];
+    public static RandomizerBox[] LoadedBoxes = [];
 
     public const int FirstBitId = 1700;
 
@@ -400,86 +438,130 @@ public static class RandomizerBoxes {
 
     public const int Capacity = (LastBitId - FirstBitId + 1) * 32;
 
-    public const int FirstActiveId = 2700;
-
-    public const int LastActiveId = FirstActiveId + LastBitId - FirstBitId;
-
     public static bool Enabled;
 
     public static RandomizerBitfield BoxOffStates = new(FirstBitId, LastBitId - FirstBitId + 1);
 
-    public static RandomizerBitfield ActiveStates = new(FirstActiveId, LastActiveId - FirstActiveId + 1);
+    public static Dictionary<int, ActiveBoxState> ActiveBoxes = [];
 
-    public static Bitfield NewActiveStates = new(Capacity);
+    public static List<int> ActiveThisTick = [];
 
-    public static List<int> RequiresUpdate = [];
-
-    public static List<int> RequiresTick = [];
+    public static List<int> CollectEachUpdate = [];
 
     private static bool _updateLast;
 
+    public static void Serialize(Archive? ar) {
+        foreach (var box in LoadedBoxes) {
+            box.UpdateActive();
+        }
+
+        if (ar == null) {
+            // Reading old save data without serialized box data
+            ActiveBoxes.Clear();
+            ActiveThisTick.Clear();
+            CollectEachUpdate.Clear();
+            return;
+        }
+
+        if (ar.Reading) {
+            ActiveBoxes.Clear();
+            ActiveThisTick.Clear();
+            CollectEachUpdate.Clear();
+
+            var serializedVersion = ar.Serialize(0);
+            if (serializedVersion != 1) {
+                Randomizer.LogError($"Error reading saved box states. SerializedVersion has invalid value '{serializedVersion}'");
+                return;
+            }
+
+            var count = ar.Serialize(0);
+            for (var i = 0; i < count; i++) {
+                var boxNr = ar.Serialize(0);
+                ActiveBoxes.Add(boxNr, new ActiveBoxState(ar.Serialize(0)));
+                ActiveThisTick.Add(boxNr);
+
+                if (boxNr < LoadedBoxes.Length && LoadedBoxes[boxNr].Trigger == RandomizerBox.BoxTrigger.Frame) {
+                    CollectEachUpdate.Add(boxNr);
+                }
+            }
+        } else {
+            ar.Serialize(1);
+            ar.Serialize(ActiveBoxes.Count);
+            foreach (var (boxNr, activeState) in ActiveBoxes) {
+                ar.Serialize(boxNr);
+                ar.Serialize(activeState.Cooldown);
+            }
+        }
+    }
+
     public static void MarkActive(int boxNumber) {
-        NewActiveStates.Set(boxNumber);
-        RequiresTick.Add(boxNumber);
+        ActiveThisTick.Add(boxNumber);
     }
 
     public static void FixedUpdate() {
         if (!Characters.Sein || Characters.Sein.IsSuspended) {
+            ActiveThisTick.Clear();
             return;
         }
 
         // Unity update order each frame is FixedUpdate -> Collisions -> FixedUpdate -> ... -> Collisions -> Update
         // So if the last called function was Update, no (physics) tick could have happened yet.
         // Additionally, FixedUpdate must be called at the start of Update to process the last physics tick.
-        if (RequiresTick.Count == 0 || _updateLast) {
+        if (_updateLast) {
             _updateLast = false;
             return;
         }
 
         _updateLast = false;
 
+        var lastActiveBoxes = ActiveBoxes;
+        ActiveBoxes = [];
+        CollectEachUpdate.Clear();
+
+        if (ActiveThisTick.Count == 0) {
+            return;
+        }
+
         var collected = new List<RandomizerBox>();
 
-        RequiresTick.Sort();
-        var toTick = RequiresTick.ToArray();
-        RequiresTick.Clear();
+        ActiveThisTick.Sort();
         var lastN = -1;
-        foreach (var n in toTick) {
+        foreach (var n in ActiveThisTick) {
             if (n == lastN) {
                 continue;
             }
 
             lastN = n;
 
-            var box = At(n);
-            var wasActive = ActiveStates.Get(n);
-            var active = box != null && NewActiveStates.Get(n) && !BoxOffStates.Get(n);
-            // Because OnCollisionExit is not guaranteed to be called
-            // we instead mark each active box to be deactivated the next tick
-            // unless the collision persists
-            NewActiveStates.Clear(n);
-            ActiveStates.Set(n, active);
-            if (box != null && active) {
-                RequiresTick.Add(n);
+            if (n < 0 || n >= LoadedBoxes.Length || BoxOffStates.Get(n)) {
+                continue;
+            }
 
-                switch (box.Trigger) {
-                    case RandomizerBox.BoxTrigger.Enter:
-                        if (!wasActive) {
-                            collected.Add(box);
-                        }
+            var box = LoadedBoxes[n];
 
-                        break;
-                    case RandomizerBox.BoxTrigger.Tick:
+            if (!lastActiveBoxes.TryGetValue(n, out var activeState)) {
+                activeState = new ActiveBoxState(box.InitialCollectCooldown);
+            }
+
+            ActiveBoxes.Add(n, activeState);
+
+            switch (box.Trigger) {
+                case RandomizerBox.BoxTrigger.Tick:
+                    if (--activeState.Cooldown <= 0) {
+                        activeState.Cooldown = box.RecollectCooldown;
                         collected.Add(box);
-                        break;
-                    case RandomizerBox.BoxTrigger.Frame:
-                        RequiresUpdate.Add(n);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                    }
+
+                    break;
+                case RandomizerBox.BoxTrigger.Frame:
+                    CollectEachUpdate.Add(n);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
+
+        ActiveThisTick.Clear();
 
         foreach (var box in collected) {
             box.Collect();
@@ -492,8 +574,8 @@ public static class RandomizerBoxes {
         if (enabled != Enabled) {
             Enabled = enabled;
 
-            foreach (var box in ActiveBoxes) {
-                box.Update();
+            foreach (var box in LoadedBoxes) {
+                box.UpdateActive();
             }
         }
 
@@ -508,53 +590,38 @@ public static class RandomizerBoxes {
 
         _updateLast = true;
 
-        if (RequiresUpdate.Count == 0) {
-            return;
-        }
-
-        RequiresUpdate.Sort();
-        var toUpdate = RequiresUpdate.ToArray();
-        RequiresUpdate.Clear();
-        var lastN = -1;
-        foreach (var n in toUpdate) {
-            if (n == lastN) {
+        foreach (var n in CollectEachUpdate) {
+            if (n >= LoadedBoxes.Length) {
                 continue;
             }
 
-            lastN = n;
+            var box = LoadedBoxes[n];
 
-            var box = At(n);
-
-            if (box != null && box.Trigger == RandomizerBox.BoxTrigger.Frame && ActiveStates.Get(n)) {
-                RequiresUpdate.Add(n);
+            if (box.Trigger == RandomizerBox.BoxTrigger.Frame) {
                 box.Collect();
             }
         }
     }
 
-    // numbers left over from the last set in force can point past this one's end
-    private static RandomizerBox? At(int n) => n < ActiveBoxes.Length ? ActiveBoxes[n] : null;
-
     public static void Use(List<RandomizerBox>? boxes) {
-        foreach (var box in ActiveBoxes) {
+        foreach (var box in LoadedBoxes) {
             box.DeInit();
         }
 
-        ActiveBoxes = (boxes ?? Seed).ToArray();
+        LoadedBoxes = (boxes ?? Seed).ToArray();
 
-        for (var i = 0; i < ActiveBoxes.Length; ++i) {
-            ActiveBoxes[i].Init(i < Capacity ? i : -1);
+        for (var i = 0; i < LoadedBoxes.Length; ++i) {
+            LoadedBoxes[i].Init(i < Capacity ? i : -1);
         }
 
-        if (ActiveBoxes.Length > Capacity) {
+        if (LoadedBoxes.Length > Capacity) {
             Randomizer.LogError(
-                "seed has " + ActiveBoxes.Length + " boxes; only the first " + Capacity
+                "seed has " + LoadedBoxes.Length + " boxes; only the first " + Capacity
                 + " can be taken once or switched off, the rest are always on"
             );
         }
     }
 
-    // the seed's own boxes, unless a practice segment has the floor
     public static void SeedLoaded() {
         if (!PracticeController.Active) {
             Use(null);
@@ -573,12 +640,12 @@ public static class RandomizerBoxes {
     public static void EvalBM(string value) {
         var eq = value.IndexOf('=');
         var name = (eq < 0 ? value : value.Substring(0, eq)).Trim();
-        if (!int.TryParse(name, out var bit) || bit < 0 || bit >= ActiveBoxes.Length) {
+        if (!int.TryParse(name, out var bit) || bit < 0 || bit >= LoadedBoxes.Length) {
             Randomizer.LogError("BM|" + value + ": this seed has no box " + name);
             return;
         }
 
-        if (ActiveBoxes[bit].Deleted) {
+        if (LoadedBoxes[bit].Deleted) {
             return;
         }
 
@@ -595,8 +662,8 @@ public static class RandomizerBoxes {
         SetOff(bit, on <= 0);
     }
 
-    // true when any box was off
-    public static bool ClearOff() {
+    // true when any data was cleared
+    public static bool ClearState() {
         var cleared = false;
         for (var id = FirstBitId; id <= LastBitId; id++) {
             if (Randomizer.Inventory.GetRandomizerItem(id) != 0) {
@@ -605,28 +672,23 @@ public static class RandomizerBoxes {
             }
         }
 
+        cleared |= ActiveBoxes.Count > 0;
+        ActiveBoxes.Clear();
+        ActiveThisTick.Clear();
+        CollectEachUpdate.Clear();
+
         return cleared;
-    }
-
-    public static void SaveLoaded() {
-        foreach (var box in ActiveBoxes) {
-            box.Update();
-        }
-
-        NewActiveStates.ReadFrom(ActiveStates);
-
-        for (var i = 0; i < Capacity; ++i) {
-            if (NewActiveStates.Get(i)) {
-                RequiresTick.Add(i);
-            }
-        }
     }
 
     public static void MaskUpdated(int code) {
         var start = (code - FirstBitId) * 32;
-        var end = Math.Min(start + 32, ActiveBoxes.Length);
+        var end = Math.Min(start + 32, LoadedBoxes.Length);
         for (var i = start; i < end; ++i) {
-            ActiveBoxes[i].Update();
+            LoadedBoxes[i].UpdateActive();
         }
+    }
+
+    public class ActiveBoxState(int cooldown) {
+        public int Cooldown = cooldown;
     }
 }

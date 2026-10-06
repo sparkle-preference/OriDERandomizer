@@ -11,6 +11,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -42,7 +43,7 @@ namespace System
         /// </summary>
         /// <param name="obj">The object to compare with this instance.</param>
         /// <returns><see langword="true"/> if <paramref name="obj"/> is a <see cref="ValueTuple"/>.</returns>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ValueTuple;
         }
@@ -269,7 +270,7 @@ namespace System
         ///     <item><description>Its components are equal to those of the current instance. Equality is determined by the default object equality comparer for each component.</description></item>
         /// </list>
         /// </remarks>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ValueTuple<T1> tuple && Equals(tuple);
         }
@@ -416,7 +417,7 @@ namespace System
         ///     <item><description>Its components are equal to those of the current instance. Equality is determined by the default object equality comparer for each component.</description></item>
         /// </list>
         /// </remarks>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ValueTuple<T1, T2> tuple && Equals(tuple);
         }
@@ -575,7 +576,7 @@ namespace System
         ///     <item><description>Its components are equal to those of the current instance. Equality is determined by the default object equality comparer for each component.</description></item>
         /// </list>
         /// </remarks>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ValueTuple<T1, T2, T3> tuple && Equals(tuple);
         }
@@ -747,7 +748,7 @@ namespace System
         ///     <item><description>Its components are equal to those of the current instance. Equality is determined by the default object equality comparer for each component.</description></item>
         /// </list>
         /// </remarks>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ValueTuple<T1, T2, T3, T4> tuple && Equals(tuple);
         }
@@ -933,7 +934,7 @@ namespace System
         ///     <item><description>Its components are equal to those of the current instance. Equality is determined by the default object equality comparer for each component.</description></item>
         /// </list>
         /// </remarks>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ValueTuple<T1, T2, T3, T4, T5> tuple && Equals(tuple);
         }
@@ -1133,7 +1134,7 @@ namespace System
         ///     <item><description>Its components are equal to those of the current instance. Equality is determined by the default object equality comparer for each component.</description></item>
         /// </list>
         /// </remarks>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ValueTuple<T1, T2, T3, T4, T5, T6> tuple && Equals(tuple);
         }
@@ -1347,7 +1348,7 @@ namespace System
         ///     <item><description>Its components are equal to those of the current instance. Equality is determined by the default object equality comparer for each component.</description></item>
         /// </list>
         /// </remarks>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ValueTuple<T1, T2, T3, T4, T5, T6, T7> tuple && Equals(tuple);
         }
@@ -1581,7 +1582,7 @@ namespace System
         ///     <item><description>Its components are equal to those of the current instance. Equality is determined by the default object equality comparer for each component.</description></item>
         /// </list>
         /// </remarks>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> tuple && Equals(tuple);
         }

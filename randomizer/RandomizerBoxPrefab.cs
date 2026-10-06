@@ -154,7 +154,6 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         rb.meshFilter = go.AddComponent<MeshFilter>();
         rb.renderer = go.AddComponent<MeshRenderer>();
         rb.collider = go.AddComponent<BoxCollider>();
-        rb.collider.isTrigger = true;
 
         return rb;
     }

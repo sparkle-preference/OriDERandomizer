@@ -81,11 +81,24 @@ Available flags:
 
 - "ritem": Implies color 80d9ff40 (unless an explicit color is specified)
 
-- "on=<trigger>": Specifies when the box is collected. Possible values are "Enter" (default), "Tick", "Frame"
-    "Enter" collects the box on the first tick ori collides with the box.
-    "Tick" collects the box on every (physics) tick while ori collides with the box.
-    "Frame" collects the box on every frame while ori collides with the box.
-    (see COLLECTION section for more details)
+- "on=<trigger>": Specifies when the box is collected (see COLLECTION section for more details).
+    Possible values:
+    - "Enter" (default): collects the box on the first (physics) tick ori collides with the box
+
+    - "Tick"
+      "Tick/<delay>"
+      "Tick/<delay>/<repeat>"
+        Collect the box the first time on the <delay>th consecutive tick ori collides with it,
+        then every <repeat>th tick afterwards.
+
+        <repeat> can also have the value "never", in which case the box is collected only once and then never again
+        (until ori leaves and re-enters the box).
+
+        By default both <delay> and <repeat> are 1, meaning the box is collected on every tick while ori collides with it.
+
+        The timer stops as soon as ori leaves the box and resets back to <delay> any time ori starts colliding with it again.
+
+    - "Frame": collects the box on every frame while ori collides with the box.
 
 - "damage=<amount>"
   "damage=<amount>/<type>"
@@ -181,9 +194,21 @@ TRIGGERS
 Boxes can specify one of three triggers, which determine when the item of a box is collected:
 
 Enter: The box is collected on the first tick it is active.
-    Technical description: The item is collected on a tick, if the box is active this tick, but was not active last tick.
+    Technical description: The item is collected on a tick, if the box became active this tick
+      (i.e. it is active this tick, but was not active last tick).
 
-Tick: The item is collected every tick on which the box is active.
+Tick
+Tick/<delay>
+Tick/<delay>/<repeat>
+    The box is first collected on the <delay>th consecutive tick it is active, then every <repeat>th tick afterwards.
+    Default values for <delay> and <repeat> are 1, meaning the box is collected every tick it is active.
+    <repeat> can also have the special value "never", which is equivalent to 2147483647 (over a year, effectively never).
+
+    Technical description:
+    - Each active box has a timer.
+    - When an inactive box becomes active, that timer is set to <delay>.
+    - Every tick while the box is active (including that first tick), the timer is reduced by 1.
+    - If (after the decrement) the timer is 0 (or less), the timer is set to <repeat> and the box is collected.
 
 Update: The box is collected on all frames while it is active.
     Technical description: The item is collected on every frame, if the box was active on the most recent tick before this frame.
@@ -202,7 +227,7 @@ Then, after that is done, the items of all collected boxes are given, in the ord
 If a box is marked as "once", it is disabled right before the box is collected
 (as if the item was an MU multi-pickup, and disabling the box was the first pickup inside).
 
-Importantly, this means that if a (box) pickup disables a box the same tick it was collected,
+Importantly, this means that if a (box) pickup disables a box the same tick that box was (scheduled to be) collected,
 that box will still be collected.
 Likewise, if a (box) pickup teleports Ori, the rest of the boxes will still be collected,
 as if the teleport only happened at the end of the tick.

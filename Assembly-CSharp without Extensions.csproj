@@ -5,7 +5,7 @@
     <PropertyGroup>
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-        <ProjectGuid>{B2F3688A-DBFA-46BF-95CE-F90B6B58B96E}</ProjectGuid>
+        <ProjectGuid>{5571AD95-3035-4B86-BD9B-6EE83964167C}</ProjectGuid>
         <OutputType>Library</OutputType>
         <AppDesignerFolder>Properties</AppDesignerFolder>
         <RootNamespace>Assembly_CSharp</RootNamespace>
@@ -85,11 +85,11 @@
         <Compile Include="action\*.cs"/>
         <Compile Include="bingo\*.cs"/>
         <Compile Include="contrib\*.cs"/>
-        <Compile Include="language_support\*.cs"/>
+        <Compile Include="language_support\*.cs" Exclude="language_support\StdLibExtensions.cs"/>
         <Compile Include="menu\*.cs"/>
         <Compile Include="modified_classes\*.cs" Exclude="modified_classes\SaveGameData_analysis.cs"/>
         <Compile Include="protogen\*.cs"/>
-        <Compile Include="randomizer\*.cs"/>
+        <Compile Include="randomizer\*.cs" Exclude="randomizer\RandomizerExtensions.cs"/>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

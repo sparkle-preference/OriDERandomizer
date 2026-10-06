@@ -793,7 +793,7 @@ public static class PracticeEditor {
 
     // the live boxes drawn from this line hide while a resize draws it; null brings every box back
     private static void Conceal(string line) {
-        foreach (var box in RandomizerBoxes.ActiveBoxes) {
+        foreach (var box in RandomizerBoxes.LoadedBoxes) {
             if (box.UnityObject == null) {
                 continue;
             }
@@ -1085,32 +1085,11 @@ public static class PracticeEditor {
         // scenes left since the last checkpoint: SaveToWriter skips them and LoadFromReader clears them
         var pending = new Dictionary<MoonGuid, SaveScene>(checkpoint.PendingScenes);
 
-        var touching = new Dictionary<int, int>();
-        for (var id = RandomizerBoxes.FirstActiveId; id <= RandomizerBoxes.LastActiveId; id++) {
-            var bits = Randomizer.Inventory.GetRandomizerItem(id);
-            if (bits != 0) {
-                touching[id] = bits;
-                Randomizer.Inventory.SetRandomizerItem(id, 0);
-            }
-        }
-
         try {
-            // CreateCheckpoint without its OnPostCreate, which would move the scenes kept loaded for the real one
-            SaveSceneManager.Master.SaveWithoutClearing(checkpoint.Master);
-            checkpoint.ApplyPendingScenes();
-            foreach (var scene in Core.Scenes.Manager.ActiveScenes) {
-                if (scene.IsVisible && scene.HasStartBeenCalled && scene.SceneRoot.SaveSceneManager) {
-                    scene.SceneRoot.SaveSceneManager.Save(checkpoint.InsertScene(scene.MetaData.SceneMoonGuid));
-                }
-            }
-
+            GameController.Instance.CreateCheckpoint(false);
             SaveSlotsManager.CurrentSaveSlot.FillData();
             return GameController.Instance.SaveGameController.SaveToBytes();
         } finally {
-            foreach (var pair in touching) {
-                Randomizer.Inventory.SetRandomizerItem(pair.Key, pair.Value);
-            }
-
             checkpoint.LoadFromReader(new BinaryReader(new MemoryStream(kept)));
             foreach (var pair in pending) {
                 checkpoint.PendingScenes[pair.Key] = pair.Value;

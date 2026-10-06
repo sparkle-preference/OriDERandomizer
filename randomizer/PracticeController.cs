@@ -467,13 +467,13 @@ public static class PracticeController {
 
                 Uncharge();
                 // the base save may carry a seed's taken boxes or a held count; this attempt starts clear
-                var changed = RandomizerBoxes.ClearOff();
+                var changed = RandomizerBoxes.ClearState();
                 if (Get(Held) != 0) {
                     Set(Held, 0);
                     changed = true;
                 }
 
-                changed = GrantStartingItems() || changed;
+                changed |= GrantStartingItems();
                 if (Segment != null) {
                     Segment.LogTurnedIn();
                 }

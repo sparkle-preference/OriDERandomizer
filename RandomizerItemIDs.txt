@@ -59,7 +59,7 @@ Randomizer inventory ids.
 87 - Last Soul Link y position
 
 
---- bonus skills
+=== Bonus Skills ===
 
 101 - Polarity Shift
 102 - Gravity Swap
@@ -288,9 +288,7 @@ Enhanced mode -- April Fools :)
 2627-2638 - Bingo journey bitfields by origin well
 2639-2650 - Bingo defeat bitfields by enemy kind (BingoEnemyKinds.Kinds order), bits = zones (RandomizerTrackedDataManager.Zones order)
 
-2700-2999 - Box bitfields: which boxes are active (i.e., intersect with ori)
-
-==== Begin Persists Through Death Zone ===
+=== Begin Persists Through Death Zone ===
 4000 - Deaths everywhere
 4001 - Deaths in Glades
 4002 - Deaths in Grove
@@ -405,7 +403,7 @@ Enhanced mode -- April Fools :)
 
 8000-8999 - plando-reserved ID range (persists through death)
 
-==== End Persists Through Death Zone ===
+=== End Persists Through Death Zone ===
 
 10000 - Slot stamp: which save slot the preserved values belong to, as slot+1
 
@@ -414,3 +412,7 @@ Enhanced mode -- April Fools :)
 11000-19999 - unused, reserved for the randomizer
 
 20000+ - plando-reserved ID range. currently uncapped
+
+=== Non-ID Data ===
+
+1000000001 - Box data

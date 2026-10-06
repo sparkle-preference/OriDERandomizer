@@ -5,4 +5,6 @@ but which require Stdlib classes the ancient ori runtime doesn't provide.
 
 The only changes to these files is the addition of a `#nullable enable` directive (unless otherwise stated).
 
+Special case: The `StdLibExtensions.cs` file contains individual members that were added to existing types.
+
 The originals can be found at <https://github.com/dotnet/runtime/tree/main>.

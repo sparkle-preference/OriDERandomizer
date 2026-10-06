@@ -1,5 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp without Extensions", "Assembly-CSharp without Extensions.csproj", "{5571AD95-3035-4B86-BD9B-6EE83964167C}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{B2F3688A-DBFA-46BF-95CE-F90B6B58B96E}"
 EndProject
 Global
@@ -12,6 +14,10 @@ Global
 		{B2F3688A-DBFA-46BF-95CE-F90B6B58B96E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2F3688A-DBFA-46BF-95CE-F90B6B58B96E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2F3688A-DBFA-46BF-95CE-F90B6B58B96E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5571AD95-3035-4B86-BD9B-6EE83964167C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5571AD95-3035-4B86-BD9B-6EE83964167C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5571AD95-3035-4B86-BD9B-6EE83964167C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5571AD95-3035-4B86-BD9B-6EE83964167C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection
