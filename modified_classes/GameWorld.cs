@@ -154,7 +154,8 @@ public class GameWorld : SaveSerialize {
     }
 
     public void VisitMapAreasAtPosition(Vector3 currentPlayerPosition) {
-        // a random spawn leaves the glades start unvisited until Ori is anywhere else
+        // When we are random spawning this ignores the default spawn location 
+        // until we see something else.
         if (Randomizer.ShouldHideGladesStart) {
             var spawnPosition = new Vector3(189.0f, -219.5f, 0.0f);
             if (Vector3.Distance(currentPlayerPosition, spawnPosition) < 0.1) {

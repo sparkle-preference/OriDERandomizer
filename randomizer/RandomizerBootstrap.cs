@@ -64,7 +64,8 @@ public class RandomizerBootstrap {
             }
 
             s_bootstrapAfterSerialize[sceneRoot.name].Invoke(sceneRoot);
-            // also rerun after serializes that aren't scene loads (death), via the save manager's hook
+            // We also need to process these functions after serialisation not caused by
+            // scene loading, e.g. after death. So connect those hooks.
             sceneRoot.SaveSceneManager.sceneRoot = sceneRoot;
             sceneRoot.SaveSceneManager.bootstrapHook = s_bootstrapAfterSerialize[sceneRoot.name];
         }
@@ -72,7 +73,11 @@ public class RandomizerBootstrap {
 
     private static void TwiddleGuidAndSave(SceneRoot sceneRoot, GuidOwner owner) {
         // this is a horrendous hack but it works well enough to place new, serializable objects without maintaining a giant GUID store
-        // bumps the v4 UUID's version nibble per clone: no longer a valid UUID, still a unique save key
+        // MoonGuid is a v4 UUID, which is a 16-byte identifier with two special bit sequences:
+        //		* in the 16-bit identifier spanning bytes 6-7, the four most significant bits must be 0100 (4), indicating a v4 UUID
+        //		* in byte 8, the two most significant bits must be 10, a special sequence indicating UUID "variant 2"
+        // we can ensure "unique" "UUIDs" by just abusing the four version bits, incrementing the "version" by 1 for each clone
+        // this results in an invalid UUID but fortunately this literally only matters for differentiating saved object data
         var originalGuid = owner.MoonGuid;
         owner.MoonGuid = new MoonGuid(originalGuid.A, originalGuid.B + 268435456, originalGuid.C, originalGuid.D);
 
@@ -464,7 +469,7 @@ public class RandomizerBootstrap {
     }
 
     private static void BootstrapSunkenGladesRunaway(SceneRoot sceneRoot) {
-        // random spawn: cuts the intro short here; BootstrapRandomSpawnTeleportLocation rebuilds the rest
+        // This is the start of random spawn. This removes a bunch, but a bunch is recreated at the random spawn scene.
         if (Randomizer.SpawnScene == null) {
             return;
         }
@@ -524,20 +529,24 @@ public class RandomizerBootstrap {
         waitAction.MoonGuid = new MoonGuid(-1216854977, 1204243132, 2020710590, 1091515233);
         waitAction.Duration = 3f;
         sequence.Actions.Add(waitAction);
+        // Unlock player input.
         var inputLockAction = sequenceObject.AddComponent<LockPlayerInputManualAction>();
         inputLockAction.MoonGuid = new MoonGuid(-803450664, 1167049334, 1107280285, 72641712);
         inputLockAction.ShouldLock = false;
         sequence.Actions.Add(inputLockAction);
+        // Wait 3.3 seconds.
         var waitObject = new GameObject("WaitAction2");
         waitObject.transform.parent = sequenceObject.transform;
         var waitAction2 = waitObject.gameObject.AddComponent<WaitAction>();
         waitAction2.MoonGuid = new MoonGuid(-1491006181, 1224537196, 1919780772, 1173563805);
         waitAction2.Duration = 3.3f;
         sequence.Actions.Add(waitAction2);
+        // Show UI.
         var showAction = sequenceObject.AddComponent<ShowSeinUIAction>();
         showAction.MoonGuid = new MoonGuid(1954200174, 1280244692, -1636812609, 1089206021);
         showAction.ShouldShow = true;
         sequence.Actions.Add(showAction);
+        // Create Checkpoint.
         var checkpointAction = sequenceObject.AddComponent<CreateCheckpointAction>();
         checkpointAction.MoonGuid = new MoonGuid(-960421049, 1184624848, 1067937201, 1937397131);
         checkpointAction.RespawnPosition = new Vector2(0, 0);
@@ -586,7 +595,9 @@ public class RandomizerBootstrap {
     }
 
     private static void BootstrapMoonGrottoMiniboss(SceneRoot sceneRoot) {
-        // no softlock after an alt-r out of the Grotto miniboss room; item 1103 turns these fixes off
+        // This function makes it so you don't soft-lock if you alt-r out
+        // of the moon grotto miniboss room.
+        // Check disable alt-r soft-lock fixes.
         if (Characters.Sein.Inventory.GetRandomizerItem(1103) != 0) {
             return;
         }
@@ -599,7 +610,9 @@ public class RandomizerBootstrap {
         var firstDoorShut = !firstDoorAnimator.AtStart;
         var secondDoorOpen = !secondDoorAnimator.AtStart;
         if (secondDoorOpen) {
-            // belt and braces: open the door and disable the trigger and camera zone
+            // Note: I don't believe this is required as the other logic should suffice
+            // by itself, but it is here just in case.
+            // Open the door and disable the trigger and camera zone.
             firstDoorAnimator.Stopped = true;
             firstDoorAnimator.Reversed = false;
             firstDoorAnimator.CurrentTime = 0f;
@@ -625,8 +638,11 @@ public class RandomizerBootstrap {
     }
 
     private static void BootstrapSeinRoomWall(SceneRoot sceneRoot) {
-        // drops the Sein room's blocking wall (and its fronkeys) so an alt-r can't softlock FronkeyFight;
-        // item 1103 turns these fixes off
+        // This removes the invisible blocking wall in the sein room so that
+        // after an alt-r we don't soft-lock on the FronkeyFight pickup.
+        // We also remove the fronkeys when the wall is not there since they
+        // shouldn't be able to leave the room normally.
+        // Check disable alt-r soft-lock fixes.
         if (Characters.Sein.Inventory.GetRandomizerItem(1103) != 0) {
             return;
         }
@@ -787,7 +803,9 @@ public class RandomizerBootstrap {
             }
         }
 
-        // no softlock after an alt-r out of the lower Ginso miniboss before the kill; item 1103 turns it off
+        // This makes it so you can't soft-lock if you alt-r out of the lower ginso miniboss 
+        // before killing the boss.
+        // Check disable alt-r soft-lock fixes.
         if (Characters.Sein.Inventory.GetRandomizerItem(1103) != 0) {
             return;
         }
@@ -1049,8 +1067,12 @@ public class RandomizerBootstrap {
 
     private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();
 
-    // Runs after every serialize of the scene (each death too): never add objects here unconditionally,
-    // and create new serialized elements in PreEnabled. For touching serialized state only.
+    // Generally prefer PreEnabled over AfterSerialize. These functions are run after *every* 
+    // serialisation of the scene, so after every death and not just the initial load. So don't
+    // e.g. unconditionally add things to the scene in these functions, as they will repeat. 
+    // But if you need to do things that alter or depend on serialised parts of the scene, 
+    // this is the place. Things altered here may be serialised (saved) by the scene. If you 
+    // want to make new serialised scene elements you'll need to use PreEnabled.
     private static Dictionary<string, Action<SceneRoot>> s_bootstrapAfterSerialize = new Dictionary<string, Action<SceneRoot>> {
         { "moonGrottoEnemyPuzzle", BootstrapMoonGrottoMiniboss },
         { "sunkenGladesOriRoom", BootstrapSeinRoomWall },

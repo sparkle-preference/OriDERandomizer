@@ -11,7 +11,9 @@ public class RandomizerResources {
             var buffer = new byte[length];
             int read;
             if ((read = stream.Read(buffer, 0, length)) != length) {
-                // in-memory resource streams read fully in one call in practice
+                // Read of resource somehow failed
+                // (Resource streams should always fully read in one `Read` call, since they're already loaded in memory.
+                // I'm not sure if there's a guarantee, but for now it works.)
                 Randomizer.LogError($"Failed to read resource '{name}'. Only read {read} bytes of {length}.");
                 return null;
             }

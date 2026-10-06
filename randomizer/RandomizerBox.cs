@@ -454,7 +454,9 @@ public static class RandomizerBoxes {
             var box = At(n);
             var wasActive = ActiveStates.Get(n);
             var active = box != null && NewActiveStates.Get(n) && !BoxOffStates.Get(n);
-            // OnCollisionExit may never come: an active box deactivates next tick unless its collision persists
+            // Because OnCollisionExit is not guaranteed to be called
+            // we instead mark each active box to be deactivated the next tick
+            // unless the collision persists
             NewActiveStates.Clear(n);
             ActiveStates.Set(n, active);
             if (box != null && active) {

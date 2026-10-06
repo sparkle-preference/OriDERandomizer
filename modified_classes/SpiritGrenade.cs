@@ -146,7 +146,7 @@ public class SpiritGrenade : MonoBehaviour, IDamageReciever, IAttackable, IBashA
     }
 
     public void OnCollisionEnter(Collision collision) {
-        // a collision that explodes it does so before this callback, hence the m_hasExploded checks
+        // If the collision causes it explode then the explosion happens before this collision callback.
         var plant = collision.gameObject.GetComponent<PetrifiedPlant>();
         if (plant != null && !m_hasExploded) {
             Explode();

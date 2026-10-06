@@ -56,6 +56,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     }
 
     public virtual void Awake() {
+        // Layout and selection manager
         layout = GetComponent<CleverMenuItemLayout>();
         selectionManager = GetComponent<CleverMenuItemSelectionManager>();
         group = GetComponent<CleverMenuItemGroup>();
@@ -74,6 +75,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             }
         }
 
+        // Tooltip
         var originalToolip = SettingsScreen.Instance.transform.Find("highlightFade/pivot/tooltip");
         var tooltip = Instantiate(originalToolip);
         tooltip.SetParent(pivot);
@@ -1135,15 +1137,18 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         };
         group.AddItem(cleverMenuItem, slider);
 
+        // Set up slider properties
         slider.MinValue = min;
         slider.MaxValue = max;
         slider.Step = step;
         (slider as MusicVolumeSlider).Setting = setting;
 
+        // Update label
         var nameTextBox = clone.transform.Find("nameText").GetComponent<MessageBox>();
         nameTextBox.MessageProvider = null;
         nameTextBox.SetMessage(new MessageDescriptor(setting.Name));
 
+        // Update tooltip
         ConfigureTooltip(clone.GetComponent<CleverMenuItemTooltip>(), tooltip);
     }
 

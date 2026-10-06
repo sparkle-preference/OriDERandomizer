@@ -125,7 +125,8 @@ public class RuntimeWorldMapIcon {
 
     private void CreateIconFromInventory(string name, float scale) {
         if (!inventoryTemplate) {
-            // the disabled template, since clones of the live inventory carry its fade animations
+            // The visible inventory on the pause screen has transparency animations affecting the cloned icons
+            // So clone from the permanently disabled inventory that the visible one is cloned from
             inventoryTemplate = SceneManager.GetSceneByName("loadBootstrap").GetRootGameObjects().First(go => go.name == "inventoryScreen").transform;
         }
 
