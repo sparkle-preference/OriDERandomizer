@@ -48,7 +48,7 @@ Specified as rrggbb or rrggbbaa where rr,gg,bb,aa are two-digit hexadecimal numb
 
 Special values:
 - "none": Makes the box invisible
-- "" (empty): The box derives its color from the flags.
+- "" (empty): The box derives its color from the flags. If no flags imply a color, it will be 80808040.
 
 
 
@@ -195,7 +195,7 @@ Boxes can specify one of three triggers, which determine when the item of a box 
 
 Enter: The box is collected on the first tick it is active.
     Technical description: The item is collected on a tick, if the box became active this tick
-      (i.e. it is active this tick, but was not active last tick).
+      (i.e., it is active this tick, but was not active last tick).
 
 Tick
 Tick/<delay>

@@ -372,7 +372,7 @@ public class RandomizerBox {
 
     public Rect Rect { get; private set; }
 
-    public Color32 Color { get; private set; } = new(128, 128, 128, 128);
+    public Color32 Color { get; private set; } = new(128, 128, 128, 64);
 
     public bool Invisible { get; private set; }
 
