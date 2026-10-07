@@ -13,7 +13,7 @@ public static class RandomizerSettings {
     }
 
     // move this with every new setting, or existing installs take the nag path on update
-    public static string LastAddedSetting = "Dirty Water";
+    public static string LastAddedSetting = "Text Cues";
 
     private static string StripComment(string line) {
         var at = line.IndexOf("//");

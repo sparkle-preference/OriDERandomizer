@@ -206,10 +206,7 @@ public static class PracticeEditor {
 
     // back to the game, from wherever right click left Ori, the file's own boxes in force
     private static void LeaveSeed() {
-        if (SeedBoxes.Current != null && SeedBoxes.Current.Dirty) {
-            SeedBoxes.Current.Reload();
-            SeedBoxes.Current.Apply();
-        }
+        DropSeedEdits();
 
         Stop();
         Seed = false;
@@ -221,16 +218,27 @@ public static class PracticeEditor {
         }
     }
 
+    // a seed file gone or locked must not keep the game frozen in the editor
+    private static void DropSeedEdits() {
+        if (SeedBoxes.Current == null || !SeedBoxes.Current.Dirty) {
+            return;
+        }
+
+        try {
+            SeedBoxes.Current.Reload();
+            SeedBoxes.Current.Apply();
+        } catch (Exception e) {
+            Randomizer.LogError("seed boxes: could not reload: " + e.Message);
+        }
+    }
+
     // quitting to the title mid-edit: nothing is saved and the freeze must not ride along
     public static void OnReturnToTitle() {
         if (!Seed) {
             return;
         }
 
-        if (SeedBoxes.Current != null && SeedBoxes.Current.Dirty) {
-            SeedBoxes.Current.Reload();
-            SeedBoxes.Current.Apply();
-        }
+        DropSeedEdits();
 
         Stop();
         Seed = false;
@@ -957,6 +965,11 @@ public static class PracticeEditor {
         undoTarget = target;
         undoIndex = index;
         undoOld = old;
+    }
+
+    // the page rewrote the boxes, so the index an undo kept may now be another box
+    public static void ForgetUndo() {
+        undoIndex = -1;
     }
 
     // an added box goes; a moved or deleted one comes back as it was

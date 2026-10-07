@@ -422,8 +422,8 @@ public static class RandomizerDirtyWater {
         var misty = MistScenes.Contains(root.name);
         Sunk sunk;
         SunkArt.TryGetValue(root.name, out sunk);
-        var groups = LooseGroups(root);
         var all = WaterGroups(root);
+        var groups = LooseGroups(all);
         if (!full && !fallsOnly && !misty && sunk == null && all.Count == 0) {
             return;
         }
@@ -506,6 +506,7 @@ public static class RandomizerDirtyWater {
                 // before the scene first builds its camera settings from it
                 if (TintFog && (ForcedOn || !Events.WaterPurified)) {
                     fog.FogGradient = Purpled(entry.Source, StrengthIn(root.name));
+                    component.Prepainted = true;
                 }
             }
 
@@ -584,9 +585,9 @@ public static class RandomizerDirtyWater {
     }
 
     // The groups without a purity switch: the ones whose surface dressing is ours to add.
-    private static List<Transform> LooseGroups(SceneRoot root) {
+    private static List<Transform> LooseGroups(List<Transform> all) {
         var loose = new List<Transform>();
-        foreach (var group in WaterGroups(root)) {
+        foreach (var group in all) {
             if (!Switched(group)) {
                 loose.Add(group);
             }
@@ -958,7 +959,12 @@ public static class RandomizerDirtyWater {
         var crossRenderer = cross != null ? cross.GetComponent<Renderer>() : null;
         var n = 0;
         for (var c = 0; c < copies; c++) {
-            n += Spawn(FirstOf(Mask), parent, control.Boundary.x + w / 2f, control.transform.position.y - h / 2f, w * MaskWidth, h);
+            var spawned = Spawn(FirstOf(Mask), parent, control.Boundary.x + w / 2f, control.transform.position.y - h / 2f, w * MaskWidth, h);
+            n += spawned;
+            if (spawned == 0) {
+                continue;
+            }
+
             var renderer = parent.GetChild(parent.childCount - 1).GetComponent<Renderer>();
             if (renderer == null) {
                 continue;
@@ -1063,7 +1069,12 @@ public static class RandomizerDirtyWater {
         var done = new List<string>();
         foreach (var scene in Core.Scenes.Manager.ActiveScenes) {
             if (scene.SceneRoot != null) {
-                Dress(scene.SceneRoot);
+                try {
+                    Dress(scene.SceneRoot);
+                } catch (Exception e) {
+                    Randomizer.LogError("dirty water: " + scene.SceneRoot.name + ": " + e.Message);
+                }
+
                 if (scene.SceneRoot.transform.Find("dirtyWaterLook") != null) {
                     done.Add(scene.SceneRoot.name);
                 }
@@ -1367,6 +1378,7 @@ public static class RandomizerDirtyWater {
         public List<Fog> Fogs = new List<Fog>();
         public List<UberWaterControl> Controls = new List<UberWaterControl>();
         public bool Applied;
+        public bool Prepainted;
         public bool Wet = true;
         private readonly List<GameObject> hidden = new List<GameObject>();
         private List<Renderer> previewed;
@@ -1380,6 +1392,10 @@ public static class RandomizerDirtyWater {
         private int ticks;
         private int fixedTicks;
         private bool wasHere;
+        private bool fogPending;
+        private bool controlsScanned;
+        // this scene's settings from before the last repaint, which the camera may still hold
+        private CameraSettings staleSettings;
 
         private enum Drift {
             Stay,
@@ -1576,7 +1592,8 @@ public static class RandomizerDirtyWater {
             // a scene whose water is switched off (Enhanced Clean Water drains it) keeps its own fog
             var wanted = Enabled && (ForcedOn || !Events.WaterPurified);
             var wet = AnyWater();
-            if (wanted != Applied || wet != Wet) {
+            if (wanted != Applied || wet != Wet || Prepainted) {
+                Prepainted = false;
                 Wet = wet;
                 Apply(wanted);
             }
@@ -1592,10 +1609,27 @@ public static class RandomizerDirtyWater {
             // the camera can hold on to settings it took before the scene changed under it
             var here = IsHere();
             if (here && !wasHere) {
-                PushFog();
+                fogPending = true;
+            }
+
+            if (fogPending && (!here || CameraOnUs())) {
+                if (here) {
+                    PushFog();
+                }
+
+                fogPending = false;
             }
 
             wasHere = here;
+        }
+
+        private bool CameraOnUs() {
+            if (Game.UI.Cameras.Current == null || Root == null || Root.SceneSettings == null) {
+                return false;
+            }
+
+            var current = Game.UI.Cameras.Current.CameraPostProcessing.CameraSettingsToUse;
+            return current != null && (current == staleSettings || current == Root.SceneSettings.GetSettings.CameraSettings);
         }
 
         private bool IsHere() {
@@ -1616,8 +1650,9 @@ public static class RandomizerDirtyWater {
         }
 
         private bool AnyWater() {
-            if (Controls.Count == 0) {
+            if (!controlsScanned) {
                 Controls.AddRange(ControlsIn(AllGroups));
+                controlsScanned = true;
             }
 
             foreach (var control in Controls) {
@@ -1851,12 +1886,11 @@ public static class RandomizerDirtyWater {
 
             if (Fogs.Count > 0) {
                 if (Root != null && Root.SceneSettings != null) {
+                    staleSettings = Root.SceneSettings.GetSettings.CameraSettings;
                     Root.SceneSettings.ResetSettings();
                 }
 
-                if (IsHere()) {
-                    PushFog();
-                }
+                fogPending = IsHere();
             }
         }
 

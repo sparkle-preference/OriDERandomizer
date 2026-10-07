@@ -102,7 +102,8 @@ public static class RandomizerCustomNames {
 
         if (problems.Count > 0 && RandomizerSettings.Customization.CustomPickupNames.Value) {
             var more = problems.Count > 1 ? " (and " + (problems.Count - 1) + " more in randomizer.log)" : "";
-            Randomizer.printInfo(RandomizerText.Error(PickupNamesFile + " " + problems[0]) + more, 360);
+            var shown = problems[0].Replace("#", "").Replace("*", "").Replace("$", "").Replace("@", "");
+            Randomizer.printInfo(RandomizerText.Error(PickupNamesFile + " " + shown) + more, 360);
         }
     }
 

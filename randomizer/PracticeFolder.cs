@@ -50,14 +50,14 @@ public static class PracticeFolder {
             ? Path.GetFileNameWithoutExtension(trimmed) : Path.GetFileName(trimmed);
     }
 
-    // A segment's name as a folder name: Windows refuses some characters and drops trailing dots and spaces.
+    // A segment's name as a folder name: Windows refuses some characters, and a dot would read as an extension.
     public static string SafeName(string name) {
         var safe = name ?? "";
         foreach (var bad in Path.GetInvalidFileNameChars()) {
             safe = safe.Replace(bad, '-');
         }
 
-        safe = safe.Trim().TrimEnd('.', ' ');
+        safe = safe.Replace('.', '-').Trim();
         if (safe.Length == 0) {
             safe = "Segment";
         }

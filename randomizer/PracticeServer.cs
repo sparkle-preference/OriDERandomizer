@@ -855,6 +855,7 @@ public static class PracticeServer {
         }
 
         file.Save();
+        PracticeEditor.ForgetUndo();
         PracticeController.Reparse();
         Randomizer.log("practice: segment saved from the editor page");
         return "{\"ok\":true}";
@@ -975,6 +976,7 @@ public static class PracticeServer {
 
         file.SetPlacementLines(variant, lines);
         file.Save();
+        PracticeEditor.ForgetUndo();
         PracticeController.Reparse();
         Randomizer.log("practice: " + lines.Count + " placement lines replaced from the editor page, " + skipped.Count + " skipped");
         var reply = JsonValue.NewObject();

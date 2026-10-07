@@ -351,7 +351,7 @@ public class PickupNameRules {
             foreach (var text in line.Substring(0, colon).Split(',')) {
                 var key = ParseKey(text.Trim(), names);
                 if (key == null) {
-                    problems.Add("line " + number + ": '" + text.Trim() + "' is not CODE|ID, CODE|LO-HI or CODE|*");
+                    problems.Add("line " + number + ": '" + text.Trim() + "' is not a key (the top of the file shows the three kinds)");
                 } else {
                     rules.keys.Add(key);
                 }

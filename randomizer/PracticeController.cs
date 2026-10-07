@@ -274,6 +274,7 @@ public static class PracticeController {
             var variants = copy.Variants;
             copy.Variant = variants.Contains(File.Variant) ? File.Variant : variants.Count > 0 ? variants[0] : "";
             File = copy;
+            PracticeEditor.ForgetUndo();
             Reparse();
             Randomizer.log("practice: extracted to " + copy.Path);
             return true;
