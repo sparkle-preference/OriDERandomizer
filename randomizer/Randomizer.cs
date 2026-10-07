@@ -681,6 +681,7 @@ public static class Randomizer {
     public static void Update() {
         // before anything asks for a key's icon: the game caches a missing cap for the session
         RandomizerKeyIcons.Register();
+        RandomizerHoldRing.Prepare();
         PracticeController.Tick();
         if (PracticeEditor.Seed) {
             PracticeEditor.Tick();

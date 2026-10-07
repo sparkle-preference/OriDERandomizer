@@ -11,7 +11,12 @@ public class RandomizerHoldRing {
     // one ring for every legend's held hint, as only one hold runs at a time
     private static RandomizerHoldRing shared;
 
-    private static bool ringless;
+    // when the last try to clone one found nothing to clone
+    private static float missedAt = -100f;
+
+    private static bool missLogged;
+
+    private const float RetryAfter = 5f;
 
     // the glyph the shared ring was last sorted against
     private static Renderer sortedBy;
@@ -21,24 +26,39 @@ public class RandomizerHoldRing {
 
     private const float GlyphLift = 0.1f;
 
-    // Fills the shared ring round a legend's key glyph.
-    public static void Around(Renderer glyph, float progress) {
-        if (glyph == null || ringless) {
+    // The loading bar goes with the boot scenes, so the ring is cloned while it is still there
+    public static void Prepare() {
+        if (shared != null && shared.Object != null || Time.unscaledTime - missedAt < RetryAfter) {
             return;
         }
 
-        // the holder is a plain object and never goes null with the scene its clone was in
-        if (shared == null || shared.Object == null) {
-            shared = new RandomizerHoldRing();
-            if (!shared.Adopt(LoadingBar(), null, "randomizerHoldRing")) {
-                Randomizer.log("hold ring: no loading bar to borrow; holds will have no ring");
-                shared = null;
-                ringless = true;
-                return;
+        var ring = new RandomizerHoldRing();
+        if (!ring.Adopt(LoadingBar(), null, "randomizerHoldRing")) {
+            missedAt = Time.unscaledTime;
+            if (!missLogged) {
+                missLogged = true;
+                Randomizer.log("hold ring: no loading bar to borrow yet");
             }
 
-            shared.Fade(1f);
-            sortedBy = null;
+            return;
+        }
+
+        UnityEngine.Object.DontDestroyOnLoad(ring.Object);
+        ring.Fade(1f);
+        ring.Show(false);
+        shared = ring;
+        sortedBy = null;
+    }
+
+    // Fills the shared ring round a legend's key glyph.
+    public static void Around(Renderer glyph, float progress) {
+        if (glyph == null) {
+            return;
+        }
+
+        Prepare();
+        if (shared == null || shared.Object == null) {
+            return;
         }
 
         if (glyph != sortedBy) {
