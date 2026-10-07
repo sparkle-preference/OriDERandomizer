@@ -859,14 +859,19 @@
     return (preset ? (NAMES[preset] || preset) + ' box' : 'box') + (b.give ? ': ' + nameOf(b.give) : '');
   }
 
-  // every box on the map, with where it lives: the goal, the shared list, each variant's
+  // every box on the map, with where it lives: the goal, the shared list, each variant's.
+  // Labels carry the BM|n number the tables show; "shared" only means something beside variants.
   function allBoxes() {
     var out = [];
     var end = state.segment.end || {};
-    if (end.box && end.box.length === 4) out.push({ b: { flags: 'goal', box: end.box, color: (end.goal || {}).color }, label: 'goal box', rowId: 'box-shared-goal', owner: 'shared' });
-    (state.segment.boxes || []).forEach(function (b, i) { if (!gone(b)) out.push({ b: b, label: boxLabel(b) + ' · shared', rowId: 'box-shared-' + i, owner: 'shared' }); });
+    var num = function (n) { return n === null ? '' : '(#' + n + ') '; };
+    if (end.box && end.box.length === 4) out.push({ b: { flags: 'goal', box: end.box, color: (end.goal || {}).color }, label: num(goalAt()) + 'goal box', rowId: 'box-shared-goal', owner: 'shared' });
+    var shared = state.segment.boxes || [], sharedNums = boxNumbers(shared, 'shared');
+    var where = Object.keys(state.variants).length ? ' · shared' : '';
+    shared.forEach(function (b, i) { if (!gone(b)) out.push({ b: b, label: num(sharedNums[i]) + boxLabel(b) + where, rowId: 'box-shared-' + i, owner: 'shared' }); });
     Object.keys(state.variants).forEach(function (id) {
-      (state.variants[id].boxes || []).forEach(function (b, i) { if (!gone(b)) out.push({ b: b, label: boxLabel(b) + ' · variant ' + id, rowId: 'box-' + id + '-' + i, owner: id }); });
+      var boxes = state.variants[id].boxes || [], nums = boxNumbers(boxes, id);
+      boxes.forEach(function (b, i) { if (!gone(b)) out.push({ b: b, label: num(nums[i]) + boxLabel(b) + ' · variant ' + id, rowId: 'box-' + id + '-' + i, owner: id }); });
     });
     return out;
   }
