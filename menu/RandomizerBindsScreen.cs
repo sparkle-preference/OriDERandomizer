@@ -34,7 +34,6 @@ public class RandomizerBindsScreen : CustomSettingsScreen {
 
         AddHeader("MENUS");
         AddRandomizerBind("Toggle Map Mode", "Toggle item filters on the map");
-        AddRandomizerBind("Cycle Map Layer", "Step through Misty Woods' layouts on the map");
         AddRandomizerBind("Menu Skip Backwards", "Jumps back/up a page in scrolling menus and the save select screen");
         AddRandomizerBind("Menu Skip Forwards", "Jumps forwards/down a page in scrolling menus and the save select screen");
         AddRandomizerBind("Menu Home", "Jumps to the top of a long menu");
