@@ -765,7 +765,8 @@
   // the flags menu, presets first; goal still loads and shows, but isn't offered
   var SUGGEST = [['kill', 'box kills Ori'], ['item', 'grants an item once'], ['solid', 'box with collision'],
     ['ritem', 'grants an item repeatedly'], ['once', 'box toggles off when collected'], ['unsafe', 'saves disabled inside box'],
-    ['on=Tick', 'grant 60 times a second while inside box'], ['on=Frame', 'grant every frame while inside box'],
+    ['on=Tick', 'grant 60 times a second while inside box'], ['on=Tick/60/60', 'grant once a second while inside box'],
+    ['on=Frame', 'grant every frame while inside box'],
     ['damage=1', 'box damages entities touching it'], ['renderDepth=-99', 'draw box over terrain'],
     ['parallaxDepth=10', 'box scrolls like background art']];
   // the flags the game reads; any other is kept, and the game logs it
@@ -779,9 +780,11 @@
   var DAMAGE_TYPES = ['Acid', 'Bash', 'Bat', 'ChargeFlame', 'Crush', 'Drowning', 'Enemy', 'Explosion', 'Grenade', 'GrenadeSplatter',
     'Heat', 'HitSurface', 'Ice', 'Laser', 'Lava', 'LevelUp', 'NightBerryDied', 'Nova', 'Projectile', 'SlugSpike',
     'Spikes', 'SpiritFlame', 'SpiritFlameSplatter', 'Stomp', 'StompBlast', 'Water'];
-  // the parts after a value flag's "=", in order, and what the game uses for one left out
+  // the parts after a value flag's "=", in order, and what the game uses for one left out; more: the names that
+  // take the parts after them, where not every name does; whole: a whole number counts as a finished part
   var FLAG_PARTS = {
-    on: [{ names: ['Enter', 'Tick', 'Frame'] }],
+    on: [{ names: ['Enter', 'Tick', 'Frame'], more: ['Tick'] }, { hint: 'delay in ticks', fallback: '1', whole: integer },
+      { names: ['never'], hint: 'repeat in ticks, or never', fallback: '1', whole: integer }],
     damage: [{ hint: 'amount' }, { names: DAMAGE_TYPES, hint: 'damage type', fallback: 'Spikes' },
       { names: ['All', 'Player'], hint: 'target', fallback: 'All' }, { names: ['Normal', 'Extended'], hint: 'hitboxes', fallback: 'Extended' }]
   };
@@ -792,15 +795,19 @@
     var typed = text.slice(eq + 1).split('/'), at = typed.length - 1;
     if (!parts || !parts[at]) return [];
     var part = parts[at], partial = typed[at].trim().toLowerCase(), head = text.slice(0, text.length - typed[at].length), out = [];
-    var whole = part.names ? part.names.some(function (n) { return n.toLowerCase() === partial; }) : numeric(typed[at]);
+    // an empty part with no names to offer shows its hint instead
+    if (!part.names && !partial) return [{ value: text, fill: true, next: part }];
+    var named = part.names ? part.names.filter(function (n) { return n.toLowerCase() === partial; })[0] : undefined;
+    var whole = !!named || (part.whole ? part.whole(typed[at]) : !part.names && numeric(typed[at]));
+    var goesOn = function (n) { return !!parts[at + 1] && (!part.more || part.more.indexOf(n) >= 0); };
     // a whole name still offers the longer ones it starts (Stomp, StompBlast)
     if (part.names) {
       var hits = part.names.filter(function (n) { return n.toLowerCase().indexOf(partial) === 0; })
         .concat(part.names.filter(function (n) { return n.toLowerCase().indexOf(partial) > 0; }))
         .filter(function (n) { return n.toLowerCase() !== partial; });
-      out = hits.map(function (n) { return { value: head + n, fill: at < parts.length - 1 }; });
+      out = hits.map(function (n) { return { value: head + n, fill: goesOn(n) }; });
     }
-    if (whole && parts[at + 1]) out.push({ value: text + '/', fill: true, next: parts[at + 1] });
+    if (whole && goesOn(named)) out.push({ value: text + '/', fill: true, next: parts[at + 1] });
     return out;
   }
   var KILL_GIVES = 'Won\'t kill Ori (grants an item)';
@@ -809,6 +816,27 @@
   function oneOf(names, t) { return names.filter(function (n) { return n.toLowerCase() === t.trim().toLowerCase(); })[0]; }
   // what the game's float parse takes: no exponents, no hex
   function numeric(t) { return /^[+-]?(\d+\.?\d*|\.\d+)$/.test(t.trim()); }
+  // a whole number that fits an int, as int.TryParse takes one
+  function integer(t) { return /^[+-]?\d+$/.test(t.trim()) && Math.abs(Number(t)) <= 2147483647; }
+  // a count of physics ticks, with the seconds it comes to
+  function ticks(n) { return n + ' tick' + (n === 1 ? '' : 's') + ' (' + Math.round(n / 60 * 100) / 100 + ' s)'; }
+  // on=Enter, on=Frame, or on=Tick/<delay>/<repeat>, as describe_trigger (boxes.js): ticks or never, 1 when left out
+  function describeTrigger(value, bad) {
+    var parts = value.split('/'), when = oneOf(Object.keys(TRIGGER_TEXT), parts[0]);
+    if (!when) return bad('One of: Enter, Tick, Frame');
+    if (when !== 'Tick') return parts.length > 1 ? bad(when + ' takes no delay or repeat') : { text: capital(TRIGGER_TEXT[when]) };
+    if (parts.length > 3) return bad('Tick takes a delay and a repeat at most: Tick/30/60');
+    // the game collects once its countdown is at or below 0, so 0 and below act as 1
+    function count(p) { return p === undefined ? 1 : /^\s*never\s*$/i.test(p) ? Infinity : integer(p) ? Math.max(1, Number(p)) : NaN; }
+    var delay = count(parts[1]), repeat = count(parts[2]);
+    if (isNaN(delay)) return bad('The delay is a whole number of ticks, or never: ' + parts[1]);
+    if (isNaN(repeat)) return bad('The repeat is a whole number of ticks, or never: ' + parts[2]);
+    if (delay === Infinity) return { text: 'Never grants' };
+    if (delay === 1 && repeat === 1) return { text: capital(TRIGGER_TEXT.Tick) };
+    var first = delay === 1 ? 'Grants as soon as Ori is inside' : 'Grants after ' + ticks(delay) + ' inside';
+    var then = repeat === Infinity ? 'then not again until Ori leaves and comes back' : repeat === 1 ? 'then every tick' : 'then every ' + ticks(repeat);
+    return { text: first + ', ' + then };
+  }
   // What a flag does, or with warn, why the game won't do what it says: its bad values are
   // the game's own parse errors, which it only logs.
   function describeFlag(f) {
@@ -816,10 +844,7 @@
     function bad(t) { return { text: t, warn: true }; }
     if (FLAGS.indexOf(key) < 0) return bad('Unknown flag (will be ignored)');
     if (VALUED.indexOf(key) >= 0 && !value) return bad('Needs a value: ' + name + '=...');
-    if (key === 'on') {
-      var when = oneOf(Object.keys(TRIGGER_TEXT), value);
-      return when ? { text: capital(TRIGGER_TEXT[when]) } : bad('One of: Enter, Tick, Frame');
-    }
+    if (key === 'on') return describeTrigger(value, bad);
     if (key === 'renderdepth' || key === 'parallaxdepth') {
       var low = key === 'renderdepth' ? -99 : -19, high = key === 'renderdepth' ? 399 : 4979;
       if (!numeric(value) || Number(value) < low || Number(value) > high) return bad(name + ' takes a number from ' + low + ' to ' + high);
