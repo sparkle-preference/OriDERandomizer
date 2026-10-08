@@ -18,6 +18,7 @@ public static class RandomizerEnemies {
         public string Spots;
         public bool Clings;
         public bool Bashable;
+        public bool Drowns;
         public int Weight;
         public readonly List<Variant> Variants = new List<Variant>();
     }
@@ -35,17 +36,17 @@ public static class RandomizerEnemies {
     // name, spots it can take, flags, prefabs; anything unlisted (fish, sharks) stays vanilla.
     // Walkers on a roof or wall spot get their gravity turned toward that surface.
     private static readonly string[][] Kinds = {
-        new[] { "Fronkeys", "floor roof wall", "bash", "jumperEnemy" },
-        new[] { "Frogs", "floor roof wall", "bash", "spitterEnemy", "fastSpitterEnemy" },
+        new[] { "Fronkeys", "floor roof wall", "bash drowns", "jumperEnemy" },
+        new[] { "Frogs", "floor roof wall", "bash drowns", "spitterEnemy", "fastSpitterEnemy" },
         new[] { "Slimes", "floor roof wall", "clings bash", "acidSlugEnemy", "fireSlugEnemy", "iceSlugEnemy", "starSlugEnemy" },
-        new[] { "Banelings", "floor", "bash", "kamikazeSootEnemy" },
+        new[] { "Banelings", "floor", "bash drowns", "kamikazeSootEnemy" },
         new[] { "DropSlugs", "roof", "bash", "dropSlugEnemy", "dropSlugFireEnemy" },
         new[] { "Worms", "floor roof wall", "clings", "mortarWormEnemy", "mortarWormFireEnemy" },
-        new[] { "Rhinos", "rhino", "bash", "armouredRammingEnemy" },
+        new[] { "Rhinos", "rhino", "bash drowns", "armouredRammingEnemy" },
         new[] { "Birds", "air", "bash", "dashOwlEnemy" },
         new[] { "Elementals", "air", "", "floatTurretEnemyFire", "floatTurretEnemyWood" },
         new[] { "Lasers", "air", "", "floatingRockLaserEnemy" },
-        new[] { "Swarms", "air", "bash", "swarmEnemyLarge", "swarmEnemyLargeFire", "swarmEnemyMedium" },
+        new[] { "Swarms", "air", "bash drowns", "swarmEnemyLarge", "swarmEnemyLargeFire", "swarmEnemyMedium" },
         new[] { "Spiders", "air", "bash", "shootingSpiderEnemy", "spreadshotSpiderEnemy" },
     };
 
@@ -73,6 +74,9 @@ public static class RandomizerEnemies {
 
     private static readonly Dictionary<string, RespawningPlaceholder> s_templates = new Dictionary<string, RespawningPlaceholder>();
     private static readonly HashSet<string> s_wanted = new HashSet<string>();
+
+    // prefabs an on-screen placeholder is waiting for: their donors load first
+    private static readonly List<string> s_urgent = new List<string>();
     private static readonly List<string> s_pins = new List<string>();
     private static float s_nextScan;
     private static float s_askedAt = -100f;
@@ -80,6 +84,9 @@ public static class RandomizerEnemies {
 
     // how far off its surface a turned walker spawns, so its capsule starts clear of the level
     public static float WalkerLift = 1.5f;
+
+    // how far a clinger looks for the surface its spot faces
+    public static float SettleReach = 20f;
 
     // every unpinned placeholder takes this kind or prefab (any category), for testing; null undoes it
     public static void SetForce(string kindOrPrefab) {
@@ -98,6 +105,8 @@ public static class RandomizerEnemies {
             return null;
         }
 
+        s_kindOf.TryGetValue(own.name, out var ownKind);
+        var spot = Spot(target, ownKind, out var gravity);
         var source = variant.Prefab == own.name ? target : Template(variant.Prefab);
         var maker = variant.Class == target.GetType().Name ? target : Template(variant.Prefab);
         if (source == null || maker == null) {
@@ -115,7 +124,7 @@ public static class RandomizerEnemies {
         var pose = new[] { t.position, t.eulerAngles, t.localScale };
         if (maker != target) {
             t.position = target.transform.position;
-            t.rotation = variant.Kind.Clings ? target.transform.rotation : Quaternion.identity;
+            t.rotation = !variant.Kind.Clings ? Quaternion.identity : ownKind.Clings ? target.transform.rotation : Quaternion.Euler(0f, 0f, gravity);
             t.localScale = new Vector3(target.transform.lossyScale.x < 0f ? -1f : 1f, 1f, 1f);
         }
 
@@ -138,10 +147,17 @@ public static class RandomizerEnemies {
             entity.transform.parent = target.transform.parent;
         }
 
+        // the root turns too: enemies find the player through it (PositionToPlayerPosition), and it carries the hitbox
         var walker = entity as GroundEnemy;
-        if (walker != null && s_kindOf.TryGetValue(own.name, out var ownKind) && Spot(target, ownKind, out var gravity) != "floor" && gravity != 0f) {
+        if (walker != null && spot != "floor" && gravity != 0f) {
             walker.PlatformMovement.GravityAngle = gravity;
+            walker.transform.rotation = Quaternion.Euler(0f, 0f, gravity);
             walker.transform.position -= walker.PlatformMovement.GravityDirection * WalkerLift;
+            walker.gameObject.AddComponent<RandomizerEnemyGrip>().Walker = walker;
+        }
+
+        if (variant.Kind.Clings && maker != target) {
+            Settle(entity);
         }
 
         if (s_arena.Contains(target.MoonGuid.ToString())) {
@@ -170,6 +186,10 @@ public static class RandomizerEnemies {
         }
 
         s_wanted.Add(variant.Prefab);
+        if (!s_urgent.Contains(variant.Prefab)) {
+            s_urgent.Add(variant.Prefab);
+        }
+
         return true;
     }
 
@@ -225,6 +245,12 @@ public static class RandomizerEnemies {
         }
 
         ReleaseDonors();
+        s_urgent.RemoveAll(prefab => !s_wanted.Contains(prefab));
+        if (s_urgent.Count > 0) {
+            AskForDonor(s_urgent[0]);
+            return;
+        }
+
         foreach (var prefab in s_wanted) {
             AskForDonor(prefab);
             break;
@@ -250,6 +276,51 @@ public static class RandomizerEnemies {
             lines.Add(string.Format("{0} ({1:0.0},{2:0.0}) r{3:0} -> {4} | {5}", own == null ? "?" : own.name, pos.x, pos.y, target.transform.eulerAngles.z,
                 variant == null ? "vanilla" : variant.Prefab + " #" + variant.Index + " x" + string.Join("/", Array.ConvertAll(Factors(target, variant), f => f.ToString("0.00"))) +
                 (Template(variant.Prefab) == null ? " (waiting)" : ""), now));
+        }
+
+        return string.Join("\n", lines.ToArray());
+    }
+
+    // one tab-separated row per live placeholder, for the probe scripts
+    public static string Probe() {
+        var lines = new List<string>();
+        foreach (var target in RespawningPlaceholder.All) {
+            var own = OwnPrefab(target);
+            var entity = target.CurrentEntity;
+            var spot = "-";
+            var gravity = 0f;
+            if (own != null && s_kindOf != null && s_kindOf.TryGetValue(own.name, out var ownKind)) {
+                spot = Spot(target, ownKind, out gravity);
+            }
+
+            var row = new List<string> {
+                target.GetInstanceID().ToString(), own == null ? "?" : own.name, spot, gravity.ToString("0"), target.EntityIsDead ? "dead" : "alive",
+                target.transform.position.x.ToString("0.0"), target.transform.position.y.ToString("0.0")
+            };
+            if (entity != null) {
+                var walker = entity as GroundEnemy;
+                var sprite = entity as SpriteEntity;
+                row.AddRange(new[] {
+                    entity.name, entity.GetInstanceID().ToString(), entity.transform.position.x.ToString("0.00"), entity.transform.position.y.ToString("0.00"),
+                    entity.transform.eulerAngles.z.ToString("0"), walker == null ? "-" : walker.PlatformMovement.IsOnGround.ToString(),
+                    sprite == null ? "-" : sprite.FaceLeft.ToString(), entity.PositionToPlayerPosition.x.ToString("0.0"), entity.IsInWater.ToString(),
+                    entity.DamageReciever.Health.ToString("0")
+                });
+            }
+
+            lines.Add(string.Join("\t", row.ToArray()));
+        }
+
+        return string.Join("\n", lines.ToArray());
+    }
+
+    // live projectiles with their owner, for checking which way turned enemies shoot
+    public static string Shots() {
+        var lines = new List<string>();
+        foreach (var found in Object.FindObjectsOfType(typeof(Projectile))) {
+            var shot = (Projectile)found;
+            var owner = shot.Owner == null ? "-" : shot.Owner.transform.root == shot.Owner.transform ? shot.Owner.name : shot.Owner.transform.parent.name;
+            lines.Add(string.Format("{0}\t{1:0.0}\t{2:0.0}\t{3:0.00}\t{4:0.00}", owner, shot.transform.position.x, shot.transform.position.y, shot.Direction.x, shot.Direction.y));
         }
 
         return string.Join("\n", lines.ToArray());
@@ -328,10 +399,11 @@ public static class RandomizerEnemies {
         }
 
         var spot = Spot(target, ownKind, out _);
+        var wet = WaterZone.PositionInWater(target.transform.position);
         var candidates = new List<Kind>();
         foreach (var kind in s_kinds) {
             if (s_force != null ? kind.Name == s_force || kind.Variants.Exists(v => v.Prefab == s_force) : Takes(kind, spot) || (spot == "rhino" && Takes(kind, "floor"))) {
-                if (!bashOnly || kind.Bashable) {
+                if ((!bashOnly || kind.Bashable) && !(wet && kind.Drowns && s_force == null)) {
                     candidates.Add(kind);
                 }
             }
@@ -394,7 +466,9 @@ public static class RandomizerEnemies {
         s_kindOf = new Dictionary<string, Kind>();
         foreach (var row in Kinds) {
             var flags = row[2].Split(' ');
-            var kind = new Kind { Name = row[0], Spots = row[1], Clings = Array.IndexOf(flags, "clings") >= 0, Bashable = Array.IndexOf(flags, "bash") >= 0 };
+            var kind = new Kind {
+                Name = row[0], Spots = row[1], Clings = Array.IndexOf(flags, "clings") >= 0, Bashable = Array.IndexOf(flags, "bash") >= 0, Drowns = Array.IndexOf(flags, "drowns") >= 0
+            };
             s_kinds.Add(kind);
             for (var i = 3; i < row.Length; i++) {
                 s_kindOf[row[i]] = kind;
@@ -511,6 +585,24 @@ public static class RandomizerEnemies {
     private static float VanillaHealth(RespawningPlaceholder target) {
         var settings = target.GetType().GetField("Settings").GetValue(target);
         return (float)settings.GetType().GetField("Health").GetValue(settings);
+    }
+
+    // clingers have no gravity (slimes drift up off a missing surface), so they start on the surface they face
+    private static void Settle(Entity entity) {
+        var down = -entity.transform.up;
+        var slug = entity as SlugEnemy;
+        var body = slug != null ? slug.Movement.GetComponent<Rigidbody>() : null;
+        RaycastHit hit;
+        var found = body != null ? body.SweepTest(down, out hit, SettleReach) : Physics.Raycast(entity.transform.position, down, out hit, SettleReach, ~0, QueryTriggerInteraction.Ignore);
+        if (!found) {
+            return;
+        }
+
+        entity.transform.position += down * hit.distance;
+        if (slug != null) {
+            typeof(TraceGroundMovement).GetField("m_floorNormal", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(slug.Movement, hit.normal);
+            entity.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(Vector3.Cross(Vector3.back, hit.normal)));
+        }
     }
 
     // ShootingSpiderPlaceholder.Instantiate without a rope: it hovers instead of hanging
@@ -674,5 +766,44 @@ public static class RandomizerEnemies {
         }
 
         s_pins.Clear();
+    }
+}
+
+// A walker on a turned surface lets go of it (gravity back to normal) if it walks off an edge or stays airborne too
+// long: ceilings have no enemy stoppers, and nothing else would stop it falling "up" out of the level.
+public class RandomizerEnemyGrip : MonoBehaviour {
+    public GroundEnemy Walker;
+
+    public static float JumpGrace = 2.5f;
+
+    private bool m_landed;
+    private bool m_jumped;
+    private float m_air;
+    private float m_age;
+
+    public void FixedUpdate() {
+        var move = Walker == null ? null : Walker.PlatformMovement;
+        if (move == null || move.GravityAngle == 0f) {
+            Destroy(this);
+            return;
+        }
+
+        m_age += Time.fixedDeltaTime;
+        if (move.IsOnGround) {
+            m_landed = true;
+            m_air = 0f;
+            return;
+        }
+
+        if (m_air == 0f) {
+            m_jumped = move.LocalSpeedY > 0f;
+        }
+
+        m_air += Time.fixedDeltaTime;
+        if (m_landed ? (!m_jumped && m_air > 0.15f) || m_air > JumpGrace : m_age > JumpGrace) {
+            move.GravityAngle = 0f;
+            Walker.transform.rotation = Quaternion.identity;
+            Destroy(this);
+        }
     }
 }

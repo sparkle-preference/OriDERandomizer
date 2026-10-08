@@ -23,14 +23,26 @@ public class SpitterEnemyShootingState : SpitterEnemyState {
         var projectileSpeed = SpitterEnemy.Settings.ProjectileSpeed;
         var projectileGravity = SpitterEnemy.Settings.ProjectileGravity;
         var projectileSpawnerPositionToPlayerPosition = ProjectileSpawnerPositionToPlayerPosition;
+        // facing is local, so a frog with turned gravity clamps its aim in its own frame
+        var turned = GroundEnemy.PlatformMovement.GravityAngle != 0f;
+        if (turned) {
+            projectileSpawnerPositionToPlayerPosition = GroundEnemy.transform.InverseTransformDirection(projectileSpawnerPositionToPlayerPosition);
+        }
+
         projectileSpawnerPositionToPlayerPosition.x = !GroundEnemy.FaceLeft ? Mathf.Max(1f, projectileSpawnerPositionToPlayerPosition.x) : Mathf.Min(-1f, projectileSpawnerPositionToPlayerPosition.x);
+        if (turned) {
+            projectileSpawnerPositionToPlayerPosition = GroundEnemy.transform.TransformDirection(projectileSpawnerPositionToPlayerPosition);
+        }
+
         var num = projectileSpawnerPositionToPlayerPosition.magnitude / projectileSpeed;
         var vector = projectileSpawnerPositionToPlayerPosition.normalized * projectileSpeed;
         vector.y += projectileGravity * num * 0.5f;
         SpawnProjectile(vector);
         if (SpitterEnemy.Settings.SpreadShot) {
-            SpawnProjectile(vector + Vector3.right * 4f + Vector3.down * 2f);
-            SpawnProjectile(vector + Vector3.left * 4f + Vector3.down * 2f);
+            var right = turned ? GroundEnemy.transform.right : Vector3.right;
+            var down = turned ? -GroundEnemy.transform.up : Vector3.down;
+            SpawnProjectile(vector + right * 4f + down * 2f);
+            SpawnProjectile(vector - right * 4f + down * 2f);
         }
     }
 

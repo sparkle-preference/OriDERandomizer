@@ -91,7 +91,12 @@ public class SpitterEnemy : GroundEnemy {
         }
 
         bool flag;
-        if (PlatformMovement.MovingHorizontally && EnemyStopper.InsideEnemyStopper(Position, !FaceLeft ? Vector3.right : Vector3.left, out flag)) {
+        var ahead = !FaceLeft ? Vector3.right : Vector3.left;
+        if (PlatformMovement.GravityAngle != 0f) {
+            ahead = transform.TransformDirection(ahead);
+        }
+
+        if (PlatformMovement.MovingHorizontally && EnemyStopper.InsideEnemyStopper(Position, ahead, out flag)) {
             FaceLeft = !FaceLeft;
             if (Controller.StateMachine.CurrentState == State.RunBack) {
                 Controller.StateMachine.ChangeState(State.SpitterEnemyCharging);
