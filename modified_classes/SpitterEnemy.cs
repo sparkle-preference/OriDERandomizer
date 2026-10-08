@@ -108,7 +108,7 @@ public class SpitterEnemy : GroundEnemy {
         }
 
         UpdateRotation();
-        if (IsInWater) {
+        if (IsInWater && !RandomizerEnemies.WaterBorn(this)) {
             Drown();
         }
 

@@ -32,6 +32,7 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
         m_collider.enabled = m_colliderEnabledAtStart;
         m_explode = false;
         m_explodeLater = false;
+        m_wetChecked = false;
         m_lastLoop = null;
         LastReflector = null;
         Displacement = Vector3.zero;
@@ -238,7 +239,13 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
             m_explode = true;
         }
 
-        if (WaterZone.PositionInWater(Position)) {
+        // a water-born enemy's shot stays alive under water
+        if (!m_wetChecked) {
+            m_wetChecked = true;
+            m_bornWet = RandomizerEnemies.Active && WaterZone.PositionInWater(Position) && RandomizerEnemies.WaterBornShot(Owner);
+        }
+
+        if (!m_bornWet && WaterZone.PositionInWater(Position)) {
             m_explode = true;
         }
 
@@ -339,6 +346,10 @@ public class Projectile : MonoBehaviour, IDamageReciever, IAttackable, IChargeFl
     private bool m_explode;
 
     private bool m_explodeLater;
+
+    private bool m_wetChecked;
+
+    private bool m_bornWet;
 
     private Action m_nullify;
 

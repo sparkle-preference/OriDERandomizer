@@ -54,12 +54,15 @@ public static class RandomizerCustomNames {
         + "//   -- CODE|ID    (A specific pickup, like EV|1 (clean water))\n"
         + "//   -- CODE|LO-HI (A range of pickups with one code, like EX|1-9 (single-digit exp values))\n"
         + "//   -- CODE|*     (Any pickup with a code, like EV|* (any world event))\n"
+        + "// A KS, MS, HC, EC or RB key can end in =N or =LO-HI to match only when {count} is in that range,\n"
+        + "//   like MS|1=5 (when you now have 5 mapstones).\n"
         + "// In a new_name, {id} is replaced with the pickup's id, {count} with how many you now have (if applicable),\n"
         + "// and {name} with the original pickup's name. Use \\| to write a | inside a name.\n"
         + "// *#@$ color wrapping and <style> tags both apply - see SH Format.txt for more info.\n"
         + "\n"
         + "// Rules are matched from most to least specific: an exact id match always wins, followed by\n"
         + "//   the narrowest range wins if multiple match, and an * only if no exact or range matches.\n"
+        + "//   Among keys equally specific about the id, one with a count wins.\n"
         + "// If you also have Randomized Experience Names enabled, any EX pickup not matched by a rule here\n"
         + "// will be named from ExpNames.txt instead.\n"
         + "\n"
@@ -81,13 +84,16 @@ public static class RandomizerCustomNames {
         + "// RB|17, RB|19, RB|21: A shard! You have {count}\n"
         + "\n"
         + "//   // Well, they're all stones, right?\n"
-        + "// KS|1, MS|1, EV|4: A stone | useful rock | Maybe it was the Sunstone this time";
+        + "// KS|1, MS|1, EV|4: A stone | useful rock | Maybe it was the Sunstone this time\n"
+        + "\n"
+        + "//   // Only on the fifth mapstone you're holding\n"
+        + "// MS|1=5: A suspicious number of mapstones";
 
     public static void ParsePickupNames() {
         var problems = new List<string>();
         try {
             if (!File.Exists(PickupNamesFile)) {
-                File.WriteAllText(PickupNamesFile, PickupNamesHelp);
+                File.WriteAllText(PickupNamesFile, PickupNamesHelp + "\n\n" + RandomizerItems.IdReference() + "\n");
             }
 
             pickupNames = PickupNameRules.Parse(File.ReadAllLines(PickupNamesFile), problems);
@@ -113,36 +119,42 @@ public static class RandomizerCustomNames {
             return message;
         }
 
-        var names = pickupNames.For(code, id);
+        var count = Count(code, id);
+        var names = pickupNames.For(code, id, count);
         if (names == null) {
             return message;
         }
 
         var name = names[new Random(31 * Randomizer.SeedMeta.GetHashCode() + coords + (code + id).GetHashCode()).Next(names.Length)];
         var keepsMessage = name.Contains("{name}");
-        name = name.Replace("{id}", id).Replace("{count}", Count(code, id)).Replace("{name}", message);
+        name = name.Replace("{id}", id).Replace("{count}", (count ?? 1).ToString()).Replace("{name}", message);
         var cue = RandomizerItems.CueFor(code, id);
         return keepsMessage || cue == null ? name : RandomizerItems.Cue(name, cue);
     }
 
-    // how many you have once the pickup lands: RB counts are bumped before their message, the rest after
-    private static string Count(string code, string id) {
+    // how many you have once the pickup lands (RB counts are bumped before their message, the rest after);
+    // null for a code outside PickupNameRules.Counted
+    private static int? Count(string code, string id) {
+        if (!PickupNameRules.Counted.Contains(code) || !Characters.Sein) {
+            return null;
+        }
+
         int.TryParse(id, out var n);
         var step = n < 0 ? -1 : 1;
         var inventory = Characters.Sein.Inventory;
         switch (code) {
             case "RB":
-                return inventory.GetRandomizerItem(Math.Abs(n)).ToString();
+                return inventory.GetRandomizerItem(Math.Abs(n));
             case "KS":
-                return (inventory.Keystones + step).ToString();
+                return inventory.Keystones + step;
             case "MS":
-                return (inventory.MapStones + step).ToString();
+                return inventory.MapStones + step;
             case "HC":
-                return (Characters.Sein.Mortality.Health.HealthUpgradesCollected + step).ToString();
+                return Characters.Sein.Mortality.Health.HealthUpgradesCollected + step;
             case "EC":
-                return ((int)Characters.Sein.Energy.Max + step).ToString();
+                return (int)Characters.Sein.Energy.Max + step;
             default:
-                return "1";
+                return null;
         }
     }
 

@@ -6,20 +6,80 @@ using Game;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-// Enemy randomizer: a placeholder spawns a seeded variant from its own category instead of its own enemy.
+// Enemy randomizer: a placeholder spawns the variant the seed rolled for it instead of its own enemy.
+// The server rolls (seedbuilder/enemyroll.py); the //EnemyRolls= line indexes RandomizerEnemyData.Placements.
 public static class RandomizerEnemies {
     public static bool Active;
 
-    // the game's fast respawners stay put; plain bash targets among them shuffle between bashable kinds
-    public static bool PinBash = true;
+    // the seed's //Enemies= line (seedbuilder/enemyopts.py): the keys the client still applies; absent keys mean these
+    public static string HpMode = "zone";        // zone, vanilla, or "lo-hi"
+    public static string DmgMode = "zone";
+
+    public static void ResetOptions() {
+        HpMode = DmgMode = "zone";
+        s_table = null;
+    }
+
+    public static void ParseOptions(string line) {
+        foreach (var part in line.Trim().Split(';')) {
+            var pair = part.Split(new[] { '=' }, 2);
+            if (pair.Length != 2) {
+                continue;
+            }
+
+            var key = pair[0].Trim().ToLower();
+            var value = pair[1].Trim().ToLower();
+            switch (key) {
+                case "hp": HpMode = value; break;
+                case "dmg": DmgMode = value; break;
+            }
+        }
+    }
+
+    // "version:12,,7,..." one variant per placement, empty for vanilla; a table from other data plays vanilla
+    public static void SetRolls(string line) {
+        Load();
+        s_table = null;
+        var colon = line.IndexOf(':');
+        var rolls = colon < 0 ? new string[0] : line.Substring(colon + 1).Trim().Split(',');
+        if (colon < 0 || line.Substring(0, colon).Trim() != RandomizerEnemyData.Version || rolls.Length != s_index.Count) {
+            Randomizer.LogError("enemies: the seed's rolls don't match this build's enemy table, playing vanilla enemies");
+            return;
+        }
+
+        var table = new int[rolls.Length];
+        for (var i = 0; i < rolls.Length; i++) {
+            table[i] = rolls[i] == "" ? -1 : int.Parse(rolls[i], CultureInfo.InvariantCulture);
+            if (table[i] >= s_variants.Count) {
+                Randomizer.LogError("enemies: roll " + i + " names a variant this build doesn't have, playing vanilla enemies");
+                return;
+            }
+        }
+
+        s_table = table;
+    }
+
+    // zone, vanilla (the variant's own numbers), or zone times a seeded draw from lo-hi
+    private static float ModeFactor(string mode, float zone, string salt) {
+        if (mode == "vanilla") {
+            return 1f;
+        }
+
+        var dash = mode.IndexOf('-');
+        float lo, hi;
+        if (dash > 0 && float.TryParse(mode.Substring(0, dash), NumberStyles.Float, CultureInfo.InvariantCulture, out lo)
+                     && float.TryParse(mode.Substring(dash + 1), NumberStyles.Float, CultureInfo.InvariantCulture, out hi)) {
+            var random = new System.Random(Hash(SeedKey() + "|" + salt));
+            return zone * (lo + (float)random.NextDouble() * (hi - lo));
+        }
+
+        return zone;
+    }
 
     private class Kind {
         public string Name;
         public string Spots;
         public bool Clings;
-        public bool Bashable;
-        public bool Drowns;
-        public int Weight;
         public readonly List<Variant> Variants = new List<Variant>();
     }
 
@@ -33,28 +93,6 @@ public static class RandomizerEnemies {
         public Kind Kind;
     }
 
-    // name, spots it can take, flags, prefabs; anything unlisted (fish, sharks) stays vanilla.
-    // Walkers on a roof or wall spot get their gravity turned toward that surface.
-    private static readonly string[][] Kinds = {
-        new[] { "Fronkeys", "floor roof wall", "bash drowns", "jumperEnemy" },
-        new[] { "Frogs", "floor roof wall", "bash drowns", "spitterEnemy", "fastSpitterEnemy" },
-        new[] { "Slimes", "floor roof wall", "clings bash", "acidSlugEnemy", "fireSlugEnemy", "iceSlugEnemy", "starSlugEnemy" },
-        new[] { "Banelings", "floor", "bash drowns", "kamikazeSootEnemy" },
-        new[] { "DropSlugs", "roof", "bash", "dropSlugEnemy", "dropSlugFireEnemy" },
-        new[] { "Worms", "floor roof wall", "clings", "mortarWormEnemy", "mortarWormFireEnemy" },
-        new[] { "Rhinos", "rhino", "bash drowns", "armouredRammingEnemy" },
-        new[] { "Birds", "air", "bash", "dashOwlEnemy" },
-        new[] { "Elementals", "air", "", "floatTurretEnemyFire", "floatTurretEnemyWood" },
-        new[] { "Lasers", "air", "", "floatingRockLaserEnemy" },
-        new[] { "Swarms", "air", "bash drowns", "swarmEnemyLarge", "swarmEnemyLargeFire", "swarmEnemyMedium" },
-        new[] { "Spiders", "air", "bash", "shootingSpiderEnemy", "spreadshotSpiderEnemy" },
-    };
-
-    // bash targets that neither shoot, explode nor stomp, so any bashable kind can stand in for them
-    private static readonly string[] PlainBashTargets = {
-        "acidSlugEnemy", "fireSlugEnemy", "iceSlugEnemy", "dashOwlEnemy", "swarmEnemyLarge", "swarmEnemyLargeFire", "swarmEnemyMedium", "armouredRammingEnemy"
-    };
-
     private static readonly string[] DamageFields = { "DamageOnTouch", "ProjectileDamage", "ExplosionDamage", "LaserDamage", "GroundStompDamage" };
     private static readonly string[] ExpFields = { "NumberOfExpOrbsToDrop", "TotalExpOrbsToDrop" };
 
@@ -62,14 +100,12 @@ public static class RandomizerEnemies {
     private static Dictionary<string, Kind> s_kindOf;
     private static List<Variant> s_variants;
     private static Dictionary<string, string> s_donors;
-    private static Dictionary<string, string> s_pinned;
     private static HashSet<string> s_arena;
-    private static Dictionary<string, string> s_bash;
     private static Dictionary<string, float[]> s_zones;
     private static Dictionary<string, string> s_placements;
+    private static Dictionary<string, int> s_index;   // placeholder guid -> its row in the seed's table
 
-    private static readonly Dictionary<string, Variant> s_rolls = new Dictionary<string, Variant>();
-    private static string s_rollKey;
+    private static int[] s_table;                      // the seed's variant per placement, -1 for vanilla
     private static string s_force;
 
     private static readonly Dictionary<string, RespawningPlaceholder> s_templates = new Dictionary<string, RespawningPlaceholder>();
@@ -85,13 +121,32 @@ public static class RandomizerEnemies {
     // how far off its surface a turned walker spawns, so its capsule starts clear of the level
     public static float WalkerLift = 1.5f;
 
+    // an elemental standing in for a spider is a small, slow one
+    public static float StandInScale = 0.6f;
+    public static float StandInPace = 4f / 3f;
+    private static readonly string[] PacedFields = { "ChargeDuration", "ShootingDuration" };
+
+    // how close Ori must be before a flying fish gives chase (vanilla fish wait for a swimming Ori within ~6)
+    public static float FlyingFishReach = 14f;
+
+    // fliers placed underwater move and fire this much slower
+    public static float WetSpeed = 0.6f;
+
+    private static readonly string[] WetSlowed = { "Speed", "MoveBackSpeed", "ProjectileSpeed", "LaserChaseSpeed", "Acceleration", "DashDistance" };
+    private static readonly string[] WetDelayed = { "ChargeDuration", "ChargingDuration", "DashAlertDelay", "JumpDelay" };
+
     // how far a clinger looks for the surface its spot faces
     public static float SettleReach = 20f;
 
-    // every unpinned placeholder takes this kind or prefab (any category), for testing; null undoes it
+    // a slime admitted to a water spot faces the surface within this reach that admitted it
+    public static float WaterReach = 8f;
+
+    // a flier at a shark's spot hovers this far above it (the spot sits in the lava or the pool)
+    public static float SharkLift = 6f;
+
+    // every placeholder the seed rolled (every one at all without a seed table) takes this kind or prefab, for testing; null undoes it
     public static void SetForce(string kindOrPrefab) {
         s_force = kindOrPrefab;
-        s_rolls.Clear();
     }
 
     public static Entity Instantiate(RespawningPlaceholder target) {
@@ -106,6 +161,7 @@ public static class RandomizerEnemies {
         }
 
         s_kindOf.TryGetValue(own.name, out var ownKind);
+        var guidKey = target.MoonGuid.ToString();
         var spot = Spot(target, ownKind, out var gravity);
         var source = variant.Prefab == own.name ? target : Template(variant.Prefab);
         var maker = variant.Class == target.GetType().Name ? target : Template(variant.Prefab);
@@ -119,12 +175,19 @@ public static class RandomizerEnemies {
         var savedSettings = settingsField.GetValue(maker);
         var settings = Copy(savedSettings, true);
         Apply(settings, variant.Settings);
-        Scale(settings, Factors(target, variant));
+        var factors = Factors(target, variant);
+        factors[0] = ModeFactor(HpMode, factors[0], guidKey + "|hp");
+        factors[1] = ModeFactor(DmgMode, factors[1], guidKey + "|dmg");
+        Scale(settings, factors);
         var t = maker.transform;
         var pose = new[] { t.position, t.eulerAngles, t.localScale };
         if (maker != target) {
-            t.position = target.transform.position;
+            t.position = target.transform.position + (spot == "shark" && Takes(variant.Kind, "air") ? Vector3.up * SharkLift : Vector3.zero);
             t.rotation = !variant.Kind.Clings ? Quaternion.identity : ownKind.Clings ? target.transform.rotation : Quaternion.Euler(0f, 0f, gravity);
+            Vector3 toward;
+            if (spot == "water" && variant.Kind.Clings && SurfaceNear(target.transform.position, WaterReach, out toward)) {
+                t.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(toward.y, toward.x) * Mathf.Rad2Deg + 90f);
+            }
             t.localScale = new Vector3(target.transform.lossyScale.x < 0f ? -1f : 1f, 1f, 1f);
         }
 
@@ -147,6 +210,11 @@ public static class RandomizerEnemies {
             entity.transform.parent = target.transform.parent;
         }
 
+        if (variant.Kind.Name == "Elementals" && ownKind != null && ownKind.Name == "Spiders") {
+            entity.transform.localScale *= StandInScale;
+            Pace(entity, StandInPace);
+        }
+
         // the root turns too: enemies find the player through it (PositionToPlayerPosition), and it carries the hitbox
         var walker = entity as GroundEnemy;
         if (walker != null && spot != "floor" && gravity != 0f) {
@@ -160,7 +228,30 @@ public static class RandomizerEnemies {
             Settle(entity);
         }
 
-        if (s_arena.Contains(target.MoonGuid.ToString())) {
+        var fish = entity as FishEnemy;
+        if (fish != null && spot != "water") {
+            Fly(fish, target);
+        } else if (fish == null && (spot == "water" || WaterZone.PositionInWater(target.transform.position))) {
+            Soak(entity);
+            entity.gameObject.AddComponent<RandomizerWaterBorn>();
+        }
+
+        // a shark away from its zone has nothing to call it up: a lure stands in for the zone
+        var shark = entity as JumpShootShark;
+        if (shark != null && spot != "shark") {
+            var lure = entity.gameObject.AddComponent<RandomizerSharkLure>();
+            lure.Shark = shark;
+            lure.Spot = target.transform.position;
+        }
+
+        var kamikaze = entity as KamikazeSootEnemy;
+        if (kamikaze != null && s_placements.TryGetValue(guidKey, out var kamZone) && s_zones.TryGetValue(kamZone, out var kamStrength)) {
+            var boom = ModeFactor(DmgMode, kamStrength[1], guidKey + "|dmg");
+            kamikaze.Settings.ExplosionDamage = Mathf.Max(1, Mathf.RoundToInt(kamikaze.Settings.ExplosionDamage * boom));
+            kamikaze.DamageDealer.Damage = kamikaze.Settings.ExplosionDamage;
+        }
+
+        if (s_arena.Contains(guidKey)) {
             var health = Enemy.ScaleHealth(VanillaHealth(target));
             entity.DamageReciever.SetHealth(health);
             entity.DamageReciever.SetMaxHealth(health);
@@ -259,7 +350,6 @@ public static class RandomizerEnemies {
 
     public static void Reset() {
         Active = false;
-        s_rolls.Clear();
     }
 
     // one line per live placeholder: what it was, what it rolled, and where that enemy is now
@@ -371,65 +461,18 @@ public static class RandomizerEnemies {
 
     private static Variant VariantFor(RespawningPlaceholder target) {
         Load();
-        var key = SeedKey() + "|" + s_force + "|" + PinBash;
-        if (key != s_rollKey) {
-            s_rolls.Clear();
-            s_rollKey = key;
-        }
-
-        var guid = target.MoonGuid.ToString();
-        if (s_rolls.TryGetValue(guid, out var cached)) {
-            return cached;
-        }
-
-        var variant = Roll(target, guid);
-        s_rolls[guid] = variant;
-        return variant;
-    }
-
-    private static Variant Roll(RespawningPlaceholder target, string guid) {
-        var own = OwnPrefab(target);
-        if (own == null || !s_kindOf.TryGetValue(own.name, out var ownKind) || s_pinned.ContainsKey(guid)) {
+        int index;
+        if (!s_index.TryGetValue(target.MoonGuid.ToString(), out index)) {
             return null;
         }
 
-        var bashOnly = PinBash && s_bash.ContainsKey(guid);
-        if (bashOnly && Array.IndexOf(PlainBashTargets, own.name) < 0) {
-            return null;
+        var roll = s_table == null ? -2 : s_table[index];
+        if (s_force != null && roll != -1) {
+            var forced = s_variants.FindAll(v => v.Kind != null && (v.Kind.Name == s_force || v.Prefab == s_force));
+            return forced.Count == 0 ? null : forced[new System.Random(Hash(SeedKey() + "|" + target.MoonGuid)).Next(forced.Count)];
         }
 
-        var spot = Spot(target, ownKind, out _);
-        var wet = WaterZone.PositionInWater(target.transform.position);
-        var candidates = new List<Kind>();
-        foreach (var kind in s_kinds) {
-            if (s_force != null ? kind.Name == s_force || kind.Variants.Exists(v => v.Prefab == s_force) : Takes(kind, spot) || (spot == "rhino" && Takes(kind, "floor"))) {
-                if ((!bashOnly || kind.Bashable) && !(wet && kind.Drowns && s_force == null)) {
-                    candidates.Add(kind);
-                }
-            }
-        }
-
-        if (candidates.Count == 0) {
-            return null;
-        }
-
-        var random = new System.Random(Hash(SeedKey() + "|" + guid));
-        var chosen = candidates[random.Next(candidates.Count)];
-        var pool = s_force != null && chosen.Name != s_force ? chosen.Variants.FindAll(v => v.Prefab == s_force) : chosen.Variants;
-        var total = 0;
-        foreach (var variant in pool) {
-            total += variant.Weight;
-        }
-
-        var pick = random.Next(total);
-        foreach (var variant in pool) {
-            pick -= variant.Weight;
-            if (pick < 0) {
-                return variant;
-            }
-        }
-
-        return null;
+        return roll < 0 ? null : s_variants[roll];
     }
 
     private static bool Takes(Kind kind, string spot) {
@@ -445,7 +488,7 @@ public static class RandomizerEnemies {
         }
 
         if (!own.Clings) {
-            return own.Spots == "air" || own.Spots == "rhino" ? own.Spots : "floor";
+            return own.Name == "Fish" ? "water" : own.Name == "Sharks" ? "shark" : own.Name == "Rhinos" ? "rhino" : Takes(own, "air") ? "air" : "floor";
         }
 
         var angle = Mathf.DeltaAngle(0f, target.transform.eulerAngles.z);
@@ -464,11 +507,9 @@ public static class RandomizerEnemies {
 
         s_kinds = new List<Kind>();
         s_kindOf = new Dictionary<string, Kind>();
-        foreach (var row in Kinds) {
-            var flags = row[2].Split(' ');
-            var kind = new Kind {
-                Name = row[0], Spots = row[1], Clings = Array.IndexOf(flags, "clings") >= 0, Bashable = Array.IndexOf(flags, "bash") >= 0, Drowns = Array.IndexOf(flags, "drowns") >= 0
-            };
+        foreach (var line in RandomizerEnemyData.Kinds) {
+            var row = line.Split('|');
+            var kind = new Kind { Name = row[0], Spots = row[1], Clings = Array.IndexOf(row[2].Split(' '), "clings") >= 0 };
             s_kinds.Add(kind);
             for (var i = 3; i < row.Length; i++) {
                 s_kindOf[row[i]] = kind;
@@ -482,15 +523,16 @@ public static class RandomizerEnemies {
             s_variants.Add(variant);
             if (s_kindOf.TryGetValue(variant.Prefab, out variant.Kind)) {
                 variant.Kind.Variants.Add(variant);
-                variant.Kind.Weight += variant.Weight;
             }
         }
 
         s_donors = Pairs(RandomizerEnemyData.Donors);
-        s_pinned = Pairs(RandomizerEnemyData.Pinned);
         s_arena = new HashSet<string>(RandomizerEnemyData.Arena);
-        s_bash = Pairs(RandomizerEnemyData.Bash);
         s_placements = Pairs(RandomizerEnemyData.Placements);
+        s_index = new Dictionary<string, int>();
+        foreach (var row in RandomizerEnemyData.Placements) {
+            s_index[row.Split('|')[0]] = s_index.Count;
+        }
         s_zones = new Dictionary<string, float[]>();
         foreach (var pair in Pairs(RandomizerEnemyData.Zones)) {
             s_zones[pair.Key] = Floats(pair.Value);
@@ -585,6 +627,99 @@ public static class RandomizerEnemies {
     private static float VanillaHealth(RespawningPlaceholder target) {
         var settings = target.GetType().GetField("Settings").GetValue(target);
         return (float)settings.GetType().GetField("Health").GetValue(settings);
+    }
+
+    // a fish in the air: water everywhere, a longer reach (it can't wait for Ori to swim by), and a buoy to wander after
+    private static void Fly(FishEnemy fish, RespawningPlaceholder target) {
+        fish.AirSwimmer = true;
+        fish.Settings.EnterSwimRange = Mathf.Max(fish.Settings.EnterSwimRange, FlyingFishReach);
+        fish.Settings.MaxSwimDistance = Mathf.Max(fish.Settings.MaxSwimDistance, FlyingFishReach + 10f);
+        var buoy = new GameObject("flyingFishWander");
+        buoy.transform.parent = target.transform.parent;
+        buoy.transform.position = fish.transform.position;
+        var wander = buoy.AddComponent<RandomizerFishWander>();
+        wander.Fish = fish;
+        wander.Center = fish.transform.position;
+        fish.WanderTarget = buoy.transform;
+    }
+
+    private static void Soak(Entity entity) {
+        var field = entity.GetType().GetField("Settings");
+        var settings = field == null ? null : field.GetValue(entity);
+        if (settings == null) {
+            return;
+        }
+
+        foreach (var setting in settings.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public)) {
+            if (setting.FieldType != typeof(float)) {
+                continue;
+            }
+
+            var value = (float)setting.GetValue(settings);
+            if (Array.IndexOf(WetSlowed, setting.Name) >= 0) {
+                setting.SetValue(settings, value * WetSpeed);
+            } else if (Array.IndexOf(WetDelayed, setting.Name) >= 0) {
+                setting.SetValue(settings, value / WetSpeed);
+            }
+        }
+    }
+
+    // spawned under water: its drown check is off
+    public static bool WaterBorn(Entity entity) {
+        return entity != null && entity.GetComponent<RandomizerWaterBorn>() != null;
+    }
+
+    public static bool WaterBornShot(GameObject owner) {
+        return owner != null && owner.GetComponentInParent<RandomizerWaterBorn>() != null;
+    }
+
+    // the level only: enemies, shots and Ori don't count as ground
+    private static bool LevelHit(Vector3 origin, Vector3 direction, float reach, out RaycastHit hit) {
+        hit = default(RaycastHit);
+        var best = float.MaxValue;
+        foreach (var candidate in Physics.RaycastAll(origin, direction, reach, ~0, QueryTriggerInteraction.Ignore)) {
+            var go = candidate.collider.gameObject;
+            if (go.GetComponentInParent<Entity>() != null || go.GetComponentInParent<Projectile>() != null || go.GetComponentInParent<SeinCharacter>() != null) {
+                continue;
+            }
+
+            if (candidate.distance < best) {
+                best = candidate.distance;
+                hit = candidate;
+            }
+        }
+
+        return best < float.MaxValue;
+    }
+
+    private static bool SurfaceNear(Vector3 position, float reach, out Vector3 toward) {
+        toward = Vector3.down;
+        var best = float.MaxValue;
+        RaycastHit hit;
+        for (var i = 0; i < 8; i++) {
+            var angle = i * Mathf.PI / 4f;
+            var direction = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f);
+            if (LevelHit(position, direction, reach, out hit) && hit.distance < best) {
+                best = hit.distance;
+                toward = direction;
+            }
+        }
+
+        return best < float.MaxValue;
+    }
+
+    private static void Pace(Entity entity, float factor) {
+        var field = entity.GetType().GetField("Settings");
+        var settings = field == null ? null : field.GetValue(entity);
+        if (settings == null) {
+            return;
+        }
+
+        foreach (var setting in settings.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public)) {
+            if (setting.FieldType == typeof(float) && Array.IndexOf(PacedFields, setting.Name) >= 0) {
+                setting.SetValue(settings, (float)setting.GetValue(settings) * factor);
+            }
+        }
     }
 
     // clingers have no gravity (slimes drift up off a missing surface), so they start on the surface they face
@@ -769,6 +904,31 @@ public static class RandomizerEnemies {
     }
 }
 
+public class RandomizerWaterBorn : MonoBehaviour {
+}
+
+// JumpShootSharkZone for a shark on dry land: it emerges under Ori when he stands on the floor near its spot.
+public class RandomizerSharkLure : MonoBehaviour {
+    public JumpShootShark Shark;
+    public Vector3 Spot;
+    public static float Reach = 10f;
+    public static float Level = 3f;
+
+    public void FixedUpdate() {
+        var sein = Characters.Sein;
+        if (Shark == null) {
+            Destroy(this);
+            return;
+        }
+
+        if (sein == null || !sein.IsOnGround || Mathf.Abs(sein.Position.x - Spot.x) > Reach || Mathf.Abs(sein.Position.y - Spot.y) > Level) {
+            return;
+        }
+
+        Shark.SetEmergeLocation(sein.Position);
+    }
+}
+
 // A walker on a turned surface lets go of it (gravity back to normal) if it walks off an edge or stays airborne too
 // long: ceilings have no enemy stoppers, and nothing else would stop it falling "up" out of the level.
 public class RandomizerEnemyGrip : MonoBehaviour {
@@ -805,5 +965,24 @@ public class RandomizerEnemyGrip : MonoBehaviour {
             Walker.transform.rotation = Quaternion.identity;
             Destroy(this);
         }
+    }
+}
+
+// A slow figure eight around a flying fish's spot: vanilla fish follow a moving scene object the same way.
+public class RandomizerFishWander : MonoBehaviour {
+    public FishEnemy Fish;
+    public Vector3 Center;
+
+    public static float Radius = 4f;
+    public static float Period = 7f;
+
+    public void Update() {
+        if (Fish == null) {
+            Destroy(gameObject);
+            return;
+        }
+
+        var t = Time.time * 2f * Mathf.PI / Period + Center.x;
+        transform.position = Center + new Vector3(Mathf.Cos(t) * Radius, Mathf.Sin(2f * t) * Radius * 0.5f, 0f);
     }
 }

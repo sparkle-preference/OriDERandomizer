@@ -43,6 +43,9 @@ public class FishEnemy : Enemy {
 
     private bool m_inWater;
 
+    // a flying fish: everywhere is water to it, and Ori always counts as swimming
+    public bool AirSwimmer;
+
     public float Angle;
 
     public float BendValue => AnimationFromBend.Evaluate((float)(base.FaceLeft ? 1 : (-1)) * m_currentAngularVelocity);
@@ -70,6 +73,9 @@ public class FishEnemy : Enemy {
             if (waterZone.Bounds.Contains(position)) {
                 flag = true;
             }
+        }
+        if (AirSwimmer) {
+            flag = true;
         }
         if (m_inWater != flag) {
             if (m_inWater) {
@@ -154,7 +160,7 @@ public class FishEnemy : Enemy {
     }
 
     public bool PlayerInWater() {
-        return Characters.Sein.Controller.IsSwimming;
+        return AirSwimmer || Characters.Sein.Controller.IsSwimming;
     }
 
     public bool OutOfWater() {

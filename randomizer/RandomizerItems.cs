@@ -305,10 +305,45 @@ public static class RandomizerItems {
 
         return ""; // this could have been a poem
     }
+
+    private static readonly string[] Teleporters = { "Glades", "Grove", "Swamp", "Grotto", "Ginso", "Valley", "Forlorn", "Sorrow", "Horu", "Blackroot" };
+
+    /// <summary>PickupNames.txt's list of codes and ids, as comment lines.</summary>
+    public static string IdReference() {
+        var lines = new List<string> {
+            "// Pickup codes and ids (a key is CODE|ID, like SK|0 for Bash):",
+            "//   HC|1 Health Cell, EC|1 Energy Cell, AC|1 Ability Cell, KS|1 Keystone, MS|1 Mapstone",
+            "//   EX|<amount> Experience",
+        };
+        Wrap(lines, "SK", SkillNames.Select(p => new KeyValuePair<int, string>(int.Parse(p.Key), p.Value)));
+        // 6 and 7 are plando-only
+        Wrap(lines, "EV", EventNames.Select(p => new KeyValuePair<int, string>(int.Parse(p.Key), p.Value)).Where(p => p.Key < 6));
+        lines.Add("//   TP|<name> Teleporter: " + string.Join(", ", Teleporters));
+        lines.Add("//   RB|<id> Bonus items, listed in RandomizerItemIDs.txt:");
+        lines.Add("//     https://github.com/sparkle-preference/OriDERandomizer/blob/master/RandomizerItemIDs.txt");
+        lines.Add("//   WT (World Tour relics), SH (messages), TW (warps) and AP (Archipelago items) have text ids: use CODE|*");
+        return string.Join("\n", lines.ToArray());
+    }
+
+    private static void Wrap(List<string> lines, string code, IEnumerable<KeyValuePair<int, string>> items) {
+        var line = "//   " + code + ":";
+        foreach (var item in items.OrderBy(p => p.Key)) {
+            var entry = " " + item.Key + " " + item.Value + ",";
+            if (line.Length + entry.Length > 110) {
+                lines.Add(line);
+                line = "//     ";
+            }
+
+            line += entry;
+        }
+
+        lines.Add(line.TrimEnd(','));
+    }
 }
 
-/// <summary>PickupNames.txt: "KEY, KEY: name | name", where a key is CODE|ID, CODE|LO-HI or CODE|*.
-/// The most specific key wins (an id, then the narrowest range, then *); a later rule wins a tie.</summary>
+/// <summary>PickupNames.txt: "KEY, KEY: name | name", where a key is CODE|ID, CODE|LO-HI or CODE|*, and a
+/// counted code's key may end in =N or =LO-HI. The most specific key wins (an id, then the narrowest range,
+/// then *; between equals, a count, then the narrowest count); a later rule wins a tie.</summary>
 public class PickupNameRules {
     private class Key {
         public string Code;
@@ -316,11 +351,20 @@ public class PickupNameRules {
         public int Lo;
         public int Hi;
         public bool Any;
+        public bool HasCount;
+        public int CountLo;
+        public int CountHi;
         public string[] Names;
 
         // lower is more specific: an exact id 0, a range its width, * last
         public long Width => Id != null ? 0 : Any ? long.MaxValue : (long)Hi - Lo + 1;
+
+        // the tiebreak between equally specific ids: a count beats none, a narrower count a wider one
+        public long CountWidth => HasCount ? (long)CountHi - CountLo : long.MaxValue;
     }
+
+    // codes whose pickups have a {count}; only their keys read a trailing =N as one, since other ids may hold an =
+    public static readonly HashSet<string> Counted = new HashSet<string> { "RB", "KS", "MS", "HC", "EC" };
 
     private readonly List<Key> keys = new List<Key>();
 
@@ -389,27 +433,48 @@ public class PickupNameRules {
 
         var key = new Key { Code = text.Substring(0, bar).Trim().ToUpperInvariant(), Names = names };
         var id = text.Substring(bar + 1).Trim();
+        var equals = id.LastIndexOf('=');
+        if (equals >= 0 && Counted.Contains(key.Code)) {
+            if (!Range(id.Substring(equals + 1).Trim(), out key.CountLo, out key.CountHi)) {
+                return null;
+            }
+
+            key.HasCount = true;
+            id = id.Substring(0, equals).Trim();
+        }
+
         if (id == "*") {
             key.Any = true;
             return key;
         }
 
-        // a leading - is a negative id, so a range's dash comes later
-        var dash = id.IndexOf('-', 1);
-        if (dash > 0) {
-            if (!int.TryParse(id.Substring(0, dash), out key.Lo) || !int.TryParse(id.Substring(dash + 1), out key.Hi) || key.Lo > key.Hi) {
-                return null;
-            }
+        if (id.Length == 0) {
+            return null;
+        }
 
-            return key;
+        // a leading - is a negative id, so a range's dash comes later
+        if (id.IndexOf('-', 1) > 0) {
+            return Range(id, out key.Lo, out key.Hi) ? key : null;
         }
 
         key.Id = id;
         return key;
     }
 
-    /// <summary>The names the most specific matching key offers, or null when none matches.</summary>
-    public string[] For(string code, string id) {
+    // N or LO-HI, where N may be negative
+    private static bool Range(string text, out int lo, out int hi) {
+        lo = hi = 0;
+        var dash = text.Length > 1 ? text.IndexOf('-', 1) : -1;
+        if (dash < 0) {
+            return int.TryParse(text, out lo) && int.TryParse(text, out hi);
+        }
+
+        return int.TryParse(text.Substring(0, dash), out lo) && int.TryParse(text.Substring(dash + 1), out hi) && lo <= hi;
+    }
+
+    /// <summary>The names the most specific matching key offers, or null when none matches.
+    /// count is the pickup's {count}, null for a code without one.</summary>
+    public string[] For(string code, string id, int? count = null) {
         Key best = null;
         int number;
         var numeric = int.TryParse(id, out number);
@@ -419,7 +484,11 @@ public class PickupNameRules {
             }
 
             var matches = key.Any || (key.Id != null ? key.Id == id : numeric && number >= key.Lo && number <= key.Hi);
-            if (matches && (best == null || key.Width <= best.Width)) {
+            if (key.HasCount) {
+                matches &= count.HasValue && count.Value >= key.CountLo && count.Value <= key.CountHi;
+            }
+
+            if (matches && (best == null || key.Width < best.Width || key.Width == best.Width && key.CountWidth <= best.CountWidth)) {
                 best = key;
             }
         }

@@ -118,6 +118,7 @@ public static class Randomizer {
             EnhancedMode = false;
             EnhancedSeinInSeed = false;
             VanillaRespawns = false;
+            RandomizerEnemies.ResetOptions();
             RandomizerEnemies.Reset();
             SpawnPosition = new Vector3(0, 0, 0);
             SpawnScene = null;
@@ -1773,6 +1774,16 @@ public static class Randomizer {
 
         if (meta.ToLower().StartsWith("players:")) {
             int.TryParse(meta.Substring("players:".Length).Trim(), out PlayerCount);
+            return;
+        }
+
+        if (meta.ToLower().StartsWith("enemies=")) {
+            RandomizerEnemies.ParseOptions(meta.Substring("enemies=".Length));
+            return;
+        }
+
+        if (meta.ToLower().StartsWith("enemyrolls=")) {
+            RandomizerEnemies.SetRolls(meta.Substring("enemyrolls=".Length));
             return;
         }
 
