@@ -119,9 +119,9 @@ public class SpitterEnemy : GroundEnemy {
         var currentStateTime = Controller.StateMachine.CurrentStateTime;
         if (currentState == State.Thrown) {
             var num = 1f - Mathf.InverseLerp(0.3f, 0.6f, currentStateTime);
-            FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(ThrownDirection) - 90f) * num);
+            FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(ThrownDirection) - 90f) * num + PlatformMovement.GravityAngle);
         } else {
-            var b = !PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle;
+            var b = (!PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle) + PlatformMovement.GravityAngle;
             FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.2f));
         }
     }

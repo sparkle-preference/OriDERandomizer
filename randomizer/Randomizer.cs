@@ -118,6 +118,7 @@ public static class Randomizer {
             EnhancedMode = false;
             EnhancedSeinInSeed = false;
             VanillaRespawns = false;
+            RandomizerEnemies.Reset();
             SpawnPosition = new Vector3(0, 0, 0);
             SpawnScene = null;
             ShouldHideGladesStart = false;
@@ -692,6 +693,7 @@ public static class Randomizer {
         RandomizerBoxes.Update();
         RandomizerPreloader.Tick();
         RandomizerDirtyWater.Tick();
+        RandomizerEnemies.Tick();
         RandomizerGhost.Update();
         UpdateMessages();
         UpdatePendingWin();
@@ -1700,6 +1702,8 @@ public static class Randomizer {
                 EnhancedMode = true;
             } else if (flag == "vanillarespawns") {
                 VanillaRespawns = true;
+            } else if (flag == "enemyrando") {
+                RandomizerEnemies.Active = true;
             }
 
             if (flag == "seintalks") {

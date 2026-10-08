@@ -46,9 +46,12 @@ public abstract class RespawningPlaceholder : SaveSerialize, ISuspendable, IDyna
     }
 
     public void Spawn() {
+        if (RandomizerEnemies.Waiting(this)) {
+            return;
+        }
         this.DestroyCurrentInstance();
         this.m_isKilled = false;
-        this.m_currentEntity = this.Instantiate();
+        this.m_currentEntity = RandomizerEnemies.Instantiate(this) ?? this.Instantiate();
         GameObject gameObject = this.m_currentEntity.gameObject;
         if (gameObject.GetComponent<DestroyWhenOutsideActiveBoundaries>() == null) {
             gameObject.AddComponent<DestroyWhenOutsideActiveBoundaries>();
@@ -70,6 +73,7 @@ public abstract class RespawningPlaceholder : SaveSerialize, ISuspendable, IDyna
         base.GetComponent<Renderer>().enabled = false;
         this.m_transform = base.transform;
         this.m_sceneRootGUID = SceneRoot.FindFromTransform(base.transform).MetaData.SceneMoonGuid;
+        RandomizerEnemies.Offer(this);
     }
 
     public void OnEnable() {
