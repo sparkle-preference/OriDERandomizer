@@ -236,8 +236,13 @@ public static class RandomizerMapWarp {
 
     // BeginTeleportation silently refuses a target within 10 units, so those never charge.
     private static bool Warpable(GameMapTeleporter well) {
-        return well.Activated && Characters.Sein != null &&
+        return well.Activated && Characters.Sein != null && !Disabled() &&
             Vector3.Distance(well.WorldPosition, Characters.Sein.Position) >= 10f;
+    }
+
+    // whatever turns off Alt+R (the noaltr flag, RB|34) turns off map warps too
+    private static bool Disabled() {
+        return Randomizer.AltRDisabled || RandomizerBonus.AltRDisabled();
     }
 
     // The warp paths' own guard: Ori free to move, and no warp already under way.
@@ -286,6 +291,8 @@ public static class RandomizerMapWarp {
         // FirstBindName renders as the button's own glyph, and follows a rebind for free
         box.OverrideText = Title(well) + "\n" + (!well.Activated
             ? "(not activated)"
+            : Disabled()
+            ? "(warping is disabled)"
             : Warpable(well)
                 ? "(Hold " + RandomizerRebinding.MapWarp.FirstBindName() + " to warp!)"
                 : "(you are here)");

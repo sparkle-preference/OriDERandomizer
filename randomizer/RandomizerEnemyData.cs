@@ -3,7 +3,7 @@ public static class RandomizerEnemyData {
     // the seed's //EnemyRolls= line must carry this: the placement order it indexes
     public const string Version = "8117e403";
 
-    // kind|spots it can take|flags|prefabs...; anything unlisted (sharks) stays vanilla
+    // kind|spots it can take|flags|prefabs...
     public static readonly string[] Kinds = {
         "Fronkeys|floor roof wall|bash drowns|jumperEnemy",
         "Frogs|floor roof wall water|bash|spitterEnemy|fastSpitterEnemy",
@@ -693,7 +693,7 @@ public static class RandomizerEnemyData {
         "floatTurretEnemyWood|ginsoTreeResurrection",
         "floatingRockLaserEnemy|horuFieldsB",
         "iceSlugEnemy|forlornRuinsKuroHideStreamlined",
-        "jumpShootSharkEnemy|mistyWoodsShortPath",
+        "jumpShootSharkEnemy|moonGrottoEnemyPuzzle",
         "jumpShootSharkEnemyFire|mountHoruHubBottom",
         "jumperEnemy|forlornRuinsKuroHideStreamlined",
         "kamikazeSootEnemy|forlornRuinsKuroHideStreamlined",

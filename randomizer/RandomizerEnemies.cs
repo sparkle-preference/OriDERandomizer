@@ -11,7 +11,7 @@ using Object = UnityEngine.Object;
 public static class RandomizerEnemies {
     public static bool Active;
 
-    // the seed's //Enemies= line (seedbuilder/enemyopts.py): the keys the client still applies; absent keys mean these
+    // the seed's //Enemies= line (seedbuilder/enemyopts.py); absent keys mean these
     public static string HpMode = "zone";        // zone, vanilla, or "lo-hi"
     public static string DmgMode = "zone";
 
@@ -80,14 +80,12 @@ public static class RandomizerEnemies {
         public string Name;
         public string Spots;
         public bool Clings;
-        public readonly List<Variant> Variants = new List<Variant>();
     }
 
     private class Variant {
         public int Index;
         public string Prefab;
         public string Class;
-        public int Weight;
         public string Settings;
         public float[] Home;
         public Kind Kind;
@@ -96,7 +94,6 @@ public static class RandomizerEnemies {
     private static readonly string[] DamageFields = { "DamageOnTouch", "ProjectileDamage", "ExplosionDamage", "LaserDamage", "GroundStompDamage" };
     private static readonly string[] ExpFields = { "NumberOfExpOrbsToDrop", "TotalExpOrbsToDrop" };
 
-    private static List<Kind> s_kinds;
     private static Dictionary<string, Kind> s_kindOf;
     private static List<Variant> s_variants;
     private static Dictionary<string, string> s_donors;
@@ -126,10 +123,10 @@ public static class RandomizerEnemies {
     public static float StandInPace = 4f / 3f;
     private static readonly string[] PacedFields = { "ChargeDuration", "ShootingDuration" };
 
-    // how close Ori must be before a flying fish gives chase (vanilla fish wait for a swimming Ori within ~6)
+    // how close Ori must be before a flying fish gives chase
     public static float FlyingFishReach = 14f;
 
-    // fliers placed underwater move and fire this much slower
+    // enemies placed underwater move and fire this much slower
     public static float WetSpeed = 0.6f;
 
     private static readonly string[] WetSlowed = { "Speed", "MoveBackSpeed", "ProjectileSpeed", "LaserChaseSpeed", "Acceleration", "DashDistance" };
@@ -144,7 +141,7 @@ public static class RandomizerEnemies {
     // a flier at a shark's spot hovers this far above it (the spot sits in the lava or the pool)
     public static float SharkLift = 6f;
 
-    // every placeholder the seed rolled (every one at all without a seed table) takes this kind or prefab, for testing; null undoes it
+    // testing: every rolled placeholder takes this kind or prefab; null undoes it
     public static void SetForce(string kindOrPrefab) {
         s_force = kindOrPrefab;
     }
@@ -179,6 +176,10 @@ public static class RandomizerEnemies {
         factors[0] = ModeFactor(HpMode, factors[0], guidKey + "|hp");
         factors[1] = ModeFactor(DmgMode, factors[1], guidKey + "|dmg");
         Scale(settings, factors);
+        if (maker == target) {
+            KeepStomp(settings, savedSettings);
+        }
+
         var t = maker.transform;
         var pose = new[] { t.position, t.eulerAngles, t.localScale };
         if (maker != target) {
@@ -208,6 +209,10 @@ public static class RandomizerEnemies {
 
         if (maker != target) {
             entity.transform.parent = target.transform.parent;
+            // a broken armour hands the bare rhino to the placeholder that built it, which must be the target
+            if (entity is ArmouredRammingEnemy armoured) {
+                armoured.OnReplacedAction = target.Adopt;
+            }
         }
 
         if (variant.Kind.Name == "Elementals" && ownKind != null && ownKind.Name == "Spiders") {
@@ -231,7 +236,7 @@ public static class RandomizerEnemies {
         var fish = entity as FishEnemy;
         if (fish != null && spot != "water") {
             Fly(fish, target);
-        } else if (fish == null && (spot == "water" || WaterZone.PositionInWater(target.transform.position))) {
+        } else if (fish == null && (spot == "water" || WaterZone.PositionInWater(entity.transform.position))) {
             Soak(entity);
             entity.gameObject.AddComponent<RandomizerWaterBorn>();
         }
@@ -245,9 +250,8 @@ public static class RandomizerEnemies {
         }
 
         var kamikaze = entity as KamikazeSootEnemy;
-        if (kamikaze != null && s_placements.TryGetValue(guidKey, out var kamZone) && s_zones.TryGetValue(kamZone, out var kamStrength)) {
-            var boom = ModeFactor(DmgMode, kamStrength[1], guidKey + "|dmg");
-            kamikaze.Settings.ExplosionDamage = Mathf.Max(1, Mathf.RoundToInt(kamikaze.Settings.ExplosionDamage * boom));
+        if (kamikaze != null) {
+            kamikaze.Settings.ExplosionDamage = Mathf.Max(1, Mathf.RoundToInt(kamikaze.Settings.ExplosionDamage * factors[1]));
             kamikaze.DamageDealer.Damage = kamikaze.Settings.ExplosionDamage;
         }
 
@@ -317,6 +321,11 @@ public static class RandomizerEnemies {
         }
 
         s_nextScan = Time.realtimeSinceStartup + 0.5f;
+        if (s_table == null) {
+            Active = false;  // no rolls to play: vanilla enemies, and no donor scenes
+            return;
+        }
+
         if (!s_warmed) {
             s_warmed = true;
             Load();
@@ -350,6 +359,11 @@ public static class RandomizerEnemies {
 
     public static void Reset() {
         Active = false;
+        s_wanted.Clear();
+        s_urgent.Clear();
+        Unpin();
+        s_warmed = false;
+        s_askedAt = -100f;
     }
 
     // one line per live placeholder: what it was, what it rolled, and where that enemy is now
@@ -453,7 +467,7 @@ public static class RandomizerEnemies {
         Load();
         var lines = new List<string>();
         foreach (var variant in s_variants) {
-            lines.Add(variant.Index + " " + variant.Prefab + " x" + variant.Weight + " " + variant.Settings);
+            lines.Add(variant.Index + " " + variant.Prefab + " " + variant.Settings);
         }
 
         return string.Join("\n", lines.ToArray());
@@ -505,12 +519,10 @@ public static class RandomizerEnemies {
             return;
         }
 
-        s_kinds = new List<Kind>();
         s_kindOf = new Dictionary<string, Kind>();
         foreach (var line in RandomizerEnemyData.Kinds) {
             var row = line.Split('|');
             var kind = new Kind { Name = row[0], Spots = row[1], Clings = Array.IndexOf(row[2].Split(' '), "clings") >= 0 };
-            s_kinds.Add(kind);
             for (var i = 3; i < row.Length; i++) {
                 s_kindOf[row[i]] = kind;
             }
@@ -519,11 +531,9 @@ public static class RandomizerEnemies {
         s_variants = new List<Variant>();
         foreach (var line in RandomizerEnemyData.Variants) {
             var parts = line.Split(new[] { '|' }, 5);
-            var variant = new Variant { Index = s_variants.Count, Prefab = parts[0], Class = parts[1], Weight = int.Parse(parts[2]), Home = Floats(parts[3]), Settings = parts[4] };
+            var variant = new Variant { Index = s_variants.Count, Prefab = parts[0], Class = parts[1], Home = Floats(parts[3]), Settings = parts[4] };
             s_variants.Add(variant);
-            if (s_kindOf.TryGetValue(variant.Prefab, out variant.Kind)) {
-                variant.Kind.Variants.Add(variant);
-            }
+            s_kindOf.TryGetValue(variant.Prefab, out variant.Kind);
         }
 
         s_donors = Pairs(RandomizerEnemyData.Donors);
@@ -549,9 +559,9 @@ public static class RandomizerEnemies {
         return values;
     }
 
-    // hp, damage and exp multipliers moving a variant from its home zones to the target's zone
+    // hp and damage multipliers moving a variant from its home zones to the target's zone
     private static float[] Factors(RespawningPlaceholder target, Variant variant) {
-        var factors = new[] { 1f, 1f, 1f };
+        var factors = new[] { 1f, 1f };
         if (!s_placements.TryGetValue(target.MoonGuid.ToString(), out var zone) || !s_zones.TryGetValue(zone, out var strength)) {
             return factors;
         }
@@ -563,9 +573,44 @@ public static class RandomizerEnemies {
         return factors;
     }
 
+    // a fronkey where a fronkey stood lands at least as hard as the old one
+    private static void KeepStomp(object settings, object vanilla) {
+        var field = settings.GetType().GetField("GroundStompDamage");
+        if (field == null) {
+            return;
+        }
+
+        if (field.FieldType == typeof(int)) {
+            field.SetValue(settings, Mathf.Max((int)field.GetValue(settings), (int)field.GetValue(vanilla)));
+        } else if (field.FieldType == typeof(float)) {
+            field.SetValue(settings, Mathf.Max((float)field.GetValue(settings), (float)field.GetValue(vanilla)));
+        }
+    }
+
+    // exp is the spot's own enemy's, give or take a fifth
+    public static void VaryExp(RespawningPlaceholder target, Entity entity) {
+        var field = Active && entity != null ? target.GetType().GetField("Settings") : null;
+        var settings = field == null ? null : field.GetValue(target);
+        var spawner = settings == null ? null : entity.GetComponentInChildren<OrbSpawner>();
+        if (spawner == null) {
+            return;
+        }
+
+        foreach (var name in ExpFields) {
+            var exp = settings.GetType().GetField(name);
+            if (exp == null || exp.FieldType != typeof(int) || (int)exp.GetValue(settings) <= 0) {
+                continue;
+            }
+
+            var random = new System.Random(Hash(SeedKey() + "|" + target.MoonGuid + "|exp"));
+            spawner.SetNumberOfExpOrbs(Mathf.Max(1, Mathf.RoundToInt((int)exp.GetValue(settings) * (0.8f + (float)random.NextDouble() * 0.4f))));
+            return;
+        }
+    }
+
     private static void Scale(object settings, float[] factors) {
         foreach (var field in settings.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public)) {
-            var factor = field.Name == "Health" ? factors[0] : Array.IndexOf(DamageFields, field.Name) >= 0 ? factors[1] : Array.IndexOf(ExpFields, field.Name) >= 0 ? factors[2] : 0f;
+            var factor = field.Name == "Health" ? factors[0] : Array.IndexOf(DamageFields, field.Name) >= 0 ? factors[1] : 0f;
             if (factor == 0f) {
                 continue;
             }
@@ -590,7 +635,7 @@ public static class RandomizerEnemies {
         return pairs;
     }
 
-    // the seed's name, not its header: co-op partners differ in their sync flags
+    // the seed's name, not its header, which differs between co-op partners
     private static string SeedKey() {
         var meta = Randomizer.SeedMeta ?? "";
         return meta.Substring(meta.LastIndexOf('|') + 1);
@@ -728,7 +773,7 @@ public static class RandomizerEnemies {
         var slug = entity as SlugEnemy;
         var body = slug != null ? slug.Movement.GetComponent<Rigidbody>() : null;
         RaycastHit hit;
-        var found = body != null ? body.SweepTest(down, out hit, SettleReach) : Physics.Raycast(entity.transform.position, down, out hit, SettleReach, ~0, QueryTriggerInteraction.Ignore);
+        var found = body != null ? body.SweepTest(down, out hit, SettleReach) : LevelHit(entity.transform.position, down, SettleReach, out hit);
         if (!found) {
             return;
         }
@@ -808,7 +853,7 @@ public static class RandomizerEnemies {
         return go != null && go.transform.root.GetComponent<SceneRoot>() != null;
     }
 
-    // the survey's k=v;k={k=v} settings onto a copy; references were never written there
+    // the survey's k=v;k={k=v} settings onto a copy
     private static void Apply(object target, string settings) {
         var depth = 0;
         var start = 0;
@@ -893,10 +938,17 @@ public static class RandomizerEnemies {
             }
         }
 
-        foreach (var name in s_pins) {
-            var scene = manager.GetSceneManagerScene(name);
-            if (scene != null) {
-                scene.PreventUnloading = false;
+        Unpin();
+    }
+
+    private static void Unpin() {
+        var manager = Core.Scenes.Manager;
+        if (manager != null) {
+            foreach (var name in s_pins) {
+                var scene = manager.GetSceneManagerScene(name);
+                if (scene != null) {
+                    scene.PreventUnloading = false;
+                }
             }
         }
 
@@ -911,8 +963,9 @@ public class RandomizerWaterBorn : MonoBehaviour {
 public class RandomizerSharkLure : MonoBehaviour {
     public JumpShootShark Shark;
     public Vector3 Spot;
-    public static float Reach = 10f;
+    public static float Reach = 14.3f;
     public static float Level = 3f;
+    public static float Probe = 4f;
 
     public void FixedUpdate() {
         var sein = Characters.Sein;
@@ -926,6 +979,26 @@ public class RandomizerSharkLure : MonoBehaviour {
         }
 
         Shark.SetEmergeLocation(sein.Position);
+        // the emerge burst lies on the ground it comes out of
+        var burst = Shark.EmergePrefab;
+        if (burst != null) {
+            burst.UseRotation = true;
+            burst.transform.rotation = Quaternion.FromToRotation(Vector3.up, GroundNormal(sein));
+        }
+    }
+
+    // the surface under Ori by a ray past his own collider, straight up when nothing is there
+    private static Vector3 GroundNormal(SeinCharacter sein) {
+        var best = Vector3.up;
+        var nearest = float.MaxValue;
+        foreach (var hit in Physics.RaycastAll(sein.Position + Vector3.up, Vector3.down, Probe, ~0, QueryTriggerInteraction.Ignore)) {
+            if (hit.distance < nearest && !hit.collider.transform.IsChildOf(sein.transform)) {
+                nearest = hit.distance;
+                best = hit.normal;
+            }
+        }
+
+        return best;
     }
 }
 

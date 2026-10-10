@@ -341,9 +341,7 @@ public static class RandomizerItems {
     }
 }
 
-/// <summary>PickupNames.txt: "KEY, KEY: name | name", where a key is CODE|ID, CODE|LO-HI or CODE|*, and a
-/// counted code's key may end in =N or =LO-HI. The most specific key wins (an id, then the narrowest range,
-/// then *; between equals, a count, then the narrowest count); a later rule wins a tie.</summary>
+/// <summary>PickupNames.txt rules ("KEY, KEY: name | name"): the most specific id wins, then a count, then the later rule.</summary>
 public class PickupNameRules {
     private class Key {
         public string Code;

@@ -8,6 +8,11 @@ public abstract class RespawningPlaceholder : SaveSerialize, ISuspendable, IDyna
         this.m_currentEntity = entity;
     }
 
+    // enemy rando: an entity a template built, taken over by the placeholder it stands for
+    public void Adopt(Entity entity) {
+        this.SetCurrentEntity(entity);
+    }
+
     public virtual bool CheckForOverlap {
         get {
             return true;
@@ -52,6 +57,7 @@ public abstract class RespawningPlaceholder : SaveSerialize, ISuspendable, IDyna
         this.DestroyCurrentInstance();
         this.m_isKilled = false;
         this.m_currentEntity = RandomizerEnemies.Instantiate(this) ?? this.Instantiate();
+        RandomizerEnemies.VaryExp(this, this.m_currentEntity);
         GameObject gameObject = this.m_currentEntity.gameObject;
         if (gameObject.GetComponent<DestroyWhenOutsideActiveBoundaries>() == null) {
             gameObject.AddComponent<DestroyWhenOutsideActiveBoundaries>();

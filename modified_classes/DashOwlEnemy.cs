@@ -74,8 +74,8 @@ public class DashOwlEnemy : OwlEnemy {
 
     public new void FixedUpdate() {
         base.FixedUpdate();
-        // enemy rando puts birds underwater
-        if (!IsSuspended && base.IsInWater && !RandomizerEnemies.Active) {
+        // a water-born bird must not drown
+        if (!IsSuspended && base.IsInWater && !RandomizerEnemies.WaterBorn(this)) {
             Drown();
         }
     }
