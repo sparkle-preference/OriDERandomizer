@@ -53,6 +53,8 @@ public static class RandomizerDirtyWater {
         public float Below;
         public string[] Names;
         public string[] Branches = { "art" };
+        // only glows centered over the scene's own pools, squeezed to their span while the look shows
+        public bool OverPool;
     }
 
     // underwater glows and tint quads outside any water group: the blue ones with these names, below the line
@@ -62,6 +64,7 @@ public static class RandomizerDirtyWater {
         { "thornfeltSwampMoonGrottoTransition", new Sunk { Below = -150f, Names = new[] { "glow", "radialGlow", "sharedFogK" }, Branches = new[] { "art", "*unsorted" } } },
         { "southMangroveFallsBackgroundB", new Sunk { Below = -540f, Names = new[] { "glow" } } },
         { "southMangroveFallsGrenadeEscalationB", new Sunk { Below = -540f, Names = new[] { "glow", "water" }, Branches = new[] { "art", "water" } } },
+        { "southMangroveFallsGrenadeEscalationBR", new Sunk { Below = -547f, Names = new[] { "glow" }, OverPool = true } },
     };
 
     // scenes whose fog clouds go dark while the water is dirty (the main Swamp room, below it, its backdrop)
@@ -131,19 +134,38 @@ public static class RandomizerDirtyWater {
 
     // the setting: off, no scene is dressed and a look already placed goes back to clean
     public static bool Enabled {
-        get { return RandomizerSettings.Customization.DirtyWater; }
+        get { return Mode != RandomizerSettings.DirtyWaterMode.Disabled; }
     }
 
-    private static bool wasEnabled = true;
+    private static RandomizerSettings.DirtyWaterMode Mode {
+        get { return RandomizerSettings.Customization.DirtyWater.Value; }
+    }
 
-    // scenes loaded while the setting was off get dressed once it is back on
+    // Partial: the water and what's under its surface change, nothing above it
+    public static bool WaterOnly {
+        get { return Mode == RandomizerSettings.DirtyWaterMode.Partial; }
+    }
+
+    // Partial: submerged art samples a purple copy of the global fog texture
+    public static bool WaterFog = true;
+
+    // Full: how far the scene's depth fog goes toward purple; below 1, submerged art keeps the full purple
+    public static float HazeMix = 0.7f;
+
+    private static bool wasEnabled = true;
+    private static RandomizerSettings.DirtyWaterMode wasMode = RandomizerSettings.DirtyWaterMode.Partial;
+
+    // scenes loaded while the setting was off get dressed once it is back on; Partial and Full swap in place
     public static void Tick() {
         var on = Enabled;
         if (on && !wasEnabled) {
             DressLoaded();
+        } else if (on && Mode != wasMode) {
+            Reapply();
         }
 
         wasEnabled = on;
+        wasMode = Mode;
     }
 
     // scenes whose every waterfall pours the dirty water
@@ -504,8 +526,8 @@ public static class RandomizerDirtyWater {
                 }
 
                 // before the scene first builds its camera settings from it
-                if (TintFog && (ForcedOn || !Events.WaterPurified)) {
-                    fog.FogGradient = Purpled(entry.Source, StrengthIn(root.name));
+                if (TintFog && !WaterOnly && (ForcedOn || !Events.WaterPurified)) {
+                    fog.FogGradient = Hazed(entry.Source, StrengthIn(root.name));
                     component.Prepainted = true;
                 }
             }
@@ -607,6 +629,22 @@ public static class RandomizerDirtyWater {
         }
 
         return controls;
+    }
+
+    private static Gradient Hazed(Gradient clean, float strength) {
+        if (HazeMix >= 1f) {
+            return Purpled(clean, strength);
+        }
+
+        var keys = clean.colorKeys;
+        var dirty = Purpled(clean, strength).colorKeys;
+        for (var i = 0; i < keys.Length; i++) {
+            keys[i].color = Color.Lerp(keys[i].color, dirty[i].color, HazeMix);
+        }
+
+        var hazed = new Gradient();
+        hazed.SetKeys(keys, clean.alphaKeys);
+        return hazed;
     }
 
     private static Gradient Purpled(Gradient clean, float strength) {
@@ -828,6 +866,34 @@ public static class RandomizerDirtyWater {
         }
 
         return n;
+    }
+
+    // every loaded pool's body, surface to floor
+    private static List<Rect> Pools() {
+        return Bodies(Object.FindObjectsOfType<UberWaterControl>());
+    }
+
+    private static List<Rect> Bodies(UberWaterControl[] controls) {
+        var pools = new List<Rect>();
+        foreach (var control in controls) {
+            if (IsWater(control)) {
+                var depth = control.transform.lossyScale.y;
+                pools.Add(new Rect(control.Boundary.x, control.transform.position.y - depth, control.Boundary.width, depth));
+            }
+        }
+
+        return pools;
+    }
+
+    private static bool Under(GameObject go, List<Rect> pools) {
+        var center = Footprint(go).center;
+        return pools.Exists(pool => pool.Contains(center));
+    }
+
+    // wholly below a pool's surface, give or take half a unit
+    private static bool Submerged(GameObject go, List<Rect> pools) {
+        var foot = Footprint(go);
+        return foot.width > 0f && pools.Exists(pool => pool.Contains(foot.center) && foot.yMax <= pool.yMax + 0.5f);
     }
 
     // from the mesh, not Renderer.bounds: an inactive set has none
@@ -1243,6 +1309,11 @@ public static class RandomizerDirtyWater {
         public Color Clean;
         public bool Mist;
         public bool Drain;
+        public bool Squeezed;
+        public Vector3 HomeScale;
+        public Vector3 HomePosition;
+        public Vector3 PoolScale;
+        public Vector3 PoolPosition;
     }
 
     private static void AddNew(List<Native> into, List<Native> more) {
@@ -1308,6 +1379,9 @@ public static class RandomizerDirtyWater {
     // art glows the scene keeps under its water: the blue-leaning ones below the line
     private static List<Native> FindSunk(SceneRoot root, Sunk sunk) {
         var found = new List<Native>();
+        // the scene isn't enabled yet, so its pools come from its own hierarchy
+        var pools = Bodies(root.GetComponentsInChildren<UberWaterControl>(true));
+
         foreach (var path in sunk.Branches) {
             var branch = root.transform.Find(path);
             if (branch == null) {
@@ -1321,13 +1395,38 @@ public static class RandomizerDirtyWater {
                 }
 
                 var c = material.color;
-                if (c.b > c.r + 0.05f && Footprint(renderer.gameObject).center.y <= sunk.Below) {
-                    found.Add(new Native { Renderer = renderer, Clean = c });
+                if (c.b > c.r + 0.05f && Footprint(renderer.gameObject).center.y <= sunk.Below && (!sunk.OverPool || Under(renderer.gameObject, pools))) {
+                    var native = new Native { Renderer = renderer, Clean = c };
+                    if (sunk.OverPool) {
+                        Squeeze(native, pools);
+                    }
+
+                    found.Add(native);
                 }
             }
         }
 
         return found;
+    }
+
+    // a glow wider than its pool narrows to the pool's span, scaled about its pivot
+    private static void Squeeze(Native native, List<Rect> pools) {
+        var t = native.Renderer.transform;
+        var foot = Footprint(t.gameObject);
+        var pool = pools.Find(p => p.Contains(foot.center));
+        var x0 = Mathf.Max(foot.xMin, pool.xMin);
+        var x1 = Mathf.Min(foot.xMax, pool.xMax);
+        if (x1 - x0 > foot.width - 0.5f || x1 <= x0) {
+            return;
+        }
+
+        var k = (x1 - x0) / foot.width;
+        var pivot = t.position.x;
+        native.Squeezed = true;
+        native.HomeScale = t.localScale;
+        native.HomePosition = t.position;
+        native.PoolScale = new Vector3(t.localScale.x * k, t.localScale.y, t.localScale.z);
+        native.PoolPosition = t.position + new Vector3(x0 - (pivot + (foot.xMin - pivot) * k), 0f, 0f);
     }
 
     private static List<Native> FindMist(SceneRoot root) {
@@ -1393,6 +1492,10 @@ public static class RandomizerDirtyWater {
         private int fixedTicks;
         private bool wasHere;
         private bool fogPending;
+        private Texture2D waterFog;
+        private List<Renderer> sunken;
+        private readonly HashSet<Renderer> blockless = new HashSet<Renderer>();
+        private static MaterialPropertyBlock block;
         private bool controlsScanned;
         // this scene's settings from before the last repaint, which the camera may still hold
         private CameraSettings staleSettings;
@@ -1760,7 +1863,10 @@ public static class RandomizerDirtyWater {
 
             hidden.Clear();
             if (on) {
-                Hide(Rainbows);
+                if (!WaterOnly) {
+                    Hide(Rainbows);
+                }
+
                 if (HideWaterfalls) {
                     Hide(Falls);
                 }
@@ -1855,34 +1961,48 @@ public static class RandomizerDirtyWater {
                 PaintTop(top, on);
             }
 
+            var pools = WaterOnly ? Pools() : null;
             foreach (var native in Natives) {
                 if (native.Renderer != null && native.Renderer.sharedMaterial != null) {
                     var material = native.Renderer.sharedMaterial;
                     var clean = native.Clean;
-                    material.color = on ? TintFor(native, strength, material.color.a, mix) : new Color(clean.r, clean.g, clean.b, material.color.a);
+                    var dirty = on && (!WaterOnly || !native.Mist || Under(native.Renderer.gameObject, pools));
+                    material.color = dirty ? TintFor(native, strength, material.color.a, mix) : new Color(clean.r, clean.g, clean.b, material.color.a);
+                    if (native.Squeezed) {
+                        native.Renderer.transform.localScale = dirty ? native.PoolScale : native.HomeScale;
+                        native.Renderer.transform.position = dirty ? native.PoolPosition : native.HomePosition;
+                    }
                 }
             }
 
             foreach (var ray in Rays) {
                 if (ray != null) {
-                    ray.enabled = !(on && HideRays);
+                    ray.enabled = !(on && HideRays && (!WaterOnly || Under(ray.gameObject, pools)));
                 }
             }
 
-            // hue only: a sequence may be animating the alpha
+            // hue only: a sequence may be animating the alpha; Partial leaves a listed scene's falls alone
+            var falls = on && TintFalls && !(WaterOnly && Scenes.Contains(Root.name));
             foreach (var fall in FallMaterials) {
                 if (fall.Renderer != null && fall.Renderer.sharedMaterial != null) {
-                    var tint = on && TintFalls ? FallTint : fall.Clean;
+                    var tint = falls ? FallTint : fall.Clean;
                     fall.Renderer.sharedMaterial.color = new Color(tint.r, tint.g, tint.b, fall.Renderer.sharedMaterial.color.a);
                 }
             }
 
-            // the scene builds its camera settings from the gradient once and keeps them
+            PaintFog(on);
+        }
+
+        // the scene builds its camera settings from the gradient once and keeps them
+        private void PaintFog(bool on) {
+            var strength = StrengthIn(Root.name);
             foreach (var fog in Fogs) {
                 if (fog.Controller != null) {
-                    fog.Controller.FogGradient = on && TintFog && Wet ? Purpled(fog.Source, strength) : fog.Clean;
+                    fog.Controller.FogGradient = on && TintFog && Wet && !WaterOnly ? Hazed(fog.Source, strength) : fog.Clean;
                 }
             }
+
+            SinkFog(on && TintFog && Wet && WaterFog && Fogs.Count > 0 && (WaterOnly || HazeMix < 1f));
 
             if (Fogs.Count > 0) {
                 if (Root != null && Root.SceneSettings != null) {
@@ -1891,6 +2011,59 @@ public static class RandomizerDirtyWater {
                 }
 
                 fogPending = IsHere();
+            }
+        }
+
+        // the art under a pool's surface samples a purple copy of the scene's fog; the rest keeps the global one
+        private void SinkFog(bool on) {
+            if (block == null) {
+                block = new MaterialPropertyBlock();
+            }
+
+            if (on && sunken == null) {
+                var pools = Pools();
+                sunken = new List<Renderer>();
+                foreach (var renderer in Root.GetComponentsInChildren<Renderer>(true)) {
+                    if (Submerged(renderer.gameObject, pools)) {
+                        sunken.Add(renderer);
+                    }
+                }
+            }
+
+            if (sunken == null) {
+                return;
+            }
+
+            var fog = Fogs.Find(f => f.Controller != null);
+            on &= fog != null;
+            if (on) {
+                if (waterFog == null) {
+                    waterFog = new Texture2D(128, 1, TextureFormat.ARGB32, false);
+                }
+
+                Frameworks.Shader.ConvertGradientToTexture(waterFog, Purpled(fog.Source, StrengthIn(Root.name)));
+                waterFog.wrapMode = TextureWrapMode.Clamp;
+            }
+
+            foreach (var renderer in sunken) {
+                if (renderer == null) {
+                    continue;
+                }
+
+                renderer.GetPropertyBlock(block);
+                if (on) {
+                    if (block.isEmpty) {
+                        blockless.Add(renderer);
+                    }
+
+                    block.SetTexture("_FogGradientTex", waterFog);
+                } else if (blockless.Remove(renderer)) {
+                    block.Clear();
+                } else {
+                    block.SetTexture("_FogGradientTex", Frameworks.Shader.Globals.FogGradientTexture);
+                }
+
+                renderer.SetPropertyBlock(block);
             }
         }
 

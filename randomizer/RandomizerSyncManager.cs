@@ -214,6 +214,13 @@ public static class RandomizerSyncManager {
         }
     }
 
+    // the title screen sends the seed too, so the server hears this dll's version before a save loads
+    public static void Announce() {
+        if (!Characters.Sein && Randomizer.Sync && Randomizer.SyncId != "" && !SeedSent && SeedHead != null) {
+            UploadSeed();
+        }
+    }
+
     // Update's gate is shut: ghosts leave, a non-sync seed stops the socket, practice drops frames
     public static void Idle() {
         try {

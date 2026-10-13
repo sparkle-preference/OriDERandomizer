@@ -801,6 +801,7 @@ public static class Randomizer {
         RandomizerDeathLink.Update();
         RandomizerTempResourceUI.EnsureRows();
         Tick();
+        RandomizerSyncManager.Announce();
 
         if (GameStateMachine.Instance?.CurrentState == GameStateMachine.State.Prologue) {
             RandomizerHints.TryShowPrologueHint();

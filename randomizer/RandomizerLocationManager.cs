@@ -365,10 +365,6 @@ public class RandomizerLocationManager {
             reachable.Add("Sein");
         }
 
-        if (reachable.Contains("ForlornEscape")) {
-            reachable.Add("ForlornEscapePlant");
-        }
-
         foreach (var item in LocationsByName) {
             item.Value.Reachable = reachable.Contains(item.Key);
         }

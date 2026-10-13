@@ -142,6 +142,10 @@ public static class RandomizerEnemies {
     // a flier at a shark's spot hovers this far above it (the spot sits in the lava or the pool)
     public static float SharkLift = 6f;
 
+    // a drop slime away from a roof hangs this far under the ceiling above its spot, as vanilla's do
+    public static float DropHang = 1.4f;
+    public static float HangReach = 20f;
+
     // testing: every rolled placeholder takes this kind or prefab; null undoes it
     public static void SetForce(string kindOrPrefab) {
         s_force = kindOrPrefab;
@@ -191,6 +195,9 @@ public static class RandomizerEnemies {
                 t.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(toward.y, toward.x) * Mathf.Rad2Deg + 90f);
             }
             t.localScale = new Vector3(target.transform.lossyScale.x < 0f ? -1f : 1f, 1f, 1f);
+            if (variant.Kind.Name == "DropSlugs" && spot != "roof") {
+                Hang(t, settings, target.transform.position);
+            }
         }
 
         Entity entity;
@@ -771,6 +778,21 @@ public static class RandomizerEnemies {
             if (setting.FieldType == typeof(float) && Array.IndexOf(PacedFields, setting.Name) >= 0) {
                 setting.SetValue(settings, (float)setting.GetValue(settings) * factor);
             }
+        }
+    }
+
+    // the slime must see Ori standing on the floor below its spot before it can drop
+    private static void Hang(Transform t, object settings, Vector3 spot) {
+        RaycastHit ceiling, floor;
+        if (!LevelHit(spot, Vector3.up, HangReach, out ceiling)) {
+            return;
+        }
+
+        t.position = ceiling.point + Vector3.down * DropHang;
+        var below = LevelHit(spot, Vector3.down, HangReach, out floor) ? floor.distance : 0f;
+        var drop = settings.GetType().GetField("DropDistance");
+        if (drop != null) {
+            drop.SetValue(settings, Mathf.Max((float)drop.GetValue(settings), ceiling.distance + below - DropHang + 2f));
         }
     }
 
