@@ -12,19 +12,18 @@ public class RandomizerBootstrap {
     }
 
     public static void FixedUpdate() {
-        for (var i = 0; i < s_bootstrappedScenesPreEnabled.Count;) {
-            if (Scenes.Manager.GetSceneManagerScene(s_bootstrappedScenesPreEnabled[i]) != null) {
-                i++;
-            } else {
-                s_bootstrappedScenesPreEnabled.RemoveAt(i);
-            }
-        }
+        Forget(s_bootstrappedScenesPreEnabled);
+        Forget(s_bootstrappedScenesAfterSerialize);
+        Forget(s_textBootstrappedScenes);
+    }
 
-        for (var i = 0; i < s_bootstrappedScenesAfterSerialize.Count;) {
-            if (Scenes.Manager.GetSceneManagerScene(s_bootstrappedScenesAfterSerialize[i]) != null) {
+    // a scene that left memory is patched again when it loads
+    private static void Forget(List<string> bootstrapped) {
+        for (var i = 0; i < bootstrapped.Count;) {
+            if (Scenes.Manager.GetSceneManagerScene(bootstrapped[i]) != null) {
                 i++;
             } else {
-                s_bootstrappedScenesAfterSerialize.RemoveAt(i);
+                bootstrapped.RemoveAt(i);
             }
         }
     }
@@ -39,7 +38,10 @@ public class RandomizerBootstrap {
             s_bootstrapPreEnabled[sceneRoot.name].Invoke(sceneRoot);
         }
 
-        if (RandomizerEnhancedMode.TextBootstrapScenes.ContainsKey(sceneRoot.name) && (Randomizer.EnhancedMode || Randomizer.EnhancedSeinInSeed)) {
+        // once per load: a re-enable from memory would hang another textAction under the sequence
+        if (RandomizerEnhancedMode.TextBootstrapScenes.ContainsKey(sceneRoot.name) && (Randomizer.EnhancedMode || Randomizer.EnhancedSeinInSeed)
+            && !s_textBootstrappedScenes.Contains(sceneRoot.name)) {
+            s_textBootstrappedScenes.Add(sceneRoot.name);
             RandomizerEnhancedMode.TextBootstrapScenes[sceneRoot.name].Invoke(sceneRoot);
         }
 
@@ -1084,6 +1086,7 @@ public class RandomizerBootstrap {
     };
 
     private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();
+    private static List<string> s_textBootstrappedScenes = new List<string>();
 
     // Generally prefer PreEnabled over AfterSerialize. These functions are run after *every* 
     // serialisation of the scene, so after every death and not just the initial load. So don't

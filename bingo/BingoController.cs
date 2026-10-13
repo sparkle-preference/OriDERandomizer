@@ -795,9 +795,14 @@ public static class BingoController {
 
     public class BoolMultiSceneGoal : BoolGoal, SceneListener {
         public HashSet<string> Scenes;
+        // the stats zone and scene-name prefixes count too, so a warp into any scene of the area lands
+        public string Zone;
+        public string[] Prefixes;
 
-        public BoolMultiSceneGoal(string name, int id, HashSet<string> scenes) : base(name, id) {
+        public BoolMultiSceneGoal(string name, int id, HashSet<string> scenes, string zone = null, params string[] prefixes) : base(name, id) {
             Scenes = scenes;
+            Zone = zone;
+            Prefixes = prefixes;
             SceneListeners.Add(this);
         }
 
@@ -807,7 +812,8 @@ public static class BingoController {
         }
 
         public void Handle(string scene) {
-            Completed = Completed || Scenes.Contains(scene);
+            Completed = Completed || Scenes.Contains(scene) || (Zone != null && RandomizerStatsManager.CurrentZone() == Zone)
+                || Prefixes.Any(scene.StartsWith);
         }
     }
 
@@ -1173,12 +1179,12 @@ public static class BingoController {
                 MultiBoolGoal.mk(
                     "EnterArea",
                     new List<BoolGoal> {
-                        new BoolMultiSceneGoal("Lost Grove", 2543, new HashSet<string> { "southMangroveFallsStoryRoomA", "southMangroveFallsGrenadeEscalationB", "southMangroveFallsGrenadeEscalationBR" }),
-                        new BoolMultiSceneGoal("Misty Woods", 2544, new HashSet<string> { "sorrowPassForestB", "mistyWoodsGetTorch", "mistyWoodsIntro" }),
-                        new BoolMultiSceneGoal("Forlorn Ruins", 2545, new HashSet<string> { "forlornRuinsGravityRoomA", "forlornRuinsGetNightberry", "forlornRuinsGetIceB" }),
-                        new BoolMultiSceneGoal("Sorrow Pass", 2546, new HashSet<string> { "valleyOfTheWindEArt", "valleyOfTheWindLaserShaft", "valleyOfTheWindGauntlet", "valleyOfTheWindTop", "valleyOfTheWindHubR" }),
-                        new BoolMultiSceneGoal("Mount Horu", 2547, new HashSet<string> { "mountHoruHubBottom", "mountHoruHubMid" }),
-                        new BoolMultiSceneGoal("Ginso Tree", 2517, new HashSet<string> { "ginsoTreeSaveRoom", "ginsoEntranceIntro", "ginsoTreeWaterRisingEnd" })
+                        new BoolMultiSceneGoal("Lost Grove", 2543, new HashSet<string> { "southMangroveFallsStoryRoomA", "southMangroveFallsGrenadeEscalationB", "southMangroveFallsGrenadeEscalationBR" }, null, "southMangroveFalls"),
+                        new BoolMultiSceneGoal("Misty Woods", 2544, new HashSet<string> { "sorrowPassForestB", "mistyWoodsGetTorch", "mistyWoodsIntro" }, "mistyWoods"),
+                        new BoolMultiSceneGoal("Forlorn Ruins", 2545, new HashSet<string> { "forlornRuinsGravityRoomA", "forlornRuinsGetNightberry", "forlornRuinsGetIceB" }, "forlornRuins"),
+                        new BoolMultiSceneGoal("Sorrow Pass", 2546, new HashSet<string> { "valleyOfTheWindEArt", "valleyOfTheWindLaserShaft", "valleyOfTheWindGauntlet", "valleyOfTheWindTop", "valleyOfTheWindHubR" }, "sorrowPass"),
+                        new BoolMultiSceneGoal("Mount Horu", 2547, new HashSet<string> { "mountHoruHubBottom", "mountHoruHubMid" }, "mountHoru"),
+                        new BoolMultiSceneGoal("Ginso Tree", 2517, new HashSet<string> { "ginsoTreeSaveRoom", "ginsoEntranceIntro", "ginsoTreeWaterRisingEnd" }, "ginsoTree")
                     }
                 );
 

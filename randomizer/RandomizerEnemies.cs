@@ -49,7 +49,8 @@ public static class RandomizerEnemies {
 
         var table = new int[rolls.Length];
         for (var i = 0; i < rolls.Length; i++) {
-            table[i] = rolls[i] == "" ? -1 : int.Parse(rolls[i], CultureInfo.InvariantCulture);
+            // "b<N>" reads bonus N when the placeholder spawns; stored as -(N + 2), -1 is vanilla
+            table[i] = rolls[i] == "" ? -1 : rolls[i].StartsWith("b") ? -2 - int.Parse(rolls[i].Substring(1), CultureInfo.InvariantCulture) : int.Parse(rolls[i], CultureInfo.InvariantCulture);
             if (table[i] >= s_variants.Count) {
                 Randomizer.LogError("enemies: roll " + i + " names a variant this build doesn't have, playing vanilla enemies");
                 return;
@@ -484,6 +485,12 @@ public static class RandomizerEnemies {
         if (s_force != null && roll != -1) {
             var forced = s_variants.FindAll(v => v.Kind != null && (v.Kind.Name == s_force || v.Prefab == s_force));
             return forced.Count == 0 ? null : forced[new System.Random(Hash(SeedKey() + "|" + target.MoonGuid)).Next(forced.Count)];
+        }
+
+        if (roll <= -2) {
+            // bonus value v takes variant v - 1; unset or out of range stays vanilla
+            var value = Characters.Sein == null ? 0 : Characters.Sein.Inventory.GetRandomizerItem(-2 - roll);
+            return value >= 1 && value <= s_variants.Count ? s_variants[value - 1] : null;
         }
 
         return roll < 0 ? null : s_variants[roll];

@@ -1203,7 +1203,7 @@ public static class Randomizer {
         }
 
         var seedInfo = "v" + DisplayVersion;
-        seedInfo += "- seed loaded: " + SeedMeta;
+        seedInfo += "- seed loaded: " + DisplayMeta();
         // both default files present and nothing handed in: say which one won
         if (IsDefaultSeedFilePath(SeedFilePath) && File.Exists("randomizer.bfr") && File.Exists("randomizer.dat")) {
             seedInfo = SeedFilePath + " - " + seedInfo;
@@ -2135,6 +2135,13 @@ public static class Randomizer {
     public static bool ProgressiveMapStones;
     public static bool ForceTrees;
     public static string SeedMeta;
+
+    // the header as the player reads it; "balanced" was every seed's fill before 5.0 and says nothing
+    private static string DisplayMeta() {
+        var parts = (SeedMeta ?? "").Split('|');
+        parts[0] = String.Join(",", parts[0].Split(',').Where(f => f.ToLower() != "balanced").ToArray());
+        return String.Join("|", parts);
+    }
 
     // Seed file layout, tracked separately from the dll version: it moves only
     // when the format stops being readable, in either direction.
