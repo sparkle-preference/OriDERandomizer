@@ -340,14 +340,237 @@ public class RandomizerBootstrapEscapes {
         disabledSequence.Actions.Add(inputLockAction);
     }
 
+    private static void BootstrapGinsoResurrection(SceneRoot sceneRoot) {
+        // This saveScene is just what is required to reset the bulb etc.
+        var saveScene = new SaveScene();
+        if (SaveScenesToRestore.ContainsKey(sceneRoot.MetaData.SceneName)) {
+            saveScene = SaveScenesToRestore[sceneRoot.MetaData.SceneName];
+        } else {
+            saveScene.SceneGUID = sceneRoot.MetaData.SceneMoonGuid;
+            Dictionary<MoonGuid, Archive> guidsToAdd = new Dictionary<MoonGuid, Archive> {
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas - PhysicalSystemManager
+                {new MoonGuid(1951272400, 1116136422, -1467713898, -1793092062), new Archive(new byte[] {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 198, 229,   3,  68, 179, 144,  20,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 152, 106, 234, 190, 159, 151,  99,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   8, 174,   3,  68, 214, 222,  20,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 152, 106, 234, 190, 159, 151,  99,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  74, 118,   3,  68, 249,  44,  21,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 152, 106, 234, 190, 159, 151,  99,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 140,  62,   3,  68,  27, 123,  21,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  54, 105, 234, 190, 250, 151,  99,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 206,   6,   3,  68,  62, 201,  21,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 152, 106, 234, 190, 159, 151,  99,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  16, 207,   2,  68,  97,  23,  22,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 152, 106, 234, 190, 159, 151,  99,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 222, 126,   1,  68, 188, 146,  20,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 127,  99, 112,  63, 104,  15, 176, 190,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 166, 202,   1,  68, 213, 210,  20,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 127,  99, 112,  63, 104,  15, 176, 190,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 112,  22,   2,  68, 238,  18,  21,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  18, 100, 112,  63,  72,  12, 176, 190,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  58,  98,   2,  68,   8,  83,  21,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 187,  99, 112,  63,  35,  14, 176, 190,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   2, 174,   2,  68,  33, 147,  21,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 127,  99, 112,  63, 104,  15, 176, 190,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 204, 249,   2,  68,  58, 211,  21,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  18, 100, 112,  63,  72,  12, 176, 190,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 198, 247,   2,  68,  50, 213,  21,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 128,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  46, 240,   2,  68,  42, 218,  21,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 128,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 140, 236,   2,  68,  45, 234,  21,  68,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 153, 127, 171, 189, 209,  25, 127,  63})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/lianaConnector - AttachToRope
+                {new MoonGuid(171396518, 1115341135, 1094506674, -113226127), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/lianaConnector - AttachToRope
+                {new MoonGuid(-1390552396, 1210886848, 1409785021, -96276738), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/lock - AttachToRope
+                {new MoonGuid(-622965360, 1136474872, -1407679567, -1472972590), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/lock - GameObjectActivator
+                {new MoonGuid(262945740, 1088346344, -547476289, -1128762443), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/spiritLantern - SpiritLantern
+                {new MoonGuid(664654869, 1094994493, -921432390, 67339341), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/spiritLantern - AttachToRope
+                {new MoonGuid(-1401955912, 1311806998, -240411984, -1923306710), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/spiritLantern - GameObjectActivator
+                {new MoonGuid(-2128870074, 1206359744, -181435209, 1308574224), new Archive(new byte[] {   0})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas - PhysicalSystemManager
+                {new MoonGuid(-774216497, 1212876729, -480291957, 1907304239), new Archive(new byte[] {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  78,  33,   4,  68,  38, 199,  23,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 191,  41, 227,  62, 120, 108, 101,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  38, 238,   3,  68,  13, 132,  23,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 191,  41, 227,  62, 120, 108, 101,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 254, 186,   3,  68, 245,  64,  23,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0,  26,  40, 227,  62, 224, 108, 101,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 216, 135,   3,  68, 220, 253,  22,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0,  20,  46, 227,  62, 102, 107, 101,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 176,  84,   3,  68, 195, 186,  22,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 191,  41, 227,  62, 120, 108, 101,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 138,  33,   3,  68, 170, 119,  22,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0,  20,  46, 227,  62, 102, 107, 101,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  98, 238,   2,  68, 146,  52,  22,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0,  26,  40, 227,  62, 224, 108, 101,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  58, 187,   2,  68, 121, 241,  21,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 191,  41, 227,  62, 120, 108, 101,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  14, 122,   1,  68, 146, 239,  23,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0, 172, 241, 103,  63,  16, 175, 216,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 154, 175,   1,  68, 150, 175,  23,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0, 172, 241, 103,  63,  16, 175, 216,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  36, 229,   1,  68, 155, 111,  23,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0,  24, 241, 103,  63, 138, 177, 216,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 174,  26,   2,  68, 159,  47,  23,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0, 173, 240, 103,  63,  83, 179, 216,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  58,  80,   2,  68, 163, 239,  22,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0, 172, 241, 103,  63,  16, 175, 216,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 196, 133,   2,  68, 167, 175,  22,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0, 173, 240, 103,  63,  83, 179, 216,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  78, 187,   2,  68, 172, 111,  22,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0,  24, 241, 103,  63, 138, 177, 216,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 218, 240,   2,  68, 176,  47,  22,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0, 172, 241, 103,  63,  16, 175, 216,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 158, 246,   2,  68, 209,  55,  22,  68,   0,   0, 128, 179,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 128,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 154, 229,   2,  68,  90,  34,  22,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 153, 127, 171, 189, 209,  25, 127,  63})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/lianaConnector - AttachToRope
+                {new MoonGuid(178371832, 1273519208, -2124900424, 1709777798), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/lianaConnector - AttachToRope
+                {new MoonGuid(1960890494, 1281138681, -1226535495, 1030485279), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/spiritLantern - SpiritLantern
+                {new MoonGuid(1746023090, 1338378712, -715567221, -181790224), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/spiritLantern - AttachToRope
+                {new MoonGuid(-2045352757, 1290326496, -2003925057, -1635746913), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas - PhysicalSystemManager
+                {new MoonGuid(2096379141, 1331294147, 632160956, 1875162157), new Archive(new byte[] {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  68,  26,   4,  68, 179, 225,  25,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 249,   6, 243,  62, 175,  82,  97,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 154, 231,   3,  68, 165, 148,  25,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 249,   6, 243,  62, 175,  82,  97,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 238, 180,   3,  68, 151,  71,  25,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 227,   2, 243,  62, 200,  83,  97,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  66, 130,   3,  68, 138, 250,  24,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 139,   1, 243,  62,  37,  84,  97,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 152,  79,   3,  68, 124, 173,  24,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 249,   6, 243,  62, 175,  82,  97,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 238,  28,   3,  68, 110,  96,  24,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 249,   6, 243,  62, 175,  82,  97,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  66, 234,   2,  68,  96,  19,  24,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 227,   2, 243,  62, 200,  83,  97,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 158, 247,   1,  68, 222, 176,  25,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0,  94,  38, 104,  63, 221, 204, 215,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 222,  50,   2,  68, 157, 106,  25,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0,  94,  38, 104,  63, 221, 204, 215,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  32, 110,   2,  68,  91,  36,  25,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0, 227,  38, 104,  63, 161, 202, 215,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  96, 169,   2,  68,  26, 222,  24,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0,  94,  38, 104,  63, 221, 204, 215,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 162, 228,   2,  68, 216, 151,  24,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0, 227,  38, 104,  63, 161, 202, 215,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 226,  31,   3,  68, 151,  81,  24,  68,  31, 133, 107,  62,   0,   0,   0,   0,   0,   0,   0,   0,  94,  38, 104,  63, 221, 204, 215,  62,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 166,  37,   3,  68, 184,  89,  24,  68,   0,   0, 128, 179,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 128,  63,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 162,  20,   3,  68,  65,  68,  24,  68, 205, 204,  76,  62,   0,   0,   0,   0,   0,   0,   0,   0, 153, 127, 171, 189, 209,  25, 127,  63})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/lianaConnector - AttachToRope
+                {new MoonGuid(-535164233, 1247262691, 1605469076, -1177271759), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/lianaConnector - AttachToRope
+                {new MoonGuid(1661904791, 1313395362, -1835874156, 1445791251), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/spiritLantern - SpiritLantern
+                {new MoonGuid(630299582, 1218977751, 158455452, -346059175), new Archive(new byte[] {   1})},
+                //  *heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle/lanternOnLianas/spiritLantern - AttachToRope
+                {new MoonGuid(1319895327, 1137486828, 1312413582, -89925671), new Archive(new byte[] {   1})},
+                // *heartResurrection/restoringHeartWaterRising/blockingWalls/ginsoTreeBlockingWallA - LegacyAnimatorSerializer
+                {new MoonGuid(1474542370, 1162171178, 732416389, 1376850379), new Archive(new byte[] {   0,   0,   0,   0,   1,   0})},
+                // *heartResurrection/restoringHeartWaterRising/blockingWalls/ginsoTreeBlockingWallA - LegacyAnimatorSerializer
+                {new MoonGuid(-406554768, 1087058291, -1146303329, -1105526941), new Archive(new byte[] {   0,   0,   0,   0,   1,   0})},
+                // *heartResurrection/restoringHeartWaterRising/timelineSequence - BaseAnimatorSerializer
+                {new MoonGuid(138114904, 1269836703, 1728861083, -349906100), new Archive(new byte[] {   0,   0,   0,   0,   0})},
+                // *heartResurrection/restoringHeartWaterRising/triggerWaterSequence - OriInterestTriggerB 
+                {new MoonGuid(38773067, 1133205061, 1144176819, -122691416), new Archive(new byte[] {   0})},
+                // *heartResurrection/restoringHeartWaterRising/triggerWaterSequence - GameObjectActivator
+                {new MoonGuid(-1132914496, 1206589852, -1986239850, 250181432), new Archive(new byte[] {   1})},
+                // *heartResurrection/restoringHeartWaterRising/waterSequenceStartAction - ActionSequenceSerializer
+                {new MoonGuid(-931408080, 1104098193, 2013734038, -576849898), new Archive(new byte[] {   0,   0,   0,   0,   0})},
+                // *heartResurrection/restoringHeartWaterRising/waterSequenceStartAction/24. Run *unhighlightSequence (ActionSequence) action - RunActionOnce
+                {new MoonGuid(-2131928798, 1151053004, -1555066196, -306220580), new Archive(new byte[] {   0})},
+                // *heartResurrection/restoringHeartWaterRising/waterSequenceStartAction/26. Deactivate blockingCreep - ActivateAction
+                {new MoonGuid(-991063856, 1297628211, -673093959, 847091872), new Archive(new byte[] {   1})},
+                // *heartResurrection/restoringHeartWaterRising/waterSequenceStartAction/21. Activate musicZoneHeartWaterRising - ActivateAction
+                {new MoonGuid(-147259863, 1148491338, 1333347473, -233039763), new Archive(new byte[] {   0})},
+                // *heartResurrection/restoringHeartWaterRising/waterSequenceStartAction/09. Activate scrollLockWaterRising - ActivateAction
+                {new MoonGuid(-348740911, 1245652916, -1985961550, -2107032426), new Archive(new byte[] {   0})},
+                // *heartResurrection/restoringHeartWaterRising/waterSequenceStartAction/08. Deactivate musicZoneHeartBefore - ActivateAction
+                {new MoonGuid(2042125136, 1307010574, -1929355389, -330155444), new Archive(new byte[] {   1})},
+                // *heartResurrection/restoringHeartWaterRising/waterSequenceStartAction/14. Deactivate purpleGoopFallSounds - ActivateAction
+                {new MoonGuid(-289053893, 1103145181, -1240229187, -846974877), new Archive(new byte[] {   1})},
+                // surfaceColliders/surfaceColliderAfterResurrection - GameObjectActivator
+                {new MoonGuid(606430441, 1122888326, 446701469, 1313404359), new Archive(new byte[] {   0})},
+            };
+
+            if (guidsToAdd != null) {
+                foreach (var guid in guidsToAdd.Keys) {
+                    var saveObject = new SaveObject(guid) { Data = guidsToAdd[guid] };
+                    saveScene.SaveObjects.Add(saveObject);
+                }
+            }
+            SaveScenesToRestore.Add(sceneRoot.MetaData.SceneName, saveScene);
+        }
+
+        MoonGuid[] resetGuids = new MoonGuid[] {
+            new MoonGuid(-818294350, 1152363901, -199920491, 1691819527),
+            new MoonGuid(-2087069953, 1097959376, 1429727127, -994677856),
+            new MoonGuid(1733253145, 1158250958, 1997332359, 796196337)
+        };
+        AddStringTriggerSceneResetter(sceneRoot, resetGuids, "Reset" + sceneRoot.name, saveScene, TriggerByString.TriggerEvent.Always);
+
+        var startSequenceTransform = sceneRoot.transform.FindChild("*heartResurrection/restoringHeartWaterRising/waterSequenceStartAction");
+        var startSequence = startSequenceTransform.gameObject.GetComponent<ActionSequence>();
+        // If we have already finished the escape then don't start the water. But it does everything
+        // else to unlock the path.
+        var ginsoEventTransform = startSequenceTransform.FindChild("22. Set World Event Action");
+        var ginsoEventAction = ginsoEventTransform.gameObject.GetComponent<SetWorldEventAction>();
+        var finishedCondition = ginsoEventTransform.gameObject.AddComponent<RandomizerGinsoEscapeWaterCondition>();
+        var startWaterAction = ginsoEventTransform.gameObject.AddComponent<RunActionCondition>();
+        startWaterAction.MoonGuid = new MoonGuid(135334539, 1305189427, -1936572794, -537139954);
+        startWaterAction.Condition = finishedCondition;
+        startWaterAction.Action = ginsoEventAction;
+        startSequence.Actions[21] = startWaterAction;
+
+        // Reset the ginso escape areas when we start the escape, ensuring that enemies exist etc.
+        var resetObject = new GameObject("reset escape object");
+        resetObject.transform.SetParent(startSequenceTransform);
+        var resetSequence = startSequence.gameObject.AddComponent<ActionSequence>();
+        resetSequence.MoonGuid = new MoonGuid(386320845, 1105950180, 648461700, -1633166887);
+        var stringTrigger1 = resetObject.AddComponent<RegisterStringTriggerAction>();
+        stringTrigger1.MoonGuid = new MoonGuid(-1824500569, 1090089555, 2036275100, 2029612424);
+        stringTrigger1.String = "ResetginsoTreeWaterRisingBtm";
+        resetSequence.Actions.Add(stringTrigger1);
+        var stringTrigger2 = resetObject.AddComponent<RegisterStringTriggerAction>();
+        stringTrigger2.MoonGuid = new MoonGuid(1686457687, 1189318547, -683848525, -163496974);
+        stringTrigger2.String = "ResetginsoTreeWaterRisingMid";
+        resetSequence.Actions.Add(stringTrigger2);
+        var stringTrigger3 = resetObject.AddComponent<RegisterStringTriggerAction>();
+        stringTrigger3.MoonGuid = new MoonGuid(1741380821, 1110385922, 1731917966, -1892890989);
+        stringTrigger3.String = "ResetginsoTreeWaterRisingEnd";
+        resetSequence.Actions.Add(stringTrigger3);
+        var softlockFixCondition = startSequence.gameObject.AddComponent<RandomizerCheckInventoryCondition>();
+        softlockFixCondition.comparison = RandomizerCheckInventoryCondition.Comparison.Equal;
+        softlockFixCondition.inventorySlot = 1103;
+        softlockFixCondition.value = 0;
+        softlockFixCondition.defaultResult = true;
+        var resetAction = startSequence.gameObject.AddComponent<RunActionCondition>();
+        resetAction.MoonGuid = new MoonGuid(-714635744, 1093956791, -1573768277, -717989336);
+        resetAction.Action = resetSequence;
+        resetAction.Condition = softlockFixCondition;
+        startSequence.Actions.Insert(0, resetAction);
+
+        // So the first middle lantern can break, this fixes it without knowing why. 
+        // Fix it just before 18. Deactivate Lock.
+        var prelanternTransform = sceneRoot.transform.FindChild("*heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle").GetChild(0);
+        var lanternTransform = prelanternTransform.FindChild("spiritLantern");
+        var lanternFix = startSequence.gameObject.AddComponent<RandomizerFixGinsoLanternAction>();
+        lanternFix.joint = lanternTransform.gameObject.GetComponent<ConfigurableJoint>();
+        startSequence.Actions.Insert(18, lanternFix);
+    }
+
+    private static void BootstrapGinsoRisingBackground(SceneRoot sceneRoot) {
+        Dictionary<MoonGuid, Archive> guidsToReplace = new Dictionary<MoonGuid, Archive> {
+            // *risingWaterGroup/*risingWater - LegacyAnimatorSerializer
+            {new MoonGuid(-1328602964, 1148476222, 624003226, 2054223519), new Archive(new byte[] {   0,   0,   0,   0,   1,   0})},
+        };
+        var saveScene = StoreSaveScene(sceneRoot, null, guidsToReplace, null);
+        MoonGuid[] resetGuids = new MoonGuid[] {
+            new MoonGuid(-1054162101, 1325166101, 155213245, 717062621),
+            new MoonGuid(-51872315, 1322113630, 725392261, 1527489992),
+            new MoonGuid(-1285731145, 1194340948, -2000290652, 1955483806)
+        };
+        AddStringTriggerSceneResetter(sceneRoot, resetGuids, "Reset" + sceneRoot.name, saveScene, TriggerByString.TriggerEvent.Always);
+    }
+
+    private static void BootstrapGinsoRisingBtm(SceneRoot sceneRoot) {
+        // Make it so the spider respawns.
+        var spiderTransform = sceneRoot.transform.FindChild("enemies/shootingSpiderEnemySetup/shootingSpiderPlaceholder");
+        var spiderPlaceholder = spiderTransform.gameObject.GetComponent<ShootingSpiderPlaceholder>();
+        spiderPlaceholder.RespawnTime = 60;
+
+        MoonGuid[] guidsToRemove = new MoonGuid[] {
+            // orbs/largeExpOrbPlaceholder - CollectablePlaceholder
+			new MoonGuid(-1915834124, 1116807532, 836193716, -2106681095),
+        };
+        Dictionary<MoonGuid, Archive> guidsToAdd = new Dictionary<MoonGuid, Archive> {
+            // cameraOffsetZones/cameraOffsetAnimationZone - CameraOffsetAnimationZone
+            {new MoonGuid(1459091892, 1292279826, 1005940402, -696068962), new Archive(new byte[] {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0})},
+        };
+        var saveScene = StoreSaveScene(sceneRoot, guidsToRemove, null, guidsToAdd);
+        MoonGuid[] resetGuids = new MoonGuid[] {
+            new MoonGuid(-1210823307, 1262238765, -1058819664, 1927245486),
+            new MoonGuid(-1925271232, 1194808160, -615463024, -848405948),
+            new MoonGuid(580063949, 1106290301, 839169942, 377624067)
+        };
+        AddStringTriggerSceneResetter(sceneRoot, resetGuids, "Reset" + sceneRoot.name, saveScene, TriggerByString.TriggerEvent.Always);
+    }
+
+    private static void BootstrapGinsoRisingMid(SceneRoot sceneRoot) {
+        MoonGuid[] guidsToRemove = new MoonGuid[] {
+            // orbs/mediumExpOrbPlaceholder - CollectablePlaceholder
+			new MoonGuid(53964193, 1257981966, 415469751, -2115092716),
+            // orbs/mediumExpOrbPlaceholder - CollectablePlaceholder
+			new MoonGuid(-1004154350, 1288196703, 335284919, -865007178),
+        };
+        Dictionary<MoonGuid, Archive> guidsToReplace = new Dictionary<MoonGuid, Archive> {
+            // landOnAndSpawnOrbs/deathEffect/sprite - LegacyAnimatorSerializer
+            {new MoonGuid(449482198, 1184250308, -1979787623, -766371553), new Archive(new byte[] {   0,   0,   0,   0,   1,   0})},
+            // landOnAndSpawnOrbs/deathEffect/sprite - LegacyAnimatorSerializer
+            {new MoonGuid(1654915717, 1225815753, 197024933, 1992423282), new Archive(new byte[] {   0,   0,   0,   0,   1,   0})},
+            // projectileSpawnerPinkPlants/projectileSpawnerPinkPlant/projectileSpawner - TimedTrigger
+            {new MoonGuid(-1669149119, 1255537032, 1214619565, -400425093), new Archive(new byte[] {   0,   0,   0,  64})},
+            // projectileSpawnerPinkPlants/projectileSpawnerPinkPlant/projectileSpawner - TimedTrigger
+            {new MoonGuid(-378876207, 1136289747, 1061897122, -906226002), new Archive(new byte[] {   0,   0, 224,  63})},
+            // projectileSpawnerPinkPlants/projectileSpawnerPinkPlant/projectileSpawner - TimedTrigger
+            {new MoonGuid(-974676905, 1078801203, -1094686583, 2073817249), new Archive(new byte[] {   0,   0, 128,  63})},
+        };
+        Dictionary<MoonGuid, Archive> guidsToAdd = new Dictionary<MoonGuid, Archive>
+        {
+            // cameraOffsetAnimationZone - CameraOffsetAnimationZone
+            {new MoonGuid(385047157, 1326497808, -1952317540, -1114365018), new Archive(new byte[] {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0})},
+        };
+        var saveScene = StoreSaveScene(sceneRoot, guidsToRemove, guidsToReplace, guidsToAdd);
+        MoonGuid[] resetGuids = new MoonGuid[] {
+            new MoonGuid(1605210463, 1235400369, 119180700, 113708956),
+            new MoonGuid(1512559529, 1248451687, -1927737216, -381345263),
+            new MoonGuid(-1976985576, 1254719064, -1555547477, -819825165)
+        };
+        AddStringTriggerSceneResetter(sceneRoot, resetGuids, "Reset" + sceneRoot.name, saveScene, TriggerByString.TriggerEvent.Always);
+    }
+
+    private static void BootstrapGinsoRisingEnd(SceneRoot sceneRoot) {
+        MoonGuid[] guidsToRemove = new MoonGuid[] {
+            // orbs/mediumExpOrbPlaceholder - CollectablePlaceholder
+			new MoonGuid(-227538525, 1250107993, -189198714, 282099947),
+        };
+        Dictionary<MoonGuid, Archive> guidsToAdd = new Dictionary<MoonGuid, Archive> {
+            // cameraOffsetAnimationZone - CameraOffsetAnimationZone
+            {new MoonGuid(-1785719754, 1075387822, 679764873, -1964096696), new Archive(new byte[] {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0})},
+        };
+        var saveScene = StoreSaveScene(sceneRoot, guidsToRemove, null, guidsToAdd);
+        MoonGuid[] resetGuids = new MoonGuid[] {
+            new MoonGuid(-1254367699, 1116691683, 2019866803, 1081176983),
+            new MoonGuid(-1384264285, 1150785703, -1193707599, 1188420518),
+            new MoonGuid(-242230410, 1247501918, -1954679131, -1201607239)
+        };
+        AddStringTriggerSceneResetter(sceneRoot, resetGuids, "Reset" + sceneRoot.name, saveScene, TriggerByString.TriggerEvent.Always);
+    }
+
     public static void GenericResetScene(SceneRoot sceneRoot) {
         // This resets the scene to the savescene in SaveScenesToRestore.
         if (TriggerByString.IsInTriggerList("Reset" + sceneRoot.name)) {
-            Randomizer.log("GenericResetScene.StringTrigger " + sceneRoot.name);
             if (SaveScenesToRestore.ContainsKey(sceneRoot.name)) {
                 sceneRoot.SaveSceneManager.LoadWithMurderousIntent(SaveScenesToRestore[sceneRoot.name]);
-            } else {
-                Randomizer.log("GenericResetScene error - key not found - " + sceneRoot.name);
             }
             TriggerByString.Deregister("Reset" + sceneRoot.name);
         }
@@ -406,6 +629,11 @@ public class RandomizerBootstrapEscapes {
     public static Dictionary<string, SaveScene> SaveScenesToRestore = new Dictionary<string, SaveScene>();
 
     public static Dictionary<string, Action<SceneRoot>> BootstrapScenes = new Dictionary<string, Action<SceneRoot>> {
+        { "ginsoTreeResurrection", BootstrapGinsoResurrection },
+        { "ginsoTreeWaterRisingBackground", BootstrapGinsoRisingBackground },
+        { "ginsoTreeWaterRisingBtm", BootstrapGinsoRisingBtm },
+        { "ginsoTreeWaterRisingMid", BootstrapGinsoRisingMid },
+        { "ginsoTreeWaterRisingEnd", BootstrapGinsoRisingEnd },
         { "forlornRuinsResurrectionAfter", BootstrapForlornEscapeResurrection },
         { "forlornRuinsWindShaftMockupB", BootstrapForlornEscapeWindB },
         { "forlornRuinsWindShaftMockupC", BootstrapForlornEscapeWindC },
