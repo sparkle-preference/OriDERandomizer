@@ -289,6 +289,57 @@ public class RandomizerBootstrapEscapes {
         restartTrigger.ActivateAction = restartSequence;
     }
 
+    private static void ForlornEntranceHideAndSeek(SceneRoot sceneRoot) {
+        // This disables the kuro hide and seek part.
+        var disabledObject = new GameObject("Hide and seek disable");
+        disabledObject.transform.SetParent(sceneRoot.transform);
+        var disabledSequence = disabledObject.AddComponent<ActionSequence>();
+        disabledSequence.MoonGuid = new MoonGuid(457861956, 1124044628, 1908663220, -924221753);
+
+        var originalSequence = sceneRoot.transform.FindChild("*setups/kurosEscape/actionSequence").GetComponent<ActionSequence>();
+        var stringTrigger = sceneRoot.transform.FindChild("*setups/kurosEscape").GetComponent<TriggerByString>();
+        stringTrigger.TriggerOnce = false;
+
+        // Only swap to the soft lock fix if soft lock fixes are not disabled.
+        var condition = stringTrigger.gameObject.AddComponent<RandomizerCheckInventoryCondition>();
+        condition.comparison = RandomizerCheckInventoryCondition.Comparison.NotEqual;
+        condition.inventorySlot = 1103;
+        condition.value = 0;
+        condition.defaultResult = false;
+
+        var conditionalAction = stringTrigger.gameObject.AddComponent<RunActionCondition>();
+        conditionalAction.Action = originalSequence;
+        conditionalAction.ElseAction = disabledSequence;
+        conditionalAction.Condition = condition;
+
+        stringTrigger.ActionToRun = conditionalAction;
+
+        var fadeOut = disabledObject.AddComponent<FaderBFadeOutAction>();
+        fadeOut.MoonGuid = new MoonGuid(1287600269, 1294930625, 1299658901, -1707084805);
+        fadeOut.Duration = 2;
+        disabledSequence.Actions.Add(fadeOut);
+
+        var showUI = disabledObject.AddComponent<ShowSeinUIAction>();
+        showUI.MoonGuid = new MoonGuid(-656123457, 1209606796, 787420561, -2025561358);
+        showUI.ShouldShow = true;
+        disabledSequence.Actions.Add(showUI);
+
+        var hideLetterboxes = disabledObject.AddComponent<LetterboxAction>();
+        hideLetterboxes.MoonGuid = new MoonGuid(671426682, 1287774943, -1288756342, -157128065);
+        hideLetterboxes.ShowLetterboxes = false;
+        disabledSequence.Actions.Add(hideLetterboxes);
+
+        var waitAction = disabledObject.AddComponent<WaitAction>();
+        waitAction.MoonGuid = new MoonGuid(-848754786, 1119927210, -525211239, -1895775866);
+        waitAction.Duration = 2f;
+        disabledSequence.Actions.Add(waitAction);
+
+        var inputLockAction = disabledObject.AddComponent<LockPlayerInputManualAction>();
+        inputLockAction.MoonGuid = new MoonGuid(-1661490662, 1280570223, -1200375398, 1343821057);
+        inputLockAction.ShouldLock = false;
+        disabledSequence.Actions.Add(inputLockAction);
+    }
+
     public static void GenericResetScene(SceneRoot sceneRoot) {
         // This resets the scene to the savescene in SaveScenesToRestore.
         if (TriggerByString.IsInTriggerList("Reset" + sceneRoot.name)) {
@@ -361,6 +412,7 @@ public class RandomizerBootstrapEscapes {
         { "forlornRuinsNestC", BootstrapForlornEscapeNest },
         { "forlornRuinsBackgroundC", BootstrapForlornEscapeBackground },
         { "forlornRuinsResurrection", BootstrapForlornRuinsResurrection },
+        { "forlornRuinsKuroHideStreamlined", ForlornEntranceHideAndSeek },
     };
 }
 
