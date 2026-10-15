@@ -464,6 +464,41 @@ public static class Randomizer {
         }
     }
 
+    public static void FixGinsoEscape() {
+        // This fixes the ginso escape after an alt-r.
+        // Check alt-r fix disabled item.
+        if (Characters.Sein.Inventory.GetRandomizerItem(1103) != 0) {
+            return;
+        }
+        var ginsoTreeWorldEvent = new WorldEvents();
+        ginsoTreeWorldEvent.MoonGuid = new MoonGuid(687998245, 1199897005, -1787166542, 576748618);
+        var currentValue = World.Events.Find(ginsoTreeWorldEvent).Value;
+        if (!Randomizer.Inventory.FinishedGinsoEscape && (currentValue == 21 || currentValue == 25)) {
+            World.Events.Find(ginsoTreeWorldEvent).Value = 23;
+            TriggerByString.Register("ResetginsoTreeResurrection");
+            TriggerByString.Register("ResetginsoTreeWaterRisingBackground");
+            TriggerByString.Register("ResetginsoTreeWaterRisingBtm");
+            TriggerByString.Register("ResetginsoTreeWaterRisingMid");
+            TriggerByString.Register("ResetginsoTreeWaterRisingEnd");
+            return;
+        }
+        // If you rekindle and then alt-r you can do it before the values above are set.
+        // So... starting waterless and immediately bailing out.
+        SceneManagerScene scene = Scenes.Manager.GetSceneManagerScene("ginsoTreeResurrection");
+        if (scene != null) {
+            var startSequenceTransform = scene.SceneRoot.transform.FindChild("*heartResurrection/restoringHeartWaterRising/waterSequenceStartAction");
+            var startSequence = startSequenceTransform.gameObject.GetComponent<ActionSequence>();
+            if (startSequence.IsRunning) {
+                World.Events.Find(ginsoTreeWorldEvent).Value = 23;
+                TriggerByString.Register("ResetginsoTreeResurrection");
+                TriggerByString.Register("ResetginsoTreeWaterRisingBackground");
+                TriggerByString.Register("ResetginsoTreeWaterRisingBtm");
+                TriggerByString.Register("ResetginsoTreeWaterRisingMid");
+                TriggerByString.Register("ResetginsoTreeWaterRisingEnd");
+            }
+        }
+    }
+
     //  more reliable hook for game end / credit starts
     public static void onNaruDestroyed() {
         if (Scenes.Manager.CurrentScene.Scene == "theSacrifice" && RandomizerStatsManager.Active) {
