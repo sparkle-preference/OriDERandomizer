@@ -8,6 +8,33 @@ public class Archive {
         MemoryStream = new MemoryStream();
     }
 
+    public Archive(List<object> items) {
+        this.MemoryStream = new MemoryStream();
+        WriteMode();
+        foreach (object item in items) {
+            if (item is int) {
+                this.Serialize((int)item);
+            } else if (item is bool) {
+                this.Serialize((bool)item);
+            } else if (item is float) {
+                this.Serialize((float)item);
+            } else if (item is Quaternion) {
+                this.Serialize((Quaternion)item);
+            } else if (item is Vector3) {
+                this.Serialize((Vector3)item);
+            }
+        }
+        ReadMode();
+    }
+
+    public Archive(Byte[] bytes) {
+        this.MemoryStream = new MemoryStream();
+        WriteMode();
+        BinaryWriter bw = new BinaryWriter(this.MemoryStream);
+        bw.Write(bytes);
+        ReadMode();
+    }
+
     public MemoryStream MemoryStream {
         get => m_memoryStream;
         set {
