@@ -33,9 +33,9 @@ public class RandomizerBootstrap {
         if (s_bootstrappedScenesPreEnabled.Contains(sceneRoot.name)) {
             return;
         }
+        s_bootstrappedScenesPreEnabled.Add(sceneRoot.name);
 
         if (s_bootstrapPreEnabled.ContainsKey(sceneRoot.name)) {
-            s_bootstrappedScenesPreEnabled.Add(sceneRoot.name);
             s_bootstrapPreEnabled[sceneRoot.name].Invoke(sceneRoot);
         }
 
