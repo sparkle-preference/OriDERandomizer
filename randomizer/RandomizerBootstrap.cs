@@ -52,6 +52,11 @@ public class RandomizerBootstrap {
         if (sceneRoot.name == Randomizer.SpawnScene) {
             BootstrapRandomSpawnTeleportLocation(sceneRoot);
         }
+
+        if (RandomizerBootstrapEscapes.BootstrapScenes.ContainsKey(sceneRoot.name)) {
+            RandomizerBootstrapEscapes.BootstrapScenes[sceneRoot.name].Invoke(sceneRoot);
+        }
+
     }
 
     private static void BootstrapSceneAfterSerialize(SceneRoot sceneRoot) {
@@ -96,7 +101,7 @@ public class RandomizerBootstrap {
         }
     }
 
-    private static Transform CloneObject(SceneRoot sceneRoot, Transform obj, string name = null, bool sibling = true) {
+    public static Transform CloneObject(SceneRoot sceneRoot, Transform obj, string name = null, bool sibling = true) {
         // temporarily fiddle with the original object's active status to prevent the clone from instantly awaking if it shouldn't
         var originalActive = obj.gameObject.activeSelf;
         if (!obj.gameObject.activeInHierarchy) {
