@@ -986,7 +986,18 @@ public class RandomizerBootstrap {
         var deactivateRocks = CloneObject(sceneRoot, deactivateExample, "25. Deactivate Rocks");
         var deactivateRocksAction = deactivateRocks.GetComponent<ActivateAction>();
         deactivateRocksAction.Target = rocks.gameObject;
-        lavaSequence.Actions.Add(deactivateRocksAction);
+
+        var softlockFixCondition = deactivateRocks.gameObject.AddComponent<RandomizerCheckInventoryCondition>();
+        softlockFixCondition.comparison = RandomizerCheckInventoryCondition.Comparison.Equal;
+        softlockFixCondition.inventorySlot = 1103;
+        softlockFixCondition.value = 0;
+        softlockFixCondition.defaultResult = true;
+
+        var conditionalAction = deactivateRocks.gameObject.AddComponent<RunActionCondition>();
+        conditionalAction.Action = deactivateRocksAction;
+        conditionalAction.Condition = softlockFixCondition;
+        conditionalAction.MoonGuid = new MoonGuid(-676058480, 1220973407, -919927166, -400007427);
+        lavaSequence.Actions.Add(conditionalAction);
     }
 
     // a RespawnTime of 0 is how vanilla spells "never"; the usual enemy gets a minute off screen
