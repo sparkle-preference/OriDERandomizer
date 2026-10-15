@@ -376,6 +376,7 @@
 		"randomizer/RandomizerChaosTeleport.cs",
 		"randomizer/RandomizerChaosVelocityVector.cs",
 		"randomizer/RandomizerChaosZoom.cs",
+		"randomizer/RandomizerCheckInventoryCondition.cs",
 		"randomizer/RandomizerClues.cs",
 		"randomizer/RandomizerColorManager.cs",
 		"randomizer/RandomizerCreditsManager.cs",
