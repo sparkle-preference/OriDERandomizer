@@ -1096,6 +1096,10 @@ public class RandomizerBootstrap {
         { "sunkenGladesOriRoom", BootstrapSeinRoomWall },
         { "ginsoTreePuzzles", BootstrapGinsoLowerMiniboss },
         { "upperGladesSwarmIntroduction", UnlessVanillaRespawns(BootstrapSpiritTreeFronkeyAfterSerialize) },
+        { "forlornRuinsWindShaftMockupB", RandomizerBootstrapEscapes.GenericResetScene },
+        { "forlornRuinsWindShaftMockupC", RandomizerBootstrapEscapes.GenericResetScene },
+        { "forlornRuinsNestC", RandomizerBootstrapEscapes.GenericResetScene },
+        { "forlornRuinsBackgroundC", RandomizerBootstrapEscapes.GenericResetScene },
     };
 
     private static List<string> s_bootstrappedScenesAfterSerialize = new List<string>();

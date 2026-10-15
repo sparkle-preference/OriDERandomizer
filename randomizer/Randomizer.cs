@@ -1518,15 +1518,6 @@ public static class Randomizer {
                             return;
                         }
 
-                        if (get(1106) > 0 && Characters.Sein.Position.y > -235f && Scenes.Manager.CurrentScene.Scene == "forlornRuinsResurrection") {
-                            if (SafeIsBashing) {
-                                Characters.Sein.Abilities.Bash.CancelBash();
-                            }
-
-                            Characters.Sein.Position = new Vector3(-1350f, -410f);
-                            return;
-                        }
-
                         if (Scenes.Manager.CurrentScene.Scene == "catAndMouseResurrectionRoom" && !canFinalEscape()) {
                             if (Entrance) {
                                 EnterDoor(new Vector3(-242f, 489f));
