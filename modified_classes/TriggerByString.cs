@@ -4,7 +4,9 @@ using Game;
 
 public class TriggerByString : Trigger {
     public static void Register(string s) {
-        TriggerByString.m_stringTriggersList.Add(s);
+        if (!m_stringTriggersList.Contains(s)) {
+            TriggerByString.m_stringTriggersList.Add(s);
+        }
     }
 
     public static void Deregister(string s) {
@@ -72,6 +74,14 @@ public class TriggerByString : Trigger {
         if (sceneRoot == sceneRoot2 && this.Data.TriggerEvent == TriggerByString.TriggerEvent.SceneEnabledAfterSerialize && TriggerByString.m_stringTriggersList.Contains(this.Data.String)) {
             this.DoTrigger();
         }
+    }
+
+    public static string GetListAsString() {
+        return String.Join(",", m_stringTriggersList.ToArray());
+    }
+
+    public static bool IsInTriggerList(string triggerString) {
+        return m_stringTriggersList.Contains(triggerString);
     }
 
     public TriggerByString.StringTriggerData Data;
