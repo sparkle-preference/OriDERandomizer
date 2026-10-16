@@ -472,6 +472,7 @@ public static class Randomizer {
         }
         var ginsoTreeWorldEvent = new WorldEvents();
         ginsoTreeWorldEvent.MoonGuid = new MoonGuid(687998245, 1199897005, -1787166542, 576748618);
+        ginsoTreeWorldEvent.DefaultValue = 23;
         var currentValue = World.Events.Find(ginsoTreeWorldEvent).Value;
         if (!Randomizer.Inventory.FinishedGinsoEscape && (currentValue == 21 || currentValue == 25)) {
             World.Events.Find(ginsoTreeWorldEvent).Value = 23;
@@ -485,7 +486,7 @@ public static class Randomizer {
         // If you rekindle and then alt-r you can do it before the values above are set.
         // So... starting waterless and immediately bailing out.
         SceneManagerScene scene = Scenes.Manager.GetSceneManagerScene("ginsoTreeResurrection");
-        if (scene != null) {
+        if (scene != null && scene.SceneRoot != null) {
             var startSequenceTransform = scene.SceneRoot.transform.FindChild("*heartResurrection/restoringHeartWaterRising/waterSequenceStartAction");
             var startSequence = startSequenceTransform.gameObject.GetComponent<ActionSequence>();
             if (startSequence.IsRunning) {
