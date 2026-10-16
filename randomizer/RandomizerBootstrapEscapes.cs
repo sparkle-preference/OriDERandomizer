@@ -42,9 +42,9 @@ public class RandomizerBootstrapEscapes {
     private static void BootstrapForlornEscapeNest(SceneRoot sceneRoot) {
         MoonGuid[] guidsToRemove = new MoonGuid[] {
             // petrifiedPlant/plant - PetrifiedPlant
-			new MoonGuid(1660790238, 1127452529, 300174735, -1356736769),
+            new MoonGuid(1660790238, 1127452529, 300174735, -1356736769),
             // petrifiedPlant/plant - EntityDamageReceiver
-			new MoonGuid(948742023, 1318543202, 1597983372, -222408251),
+            new MoonGuid(948742023, 1318543202, 1597983372, -222408251),
         };
         Dictionary<MoonGuid, Archive> guidsToAdd = new Dictionary<MoonGuid, Archive> {
             // *storyNew/setup/cameraOffsetAnimationZone - CameraOffsetAnimationZone
@@ -90,11 +90,11 @@ public class RandomizerBootstrapEscapes {
         // This is the *escape ResurrectionAfter*, not the pre-escape resurrection.
         MoonGuid[] guidsToRemove = new MoonGuid[] {
             // *startSequence - OnSceneStartRunAction
-			new MoonGuid(-216819770, 1262214645, -943610713, 348842924), 
+            new MoonGuid(-216819770, 1262214645, -943610713, 348842924),
             // *startSequence/*startSequence - ActionSequence
-			new MoonGuid(-1590895792, 1248701012, -1866951527, -423739732), 
+            new MoonGuid(-1590895792, 1248701012, -1866951527, -423739732),
             // *startSequence/*startSequence - ActionSequenceSerializer
-			new MoonGuid(-624430614, 1252109364, -1688148827, 581974120),
+            new MoonGuid(-624430614, 1252109364, -1688148827, 581974120),
         };
         Dictionary<MoonGuid, Archive> guidsToReplace = new Dictionary<MoonGuid, Archive> {
             // **resurrection/timelineSequenceBgRocks - BaseAnimatorSerializer
@@ -162,7 +162,7 @@ public class RandomizerBootstrapEscapes {
         message.SetMessage(text);
         restartTrigger.HintMessage = message;
 
-        // Only enable the new trigger when the original trigger has been triggered.		
+        // Only enable the new trigger when the original trigger has been triggered.
         var gumo = sceneRoot.transform.FindChild("*gumoSetup/group/timelineSequenceGumo/gumo");
         var gumoDeactivated = restartTrigger.gameObject.AddComponent<IsActiveCondition>();
         gumoDeactivated.ActivationType = IsActiveCondition.Mode.ActiveSelf;
@@ -497,13 +497,16 @@ public class RandomizerBootstrapEscapes {
 
     private static void BootstrapGinsoRisingBtm(SceneRoot sceneRoot) {
         // Make it so the spider respawns.
-        var spiderTransform = sceneRoot.transform.FindChild("enemies/shootingSpiderEnemySetup/shootingSpiderPlaceholder");
-        var spiderPlaceholder = spiderTransform.gameObject.GetComponent<ShootingSpiderPlaceholder>();
-        spiderPlaceholder.RespawnTime = 60;
+        // only the timed respawn; the escape reset brings it back either way
+        if (!Randomizer.VanillaRespawns) {
+            var spiderTransform = sceneRoot.transform.FindChild("enemies/shootingSpiderEnemySetup/shootingSpiderPlaceholder");
+            var spiderPlaceholder = spiderTransform.gameObject.GetComponent<ShootingSpiderPlaceholder>();
+            spiderPlaceholder.RespawnTime = 60;
+        }
 
         MoonGuid[] guidsToRemove = new MoonGuid[] {
             // orbs/largeExpOrbPlaceholder - CollectablePlaceholder
-			new MoonGuid(-1915834124, 1116807532, 836193716, -2106681095),
+            new MoonGuid(-1915834124, 1116807532, 836193716, -2106681095),
         };
         Dictionary<MoonGuid, Archive> guidsToAdd = new Dictionary<MoonGuid, Archive> {
             // cameraOffsetZones/cameraOffsetAnimationZone - CameraOffsetAnimationZone
@@ -521,9 +524,9 @@ public class RandomizerBootstrapEscapes {
     private static void BootstrapGinsoRisingMid(SceneRoot sceneRoot) {
         MoonGuid[] guidsToRemove = new MoonGuid[] {
             // orbs/mediumExpOrbPlaceholder - CollectablePlaceholder
-			new MoonGuid(53964193, 1257981966, 415469751, -2115092716),
+            new MoonGuid(53964193, 1257981966, 415469751, -2115092716),
             // orbs/mediumExpOrbPlaceholder - CollectablePlaceholder
-			new MoonGuid(-1004154350, 1288196703, 335284919, -865007178),
+            new MoonGuid(-1004154350, 1288196703, 335284919, -865007178),
         };
         Dictionary<MoonGuid, Archive> guidsToReplace = new Dictionary<MoonGuid, Archive> {
             // landOnAndSpawnOrbs/deathEffect/sprite - LegacyAnimatorSerializer
@@ -554,7 +557,7 @@ public class RandomizerBootstrapEscapes {
     private static void BootstrapGinsoRisingEnd(SceneRoot sceneRoot) {
         MoonGuid[] guidsToRemove = new MoonGuid[] {
             // orbs/mediumExpOrbPlaceholder - CollectablePlaceholder
-			new MoonGuid(-227538525, 1250107993, -189198714, 282099947),
+            new MoonGuid(-227538525, 1250107993, -189198714, 282099947),
         };
         Dictionary<MoonGuid, Archive> guidsToAdd = new Dictionary<MoonGuid, Archive> {
             // cameraOffsetAnimationZone - CameraOffsetAnimationZone
@@ -646,13 +649,3 @@ public class RandomizerBootstrapEscapes {
         { "forlornRuinsKuroHideStreamlined", ForlornEntranceHideAndSeek },
     };
 }
-
-
-
-
-
-
-
-
-
-

@@ -436,6 +436,11 @@ public static class Randomizer {
         }
 
         BingoController.OnWarp();
+        // the practice editor's warp in place doesn't leave the escape
+        if (position != Characters.Sein.Position) {
+            FixGinsoEscape();
+        }
+
         Characters.Sein.Position = position;
         Characters.Sein.Speed = new Vector3(0f, 0f);
         Characters.Ori.Position = new Vector3(position.x, position.y + 5);
@@ -460,6 +465,7 @@ public static class Randomizer {
         RandomizerStatsManager.WarpedToStart();
         RandomizerBonusSkill.LastAltR = Characters.Sein.Position;
         BingoController.OnWarp();
+        FixGinsoEscape();
         Returning = true;
         Characters.Sein.Position = new Vector3(189f, -215f);
         Characters.Sein.Speed = new Vector3(0f, 0f);
