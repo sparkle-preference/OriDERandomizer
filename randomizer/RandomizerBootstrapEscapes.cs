@@ -473,7 +473,7 @@ public class RandomizerBootstrapEscapes {
         var prelanternTransform = sceneRoot.transform.FindChild("*heartResurrection/chainReactionSetup/spiritLanternPlaceholders/middle").GetChild(0);
         var lanternTransform = prelanternTransform.FindChild("spiritLantern");
         var lanternFix = startSequence.gameObject.AddComponent<RandomizerFixGinsoLanternAction>();
-        lanternFix.MoonGuid = new MoonGuid(1949142246,1290147668,1812503716,-1229421162);
+        lanternFix.MoonGuid = new MoonGuid(1949142246, 1290147668, 1812503716, -1229421162);
         lanternFix.joint = lanternTransform.gameObject.GetComponent<ConfigurableJoint>();
         startSequence.Actions.Insert(18, lanternFix);
         // No, seriously, fix it!
