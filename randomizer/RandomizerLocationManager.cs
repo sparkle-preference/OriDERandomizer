@@ -604,9 +604,6 @@ public class RandomizerLocationManager {
             }
 
             BingoController.OnLoc(Key);
-            if (Key == -7320236) {
-                Randomizer.Inventory.SetRandomizerItem(1106, 1);
-            }
 
             RandomizerSwitch.GivePickup(Pickup, Key);
             UpdateReachable();
