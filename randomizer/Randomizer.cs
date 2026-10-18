@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using B83.Win32;
 using Core;
 using Game;
@@ -327,15 +328,40 @@ public static class Randomizer {
         Inventory = RandomizerInventory.Initialize();
         Keysanity = new RandomizerKeysanity(Inventory);
 
+        unseededRandom = new Random();
+
         UnityDragAndDropHook.InstallHook();
         UnityDragAndDropHook.OnDroppedFiles += OnDroppedFiles;
 
-        unseededRandom = new Random();
+        ReadStartupFile();
     }
 
     public static void OnApplicationQuit() {
         FlushLog();
         UnityDragAndDropHook.UninstallHook();
+    }
+
+    private static void ReadStartupFile() {
+        try {
+            foreach (var line in File.ReadAllLines(SINGLE_USE_STARTUP_FILE, Encoding.UTF8)) {
+                if (line == "") {
+                } else if (line.StartsWith("dropfile:")) {
+                    OnDroppedFiles([line.Substring("dropfile:".Length)], default);
+                } else {
+                    log($"Invalid line in single-use startup file: {line}");
+                }
+            }
+        } catch (FileNotFoundException) {
+            // no file = nothing to do
+        } catch (Exception e) {
+            log($"Error reading single-use startup file: {e}");
+        } finally {
+            try {
+                File.Delete(SINGLE_USE_STARTUP_FILE);
+            } catch (Exception e) {
+                log($"Error deleting single-use startup file: {e}");
+            }
+        }
     }
 
     // runs inside the native message hook, so nothing may throw out of it
@@ -345,16 +371,48 @@ public static class Randomizer {
                 return;
             }
 
-            var filePath = aFiles[0];
-            var fileName = filePath.Substring(filePath.LastIndexOf('\\') + 1);
+            var filePath = Path.GetFullPath(aFiles[0]);
+            var fileName = Path.GetFileName(filePath);
             if (fileName.StartsWith("randomizer") && (fileName.EndsWith(".bfr") || fileName.EndsWith(".dat"))) {
                 SeedFilePath = aFiles[0];
                 initialize();
                 showSeedInfo();
+            } else if (fileName.EndsWith(PracticeFolder.Extension)) {
+                if (GameStateMachine.Instance?.CurrentState is null or <= GameStateMachine.State.TitleScreen) {
+                    RandomizerCoroutineUtil.Instance.StartCoroutine(PlayPracticeFile(filePath));
+                } else if (Path.GetDirectoryName(filePath) == Path.GetFullPath(PracticeSelect.Folder)) {
+                    var fileStem = Path.GetFileNameWithoutExtension(filePath);
+                    printInfo($"Loaded Practice File \"{fileStem}\". Start it from the main menu.", 180);
+                }
             }
         } catch (Exception e) {
             log("drop: " + e);
         }
+    }
+
+    private static IEnumerator PlayPracticeFile(string filePath) {
+        while (GameStateMachine.Instance?.CurrentState is null or < GameStateMachine.State.TitleScreen) {
+            yield return null;
+        }
+
+        var fileName = Path.GetFileName(filePath);
+        PracticeSelect.Open();
+
+        yield return null;
+        var saveSelectScreen = SaveSlotsUI.Instance;
+        var index = PracticeSelect.Files.FindIndex(f => Path.GetFullPath(f.Path).Equals(filePath, StringComparison.OrdinalIgnoreCase));
+        if (index < 0) {
+            LogError($"Couldn't find or load practice file {fileName}");
+            yield break;
+        }
+
+        // Variant selection doesn't always open without the second selection. (for some reason)
+        saveSelectScreen.SetCurrentItemAndScroll(index);
+        yield return null;
+        saveSelectScreen.SetCurrentItemAndScroll(index);
+        saveSelectScreen.ItemsUI.SnapScroll();
+        saveSelectScreen.CursorLock();
+        PracticeSelect.Choose(saveSelectScreen);
     }
 
     public static void WarpTo(Vector3 position, int warpDelay) {
@@ -2030,6 +2088,8 @@ public static class Randomizer {
         SpawnScene = Core.Scenes.Manager.GetSceneNameAtPosition(SpawnPosition);
         ShouldHideGladesStart = true;
     }
+
+    private const string SINGLE_USE_STARTUP_FILE = ".SafeToDelete.RandomizerOneTimeStartupInfo.txt";
 
     public static bool SafeIsBashing => (Characters.Sein.Abilities.Bash && Characters.Sein.Abilities.Bash.IsBashing) || false;
 

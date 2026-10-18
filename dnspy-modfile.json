@@ -378,6 +378,7 @@
 		"randomizer/RandomizerChaosZoom.cs",
 		"randomizer/RandomizerClues.cs",
 		"randomizer/RandomizerColorManager.cs",
+        "randomizer/RandomizerCoroutineUtil.cs",
 		"randomizer/RandomizerCreditsManager.cs",
 		"randomizer/RandomizerCustomNames.cs",
 		"randomizer/RandomizerDeathLink.cs",

@@ -25,7 +25,7 @@ public static class PracticeSelect {
     // whether each segment has anything to end it; one without opens in the editor
     private static readonly List<bool> Ends = new List<bool>();
 
-    private static readonly List<BfrpFile> Files = new List<BfrpFile>();
+    public static readonly List<BfrpFile> Files = new List<BfrpFile>();
 
     private static MessageProvider backupsLegend;
 
@@ -671,7 +671,7 @@ public static class PracticeSelect {
         var picked = card.BackupIndex;
         // a variant is always a choice; pressing the card itself unfolds them
         if (variants.Count > 0 && (picked < 0 || picked >= variants.Count)) {
-            Unfold(card, index);
+            Unfold(screen);
             return;
         }
 
@@ -685,7 +685,10 @@ public static class PracticeSelect {
         }
     }
 
-    private static void Unfold(SaveSlotUI card, int index) {
+    public static void Unfold(SaveSlotsUI screen) {
+        var card = screen.CurrentSaveSlot;
+        var index = screen.CurrentSlotIndex;
+
         SaveSlotBackupsManager.RequestReadBackups(index, card.OnFinishedReadingBackups);
         if (card.BackupsAnimator) {
             card.BackupsAnimator.AnimatorDriver.ContinueForward();

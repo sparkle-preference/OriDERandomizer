@@ -63,6 +63,17 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
 
     private GameObject m_difficultyScreen;
 
+    // Prevents the cursor from changing selection while active
+    private bool m_cursorLocked;
+
+    private float m_sameLockTime;
+
+    private float m_changeLockTime;
+
+    private const float SameLockTime = 0.25f;
+
+    private const float ChangeLockTime = 0.5f;
+
     public SaveSlotUI CurrentSaveSlot {
         get {
             if (CurrentSlotIndex < 0 || CurrentSlotIndex >= Items.Count) {
@@ -293,6 +304,12 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
         return true;
     }
 
+    public void CursorLock() {
+        m_cursorLocked = true;
+        m_sameLockTime = SameLockTime;
+        m_changeLockTime = ChangeLockTime;
+    }
+
     public void HandleNavigation() {
         if (Core.Input.MenuLeft.OnPressed) {
             SetCurrentItemAndScroll(CurrentSlotIndex - 1);
@@ -313,7 +330,21 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
             SetCurrentItemAndScroll(Mathf.Clamp(CurrentSlotIndex + jump, 0, Items.Count - 1));
         }
 
-        if (Core.Input.CursorMoved) {
+        if (m_cursorLocked) {
+            var saveSlotUnderCursor = SaveSlotUnderCursor;
+            if (saveSlotUnderCursor == CurrentSaveSlot) {
+                m_sameLockTime -= Time.deltaTime;
+                m_cursorLocked = m_sameLockTime > 0f;
+                m_changeLockTime = ChangeLockTime;
+            } else {
+                m_sameLockTime = SameLockTime;
+
+                if (saveSlotUnderCursor && Core.Input.CursorMoved) {
+                    m_changeLockTime -= Time.deltaTime;
+                    m_cursorLocked = m_changeLockTime > 0f;
+                }
+            }
+        } else if (Core.Input.CursorMoved) {
             var saveSlotUnderCursor = SaveSlotUnderCursor;
             if (saveSlotUnderCursor && saveSlotUnderCursor != CurrentSaveSlot) {
                 SetCurrentItem(saveSlotUnderCursor);
@@ -346,6 +377,8 @@ public class SaveSlotsUI : MonoBehaviour, ISuspendable {
     }
 
     public void SetCurrentItem(int index) {
+        m_cursorLocked = false;
+
         if (CurrentSaveSlot) {
             CurrentSaveSlot.Highlight(false);
         }
