@@ -84,6 +84,11 @@ public class FolderStore : IEntryStore {
         return store;
     }
 
+    // the folder moved whole, so later writes there stay incremental
+    public void MovedTo(string path) {
+        root = Full(path);
+    }
+
     public void Write(string path) {
         var full = Full(path);
         var all = root == null || !string.Equals(root, full, StringComparison.OrdinalIgnoreCase);

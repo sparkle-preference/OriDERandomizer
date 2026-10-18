@@ -1106,7 +1106,6 @@ public static class PracticeEditor {
         var path = PracticeSelect.PathFor(name);
         var segment = JsonValue.NewObject();
         segment.Set("version", JsonValue.Of(1));
-        segment.Set("name", JsonValue.Of(name));
         segment.Set("end", JsonValue.NewObject());
         BfrpFile.Create(path, segment, save).Save();
         Randomizer.log("practice: created " + path + " (" + save.Length + " byte save)");

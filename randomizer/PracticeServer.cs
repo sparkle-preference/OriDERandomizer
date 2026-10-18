@@ -663,6 +663,7 @@ public static class PracticeServer {
         }
 
         reply.Set("path", JsonValue.Of(file.Path));
+        reply.Set("name", JsonValue.Of(PracticeFolder.NameOf(file.Path)));
         // a given .bfrp is extracted on its first save; only a folder has an export
         reply.Set("given", JsonValue.Of(!file.IsFolder));
         if (file.IsFolder) {
@@ -823,7 +824,8 @@ public static class PracticeServer {
 
         // all of it is built and checked before the file changes, so a refusal leaves the file whole
         var boxes = TakeBoxes(segment, true);
-        var stored = Copy(segment, "boxes", "end");
+        // a segment's name is its folder's, so none is stored
+        var stored = Copy(segment, "boxes", "end", "name");
         stored.Set("end", Copy(segment["end"], "box", "goal"));
         for (var g = 0; g < stored["shuffle"].Count; g++) {
             CheckPickups(stored["shuffle"][g]["give"]);
@@ -858,7 +860,47 @@ public static class PracticeServer {
         PracticeEditor.ForgetUndo();
         PracticeController.Reparse();
         Randomizer.log("practice: segment saved from the editor page");
-        return "{\"ok\":true}";
+        var reply = JsonValue.NewObject();
+        reply.Set("ok", JsonValue.Of(true));
+        var name = incoming["name"].IsString ? incoming["name"].Str.Trim() : "";
+        if (name.Length > 0 && file.IsFolder) {
+            RenameSegment(file, name, reply);
+        }
+
+        reply.Set("name", JsonValue.Of(PracticeFolder.NameOf(file.Path)));
+        return reply.Serialize(false);
+    }
+
+    // the folder is the segment's name; its export follows it when that name is free
+    private static void RenameSegment(BfrpFile file, string name, JsonValue reply) {
+        var before = file.Path;
+        // a folder name SafeName would rewrite (a dot in it) is already what the player called it
+        if (PracticeFolder.SafeName(name) == PracticeFolder.SafeName(PracticeFolder.NameOf(before))) {
+            return;
+        }
+
+        try {
+            file.MovedTo(PracticeFolder.Rename(before, name));
+        } catch (Exception e) {
+            Randomizer.log("practice: could not rename " + before + ": " + e.Message);
+            reply.Set("renameError", JsonValue.Of(e.Message));
+            return;
+        }
+
+        if (string.Equals(Path.GetFullPath(before).TrimEnd('\\', '/'), file.Path, StringComparison.Ordinal)) {
+            return;
+        }
+
+        Randomizer.log("practice: renamed " + before + " to " + file.Path);
+        try {
+            var oldExport = PracticeFolder.ExportPath(before);
+            var newExport = PracticeFolder.ExportPath(file.Path);
+            if (File.Exists(oldExport) && !File.Exists(newExport)) {
+                File.Move(oldExport, newExport);
+            }
+        } catch (Exception e) {
+            Randomizer.log("practice: the export stayed under the old name: " + e.Message);
+        }
     }
 
     // --- the loaded seed's boxes, while the box editor has them open outside practice ---

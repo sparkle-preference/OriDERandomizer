@@ -138,7 +138,7 @@
 <div class="cols">
 <section id="segmentSection" class="segonly">
   <h2>Segment</h2>
-  <div class="row"><label>Name <input type="text" id="name" size="40"></label></div>
+  <div class="row"><label>Name <input type="text" id="name" size="40" title="The segment's folder name; saving renames the folder"></label></div>
   <div class="row"><label>Timing
     <select id="mode"><option value="best">best time (ghosts on)</option><option value="average">average time (no ghosts)</option></select>
   </label>
@@ -266,6 +266,7 @@
         : s.path + (s.variant ? '  (playing variant ' + s.variant + ')' : '') + (s.given ? '  (a .bfrp: saving here extracts it to a folder)' : '');
       $('export').hidden = state.seed || !s.export; $('export').title = s.export || '';
       state.segment = s.segment; state.variants = s.variants || {}; state.playing = s.variant || '';
+      $('name').value = state.name = s.name || '';
       state.base = s.base || null; state.placements = s.placements || {};
       // a save names the revision it was made from; a stale one merges against these two copies
       state.rev = s.rev; state.loaded = JSON.stringify({ segment: s.segment, variants: state.variants });
@@ -1019,7 +1020,6 @@
   // ---- rendering ---------------------------------------------------------------
   function render() {
     var seg = state.segment;
-    $('name').value = seg.name || '';
     $('about').value = seg.about || '';
     var timing = seg.timing || {};
     $('mode').value = timing.mode === 'average' ? 'average' : 'best';
@@ -1304,7 +1304,6 @@
   function collect() {
     var seg = state.segment;
     seg.version = seg.version || 1;
-    seg.name = $('name').value;
     var about = $('about').value.trim();
     if (about) { seg.about = about; } else { delete seg.about; }
     seg.timing = seg.timing || {};
@@ -1319,19 +1318,27 @@
     if (seg.boxes && seg.boxes.length === 0) delete seg.boxes;
     if (seg.shuffle && seg.shuffle.length === 0) delete seg.shuffle;
     Object.keys(state.variants).forEach(function (id) { (state.variants[id].boxes || []).forEach(tidy); });
-    return { segment: seg, variants: state.variants };
+    // only a name typed here renames: an untouched box leaves the folder as it is
+    var name = state.seed ? '' : $('name').value.trim();
+    return { segment: seg, variants: state.variants, name: name === state.name ? '' : name };
   }
   function tidy(b) { delete b.text; delete b.repeat; }
 
   function put(doc, rev) {
-    return api('/api/segment', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ segment: doc.segment, variants: doc.variants, rev: rev }) });
+    return api('/api/segment', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ segment: doc.segment, variants: doc.variants, name: doc.name, rev: rev }) });
+  }
+  // a rename that failed still saved everything else
+  function saved(reply, words) {
+    return load().then(function () {
+      if (reply && reply.renameError) say('Saved, but not renamed: ' + reply.renameError, 'bad');
+      else say(words, 'ok');
+    });
   }
   $('save').onclick = function () {
     say('Saving…');
     var mine = collect();
     put(mine, state.rev)
-      .then(function () { return load(); })
-      .then(function () { say(state.seed ? 'Saved to the seed file.' : 'Saved. A running attempt uses the new rules now; a changed start needs a retry.', 'ok'); })
+      .then(function (reply) { return saved(reply, state.seed ? 'Saved to the seed file.' : 'Saved. A running attempt uses the new rules now; a changed start needs a retry.'); })
       .catch(function (e) { if (e.status === 409) return saveOver(mine, e.body); say('Save failed: ' + e.message, 'bad'); });
   };
 
@@ -1340,9 +1347,9 @@
     var ours = added(JSON.parse(state.shown), mine), theirs = added(JSON.parse(state.loaded), current);
     var merged = ours && theirs && union(current, ours, theirs);
     if (!merged) return offerReload();
+    merged.name = mine.name;
     return put(merged, current.rev)
-      .then(function () { return load(); })
-      .then(function () { say('Saved, keeping the boxes added in the game meanwhile.', 'ok'); })
+      .then(function (reply) { return saved(reply, 'Saved, keeping the boxes added in the game meanwhile.'); })
       .catch(function (e) { if (e.status === 409) return offerReload(); say('Save failed: ' + e.message, 'bad'); });
   }
   function offerReload() {

@@ -494,7 +494,7 @@ public static class RandomizerEnemies {
             return forced.Count == 0 ? null : forced[new System.Random(Hash(SeedKey() + "|" + target.MoonGuid)).Next(forced.Count)];
         }
 
-        if (roll <= -2) {
+        if (roll <= -2 && s_table != null) {
             // bonus value v takes variant v - 1; unset or out of range stays vanilla
             var value = Characters.Sein == null ? 0 : Characters.Sein.Inventory.GetRandomizerItem(-2 - roll);
             return value >= 1 && value <= s_variants.Count ? s_variants[value - 1] : null;

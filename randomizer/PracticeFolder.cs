@@ -80,6 +80,31 @@ public static class PracticeFolder {
             || File.Exists(path + Extension) || Directory.Exists(path + Extension);
     }
 
+    // A segment folder under a new name beside it; a taken name is refused, never numbered.
+    public static string Rename(string folder, string name) {
+        var full = Path.GetFullPath(folder).TrimEnd('\\', '/');
+        var safe = SafeName(name);
+        var to = Path.Combine(Path.GetDirectoryName(full), safe);
+        if (string.Equals(full, to, StringComparison.Ordinal)) {
+            return full;
+        }
+
+        // Windows sees a change of case alone as the same folder, so it goes through a visible stopover
+        if (string.Equals(full, to, StringComparison.OrdinalIgnoreCase)) {
+            var stopover = full + " (renaming)";
+            Directory.Move(full, stopover);
+            Directory.Move(stopover, to);
+            return to;
+        }
+
+        if (Taken(to)) {
+            throw new IOException("there is already a segment or file named \"" + safe + "\"");
+        }
+
+        Directory.Move(full, to);
+        return to;
+    }
+
     // "New Segment N", past every N already named
     public static string NextName(IEnumerable<string> names) {
         var taken = 0;

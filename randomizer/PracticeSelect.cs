@@ -620,11 +620,6 @@ public static class PracticeSelect {
     private static readonly List<string> Unnamed = new List<string> { "" };
 
     private static string Name(BfrpFile file) {
-        var name = file.Segment["name"];
-        if (name.IsString && name.Str.Length > 0) {
-            return name.Str;
-        }
-
         return PracticeFolder.NameOf(file.Path);
     }
 

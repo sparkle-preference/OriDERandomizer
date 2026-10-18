@@ -436,6 +436,14 @@ public class BfrpFile {
         }
     }
 
+    public void MovedTo(string path) {
+        Path = path;
+        var folder = store as FolderStore;
+        if (folder != null) {
+            folder.MovedTo(path);
+        }
+    }
+
     public void Save() {
         TrimTombstones();
         ModernTombstones();
