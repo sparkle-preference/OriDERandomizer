@@ -33,9 +33,9 @@ public class RandomizerBootstrap {
         if (s_bootstrappedScenesPreEnabled.Contains(sceneRoot.name)) {
             return;
         }
+        s_bootstrappedScenesPreEnabled.Add(sceneRoot.name);
 
         if (s_bootstrapPreEnabled.ContainsKey(sceneRoot.name)) {
-            s_bootstrappedScenesPreEnabled.Add(sceneRoot.name);
             s_bootstrapPreEnabled[sceneRoot.name].Invoke(sceneRoot);
         }
 
@@ -52,6 +52,11 @@ public class RandomizerBootstrap {
         if (sceneRoot.name == Randomizer.SpawnScene) {
             BootstrapRandomSpawnTeleportLocation(sceneRoot);
         }
+
+        if (RandomizerBootstrapEscapes.BootstrapScenes.ContainsKey(sceneRoot.name)) {
+            RandomizerBootstrapEscapes.BootstrapScenes[sceneRoot.name].Invoke(sceneRoot);
+        }
+
     }
 
     private static void BootstrapSceneAfterSerialize(SceneRoot sceneRoot) {
@@ -96,7 +101,7 @@ public class RandomizerBootstrap {
         }
     }
 
-    private static Transform CloneObject(SceneRoot sceneRoot, Transform obj, string name = null, bool sibling = true) {
+    public static Transform CloneObject(SceneRoot sceneRoot, Transform obj, string name = null, bool sibling = true) {
         // temporarily fiddle with the original object's active status to prevent the clone from instantly awaking if it shouldn't
         var originalActive = obj.gameObject.activeSelf;
         if (!obj.gameObject.activeInHierarchy) {
@@ -981,7 +986,18 @@ public class RandomizerBootstrap {
         var deactivateRocks = CloneObject(sceneRoot, deactivateExample, "25. Deactivate Rocks");
         var deactivateRocksAction = deactivateRocks.GetComponent<ActivateAction>();
         deactivateRocksAction.Target = rocks.gameObject;
-        lavaSequence.Actions.Add(deactivateRocksAction);
+
+        var softlockFixCondition = deactivateRocks.gameObject.AddComponent<RandomizerCheckInventoryCondition>();
+        softlockFixCondition.comparison = RandomizerCheckInventoryCondition.Comparison.Equal;
+        softlockFixCondition.inventorySlot = 1103;
+        softlockFixCondition.value = 0;
+        softlockFixCondition.defaultResult = true;
+
+        var conditionalAction = deactivateRocks.gameObject.AddComponent<RunActionCondition>();
+        conditionalAction.Action = deactivateRocksAction;
+        conditionalAction.Condition = softlockFixCondition;
+        conditionalAction.MoonGuid = new MoonGuid(-676058480, 1220973407, -919927166, -400007427);
+        lavaSequence.Actions.Add(conditionalAction);
     }
 
     // a RespawnTime of 0 is how vanilla spells "never"; the usual enemy gets a minute off screen
@@ -1080,6 +1096,10 @@ public class RandomizerBootstrap {
         { "sunkenGladesOriRoom", BootstrapSeinRoomWall },
         { "ginsoTreePuzzles", BootstrapGinsoLowerMiniboss },
         { "upperGladesSwarmIntroduction", UnlessVanillaRespawns(BootstrapSpiritTreeFronkeyAfterSerialize) },
+        { "forlornRuinsWindShaftMockupB", RandomizerBootstrapEscapes.GenericResetScene },
+        { "forlornRuinsWindShaftMockupC", RandomizerBootstrapEscapes.GenericResetScene },
+        { "forlornRuinsNestC", RandomizerBootstrapEscapes.GenericResetScene },
+        { "forlornRuinsBackgroundC", RandomizerBootstrapEscapes.GenericResetScene },
     };
 
     private static List<string> s_bootstrappedScenesAfterSerialize = new List<string>();

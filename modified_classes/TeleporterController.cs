@@ -221,6 +221,8 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         foreach (var savePedestal in SavePedestal.All) {
             savePedestal.OnBeginTeleporting();
         }
+
+        Randomizer.FixGinsoEscape();
     }
 
     public static void OnFinishedTeleportingStartAnimation() {
