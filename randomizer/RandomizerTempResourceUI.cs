@@ -14,6 +14,10 @@ public static class RandomizerTempResourceUI {
 
     private static GameObject energyRow;
 
+    private static GameObject healthInline;
+
+    private static GameObject energyInline;
+
     private static float builtScale;
 
     private static bool errorLogged;
@@ -30,31 +34,38 @@ public static class RandomizerTempResourceUI {
         }
 
         try {
-            if (RandomizerSettings.Customization.DisableTempResourceRows) {
-                // installed caps pass vanilla values through while disabled; only the rows go
-                if (healthRow != null) {
-                    UnityEngine.Object.Destroy(healthRow);
-                    healthRow = null;
-                }
-
-                if (energyRow != null) {
-                    UnityEngine.Object.Destroy(energyRow);
-                    energyRow = null;
-                }
-
-                return;
+            // rows or the legacy inline copies, never both
+            var legacy = RandomizerSettings.Customization.DisableTempResourceRows;
+            if (legacy) {
+                Drop(ref healthRow);
+                Drop(ref energyRow);
+            } else {
+                Drop(ref healthInline);
+                Drop(ref energyInline);
             }
 
-            // one search per HUD; a row still missing is looked for again only when the overflow moves
+            // one search per HUD; a piece still missing is looked for again only when the overflow moves
             var hud = UI.SeinUI;
             var overflow = Overflow();
-            if (hud != null && (!ReferenceEquals(hud, searchedHud)
-                    || overflow != lastOverflow && (healthRow == null || energyRow == null))) {
+            var missing = legacy ? healthInline == null || energyInline == null : healthRow == null || energyRow == null;
+            if (hud != null && (!ReferenceEquals(hud, searchedHud) || overflow != lastOverflow && missing)) {
                 searchedHud = hud;
                 FindFills(hud);
             }
 
             lastOverflow = overflow;
+
+            if (legacy) {
+                if (healthInline == null && healthFill != null && healthFill.gameObject.activeInHierarchy) {
+                    healthInline = BuildRow(healthFill, false, true);
+                }
+
+                if (energyInline == null && energyFill != null && energyFill.gameObject.activeInHierarchy) {
+                    energyInline = BuildRow(energyFill, true, true);
+                }
+
+                return;
+            }
 
             if (builtScale != TempRowScale && (healthRow != null || energyRow != null)) {
                 // scale changed: rebuild next pass (Destroy lands at end of frame)
@@ -73,11 +84,11 @@ public static class RandomizerTempResourceUI {
 
             // a clone of an inactive strip would stay hidden: nothing vanilla ever turns it on
             if (healthRow == null && healthFill != null && healthFill.gameObject.activeInHierarchy) {
-                healthRow = BuildRow(healthFill, false);
+                healthRow = BuildRow(healthFill, false, false);
             }
 
             if (energyRow == null && energyFill != null && energyFill.gameObject.activeInHierarchy) {
-                energyRow = BuildRow(energyFill, true);
+                energyRow = BuildRow(energyFill, true, false);
             }
 
             builtScale = TempRowScale;
@@ -86,6 +97,17 @@ public static class RandomizerTempResourceUI {
                 errorLogged = true;
                 Randomizer.log("TempResourceUI: " + e);
             }
+        }
+    }
+
+    public static bool InlineReady(bool energy) {
+        return (energy ? energyInline : healthInline) != null;
+    }
+
+    private static void Drop(ref GameObject piece) {
+        if (piece != null) {
+            UnityEngine.Object.Destroy(piece);
+            piece = null;
         }
     }
 
@@ -112,7 +134,7 @@ public static class RandomizerTempResourceUI {
                 Cap(driver, true, true, ((SeinEnergyMinVisualProvider)driver.Value).DivideBy);
             } else if (driver.Value is RandomizerTempResourceProvider) {
                 var p = (RandomizerTempResourceProvider)driver.Value;
-                if (!p.Overflow && !p.UseMinVisual) {
+                if (!p.Overflow && !p.Inline && !p.UseMinVisual) {
                     if (p.Energy) {
                         energyFill = driver;
                     } else {
@@ -131,23 +153,25 @@ public static class RandomizerTempResourceUI {
         driver.Value = capped;
     }
 
-    private static GameObject BuildRow(FloatProviderAnimatorDriver fill, bool energy) {
+    // inline: legacy mode's copy, the whole bar in place and one queue step behind it
+    private static GameObject BuildRow(FloatProviderAnimatorDriver fill, bool energy, bool inline) {
         var ours = fill.Value as RandomizerTempResourceProvider;
         var divideBy = ours != null ? ours.DivideBy : 1f;
 
         var clone = (GameObject)UnityEngine.Object.Instantiate(fill.gameObject);
-        clone.name = energy ? "randomizerTempEnergyRow" : "randomizerTempHealthRow";
+        clone.name = (energy ? "randomizerTempEnergy" : "randomizerTempHealth") + (inline ? "Inline" : "Row");
 
         var t = clone.transform;
         var orig = fill.transform;
         t.parent = orig.parent;
         t.localRotation = orig.localRotation;
-        t.localScale = orig.localScale * TempRowScale;
+        t.localScale = orig.localScale * (inline ? 1f : TempRowScale);
         t.localPosition = orig.localPosition;
 
         var overflow = clone.AddComponent<RandomizerTempResourceProvider>();
         overflow.Energy = energy;
-        overflow.Overflow = true;
+        overflow.Overflow = !inline;
+        overflow.Inline = inline;
         overflow.DivideBy = divideBy;
         clone.GetComponent<FloatProviderAnimatorDriver>().Value = overflow;
 
@@ -182,7 +206,16 @@ public static class RandomizerTempResourceUI {
             targets.Add(layer.GetComponent<Renderer>());
         }
 
+        if (inline) {
+            for (var i = 0; i < sources.Count; i++) {
+                if (sources[i] != null && targets[i] != null) {
+                    targets[i].material.renderQueue = sources[i].sharedMaterial.renderQueue - 1;
+                }
+            }
+        }
+
         var anchor = clone.AddComponent<RowAnchor>();
+        anchor.Inline = inline;
         anchor.Strip = orig;
         anchor.StripRenderer = fill.GetComponent<Renderer>();
         anchor.LayerSources = sources.ToArray();
@@ -217,8 +250,15 @@ public static class RandomizerTempResourceUI {
 
         public Vector3 EdgeMax;
 
+        public bool Inline;
+
         public void LateUpdate() {
             if (Strip == null || StripRenderer == null) {
+                return;
+            }
+
+            if (Inline) {
+                MirrorAll();
                 return;
             }
 
@@ -243,6 +283,10 @@ public static class RandomizerTempResourceUI {
             transform.position += right * (shift + side * height * RandomizerSettings.Customization.TempRowHorizontalOffset)
                 + up * (height * RandomizerSettings.Customization.TempRowSpacing);
 
+            MirrorAll();
+        }
+
+        private void MirrorAll() {
             // HUD fades never reach these clones, so each mirrors its source's live tint (times
             // brightness) and enabled flag
             if (LayerSources != null && LayerTargets != null) {

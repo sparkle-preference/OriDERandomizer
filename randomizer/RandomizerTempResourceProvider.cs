@@ -10,6 +10,9 @@ public class RandomizerTempResourceProvider : FloatValueProvider {
 
     public bool UseMinVisual;
 
+    // legacy mode's dimmed copy of the whole bar, drawn behind the capped one
+    public bool Inline;
+
     public float DivideBy = 1f;
 
     private float smoothed;
@@ -33,17 +36,21 @@ public class RandomizerTempResourceProvider : FloatValueProvider {
         }
 
         if (RandomizerSettings.Customization.DisableTempResourceRows) {
-            // vanilla display: base layers uncapped, temp rows empty
-            smoothedInit = false;
-            return (Overflow ? 0f : visual) / DivideBy;
-        }
+            if (Overflow) {
+                smoothedInit = false;
+                return 0f;
+            }
 
-        if (!Overflow) {
+            // inline: the base stops at max when the dimmed copy behind it is up, else draws it all
+            if (!Inline) {
+                return (RandomizerTempResourceUI.InlineReady(Energy) ? Mathf.Min(visual, max) : visual) / DivideBy;
+            }
+        } else if (!Overflow) {
             return Mathf.Min(visual, max) / DivideBy;
         }
 
         // the temp row settles on damage in a few frames, not the slow vanilla settle; gains snap
-        var target = Mathf.Max(0f, current - max);
+        var target = Inline ? (current > max ? current : 0f) : Mathf.Max(0f, current - max);
         if (!smoothedInit || target > smoothed) {
             smoothedInit = true;
             smoothed = target;
