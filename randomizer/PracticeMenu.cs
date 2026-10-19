@@ -110,12 +110,14 @@ public static class PracticeMenu {
         var exit = finished ? Take(manager, "exit", ExitNow, false) : Take(manager, "exit", RequestExit, true);
         Label(exit, "EXIT TO PRACTICE MENU");
 
-        // Skip is the practice row (edit / save and retry / pin); editing borrows Resume and Options
+        // Skip is the practice row (edit / save and retry / pin); editing borrows Resume and Options.
+        // A given .bfrp plays like vanilla's menu: no edit row.
+        var canEdit = !finished && PracticeController.File != null && PracticeController.File.IsFolder;
         if (editing) {
             Label(Take(manager, "continue", null, true), "BACK TO EDITING");
             Label(Take(manager, "options", Reload, false), "RELOAD FROM DISK");
             Label(Take(manager, "skip", SaveAndRetry, false), "SAVE AND RETRY");
-        } else if (!finished) {
+        } else if (canEdit) {
             Label(Take(manager, "skip", Edit, false), "EDIT PRACTICE SEGMENT");
         }
 
@@ -140,7 +142,7 @@ public static class PracticeMenu {
         }
 
         // the editor row goes last, under Exit; while editing, Reload sits under Save
-        Arrange(manager, finished ? null : Find(manager, "skip"),
+        Arrange(manager, editing || canEdit ? Find(manager, "skip") : null,
             editing ? Find(manager, "options") : null, editing ? Find(manager, "difficulty") : null);
         Relayout(manager);
     }
