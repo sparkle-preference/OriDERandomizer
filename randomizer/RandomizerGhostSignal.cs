@@ -25,12 +25,16 @@ public static class RandomizerGhostSignal {
         public bool Announced;
         public float Since;
         public int Attempt;
+        public bool ViaRelay;
         // their clip table is not ours (or unsaid), so their clips are blanked
         public bool OtherClips;
     }
 
-    // seconds in connecting before a handshake counts as lost and is retried
-    private const float RetryAfter = 15f;
+    // seconds a handshake gets before it's retried, by misses in a row; a dropped relayed link strands its allocation for 600 s
+    private static readonly float[] RetryAfter = { 15f, 30f, 60f, 300f };
+
+    // misses in a row before a peer counts as unreachable
+    private const int MissLimit = 3;
 
     private const string StunServers = "stun:stun.l.google.com:19302";
 
@@ -248,17 +252,20 @@ public static class RandomizerGhostSignal {
 
             // a lost handshake tells neither side: the offerer retries, the answerer waits for the
             // next offer. Ask the channel, not Announced: a long frame must not fail a live link.
+            var patience = Patience(link);
             if (!link.Announced && !NativeWebSocket.RtcIsOpen(link.Handle) &&
-                now - link.Since > RetryAfter) {
+                now - link.Since > patience) {
                 var pid = link.PlayerId;
                 var attempt = link.Attempt + 1;
                 Randomizer.log("ghost signal: peer " + pid + " never connected in " +
-                    RetryAfter + "s, state " + NativeWebSocket.RtcGetState(link.Handle) +
+                    patience + "s, state " + NativeWebSocket.RtcGetState(link.Handle) +
                     "; " + (link.Offering ? "retrying" : "dropping and waiting for an offer"));
                 var offering = link.Offering;
+                var viaRelay = link.ViaRelay;
                 Drop(link);
                 Links.RemoveAt(i);
                 Escalate(pid);
+                Missed(pid, viaRelay);
                 if (offering) {
                     var fresh = Open(pid, true);
                     if (fresh != null) {
@@ -282,6 +289,7 @@ public static class RandomizerGhostSignal {
 
             if (!link.Announced && NativeWebSocket.RtcIsOpen(link.Handle)) {
                 link.Announced = true;
+                Misses.Remove(link.PlayerId);
                 Randomizer.log("ghost signal: channel open to " + link.PlayerId);
             }
 
@@ -339,11 +347,27 @@ public static class RandomizerGhostSignal {
             return null;
         }
 
-        var link = new Link { Handle = handle, PlayerId = pid, Offering = offering, Since = Time.time };
+        var link = new Link { Handle = handle, PlayerId = pid, Offering = offering, Since = Time.time, ViaRelay = relayed };
         Links.Add(link);
         Randomizer.log("ghost signal: " + (offering ? "offering to " : "answering ") + pid +
             ", handle " + handle + ", " + Links.Count + " link(s)" + (relayed ? ", via the relay" : ""));
         return link;
+    }
+
+    // the third miss in a row, once the relay has had its turn, is a firewall or VPN: said once per peer
+    private static void Missed(int pid, bool viaRelay) {
+        int n;
+        Misses.TryGetValue(pid, out n);
+        Misses[pid] = ++n;
+        if (n >= MissLimit && (viaRelay || RelayUrl == null) && Unreachable.Add(pid)) {
+            Say("Can't show " + RandomizerMW.PlayerName(pid) + "'s ghost: a firewall or VPN is probably blocking the connection.");
+        }
+    }
+
+    private static float Patience(Link link) {
+        int n;
+        Misses.TryGetValue(link.PlayerId, out n);
+        return RetryAfter[Math.Min(n, RetryAfter.Length - 1)];
     }
 
     // Asked once per peer: the server reads it as the report that pid needs relaying.
@@ -443,6 +467,8 @@ public static class RandomizerGhostSignal {
         Links.Clear();
         Roster.Clear();
         Relayed.Clear();
+        Misses.Clear();
+        Unreachable.Clear();
         // credentials are named for the game we just left
         RelayUrl = null;
         foreach (var pid in new List<int>(Ghosts.Keys)) {
@@ -523,6 +549,10 @@ public static class RandomizerGhostSignal {
 
     // peers a direct attempt has already failed against; their next link gets the relay
     private static readonly HashSet<int> Relayed = new HashSet<int>();
+
+    private static readonly Dictionary<int, int> Misses = new Dictionary<int, int>();
+
+    private static readonly HashSet<int> Unreachable = new HashSet<int>();
 
     // the relay as one url with its credentials folded in, or null until the server sends one
     private static string RelayUrl;
