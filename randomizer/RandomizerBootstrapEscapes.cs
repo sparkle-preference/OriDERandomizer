@@ -290,6 +290,11 @@ public class RandomizerBootstrapEscapes {
     }
 
     private static void ForlornEntranceHideAndSeek(SceneRoot sceneRoot) {
+        // Legacy Kuro Behavior (the vanilla seed has it) keeps the hide and seek
+        if (Randomizer.StompTriggers) {
+            return;
+        }
+
         // This disables the kuro hide and seek part.
         var disabledObject = new GameObject("Hide and seek disable");
         disabledObject.transform.SetParent(sceneRoot.transform);
