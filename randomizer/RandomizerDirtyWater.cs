@@ -869,8 +869,18 @@ public static class RandomizerDirtyWater {
     }
 
     // every loaded pool's body, surface to floor
-    private static List<Rect> Pools() {
-        return Bodies(Object.FindObjectsOfType<UberWaterControl>());
+    // live water anywhere, plus the scene's own, which stays disabled while the scene is held
+    private static List<Rect> Pools(SceneRoot root) {
+        var controls = new List<UberWaterControl>(Object.FindObjectsOfType<UberWaterControl>());
+        if (root != null) {
+            foreach (var control in root.GetComponentsInChildren<UberWaterControl>(true)) {
+                if (!controls.Contains(control)) {
+                    controls.Add(control);
+                }
+            }
+        }
+
+        return Bodies(controls.ToArray());
     }
 
     private static List<Rect> Bodies(UberWaterControl[] controls) {
@@ -1961,7 +1971,7 @@ public static class RandomizerDirtyWater {
                 PaintTop(top, on);
             }
 
-            var pools = WaterOnly ? Pools() : null;
+            var pools = WaterOnly ? Pools(Root) : null;
             foreach (var native in Natives) {
                 if (native.Renderer != null && native.Renderer.sharedMaterial != null) {
                     var material = native.Renderer.sharedMaterial;
@@ -2021,7 +2031,7 @@ public static class RandomizerDirtyWater {
             }
 
             if (on && sunken == null) {
-                var pools = Pools();
+                var pools = Pools(Root);
                 sunken = new List<Renderer>();
                 foreach (var renderer in Root.GetComponentsInChildren<Renderer>(true)) {
                     if (Submerged(renderer.gameObject, pools)) {
