@@ -138,7 +138,7 @@
 <div class="cols">
 <section id="segmentSection" class="segonly">
   <h2>Segment</h2>
-  <div class="row"><label>Name <input type="text" id="name" size="40" title="The segment's folder name; saving renames the folder"></label></div>
+  <div class="row"><label>Name <input type="text" id="name" size="40" title="Segment name (Changing this will rename the folder)"></label></div>
   <div class="row"><label>Timing
     <select id="mode"><option value="best">best time (ghosts on)</option><option value="average">average time (no ghosts)</option></select>
   </label>
@@ -1330,7 +1330,7 @@
   // a rename that failed still saved everything else
   function saved(reply, words) {
     return load().then(function () {
-      if (reply && reply.renameError) say('Saved, but not renamed: ' + reply.renameError, 'bad');
+      if (reply && reply.renameError) say('Saved but not renamed: ' + reply.renameError, 'bad');
       else say(words, 'ok');
     });
   }
