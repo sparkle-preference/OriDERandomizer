@@ -395,14 +395,13 @@ public static class Randomizer {
             yield return null;
         }
 
-        var fileName = Path.GetFileName(filePath);
         PracticeSelect.Open();
-
         yield return null;
+
         var saveSelectScreen = SaveSlotsUI.Instance;
         var index = PracticeSelect.Files.FindIndex(f => Path.GetFullPath(f.Path).Equals(filePath, StringComparison.OrdinalIgnoreCase));
         if (index < 0) {
-            LogError($"Couldn't find or load practice file {fileName}");
+            LogError($"Couldn't find or load practice file {Path.GetFileName(filePath)}");
             yield break;
         }
 
