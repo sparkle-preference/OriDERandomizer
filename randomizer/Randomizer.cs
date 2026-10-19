@@ -13,7 +13,7 @@ using Events = Game.Events;
 using Random = System.Random;
 
 public static class Randomizer {
-    public static string VERSION = "4.9.12";
+    public static string VERSION = "4.9.13";
 
     // the netcode host this build points at; changing it moves every install (RandomizerSettings)
     public static string NETCODE_HOST = "bfbeta.eiko.blue";
