@@ -180,8 +180,9 @@ public static class RandomizerTempResourceUI {
         var sources = new List<Renderer> { fill.GetComponent<Renderer>() };
         var targets = new List<Renderer> { clone.GetComponent<Renderer>() };
         for (var i = 0; i < orig.parent.childCount; i++) {
+            // our own clones are siblings too: the new one, and a row or copy not yet destroyed
             var c = orig.parent.GetChild(i);
-            if (c == orig) {
+            if (c == orig || c == t || c.name.StartsWith("randomizerTemp")) {
                 continue;
             }
 
