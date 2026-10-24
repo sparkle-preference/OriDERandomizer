@@ -1047,6 +1047,134 @@ public class RandomizerBootstrap {
         fronkey.RespawnTime = floorBroken ? 60f : 7f;
     }
 
+    private static void BootstrapMistyKS1(SceneRoot sceneRoot) {
+        var revisitGo = sceneRoot.transform.Find("*revisitTrigger").gameObject;
+
+        var trigger = revisitGo.GetComponent<PlayerCollisionTrigger>();
+        var worldEventCondition = trigger.Condition;
+        var compoundCondition = revisitGo.AddComponent<CompoundCondition>();
+        compoundCondition.Tests.Add(new() { Conditions = [worldEventCondition] });
+
+        var stateCondition = revisitGo.AddComponent<GetWorldEventCondition>();
+        stateCondition.WorldEvents = Randomizer.MistySim;
+        stateCondition.States = [1];
+        var coordsCondition = revisitGo.AddComponent<RandomizerHasCoordsCondition>();
+        coordsCondition.coordsKey = -10759968;
+        compoundCondition.Tests.Add(new() { Conditions = [stateCondition, coordsCondition] });
+        trigger.Condition = compoundCondition;
+
+        var revisitAction = CreateAction<RandomizerMistySelectStateAction>(sceneRoot, revisitGo.transform, new MoonGuid(260470117, 1866813260, -1226459743, 1638716956));
+        revisitAction.Cases = [new(10, null, 15), new(null, -10440008, 2), new(null, null, 0)];
+        var sequenceActions = revisitGo.GetComponent<ActionSequence>().Actions;
+        Object.Destroy(sequenceActions[0].gameObject);
+        sequenceActions[0] = revisitAction;
+        ActionSequence.Rename(sequenceActions);
+
+        if (Randomizer.MistyState.Value == 1) {
+            // Always supposed to be off during state 1.
+            // Gets reactivated by the vfx when needed.
+            sceneRoot.transform.Find("*forestChangeSetup/*forestChangeTimeline/cameraSettingsZone").gameObject.SetActive(false);
+        }
+    }
+
+    private static void BootstrapMistyBridge(SceneRoot sceneRoot) {
+        var changeTimeline = sceneRoot.transform.Find("*forestChangeSetup/*forestChangeTimeline");
+        var trigger = changeTimeline.Find("trigger").GetComponent<PlayerCollisionTrigger>();
+        trigger.TriggerOnce = false;
+
+        var actionTf = changeTimeline.Find("action");
+        var sequence = actionTf.GetComponent<ActionSequence>();
+
+        var disableTriggerAction = CreateAction<ActivateAction>(sceneRoot, actionTf, new MoonGuid(995522416, -680310442, -1191568504, -767387724));
+        disableTriggerAction.Target = trigger.gameObject;
+        disableTriggerAction.Activate = false;
+        disableTriggerAction.Save = false;
+        sequence.Actions.Insert(0, disableTriggerAction);
+
+        var animatorFixAction = CreateAction<RandomizerMistyAnimationFixAction>(sceneRoot, actionTf, new MoonGuid(588332445, 1378765767, -1259952258, 2068770370));
+        animatorFixAction.Animator = changeTimeline.Find("timelineShakes/shakes/postAnimator").GetComponent<CameraSettingsZoneAnimator>();
+        sequence.Actions.Insert(1, animatorFixAction);
+
+        var toggleStateAction = CreateAction<RandomizerMistySelectStateAction>(sceneRoot, actionTf, new MoonGuid(1196825710, 855396032, -1699969059, 1722915114));
+        toggleStateAction.Cases = [new(3, null, 15), new(15, null, 2), new(2, null, 15)];
+        sequence.Actions.Insert(2, toggleStateAction);
+
+        ActionSequence.Rename(sequence.Actions);
+
+        var revisitObj = new GameObject("*revisitTrigger");
+        var revisitTf = revisitObj.transform;
+        revisitTf.SetParent(changeTimeline, false);
+        revisitTf.position = new Vector3(-917.845f, 4.54f);
+        revisitTf.localScale = new Vector3(17.29f, 16.6f);
+
+        var cutsceneCondition = revisitObj.AddComponent<RandomizerIsTriggerActiveCondition>();
+        cutsceneCondition.Target = sceneRoot.transform.Find("*storySetups/storyTextWithTrigger/triggerCollider").GetComponent<PlayerCollisionTrigger>();
+        cutsceneCondition.Active = false;
+
+        var triggerCondition = revisitObj.AddComponent<IsActiveCondition>();
+        triggerCondition.Target = trigger.gameObject;
+        triggerCondition.Active = false;
+
+        var mistyStateCondition = revisitObj.AddComponent<GetWorldEventCondition>();
+        mistyStateCondition.WorldEvents = Randomizer.MistySim;
+        mistyStateCondition.States = [2, 3, 15];
+
+        var compoundCondition = revisitObj.AddComponent<CompoundCondition>();
+        compoundCondition.Tests = [new() { Conditions = [cutsceneCondition, triggerCondition, mistyStateCondition] }];
+
+        var enableTriggerAction = revisitObj.AddComponent<ActivateAction>();
+        SetGuidAndSave(sceneRoot, enableTriggerAction, new MoonGuid(2006654161, 2069841723, -1304120424, 471054335));
+        enableTriggerAction.Target = trigger.gameObject;
+        enableTriggerAction.Save = false;
+
+        var activateCutsceneTrigger = revisitObj.AddComponent<PlayerCollisionTrigger>();
+        SetGuidAndSave(sceneRoot, activateCutsceneTrigger, new MoonGuid(-2113055654, -1822210313, -1755943464, -1777873911));
+        activateCutsceneTrigger.Condition = compoundCondition;
+        activateCutsceneTrigger.ActionToRun = enableTriggerAction;
+    }
+
+    private static void BootstrapMistyTree(SceneRoot sceneRoot) {
+        var revisitTrigger = sceneRoot.transform.Find("*forestChangeSetup/*forestChangeTimeline/*revisitTrigger").GetComponent<PlayerCollisionTrigger>();
+
+        var stateCondition = revisitTrigger.GetComponent<GetWorldEventCondition>();
+        var pickupCondition = revisitTrigger.gameObject.AddComponent<RandomizerHasCoordsCondition>();
+        pickupCondition.coordsKey = -11880100;
+        var compoundCondition = revisitTrigger.gameObject.AddComponent<CompoundCondition>();
+        compoundCondition.Tests = [new() { Conditions = [stateCondition, pickupCondition] }];
+        revisitTrigger.Condition = compoundCondition;
+
+        var revisitSequence = revisitTrigger.GetComponent<ActionSequence>();
+        var revisitActions = revisitSequence.Actions;
+        var stateAction = CreateAction<RandomizerMistySelectStateAction>(sceneRoot, revisitSequence.transform, new MoonGuid(1284237799, -420134354, -1844507112, -267335023));
+        stateAction.Cases = [new(null, -9120036, 11), new(null, null, 4)];
+        Object.Destroy(revisitActions[0].gameObject);
+        revisitActions[0] = stateAction;
+        ActionSequence.Rename(revisitActions);
+    }
+
+    private static void BootstrapMistySpikeMazeB(SceneRoot sceneRoot) {
+        for (var i = 0; i < sceneRoot.transform.childCount; ++i) {
+            var child = sceneRoot.transform.GetChild(i);
+            var sweAction = child.GetComponent<SetWorldEventAction>();
+            if (sweAction != null && sweAction.State == 12) {
+                Object.Destroy(child.GetComponent<SetWorldEventAction>());
+                var caseAction = child.gameObject.AddComponent<RandomizerMistySelectStateAction>();
+                SetGuidAndSave(sceneRoot, caseAction, new MoonGuid(-656584922, 1977237624, -1108466084, 1406314579));
+                caseAction.Cases = [new(null, -7680144, 12), new(null, null, 5)];
+                child.GetComponent<PlayerCollisionTrigger>().ActionToRun = caseAction;
+                break;
+            }
+        }
+    }
+
+    private static T CreateAction<T>(SceneRoot sceneRoot, Transform parent, MoonGuid guid) where T : SaveSerialize {
+        var go = new GameObject();
+        go.transform.SetParent(parent, false);
+        var action = go.AddComponent<T>();
+        SetGuidAndSave(sceneRoot, action, guid);
+        return action;
+    }
+
     // the VanillaRespawns seed flag leaves these enemies as shipped
     private static Action<SceneRoot> UnlessVanillaRespawns(Action<SceneRoot> bootstrap) {
         return sceneRoot => {
@@ -1083,6 +1211,10 @@ public class RandomizerBootstrap {
         { "westGladesBashCave", UnlessVanillaRespawns(BootstrapValleyBashCave) },
         { "mangroveFallsDashEscalation", UnlessVanillaRespawns(BootstrapBlackrootTeleporterFronkey) },
         { "upperGladesSwarmIntroduction", UnlessVanillaRespawns(BootstrapSpiritTreeFronkey) },
+        { "mistyWoodsGetTorch", BootstrapMistyKS1 },
+        { "mistyWoodsRopeBridge", BootstrapMistyBridge },
+        { "mistyWoodsGetClimb", BootstrapMistyTree },
+        { "mistyWoodsGlideMazeB", BootstrapMistySpikeMazeB },
     };
 
     private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();

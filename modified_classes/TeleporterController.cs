@@ -287,6 +287,10 @@ public class TeleporterController : SaveSerialize, ISuspendable {
             RandomizerBonusSkill.LastAltR = Characters.Sein.Position;
         }
 
+        if (Randomizer.IsUsingRandomizerTeleportAnywhere) {
+            Randomizer.DisableMistyVfxTriggers();
+        }
+
         Characters.Sein.Position = m_teleporterTargetPosition + Vector3.up * 1.6f;
         CameraPivotZone.InstantUpdate();
         Scenes.Manager.UpdatePosition();
@@ -303,10 +307,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         RandomizerStatsManager.UsedTeleporter();
 
         if (Randomizer.IsUsingRandomizerTeleportAnywhere) {
-            var value = World.Events.Find(Randomizer.MistySim).Value;
-            if (value != 1 && value != 8) {
-                World.Events.Find(Randomizer.MistySim).Value = 10;
-            }
+            Randomizer.ResetMistyState();
         }
 
         LateStartHook.AddLateStartMethod(OnFinishedTeleporting);

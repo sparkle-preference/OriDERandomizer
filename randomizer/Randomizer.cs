@@ -461,6 +461,7 @@ public static class Randomizer {
             Characters.Sein.Abilities.Carry.CurrentCarryable.Drop();
         }
 
+        DisableMistyVfxTriggers();
         RandomizerStatsManager.WarpedToStart();
         RandomizerBonusSkill.LastAltR = Characters.Sein.Position;
         BingoController.OnWarp();
@@ -472,9 +473,34 @@ public static class Randomizer {
         Scenes.Manager.SetTargetPositions(Characters.Sein.Position);
         UI.Cameras.Current.CameraTarget.SetTargetPosition(Characters.Sein.Position);
         UI.Cameras.Current.MoveCameraToTargetInstantly();
-        var value = World.Events.Find(MistySim).Value;
-        if (value != 1 && value != 8) {
-            World.Events.Find(MistySim).Value = 10;
+        ResetMistyState();
+    }
+
+    public static WorldEventsRuntime MistyState => World.Events.Find(MistySim);
+
+    public static void ResetMistyState() {
+        var state = MistyState;
+        if (state.Value < 3) {
+            state.Value = 1;
+        } else if (state.Value is < 8 or > 10) {
+            state.Value = 10;
+        }
+
+    }
+
+    public static void DisableMistyVfxTriggers() {
+        DisableMistyChangeTrigger("mistyWoodsGetTorch");
+        DisableMistyChangeTrigger("mistyWoodsDocksB");
+        DisableMistyChangeTrigger("mistyWoodsRopeBridge");
+        DisableMistyChangeTrigger("mistyWoodsGetClimb");
+        DisableMistyChangeTrigger("mistyWoodsCeilingClimbing");
+        DisableMistyChangeTrigger("mistyWoodsMortarBash");
+    }
+
+    private static void DisableMistyChangeTrigger(string scene) {
+        var obj = GameObject.Find($"/{scene}/*forestChangeSetup/*forestChangeTimeline/trigger");
+        if (obj != null) {
+            obj.SetActive(false);
         }
     }
 
