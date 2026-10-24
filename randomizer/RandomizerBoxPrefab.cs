@@ -14,6 +14,7 @@ public class RandomizerBoxPrefab : MonoBehaviour {
 
     public static RandomizerBoxPrefab Create(RandomizerBox box) {
         var go = Instantiate(PrefabInstance.gameObject);
+        go.transform.SetParent(BoxParent, false);
         var rb = go.GetComponent<RandomizerBoxPrefab>();
         rb.Init(box);
         rb.UpdateActive();
@@ -149,6 +150,7 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         DontDestroyOnLoad(go);
 
         go.SetActive(false);
+        go.transform.SetParent(BoxParent, false);
 
         var rb = go.AddComponent<RandomizerBoxPrefab>();
         rb.meshFilter = go.AddComponent<MeshFilter>();
@@ -181,6 +183,8 @@ public class RandomizerBoxPrefab : MonoBehaviour {
     }
 
     public const float EdgeWidth = 0.25f;
+
+    private static Transform BoxParent => field ??= new GameObject("RandomizerBoxes").transform;
 
     private static RandomizerBoxPrefab PrefabInstance => field ??= CreatePrefab();
 
