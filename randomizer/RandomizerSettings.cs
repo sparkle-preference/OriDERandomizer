@@ -13,7 +13,7 @@ public static class RandomizerSettings {
     }
 
     // move this with every new setting, or existing installs take the nag path on update
-    public static string LastAddedSetting = "Text Cues";
+    public static string LastAddedSetting = "Debug Controls";
 
     private static string StripComment(string line) {
         var at = line.IndexOf("//");
@@ -302,6 +302,7 @@ public static class RandomizerSettings {
         QOL.PauseMenuOpacity = new FloatSetting("Pause Menu Opacity", 1.0f, "(0.0-1.0) The opacity of the pause menu.", false);
         QOL.CursorLock = new BoolSetting("Cursor Lock", false, "True: Locks the mouse cursor inside the window\nFalse (default): Vanilla behavior (cursor can leave the Ori window in borderless / windowed mode).", false);
         QOL.PerformanceOptimizations = new BoolSetting("Performance Optimizations", true, "True (default): fewer loading freezes and steadier frame pacing.\nFalse: vanilla behavior.", false);
+        QOL.DebugControls = new EnumSetting<DebugControls>("Debug Controls", DebugControls.Default, "Default (default): Default/Vanilla debug controls.\nFast: Debug controls are twice as fast and stay on screen.", false);
 
         Practice.Folder = new StringSetting("Practice Folder", "practice", "Where practice segments are kept: a folder name inside the game folder, or a full path.", false);
         Practice.Ghost = new EnumSetting<PracticeGhost>("Practice Ghost", PracticeGhost.Segment, "Which ghost to race in practice mode.\nSegment (default): Pinned run if there is one; fastest otherwise.\nFastest, Pinned, Recent: always that one. None: no ghosts in practice mode.", false);
@@ -379,6 +380,11 @@ public static class RandomizerSettings {
     public enum MapFilterMode {
         [Description("In Logic")] InLogic,
         [Description("Uncollected")] Uncollected
+    }
+
+    public enum DebugControls {
+        Default,
+        Fast,
     }
 
     public static class Controls {
@@ -465,6 +471,8 @@ public static class RandomizerSettings {
         public static BoolSetting CursorLock;
 
         public static BoolSetting PerformanceOptimizations;
+
+        public static EnumSetting<DebugControls> DebugControls;
     }
 
     public static class Practice {

@@ -39,7 +39,18 @@ public class DebugMenu : MonoBehaviour {
                 }
 
                 var vector = MoonMath.Vector.ApplyRectangleDeadzone(Input.Axis, 0.15f, 0.15f);
-                m_noClipGhost.transform.position += (Vector3)vector.normalized * AxisToSpeedCurve.Evaluate(vector.magnitude) * Time.deltaTime;
+                var delta = (Vector3)vector.normalized * (AxisToSpeedCurve.Evaluate(vector.magnitude) * Time.deltaTime);
+                m_noClipGhost.transform.position += delta;
+
+                if (RandomizerSettings.QOL.DebugControls == RandomizerSettings.DebugControls.Fast) {
+                    m_noClipGhost.transform.position += delta;
+                    // Update the camera multiple times so it always catches up to the crosshair
+                    UI.Cameras.Current.FixedUpdate();
+                    UI.Cameras.Current.FixedUpdate();
+                    UI.Cameras.Current.FixedUpdate();
+                    UI.Cameras.Current.FixedUpdate();
+                    UI.Cameras.Current.FixedUpdate();
+                }
             }
 
             if (m_noClipParamsEnabled && !Input.RightShoulder.IsPressed) {

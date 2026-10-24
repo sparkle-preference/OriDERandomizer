@@ -12,5 +12,8 @@ public class ControlsSettingsScreen : CustomSettingsScreen {
         AddEnum(RandomizerSettings.Controls.GrenadeJump, "Auto jumps on the [[Grenade Jump]] bind; Manual is the vanilla two-input timing.");
         AddEnum(RandomizerSettings.Controls.DoubleBash, "Hold holds [[Double Bash]] through the Bash; Tap presses it to Bash again.");
         AddEnum(RandomizerSettings.Controls.Autofire, "Change Autofire modes - hold or toggle Spirit Flame to fire continuously, or Off for vanilla.");
+        AddEnum(RandomizerSettings.QOL.DebugControls, "Movement speed of the Debug Controls");
+
+        ScrollAfter(Footer());
     }
 }
