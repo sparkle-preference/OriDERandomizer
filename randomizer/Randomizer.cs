@@ -110,7 +110,6 @@ public static class Randomizer {
             AllowOrbWarps = false;
             NightBerryWarpPosition = new Vector3(-910f, -300f);
             InLogicWarps = false;
-            RandomizerLocationManager.ResetDoorLogic();
             TeleportersLockedByClues = false;
             WarpLogicLocations = new Hashtable();
             Keysanity.Initialize();
@@ -209,9 +208,6 @@ public static class Randomizer {
                     }
 
                     RandomizerLocationManager.InitializeLogic();
-                    if (Characters.Sein) {
-                        RandomizerLocationManager.UpdateReachable();
-                    }
                 } else {
                     printInfo("Error: " + SeedFilePath + " not found");
                     SeedFilePath = DefaultSeedFilePath();

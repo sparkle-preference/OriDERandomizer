@@ -157,6 +157,9 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
             if (RandomizerRebinding.ToggleMapMode.OnPressed) {
                 RandomizerSettings.CurrentFilter = RandomizerSettings.CurrentFilter.Next();
+                if (!RandomizerLocationManager.HasLogic && RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.InLogic) {
+                    RandomizerSettings.CurrentFilter = RandomizerSettings.CurrentFilter.Next();
+                }
                 IconManager.ShowAreaIcons();
             }
         }

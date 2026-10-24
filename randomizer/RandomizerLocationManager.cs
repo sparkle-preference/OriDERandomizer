@@ -41,17 +41,22 @@ public class RandomizerLocationManager {
     }
 
     public static void InitializeLogic() {
+        HasLogic = false;
+        DoorsInLogicMask = 0;
+        KeyTiers = null;
+        warnedDoors.Clear();
+
         if (!HaveDownloadedAreas) {
             return; //Areas thread hasn't returned yet, skip. It'll run this on its own on completion.
         }
 
         var paths = InitializePaths();
 
-        if (!File.Exists("areas.ori")) {
+        if (paths.Count == 0 || !File.Exists("areas.ori")) {
             Areas = null;
             s_logicLastUpdated = DateTime.MinValue;
             s_lastLogicPaths = paths;
-            Randomizer.log("No areas.ori found, will not update logic.");
+            Randomizer.log(paths.Count == 0 ? "No logic specified for seed, will not update logic." : "No areas.ori found, will not update logic.");
             RandomizerSettings.CurrentFilter = RandomizerSettings.MapFilterMode.Uncollected;
             return;
         }
@@ -74,6 +79,10 @@ public class RandomizerLocationManager {
             foreach (var location in LocationsByName.Values) {
                 location.Reachable = false;
             }
+        }
+
+        if (Characters.Sein) {
+            UpdateReachable();
         }
     }
 
@@ -147,9 +156,10 @@ public class RandomizerLocationManager {
                             paths = newPaths;
                         }
                     }
+
+                    paths.Add("casual-core");
                 }
 
-                paths.Add("casual-core");
                 break;
         }
 
@@ -393,7 +403,7 @@ public class RandomizerLocationManager {
         }
 
         DoorsInLogicMask = doorMask;
-        DoorLogicValid = true;
+        HasLogic = true;
         /* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
                 {
                     if (reachable.Contains(item.Key))
@@ -419,6 +429,8 @@ public class RandomizerLocationManager {
     public static Location[] ProgressiveMapLocations = new Location[9];
 
     public static AreaGraph Areas;
+
+    public static bool HasLogic;
 
     public static Thread LogicThread;
 
@@ -452,8 +464,6 @@ public class RandomizerLocationManager {
     // warns before a loaded save's first sweep
     public static int DoorsInLogicMask;
 
-    public static bool DoorLogicValid;
-
     // wire order, from the seed's KeyTiers line (AP seeds)
     public static int[] KeyTiers;
 
@@ -469,13 +479,6 @@ public class RandomizerLocationManager {
     };
 
     private static readonly int[] DoorCosts = { 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4 };
-
-    public static void ResetDoorLogic() {
-        DoorsInLogicMask = 0;
-        DoorLogicValid = false;
-        KeyTiers = null;
-        warnedDoors.Clear();
-    }
 
     // keys sunk into opened doors; refunds mean partial fills never count
     public static int SpentKeystones() {
@@ -494,7 +497,7 @@ public class RandomizerLocationManager {
     /// door, while the player can't pay yet, and forever on a keyduped save (item 73).</summary>
     public static void WarnIfDoorOutOfLogic(MoonGuid doorGuid) {
         if (!RandomizerSettings.Customization.KeyLockWarnings.Value || Randomizer.Keysanity.IsActive
-            || !DoorLogicValid || !KeystoneDoors.ContainsKey(doorGuid)) {
+            || !HasLogic || !KeystoneDoors.ContainsKey(doorGuid)) {
             return;
         }
 
