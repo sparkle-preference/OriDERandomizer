@@ -37,5 +37,9 @@ namespace RandoExts {
                 return false;
             }
         }
+
+        extension(string) {
+            public static string Join<T>(string separator, IEnumerable<T> iter) => string.Join(separator, iter.Select(v => "" + v).ToArray());
+        }
     }
 }
