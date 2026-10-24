@@ -312,6 +312,28 @@ public static class PracticeController {
         SaveSlotsManager.PrepareSlots();
         if (load) {
             saves.PerformLoad();
+            DropScenesTheSaveLacks();
+        }
+    }
+
+    // A started scene the save doesn't hold would come back as the last attempt left it, so it reloads fresh.
+    // PerformLoad has already swapped in the file's data; the restore that reads scenes from it comes later.
+    private static void DropScenesTheSaveLacks() {
+        var data = Game.Checkpoint.SaveGameData;
+        var scenes = Core.Scenes.Manager.ActiveScenes;
+        for (var i = 0; i < scenes.Count; i++) {
+            var scene = scenes[i];
+            // dependants follow their parents out; an unstarted scene is still as authored
+            if (!scene.HasStartBeenCalled || scene.IsTitleScreen || scene.MetaData == null || scene.MetaData.DependantScene
+                    || data.SceneExists(scene.MetaData.SceneMoonGuid)) {
+                continue;
+            }
+
+            // one in its unload delay would otherwise wait the delay out
+            scene.UnloadTime = -1f;
+            if (Core.Scenes.Manager.UnloadScene(scene, false, true)) {
+                i--;
+            }
         }
     }
 
