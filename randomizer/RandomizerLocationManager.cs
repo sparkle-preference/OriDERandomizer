@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Game;
+using JetBrains.Annotations;
 using Protogen;
 using UnityEngine;
 
@@ -42,6 +41,8 @@ public class RandomizerLocationManager {
 
     public static void InitializeLogic() {
         HasLogic = false;
+        NoLogicReason = "Logic hasn't been calculated yet";
+        ShowNoLogicHint = false;
         DoorsInLogicMask = 0;
         KeyTiers = null;
         warnedDoors.Clear();
@@ -52,12 +53,17 @@ public class RandomizerLocationManager {
 
         var paths = InitializePaths();
 
-        if (paths.Count == 0 || !File.Exists("areas.ori")) {
+        if (paths == null || !File.Exists("areas.ori")) {
             Areas = null;
             s_logicLastUpdated = DateTime.MinValue;
             s_lastLogicPaths = paths;
-            Randomizer.log(paths.Count == 0 ? "No logic specified for seed, will not update logic." : "No areas.ori found, will not update logic.");
-            RandomizerSettings.CurrentFilter = RandomizerSettings.MapFilterMode.Uncollected;
+            Randomizer.log(paths == null ? "No logic specified for seed, will not update logic." : "No areas.ori found, will not update logic.");
+            NoLogicReason = paths == null ? "the seed doesn't specify logic" : "no logic file (areas.ori) was found";
+            if (RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.InLogic) {
+                RandomizerSettings.CurrentFilter = RandomizerSettings.MapFilterMode.Uncollected;
+                ShowNoLogicHint = true;
+            }
+
             return;
         }
 
@@ -86,84 +92,87 @@ public class RandomizerLocationManager {
         }
     }
 
+    [CanBeNull]
     private static HashSet<string> InitializePaths() {
-        var paths = new HashSet<string>();
+        var paths = (HashSet<string>)null;
 
         var flags = Randomizer.SeedMeta.Split('|')[0].Split(',');
-        var preset = flags[0];
-        if (preset == "") {
-            return paths;
-        }
 
-        if (preset.StartsWith("Sync")) {
-            if (flags.Length < 2) {
-                return paths;
+        foreach (var flag in flags) {
+            if (PathsForFlag(flag) is { } newPaths) {
+                if (paths != null) {
+                    Randomizer.LogError("More than one logic flag specified, ignoring all but the first");
+                    break;
+                }
+
+                paths = newPaths;
             }
-
-            preset = flags[1];
         }
 
-        switch (preset) {
-            case "Casual":
-                paths.Add("casual-core");
-                paths.Add("casual-dboost");
-                break;
-            case "Standard":
-                paths.Add("casual-core");
-                paths.Add("casual-dboost");
-                paths.Add("standard-core");
-                paths.Add("standard-dboost");
-                paths.Add("standard-lure");
-                paths.Add("standard-abilities");
-                break;
-            case "Expert":
-                paths.Add("casual-core");
-                paths.Add("casual-dboost");
-                paths.Add("standard-core");
-                paths.Add("standard-dboost");
-                paths.Add("standard-lure");
-                paths.Add("standard-abilities");
-                paths.Add("expert-core");
-                paths.Add("expert-dboost");
-                paths.Add("expert-lure");
-                paths.Add("expert-abilities");
-                paths.Add("dbash");
-                break;
-            case "Master":
-                paths.Add("casual-core");
-                paths.Add("casual-dboost");
-                paths.Add("standard-core");
-                paths.Add("standard-dboost");
-                paths.Add("standard-lure");
-                paths.Add("standard-abilities");
-                paths.Add("expert-core");
-                paths.Add("expert-dboost");
-                paths.Add("expert-lure");
-                paths.Add("expert-abilities");
-                paths.Add("dbash");
-                paths.Add("master-core");
-                paths.Add("master-dboost");
-                paths.Add("master-lure");
-                paths.Add("master-abilities");
-                paths.Add("gjump");
-                break;
-            default:
-                if (preset.StartsWith("Custom")) {
-                    if (int.TryParse(preset.Remove(0, "Custom".Length), out var pathMask)) {
-                        var newPaths = OriParse.PathMaskToPathSet(pathMask);
-                        if (newPaths != null) {
-                            //Randomizer.log("Got custom pathset: " + OriParse.PathMaskToString(pathMask));
-                            paths = newPaths;
-                        }
-                    }
+        return paths;
+    }
 
-                    paths.Add("casual-core");
+    [CanBeNull]
+    private static HashSet<string> PathsForFlag(string flag) {
+        switch (flag.ToLower()) {
+            case "casual":
+                return [
+                    "casual-core",
+                    "casual-dboost",
+                ];
+            case "standard":
+                return [
+                    "casual-core",
+                    "casual-dboost",
+                    "standard-core",
+                    "standard-dboost",
+                    "standard-lure",
+                    "standard-abilities",
+                ];
+            case "expert":
+                return [
+                    "casual-core",
+                    "casual-dboost",
+                    "standard-core",
+                    "standard-dboost",
+                    "standard-lure",
+                    "standard-abilities",
+                    "expert-core",
+                    "expert-dboost",
+                    "expert-lure",
+                    "expert-abilities",
+                    "dbash",
+                ];
+            case "master":
+                return [
+                    "casual-core",
+                    "casual-dboost",
+                    "standard-core",
+                    "standard-dboost",
+                    "standard-lure",
+                    "standard-abilities",
+                    "expert-core",
+                    "expert-dboost",
+                    "expert-lure",
+                    "expert-abilities",
+                    "dbash",
+                    "master-core",
+                    "master-dboost",
+                    "master-lure",
+                    "master-abilities",
+                    "gjump",
+                ];
+            default:
+                if (flag.StartsWith("custom")) {
+                    if (int.TryParse(flag.Remove(0, "custom".Length), out var pathMask)) {
+                        return OriParse.PathMaskToPathSet(pathMask);
+                    }
                 }
 
                 break;
         }
 
-        return paths;
+        return null;
     }
 
     public static RandomizerPickupAction AddPickupAction(GameObject parentObj, string pickupName, string actionName = null) {
@@ -431,6 +440,10 @@ public class RandomizerLocationManager {
     public static AreaGraph Areas;
 
     public static bool HasLogic;
+
+    public static string NoLogicReason;
+
+    public static bool ShowNoLogicHint;
 
     public static Thread LogicThread;
 

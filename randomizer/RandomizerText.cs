@@ -64,14 +64,15 @@ public static class RandomizerText {
 
     public static string MapFilterText {
         get {
-            var text = $"Current Filter ({RandomizerRebinding.ToggleMapMode.FirstBindName()}): *{RandomizerSettings.CurrentFilter.Desc()}*";
-            if (RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.InLogic) {
-                if (RandomizerLocationManager.Areas == null) {
-                    return $"{text}\n{Error("Logic filter unavailable; areas.ori missing")}";
-                }
+            if (RandomizerLocationManager.HasLogic) {
+                return $"Current Filter ({RandomizerRebinding.ToggleMapMode.FirstBindName()}): *{RandomizerSettings.CurrentFilter.Desc()}*";
             }
 
-            return text;
+            if (RandomizerLocationManager.ShowNoLogicHint) {
+                return Error($"Logic Filter not available because {RandomizerLocationManager.NoLogicReason}");
+            }
+
+            return null;
         }
     }
 
