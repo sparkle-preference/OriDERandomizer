@@ -32,7 +32,7 @@ public class WorldEventsManager {
             var defaultValue = worldEvents.DefaultValue;
             worldEventsRuntime = new WorldEventsRuntime(defaultValue);
             m_worldEvents.Add(worldEvents.GetGuid(), worldEventsRuntime);
-            if (Application.isPlaying && DebugMenuB.Instance) {
+            if (worldEvents != null && Application.isPlaying && DebugMenuB.Instance) {
                 DebugMenuB.Instance.AddWorldEvent(worldEvents);
             }
         }
