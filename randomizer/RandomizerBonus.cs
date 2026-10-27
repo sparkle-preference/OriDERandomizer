@@ -644,7 +644,7 @@ public static class RandomizerBonus {
     public static bool SenseFragsEnabled => Characters.Sein.Inventory.GetRandomizerItem(1100) > 0;
 
     // the soul flame button at an ally's ghost link saves there, own link untouched
-    public static bool AllyLinkSaves => Characters.Sein != null && Characters.Sein.Inventory != null &&
+    public static bool AllyLinkSaves => Randomizer.ShareSaves || Characters.Sein != null && Characters.Sein.Inventory != null &&
         Characters.Sein.Inventory.GetRandomizerItem(1110) > 0;
 
     public static bool SenseFragsActive {

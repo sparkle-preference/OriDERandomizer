@@ -118,6 +118,7 @@ public static class Randomizer {
             EnhancedMode = false;
             EnhancedSeinInSeed = false;
             VanillaRespawns = false;
+            ShareSaves = false;
             RandomizerEnemies.ResetOptions();
             RandomizerEnemies.Reset();
             SpawnPosition = new Vector3(0, 0, 0);
@@ -1818,6 +1819,8 @@ public static class Randomizer {
                 VanillaRespawns = true;
             } else if (flag == "enemyrando") {
                 RandomizerEnemies.Active = true;
+            } else if (flag.StartsWith("share=") || flag.StartsWith("shared=")) {
+                ShareSaves = flag.Substring(flag.IndexOf('=') + 1).Split('+').Contains("saves");
             }
 
             if (flag == "seintalks") {
@@ -2308,6 +2311,8 @@ public static class Randomizer {
     public static bool EnhancedSeinInSeed;
 
     public static bool VanillaRespawns;
+
+    public static bool ShareSaves;
 
     public static Vector3 SpawnPosition;
 
