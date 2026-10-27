@@ -17,41 +17,41 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             refresh();
         }
 
-        // a flyout open when the screen closed still has the tooltip
+        // a flyout or slider in hand when the screen closed still has the tooltip
+        tooltipController.enabled = true;
         RestoreTooltip();
         // its key caps follow binds changed since it was drawn
         BindLegend();
     }
 
     public void OnDisable() {
-        Hold(false);
+        LockTabs(false);
         saving = -1f;
         HideHold();
         // Will only write if there have been changes
         RandomizerSettings.WriteSettings();
     }
 
-    // Escape is also Pause, which the menu manager reads first. Hold it and the tab list off
-    // during a prompt or edit and SettleFrames after: the manager sees that press a frame late.
+    // Call again after anything that resumes every suspendable: that releases the menu manager too.
     public void HoldMenu() {
-        if (Editing || prompt != null) {
-            settle = SettleFrames;
-        } else if (settle > 0) {
-            settle--;
+        var hold = GetComponent<OptionsPageHold>();
+        if (hold != null) {
+            hold.Apply();
         }
 
-        Hold(prompt != null || Editing || settle > 0 || (selectionManager.IsActive && BindsDirty));
+        LockTabs(Busy || (selectionManager.IsActive && BindsDirty));
         // the cursor must not move the selection, or swap the tooltip, under an edit or prompt
-        selectionManager.IsLocked = prompt != null || Editing;
+        selectionManager.IsLocked = Busy;
     }
 
-    private void Hold(bool held) {
-        if (Game.UI.Menu != null) {
-            Game.UI.Menu.IsSuspended = held;
-        }
+    // an edit or prompt has every key
+    public bool Busy {
+        get { return Editing || prompt != null; }
+    }
 
+    private static void LockTabs(bool locked) {
         if (OptionsScreen.Instance != null) {
-            OptionsScreen.Instance.Navigation.IsLocked = held;
+            OptionsScreen.Instance.Navigation.IsLocked = locked;
         }
     }
 
@@ -255,6 +255,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     public void Update() {
         // re-asserted every frame because finishing an edit resumes everything
         HoldMenu();
+        KeepSliderTooltip();
         if (layout == null || layout.MaxVisible <= 0) {
             return;
         }
@@ -280,6 +281,20 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         if (Input.GetMouseButton(0) && scrollTrack != null) {
             DragScrollbar();
+        }
+    }
+
+    // The controller hides the tooltip whenever the page loses the keys, as it does to a slider being moved.
+    private void KeepSliderTooltip() {
+        var sliding = sliders.Exists(s => s.IsActive);
+        if (tooltipController.enabled != sliding) {
+            return;
+        }
+
+        // re-enabling runs its OnEnable, which shows the selected row's tooltip again
+        tooltipController.enabled = !sliding;
+        if (sliding) {
+            tooltipController.Tooltip.gameObject.SetActive(true);
         }
     }
 
@@ -849,6 +864,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         nameBox.SetMessage(new MessageDescriptor(caption));
 
         var list = PlainOptionsList(flyout);
+        var flyoutGroup = flyout.GetComponent<CleverMenuItemGroup>();
         var members = new List<string>();
         foreach (var raw in Enum.GetValues(typeof(T))) {
             var value = (T)raw;
@@ -859,7 +875,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
                 RandomizerSettings.SetDirty();
                 state.MessageProvider = null;
                 state.SetMessage(new MessageDescriptor(label));
-                RestoreTooltip();
+                // a click closes the list on its own, a key or button press does not
+                flyoutGroup.OnSelectionManagerBackPressed();
             });
         }
 
@@ -870,13 +887,23 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
         showValue();
         rowRefresh.Add(showValue);
         ConfigureTooltip(clone.GetComponent<CleverMenuItemTooltip>(), tooltip);
-        FitBackground(flyout, list.Spacing, members.IndexOf(setting.Value.ToString()));
+        FitBackground(flyout, list.Spacing);
         FlyoutTooltips(flyout, setting, members, tooltip);
+        // opens on the value in hand, placed over the row's own value
+        flyout.GetComponent<CleverMenuItemSelectionManager>().EnterRow = delegate {
+            var at = Mathf.Max(0, members.IndexOf(setting.Value.ToString()));
+            var rows = flyout.GetComponent<CleverMenuItemSelectionManager>().MenuItems;
+            if (at < rows.Count) {
+                flyout.position += new Vector3(0f, clone.transform.position.y - rows[at].transform.position.y, 0f);
+            }
+
+            return at;
+        };
     }
 
     // Resizes and re-centers the language panel on the rows actually there, measured off their
     // transforms. The panel is rotated 270 degrees: its local x is the screen's vertical.
-    private void FitBackground(Transform flyout, float spacing, int selected) {
+    private void FitBackground(Transform flyout, float spacing) {
         var bg = flyout.FindChild("abilityMessageBackground");
         var mesh = bg == null ? null : bg.GetComponent<MeshFilter>();
         var rows = flyout.GetComponent<CleverMenuItemSelectionManager>().MenuItems;
@@ -886,10 +913,6 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
         var top = flyout.InverseTransformPoint(rows[0].transform.position).y;
         var bottom = flyout.InverseTransformPoint(rows[rows.Count - 1].transform.position).y;
-
-        // opens with the option set at build time over the row's own value
-        var anchor = -top + Mathf.Max(0, selected) * spacing;
-        flyout.localPosition = new Vector3(flyout.localPosition.x, anchor, flyout.localPosition.z);
 
         // the on-screen gap, which Spacing need not be
         var gap = rows.Count > 1 ? Mathf.Abs(top - bottom) / (rows.Count - 1) : spacing;
@@ -1136,6 +1159,7 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
             transform.FindChild("highlightFade/legend/xBoxLegend/navigate").GetComponent<MessageBox>()
         };
         group.AddItem(cleverMenuItem, slider);
+        sliders.Add(slider);
 
         // Set up slider properties
         slider.MinValue = min;
@@ -1197,11 +1221,6 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     private GameObject prompt;
 
-    // long enough to cover the manager's next FixedUpdate whichever order the two run in
-    private const int SettleFrames = 3;
-
-    private int settle;
-
     // when the save hold started, or -1 for no hold in hand
     private float saving = -1f;
 
@@ -1227,6 +1246,8 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
 
     // re-reads each value row's setting into the row
     private readonly List<Action> rowRefresh = new List<Action>();
+
+    private readonly List<CleverValueSlider> sliders = new List<CleverValueSlider>();
 
     // the tail of both lists from optionalFrom, kept while it is off them
     private int optionalFrom;
@@ -1302,6 +1323,49 @@ public abstract class CustomSettingsScreen : MonoBehaviour {
     private Transform scrollTrack;
 
     private Transform scrollThumb;
+}
+
+// On every options page. Escape is Cancel and Pause, and the menu manager reads Pause first, closing
+// the whole options screen; holding it while a page has the keys, and SettleFrames after (it sees a
+// press a frame late), lets Escape back out to the tabs.
+public class OptionsPageHold : MonoBehaviour {
+    public void Update() {
+        var nav = OptionsScreen.Instance != null ? OptionsScreen.Instance.Navigation : null;
+        // a hidden screen keeps its page's last state, and a hold left on would lock out the pause menu
+        if (nav != null && nav.IsVisible && !nav.IsActive) {
+            settle = SettleFrames;
+        } else if (settle > 0) {
+            settle--;
+        }
+
+        Apply();
+    }
+
+    // A pad's Pause is a button of its own, and still closes the menu from a page. Read per fixed
+    // step, as the input is: a frame can span two, and the press would be gone by Update.
+    public void FixedUpdate() {
+        var page = GetComponent<CustomSettingsScreen>();
+        if (settle > 0 && Game.UI.Menu != null && Core.Input.Start.OnPressed && !Core.Input.Start.Used &&
+                !Core.Input.Cancel.OnPressed && (page == null || !page.Busy)) {
+            Game.UI.Menu.DoMenuKeyPress();
+        }
+    }
+
+    public void OnDisable() {
+        settle = 0;
+        Apply();
+    }
+
+    public void Apply() {
+        if (Game.UI.Menu != null) {
+            Game.UI.Menu.IsSuspended = settle > 0;
+        }
+    }
+
+    // long enough to cover the manager's next FixedUpdate whichever order the two run in
+    private const int SettleFrames = 3;
+
+    private int settle;
 }
 
 // A key held to cancel or swap, tapped to bind; a key pressed mid-hold joins the chord along with it.

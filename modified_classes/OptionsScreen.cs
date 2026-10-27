@@ -17,12 +17,17 @@ public class OptionsScreen : MenuScreen, ISuspendable {
         root.StayLit = true;
         RemoveSubscreen(2);
         AddSubscreen<ControlsSettingsScreen>("CONTROL OPTIONS", 1);
-        AddSubscreen<AccessibilitySettingsScreen>("ACCESSIBILITY", 2);
+        AddSubscreen<AccessibilitySettingsScreen>("ACCESSIBILITY/QOL", 2);
         AddSubscreen<RandoUiScreen>("RANDO UI", 3);
         AddSubscreen<RandoOptionsScreen>("RANDO OPTIONS", 4);
         AddSubscreen<RandomizerBindsScreen>("RANDO BINDS", 5);
         AddSubscreen<KeybindsScreen>("KEYBINDS", 6);
         AddSubscreen<ControllerBindsScreen>("CONTROLLER BINDS", 7);
+        foreach (var page in root.Options) {
+            if (page.ItemGroup != null) {
+                page.ItemGroup.gameObject.AddComponent<OptionsPageHold>();
+            }
+        }
     }
 
     public void OnDestroy() {
@@ -95,7 +100,8 @@ public class OptionsScreen : MenuScreen, ISuspendable {
     public void AddSubscreen<TController>(string label, int index) where TController : MonoBehaviour {
         Navigation.AddMenuItem(label, index, Navigation.transform.FindChild("mainMenuUI").GetComponent<CleverMenuItemLayout>(), delegate { });
         var gameObject = Instantiate(transform.FindChild("*settings").gameObject);
-        gameObject.name = "*" + label.ToLower();
+        // a slash in a name reads as a path step to Find
+        gameObject.name = "*" + label.ToLower().Replace('/', ' ');
         gameObject.transform.SetParent(transform);
         Destroy(gameObject.GetComponent<SettingsScreen>());
         gameObject.AddComponent<TController>();

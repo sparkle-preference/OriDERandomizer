@@ -10,15 +10,15 @@ public class RandoUiScreen : CustomSettingsScreen {
         AddToggle(RandomizerSettings.Customization.AlwaysShowDoorHints, "Shows every unlocked Keysanity door hint on the map without hovering.");
         AddColor(RandomizerSettings.Customization.WarpTeleporterColor, "Color of Warp-created teleporters on the map.");
 
-        AddToggle(RandomizerSettings.Customization.KeyLockWarnings, "Toggle out-of-logic keystone door warnings (spending keystones out of logic can sometimes render seeds uncompletable).");
+        AddToggle(RandomizerSettings.Customization.KeyLockWarnings, "Toggle out-of-logic keystone door warnings.");
 
         // the two previews sit mid-screen, where the background is brightest and a translucent message background is easiest to judge
         AddColor(RandomizerSettings.Customization.PickupMessageBgColor, "Background color for normal pickup messages.", null, true);
         AddColor(RandomizerSettings.Customization.MwPickupMessageBgColor, "Background for pickup messages when the pickup belongs to another player.", "Multiworld Message Background", true);
 
         AddToggle(RandomizerSettings.Customization.RandomizedExpNames, "Replaces \"Experience\" with a random-chosen currency name.");
-        AddToggle(RandomizerSettings.Customization.CustomPickupNames, "Renames pickups with the rules in PickupNames.txt, next to the game.");
+        AddToggle(RandomizerSettings.Customization.CustomPickupNames, "Renames pickups using user-specified rules in PickupNames.txt.");
 
-        AddToggle(RandomizerSettings.Customization.DisableTempResourceRows, "Display temporary health and energy as though you actually have that much health/energy.");
+        AddToggle(RandomizerSettings.Customization.DisableTempResourceRows, "Toggle the auxillary rows for temporary health/energy.");
     }
 }
