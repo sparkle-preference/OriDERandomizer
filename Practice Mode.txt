@@ -6,6 +6,7 @@ What it is
 ===
 A segment is a save file plus rules: where the attempt ends, boxes that kill, hint or give items, an optional loadout, and variants of the same segment with different loadouts or boxes.
 Segments live in the practice folder next to the game (practice/ by default). One you make is a folder there; one someone gives you is a .bfrp file. Drop a .bfrp in the folder to play it.
+The game adds new starter segments to the folder when it starts. Delete or rename one and it won't come back.
 PRACTICE MODE on the title menu lists them. You race a clock, and a ghost of one of your earlier attempts if you have one.
 
 

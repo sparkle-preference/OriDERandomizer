@@ -75,7 +75,7 @@ public static class PracticeFolder {
         return path;
     }
 
-    private static bool Taken(string path) {
+    public static bool Taken(string path) {
         return IsReserved(Path.GetFileName(path)) || Directory.Exists(path) || File.Exists(path)
             || File.Exists(path + Extension) || Directory.Exists(path + Extension);
     }

@@ -321,6 +321,7 @@ public static class Randomizer {
         RandomizerUI.Initialize();
         RandomizerVersionLabel.Initialize();
         RandomizerUpdater.Initialize();
+        PracticeDefaults.Start();
         RandomizerBootstrap.Initialize();
         Inventory = RandomizerInventory.Initialize();
         Keysanity = new RandomizerKeysanity(Inventory);

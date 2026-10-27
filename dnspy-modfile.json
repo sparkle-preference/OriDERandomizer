@@ -351,6 +351,7 @@
 		"randomizer/JsonValue.cs",
 		"randomizer/NativeWebSocket.cs",
 		"randomizer/PracticeController.cs",
+		"randomizer/PracticeDefaults.cs",
 		"randomizer/PracticeEditor.cs",
 		"randomizer/PracticeFolder.cs",
 		"randomizer/PracticeHud.cs",
