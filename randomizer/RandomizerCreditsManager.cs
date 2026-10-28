@@ -30,8 +30,8 @@ Smashy  Terra  2Kil", 16));
 Athos213  AvengedRuler  Cereberon  Cleanfel  CosmicAngel
 CovertMuffin   DireKrow   Eph   Grimelios   iRobin
 JHobz   jmal116   madinsane   Mattermonkey    Nari
-RainbowPoogle    Roryrai    SeaAverage    spinesheath
-UncleRonny    Wingheart    xaviershay", 16));
+RainbowPoogle    Roryrai    SeaAverage    Specht98
+spinesheath   UncleRonny   Wingheart   xaviershay", 16));
 
         Credits.Add(new KeyValuePair<string, int>(
             @"ANCHORTOPPARAMS_20_10_2_Ori DE Randomizer inspired by:
