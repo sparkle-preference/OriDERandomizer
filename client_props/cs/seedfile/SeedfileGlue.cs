@@ -38,7 +38,6 @@ public static class SeedfileGlue {
         Randomizer.ForceMaps = false;
         Randomizer.SyncMode = 4;
         Randomizer.Message = "Good luck on your rando!";
-        Randomizer.ProgressiveMapStones = true;
         Randomizer.ForceTrees = false;
         Randomizer.CluesMode = false;
         Randomizer.Shards = false;
@@ -179,7 +178,7 @@ public static class SeedfileGlue {
     public static Dictionary<string, object> Flags() {
         return new Dictionary<string, object> {
             { "ZeroXP", Randomizer.ZeroXP }, { "IgnoreEnemyExp", Randomizer.IgnoreEnemyExp },
-            { "ProgressiveMapStones", Randomizer.ProgressiveMapStones }, { "Entrance", Randomizer.Entrance },
+            { "Entrance", Randomizer.Entrance },
             { "ForceMaps", Randomizer.ForceMaps }, { "ForceTrees", Randomizer.ForceTrees }, { "OHKO", Randomizer.OHKO },
             { "OpenMode", Randomizer.OpenMode }, { "OpenWorld", Randomizer.OpenWorld }, { "WorldTour", Randomizer.WorldTour },
             { "RelicCountOverride", Randomizer.RelicCountOverride }, { "RelicCount", Randomizer.RelicCount },

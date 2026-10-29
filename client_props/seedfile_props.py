@@ -185,7 +185,7 @@ def header_of(j, p=1):
 DEFAULT_SENSE = sorted(["EV", "RB17", "RB19", "RB21", "RB28", "SK", "TPForlorn", "TPHoru", "TPGinso", "TPValley", "TPSorrow"])
 # no frag counts: initialize() keeps the last seed's, and fragsEnabled guards them
 FLAG_DEFAULTS = {
-    "ZeroXP": False, "IgnoreEnemyExp": False, "ProgressiveMapStones": True, "Entrance": False, "ForceMaps": False,
+    "ZeroXP": False, "IgnoreEnemyExp": False, "Entrance": False, "ForceMaps": False,
     "ForceTrees": False, "OHKO": False, "OpenMode": True, "OpenWorld": False, "WorldTour": False,
     "RelicCountOverride": False, "RelicCount": 0, "fragsEnabled": False, "StompTriggers": False, "GoalModeFinish": False, "InLogicWarps": False, "TeleportersLockedByClues": False,
     "Keysanity": False, "EnhancedMode": False, "VanillaRespawns": False, "EnemyRando": False, "CluesMode": False,
@@ -194,7 +194,7 @@ FLAG_DEFAULTS = {
 }
 # what each variation the server writes sets in the client
 CLIENT_FLAGS = {
-    "0XP": {"ZeroXP": True, "IgnoreEnemyExp": True}, "NonProgressMapStones": {"ProgressiveMapStones": False},
+    "0XP": {"ZeroXP": True, "IgnoreEnemyExp": True},
     "Entrance": {"Entrance": True}, "ForceMaps": {"ForceMaps": True}, "ForceTrees": {"ForceTrees": True},
     "OHKO": {"OHKO": True}, "ClosedDungeons": {"OpenMode": False}, "OpenWorld": {"OpenWorld": True},
     "WorldTour": lambda f: {"WorldTour": True, "RelicCountOverride": True, "RelicCount": f["relic_count"]},
@@ -209,6 +209,8 @@ CLIENT_FLAGS = {
 GENERATOR_ONLY = {"Hard", "Starved", "BonusPickups", "DoubleSkills", "StrictMapstones", "TPStarved", "WallStarved",
                   "GrenadeStarved", "WarpsInsteadOfTPs", "WarpCount", "StartingHealth", "StartingEnergy",
                   "StartingSkills", "NoTPs", "Competitive", "BonusLite", "ZoneLockedTPs"}
+# retired variations: no new seed carries one, and nothing reads an old seed's
+RETIRED = {"NonProgressMapStones"}
 
 
 def expected_flags(f):
@@ -226,14 +228,10 @@ def expected_flags(f):
     return want
 
 
-def asks_for_nonprogressive_map_stones(f):
-    return "NonProgressMapStones" in f["variations"]
-
-
 class FlagLine(unittest.TestCase):
 
     def test_every_variation_is_read_by_the_client_or_generator_only(self):
-        names = {v.value for v in Variation}
+        names = {v.value for v in Variation} - RETIRED
         self.assertEqual(set(CLIENT_FLAGS) & GENERATOR_ONLY, set())
         self.assertEqual(names, set(CLIENT_FLAGS) | GENERATOR_ONLY)
 
@@ -250,17 +248,10 @@ class FlagLine(unittest.TestCase):
         bingo = parse_flags(header)
         got = B.call("SeedfileGlue.Flags")
         want = expected_flags(f)
-        if asks_for_nonprogressive_map_stones(f):
-            del want["ProgressiveMapStones"]
         self.assertEqual({k: got[k] for k in want}, want)
         self.assertEqual(got["SyncMode"] == 5, f["mode"] == MultiplayerGameType.MULTIWORLD)
         self.assertEqual(bingo, "Bingo" in f["variations"])
         self.assertEqual(got["SeedMeta"] != header, "Race" in f["variations"])
-
-    @unittest.expectedFailure
-    def test_nonprogressive_map_stones_turns_progressive_map_stones_off(self):
-        parse_flags("Standard,NonProgressMapStones|seed")
-        self.assertFalse(B.get("Randomizer.ProgressiveMapStones"))
 
 
 def meta_truth(f, text):

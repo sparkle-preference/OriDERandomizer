@@ -620,7 +620,7 @@ public class RandomizerLocationManager {
                     break;
             }
 
-            if (Type == LocationType.Map && Randomizer.ProgressiveMapStones) {
+            if (Type == LocationType.Map) {
                 ProgressiveMapLocations[RandomizerBonus.MapStoneProgression()].Give();
                 return;
             }

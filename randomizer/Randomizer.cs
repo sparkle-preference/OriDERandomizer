@@ -44,7 +44,6 @@ public static class Randomizer {
             PlayedGoodLuckOnce = false;
             MessageProvider = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
             RandomizerUI.Instance.ClearRecentNotifications();
-            ProgressiveMapStones = true;
             ForceTrees = false;
             CluesMode = false;
             Shards = false;
@@ -1780,8 +1779,6 @@ public static class Randomizer {
                 ZeroXP = true;
             } else if (flag == "nobonus") {
                 BonusActive = false;
-            } else if (flag == "nonprogressivemapstones") {
-                ProgressiveMapStones = false;
             } else if (flag == "forcetrees") {
                 ForceTrees = true;
             } else if (flag == "forcemaps") {
@@ -2167,7 +2164,6 @@ public static class Randomizer {
     public static bool Chaos;
     public static bool ChaosVerbose;
     public static float DamageModifier;
-    public static bool ProgressiveMapStones;
     public static bool ForceTrees;
     public static string SeedMeta;
 

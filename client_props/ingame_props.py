@@ -184,11 +184,6 @@ class ServedSeeds(unittest.TestCase):
         for flag in ("OHKO", "ForceTrees", "ZeroXP"):
             self.assertEqual(dbg("eval Randomizer.%s" % flag).lower(), "true", flag)
 
-    @unittest.expectedFailure
-    def test_non_progressive_map_stones_reach_the_client(self):
-        self.load_served(request(variations=["NonProgressMapStones"]))
-        self.assertEqual(dbg("eval Randomizer.ProgressiveMapStones").lower(), "false")
-
     def test_glitched_seeds_get_logic(self):
         self.load_served(request(paths=[p.value for p in presets["Glitched"]]))
         self.assertIsNotNone(wait_for_paths(), "the client found no logic paths for the seed")
