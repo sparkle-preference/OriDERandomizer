@@ -430,6 +430,42 @@ public static class RandomizerBonusSkill {
         }
     }
 
+    public static void LoseBonusSkill(int ID) {
+        if (ID == LegacyCreditWarp) {
+            ID = CreditWarp;
+        }
+
+        if (get(ID) == 0) {
+            return;
+        }
+
+        var gravitySwapped = ID == 102 && IsActive(ID);
+        set(ID, 0);
+        if (ActiveBonus == ID) {
+            ActiveBonus = 0;
+        }
+
+        // every other toggle reads IsActive as it goes; gravity swap flipped once and must flip back
+        if (gravitySwapped) {
+            if (Characters.Sein.Abilities.Carry.IsCarrying) {
+                Characters.Sein.PlatformBehaviour.Gravity.BaseSettings.GravityAngle += 180f;
+            } else {
+                Characters.Sein.PlatformBehaviour.Gravity.BaseSettings.GravityAngle = 0f;
+            }
+
+            Characters.Sein.PlatformBehaviour.LeftRightMovement.PlatformMovement.LocalSpeedX *= -1;
+        }
+
+        if (ID == 115) {
+            Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
+        }
+
+        UpdateDrain();
+        if (ID != 108 && ID != 115 && ID != CreditWarp) {
+            RandomizerSwitch.PickupMessage("@" + RandomizerItems.BonusSkillNames[ID] + " Lost!!@", 240);
+        }
+    }
+
     public static void Reset() {
         UpdateDrain();
     }

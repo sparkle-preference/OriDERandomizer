@@ -15,7 +15,12 @@ public static class RandomizerBonus {
         }
 
         if (RandomizerItems.BonusSkillNames.ContainsKey(ID)) {
-            RandomizerBonusSkill.FoundBonusSkill(ID);
+            if (flag) {
+                RandomizerBonusSkill.LoseBonusSkill(ID);
+            } else {
+                RandomizerBonusSkill.FoundBonusSkill(ID);
+            }
+
             return;
         }
 
@@ -46,7 +51,7 @@ public static class RandomizerBonus {
         if (ID >= 200 && ID < 260) {
             var abilityId = (ID - 200) % 30;
             var ability = abilities[abilityId];
-            if (ID < 230) {
+            if (ID < 230 && !flag) {
                 ability.Found();
             } else {
                 ability.Lost();
@@ -135,6 +140,11 @@ public static class RandomizerBonus {
 
                 break;
             case 8:
+                if (flag) {
+                    LoseUpgrade(ID);
+                    break;
+                }
+
                 RandomizerSwitch.PickupMessage("Explosion Power Upgrade");
                 if (!ExplosionPower()) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
@@ -156,6 +166,11 @@ public static class RandomizerBonus {
 
                 break;
             case 10:
+                if (flag) {
+                    LoseUpgrade(ID);
+                    break;
+                }
+
                 RandomizerSwitch.PickupMessage("Extra Air Dash");
                 if (!DoubleAirDash()) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
@@ -163,6 +178,11 @@ public static class RandomizerBonus {
 
                 break;
             case 11:
+                if (flag) {
+                    LoseUpgrade(ID);
+                    break;
+                }
+
                 RandomizerSwitch.PickupMessage("Charge Dash Efficiency");
                 if (!ChargeDashEfficiency()) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
@@ -351,6 +371,11 @@ public static class RandomizerBonus {
                 RandomizerSwitch.PickupMessage("Warps Enabled!");
                 break;
             case 36:
+                if (flag) {
+                    LoseUpgrade(ID);
+                    break;
+                }
+
                 RandomizerSwitch.PickupMessage("Underwater Skill Usage");
                 Characters.Sein.Inventory.SetRandomizerItem(36, 1);
                 break;
@@ -654,6 +679,14 @@ public static class RandomizerBonus {
 
     public static bool ForlornEscapeHint() {
         return Characters.Sein.Inventory.GetRandomizerItem(81) > 0;
+    }
+
+    // a one-of upgrade (held or not) taken back by its negative id
+    private static void LoseUpgrade(int ID) {
+        if (Characters.Sein.Inventory.GetRandomizerItem(ID) > 0) {
+            Characters.Sein.Inventory.SetRandomizerItem(ID, 0);
+            RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", (-ID).ToString()));
+        }
     }
 
     public static bool DoubleAirDash() {
