@@ -44,7 +44,6 @@ public class RandomizerLocationManager {
         NoLogicReason = "Logic hasn't been calculated yet";
         ShowNoLogicHint = false;
         DoorsInLogicMask = 0;
-        KeyTiers = null;
         warnedDoors.Clear();
 
         if (!HaveDownloadedAreas) {

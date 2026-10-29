@@ -298,10 +298,6 @@ def meta_now():
             "Rolls": B.call("SeedfileGlue.Rolls"), "KeyTiers": B.get("RandomizerLocationManager.KeyTiers")}
 
 
-def carries_key_tiers(text):
-    return "\n//KeyTiers=" in text
-
-
 class MetaLines(unittest.TestCase):
 
     @settings(max_examples=examples(60))
@@ -327,17 +323,7 @@ class MetaLines(unittest.TestCase):
         report, _ = load(text)
         self.assertIsNone(report["threw"])
         want, got = meta_truth(f, text), meta_now()
-        if carries_key_tiers(text):
-            event("masked: key tiers")
-            del want["KeyTiers"], got["KeyTiers"]
         self.assertEqual(got, want)
-
-    @unittest.expectedFailure
-    def test_key_tiers_survive_a_whole_load(self):
-        report, _ = load("Standard,Clues,mode=Multiworld|seed\n// SEED_FORMAT: 2\n//KeyTiers=2+4+10\n")
-        self.assertIsNone(report["threw"])
-        self.assertEqual(B.get("RandomizerLocationManager.KeyTiers"), [2, 4, 10])
-
 
 def value_of(code, value):
     return value if code in STRING_CODES else str(int(value))
@@ -466,9 +452,6 @@ class ServedSeeds(unittest.TestCase):
         f, text = self.corpus[data.draw(st.sampled_from(sorted(self.corpus)))]
         load(text)
         want, got = meta_truth(f, text), meta_now()
-        if carries_key_tiers(text):
-            event("masked: key tiers")
-            del want["KeyTiers"], got["KeyTiers"]
         self.assertEqual(got, want)
 
     @settings(max_examples=examples(20))

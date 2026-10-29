@@ -206,7 +206,6 @@ class ServedSeeds(unittest.TestCase):
         held = {k: v for k, v in table(placements(text.splitlines())).items() if v}
         self.assertEqual(held, {}, "locations still hold the last seed's items")
 
-    @unittest.expectedFailure
     def test_ap_key_tiers_survive_the_load(self):
         text, _ = self.load_served(request(apMode=True))
         self.assertIn("//KeyTiers=", text)

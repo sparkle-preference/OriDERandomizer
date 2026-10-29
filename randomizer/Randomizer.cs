@@ -124,6 +124,7 @@ public static class Randomizer {
             SpawnPosition = new Vector3(0, 0, 0);
             SpawnScene = null;
             ShouldHideGladesStart = false;
+            RandomizerLocationManager.KeyTiers = null;
 
             if (SeedFilePath == null || IsDefaultSeedFilePath(SeedFilePath)) {
                 SeedFilePath = DefaultSeedFilePath();

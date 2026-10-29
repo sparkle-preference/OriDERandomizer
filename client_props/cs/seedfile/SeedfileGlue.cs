@@ -88,6 +88,7 @@ public static class SeedfileGlue {
         Randomizer.ShareSaves = false;
         RandomizerEnemies.ResetOptions();
         RandomizerEnemies.Reset();
+        RandomizerLocationManager.KeyTiers = null;
         // keeps InitializeLogic to its resets: the areas parse runs on its own thread in game
         RandomizerLocationManager.HaveDownloadedAreas = false;
     }
