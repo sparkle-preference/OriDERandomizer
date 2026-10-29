@@ -189,12 +189,10 @@ class ServedSeeds(unittest.TestCase):
         self.load_served(request(variations=["NonProgressMapStones"]))
         self.assertEqual(dbg("eval Randomizer.ProgressiveMapStones").lower(), "false")
 
-    @unittest.expectedFailure
     def test_glitched_seeds_get_logic(self):
         self.load_served(request(paths=[p.value for p in presets["Glitched"]]))
         self.assertIsNotNone(wait_for_paths(), "the client found no logic paths for the seed")
 
-    @unittest.expectedFailure
     def test_custom_logic_seeds_get_logic(self):
         text, _ = self.load_served(request(paths=["casual-core", "casual-dboost", "standard-core", "dbash"]))
         self.assertTrue(any(f.startswith("Custom") for f in text.split("|")[0].split(",")), text.splitlines()[0])

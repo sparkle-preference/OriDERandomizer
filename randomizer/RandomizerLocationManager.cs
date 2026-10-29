@@ -109,12 +109,18 @@ public class RandomizerLocationManager {
             }
         }
 
+        // the generator walks an EnemyRando seed without lure paths: their enemies may be gone
+        if (paths != null && Array.Exists(flags, f => f.ToLower() == "enemyrando")) {
+            paths.RemoveWhere(p => p.EndsWith("-lure"));
+        }
+
         return paths;
     }
 
     [CanBeNull]
     private static HashSet<string> PathsForFlag(string flag) {
-        switch (flag.ToLower()) {
+        flag = flag.ToLower();
+        switch (flag) {
             case "casual":
                 return [
                     "casual-core",
@@ -161,6 +167,22 @@ public class RandomizerLocationManager {
                     "master-lure",
                     "master-abilities",
                     "gjump",
+                ];
+            case "glitched":
+                return [
+                    "casual-core",
+                    "casual-dboost",
+                    "standard-core",
+                    "standard-dboost",
+                    "standard-lure",
+                    "standard-abilities",
+                    "expert-core",
+                    "expert-dboost",
+                    "expert-lure",
+                    "expert-abilities",
+                    "dbash",
+                    "glitched",
+                    "timed-level",
                 ];
             default:
                 if (flag.StartsWith("custom")) {

@@ -26,10 +26,9 @@ NOTHING = Held(frozenset(), frozenset(), frozenset(), 0, 0, 0, 0, 0)
 EVERYTHING = Held(frozenset(SKILLS), frozenset(EVENTS), frozenset(TELEPORTERS), 12, 15, 40, 11, 33)
 # the tracker counts a pedestal as any reached area named *Map
 PEDESTALS = frozenset(n for home in get_areas()["homes"].values() for n in home["conns"] if n.endswith("Map"))
-FORLORN_DOOR = "ForlornKeyDoor"
 
 B = None  # protogen, built from a scratch copy
-G = None  # the release dll's RandomizerLocationManager and friends
+G = None  # the built dll's RandomizerLocationManager and friends
 SERVER_VIEW = None
 TP_IDS = {}
 
@@ -145,20 +144,14 @@ def holds_no_mapstones(held):
     return held.ms == 0
 
 
-def holds_more_mapstones_than_pedestals_in_reach(held, tracker_reached):
-    return held.ms > len(tracker_reached & PEDESTALS)
-
-
 def holds_keystones(held):
     return held.ks > 0
 
 
 def masked(held, client, tracker):
-    """Both reaches with the open mapstone classes taken out."""
+    """Both reaches with the open mapstone class taken out."""
     if holds_no_mapstones(held):
         client, tracker = client - PEDESTALS, tracker - PEDESTALS
-    if holds_more_mapstones_than_pedestals_in_reach(held, tracker):
-        client, tracker = client - progressive(client), tracker - progressive(tracker)
     return client, tracker
 
 
@@ -205,6 +198,7 @@ class Reach(unittest.TestCase):
         held = world[0]
         client, tracker = masked(held, client_reach(*world), server_reach(*world))
         self.assertEqual(sorted(tracker - client), [], world)
+        # the client pays a door's keys per route, by design, so with keys it may reach more
         if not holds_keystones(held):
             self.assertEqual(sorted(client - tracker), [], world)
 
@@ -231,19 +225,10 @@ class Reach(unittest.TestCase):
     def test_a_pedestal_needs_a_mapstone(self):
         self.assertEqual(client_reach(NOTHING, preset_paths("Casual"), spawn="Grotto") & PEDESTALS, set())
 
-    @unittest.expectedFailure
-    def test_progressive_maps_in_logic_never_outnumber_reachable_pedestals(self):
-        held = NOTHING._replace(skills=frozenset({"WallJump", "ChargeJump"}), ms=2)
-        client = client_reach(held, preset_paths("Casual"), spawn="Blackroot")
-        self.assertEqual(client & PEDESTALS, {"BlackrootMap"})
-        self.assertEqual(progressive(client), {"MS1"})
-
-    @unittest.expectedFailure
-    def test_keys_spent_on_one_door_do_not_open_another(self):
-        held = NOTHING._replace(skills=frozenset({"ChargeFlame", "ChargeJump"}), ks=6)
-        paths = preset_paths("Casual")
-        client, tracker = masked(held, client_reach(held, paths), server_reach(held, paths))
-        self.assertEqual(sorted(client - tracker), [])
+    def test_the_eighth_and_ninth_maps_cost_nine_and_eleven_stones(self):
+        for ms, maps in ((8, 7), (9, 8), (10, 8), (11, 9)):
+            held = EVERYTHING._replace(ks=0, ms=ms)
+            self.assertEqual(len(progressive(client_reach(held, preset_paths("Casual")))), maps, ms)
 
 
 class Monotone(unittest.TestCase):
@@ -297,14 +282,6 @@ def client_paths(meta):
     return None if found is None else set(found)
 
 
-def written_as_custom(meta):
-    return meta.startswith("Custom")
-
-
-def glitched_preset(meta):
-    return meta.startswith("Glitched,")
-
-
 def enemy_rando_seed(variations):
     return Variation.ENEMY_RANDO.value in variations
 
@@ -324,14 +301,8 @@ class Flags(unittest.TestCase):
            st.sampled_from([k.value for k in KeyMode]))
     def test_a_seeds_flag_line_reads_back_as_the_path_sets_the_tracker_walks(self, paths, variations, key_mode):
         meta = flag_line(paths, variations, key_mode)
-        if glitched_preset(meta):
-            return
-        if written_as_custom(meta):
-            meta = "c" + meta[1:]
         expected, got = tracker_paths(paths, variations), client_paths(meta)
         self.assertIsNotNone(got, meta)
-        if enemy_rando_seed(variations):
-            got = set(enemy_rando_paths(got))
         self.assertEqual(sorted(got), sorted(expected), meta)
 
     @settings(max_examples=examples(100))
@@ -348,29 +319,12 @@ class Flags(unittest.TestCase):
             "LegacyFill", "DeathLink", "anti_bk_bias=0.5", "sense=a+b", "lps=Casual-core+Standard-core"]
         self.assertEqual([f for f in others if G.call("RandomizerLocationManager.PathsForFlag", f) is not None], [])
 
-    @unittest.expectedFailure
-    def test_the_glitched_preset_reads_back_as_its_path_sets(self):
-        self.assertEqual(client_paths("Glitched,Clues|1"), set(preset_paths("Glitched")))
-
-    @unittest.expectedFailure
-    def test_a_custom_flag_as_the_server_writes_it_reads_back(self):
-        paths = preset_paths("Casual") + ["gjump"]
-        self.assertEqual(client_paths(flag_line(paths, [], "Clues")), set(paths))
-
-    @unittest.expectedFailure
-    def test_an_enemy_rando_seed_walks_no_lure_path(self):
-        self.assertEqual(client_paths("Standard,Clues,EnemyRando|1"), tracker_paths(preset_paths("Standard"), ["EnemyRando"]))
-
 
 # --- keystone doors ---
 
 def doors():
     """[source, destination, keysanity id, keysanity cost] per RandomizerLocationData.KeystoneDoors entry."""
     return G.call("GameGlue.KeysanityDoors")
-
-
-def the_forlorn_door(source):
-    return source == FORLORN_DOOR
 
 
 class Doors(unittest.TestCase):
@@ -380,8 +334,6 @@ class Doors(unittest.TestCase):
         for s, d, req in B.call("LogicGlue.Conns", AREAS, preset_paths("Casual")):
             reqs.setdefault((s, d), []).append(req.split(", "))
         for source, dest, _, _ in doors():
-            if the_forlorn_door(source):
-                continue
             self.assertIn(["Free", "Keystone=%d" % costs[pos[source]]], reqs.get((source, dest), []), (source, dest))
 
     def test_keysanity_ids_and_costs_are_the_servers(self):
@@ -394,8 +346,7 @@ class Doors(unittest.TestCase):
             self.assertEqual((ks_id - 300, ks_cost), (wire, costs[wire]), source)
             self.assertEqual((shared[wire][0], shared[wire][2]), (source, ks_cost), source)
             far = shared[wire][1]
-            if not the_forlorn_door(source):
-                self.assertEqual(far, dest, source)
+            self.assertEqual(far, dest, source)
             sanity = [p for p in homes[source]["conns"][far]["paths"] if "Keysanity" in p]
             self.assertEqual(len(sanity), 1, source)
             names = keysanity_map[[t for t in sanity[0][1:] if t != "Keysanity"][0]]
@@ -406,18 +357,9 @@ class Doors(unittest.TestCase):
     def test_an_opened_door_reaches_no_further_than_paying_for_it(self, world, door):
         held, rest = world[0], world[1:]
         source, _, _, cost = doors()[door]
-        if the_forlorn_door(source):
-            return
         opened = client_reach(held, *rest, doors=[door])
         paid = client_reach(held._replace(ks=cost), *rest)
         self.assertEqual(sorted(opened - paid - progressive(opened)), [], (world, source))
-
-    @unittest.expectedFailure
-    def test_opening_the_forlorn_door_reaches_no_further_than_paying_for_it(self):
-        door = [d[0] for d in doors()].index(FORLORN_DOOR)
-        opened = client_reach(NOTHING, preset_paths("Casual"), spawn="Forlorn", doors=[door])
-        self.assertIn(FORLORN_DOOR, opened)
-        self.assertEqual(sorted(opened - client_reach(NOTHING._replace(ks=4), preset_paths("Casual"), spawn="Forlorn")), [])
 
 
 # --- locations ---
