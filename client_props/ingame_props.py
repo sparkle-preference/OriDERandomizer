@@ -236,10 +236,9 @@ class Runtime(unittest.TestCase):
         url = unquote(dbg('call RandomizerSyncManager.RequestUrl("http://127.0.0.1/callback/dl%3A1%3BJr.")'))
         self.assertTrue(url.endswith("Jr."), url)
 
-    def test_mono_sends_a_question_mark_in_a_find_id_raw(self):
-        # so the server reads everything after it as the query: the http lane's id can't carry one
-        url = unquote(dbg('call RandomizerSyncManager.RequestUrl("http://127.0.0.1/found/1/MU/SH/Why?/SK/0?zone=Glades")'))
-        self.assertEqual(url, "http://127.0.0.1/found/1/MU/SH/Why?/SK/0?zone=Glades")
+    def test_mono_keeps_an_escaped_question_mark_in_a_find_id(self):
+        url = unquote(dbg('call RandomizerSyncManager.RequestUrl("http://127.0.0.1/found/1/MU/SH%2FWhy%3F%2FSK%2F0?zone=Glades")'))
+        self.assertIn("Why%3F", url)
 
 
 def wait_for_paths():

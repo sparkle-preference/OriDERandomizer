@@ -368,11 +368,6 @@ def cleaned(id):
     return id.replace("#", "").split("\\")[0]
 
 
-def url_syntax(id):
-    """An id holding what a url path reads as syntax: '?', '%', or a segment ending in a dot."""
-    return "?" in id or "%" in id or any(seg.endswith(".") for seg in id.split("/"))
-
-
 def http_find(url):
     """(coords, kind, id, zone) as the found route reads the request: <coords>/<kind>/<path:id>, zone from the query."""
     from urllib.parse import parse_qs, urlsplit
@@ -398,15 +393,11 @@ class FoundWire(unittest.TestCase):
     @given(reported)
     def test_both_lanes_report_the_same_find(self, pickup):
         kind, id = pickup
-        if url_syntax(cleaned(id)):
-            return  # test_an_http_find_keeps_a_question_mark_in_its_message
+        if ends_in_a_dot(cleaned(id)):
+            return
         want = (4242, kind, cleaned(id), "Glades")
         self.assertEqual(self.sent_find(True, kind, id), want)
         self.assertEqual(self.sent_find(False, kind, id), want)
-
-    @unittest.expectedFailure
-    def test_an_http_find_keeps_a_question_mark_in_its_message(self):
-        self.assertEqual(self.sent_find(False, "MU", "SH/Why?/SK/0"), (4242, "MU", "SH/Why?/SK/0", "Glades"))
 
 
 class DataAgreement(unittest.TestCase):
@@ -595,7 +586,7 @@ class MultiworldFields(unittest.TestCase):
 
 
 def ends_in_a_dot(text):
-    """A signal ending in '.': the bridge's .NET Uri trims that dot and the game's Mono keeps it (ingame_props checks Mono)."""
+    """Text ending a url in '.': the bridge's .NET Uri trims that dot and the game's Mono keeps it (ingame_props checks Mono)."""
     return text.endswith(".")
 
 
