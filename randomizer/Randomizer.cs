@@ -144,6 +144,8 @@ public static class Randomizer {
 
                 if (File.Exists(SeedFilePath)) {
                     var allLines = File.ReadAllLines(SeedFilePath).ToList();
+                    // a header that throws must not leave the last seed's items at their locations
+                    RandomizerLocationManager.ClearPickups();
 
                     lastLine = allLines[0];
                     lastLineNum = 0;
@@ -176,7 +178,6 @@ public static class Randomizer {
                     if (!PracticeEditor.Seed) {
                         SeedBoxes.Current = null;
                     }
-                    RandomizerLocationManager.ClearPickups();
                     var badLines = 0;
                     var firstBad = "";
                     foreach (var line in allLines.Skip(1)) {
@@ -1764,8 +1765,9 @@ public static class Randomizer {
                     syncMode = 4;
                 } else if (modeStr == "multiworld") {
                     syncMode = 5;
-                } else {
-                    syncMode = int.Parse(modeStr);
+                } else if (!int.TryParse(modeStr, out syncMode)) {
+                    // the client tells only multiworld apart; SplitShards and Bingo games sync like none
+                    syncMode = 4;
                 }
 
                 SyncMode = syncMode;

@@ -198,11 +198,10 @@ class ServedSeeds(unittest.TestCase):
         self.assertTrue(any(f.startswith("Custom") for f in text.split("|")[0].split(",")), text.splitlines()[0])
         self.assertIsNotNone(wait_for_paths(), "the client found no logic paths for the seed")
 
-    @unittest.expectedFailure
     def test_a_seed_that_fails_at_its_header_keeps_nothing_of_the_last_one(self):
         text, _ = self.load_served(request())
         first, rest = text.split("\n", 1)
-        load(write("split_shards.bfr", first.replace("|", ",mode=SplitShards|", 1) + "\n" + rest), expect_fail=True)
+        load(write("bad_header.bfr", first.replace("|", ",WorldTour=many|", 1) + "\n" + rest), expect_fail=True)
         held = {k: v for k, v in table(placements(text.splitlines())).items() if v}
         self.assertEqual(held, {}, "locations still hold the last seed's items")
 

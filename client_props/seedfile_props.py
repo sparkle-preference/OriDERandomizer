@@ -230,11 +230,6 @@ def asks_for_nonprogressive_map_stones(f):
     return "NonProgressMapStones" in f["variations"]
 
 
-def a_sync_mode_the_client_has_no_name_for(header):
-    modes = [x[5:].lower() for x in header.split("|")[0].split(",") if x.lower().startswith("mode=")]
-    return any(m not in ("shared", "none", "multiworld") and not cs_int(m) for m in modes)
-
-
 class FlagLine(unittest.TestCase):
 
     def test_every_variation_is_read_by_the_client_or_generator_only(self):
@@ -252,9 +247,6 @@ class FlagLine(unittest.TestCase):
             return
         header = text.split("\n")[0]
         note(header)
-        if a_sync_mode_the_client_has_no_name_for(header):
-            event("masked: a sync mode the client has no name for")
-            return
         bingo = parse_flags(header)
         got = B.call("SeedfileGlue.Flags")
         want = expected_flags(f)
@@ -269,11 +261,6 @@ class FlagLine(unittest.TestCase):
     def test_nonprogressive_map_stones_turns_progressive_map_stones_off(self):
         parse_flags("Standard,NonProgressMapStones|seed")
         self.assertFalse(B.get("Randomizer.ProgressiveMapStones"))
-
-    @unittest.expectedFailure
-    def test_every_sync_mode_the_server_writes_loads(self):
-        report, _ = load("Standard,Clues,mode=SplitShards|seed/2\n// SEED_FORMAT: 2\n")
-        self.assertIsNone(report["threw"])
 
 
 def meta_truth(f, text):
@@ -318,7 +305,7 @@ class MetaLines(unittest.TestCase):
     def test_served_meta_lines_survive_a_whole_load(self, j):
         note("SeedGenParams.from_json(%r)" % j)
         f, text = header_of(j)
-        if text is None or a_sync_mode_the_client_has_no_name_for(text.split("\n")[0]):
+        if text is None:
             return
         report, _ = load(text)
         self.assertIsNone(report["threw"])
@@ -376,8 +363,7 @@ def reads(text):
     return want
 
 
-REFUSED_HEADERS = ["Standard,Clues,mode=SplitShards|refused", "Standard,WorldTour=many|refused", "Standard,Frags/a/b|refused",
-                   "Standard,Clues"]
+REFUSED_HEADERS = ["Standard,WorldTour=many|refused", "Standard,Frags/a/b|refused", "Standard,Clues"]
 
 
 def a_header_the_client_refuses(text):
@@ -466,17 +452,11 @@ class ServedSeeds(unittest.TestCase):
         load(self.corpus[first][1])
         report, _ = load(text)
         if a_header_the_client_refuses(text):
-            event("masked: a header the client refuses")
+            self.assertIsNotNone(report["threw"])
+            self.assertEqual(B.call("SeedfileGlue.Pickups"), {}, "the last seed's items are still placed")
             return
         self.assertIsNone(report["threw"])
         self.assertEqual(read_back_problems(text), [])
-
-    @unittest.expectedFailure
-    def test_a_seed_that_fails_to_load_keeps_nothing_of_the_last_one(self):
-        load(self.corpus[("solo", 1)][1])
-        report, _ = load("Standard,mode=SplitShards|other\n-280256|EC|1|Glades\n")
-        self.assertIsNotNone(report["threw"])
-        self.assertEqual(B.call("SeedfileGlue.Pickups"), {})
 
     @deep_only
     @settings(max_examples=examples(8))

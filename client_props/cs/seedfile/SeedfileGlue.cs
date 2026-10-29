@@ -114,6 +114,7 @@ public static class SeedfileGlue {
         var lastLineNum = -1;
         try {
             var allLines = File.ReadAllLines(path).ToList();
+            RandomizerLocationManager.ClearPickups();
             lastLineNum = 0;
             var flagLine = allLines[0].Split('|');
             var s = flagLine[1];
@@ -130,7 +131,6 @@ public static class SeedfileGlue {
             }
 
             RandomizerBoxes.Seed.Clear();
-            RandomizerLocationManager.ClearPickups();
             foreach (var line in allLines.Skip(1)) {
                 lastLineNum += 1;
                 if (line.Trim().Length == 0) {
