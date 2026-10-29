@@ -200,6 +200,12 @@ class ServedSeeds(unittest.TestCase):
         held = {k: v for k, v in table(placements(text.splitlines())).items() if v}
         self.assertEqual(held, {}, "locations still hold the last seed's items")
 
+    def test_a_split_shards_header_loads_whole(self):
+        text, _ = self.load_served(request())
+        first, rest = text.split("\n", 1)
+        split = first.replace("|", ",mode=SplitShards|", 1) + "\n" + rest
+        self.check_world(split, load(write("split_shards.bfr", split)))
+
     def test_ap_key_tiers_survive_the_load(self):
         text, _ = self.load_served(request(apMode=True))
         self.assertIn("//KeyTiers=", text)
