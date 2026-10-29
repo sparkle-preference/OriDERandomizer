@@ -70,20 +70,8 @@ public class RandomizerBox {
         };
 
         box.ParseFlags(fields[1], line);
+        box.ParseShape(fields[2], line);
 
-        var corners = fields[2].Split(',');
-        if (corners.Length != 4) {
-            throw new FormatException("a box needs four corners, x1,y1,x2,y2");
-        }
-
-        var c = new float[4];
-        for (var i = 0; i < 4; i++) {
-            if (!float.TryParse(corners[i], NumberStyles.Number, CultureInfo.InvariantCulture, out c[i])) {
-                throw new FormatException("'" + corners[i] + "' is not a number");
-            }
-        }
-
-        box.Rect = Between(c[0], c[1], c[2], c[3]);
         if (fields.Length > 3 && !string.IsNullOrEmpty(fields[3])) {
             box.SetColor(fields[3], line);
         }
@@ -95,6 +83,14 @@ public class RandomizerBox {
             } else {
                 box.Item = new RandomizerAction(parts[0], parts[1]);
             }
+        }
+
+        if (box.Points != null && box.Unsafe) {
+            Randomizer.log($"Unsafe boxes must be rectangular; error is in line {line}");
+        }
+
+        if (box.ShapeType == BoxShapeType.Polygon && !box.Solid && (box.DamageAmount > 0f || box.Item != null)) {
+            Randomizer.log($"Boxes with \"loop\" shape must be solid or decorative; error is in line {line}");
         }
 
         return box;
@@ -266,6 +262,74 @@ public class RandomizerBox {
         }
     }
 
+    private void ParseShape(string shape, string line) {
+        var corners = shape.Split(',');
+
+        if (corners[0].Equals("convex",  StringComparison.InvariantCultureIgnoreCase)) {
+            ShapeType = BoxShapeType.ConvexHull;
+            ParsePoints(corners, line, true);
+            return;
+        }
+
+        if (corners[0].Equals("loop",  StringComparison.InvariantCultureIgnoreCase)) {
+            ShapeType = BoxShapeType.Polygon;
+            ParsePoints(corners, line, true);
+            return;
+        }
+
+        if (corners[0].Equals("previewLine", StringComparison.InvariantCultureIgnoreCase)) {
+            // ONLY for use in the practice editor. Do not use in seed files.
+            ShapeType = BoxShapeType.PreviewLine;
+            ParsePoints(corners, line, false);
+            return;
+        }
+
+        if (corners.Length != 4) {
+            throw new FormatException("a box needs four corners, x1,y1,x2,y2");
+        }
+
+        var c = new float[4];
+        for (var i = 0; i < 4; i++) {
+            if (!float.TryParse(corners[i], NumberStyles.Number, CultureInfo.InvariantCulture, out c[i])) {
+                throw new FormatException("'" + corners[i] + "' is not a number");
+            }
+        }
+
+        Rect = Between(c[0], c[1], c[2], c[3]);
+    }
+
+    private void ParsePoints(string[] values, string line, bool checkLength) {
+        var points = new List<Vector2>();
+
+        for (var i = 1; i < values.Length; i += 2) {
+            if (i == values.Length - 1) {
+                Randomizer.log($"Missing y-coordinate for last point in loop in line {line}");
+                break;
+            }
+
+            if (!float.TryParse(values[i], NumberStyles.Number, CultureInfo.InvariantCulture, out var x)) {
+                throw new FormatException($"'{values[i]}' is not a number");
+            }
+
+            if (!float.TryParse(values[i + 1], NumberStyles.Number, CultureInfo.InvariantCulture, out var y)) {
+                throw new FormatException($"'{values[i + 1]}' is not a number");
+            }
+
+            points.Add(new Vector2(x, y));
+        }
+
+        if (checkLength && points.Count < 3) {
+            throw new ArgumentException($"A loop needs at least three points. This box has only {points.Count} points.");
+        }
+
+        var bounds = new Bounds(points[0], Vector3.zero);
+        for (var i = 1; i < points.Count; ++i) {
+            bounds.Encapsulate(points[i]);
+        }
+
+        Rect = new Rect(bounds.min, bounds.size);
+        Points = points.ToArray();
+    }
 
     private static string Num(float value) {
         return Math.Round(value, 2).ToString(CultureInfo.InvariantCulture);
@@ -366,11 +430,17 @@ public class RandomizerBox {
         return IsLine(line) && fields.Length > 1 && Deleting(fields[1]) ? Tombstone : line;
     }
 
+    public bool Convex => ShapeType is BoxShapeType.Rectangle or BoxShapeType.ConvexHull;
+
     // Keep the original parsed line to be able to save it again.
     // Properties must only be modified during parsing for that reason.
     public string Line { get; private set; } = "";
 
     public Rect Rect { get; private set; }
+
+    public Vector2[]? Points { get; private set; }
+
+    public BoxShapeType ShapeType { get; private set; }
 
     public Color32 Color { get; private set; } = new(128, 128, 128, 64);
 
@@ -421,6 +491,13 @@ public class RandomizerBox {
     public enum BoxDamageTarget {
         Player,
         All,
+    }
+
+    public enum BoxShapeType {
+        Rectangle,
+        ConvexHull,
+        Polygon,
+        PreviewLine, // ONLY for use in the practice editor. Do not use in seed files.
     }
 }
 

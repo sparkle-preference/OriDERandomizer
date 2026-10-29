@@ -2,6 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using Clipper2Lib;
 using Game;
 using UnityEngine;
 
@@ -9,6 +12,10 @@ public class RandomizerBoxPrefab : MonoBehaviour {
     private void OnDestroy() {
         if (meshFilter.sharedMesh != null) {
             Destroy(meshFilter.sharedMesh);
+        }
+
+        if (meshCollider != null) {
+            Destroy(meshCollider.sharedMesh);
         }
     }
 
@@ -31,18 +38,44 @@ public class RandomizerBoxPrefab : MonoBehaviour {
 
         transform.position = rect.center;
 
-        collider.isTrigger = !box.Solid;
-        collider.size = new Vector3(rect.width, rect.height, 100f);
+        var fillColor = (Color)box.Color;
+        var edgeColor = fillColor;
+        edgeColor.a = Math.Min(edgeColor.a + 0.45f, 1f);
+
+        Mesh? rendererMesh = null;
+        Mesh? colliderMesh = null;
+        if (box.Points != null) {
+            var points = box.Points.Select(p => p - rect.center).ToList();
+            if (box.Convex) {
+                points = QuickHull.Compute(points);
+            }
+
+            var isLine = box.ShapeType == RandomizerBox.BoxShapeType.PreviewLine;
+            CreateMeshes(isLine, points, box.ParallaxDepth, fillColor, edgeColor, out rendererMesh, out colliderMesh);
+        }
 
         if (box.Invisible) {
             renderer.enabled = false;
+            if (rendererMesh != null) {
+                Destroy(rendererMesh);
+            }
         } else {
-            var fillColor = (Color)box.Color;
-            var edgeColor = fillColor;
-            edgeColor.a = Math.Min(edgeColor.a + 0.45f, 1f);
-            meshFilter.sharedMesh = CreateMesh(fillColor, edgeColor, box.ParallaxDepth);
+            meshFilter.sharedMesh = rendererMesh ?? CreateRectangleMesh(fillColor, edgeColor, box.ParallaxDepth);
             renderer.sharedMaterial = GetMaterial(box.RenderDepth);
             UberShaderRenderQueue.SetRenderQueueExplicit(gameObject, box.RenderDepth);
+        }
+
+        if (colliderMesh == null) {
+            var collider = gameObject.AddComponent<BoxCollider>();
+            collider.isTrigger = !box.Solid;
+            collider.size = new Vector3(rect.width, rect.height, ColliderDepth);
+        } else if (box.Solid || box.Convex) {
+            meshCollider = gameObject.AddComponent<MeshCollider>();
+            meshCollider.convex = box.Convex;
+            meshCollider.sharedMesh = colliderMesh;
+            meshCollider.isTrigger = !box.Solid;
+        } else {
+            Destroy(colliderMesh);
         }
 
         if (box.DamageAmount > 0f) {
@@ -56,9 +89,16 @@ public class RandomizerBoxPrefab : MonoBehaviour {
                 };
                 ddGo.transform.SetParent(transform, false);
 
-                var ddCollider = ddGo.AddComponent<BoxCollider>();
-                ddCollider.isTrigger = true;
-                ddCollider.size = new Vector3(rect.width, rect.height, 100f);
+                if (colliderMesh == null) {
+                    var ddCollider = ddGo.AddComponent<BoxCollider>();
+                    ddCollider.isTrigger = !box.Solid;
+                    ddCollider.size = new Vector3(rect.width, rect.height, ColliderDepth);
+                } else {
+                    var ddCollider = ddGo.AddComponent<MeshCollider>();
+                    ddCollider.convex = box.Convex;
+                    ddCollider.sharedMesh = colliderMesh;
+                    ddCollider.isTrigger = !box.Solid;
+                }
             }
 
             var dd = ddGo.AddComponent<DamageDealer>();
@@ -76,6 +116,135 @@ public class RandomizerBoxPrefab : MonoBehaviour {
 
             zoneGo.AddComponent<NoSoulFlameZone>();
         }
+    }
+
+    private void CreateMeshes(bool isLine, List<Vector2> points, float z, Color fillColor, Color edgeColor,
+        [NotNullWhen(true)] out Mesh? visualMesh, [NotNullWhen(true)] out Mesh? colliderMesh) {
+        const float scale = 1024f;
+        const float scaleDown = 1f / scale;
+
+        var path = new long[points.Count * 2];
+        for (var i = 0; i < points.Count; i++) {
+            path[2 * i] = (long)(points[i].x * scale);
+            path[2 * i + 1] = (long)(points[i].y * scale);
+        }
+
+        var outerPaths = new Paths64([Clipper.MakePath(path)]);
+
+        Paths64 edgeTriangulation;
+        Paths64 innerTriangulation;
+
+        if (isLine) {
+            outerPaths = Clipper.InflatePaths(outerPaths, 0.2 * scale, JoinType.Round, EndType.Round);
+            Clipper.Triangulate(outerPaths, out edgeTriangulation);
+            innerTriangulation = new();
+        } else {
+            outerPaths = Clipper.Union(outerPaths, FillRule.EvenOdd);
+            var innerPaths = Clipper.InflatePaths(outerPaths, -EdgeWidth * scale, JoinType.Miter, EndType.Polygon);
+            var edge = Clipper.Difference(outerPaths, innerPaths, FillRule.EvenOdd);
+
+            var edgeResult = Clipper.Triangulate(edge, out edgeTriangulation);
+            if (edgeResult != TriangulateResult.success) {
+                Randomizer.log($"Edge triangulation of failed, box will have no edge");
+                if (Clipper.Triangulate(outerPaths, out innerTriangulation) != TriangulateResult.success) {
+                    Randomizer.log("Outer path also failed to triangulate, falling back to rectangle");
+                    visualMesh = colliderMesh = null;
+                    return;
+                }
+            } else {
+                Clipper.Triangulate(innerPaths, out innerTriangulation);
+            }
+        }
+
+        visualMesh = CreateVisualMesh(edgeTriangulation, innerTriangulation, scaleDown, z, fillColor, edgeColor);
+        colliderMesh = CreateColliderMesh(outerPaths, scaleDown);
+    }
+
+    private Mesh CreateVisualMesh(Paths64 edgeTriangulation, Paths64 innerTriangulation, float scaleDown, float z, Color fillColor, Color edgeColor) {
+        var edgeCount = edgeTriangulation.Count * 3;
+        var innerCount = innerTriangulation.Count * 3;
+        var vertices = new Vector3[edgeCount + innerCount];
+
+        for (var i = 0; i < edgeTriangulation.Count; i++) {
+            var tri = edgeTriangulation[i];
+            vertices[i * 3] = new Vector3(tri[0].X * scaleDown, tri[0].Y * scaleDown, z);
+            vertices[i * 3 + 1] = new Vector3(tri[1].X * scaleDown, tri[1].Y * scaleDown, z);
+            vertices[i * 3 + 2] = new Vector3(tri[2].X * scaleDown, tri[2].Y * scaleDown, z);
+        }
+
+        for (var i = 0; i < innerTriangulation.Count; i++) {
+            var tri = innerTriangulation[i];
+            vertices[edgeCount + i * 3] = new Vector3(tri[0].X * scaleDown, tri[0].Y * scaleDown, z);
+            vertices[edgeCount + i * 3 + 1] = new Vector3(tri[1].X * scaleDown, tri[1].Y * scaleDown, z);
+            vertices[edgeCount + i * 3 + 2] = new Vector3(tri[2].X * scaleDown, tri[2].Y * scaleDown, z);
+        }
+
+        var triangles = new int[vertices.Length];
+        for (var i = 0; i < triangles.Length; i++) {
+            triangles[i] = i;
+        }
+
+        var colors = new Color[vertices.Length];
+        for (var i = 0; i < edgeCount; i++) {
+            colors[i] = edgeColor;
+        }
+
+        for (var i = 0; i < innerCount; i++) {
+            colors[edgeCount + i] = fillColor;
+        }
+
+        var mesh = new Mesh {
+            name = "Box Mesh",
+            vertices = vertices,
+            triangles = triangles,
+            colors = colors,
+        };
+        mesh.RecalculateBounds();
+        mesh.Optimize();
+        return mesh;
+    }
+
+    private Mesh CreateColliderMesh(Paths64 paths, float scaleDown) {
+        var z = ColliderDepth * 0.5f;
+
+        var vertices = new List<Vector3>();
+        var tris = new List<int>();
+
+        foreach (var path in paths) {
+            var firstIdx = vertices.Count;
+
+            foreach (var p in path) {
+                var x = p.X * scaleDown;
+                var y = p.Y * scaleDown;
+                vertices.Add(new Vector3(x, y, z));
+                vertices.Add(new Vector3(x, y, -z));
+            }
+
+            for (var i = firstIdx; i < vertices.Count - 2; i += 2) {
+                tris.Add(i);
+                tris.Add(i + 1);
+                tris.Add(i + 2);
+                tris.Add(i + 1);
+                tris.Add(i + 3);
+                tris.Add(i + 2);
+            }
+
+            tris.Add(vertices.Count - 2);
+            tris.Add(vertices.Count - 1);
+            tris.Add(firstIdx);
+            tris.Add(vertices.Count - 1);
+            tris.Add(firstIdx + 1);
+            tris.Add(firstIdx);
+        }
+
+        var mesh = new Mesh {
+            name = "Box Collider Mesh",
+            vertices = vertices.ToArray(),
+            triangles = tris.ToArray(),
+        };
+        mesh.RecalculateBounds();
+        mesh.Optimize();
+        return mesh;
     }
 
     private void OnTriggerStay(Collider other) {
@@ -98,7 +267,7 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         OnTriggerStay(other.collider);
     }
 
-    private Mesh CreateMesh(Color color, Color edgeColor, float zPos) {
+    private Mesh CreateRectangleMesh(Color color, Color edgeColor, float zPos) {
         var mesh = new Mesh();
         var size = Box.Rect.size;
         var xMin = -size.x * 0.5f;
@@ -155,7 +324,6 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         var rb = go.AddComponent<RandomizerBoxPrefab>();
         rb.meshFilter = go.AddComponent<MeshFilter>();
         rb.renderer = go.AddComponent<MeshRenderer>();
-        rb.collider = go.AddComponent<BoxCollider>();
 
         return rb;
     }
@@ -184,6 +352,8 @@ public class RandomizerBoxPrefab : MonoBehaviour {
 
     public const float EdgeWidth = 0.25f;
 
+    public const float ColliderDepth = 100f;
+
     private static Transform BoxParent => field ??= new GameObject("RandomizerBoxes").transform;
 
     private static RandomizerBoxPrefab PrefabInstance => field ??= CreatePrefab();
@@ -198,5 +368,5 @@ public class RandomizerBoxPrefab : MonoBehaviour {
 
     public MeshRenderer renderer = null!;
 
-    public BoxCollider collider = null!;
+    public MeshCollider? meshCollider;
 }
