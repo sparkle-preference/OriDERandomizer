@@ -534,10 +534,6 @@ def enemy_seed_key(header):
     return B.call("SeedfileGlue.EnemySeedKey")
 
 
-def a_header_numbered_by_world(headers):
-    return any(h.split("|")[1].endswith("/%d" % p) for p, h in enumerate(headers, 1))
-
-
 class EnemySeedKey(unittest.TestCase):
 
     @settings(max_examples=examples(30))
@@ -549,15 +545,11 @@ class EnemySeedKey(unittest.TestCase):
         texts = served(j, generate=False)[1]
         headers = [texts[p].split("\n")[0] for p in sorted(texts)]
         note(headers)
-        if a_header_numbered_by_world(headers):
-            event("masked: a header numbered by world")
-            return
         self.assertEqual(len({enemy_seed_key(h) for h in headers}), 1)
 
-    @unittest.expectedFailure
-    def test_coop_partners_agree_on_the_enemy_seed_key(self):
-        one = enemy_seed_key("Standard,Clues,EnemyRando,share=Skills|seed/1")
-        self.assertEqual(enemy_seed_key("Standard,Clues,EnemyRando,share=Skills|seed/2"), one)
+    def test_multiworld_worlds_draw_apart(self):
+        keys = {enemy_seed_key("Standard,Clues,EnemyRando,mode=Multiworld|seed/%d" % p) for p in (1, 2)}
+        self.assertEqual(len(keys), 2)
 
 
 def a_numeric_code_with_a_non_numeric_id(line):

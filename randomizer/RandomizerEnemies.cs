@@ -649,10 +649,17 @@ public static class RandomizerEnemies {
         return pairs;
     }
 
-    // the seed's name, not its header, which differs between co-op partners
+    // the seed's name, less the world number a co-op header ends in: clones share draws, multiworld worlds don't
     private static string SeedKey() {
         var meta = Randomizer.SeedMeta ?? "";
-        return meta.Substring(meta.LastIndexOf('|') + 1);
+        var key = meta.Substring(meta.LastIndexOf('|') + 1);
+        var slash = key.LastIndexOf('/');
+        int world;
+        if (Randomizer.SyncMode != 5 && slash >= 0 && int.TryParse(key.Substring(slash + 1), out world)) {
+            key = key.Substring(0, slash);
+        }
+
+        return key;
     }
 
     private static int Hash(string text) {
