@@ -186,7 +186,8 @@ public class DebugWidget : MonoBehaviour {
         public LogType type;
     }
 
-    public class OutputEntry(string text, int indent) {
+    // TODO: switch "abstract" to "closed" once it's supported by dnSpy
+    public abstract class OutputEntry(string text, int indent) {
         public string Text = text;
         public int Indent = indent;
     };

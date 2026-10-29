@@ -110,7 +110,7 @@ Available flags:
     amount
         The amount of damage dealt (may contain decimal places).
         Note that this is the raw amount, before the regular processing by the game.
-        For example, damage to Ori is always rounded up to the nearest multiple of 4.
+        For example, damage to Ori is always rounded up to the nearest multiple of 4 (= one cell).
 
     type (default: "Spikes")
         The type of damage dealt, can be any type defined by the game.
@@ -167,6 +167,9 @@ Available flags:
 
     Note: this value is separate from renderDepth, so you *can* have an always visible box that moves as if it was in the background
     or a box that gets obscured by most background objects, yet moves as if it was in front of everything.
+
+- "tombstone": Treats this box as non-existent/deleted, regardless of other flags.
+    Used to delete boxes without changing the box numbers of following boxes.
 
 
 
