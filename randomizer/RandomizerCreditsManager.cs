@@ -10,7 +10,7 @@ public static class RandomizerCreditsManager {
             @"ANCHORTOPPARAMS_20_9_2_Ori DE Randomizer (" + Randomizer.DisplayVersion + @")
 Developed by:
 Torin  *Eiko*  @Vulajin@
-$d265f27$  #Kirefel# :AsmPrgmC3" + (BingoController.Active ? "\n\nBingo by *Eiko*" : ""), 14));
+$d265f27$  #Kirefel#  <style color=4E79FE>:AsmPrgmC3</>" + (BingoController.Active ? "\n\nBingo by *Eiko*" : ""), 14));
 
         Credits.Add(new KeyValuePair<string, int>(
             @"ANCHORTOPPARAMS_20_7_2_Major contributions by:
