@@ -632,7 +632,7 @@ public class ScenesManager : SaveSerialize {
         }
     }
 
-    private void AdditivelyLoadScene(RuntimeSceneMetaData sceneMetaData, bool async, bool keepPreloaded = false) {
+    public void AdditivelyLoadScene(RuntimeSceneMetaData sceneMetaData, bool async, bool keepPreloaded = false) {
         SceneManagerScene fromCurrentScenes = this.GetFromCurrentScenes(sceneMetaData);
         if (fromCurrentScenes != null) {
             if (fromCurrentScenes.CurrentState == SceneManagerScene.State.LoadingCancelled) {
@@ -835,9 +835,14 @@ public class ScenesManager : SaveSerialize {
             WorldMapUI.OnFinishedLoading(sceneRoot);
             return;
         }
+
         RuntimeSceneMetaData runtimeSceneMetaData = this.FindRuntimeSceneMetaData(sceneRoot.MetaData.SceneMoonGuid);
         SceneManagerScene sceneManagerScene = this.GetFromCurrentScenes(runtimeSceneMetaData);
-        SceneMetaData metaData = sceneRoot.MetaData;
+
+        if (sceneManagerScene == null || sceneManagerScene.SceneRoot != sceneRoot) {
+                Events.Scheduler.OnSceneLoaded.Call(sceneRoot);
+        }
+
         if (sceneManagerScene == null) {
             sceneManagerScene = new SceneManagerScene(sceneRoot, runtimeSceneMetaData);
             this.UpdatePosition();

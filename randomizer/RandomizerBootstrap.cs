@@ -7,14 +7,13 @@ using Object = UnityEngine.Object;
 
 public class RandomizerBootstrap {
     public static void Initialize() {
-        Events.Scheduler.OnSceneRootPreEnabled.Add(BootstrapScenePreEnabled);
+        Events.Scheduler.OnSceneLoaded.Add(BootstrapSceneLoaded);
         Events.Scheduler.OnSceneRootEnabledAfterSerialize.Add(BootstrapSceneAfterSerialize);
+        Events.Scheduler.OnGameStartLate.Add(PreloadScenes);
     }
 
     public static void FixedUpdate() {
-        Forget(s_bootstrappedScenesPreEnabled);
         Forget(s_bootstrappedScenesAfterSerialize);
-        Forget(s_textBootstrappedScenes);
     }
 
     // a scene that left memory is patched again when it loads
@@ -28,20 +27,21 @@ public class RandomizerBootstrap {
         }
     }
 
-    private static void BootstrapScenePreEnabled(SceneRoot sceneRoot) {
-        if (s_bootstrappedScenesPreEnabled.Contains(sceneRoot.name)) {
-            return;
+    private static void PreloadScenes() {
+        foreach (var scene in Scenes.Manager.AllScenes) {
+            if (scene.Scene == "sunkenGladesIntroSplitB") {
+                // Load glades scene to steal TA animation
+                Scenes.Manager.AdditivelyLoadScene(scene, true);
+            }
         }
-        s_bootstrappedScenesPreEnabled.Add(sceneRoot.name);
+    }
 
-        if (s_bootstrapPreEnabled.ContainsKey(sceneRoot.name)) {
-            s_bootstrapPreEnabled[sceneRoot.name].Invoke(sceneRoot);
+    private static void BootstrapSceneLoaded(SceneRoot sceneRoot) {
+        if (s_bootstrapLoaded.ContainsKey(sceneRoot.name)) {
+            s_bootstrapLoaded[sceneRoot.name].Invoke(sceneRoot);
         }
 
-        // once per load: a re-enable from memory would hang another textAction under the sequence
-        if (RandomizerEnhancedMode.TextBootstrapScenes.ContainsKey(sceneRoot.name) && (Randomizer.EnhancedMode || Randomizer.EnhancedSeinInSeed)
-            && !s_textBootstrappedScenes.Contains(sceneRoot.name)) {
-            s_textBootstrappedScenes.Add(sceneRoot.name);
+        if (RandomizerEnhancedMode.TextBootstrapScenes.ContainsKey(sceneRoot.name) && (Randomizer.EnhancedMode || Randomizer.EnhancedSeinInSeed)) {
             RandomizerEnhancedMode.TextBootstrapScenes[sceneRoot.name].Invoke(sceneRoot);
         }
 
@@ -441,6 +441,49 @@ public class RandomizerBootstrap {
     private static void BootstrapSunkenGladesSpiritWell(SceneRoot sceneRoot) {
         // forcibly deactivate the collision trigger for the spirit well intro cutscene
         sceneRoot.transform.FindChild("*activatedBySpiritFlame/activated/*spiritWellHintSetup/objectiveSetupTrigger").GetComponent<PlayerCollisionTrigger>().Active = false;
+
+        if (!TeleporterController.TeleportAnywhereEffect) {
+            var teleporterEffect = Object.Instantiate(sceneRoot.transform.Find("savePedestal/teleporterEffect").GetComponent<TimelineSequence>());
+            teleporterEffect.name = "teleportAnywhereEffect";
+            var effectTf = teleporterEffect.transform;
+            effectTf.Find("midFadeIn").localPosition -= new Vector3(0f, 2.1885f, 0f);
+            effectTf.Find("midFadeIn/midTimeline").localScale *= 0.7f;
+            DestroyChild(effectTf, "teleportStartEffect");
+            DestroyChild(effectTf, "midFadeIn/midTimeline/teleportLoopEffect/sharedCircleGlowA", true);
+            DestroyChild(effectTf, "midFadeIn/midTimeline/teleportLoopEffect/sharedCircleGlowA");
+            DestroyChild(effectTf, "midFadeIn/midTimeline/teleportLoopEffect/sharedTeleporterBeamB", true);
+            DestroyChild(effectTf, "midFadeIn/midTimeline/teleportLoopEffect/sharedTeleporterBeamB");
+            DestroyChild(effectTf, "midFadeIn/midTimeline/teleportLoopEffect/sharedTeleporterWaveBs");
+
+            // copy materials as the originals get unloaded with the scene
+            var materialCopies = new Dictionary<Material, Material>();
+            foreach (var renderer in teleporterEffect.GetComponentsInChildren<Renderer>()) {
+                var mats = renderer.sharedMaterials;
+                for (var i = 0; i < mats.Length; i++) {
+                    var mat = mats[i];
+                    if (!materialCopies.TryGetValue(mat, out var matCopy)) {
+                        matCopy = materialCopies[mat] = Object.Instantiate(mat);
+                    }
+
+                    mats[i] = matCopy;
+                }
+
+                renderer.sharedMaterials = mats;
+            }
+
+            TeleporterController.TeleportAnywhereEffect = teleporterEffect;
+        }
+    }
+
+    private static void DestroyChild(Transform tf, string childName, bool immediate = false) {
+        var childTf = tf.Find(childName);
+        if (childTf) {
+            if (immediate) {
+                Object.DestroyImmediate(childTf.gameObject);
+            } else {
+                Object.Destroy(childTf.gameObject);
+            }
+        }
     }
 
     private static void BootstrapMountHoruLaserPuzzle(SceneRoot sceneRoot) {
@@ -1184,7 +1227,7 @@ public class RandomizerBootstrap {
         };
     }
 
-    private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>> {
+    private static Dictionary<string, Action<SceneRoot>> s_bootstrapLoaded = new Dictionary<string, Action<SceneRoot>> {
         { "moonGrottoRopeBridge", BootstrapMoonGrottoBridge },
         { "mountHoruHubMid", BootstrapMountHoruHub },
         { "mountHoruLaserPuzzle", BootstrapMountHoruLaserPuzzle },
@@ -1217,15 +1260,12 @@ public class RandomizerBootstrap {
         { "mistyWoodsGlideMazeB", BootstrapMistySpikeMazeB },
     };
 
-    private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();
-    private static List<string> s_textBootstrappedScenes = new List<string>();
-
-    // Generally prefer PreEnabled over AfterSerialize. These functions are run after *every* 
+    // Generally prefer Loaded over AfterSerialize. These functions are run after *every*
     // serialisation of the scene, so after every death and not just the initial load. So don't
     // e.g. unconditionally add things to the scene in these functions, as they will repeat. 
     // But if you need to do things that alter or depend on serialised parts of the scene, 
     // this is the place. Things altered here may be serialised (saved) by the scene. If you 
-    // want to make new serialised scene elements you'll need to use PreEnabled.
+    // want to make new serialised scene elements you'll need to use Loaded.
     private static Dictionary<string, Action<SceneRoot>> s_bootstrapAfterSerialize = new Dictionary<string, Action<SceneRoot>> {
         { "moonGrottoEnemyPuzzle", BootstrapMoonGrottoMiniboss },
         { "sunkenGladesOriRoom", BootstrapSeinRoomWall },

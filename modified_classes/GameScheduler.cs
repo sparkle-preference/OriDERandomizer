@@ -1,5 +1,7 @@
 ﻿public class GameScheduler
 {
+	public UberDelegate<SceneRoot> OnSceneLoaded = new UberDelegate<SceneRoot>();
+
 	public UberDelegate<SceneRoot> OnSceneRootLoadEarlyStart = new UberDelegate<SceneRoot>();
 
 	public UberDelegate<SceneRoot> OnSceneStartLateBeforeSerialize = new UberDelegate<SceneRoot>();

@@ -85,10 +85,10 @@ public class DebugWidget : MonoBehaviour {
 
     public void TargetObject(GameObject obj, bool verbose) {
         hidden = false;
-        var components = obj.GetComponents<MonoBehaviour>();
+        var components = obj.GetComponents<Component>();
         var list = new List<OutputEntry> { new TextEntry(obj.name, 0) };
-        foreach (var monoBehaviour in components) {
-            RenderObject(list, monoBehaviour, verbose);
+        foreach (var component in components) {
+            RenderObject(list, component, verbose);
         }
 
         output = list;
@@ -96,34 +96,74 @@ public class DebugWidget : MonoBehaviour {
     }
 
     private static void RenderObject(List<OutputEntry> list, object obj, bool verbose) {
-        list.Add(new TextEntry("  " + obj.GetType().Name + (obj is MonoBehaviour mb ? " (" + mb.GetInstanceID() + ")" : null), 1));
+        if (obj == null) {
+            list.Add(new TextEntry("  (null)", 1));
+            return;
+        }
+
+        list.Add(new TextEntry("  " + obj.GetType().Name + ObjectInfo(obj), 1));
         if (!verbose) {
             return;
+        }
+
+        switch (obj) {
+            case Transform tf:
+                list.Add(new TextEntry("  - Position: " + tf.localPosition, 1));
+                list.Add(new TextEntry("  - Rotation: " + tf.localEulerAngles, 1));
+                list.Add(new TextEntry("  - Scale: " + tf.localScale, 1));
+                break;
+            case MeshFilter mf:
+                list.Add(new TextEntry("  - Mesh: " + mf.sharedMesh, 1));
+                list.Add(new TextEntry("    - Vertices: " + mf.sharedMesh.vertexCount, 2));
+                list.Add(new TextEntry("    - Bounds: " + mf.sharedMesh.bounds, 2));
+                break;
+            case Renderer mr:
+                list.Add(new ListEntry("  - Materials: " + mr.sharedMaterials.Length + " items", 1, mr.sharedMaterials));
+                break;
         }
 
         var fields = obj.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         foreach (var fieldInfo in fields) {
             var value = fieldInfo.GetValue(obj);
             var text = value != null ? value.ToString() : "(null)";
-            if (value != null && typeof(MonoBehaviour).IsAssignableFrom(fieldInfo.FieldType)) {
-                list.Add(new ObjectEntry("  - " + fieldInfo.Name + ": " + text + " (" + ((MonoBehaviour)value).GetInstanceID() + ")", 1, value));
-            } else if (value != null && typeof(List<CleverMenuItemGroup.CleverMenuItemGroupItem>).IsAssignableFrom(fieldInfo.FieldType)) {
-                var groupItems = (List<CleverMenuItemGroup.CleverMenuItemGroupItem>)value;
-                list.Add(new TextEntry("  - " + fieldInfo.Name + ":", 1));
-                var num = 0;
-                foreach (var item in groupItems) {
-                    list.Add(new TextEntry("    - Item " + num++, 2));
-                    var itemGroup = item.ItemGroup;
-                    list.Add(new TextEntry("      - ItemGroup: " + (itemGroup != null ? itemGroup.name : null), 3));
-                    var menuItem = item.MenuItem;
-                    list.Add(new TextEntry("      - MenuItem: " + (menuItem != null ? menuItem.name : null), 3));
+            switch (value) {
+                case Object o:
+                    list.Add(new ObjectEntry($"  - {fieldInfo.Name}: {text}{ObjectInfo(o)}", 1, value));
+                    break;
+                case List<CleverMenuItemGroup.CleverMenuItemGroupItem> groupItems: {
+                    list.Add(new TextEntry($"  - {fieldInfo.Name}:", 1));
+                    var num = 0;
+                    foreach (var item in groupItems) {
+                        list.Add(new TextEntry($"    - Item {num++}", 2));
+                        var itemGroup = item.ItemGroup;
+                        list.Add(new TextEntry("      - ItemGroup: " + (itemGroup != null ? itemGroup.name : null), 3));
+                        var menuItem = item.MenuItem;
+                        list.Add(new TextEntry("      - MenuItem: " + (menuItem != null ? menuItem.name : null), 3));
+                    }
+
+                    break;
                 }
-            } else if (value is IEnumerable enumerable) {
-                list.Add(new ListEntry("  - " + fieldInfo.Name + ": " + enumerable.Cast<object>().Count() + " items", 1, enumerable));
-            } else {
-                list.Add(new ObjectEntry("  - " + fieldInfo.Name + ": " + text, 1, value));
+                case IEnumerable enumerable:
+                    list.Add(new ListEntry($"  - {fieldInfo.Name}: {enumerable.Cast<object>().Count()} items", 1, enumerable));
+                    break;
+                default:
+                    list.Add(new ObjectEntry($"  - {fieldInfo.Name}: {text}", 1, value));
+                    break;
             }
         }
+    }
+
+    private static string ObjectInfo(object obj) {
+        if (obj is not Object o) {
+            return "";
+        }
+
+        if (!o) {
+            return " (Dead)";
+        }
+
+        var name = o is not Component ? " " + o.name : null;
+        return $"{name} ({o.GetInstanceID()})";
     }
 
     public void Update() {

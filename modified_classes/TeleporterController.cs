@@ -114,6 +114,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         Instance = null;
         SuspensionManager.Unregister(this);
         Events.Scheduler.OnGameReset.Remove(OnGameReset);
+        DisableTaEffect();
     }
 
     public void OnGameReset() {
@@ -125,6 +126,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public void CancelTeleport() {
+        DisableTaEffect();
         Randomizer.IsUsingRandomizerTeleportAnywhere = false;
         m_isTeleporting = false;
         m_isBlooming = false;
@@ -180,6 +182,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
     public static void BeginTeleportation(GameMapTeleporter selectedTeleporter) {
         if (Vector3.Distance(selectedTeleporter.WorldPosition, Characters.Sein.Position) < 10f) {
+            Randomizer.IsUsingRandomizerTeleportAnywhere = false;
             return;
         }
 
@@ -218,11 +221,24 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
         Characters.Sein.Controller.OnTriggeredAnimationFinished += OnFinishedTeleportingStartAnimation;
         Instance.m_startTime = Time.time;
-        foreach (var savePedestal in SavePedestal.All) {
-            savePedestal.OnBeginTeleporting();
+
+        if (TeleportAnywhereEffect && Randomizer.IsUsingRandomizerTeleportAnywhere) {
+            TeleportAnywhereEffect.gameObject.SetActive(true);
+            TeleportAnywhereEffect.Initialize();
+            TeleportAnywhereEffect.AnimatorDriver.Restart();
+        } else {
+            foreach (var savePedestal in SavePedestal.All) {
+                savePedestal.OnBeginTeleporting();
+            }
         }
 
         Randomizer.FixGinsoEscape();
+    }
+
+    private static void DisableTaEffect() {
+        if (TeleportAnywhereEffect) {
+            TeleportAnywhereEffect.gameObject.SetActive(false);
+        }
     }
 
     public static void OnFinishedTeleportingStartAnimation() {
@@ -234,6 +250,12 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public void FixedUpdate() {
+        if (!IsTeleporting) {
+            return;
+        }
+
+        TeleportAnywhereEffect.transform.position = Characters.Sein.Position;
+
         if (m_isTeleporting) {
             var time = Time.time;
             var num = 7f;
@@ -270,6 +292,8 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public void OnFadedToBlack() {
+        DisableTaEffect();
+
         foreach (var savePedestal in SavePedestal.All) {
             savePedestal.OnFinishedTeleporting();
         }
@@ -368,19 +392,9 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         Instance.Teleporters.Add(teleporter);
     }
 
-    public static bool IsTeleporting {
-        get {
-            if (Instance == null) {
-                return false;
-            }
+    public static bool IsTeleporting => Instance && (Instance.m_isTeleporting || Instance.m_isBlooming);
 
-            return Instance.m_isTeleporting || Instance.m_isBlooming;
-        }
-    }
-
-    public static bool IsBlooming {
-        get { return Instance != null && Instance.m_isBlooming; }
-    }
+    public static bool IsBlooming => Instance && Instance.m_isBlooming;
 
     public bool IsSuspended { get; set; }
 
@@ -425,4 +439,6 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     private float m_bloomCurrentTime;
 
     private Vector3 m_teleporterTargetPosition;
+
+    public static TimelineSequence TeleportAnywhereEffect;
 }
