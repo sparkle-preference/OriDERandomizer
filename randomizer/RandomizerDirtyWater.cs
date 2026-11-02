@@ -563,6 +563,10 @@ public static class RandomizerDirtyWater {
 
         component.FallMaterials = FindFallMaterials(component.Falls);
 
+        if (!full && groups.Count + component.Natives.Count + component.CleanCopies.Count + component.Tops.Count + component.Falls.Count == 0) {
+            return;
+        }
+
         Randomizer.log("dirty water: " + root.name + (full ? " (listed)" : "") + " has " + groups.Count + " of " + all.Count + " water groups loose, " + component.Natives.Count
             + " native quads, " + CopiesIn(component.CleanCopies) + " clean copies, " + component.Rays.Count + " light rays, " + component.Falls.Count + " waterfall objects, " + component.Fogs.Count + " fogs, "
             + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms");
