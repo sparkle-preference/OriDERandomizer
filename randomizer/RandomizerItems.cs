@@ -75,7 +75,6 @@ public static class RandomizerItems {
         { "920", "Sorrow Relic" }, { "921", "Horu Relic" }, { "1100", "Enable Frag-Sense variant" }
     };
 
-    // 112 is rewritten as the Pokeball's contents change, so this is live state
     public static Dictionary<int, string> BonusSkillNames = new Dictionary<int, string> {
         { 101, "Polarity Shift" },
         { 102, "Gravity Swap" },

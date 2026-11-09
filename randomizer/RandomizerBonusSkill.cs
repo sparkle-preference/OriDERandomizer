@@ -22,7 +22,7 @@ public static class RandomizerBonusSkill {
         var active_slot = get(ActiveBonus) >> 2;
         var cur_slot = active_slot;
         if (unlocked.Count == 1) {
-            Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + RandomizerItems.BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
+            Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + Name(unlocked[cur_slot]), 3, false, false, false, true);
             return;
         }
 
@@ -30,7 +30,7 @@ public static class RandomizerBonusSkill {
             cur_slot++;
             if (unlocked.ContainsKey(cur_slot) && get(unlocked[cur_slot]) > 0) {
                 ActiveBonus = unlocked[cur_slot];
-                Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + RandomizerItems.BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
+                Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + Name(unlocked[cur_slot]), 3, false, false, false, true);
                 return;
             }
         }
@@ -39,7 +39,7 @@ public static class RandomizerBonusSkill {
         while (cur_slot < active_slot) {
             if (unlocked.ContainsKey(cur_slot) && get(unlocked[cur_slot]) > 0) {
                 ActiveBonus = unlocked[cur_slot];
-                Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + RandomizerItems.BonusSkillNames[unlocked[cur_slot]], 3, false, false, false, true);
+                Randomizer.Print("Bonus Skill (" + (cur_slot + 1) + "): " + Name(unlocked[cur_slot]), 3, false, false, false, true);
                 return;
             }
 
@@ -221,50 +221,33 @@ public static class RandomizerBonusSkill {
             case 111:
                 Characters.Sein.Mortality.DamageReciever.OnRecieveDamage(new Damage(9000f, new Vector2(0, 0), Characters.Sein.Position, DamageType.Lava, Characters.Sein.GameObject));
                 break;
-            case 112:
-                if (CapturedEnemy == null) {
-                    RandomizerItems.BonusSkillNames[112] = "Pokeball (empty)";
-                    Characters.Sein.Abilities.SpiritFlameTargetting.UpdateClosestAttackables();
-                    foreach (var target in Characters.Sein.Abilities.SpiritFlameTargetting.ClosestAttackables) {
-                        var logMessage = target.GetType().ToString();
-                        if (target is EntityTargetting) {
-                            var enemyTarget = target as EntityTargetting;
-                            var entity = enemyTarget.Entity;
-                            if (entity is JumperEnemy) {
-                                CapturedName = "Fronkey";
-                            } else if (entity is FishEnemy) {
-                                CapturedName = "Fish";
-                            } else if (entity is SpitterEnemy) {
-                                CapturedName = "Frog";
-                            } else if (entity is KamikazeSootEnemy) {
-                                CapturedName = "Baneling";
-                            } else if (entity is DashOwlEnemy) {
-                                CapturedName = "Bird";
-                            } else {
-                                continue;
-                            }
-
-                            CapturedEnemy = entity as Enemy;
-                            CapturedOffset = CapturedEnemy.PositionToPlayerPosition;
-                            CapturedLeft = Characters.Sein.FaceLeft;
-                            CapturedEnemy.gameObject.SetActiveRecursively(false);
-                            //Events.Scheduler.OnSceneRootDisabled.Remove(new Action<SceneRoot>(CapturedEnemy.OnSceneUnloaded));
-                            RandomizerItems.BonusSkillNames[112] = "Pokeball (" + CapturedName + ")";
-                            break;
-                        }
-                    }
-                } else {
-                    if (CapturedLeft != Characters.Sein.FaceLeft) {
-                        CapturedOffset.x *= -1;
+            case 112: {
+                // contents this build can't read count as empty
+                var held = RandomizerEnemies.CatchName(Pokeball - 1) == null ? -1 : Pokeball - 1;
+                if (held >= 0) {
+                    if (RandomizerEnemies.Release(held, new Vector2(get(89) / 100f, get(90) / 100f)) == null) {
+                        BonusSkillText("The Pokeball isn't ready yet");
+                        return;
                     }
 
-                    CapturedEnemy.Position = Characters.Sein.Position + CapturedOffset;
-                    CapturedEnemy.gameObject.SetActiveRecursively(true);
-                    CapturedEnemy = null;
-                    RandomizerItems.BonusSkillNames[112] = "Pokeball (empty)";
+                    Pokeball = 0;
+                    return;
+                }
+
+                bool arena;
+                Vector2 offset;
+                var caught = RandomizerEnemies.Catch(out arena, out offset);
+                if (caught >= 0) {
+                    Pokeball = caught + 1;
+                    set(89, Mathf.RoundToInt(offset.x * 100f));
+                    set(90, Mathf.RoundToInt(offset.y * 100f));
+                    BonusSkillText(Name(ab));
+                } else if (arena) {
+                    BonusSkillText("Arena enemies can't be caught");
                 }
 
                 break;
+            }
             case 114:
                 if (IsActive(ab)) {
                     Deactivate(ab);
@@ -373,25 +356,10 @@ public static class RandomizerBonusSkill {
     }
 
     public static void OnSave() {
-        SaveEnemy = CapturedEnemy;
-        SaveOffset = CapturedOffset;
-        SaveLeft = CapturedLeft;
-        SaveName = CapturedName;
-
         UpdateDrain();
     }
 
     public static void OnDeath() {
-        CapturedEnemy = SaveEnemy;
-        CapturedOffset = SaveOffset;
-        CapturedLeft = SaveLeft;
-        CapturedName = SaveName;
-        if (CapturedName != null) {
-            RandomizerItems.BonusSkillNames[112] = "Pokeball (" + CapturedName + ")";
-        } else {
-            RandomizerItems.BonusSkillNames[112] = "Pokeball (empty)";
-        }
-
         UpdateDrain();
     }
 
@@ -508,6 +476,13 @@ public static class RandomizerBonusSkill {
     public static int ActiveBonus {
         get => get(4089);
         set => set(4089, value);
+    }
+
+    // the Pokeball's enemy as its variant + 1 (0 when empty), rolled back with the save;
+    // 89 and 90 hold where it stood from Ori, in hundredths along his facing and up
+    public static int Pokeball {
+        get => get(88);
+        set => set(88, value);
     }
 
     public static int LevelExplosionCooldown;
@@ -674,6 +649,12 @@ public static class RandomizerBonusSkill {
         Randomizer.Print(text, 3, false, false, false, true);
     }
 
+    // the Pokeball's name says what it holds
+    public static string Name(int id) {
+        var name = RandomizerItems.BonusSkillNames[id];
+        return id != 112 ? name : name + " (" + (RandomizerEnemies.CatchName(Pokeball - 1) ?? "empty") + ")";
+    }
+
     public static bool UnlockCreditWarp(string message) {
         if (get(CreditWarp) > 0) {
             return false;
@@ -695,12 +676,4 @@ public static class RandomizerBonusSkill {
     }
 
     private static int DrainNextUpdate;
-    public static Enemy SaveEnemy;
-    public static Vector3 SaveOffset;
-    public static bool SaveLeft;
-    public static string SaveName;
-    public static Enemy CapturedEnemy;
-    public static Vector3 CapturedOffset;
-    public static bool CapturedLeft;
-    public static string CapturedName;
 }

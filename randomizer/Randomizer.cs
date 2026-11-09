@@ -1404,6 +1404,10 @@ public static class Randomizer {
             DebugMenuB.DebugControlsEnabled = true;
         }
 
+        if (Characters.Sein && Characters.Sein.Inventory != null) {
+            RandomizerEnemies.Want(RandomizerBonusSkill.Pokeball - 1);
+        }
+
         if (Scenes.Manager.CurrentScene?.Scene != "titleScreenSwallowsNest") {
             RandomizerTrackedDataManager.Reset();
             RandomizerTrackedDataManager.UpdateBitfields();

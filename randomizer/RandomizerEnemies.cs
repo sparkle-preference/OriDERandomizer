@@ -146,6 +146,19 @@ public static class RandomizerEnemies {
     public static float DropHang = 1.4f;
     public static float HangReach = 20f;
 
+    // the kinds the Pokeball (bonus skill 112) catches, by the names it shows
+    private static readonly Dictionary<string, string> Catchable = new Dictionary<string, string> {
+        { "Fronkeys", "Fronkey" },
+        { "Frogs", "Frog" },
+        { "Banelings", "Baneling" },
+        { "Birds", "Bird" },
+        { "Fish", "Fish" },
+    };
+
+    // where the Pokeball lets its enemy go when its catch spot won't do, and how far a walker's floor may lie below
+    public static float ReleaseReach = 4f;
+    public static float ReleaseDrop = 20f;
+
     // testing: every rolled placeholder takes this kind or prefab; null undoes it
     public static void SetForce(string kindOrPrefab) {
         s_force = kindOrPrefab;
@@ -243,7 +256,7 @@ public static class RandomizerEnemies {
 
         var fish = entity as FishEnemy;
         if (fish != null && spot != "water") {
-            Fly(fish, target);
+            Fly(fish, target.transform.parent);
         } else if (fish == null && (spot == "water" || WaterZone.PositionInWater(entity.transform.position))) {
             Soak(entity);
             entity.gameObject.AddComponent<RandomizerWaterBorn>();
@@ -298,12 +311,13 @@ public static class RandomizerEnemies {
 
     // any placeholder can give its prefab and settings; its scene references stay behind
     public static void Offer(RespawningPlaceholder donor) {
-        if (!Active || donor == null || donor.name.StartsWith("enemyTemplate ")) {
+        if ((!Active && s_wanted.Count == 0) || donor == null || donor.name.StartsWith("enemyTemplate ")) {
             return;
         }
 
+        // without rolls, only the prefabs the Pokeball wants
         var prefab = OwnPrefab(donor);
-        if (prefab == null || Template(prefab.name) != null) {
+        if (prefab == null || Template(prefab.name) != null || (!Active && !s_wanted.Contains(prefab.name))) {
             return;
         }
 
@@ -324,17 +338,16 @@ public static class RandomizerEnemies {
 
     // templates outlive scenes, so every prefab is captured once per process, a donor scene at a time
     public static void Tick() {
-        if (!Active || !Characters.Sein || Time.realtimeSinceStartup < s_nextScan) {
+        if (!Characters.Sein || Time.realtimeSinceStartup < s_nextScan) {
             return;
         }
 
         s_nextScan = Time.realtimeSinceStartup + 0.5f;
-        if (s_table == null) {
-            Active = false;  // no rolls to play: vanilla enemies, and no donor scenes
-            return;
+        if (Active && s_table == null) {
+            Active = false;  // no rolls to play: vanilla enemies, and donor scenes only for the Pokeball
         }
 
-        if (!s_warmed) {
+        if (Active && !s_warmed) {
             s_warmed = true;
             Load();
             foreach (var prefab in s_kindOf.Keys) {
@@ -471,6 +484,135 @@ public static class RandomizerEnemies {
         }
     }
 
+    // the Pokeball's name for a variant it holds, or null for one it couldn't have caught
+    public static string CatchName(int index) {
+        Load();
+        string name;
+        return index >= 0 && index < s_variants.Count && s_variants[index].Kind != null && Catchable.TryGetValue(s_variants[index].Kind.Name, out name) ? name : null;
+    }
+
+    // the Pokeball takes the nearest enemy it can: its variant, or -1; arena enemies stay put.
+    // offset is where it stood from Ori: x along his facing, y up
+    public static int Catch(out bool arena, out Vector2 offset) {
+        arena = false;
+        offset = Vector2.zero;
+        Load();
+        var targetting = Characters.Sein.Abilities.SpiritFlameTargetting;
+        if (!targetting) {
+            return -1;
+        }
+
+        targetting.UpdateClosestAttackables();
+        foreach (var attackable in targetting.ClosestAttackables) {
+            var target = attackable as EntityTargetting;
+            var entity = target == null ? null : target.Entity;
+            if (entity == null) {
+                continue;
+            }
+
+            var released = entity.GetComponent<RandomizerReleased>();
+            if (released != null) {
+                offset = Offset(entity);
+                RandomizerPokeballWarp.Begin(entity, true, true);
+                return released.Variant;
+            }
+
+            var owner = RespawningPlaceholder.All.Find(p => p.CurrentEntity == entity);
+            if (owner == null) {
+                continue;
+            }
+
+            var variant = (Active ? VariantFor(owner) : null) ?? Surveyed(owner);
+            if (variant == null || CatchName(variant.Index) == null) {
+                continue;
+            }
+
+            if (s_arena.Contains(owner.MoonGuid.ToString())) {
+                arena = true;
+                continue;
+            }
+
+            var own = OwnPrefab(owner);
+            if (Template(variant.Prefab) == null && own != null && own.name == variant.Prefab) {
+                s_wanted.Add(variant.Prefab);
+                Offer(owner);
+            }
+
+            if (Template(variant.Prefab) == null) {
+                continue;
+            }
+
+            // not a kill: its placeholder keeps holding it, so nothing respawns until Ori leaves the scene or reloads
+            entity.gameObject.AddComponent<RandomizerPocketed>();
+            CameraFrustumOptimizer.Unregister(entity);  // it would wake the enemy on coming back into view
+            offset = Offset(entity);
+            RandomizerPokeballWarp.Begin(entity, true, false);
+            return variant.Index;
+        }
+
+        return -1;
+    }
+
+    private static Vector2 Offset(Entity entity) {
+        var sein = Characters.Sein;
+        var offset = entity.transform.position - sein.Position;
+        return new Vector2(sein.FaceLeft ? -offset.x : offset.x, offset.y);
+    }
+
+    // the Pokeball's enemy, let go where it stood from Ori when caught (mirrored to his facing); null while its template loads
+    public static Entity Release(int index, Vector2 offset) {
+        var sein = Characters.Sein;
+        var variant = s_variants[index];
+        var at = Landing(sein.Position, sein.Position + new Vector3(sein.FaceLeft ? -offset.x : offset.x, offset.y), variant.Kind != null && Takes(variant.Kind, "air"));
+        var entity = SpawnVariant(index, at.x, at.y, 0f, at.x > sein.Position.x);
+        if (entity == null) {
+            return null;
+        }
+
+        // it lives and unloads with the scene it was let go in
+        var manager = Core.Scenes.Manager;
+        var scene = manager.CurrentScene == null ? null : manager.GetSceneManagerScene(manager.CurrentScene.Scene);
+        if (scene != null && scene.SceneRoot != null) {
+            entity.transform.parent = scene.SceneRoot.transform;
+            entity.SetSceneRoot(manager.CurrentScene.SceneMoonGuid);
+        }
+
+        var fish = entity as FishEnemy;
+        if (fish != null && !WaterZone.PositionInWater(at)) {
+            Fly(fish, entity.transform.parent);
+        } else if (fish == null && WaterZone.PositionInWater(at)) {
+            Soak(entity);
+            entity.gameObject.AddComponent<RandomizerWaterBorn>();
+        }
+
+        entity.gameObject.AddComponent<RandomizerReleased>().Variant = index;
+        RandomizerPokeballWarp.Begin(entity, false, false);
+        return entity;
+    }
+
+    // short of any wall between Ori and the spot, inside a loaded scene, and over a floor unless it flies; else just ahead of Ori
+    private static Vector3 Landing(Vector3 from, Vector3 to, bool flies) {
+        var toward = to - from;
+        RaycastHit hit;
+        if (toward.magnitude > 0.01f && LevelHit(from, toward.normalized, toward.magnitude, out hit)) {
+            to = from + toward.normalized * Mathf.Max(0f, hit.distance - 1f);
+        }
+
+        if (Core.Scenes.Manager.SceneVisibleAtPosition(to) && (flies || LevelHit(to, Vector3.down, ReleaseDrop, out hit))) {
+            return to;
+        }
+
+        var ahead = Characters.Sein.FaceLeft ? Vector3.left : Vector3.right;
+        return from + ahead * (LevelHit(from, ahead, ReleaseReach, out hit) ? Mathf.Max(0f, hit.distance - 1f) : ReleaseReach);
+    }
+
+    // the held enemy's template is gone after a restart: fetch it ahead of the release
+    public static void Want(int index) {
+        if (CatchName(index) != null && Template(s_variants[index].Prefab) == null) {
+            s_wanted.Add(s_variants[index].Prefab);
+        }
+    }
+
     public static string Variants() {
         Load();
         var lines = new List<string>();
@@ -501,6 +643,28 @@ public static class RandomizerEnemies {
         }
 
         return roll < 0 ? null : s_variants[roll];
+    }
+
+    // a vanilla enemy's variant: the survey row for its prefab whose settings differ least from its own
+    private static Variant Surveyed(RespawningPlaceholder placeholder) {
+        var own = OwnPrefab(placeholder);
+        var field = placeholder.GetType().GetField("Settings");
+        var settings = field == null ? null : field.GetValue(placeholder);
+        Variant nearest = null;
+        var fewest = int.MaxValue;
+        foreach (var variant in s_variants) {
+            if (own == null || settings == null || variant.Prefab != own.name || variant.Class != placeholder.GetType().Name) {
+                continue;
+            }
+
+            var misses = Misses(settings, variant.Settings);
+            if (misses < fewest) {
+                nearest = variant;
+                fewest = misses;
+            }
+        }
+
+        return nearest;
     }
 
     private static bool Takes(Kind kind, string spot) {
@@ -696,12 +860,12 @@ public static class RandomizerEnemies {
     }
 
     // a fish in the air: water everywhere, a longer reach (it can't wait for Ori to swim by), and a buoy to wander after
-    private static void Fly(FishEnemy fish, RespawningPlaceholder target) {
+    private static void Fly(FishEnemy fish, Transform parent) {
         fish.AirSwimmer = true;
         fish.Settings.EnterSwimRange = Mathf.Max(fish.Settings.EnterSwimRange, FlyingFishReach);
         fish.Settings.MaxSwimDistance = Mathf.Max(fish.Settings.MaxSwimDistance, FlyingFishReach + 10f);
         var buoy = new GameObject("flyingFishWander");
-        buoy.transform.parent = target.transform.parent;
+        buoy.transform.parent = parent;
         buoy.transform.position = fish.transform.position;
         var wander = buoy.AddComponent<RandomizerFishWander>();
         wander.Fish = fish;
@@ -737,6 +901,12 @@ public static class RandomizerEnemies {
 
     public static bool WaterBornShot(GameObject owner) {
         return owner != null && owner.GetComponentInParent<RandomizerWaterBorn>() != null;
+    }
+
+    // its enemy is in the Pokeball, so Soul Link has nothing there to fear
+    public static bool Pocketed(RespawningPlaceholder placeholder) {
+        var entity = placeholder.CurrentEntity;
+        return entity != null && entity.GetComponent<RandomizerPocketed>() != null;
     }
 
     // the level only: enemies, shots and Ori don't count as ground
@@ -889,8 +1059,9 @@ public static class RandomizerEnemies {
         return go != null && go.transform.root.GetComponent<SceneRoot>() != null;
     }
 
-    // the survey's k=v;k={k=v} settings onto a copy
-    private static void Apply(object target, string settings) {
+    // the survey's k=v;k={k=v} settings, split at the top level
+    private static List<string> Fields(string settings) {
+        var fields = new List<string>();
         var depth = 0;
         var start = 0;
         for (var i = 0; i <= settings.Length; i++) {
@@ -901,12 +1072,41 @@ public static class RandomizerEnemies {
                 depth--;
             } else if (c == ';' && depth == 0) {
                 if (i > start) {
-                    Set(target, settings.Substring(start, i - start));
+                    fields.Add(settings.Substring(start, i - start));
                 }
 
                 start = i + 1;
             }
         }
+
+        return fields;
+    }
+
+    // the survey's settings onto a copy
+    private static void Apply(object target, string settings) {
+        foreach (var pair in Fields(settings)) {
+            Set(target, pair);
+        }
+    }
+
+    // how many of the survey's settings a live settings object disagrees with
+    private static int Misses(object target, string settings) {
+        var misses = 0;
+        foreach (var pair in Fields(settings)) {
+            var eq = pair.IndexOf('=');
+            var field = target.GetType().GetField(pair.Substring(0, eq));
+            var value = field == null ? null : field.GetValue(target);
+            var text = pair.Substring(eq + 1);
+            if (value == null) {
+                misses++;
+            } else if (text.StartsWith("{")) {
+                misses += Misses(value, text.Substring(1, text.Length - 2));
+            } else if (Convert.ToString(value, CultureInfo.InvariantCulture) != text) {
+                misses++;
+            }
+        }
+
+        return misses;
     }
 
     private static void Set(object target, string pair) {
@@ -993,6 +1193,95 @@ public static class RandomizerEnemies {
 }
 
 public class RandomizerWaterBorn : MonoBehaviour {
+}
+
+// an enemy the Pokeball let go: the ball takes it back as the variant it was
+public class RandomizerReleased : MonoBehaviour {
+    public int Variant;
+}
+
+// the hidden original of an enemy the Pokeball took, still its placeholder's
+public class RandomizerPocketed : MonoBehaviour {
+}
+
+// The Pokeball's pull: an enemy shrinks into Sein, or grows out of it to where it was spawned, inert until it's done.
+public class RandomizerPokeballWarp : MonoBehaviour {
+    public static float Seconds = 1f;
+
+    private Entity m_entity;
+    private bool m_into;
+    private bool m_destroy;
+    private Vector3 m_spot;
+    private Vector3 m_scale;
+    private Rigidbody m_body;
+    private bool m_kinematic;
+    private float m_time;
+
+    // into: shrink into Sein, then hide (or destroy); otherwise grow out of Sein to its spawn spot
+    public static void Begin(Entity entity, bool into, bool destroy) {
+        var warp = entity.gameObject.AddComponent<RandomizerPokeballWarp>();
+        warp.m_entity = entity;
+        warp.m_into = into;
+        warp.m_destroy = destroy;
+        warp.m_spot = entity.transform.position;
+        warp.m_scale = entity.transform.localScale;
+        warp.m_body = entity.GetComponent<Rigidbody>();
+        warp.m_kinematic = warp.m_body != null && warp.m_body.isKinematic;
+        warp.Hold(true);
+        warp.Step(0f);
+    }
+
+    private void Hold(bool inert) {
+        m_entity.IsSuspended = inert;
+        if (m_entity.DamageDealer) {
+            m_entity.DamageDealer.Activated = !inert;
+        }
+
+        if (m_entity.Targetting) {
+            m_entity.Targetting.Activated = !inert;
+        }
+
+        if (m_body) {
+            m_body.isKinematic = inert || m_kinematic;
+        }
+    }
+
+    private void Step(float t) {
+        // the floating spirit (Sein to players, Ori in the code), else Ori himself
+        var ori = Characters.Ori && Characters.Ori.gameObject.activeInHierarchy ? Characters.Ori.Position : Characters.Sein ? Characters.Sein.Position : m_spot;
+        var eased = Mathf.SmoothStep(0f, 1f, t);
+        transform.position = m_into ? Vector3.Lerp(m_spot, ori, eased) : Vector3.Lerp(ori, m_spot, eased);
+        transform.localScale = m_scale * Mathf.Max(0.01f, m_into ? 1f - eased : eased);
+    }
+
+    public void Update() {
+        if (m_entity == null) {
+            Destroy(this);
+            return;
+        }
+
+        m_time += Time.deltaTime;
+        Step(Mathf.Clamp01(m_time / Seconds));
+        if (m_time < Seconds) {
+            return;
+        }
+
+        Destroy(this);
+        if (m_into && m_destroy) {
+            Destroy(gameObject);
+            return;
+        }
+
+        transform.localScale = m_scale;
+        if (m_into) {
+            transform.position = m_spot;
+            gameObject.SetActive(false);
+            return;
+        }
+
+        Hold(false);
+        m_entity.StartPosition = m_spot;
+    }
 }
 
 // JumpShootSharkZone for a shark on dry land: it emerges under Ori when he stands on the floor near its spot.
