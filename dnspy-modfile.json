@@ -420,6 +420,7 @@
 		"randomizer/RandomizerKeysanityHintInfo.cs",
 		"randomizer/RandomizerLayers.cs",
 		"randomizer/RandomizerLeague.cs",
+		"randomizer/RandomizerLeverHint.cs",
 		"randomizer/RandomizerLoadRuntimeSceneAction.cs",
 		"randomizer/RandomizerLoadSceneAtPositionAction.cs",
 		"randomizer/RandomizerLocationData.cs",

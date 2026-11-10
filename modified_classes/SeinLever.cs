@@ -18,7 +18,7 @@ public class SeinLever : CharacterState, ISeinReceiver {
     public bool InputLocked => m_lever != null && m_lever.IsGrabbed;
 
     private void ShowGrabHint() {
-        if (PressToGrabMessage && !GameController.Instance.InputLocked) {
+        if (PressToGrabMessage && !m_lever.GetComponent<RandomizerLeverHint>() && !GameController.Instance.InputLocked) {
             m_pressToGrabHint = UI.Hints.Show(PressToGrabMessage, HintLayer.HintZone, 3f);
         }
     }
@@ -30,8 +30,10 @@ public class SeinLever : CharacterState, ISeinReceiver {
     }
 
     private void ShowLeftRightHint() {
-        if (PressLeftRightMessage && !GameController.Instance.InputLocked) {
-            m_pressLeftRightHint = UI.Hints.Show(PressLeftRightMessage, HintLayer.HintZone, 3f);
+        var hint = m_lever.GetComponent<RandomizerLeverHint>();
+        var message = hint ? hint.Message : PressLeftRightMessage;
+        if (message && !GameController.Instance.InputLocked) {
+            m_pressLeftRightHint = UI.Hints.Show(message, HintLayer.HintZone, 3f);
         }
     }
 
@@ -197,6 +199,15 @@ public class SeinLever : CharacterState, ISeinReceiver {
             case Lever.LeverDirections.Middle:
                 UpdateMiddle();
                 break;
+        }
+
+        // a lever's own hint stays up while it is held in a direction
+        if (m_lever.Direction != Lever.LeverDirections.Middle && m_lever.GetComponent<RandomizerLeverHint>()) {
+            if (m_pressLeftRightHint) {
+                m_pressLeftRightHint.Visibility.ResetWaitDuration();
+            } else {
+                ShowLeftRightHint();
+            }
         }
     }
 
