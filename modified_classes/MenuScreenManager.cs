@@ -47,10 +47,15 @@ public class MenuScreenManager : Suspendable {
             Core.Input.Cancel.Used = true;
             if (MainMenuVisible) {
                 HideMenuScreen(false);
-            } else if (CanOpenMenus() && Characters.Sein && Characters.Sein.Controller.CanMove && Characters.Sein.Active && GameMapUI.Instance != null && WorldMapLogic.Instance != null && WorldMapLogic.Instance.MapEnabledArea.FindFaceAtPositionFaster(Characters.Sein.Position) != null && World.CurrentArea != null && !GameMapUI.Instance.ShowingTeleporters && WorldMapUI.IsReady) {
+            } else if (CanOpenMenus() && Characters.Sein && Characters.Sein.Controller.CanMove && Characters.Sein.Active && GameMapUI.Instance != null && WorldMapLogic.Instance != null && MapOpensHere() && World.CurrentArea != null && !GameMapUI.Instance.ShowingTeleporters && WorldMapUI.IsReady) {
                 ShowAreaMap();
             }
         }
+    }
+
+    // MapEnabledArea leaves out the escapes; the map opens wherever warping works
+    private static bool MapOpensHere() {
+        return !RandomizerMapWarp.Disabled() || WorldMapLogic.Instance.MapEnabledArea.FindFaceAtPositionFaster(Characters.Sein.Position) != null;
     }
 
     public void DoMenuKeyPress() {
