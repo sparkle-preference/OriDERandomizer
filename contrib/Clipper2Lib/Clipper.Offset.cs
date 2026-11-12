@@ -234,7 +234,6 @@ namespace Clipper2Lib
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static PointD GetUnitNormal(Point64 pt1, Point64 pt2)
     {
       double dx = (pt2.X - pt1.X);
@@ -279,7 +278,6 @@ namespace Clipper2Lib
       }
     }
 
-  [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static PointD TranslatePoint(PointD pt, double dx, double dy)
     {
 #if USINGZ
@@ -289,7 +287,6 @@ namespace Clipper2Lib
 #endif
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static PointD ReflectPoint(PointD pt, PointD pivot)
     {
 #if USINGZ
@@ -299,19 +296,16 @@ namespace Clipper2Lib
 #endif
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool AlmostZero(double value, double epsilon = 0.001)
     {
       return Math.Abs(value) < epsilon;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static double Hypotenuse(double x, double y)
     {
       return Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static PointD NormalizeVector(PointD vec)
     {
 	    double h = Hypotenuse(vec.x, vec.y);
@@ -321,13 +315,11 @@ namespace Clipper2Lib
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static PointD GetAvgUnitVector(PointD vec1, PointD vec2)
     {
 	    return NormalizeVector(new PointD(vec1.x + vec2.x, vec1.y + vec2.y));
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Point64 GetPerpendic(Point64 pt, PointD norm)
     {
 #if USINGZ
@@ -339,7 +331,6 @@ namespace Clipper2Lib
 #endif
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private PointD GetPerpendicD(Point64 pt, PointD norm)
     {
 #if USINGZ
@@ -351,7 +342,6 @@ namespace Clipper2Lib
 #endif
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DoBevel(Path64 path, int j, int k)
     {
       Point64 pt1, pt2;
@@ -396,7 +386,6 @@ namespace Clipper2Lib
       pathOut.Add(pt2);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DoSquare(Path64 path, int j, int k)
     {
       PointD vec;
@@ -448,7 +437,6 @@ namespace Clipper2Lib
       }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DoMiter(Path64 path, int j, int k, double cosA)
     {
       double q = _groupDelta / (cosA + 1);
@@ -464,7 +452,6 @@ namespace Clipper2Lib
 #endif
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DoRound(Path64 path, int j, int k, double angle)
     {
       if (DeltaCallback != null)
@@ -502,7 +489,6 @@ namespace Clipper2Lib
       pathOut.Add(GetPerpendic(pt, _normals[j]));
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void BuildNormals(Path64 path)
     {
       int cnt = path.Count;
@@ -578,7 +564,6 @@ namespace Clipper2Lib
       k = j;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void OffsetPolygon(Group group, Path64 path)
     {
       pathOut = new Path64();
@@ -588,7 +573,6 @@ namespace Clipper2Lib
       _solution.Add(pathOut);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void OffsetOpenJoined(Group group, Path64 path)
     {
       OffsetPolygon(group, path);

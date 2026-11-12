@@ -62,7 +62,7 @@ namespace Clipper2Lib
 
     private static uint GenerateGlobalSeed()
     {
-      using RandomNumberGenerator randomNumberGenerator = RandomNumberGenerator.Create();
+      RandomNumberGenerator randomNumberGenerator = RandomNumberGenerator.Create();
       byte[] data = new byte[sizeof(uint)];
       randomNumberGenerator.GetBytes(data);
       return BitConverter.ToUInt32(data, 0);
@@ -83,7 +83,6 @@ namespace Clipper2Lib
       return (int) hash;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static uint QueueRound(uint hash, uint queuedValue)
     {
       return RotateLeft(hash + (queuedValue * Prime3), 17) * Prime4;
@@ -94,7 +93,6 @@ namespace Clipper2Lib
       return s_seed + Prime5;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static uint MixFinal(uint hash)
     {
       hash ^= hash >> 15;
@@ -105,7 +103,6 @@ namespace Clipper2Lib
       return hash;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint RotateLeft(uint value, int offset)
     {
       return (value << offset) | (value >> (32 - offset));

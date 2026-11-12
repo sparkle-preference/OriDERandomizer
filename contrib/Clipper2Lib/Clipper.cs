@@ -292,13 +292,11 @@ namespace Clipper2Lib
       return a;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPositive(Path64 poly)
     {
       return Area(poly) >= 0;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPositive(PathD poly)
     {
       return Area(poly) >= 0;
@@ -340,7 +338,6 @@ namespace Clipper2Lib
       return result;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Point64 ScalePoint64(Point64 pt, double scale)
     {
       Point64 result = new Point64()
@@ -354,7 +351,6 @@ namespace Clipper2Lib
       return result;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PointD ScalePointD(Point64 pt, double scale)
     {
       PointD result = new PointD()
@@ -369,7 +365,6 @@ namespace Clipper2Lib
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Rect64 ScaleRect(RectD rec, double scale)
     {
       Rect64 result = new Rect64()
@@ -657,37 +652,31 @@ namespace Clipper2Lib
 #endif
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double Sqr(double val)
     {
       return val * val;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double Sqr(long val)
     {
       return (double) val * (double) val;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double DistanceSqr(Point64 pt1, Point64 pt2)
     {
       return Sqr(pt1.X - pt2.X) + Sqr(pt1.Y - pt2.Y);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Point64 MidPoint(Point64 pt1, Point64 pt2)
     {
       return new Point64((pt1.X + pt2.X) / 2, (pt1.Y + pt2.Y) / 2);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PointD MidPoint(PointD pt1, PointD pt2)
     {
       return new PointD((pt1.x + pt2.x) / 2, (pt1.y + pt2.y) / 2);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void InflateRect(ref Rect64 rec, int dx, int dy)
     {
       rec.left -= dx;
@@ -696,7 +685,6 @@ namespace Clipper2Lib
       rec.bottom += dy;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void InflateRect(ref RectD rec, double dx, double dy)
     {
       rec.left -= dx;
@@ -705,7 +693,6 @@ namespace Clipper2Lib
       rec.bottom += dy;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool PointsNearEqual(PointD pt1, PointD pt2, double distanceSqrd)
     {
       return Sqr(pt1.x - pt2.x) + Sqr(pt1.y - pt2.y) < distanceSqrd;
@@ -752,7 +739,6 @@ namespace Clipper2Lib
       return result;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void AddPolyNodeToPaths(PolyPath64 polyPath, Paths64 paths)
     {
       if (polyPath.Polygon!.Count > 0)
@@ -761,7 +747,6 @@ namespace Clipper2Lib
         AddPolyNodeToPaths((PolyPath64) polyPath._childs[i], paths);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Paths64 PolyTreeToPaths64(PolyTree64 polyTree)
     {
       Paths64 result = new Paths64();
@@ -770,7 +755,6 @@ namespace Clipper2Lib
       return result;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void AddPolyNodeToPathsD(PolyPathD polyPath, PathsD paths)
     {
       if (polyPath.Polygon!.Count > 0)
@@ -779,7 +763,6 @@ namespace Clipper2Lib
         AddPolyNodeToPathsD((PolyPathD) polyPath._childs[i], paths);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PathsD PolyTreeToPathsD(PolyTreeD polyTree)
     {
       PathsD result = new PathsD();
@@ -793,7 +776,6 @@ namespace Clipper2Lib
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double PerpendicDistFromLineSqrd(PointD pt, PointD line1, PointD line2)
     {
       double a = pt.x - line1.x;
@@ -804,7 +786,6 @@ namespace Clipper2Lib
       return Sqr(a * d - c * b) / (c * c + d * d);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double PerpendicDistFromLineSqrd(Point64 pt, Point64 line1, Point64 line2)
     {
       double a = (double) pt.X - line1.X;
@@ -914,7 +895,6 @@ namespace Clipper2Lib
     }
 
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int GetNext(int current, int high, ref bool[] flags)
     {
       ++current;

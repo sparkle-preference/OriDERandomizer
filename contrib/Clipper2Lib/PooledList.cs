@@ -25,7 +25,6 @@ namespace Clipper2Lib
   /// </summary>
   internal class VertexPoolList : PooledList<Vertex>
   {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Vertex Add(Point64 point, VertexFlags flags, Vertex? prev)
     {
       TryGrow();
@@ -55,7 +54,6 @@ namespace Clipper2Lib
   {
     public static bool UseOutPtPool = true;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public OutPt Add(Point64 pt, OutRec outrec)
     {
       TryGrow();
@@ -85,7 +83,6 @@ namespace Clipper2Lib
   /// </summary>
   internal class OutRecPoolList : PooledList<OutRec>
   {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public OutRec Add()
     {
       TryGrow();
@@ -142,7 +139,6 @@ namespace Clipper2Lib
   /// </summary>
   internal class HorzJoinPoolList : PooledList<HorzJoin>
   {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public HorzJoin Add(OutPt ltor, OutPt rtol)
     {
       TryGrow();
@@ -168,7 +164,7 @@ namespace Clipper2Lib
   /// Indexing, growing and enumeration implementation is identical to <see cref="System.Collections.Generic.List{T}"/>.
   /// The pooled list reuses allocated reference objects. Operations are limited to read, add and clear.
   /// </summary>
-  internal abstract class PooledList<T> : IReadOnlyList<T> where T : class
+  internal abstract class PooledList<T> : IEnumerable<T> where T : class
   {
     private const int DefaultCapacity = 4;
 
@@ -191,7 +187,7 @@ namespace Clipper2Lib
 
     public PooledList()
     {
-      _items = Array.Empty<T>();
+      _items = [];
     }
 
     public PooledList(int capacity)

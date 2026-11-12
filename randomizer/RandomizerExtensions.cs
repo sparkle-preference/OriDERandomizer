@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Reflection;
 
 namespace RandoExts {
     public static class RandomizerExtensions {
@@ -36,10 +34,6 @@ namespace RandoExts {
                 parsedValue = default;
                 return false;
             }
-        }
-
-        extension(string) {
-            public static string Join<T>(string separator, IEnumerable<T> iter) => string.Join(separator, iter.Select(v => "" + v).ToArray());
         }
     }
 }

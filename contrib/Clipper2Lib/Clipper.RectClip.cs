@@ -111,7 +111,6 @@ namespace Clipper2Lib
       return ioCount <= 0;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsClockwise(Location prev, Location curr, 
       Point64 prevPt, Point64 currPt, Point64 rectMidPoint)
     {
@@ -120,26 +119,22 @@ namespace Clipper2Lib
       return HeadingClockwise(prev, curr);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool AreOpposites(Location prev, Location curr)
     {
       return Math.Abs((int)prev - (int) curr) == 2;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool HeadingClockwise(Location prev, Location curr)
     {
       return ((int) prev + 1) % 4 == (int) curr;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Location GetAdjacentLocation(Location loc, bool isClockwise)
     {
       int delta = (isClockwise) ? 1 : 3;
       return (Location)(((int) loc + delta) % 4);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static OutPt2? UnlinkOp(OutPt2 op)
     {
       if (op.next == op) return null;
@@ -148,7 +143,6 @@ namespace Clipper2Lib
       return op.next;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static OutPt2? UnlinkOpBack(OutPt2 op)
     {
       if (op.next == op) return null;
@@ -157,7 +151,6 @@ namespace Clipper2Lib
       return op.prev;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static uint GetEdgesForPt(Point64 pt, Rect64 rec)
     {
       uint result = 0;
@@ -168,7 +161,6 @@ namespace Clipper2Lib
       return result;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsHeadingClockwise(Point64 pt1, Point64 pt2, int edgeIdx)
     {
       return edgeIdx switch
@@ -180,21 +172,18 @@ namespace Clipper2Lib
       };
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool HasHorzOverlap(Point64 left1, Point64 right1,
       Point64 left2, Point64 right2)
     {
       return (left1.X < right2.X) && (right1.X > left2.X);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool HasVertOverlap(Point64 top1, Point64 bottom1,
       Point64 top2, Point64 bottom2)
     {
       return (top1.Y < bottom2.Y) && (bottom1.Y > top2.Y);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void AddToEdge(List<OutPt2?> edge, OutPt2 op)
     {
       if (op.edge != null) return;
@@ -202,7 +191,6 @@ namespace Clipper2Lib
       edge.Add(op);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void UncoupleEdge(OutPt2 op)
     {
       if (op.edge == null) return;
@@ -216,7 +204,6 @@ namespace Clipper2Lib
       op.edge = null;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void SetNewOwner(OutPt2 op, int newIdx)
     {
       op.ownerIdx = newIdx;
@@ -273,7 +260,6 @@ namespace Clipper2Lib
       return true;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsHorizontal(Point64 pt1, Point64 pt2)
     {
       return pt1.Y == pt2.Y;

@@ -552,20 +552,17 @@ namespace Clipper2Lib
     }
 #endif
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void CheckPrecision(int precision)
     {
       if (precision < -8 || precision > 8)
         throw new Exception(precision_range_error);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static bool IsAlmostZero(double value)
     {
       return (Math.Abs(value) <= floatingPointTolerance);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static int TriSign(long x) // returns 0, 1 or -1
     {
       return (x < 0) ? -1 : (x > 0) ? 1 : 0;
@@ -577,7 +574,6 @@ namespace Clipper2Lib
       public ulong hi64;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static UInt128Struct MultiplyUInt64(ulong a, ulong b) // #834,#835
     {
       ulong x1 = (a & 0xFFFFFFFF) * (b & 0xFFFFFFFF);
@@ -608,7 +604,6 @@ namespace Clipper2Lib
       return mul_ab.lo64 == mul_cd.lo64 && mul_ab.hi64 == mul_cd.hi64 && sign_ab == sign_cd;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static bool IsCollinear(Point64 pt1, Point64 sharedPt, Point64 pt2)
     {
       long a = sharedPt.X - pt1.X;
@@ -620,7 +615,6 @@ namespace Clipper2Lib
       return ProductsAreEqual(a, b, c, d);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static double DotProduct(Point64 pt1, Point64 pt2, Point64 pt3)
     {
       // typecast to double to avoid potential int overflow
@@ -628,19 +622,16 @@ namespace Clipper2Lib
               (double) (pt2.Y - pt1.Y) * (pt3.Y - pt2.Y));
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static double CrossProduct(PointD vec1, PointD vec2)
     {
       return (vec1.y * vec2.x - vec2.y * vec1.x);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static double DotProduct(PointD vec1, PointD vec2)
     {
       return (vec1.x * vec2.x + vec1.y * vec2.y);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static long CheckCastInt64(double val)
     {
       if ((val >= max_coord) || (val <= min_coord)) return Invalid64;
@@ -651,7 +642,6 @@ namespace Clipper2Lib
     // be constrained to seg1. However, it's possible that 'ip' won't be inside
     // seg2, even when 'ip' hasn't been constrained (ie 'ip' is inside seg1).
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool GetLineIntersectPt(Point64 ln1a,
       Point64 ln1b, Point64 ln2a, Point64 ln2b, out Point64 ip)
     {
@@ -681,7 +671,6 @@ namespace Clipper2Lib
       return true;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool GetLineIntersectPt(PointD ln1a,
       PointD ln1b, PointD ln2a, PointD ln2b, out PointD ip)
     {

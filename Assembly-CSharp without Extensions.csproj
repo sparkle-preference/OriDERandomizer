@@ -84,7 +84,7 @@
     <ItemGroup>
         <Compile Include="action\*.cs"/>
         <Compile Include="bingo\*.cs"/>
-        <Compile Include="contrib\*.cs"/>
+        <Compile Include="contrib\**\*.cs"/>
         <Compile Include="language_support\*.cs" Exclude="language_support\StdLibExtensions.cs"/>
         <Compile Include="menu\*.cs"/>
         <Compile Include="modified_classes\*.cs" Exclude="modified_classes\SaveGameData_analysis.cs"/>
