@@ -1119,3 +1119,24 @@ class Seed(unittest.TestCase):
     def test_save_of_mixed_endings_keeps_every_line_and_writes_crlf(self, seed, data):
         out, want = self.edit(seed, data)
         self.assertEqual(out, want)
+
+    @settings(max_examples=examples(40))
+    @given(seed_files(), st.lists(st.text(st.sampled_from("0123456789b,"), max_size=12), min_size=1, max_size=3))
+    def test_new_rolls_replace_their_line_and_keep_the_first_backup(self, seed, bodies):
+        text = seed_text(*seed)
+        lines = text.replace("\r\n", "\n").split("\n")
+        head, rest = lines[0], lines[1:]
+        eol = "\r\n" if "\r\n" in text else "\n"
+        original = eol.join([head, "//EnemyRolls=v:"] + rest)
+        with scratch() as d:
+            path = os.path.join(d, "randomizer.dat")
+            with open(path, "wb") as f:
+                f.write(original.encode("utf-8"))
+            B.call("PracticeGlue.SeedRolls", path, ["//EnemyRolls=v:" + b for b in bodies])
+            with open(path, "rb") as f:
+                out = f.read().decode("utf-8")
+            with open(path + ".before-boxes", "rb") as f:
+                backup = f.read().decode("utf-8")
+        saved = [modern(l) if l.startswith("BX|") and B.call("PracticeGlue.Parses", l) else l for l in rest]
+        self.assertEqual(out, eol.join([head, "//EnemyRolls=v:" + bodies[-1]] + saved))
+        self.assertEqual(backup, original)

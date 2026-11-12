@@ -914,7 +914,44 @@ public static class PracticeServer {
         reply.Set("path", JsonValue.Of(Path.GetFullPath(SeedBoxes.Current.Path)));
         reply.Set("editing", JsonValue.Of(PracticeEditor.Active));
         SeedCurrent(reply);
+        // the page draws enemies from the site's table, which must be this build's version
+        var rolls = SeedBoxes.Current.EnemyRolls;
+        if (rolls != null) {
+            var enemies = JsonValue.NewObject();
+            enemies.Set("rolls", JsonValue.Of(rolls));
+            enemies.Set("version", JsonValue.Of(RandomizerEnemyData.Version));
+            enemies.Set("site", JsonValue.Of(RandomizerSyncManager.WebBase()));
+            reply.Set("enemies", enemies);
+        }
+
         return reply.Serialize(false);
+    }
+
+    // checked as SetRolls reads it, so a line the game would refuse never reaches the seed file
+    private static string RollsLine(JsonValue value) {
+        if (!value.IsString) {
+            return null;
+        }
+
+        var line = value.Str;
+        var body = line.StartsWith(SeedBoxes.RollsPrefix, StringComparison.Ordinal) ? line.Substring(SeedBoxes.RollsPrefix.Length) : "";
+        var ok = body.StartsWith(RandomizerEnemyData.Version + ":", StringComparison.Ordinal);
+        var rolls = 1;
+        for (var i = RandomizerEnemyData.Version.Length + 1; ok && i < body.Length; i++) {
+            var c = body[i];
+            rolls += c == ',' ? 1 : 0;
+            ok = c is >= '0' and <= '9' or ',' or 'b';
+        }
+
+        if (!ok || rolls != RandomizerEnemyData.Placements.Length) {
+            throw new Exception("enemyRolls must be a //EnemyRolls= line for this build's enemy table");
+        }
+
+        if (SeedBoxes.Current.EnemyRolls == null) {
+            throw new Exception("this seed has no //EnemyRolls= line to change");
+        }
+
+        return line;
     }
 
     private static void SeedCurrent(JsonValue reply) {
@@ -952,9 +989,20 @@ public static class PracticeServer {
             throw new Exception("segment must be an object");
         }
 
-        SeedBoxes.Current.SetBoxes(TakeBoxes(segment, false));
+        var boxes = TakeBoxes(segment, false);
+        var rolls = RollsLine(incoming["enemyRolls"]);
+        SeedBoxes.Current.SetBoxes(boxes);
+        if (rolls != null) {
+            SeedBoxes.Current.SetEnemyRolls(rolls);
+        }
+
         SeedBoxes.Current.Save();
         SeedBoxes.Current.Apply();
+        // each placeholder takes its new roll the next time it spawns
+        if (rolls != null) {
+            RandomizerEnemies.SetRolls(rolls.Substring(SeedBoxes.RollsPrefix.Length));
+        }
+
         Randomizer.log("seed boxes: saved from the editor page");
         return "{\"ok\":true}";
     }

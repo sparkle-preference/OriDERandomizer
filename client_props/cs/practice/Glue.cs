@@ -329,4 +329,13 @@ static class PracticeGlue {
         seed.SetBoxes(boxLines.Select(l => RandomizerBox.Parse(l)).ToList());
         seed.Save();
     }
+
+    // each line saved in turn, as the page's saves would
+    public static void SeedRolls(string path, List<string> rollsLines) {
+        foreach (var line in rollsLines) {
+            var seed = SeedBoxes.Load(path);
+            seed.SetEnemyRolls(line);
+            seed.Save();
+        }
+    }
 }
