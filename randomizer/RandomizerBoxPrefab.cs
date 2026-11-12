@@ -25,11 +25,16 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         gameObject.SetActive(!Box.IsOff && RandomizerBoxes.Enabled);
     }
 
+    // everything the box owns hangs off this transform, so moving it moves them all
+    public void Place() {
+        transform.position = (RandomizerBoxes.ShowingLines ? Box.Rect : Box.CurrentRect).center;
+    }
+
     private void Init(RandomizerBox box) {
         Box = box;
         var rect = box.Rect;
 
-        transform.position = rect.center;
+        Place();
 
         collider.isTrigger = !box.Solid;
         collider.size = new Vector3(rect.width, rect.height, 100f);

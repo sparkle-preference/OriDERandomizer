@@ -19,6 +19,20 @@ public class RandomizerBox {
         }
     }
 
+    public void UpdatePosition() {
+        if (UnityObject != null) {
+            UnityObject.Place();
+        }
+    }
+
+    // where the box is now: its line's rect, moved by any BR
+    public Rect CurrentRect {
+        get {
+            RandomizerInventory.MoveOffset(BoxNumber, out var x, out var y);
+            return new Rect(Rect.x + x / 100f, Rect.y + y / 100f, Rect.width, Rect.height);
+        }
+    }
+
     public void Init(int boxNumber) {
         DeInit();
 
@@ -451,8 +465,10 @@ public static class RandomizerBoxes {
     private static bool _updateLast;
 
     public static void Serialize(Archive? ar) {
+        // a load swaps the inventory in whole, so every box is placed and shown again
         foreach (var box in LoadedBoxes) {
             box.UpdateActive();
+            box.UpdatePosition();
         }
 
         if (ar == null) {
@@ -636,12 +652,13 @@ public static class RandomizerBoxes {
         BoxOffStates.Set(boxNumber, off);
     }
 
-    // BM|n toggles the seed's nth box line; BM|n=v turns it on if v > 0, else off (v: 1, 0, {slot} or (a OP b))
+    // BM|n toggles the seed's nth box line; BM|n=v turns it on if v > 0, else off (v as RI Format.txt says)
     public static void EvalBM(string value) {
         var eq = value.IndexOf('=');
         var name = (eq < 0 ? value : value.Substring(0, eq)).Trim();
+        var key = "BM|" + value;
         if (!int.TryParse(name, out var bit) || bit < 0 || bit >= LoadedBoxes.Length) {
-            Randomizer.LogError("BM|" + value + ": this seed has no box " + name);
+            RandomizerInventory.Complain(key, key + ": this seed has no box " + name);
             return;
         }
 
@@ -654,8 +671,8 @@ public static class RandomizerBoxes {
             return;
         }
 
-        if (!RandomizerInventory.ParseValue(value.Substring(eq + 1), out var on)) {
-            Randomizer.LogError("BM|" + value + ": after = comes 1, 0, {slot} or (a OP b)");
+        if (!RandomizerInventory.Evaluate(value.Substring(eq + 1), out var on, out var problem)) {
+            RandomizerInventory.Complain(key, key + ": " + problem);
             return;
         }
 
@@ -672,12 +689,62 @@ public static class RandomizerBoxes {
             }
         }
 
+        for (var id = RandomizerInventory.FirstMoveId; id <= RandomizerInventory.LastMoveId; id++) {
+            if (Randomizer.Inventory.GetRandomizerItem(id) != 0) {
+                Randomizer.Inventory.SetRandomizerItem(id, 0);
+                cleared = true;
+            }
+        }
+
         cleared |= ActiveBoxes.Count > 0;
         ActiveBoxes.Clear();
         ActiveThisTick.Clear();
         CollectEachUpdate.Clear();
 
         return cleared;
+    }
+
+    public static bool Exists(int box) {
+        return box >= 0 && box < LoadedBoxes.Length;
+    }
+
+    public static bool Deleted(int box) {
+        return LoadedBoxes[box].Deleted;
+    }
+
+    // a box past Capacity has no off bit, so it is always on
+    public static bool IsOn(int box) {
+        var it = LoadedBoxes[box];
+        return !it.Deleted && (it.BoxNumber < 0 || !IsOff(it.BoxNumber));
+    }
+
+    // the top-left corner its line gives, in hundredths; false past what a move can reach
+    public static bool Corner(int box, out long x, out long y) {
+        var rect = LoadedBoxes[box].Rect;
+        x = y = 0;
+        if (!(Math.Abs(rect.xMin) < 1e7f && Math.Abs(rect.yMax) < 1e7f)) {
+            return false;
+        }
+
+        x = (long)Math.Round(rect.xMin * 100.0);
+        y = (long)Math.Round(rect.yMax * 100.0);
+        return true;
+    }
+
+    public static void Moved(int box) {
+        if (box < LoadedBoxes.Length) {
+            LoadedBoxes[box].UpdatePosition();
+        }
+    }
+
+    // the box editors draw every box where its line puts it; moves come back when they close
+    public static bool ShowingLines { get; private set; }
+
+    public static void ShowLines(bool on) {
+        ShowingLines = on;
+        foreach (var box in LoadedBoxes) {
+            box.UpdatePosition();
+        }
     }
 
     public static void MaskUpdated(int code) {

@@ -180,6 +180,7 @@ public static class PracticeEditor {
         undoIndex = -1;
         leaveArmed = false;
         hoverLists = null;
+        RandomizerBoxes.ShowLines(true);
 
         if (UberPostProcess.Instance != null) {
             doMotionBlur = UberPostProcess.Instance.DoMotionBlur;
@@ -196,6 +197,7 @@ public static class PracticeEditor {
         lit = null;
         Active = false;
         dragging = false;
+        RandomizerBoxes.ShowLines(false);
 
         if (UberPostProcess.Instance != null) {
             UberPostProcess.Instance.DoMotionBlur = doMotionBlur;

@@ -5,14 +5,15 @@ import os
 import re
 import unicodedata
 import unittest
+from decimal import Decimal
 
 from hypothesis import event, given, settings, strategies as st
 
 from client_props.base import CLIENT, HERE, examples
 from client_props.cs_bridge import outcome, slice_bridge
 from client_props.strategies.pickups import (BROKEN_RULES, INT_MAX, INT_MIN, EDGE_SLOTS, EDGE_VALUES, any_code, any_id,
-                                             emitted, inventory, mw_line, name_query, name_rules, ri_stmt, slot_id,
-                                             slot_message, value_expr)
+                                             boxes, br_stmt, emitted, inventory, legacy_value_expr, mw_line, name_query,
+                                             name_rules, ri_stmt, slot_id, slot_message, value_expr)
 from pickups import Event, MultiworldItem, Pickup, Skill, Teleporter, Upgrade
 from test.js_bridge import call as js
 from test.strategies.wire import line_text, pieces, raw_multi, real_pickup, slashy_text
@@ -355,91 +356,362 @@ BOXES = range(1700, 2000)
 EXTRA_ITEMS_APPLIED = 948
 
 
-def writable(slot):
-    """Seeds keep off the MW and AP bookkeeping (940-948) and the client's own block (10000-19999)."""
-    return slot >= 0 and not 940 <= slot <= EXTRA_ITEMS_APPLIED and not 10000 <= slot <= 19999
+class Refused(Exception):
+    pass
 
 
-class Model:
-    """RI Format.txt and the comments in RandomizerInventory, as Python: one instance per expression."""
+_LETTERS = re.compile(r"[A-Za-z]+")
+_DIGITS = re.compile(r"[0-9]+")
+
+
+def _read_atom(inner):
+    """("s", slot) for {n}; ("b", box), ("x", box) or ("y", box) for {Bn}, {Bn.x}, {Bn.y}."""
+    if len(inner) > 1 and inner[0] in "Bb":
+        dot = inner.find(".")
+        num, part = (inner[1:], "") if dot < 0 else (inner[1:dot], inner[dot + 1:])
+        if re.fullmatch("[0-9]+\0*", num) and int(num.rstrip("\0")) <= INT_MAX and (dot < 0 or part.lower() in ("x", "y")):
+            return ("b" if dot < 0 else part.lower()), int(num.rstrip("\0"))
+        raise Refused
+    n = cs_int(inner)
+    if n is None:
+        raise Refused
+    return "s", n
+
+
+def parse_slot_value(text):
+    """("sum", (atoms, ops)) or ("any", [[(not, left, op, right)]]), ORs of ANDs; None when refused.
+
+    An atom is (kind, n, minus): ("n", hundredths), or a read as _read_atom has it; whitespace is
+    Trim's set, keywords any case."""
+    t, at = text or "", 0
+
+    def skip():
+        nonlocal at
+        while at < len(t) and t[at] in _TRIM:
+            at += 1
+        return t[at:at + 1]
+
+    def word():
+        nonlocal at
+        skip()
+        m = _LETTERS.match(t, at)
+        if not m:
+            return None
+        at = m.end()
+        return m.group().upper()
+
+    def atom():
+        nonlocal at
+        sign = skip()
+        if sign in ("+", "-"):
+            at += 1
+        if skip() == "{":
+            close = t.find("}", at)
+            if close < 0:
+                raise Refused
+            kind, n = _read_atom(cs_trim(t[at + 1:close]))
+            at = close + 1
+            return kind, n, sign == "-"
+        m = _DIGITS.match(t, at)
+        if not m:
+            raise Refused
+        at = m.end()
+        whole = m.group().lstrip("0")
+        if len(whole) > 10 or len(whole) == 10 and whole > ("2147483648" if sign == "-" else "2147483647"):
+            raise Refused
+        n = int(whole or "0") * 100
+        if t[at:at + 1] == ".":
+            p = _DIGITS.match(t, at + 1)
+            if not p or len(p.group()) > 2:
+                raise Refused
+            at = p.end()
+            n += int(p.group().ljust(2, "0"))
+        return "n", -n if sign == "-" else n, False
+
+    def sum_():
+        nonlocal at
+        atoms, ops = [atom()], []
+        while (c := skip()) and c in "+-*/%":
+            at += 1
+            ops.append(c)
+            atoms.append(atom())
+        return atoms, ops
+
+    def clause():
+        nonlocal at
+        neg = False
+        while (w := word()) is not None:
+            if w != "NOT":
+                raise Refused
+            neg = not neg
+        if skip() != "(":
+            raise Refused
+        at += 1
+        left = sum_()
+        skip()
+        op = next((o for o in COMPARATORS if t.startswith(o, at)), None)
+        if op is None:
+            raise Refused
+        at += len(op)
+        right = sum_()
+        if skip() != ")":
+            raise Refused
+        at += 1
+        return neg, left, op, right
+
+    try:
+        if skip() == "(" or _LETTERS.match(t, at):
+            groups = [[clause()]]
+            while (w := word()) is not None:
+                if w == "AND":
+                    groups[-1].append(clause())
+                elif w == "OR":
+                    groups.append([clause()])
+                else:
+                    raise Refused
+            parsed = "any", groups
+        else:
+            parsed = "sum", sum_()
+        if skip():
+            raise Refused
+        return parsed
+    except Refused:
+        return None
+
+
+class LegacyModel:
+    """The grammar before math and AND/OR/NOT: a number, {n}, or (a OP b)."""
 
     def __init__(self, inv):
-        self.inv, self.errors, self.logs, self.masks = dict(inv), 0, 0, []
-
-    def read(self, slot):
-        if slot < 0:
-            self.errors += 1
-            return 0
-        return self.inv.get(slot, 0)
-
-    def write(self, slot, value):
-        if not writable(slot):
-            self.errors += 1
-            return
-        self.inv[slot] = value
-        if slot in BOXES:
-            self.masks.append(slot)
+        self.inv = dict(inv)
 
     def operand(self, text):
         t = cs_trim(text)
         if len(t) > 2 and t[0] == "{" and t[-1] == "}":
             slot = cs_int(cs_trim(t[1:-1]))
             if slot is not None:
-                return self.read(slot)
+                return self.inv.get(slot, 0) if slot >= 0 else 0
         return cs_int(t)
-
-    def comparison(self, text):
-        for op in COMPARATORS:
-            at = text.find(op)
-            if at < 0:
-                continue
-            left = self.operand(text[:at])
-            right = None if left is None else self.operand(text[at + len(op):])
-            return None if right is None else int(HOLDS[op](left, right))
-        return None
 
     def parse_value(self, text):
         t = cs_trim(text or "")
-        if len(t) > 2 and t[0] == "(" and t[-1] == ")":
-            return self.comparison(t[1:-1])
-        return self.operand(t)
+        if not (len(t) > 2 and t[0] == "(" and t[-1] == ")"):
+            return self.operand(t)
+        for op in COMPARATORS:
+            at = t.find(op, 1, len(t) - 1)
+            if at < 0:
+                continue
+            left = self.operand(t[1:at])
+            right = None if left is None else self.operand(t[at + len(op):-1])
+            return None if right is None else int(HOLDS[op](left, right))
+        return None
+
+
+def writable(slot):
+    """Seeds keep off the MW and AP bookkeeping (940-948) and the client's own block (10000-19999)."""
+    return slot >= 0 and not 940 <= slot <= EXTRA_ITEMS_APPLIED and not 10000 <= slot <= 19999
+
+
+BIGGEST = 10 ** 22   # 1e20, in hundredths
+FIRST_MOVE, MOVABLE = 11000, 4500
+
+
+def show(h):
+    """A number in hundredths as C#'s "0.##" writes it."""
+    if h == 0:
+        return "0"
+    frac = "%02d" % (abs(h) % 100)
+    return ("-" if h < 0 else "") + str(abs(h) // 100) + ("." + frac.rstrip("0") if frac != "00" else "")
+
+
+class Model:
+    """RI Format.txt and the comments in RandomizerInventory, as Python: one instance per expression.
+
+    Numbers are exact integers in hundredths; boxes are (x, y, deleted, off), corners in hundredths."""
+
+    def __init__(self, inv, boxes=()):
+        self.inv, self.errors, self.logs, self.masks, self.moves = dict(inv), 0, 0, [], []
+        self.boxes = list(boxes)
+        self.now, self.complained = 0, {}
+
+    def complain(self, key):
+        """At most once per 5 s per key."""
+        if key in self.complained and self.now - self.complained[key] < 5000:
+            return
+        self.complained[key] = self.now
+        self.errors += 1
+
+    def offset(self, n):
+        if not 0 <= n < MOVABLE:
+            return 0, 0
+        return self.inv.get(FIRST_MOVE + 2 * n, 0), self.inv.get(FIRST_MOVE + 2 * n + 1, 0)
+
+    def read_box(self, n, part):
+        if not 0 <= n < len(self.boxes):
+            self.complain("{B%d}" % n)
+            return 0
+        x, y, gone, off = self.boxes[n]
+        if part == "b":
+            return 0 if gone or off else 100
+        if not (abs(x) < 10 ** 9 and abs(y) < 10 ** 9):
+            self.complain("{B%d}" % n)
+            return 0
+        dx, dy = self.offset(n)
+        return x + dx if part == "x" else y + dy
+
+    def read(self, slot):
+        if slot < 0:
+            self.complain("slot %d" % slot)
+            return 0
+        return self.inv.get(slot, 0)
+
+    @staticmethod
+    def arith(a, op, b):
+        """/ drops the remainder, % is what it dropped, * cuts past two places; None past 1e20."""
+        if op in "/%" and b == 0:
+            return None
+        r = {"+": lambda: a + b, "-": lambda: a - b, "*": lambda: cs_div(a * b, 100),
+             "/": lambda: cs_div(a, b) * 100, "%": lambda: a - b * cs_div(a, b)}[op]()
+        return r if abs(r) < BIGGEST else None
+
+    def atom(self, a):
+        kind, n, minus = a
+        v = n if kind == "n" else self.read(n) * 100 if kind == "s" else self.read_box(n, kind)
+        return -v if minus else v
+
+    def sum(self, s):
+        """Left to right, a * / % run folded into its term; reads stop at the first refusal."""
+        atoms, ops = s
+        total, pending, term = 0, "+", self.atom(atoms[0])
+        for op, a in zip(ops, atoms[1:]):
+            v = self.atom(a)
+            if op in "+-":
+                total = self.arith(total, pending, term)
+                if total is None:
+                    return None
+                pending, term = op, v
+            else:
+                term = self.arith(term, op, v)
+                if term is None:
+                    return None
+        return self.arith(total, pending, term)
+
+    def number(self, text):
+        """The value in hundredths, or None when refused."""
+        parsed = parse_slot_value(text)
+        if parsed is None:
+            return None
+        kind, body = parsed
+        if kind == "sum":
+            return self.sum(body)
+        for group in body:
+            for neg, left, op, right in group:
+                a = self.sum(left)
+                b = None if a is None else self.sum(right)
+                if b is None:
+                    return None
+                if HOLDS[op](a, b) == neg:
+                    break
+            else:
+                return 100
+        return 0
+
+    @staticmethod
+    def to_slot(h):
+        """(whole, rounded?): halves away from zero, then wrapped to 32 bits."""
+        q, r = divmod(abs(h), 100)
+        q += r >= 50
+        return wrap(-q if h < 0 else q), r != 0
+
+    def parse_value(self, text):
+        """The value as a slot takes it."""
+        h = self.number(text)
+        return None if h is None else self.to_slot(h)[0]
 
     def apply(self, text):
+        key = "RI|" + text
         eq = text.find("=")
         if eq < 1:
-            self.errors += 1
-            return
+            return self.complain(key)
         left = cs_trim(text[:eq])
         op = left[-1] if left and left[-1] in "+-*/%" else "="
         slot = cs_int(cs_trim(left[:-1]) if op != "=" else left)
-        value = None if slot is None else self.parse_value(text[eq + 1:])
+        if slot is None:
+            return self.complain(key)
+        value = self.number(text[eq + 1:])
+        if value is not None and op != "=":
+            value = self.arith(self.read(slot) * 100, op, value)
         if value is None:
-            self.errors += 1
+            return self.complain(key)
+        whole, rounded = self.to_slot(value)
+        if rounded:
+            self.complain(key)
+        if not writable(slot):
+            return self.complain(key)
+        self.inv[slot] = whole
+        if slot in BOXES:
+            self.masks.append(slot)
+
+    def move_box(self, text):
+        key = "BR|" + text
+        eq = text.find("=")
+        name = cs_trim(text if eq < 0 else text[:eq])
+        op = name[-1] if eq >= 0 and name and name[-1] in "+-" else "="
+        if op != "=":
+            name = cs_trim(name[:-1])
+        n = cs_int(name)
+        if n is None or not 0 <= n < len(self.boxes):
+            return self.complain(key)
+        if self.boxes[n][2]:
             return
-        if op == "=":
-            return self.write(slot, value)
-        was = self.read(slot)
-        if op in "/%" and (value == 0 or was == INT_MIN and value == -1):
-            self.errors += 1
-            return
-        q = cs_div(was, value) if op in "/%" else 0
-        self.write(slot, wrap({"+": was + value, "-": was - value, "*": was * value, "/": q, "%": was - value * q}[op]))
+        if n >= MOVABLE:
+            return self.complain(key)
+        x, y = 0, 0
+        if eq >= 0:
+            xy = text[eq + 1:]
+            comma = xy.find(",")
+            dx = None if comma < 0 else self.number(xy[:comma])
+            dy = None if dx is None else self.number(xy[comma + 1:])
+            cx, cy = self.boxes[n][:2]
+            if dy is None or not (abs(cx) < 10 ** 9 and abs(cy) < 10 ** 9):
+                return self.complain(key)
+            wx, wy = self.offset(n)
+            sign = -1 if op == "-" else 1
+            x, y = (dx - cx, dy - cy) if op == "=" else (wx + sign * dx, wy + sign * dy)
+        if not (INT_MIN <= x <= INT_MAX and INT_MIN <= y <= INT_MAX):
+            return self.complain(key)
+        self.inv[FIRST_MOVE + 2 * n], self.inv[FIRST_MOVE + 2 * n + 1] = x, y
+        self.moves += [n, n]
 
     def resolve(self, text):
         if "{" not in text:
             return text
 
         def one(m):
-            slot = cs_int(m.group(1))
+            name = m.group(1)
+            if name[0] in "Bb":
+                dot = name.find(".")
+                num = name[1:] if dot < 0 else name[1:dot]
+                if not re.fullmatch("[0-9]+", num) or int(num) > INT_MAX:
+                    self.logs += 1
+                    return "0"
+                return show(self.read_box(int(num), "b" if dot < 0 else name[dot + 1].lower()))
+            slot = cs_int(name)
             if slot is None:
                 self.logs += 1
                 return "0"
             return str(self.read(slot))
-        return re.sub(r"\{(-?\d+)\}", one, text)
+        return re.sub(r"\{(-?\d+|[Bb]\d+(?:\.[XxYy])?)\}", one, text)
 
 
 def errors():
     return len(B.get("Randomizer.Errors"))
+
+
+def reset(inv, bxs=()):
+    B.call("PickupsGlue.Reset", inv)
+    if bxs:
+        B.call("PickupsGlue.Boxes", *([b[i] for b in bxs] for i in range(4)))
 
 
 def snapshot():
@@ -477,14 +749,114 @@ class SlotExpressions(Quiet):
         self.assertFalse(B.call("RandomizerInventory.Writable", EXTRA_ITEMS_APPLIED))
 
     @settings(max_examples=examples(600))
-    @given(value_expr(), inventory)
-    def test_parse_value_matches_the_format(self, text, inv):
-        B.call("PickupsGlue.Reset", inv)
-        model = Model(inv)
+    @given(value_expr(), inventory, boxes)
+    def test_parse_value_matches_the_format(self, text, inv, bxs):
+        reset(inv, bxs)
+        model = Model(inv, bxs)
         want = model.parse_value(text)
         event("parses" if want is not None else "refused")
         self.assertEqual(B.call("RandomizerInventory.ParseValue", text), (want is not None, [want or 0]))
         self.assertEqual(errors(), model.errors)
+
+    @settings(max_examples=examples(600))
+    @given(value_expr(), inventory, boxes)
+    def test_a_number_matches_the_format(self, text, inv, bxs):
+        reset(inv, bxs)
+        model = Model(inv, bxs)
+        want = model.number(text)
+        event("a number" if want is None or want % 100 == 0 else "a fraction")
+        ok, value, _ = B.call("PickupsGlue.Evaluate", text)
+        self.assertEqual((ok == "ok", Decimal(value) * 100 if ok == "ok" else None), (want is not None, want))
+        self.assertEqual(errors(), model.errors)
+
+    def test_the_format_examples(self):
+        inv = {8000: 2, 8001: 0, 20000: 5, 11002: 150, 11003: -50}
+        bxs = [(10050, -4000, False, False), (-200, 300, False, True), (0, 0, True, False)]
+        for text, want in [("{20000}*2 - 1", 9), ("1 + {8000}*3", 7), ("7 - 2 - 1", 4), ("-7/2", -3), ("-7%2", -1),
+                           ("-2147483648", INT_MIN), ("-{8000}", -2), ("2147483647+1", INT_MIN),
+                           ("({8000}>=2) AND NOT ({8001}==0)", 0), ("not ({8001}==0) or ({8000}*2 > 3)", 1),
+                           ("(1==1) OR (1==1) AND (1==0)", 1), ("({8001}==0) OR (10/{8001}>2)", 1),
+                           ("(5=={8000})", 0), ("{8000} AND (1==1)", None), ("({8000}==2 AND {8001}==0)", None),
+                           ("({8000})", None), ("{8000}*(2+1)", None), ("(1==1) NOT (1==1)", None),
+                           ("(1==1) AND", None), ("1/{8001}", None), ("2147483648", None), ("", None),
+                           ("0.65", 1), ("2.5", 3), ("-2.5", -3), ("0.49", 0), ("-0.5", -1), ("0.65*{20000}/1", 3), ("2.5*2", 5), ("7.5/2", 3), ("7.5%2*2", 3),
+                           ("{B0.x}*100", 10050), ("{b0.Y}", -40), ("{B1.x}*100", -50), ("{B1.y}*2", 5),
+                           ("{B0}+{B1}+{B2}", 1), ("({B0.x} > 100.25)", 1), ("{B3}", 0), ("{B0.z}", None),
+                           ("1.234", None), ("1.", None), (".5", None), ("2147483647.5*2/1", INT_MAX * 2 + 1 - 2 ** 32),
+                           ("({B0.x}+{B1.x})*0.5", None), ("{B0.x}*0.5+{B1.x}*0.5", 50)]:
+            reset(inv, bxs)
+            self.assertEqual(B.call("RandomizerInventory.ParseValue", text), (want is not None, [want or 0]), text)
+            self.assertEqual(Model(inv, bxs).parse_value(text), want, text)
+
+    def test_errors_are_capped_per_statement_for_five_seconds(self):
+        reset({})
+        for _ in range(3):
+            B.call("RandomizerInventory.Apply", "8000=1/0")
+            B.call("RandomizerInventory.Apply", "8000=0.5")
+        self.assertEqual((errors(), snapshot()), (2, {8000: 1}))
+        B.call("PickupsGlue.Tick", 4999)
+        B.call("RandomizerInventory.Apply", "8000=1/0")
+        self.assertEqual(errors(), 2)
+        B.call("PickupsGlue.Tick", 1)
+        B.call("RandomizerInventory.Apply", "8000=1/0")
+        self.assertEqual(errors(), 3)
+
+    @settings(max_examples=examples(300))
+    @given(st.lists(st.one_of(ri_stmt().map(lambda t: ("RI", t)), br_stmt().map(lambda t: ("BR", t))), min_size=1, max_size=3),
+           st.lists(st.tuples(st.integers(0, 2), st.sampled_from([0, 0, 1000, 4999, 5000])), max_size=8), inventory, boxes)
+    def test_the_error_cap_matches_the_format(self, pool, picks, inv, bxs):
+        if any(code == "RI" and the_extra_items_counter(statement_slot(text)) for code, text in pool):
+            event("masked: the extra items counter")
+            return
+        reset(inv, bxs)
+        model = Model(inv, bxs)
+        for k, ms in picks:
+            code, text = pool[k % len(pool)]
+            B.call("PickupsGlue.Tick", ms)
+            model.now += ms
+            B.call("RandomizerInventory.Apply" if code == "RI" else "RandomizerInventory.MoveBox", text)
+            (model.apply if code == "RI" else model.move_box)(text)
+        self.assertEqual(snapshot(), model.inv)
+        self.assertEqual(errors(), model.errors)
+
+    def test_a_box_move_example(self):
+        bxs = [(10050, -4000, False, False), (0, 0, True, False)]
+        for text, want in [("0=120,-40", (1950, 0)), ("0=120.5,-39.99", (2000, 1)), ("0+=3,0.5", (300, 50)),
+                           ("0-=1,1", (-100, -100)), ("0", (0, 0)), ("0={B0.x}+1,{B0.y}", (100, 0))]:
+            reset({}, bxs)
+            model = Model({}, bxs)
+            model.move_box(text)
+            B.call("RandomizerInventory.MoveBox", text)
+            self.assertEqual(model.offset(0), want, text)
+            self.assertEqual(snapshot(), model.inv, text)
+            self.assertEqual(errors(), 0, text)
+        for text in ["1=5,5", "7=1,1", "0=1", "0=1,0.5x", "0=99999999,0"]:
+            reset({}, bxs)
+            B.call("RandomizerInventory.MoveBox", text)
+            self.assertEqual((snapshot(), errors()), ({}, 0 if text.startswith("1=") else 1), text)
+
+    @settings(max_examples=examples(600))
+    @given(br_stmt(), inventory, boxes, st.dictionaries(st.integers(11000, 11013), st.integers(-10 ** 6, 10 ** 6), max_size=4))
+    def test_a_box_move_matches_the_format(self, text, inv, bxs, moved):
+        inv = {**inv, **moved}
+        reset(inv, bxs)
+        model = Model(inv, bxs)
+        model.move_box(text)
+        event("refused" if model.errors else "moved" if model.moves else "left alone")
+        B.call("RandomizerInventory.MoveBox", text)
+        self.assertEqual(snapshot(), model.inv)
+        self.assertEqual(errors(), model.errors)
+        self.assertEqual(B.get("RandomizerBoxes.Moves"), model.moves)
+
+    @settings(max_examples=examples(400))
+    @given(legacy_value_expr(), inventory)
+    def test_a_value_the_old_grammar_took_reads_the_same(self, text, inv):
+        old = LegacyModel(inv).parse_value(text)
+        if old is None:
+            event("the old grammar refused it")
+            return
+        B.call("PickupsGlue.Reset", inv)
+        self.assertEqual(B.call("RandomizerInventory.ParseValue", text), (True, [old]))
 
     @settings(max_examples=examples(600))
     @given(ri_stmt(), inventory)
@@ -505,7 +877,7 @@ class SlotExpressions(Quiet):
     @given(st.sampled_from([0, 8000, 9999, 20000, INT_MAX]), st.sampled_from("+-*/%"),
            st.one_of(st.sampled_from(EDGE_VALUES), st.integers(-9, 9), st.integers(INT_MIN, INT_MAX)),
            st.one_of(st.sampled_from(EDGE_VALUES), st.integers(-9, 9), st.integers(INT_MIN, INT_MAX)))
-    def test_slot_arithmetic_wraps_and_refuses_what_would_throw(self, slot, op, was, value):
+    def test_slot_arithmetic_wraps_and_refuses_division_by_zero(self, slot, op, was, value):
         B.call("PickupsGlue.Reset", {slot: was})
         model = Model({slot: was})
         text = "%d%s=%d" % (slot, op, value)
@@ -515,19 +887,19 @@ class SlotExpressions(Quiet):
         self.assertEqual(errors(), model.errors)
 
     @settings(max_examples=examples(400))
-    @given(slot_message, inventory)
-    def test_a_message_reads_the_slots_it_names(self, text, inv):
-        B.call("PickupsGlue.Reset", inv)
-        model = Model(inv)
+    @given(slot_message, inventory, boxes)
+    def test_a_message_reads_the_slots_it_names(self, text, inv, bxs):
+        reset(inv, bxs)
+        model = Model(inv, bxs)
         self.assertEqual(B.call("RandomizerInventory.ResolveSlots", text), model.resolve(text))
         self.assertEqual(errors(), model.errors)
         self.assertEqual(len(B.get("Randomizer.Logs")), model.logs)
 
     @settings(max_examples=examples(300))
-    @given(st.text(max_size=20), inventory)
-    def test_slot_expressions_never_throw(self, text, inv):
-        B.call("PickupsGlue.Reset", inv)
-        for fn in ("ParseValue", "Apply", "ResolveSlots"):
+    @given(st.text(max_size=20), inventory, boxes)
+    def test_slot_expressions_never_throw(self, text, inv, bxs):
+        reset(inv, bxs)
+        for fn in ("ParseValue", "Apply", "ResolveSlots", "MoveBox"):
             self.assertEqual(outcome(B.call, "RandomizerInventory." + fn, text)[0], "ok", fn)
 
 

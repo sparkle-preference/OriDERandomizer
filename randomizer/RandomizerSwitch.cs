@@ -432,6 +432,9 @@ public static class RandomizerSwitch {
                 case "BM":
                     RandomizerBoxes.EvalBM((string)action.Value);
                     break;
+                case "BR":
+                    RandomizerInventory.MoveBox((string)action.Value);
+                    break;
                 case "TW":
                     // TW entries are coord|TW|name,x,y,logicnode
                     var pieces2 = ((string)action.Value).Split(',');
@@ -500,9 +503,13 @@ public static class RandomizerSwitch {
         }
     }
 
-    // RI and BM go out as NO|1, bare or inside a multipickup: servers must not learn invented slot ids
+    // RI, BM and BR go out as NO|1, bare or inside a multipickup: servers must not learn invented slot ids
+    private static bool Scripting(string code) {
+        return code == "RI" || code == "BM" || code == "BR";
+    }
+
     private static RandomizerAction WireSafe(RandomizerAction action) {
-        if (action.Action == "RI" || action.Action == "BM") {
+        if (Scripting(action.Action)) {
             return new RandomizerAction("NO", "1");
         }
 
@@ -511,12 +518,12 @@ public static class RandomizerSwitch {
         }
 
         var value = (string)action.Value;
-        if (!value.Contains("RI/") && !value.Contains("BM/")) {
+        if (!value.Contains("RI/") && !value.Contains("BM/") && !value.Contains("BR/")) {
             return action;
         }
 
         var parts = action.Decompose();
-        return parts.Any(p => p.Action == "RI" || p.Action == "BM")
+        return parts.Any(p => Scripting(p.Action))
             ? RandomizerAction.AsMulti(parts.Select(WireSafe).ToList(), action.Action == "RP")
             : action;
     }

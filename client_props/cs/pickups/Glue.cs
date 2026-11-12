@@ -16,6 +16,31 @@ static class PickupsGlue {
         Randomizer.Errors.Clear();
         Randomizer.Logs.Clear();
         RandomizerBoxes.Masks.Clear();
+        RandomizerBoxes.Moves.Clear();
+        Boxes(new long[0], new long[0], new bool[0], new bool[0]);
+        RandomizerInventory.ForgetComplaints();
+        Clock = 0;
+        RandomizerInventory.Now = () => Clock;
+    }
+
+    // the milliseconds the error cap sees; tests move it by hand
+    public static int Clock;
+
+    public static void Tick(int ms) { Clock += ms; }
+
+    public static void Boxes(long[] xs, long[] ys, bool[] gone, bool[] off) {
+        RandomizerBoxes.CornerX = xs;
+        RandomizerBoxes.CornerY = ys;
+        RandomizerBoxes.Gone = gone;
+        RandomizerBoxes.Off = off;
+    }
+
+    // [ok, the number as written, the problem]
+    public static string[] Evaluate(string text) {
+        decimal value;
+        string problem;
+        var ok = RandomizerInventory.Evaluate(text, out value, out problem);
+        return new[] { ok ? "ok" : "refused", value.ToString(System.Globalization.CultureInfo.InvariantCulture), problem };
     }
 
     public static Dictionary<int, int> Snapshot() {

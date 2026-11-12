@@ -31,4 +31,23 @@ static class RandomizerBoxes {
     public static void MaskUpdated(int code) { Masks.Add(code); }
 
     public static void Serialize(Archive ar) { }
+
+    // a fake seed's boxes: top-left corners in hundredths, and which are deleted or off
+    public static long[] CornerX = new long[0], CornerY = new long[0];
+    public static bool[] Gone = new bool[0], Off = new bool[0];
+    public static List<int> Moves = new List<int>();
+
+    public static bool Exists(int box) { return box >= 0 && box < CornerX.Length; }
+
+    public static bool Deleted(int box) { return Gone[box]; }
+
+    public static bool IsOn(int box) { return !Gone[box] && !Off[box]; }
+
+    public static bool Corner(int box, out long x, out long y) {
+        x = CornerX[box];
+        y = CornerY[box];
+        return System.Math.Abs(x) < 1000000000 && System.Math.Abs(y) < 1000000000;
+    }
+
+    public static void Moved(int box) { Moves.Add(box); }
 }

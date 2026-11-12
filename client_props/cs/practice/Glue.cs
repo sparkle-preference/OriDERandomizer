@@ -286,7 +286,7 @@ static class PracticeGlue {
         var seg = PracticeSegment.Parse(file, "v");
         return new Dictionary<string, object> {
             { "boxes", seg.Boxes.Select(b => (object)new List<object> { b.Line, b.Deleted }).ToList() },
-            { "items", seg.StartingItems.Select(a => a.ToString()).ToList() }, { "goal", seg.GoalArea.HasValue }
+            { "items", seg.StartingItems.Select(a => a.ToString()).ToList() }, { "goal", seg.GoalBox != null }
         };
     }
 

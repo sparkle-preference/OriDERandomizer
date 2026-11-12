@@ -36,6 +36,9 @@ The rect is defined as "x1,y1,x2,y2" and defines the position and size of the bo
 Both (x1,y1) and (x2,y2) are points in the game's coordinate system and define two opposing corners of the box
 (any two corners in any order).
 
+BR|n moves box n during the game, keeping its size; {Bn.x} and {Bn.y} read where its top-left corner is,
+and {Bn} whether it is on. See RI Format.txt.
+
 
 
 COLOR

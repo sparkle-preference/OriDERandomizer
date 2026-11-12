@@ -55,9 +55,12 @@ ri_text = st.one_of(
     st.builds("{}{}={}".format, st.integers(8000, 8010), st.sampled_from("+-*/%"), st.integers(-5, 50)),
     st.builds("{}=({{{}}}>={})".format, st.integers(8000, 8010), st.integers(8000, 8010), st.integers(0, 9)),
     st.builds("{}+={{{}}}".format, st.integers(20000, 20010), st.integers(8000, 8010)),
+    st.builds("{}={{{}}}*2 - 1".format, st.integers(20000, 20010), st.integers(8000, 8010)),
+    st.builds("{}={{{}}}/2".format, st.integers(20000, 20010), st.integers(8000, 8010)),
 )
 bm_text = st.one_of(st.integers(0, 40).map(str),
-                    st.builds("{}={}".format, st.integers(0, 40), st.sampled_from(["0", "1", "{8000}", "(5=={8000})"])))
+                    st.builds("{}={}".format, st.integers(0, 40), st.sampled_from(
+                        ["0", "1", "{8000}", "(5=={8000})", "({8000}>=3) AND NOT ({8001}==0)", "({1}/2 > 0) or (0 > 1)"])))
 
 plain_emitted = st.one_of(
     real_pickup, removal, relic, st.just(("NO", "1")),
@@ -119,14 +122,89 @@ def _mangle(draw, text):
 
 
 @st.composite
-def value_expr(draw):
-    """The right of an RI or BM =: a number, {n}, or (a OP b)."""
+def legacy_value_expr(draw):
+    """The right of an RI or BM = before math: a number, {n}, or (a OP b)."""
     if draw(st.integers(0, 2)):
         text = draw(operand())
     else:
         op = draw(st.sampled_from(["==", "!=", "<=", ">=", "<", ">"]))
         text = draw(pad) + "(" + draw(operand()) + op + draw(operand()) + ")" + draw(pad)
     return draw(_mangle(text))
+
+
+@st.composite
+def decimal_literal(draw):
+    """A number with one or two decimals, now and then none or three."""
+    places = draw(st.sampled_from([1, 2, 2, 1, 0, 3]))
+    return draw(literal(st.integers(-99999, 99999))).rstrip() + "." + "".join(
+        draw(st.sampled_from("0123456789")) for _ in range(places)) + draw(pad)
+
+
+@st.composite
+def box_read(draw):
+    """{Bn}, {Bn.x} or {Bn.y}, any case, some on boxes the fake seed lacks."""
+    n = draw(st.one_of(st.integers(0, 7), st.sampled_from(["-1", "+2", "4500", "99999999999"])))
+    part = draw(st.sampled_from(["", "", ".x", ".y", ".X", ".Y", ".z", "."]))
+    return draw(pad) + "{" + draw(pad) + draw(st.sampled_from("Bb")) + str(n) + part + draw(pad) + "}" + draw(pad)
+
+
+@st.composite
+def math_expr(draw):
+    """Numbers (some with decimals), {n} and box reads, some negated, joined by + - * / %; divisors are often 0 or -1."""
+    def atom():
+        text = draw(st.one_of(operand(), operand(), decimal_literal(), box_read()))
+        if draw(st.integers(0, 3)):
+            return text
+        return draw(pad) + draw(st.sampled_from("-+")) + text.lstrip()
+    text = atom()
+    for _ in range(draw(st.integers(0, 3))):
+        op = draw(st.sampled_from("+-*/%"))
+        text += op + (draw(st.sampled_from([" 0", "-1", "{8000}"])) if draw(st.integers(0, 3)) == 0 else atom())
+    return text
+
+
+word_case = st.sampled_from([str.upper, str.upper, str.lower, str.title])
+
+
+@st.composite
+def condition(draw):
+    """(a OP b) comparisons, a and b math, each maybe NOT, joined by AND and OR."""
+    def clause():
+        nots = "".join(draw(word_case)("not") + draw(st.sampled_from([" ", "  ", ""])) for _ in range(draw(st.integers(0, 2))))
+        op = draw(st.sampled_from(["==", "!=", "<=", ">=", "<", ">"]))
+        return draw(pad) + nots + "(" + draw(math_expr()) + op + draw(math_expr()) + ")" + draw(pad)
+    text = clause()
+    for _ in range(draw(st.integers(0, 3))):
+        text += draw(st.sampled_from([" ", ""])) + draw(word_case)(draw(st.sampled_from(["and", "or"]))) + " " + clause()
+    return text
+
+
+@st.composite
+def value_expr(draw):
+    """The right of an RI or BM =: math on numbers and {n}, or comparisons joined by NOT, AND and OR."""
+    text = draw(st.one_of(legacy_value_expr(), math_expr(), condition()))
+    if draw(st.integers(0, 5)) == 0:
+        at = draw(st.integers(0, len(text)))
+        text = text[:at] + draw(st.sampled_from([" AND ", " or ", "NOT ", "(", ")", "x", "{8000} AND "])) + text[at:]
+    return draw(_mangle(text))
+
+
+@st.composite
+def br_stmt(draw):
+    """A BR value: n, n=x,y, n+=x,y or n-=x,y, mostly on the fake seed's boxes."""
+    n = draw(st.one_of(st.integers(0, 7).map(str), st.sampled_from(["-1", " 3 ", "x", "4500"])))
+    if draw(st.integers(0, 5)) == 0:
+        return draw(_mangle(n))
+    op = draw(st.sampled_from(["", "", "+", "-"]))
+    xy = draw(value_expr()) + draw(st.sampled_from([",", ",", ",", "", ",,"])) + draw(value_expr())
+    return draw(_mangle(n + draw(pad) + op + "=" + xy))
+
+
+# a fake seed's boxes: top-left corners in hundredths, deleted, off
+boxes = st.lists(st.tuples(
+    st.one_of(st.integers(-500000, 500000), st.sampled_from([0, 999999999, -999999999, 10 ** 9])),
+    st.one_of(st.integers(-500000, 500000), st.sampled_from([0, 999999999, -10 ** 9])),
+    st.sampled_from([False, False, False, True]), st.booleans()), max_size=6)
 
 
 @st.composite
@@ -187,4 +265,6 @@ slot_message = st.lists(st.one_of(
     st.text(st.sampled_from("ab {}-0123456789\N{ARABIC-INDIC DIGIT ZERO}\N{ARABIC-INDIC DIGIT THREE}"
                             "\N{DEVANAGARI DIGIT ZERO}\N{FULLWIDTH DIGIT ONE}"), max_size=6),
     st.builds("{{{}}}".format, slot_id),
+    st.builds("{{{}{}{}}}".format, st.sampled_from("Bbx"), st.one_of(st.integers(-1, 7), st.just("\N{ARABIC-INDIC DIGIT THREE}")),
+              st.sampled_from(["", ".x", ".Y", ".z"])),
 ), max_size=5).map("".join)

@@ -44,4 +44,6 @@ public class RandomizerBoxPrefab : MonoBehaviour {
     public static RandomizerBoxPrefab Create(RandomizerBox box) { return null; }
 
     public void UpdateActive() { }
+
+    public void Place() { }
 }
