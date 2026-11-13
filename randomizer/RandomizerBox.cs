@@ -28,7 +28,7 @@ public class RandomizerBox {
     // where the box is now: its line's rect, moved by any BR
     public Rect CurrentRect {
         get {
-            RandomizerInventory.MoveOffset(BoxNumber, out var x, out var y);
+            RandomizerBoxes.Offset(BoxNumber, out var x, out var y);
             return new Rect(Rect.x + x / 100f, Rect.y + y / 100f, Rect.width, Rect.height);
         }
     }
@@ -464,49 +464,96 @@ public static class RandomizerBoxes {
 
     private static bool _updateLast;
 
-    public static void Serialize(Archive? ar) {
-        // a load swaps the inventory in whole, so every box is placed and shown again
-        foreach (var box in LoadedBoxes) {
-            box.UpdateActive();
-            box.UpdatePosition();
-        }
+    // each moved box's offset from where its line puts it, in hundredths; saved with the box data
+    private static readonly Dictionary<int, (int, int)> Offsets = [];
 
-        if (ar == null) {
-            // Reading old save data without serialized box data
-            ActiveBoxes.Clear();
-            ActiveThisTick.Clear();
-            CollectEachUpdate.Clear();
-            return;
-        }
+    public static void Offset(int box, out int x, out int y) {
+        (x, y) = Offsets.TryGetValue(box, out var at) ? at : (0, 0);
+    }
 
-        if (ar.Reading) {
-            ActiveBoxes.Clear();
-            ActiveThisTick.Clear();
-            CollectEachUpdate.Clear();
-
-            var serializedVersion = ar.Serialize(0);
-            if (serializedVersion != 1) {
-                Randomizer.LogError($"Error reading saved box states. SerializedVersion has invalid value '{serializedVersion}'");
-                return;
-            }
-
-            var count = ar.Serialize(0);
-            for (var i = 0; i < count; i++) {
-                var boxNr = ar.Serialize(0);
-                ActiveBoxes.Add(boxNr, new ActiveBoxState(ar.Serialize(0)));
-                ActiveThisTick.Add(boxNr);
-
-                if (boxNr < LoadedBoxes.Length && LoadedBoxes[boxNr].Trigger == RandomizerBox.BoxTrigger.Frame) {
-                    CollectEachUpdate.Add(boxNr);
-                }
-            }
+    public static void SetOffset(int box, int x, int y) {
+        if (x == 0 && y == 0) {
+            Offsets.Remove(box);
         } else {
-            ar.Serialize(1);
+            Offsets[box] = (x, y);
+        }
+
+        Moved(box);
+    }
+
+    // every box back where its line puts it; true when any had moved
+    public static bool ForgetMoves() {
+        var moved = new List<int>(Offsets.Keys);
+        Offsets.Clear();
+        foreach (var box in moved) {
+            Moved(box);
+        }
+
+        return moved.Count > 0;
+    }
+
+    // version 2 adds the offsets; a version 1 save has every box unmoved
+    public static void Serialize(Archive? ar) {
+        if (ar != null && !ar.Reading) {
+            ar.Serialize(2);
             ar.Serialize(ActiveBoxes.Count);
             foreach (var (boxNr, activeState) in ActiveBoxes) {
                 ar.Serialize(boxNr);
                 ar.Serialize(activeState.Cooldown);
             }
+
+            ar.Serialize(Offsets.Count);
+            foreach (var (boxNr, (x, y)) in Offsets) {
+                ar.Serialize(boxNr);
+                ar.Serialize(x);
+                ar.Serialize(y);
+            }
+
+            return;
+        }
+
+        ActiveBoxes.Clear();
+        ActiveThisTick.Clear();
+        CollectEachUpdate.Clear();
+        Offsets.Clear();
+        if (ar != null) {
+            Read(ar);
+        }
+
+        // a load swaps the box state in whole, so every box is placed and shown again
+        foreach (var box in LoadedBoxes) {
+            box.UpdateActive();
+            box.UpdatePosition();
+        }
+    }
+
+    private static void Read(Archive ar) {
+        var serializedVersion = ar.Serialize(0);
+        if (serializedVersion is not (1 or 2)) {
+            Randomizer.LogError($"Error reading saved box states. SerializedVersion has invalid value '{serializedVersion}'");
+            return;
+        }
+
+        var count = ar.Serialize(0);
+        for (var i = 0; i < count; i++) {
+            var boxNr = ar.Serialize(0);
+            ActiveBoxes.Add(boxNr, new ActiveBoxState(ar.Serialize(0)));
+            ActiveThisTick.Add(boxNr);
+
+            if (boxNr < LoadedBoxes.Length && LoadedBoxes[boxNr].Trigger == RandomizerBox.BoxTrigger.Frame) {
+                CollectEachUpdate.Add(boxNr);
+            }
+        }
+
+        if (serializedVersion < 2) {
+            return;
+        }
+
+        var moved = ar.Serialize(0);
+        for (var i = 0; i < moved; i++) {
+            var boxNr = ar.Serialize(0);
+            var x = ar.Serialize(0);
+            Offsets[boxNr] = (x, ar.Serialize(0));
         }
     }
 
@@ -529,6 +576,7 @@ public static class RandomizerBoxes {
         }
 
         _updateLast = false;
+        RandomizerInventory.CountTick();
 
         var lastActiveBoxes = ActiveBoxes;
         ActiveBoxes = [];
@@ -689,13 +737,7 @@ public static class RandomizerBoxes {
             }
         }
 
-        for (var id = RandomizerInventory.FirstMoveId; id <= RandomizerInventory.LastMoveId; id++) {
-            if (Randomizer.Inventory.GetRandomizerItem(id) != 0) {
-                Randomizer.Inventory.SetRandomizerItem(id, 0);
-                cleared = true;
-            }
-        }
-
+        cleared |= ForgetMoves();
         cleared |= ActiveBoxes.Count > 0;
         ActiveBoxes.Clear();
         ActiveThisTick.Clear();

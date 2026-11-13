@@ -17,11 +17,32 @@ static class PickupsGlue {
         Randomizer.Logs.Clear();
         RandomizerBoxes.Masks.Clear();
         RandomizerBoxes.Moves.Clear();
+        RandomizerBoxes.Offsets.Clear();
         Boxes(new long[0], new long[0], new bool[0], new bool[0]);
         RandomizerInventory.ForgetComplaints();
         Clock = 0;
         RandomizerInventory.Now = () => Clock;
+        Pos = null;
+        RandomizerInventory.OriPosition = () => Pos;
     }
+
+    // where {Pos.x} and {Pos.y} find Ori; null is no Ori in the world
+    public static UnityEngine.Vector2? Pos;
+
+    public static void Ori(float x, float y) { Pos = new UnityEngine.Vector2(x, y); }
+
+    // box offsets as [box, x, y] triples, and seeding them
+    public static List<int[]> Offsets() {
+        return RandomizerBoxes.Offsets.Select(kv => new[] { kv.Key, kv.Value[0], kv.Value[1] }).ToList();
+    }
+
+    public static void SetOffsets(int[] boxes, int[] xs, int[] ys) {
+        for (var i = 0; i < boxes.Length; i++) {
+            RandomizerBoxes.Offsets[boxes[i]] = new[] { xs[i], ys[i] };
+        }
+    }
+
+    public static void CountTick() { RandomizerInventory.CountTick(); }
 
     // the milliseconds the error cap sees; tests move it by hand
     public static int Clock;

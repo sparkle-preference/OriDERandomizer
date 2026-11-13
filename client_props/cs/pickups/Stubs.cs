@@ -50,4 +50,22 @@ static class RandomizerBoxes {
     }
 
     public static void Moved(int box) { Moves.Add(box); }
+
+    public static Dictionary<int, int[]> Offsets = new Dictionary<int, int[]>();
+
+    public static void Offset(int box, out int x, out int y) {
+        int[] at;
+        x = Offsets.TryGetValue(box, out at) ? at[0] : 0;
+        y = at != null ? at[1] : 0;
+    }
+
+    public static void SetOffset(int box, int x, int y) {
+        if (x == 0 && y == 0) {
+            Offsets.Remove(box);
+        } else {
+            Offsets[box] = new[] { x, y };
+        }
+
+        Moved(box);
+    }
 }

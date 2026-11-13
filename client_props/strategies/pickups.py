@@ -83,7 +83,7 @@ def emitted(draw):
 EDGE_SLOTS = [0, 1, 5, 939, 940, 947, 948, 949, 1699, 1700, 1999, 2000, 3999, 4000, 8000, 8001, 9999,
               10000, 19999, 20000, 20001, INT_MAX, -1, -5, INT_MIN]
 EDGE_VALUES = [0, 1, -1, 2, 7, -7, 100, 65536, INT_MAX, INT_MIN, INT_MAX - 1, INT_MIN + 1]
-HELD = [0, 5, 940, 948, 1700, 8000, 8001, 10000, 20000]
+HELD = [0, 5, 940, 948, 1700, 8000, 8001, 10000, 11000, 20000]
 
 slot_id = st.one_of(st.sampled_from(EDGE_SLOTS), st.sampled_from(HELD), st.integers(-3, 25000), st.integers(INT_MIN, INT_MAX))
 number = st.one_of(st.sampled_from(EDGE_VALUES), st.integers(-50, 50), st.integers(INT_MIN, INT_MAX),
@@ -134,8 +134,8 @@ def legacy_value_expr(draw):
 
 @st.composite
 def decimal_literal(draw):
-    """A number with one or two decimals, now and then none or three."""
-    places = draw(st.sampled_from([1, 2, 2, 1, 0, 3]))
+    """A number with one to eight decimals, now and then none or nine."""
+    places = draw(st.sampled_from([1, 2, 8, 1, 2, 3, 5, 7, 8, 0, 9]))
     return draw(literal(st.integers(-99999, 99999))).rstrip() + "." + "".join(
         draw(st.sampled_from("0123456789")) for _ in range(places)) + draw(pad)
 
@@ -149,10 +149,40 @@ def box_read(draw):
 
 
 @st.composite
-def math_expr(draw):
-    """Numbers (some with decimals), {n} and box reads, some negated, joined by + - * / %; divisors are often 0 or -1."""
+def special_read(draw):
+    """{T}, {Pos.x} or {Pos.y}, any case on every letter, now and then misspelled."""
+    name = draw(st.sampled_from(["T", "t", "Pos.x", "Pos.y", "pos.X", "POS.y", "pOs.Y", "Pos.z", "Pos", "T1", "Pos. x"]))
+    return draw(pad) + "{" + draw(pad) + name + draw(pad) + "}" + draw(pad)
+
+
+word_case = st.sampled_from([str.upper, str.upper, str.lower, str.title, lambda w: w.title().swapcase()])
+# angles: exact values, a turn or more out, a hair off one, reads and more trig
+ANGLES = ["0", "30", "-30", "45", "90", "180", "270", "390", "-720.5", "0.00000001", "359.99999999", "{T}*6",
+          "cos(0)*90", "sin({8000})"]
+# typeable numbers in units of 1e-8, tiny to the int edge
+eight_places = st.one_of(st.integers(-10 ** 4, 10 ** 4), st.integers(-10 ** 9, 10 ** 9),
+                         st.integers(-INT_MAX * 10 ** 8, INT_MAX * 10 ** 8))
+# typeable angles in units of 1e-8 degrees, often a hair off a multiple of 15
+degrees = st.one_of(st.integers(-720 * 10 ** 8, 720 * 10 ** 8), st.integers(-INT_MAX * 10 ** 8, INT_MAX * 10 ** 8),
+                    st.builds(lambda k, d: 15 * k * 10 ** 8 + d, st.integers(-48, 48), st.sampled_from([0, 0, 1, -1])))
+
+
+@st.composite
+def trig(draw, depth):
+    """sin(math) or cos(math), any case, the math maybe holding more of them."""
+    name = draw(word_case)(draw(st.sampled_from(["sin", "cos"])))
+    inner = draw(st.sampled_from(ANGLES)) if draw(st.booleans()) else draw(math_expr(depth - 1))
+    return draw(pad) + name + draw(st.sampled_from(["", "", " "])) + "(" + inner + ")" + draw(pad)
+
+
+@st.composite
+def math_expr(draw, depth=1):
+    """Numbers (some with decimals), reads, sin and cos, some negated, joined by + - * / %; divisors are often 0 or -1."""
     def atom():
-        text = draw(st.one_of(operand(), operand(), decimal_literal(), box_read()))
+        if depth > 0 and draw(st.integers(0, 4)) == 0:
+            text = draw(trig(depth))
+        else:
+            text = draw(st.one_of(operand(), operand(), decimal_literal(), box_read(), special_read()))
         if draw(st.integers(0, 3)):
             return text
         return draw(pad) + draw(st.sampled_from("-+")) + text.lstrip()
@@ -161,9 +191,6 @@ def math_expr(draw):
         op = draw(st.sampled_from("+-*/%"))
         text += op + (draw(st.sampled_from([" 0", "-1", "{8000}"])) if draw(st.integers(0, 3)) == 0 else atom())
     return text
-
-
-word_case = st.sampled_from([str.upper, str.upper, str.lower, str.title])
 
 
 @st.composite
@@ -181,11 +208,12 @@ def condition(draw):
 
 @st.composite
 def value_expr(draw):
-    """The right of an RI or BM =: math on numbers and {n}, or comparisons joined by NOT, AND and OR."""
+    """The right of an RI or BM =: math on numbers, reads, sin and cos, or comparisons joined by NOT, AND and OR."""
     text = draw(st.one_of(legacy_value_expr(), math_expr(), condition()))
     if draw(st.integers(0, 5)) == 0:
         at = draw(st.integers(0, len(text)))
-        text = text[:at] + draw(st.sampled_from([" AND ", " or ", "NOT ", "(", ")", "x", "{8000} AND "])) + text[at:]
+        text = text[:at] + draw(st.sampled_from([" AND ", " or ", "NOT ", "(", ")", "x", "{8000} AND ", "sin(", "cos(0)",
+                                                 "tan(1)"])) + text[at:]
     return draw(_mangle(text))
 
 
@@ -205,6 +233,12 @@ boxes = st.lists(st.tuples(
     st.one_of(st.integers(-500000, 500000), st.sampled_from([0, 999999999, -999999999, 10 ** 9])),
     st.one_of(st.integers(-500000, 500000), st.sampled_from([0, 999999999, -10 ** 9])),
     st.sampled_from([False, False, False, True]), st.booleans()), max_size=6)
+# moved boxes' offsets in hundredths; moving a box back removes its entry, so none sits at (0, 0)
+offset = st.one_of(st.integers(-10 ** 6, 10 ** 6), st.sampled_from([INT_MAX, INT_MIN]))
+box_offsets = st.dictionaries(st.integers(0, 7), st.tuples(offset, offset).filter(lambda xy: xy != (0, 0)), max_size=4)
+# Ori's position in hundredths, or None for no Ori; seven digits at most, which C#'s float-to-decimal keeps
+hundredths = st.one_of(st.sampled_from([0, 1, -1, 5, -5, 50, -50, 9999999, -9999999]), st.integers(-9999999, 9999999))
+ori_at = st.one_of(st.none(), st.tuples(hundredths, hundredths))
 
 
 @st.composite
@@ -265,6 +299,7 @@ slot_message = st.lists(st.one_of(
     st.text(st.sampled_from("ab {}-0123456789\N{ARABIC-INDIC DIGIT ZERO}\N{ARABIC-INDIC DIGIT THREE}"
                             "\N{DEVANAGARI DIGIT ZERO}\N{FULLWIDTH DIGIT ONE}"), max_size=6),
     st.builds("{{{}}}".format, slot_id),
+    st.sampled_from(["{T}", "{t}", "{ T}", "{Pos.x}", "{pOs.Y}", "{POS.X}", "{Pos.z}", "{Pos}"]),
     st.builds("{{{}{}{}}}".format, st.sampled_from("Bbx"), st.one_of(st.integers(-1, 7), st.just("\N{ARABIC-INDIC DIGIT THREE}")),
               st.sampled_from(["", ".x", ".Y", ".z"])),
 ), max_size=5).map("".join)

@@ -33,6 +33,8 @@ class StubInventory {
     public int GetRandomizerItem(int id) { return 0; }
 
     public int SetRandomizerItem(int id, int value) { return value; }
+
+    public int IncRandomizerItem(int id, int value) { return value; }
 }
 
 // the source RandomizerBox and RandomizerAction can't be handed to the dll's copies of these

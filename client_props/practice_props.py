@@ -22,7 +22,7 @@ from client_props.strategies import practice as S
 
 SOURCES = ["randomizer/" + f for f in ("JsonValue.cs", "ZipStore.cs", "FolderStore.cs", "PracticeFolder.cs",
                                         "PracticeDefaults.cs", "BfrpFile.cs", "PracticeSegment.cs", "SeedBoxes.cs",
-                                        "RandomizerBox.cs", "RandomizerAction.cs")]
+                                        "RandomizerBox.cs", "RandomizerAction.cs", "RandomizerInventory.cs")]
 EXTRA = [os.path.join(HERE, "cs", "practice", f) for f in ("Stubs.cs", "Glue.cs")]
 WORK = os.path.join(os.environ.get("TEMP", HERE), "client_props", "work", "practice")
 os.makedirs(WORK, exist_ok=True)

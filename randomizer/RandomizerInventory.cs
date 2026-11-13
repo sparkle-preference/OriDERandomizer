@@ -25,27 +25,21 @@ public class RandomizerInventory : SaveSerialize {
         randomizerItems[code] = value;
         if (code is >= RandomizerBoxes.FirstBitId and <= RandomizerBoxes.LastBitId) {
             RandomizerBoxes.MaskUpdated(code);
-        } else if (code is >= FirstMoveId and <= LastMoveId) {
-            RandomizerBoxes.Moved((code - FirstMoveId) / 2);
         }
 
         return value;
     }
 
-    // box n's offset from where its line puts it, in hundredths: x at FirstMoveId + 2n, y after it
-    public const int FirstMoveId = 11000;
+    // {T}: physics ticks played, in the client's block so a death rolls it back
+    public const int TickSlot = 11000;
 
-    public const int LastMoveId = 19999;
-
-    public const int MovableBoxes = (LastMoveId - FirstMoveId + 1) / 2;
-
-    public static void MoveOffset(int box, out int x, out int y) {
-        var moved = box >= 0 && box < MovableBoxes && Randomizer.Inventory is not null;
-        x = moved ? Randomizer.Inventory.GetRandomizerItem(FirstMoveId + 2 * box) : 0;
-        y = moved ? Randomizer.Inventory.GetRandomizerItem(FirstMoveId + 2 * box + 1) : 0;
+    public static void CountTick() {
+        if (Randomizer.Inventory is not null) {
+            Randomizer.Inventory.IncRandomizerItem(TickSlot, 1);
+        }
     }
 
-    // BR|n=x,y puts box n's top-left corner at (x, y), BR|n+=x,y and -= move it, bare BR|n puts it back
+    // BR|n=x,y puts box n's top-left corner at (x, y), rounded to hundredths; += and -= move it, bare BR|n puts it back
     public static void MoveBox(string text) {
         text ??= "";
         var key = "BR|" + text;
@@ -67,12 +61,7 @@ public class RandomizerInventory : SaveSerialize {
             return;
         }
 
-        if (n >= MovableBoxes) {
-            Complain(key, key + ":only boxes 0 to " + (MovableBoxes - 1) + " can move");
-            return;
-        }
-
-        MoveOffset(n, out var wasX, out var wasY);
+        RandomizerBoxes.Offset(n, out var wasX, out var wasY);
         decimal x = 0, y = 0;
         if (eq >= 0) {
             var xy = text.Substring(eq + 1);
@@ -94,8 +83,10 @@ public class RandomizerInventory : SaveSerialize {
             }
 
             var sign = op == '-' ? -1 : 1;
-            x = op == '=' ? dx * 100 - cornerX : wasX + sign * dx * 100;
-            y = op == '=' ? dy * 100 - cornerY : wasY + sign * dy * 100;
+            var hx = Math.Round(dx * 100, MidpointRounding.AwayFromZero);
+            var hy = Math.Round(dy * 100, MidpointRounding.AwayFromZero);
+            x = op == '=' ? hx - cornerX : wasX + sign * hx;
+            y = op == '=' ? hy - cornerY : wasY + sign * hy;
         }
 
         if (x < int.MinValue || x > int.MaxValue || y < int.MinValue || y > int.MaxValue) {
@@ -103,8 +94,7 @@ public class RandomizerInventory : SaveSerialize {
             return;
         }
 
-        Randomizer.Inventory.SetRandomizerItem(FirstMoveId + 2 * n, (int)x);
-        Randomizer.Inventory.SetRandomizerItem(FirstMoveId + 2 * n + 1, (int)y);
+        RandomizerBoxes.SetOffset(n, (int)x, (int)y);
     }
 
     public int GetRandomizerItem(int code) {
@@ -133,7 +123,7 @@ public class RandomizerInventory : SaveSerialize {
     private const int LastRandoSlot = 20000;
 
     // Seeds may not write the MW grant bitfields (a forged bit silently eats an item) nor
-    // 10000-19999, the slot stamp and practice block the save reads back as truth.
+    // 10000-19999, the slot stamp, practice block and tick count the save reads back as truth.
     public static bool Writable(int id) {
         return id >= 0 && (id < SlotStamp || id >= LastRandoSlot)
             && (id < RandomizerMW.GrantedSlotsBase || id > RandomizerMW.GrantedSlotsLast);
@@ -171,8 +161,8 @@ public class RandomizerInventory : SaveSerialize {
         LastComplaint.Clear();
     }
 
-    // RI, BM and BR values: math on numbers, {n} and {Bn} reads (* / % first, / dropping the remainder),
-    // or comparisons, each (a OP b) and 1 or 0, joined by AND, OR and NOT (AND first). Nothing nests.
+    // RI, BM and BR values: math on numbers, reads and sin()/cos() (* / % first, / dropping the remainder),
+    // or comparisons, each (a OP b) and 1 or 0, joined by AND, OR and NOT (AND first). Only sin and cos nest.
     public static bool ParseValue(string text, out int value) {
         value = 0;
         if (!Evaluate(text, out var number, out _)) {
@@ -202,8 +192,11 @@ public class RandomizerInventory : SaveSerialize {
         return number == 0 ? "0" : number.ToString("0.##", CultureInfo.InvariantCulture);
     }
 
-    // every step stays under this, where decimal's 28 digits keep two places exactly
-    private const decimal Biggest = 100_000_000_000_000_000_000m;
+    // every step stays under this: past 2^63, so *= on slots still wraps, and low enough that decimal's
+    // 28 digits keep / exact at eight places
+    private const decimal Biggest = 10_000_000_000_000_000_000m;
+
+    private const int Places = 8;
 
     private static readonly Dictionary<string, SlotValue> ParsedValues = new();
 
@@ -219,7 +212,26 @@ public class RandomizerInventory : SaveSerialize {
         return parsed;
     }
 
-    // / drops the remainder and % is what it dropped; * keeps two places, cutting the rest
+    // a * b rounded to eight places: the whole and fraction parts multiply exactly, and all four products share a sign
+    private static decimal Times(decimal a, decimal b) {
+        decimal ai = decimal.Truncate(a), af = a - ai, bi = decimal.Truncate(b), bf = b - bi;
+        return ai * bi + ai * bf + af * bi + Math.Round(af * bf, Places, MidpointRounding.AwayFromZero);
+    }
+
+    // degrees in, eight places out, rounded by hand so no runtime's double-to-decimal conversion is involved
+    private static decimal SinCos(decimal degrees, bool cosine) {
+        var turn = degrees - 360 * decimal.Truncate(degrees / 360);
+        var radians = (double)(long)(turn * 100_000_000m) / 1e8 * Math.PI / 180;
+        var scaled = (cosine ? Math.Cos(radians) : Math.Sin(radians)) * 1e8;
+        var whole = Math.Truncate(scaled);
+        if (Math.Abs(scaled - whole) >= 0.5) {
+            whole += Math.Sign(scaled);
+        }
+
+        return (long)whole / 100_000_000m;
+    }
+
+    // / drops the remainder and % is what it dropped; * keeps eight places, rounding the rest
     private static bool Arith(decimal a, char op, decimal b, out decimal result, out string problem) {
         result = 0;
         problem = null;
@@ -232,7 +244,7 @@ public class RandomizerInventory : SaveSerialize {
             switch (op) {
                 case '+': result = a + b; break;
                 case '-': result = a - b; break;
-                case '*': result = decimal.Truncate(a * b * 100) / 100; break;
+                case '*': result = Times(a, b); break;
                 case '/': result = decimal.Truncate(a / b); break;
                 default: result = a - b * decimal.Truncate(a / b); break;
             }
@@ -258,6 +270,8 @@ public class RandomizerInventory : SaveSerialize {
     // parsed whole before any slot is read, so a typo refuses whatever the slots hold
     private sealed class SlotValue {
         public string Problem;
+        // a value with sin or cos in it is rounded into a slot without a warning
+        public bool Trig;
         private Sum math;
         private readonly List<List<Clause>> anyOf = new();
 
@@ -265,7 +279,7 @@ public class RandomizerInventory : SaveSerialize {
             var r = new Reader(text);
             var parsed = new SlotValue();
             try {
-                if (r.Peek() == '(' || r.AtWord()) {
+                if (r.Peek() == '(' || r.AtNot()) {
                     parsed.ParseClauses(r);
                 } else {
                     parsed.math = Sum.Parse(r);
@@ -281,6 +295,7 @@ public class RandomizerInventory : SaveSerialize {
                 parsed.Problem = e.Message;
             }
 
+            parsed.Trig = r.Trig;
             return parsed;
         }
 
@@ -402,12 +417,17 @@ public class RandomizerInventory : SaveSerialize {
         // left to right, a * / % run folded into its term before the + or - that ends it
         public bool Eval(out decimal value, out string problem) {
             value = 0;
-            problem = null;
             decimal total = 0;
-            var term = atoms[0].Value();
+            if (!atoms[0].Eval(out var term, out problem)) {
+                return false;
+            }
+
             var pending = '+';
             for (var i = 0; i < ops.Count; i++) {
-                var next = atoms[i + 1].Value();
+                if (!atoms[i + 1].Eval(out var next, out problem)) {
+                    return false;
+                }
+
                 if (ops[i] == '+' || ops[i] == '-') {
                     if (!Arith(total, pending, term, out total, out problem)) {
                         return false;
@@ -424,13 +444,16 @@ public class RandomizerInventory : SaveSerialize {
         }
     }
 
-    // [+|-] a number with up to two decimals, {n}, {Bn}, {Bn.x} or {Bn.y}
+    // [+|-] a number with up to eight decimals, {n}, {Bn}, {Bn.x}, {Bn.y}, {T}, {Pos.x}, {Pos.y}, sin(math) or cos(math)
     private sealed class Atom {
-        // 'n' a number, 's' a slot, 'b' a box's on/off, 'x' or 'y' its corner
+        // 'n' a number, 's' a slot, 'b' a box's on/off, 'x' or 'y' its corner, 't' the tick count,
+        // 'o' Ori's position (id 0 x, 1 y), 'f' sin or cos of inner
         private char kind = 'n';
         private bool minus;
         private int id;
         private decimal number;
+        private bool cosine;
+        private Sum inner;
 
         // the sign is parsed with its digits, so -2147483648 stays in range
         public static Atom Parse(Reader r) {
@@ -438,6 +461,23 @@ public class RandomizerInventory : SaveSerialize {
             var sign = r.Peek();
             if (sign == '+' || sign == '-') {
                 r.At++;
+            }
+
+            if (r.AtWord()) {
+                var at = r.At;
+                var word = r.Word();
+                if (!Is(word, "sin") && !Is(word, "cos")) {
+                    throw r.Fail("expected a number, {slot}, sin() or cos()", at);
+                }
+
+                r.Expect('(');
+                atom.kind = 'f';
+                atom.cosine = Is(word, "cos");
+                atom.inner = Sum.Parse(r);
+                r.Expect(')');
+                atom.minus = sign == '-';
+                r.Trig = true;
+                return atom;
             }
 
             var c = r.Peek();
@@ -471,11 +511,11 @@ public class RandomizerInventory : SaveSerialize {
             if (r.At < r.Text.Length && r.Text[r.At] == '.') {
                 r.At++;
                 var places = Digits(r);
-                if (places.Length is 0 or > 2) {
-                    throw r.Fail("a number takes one or two decimals", from);
+                if (places.Length is 0 or > Places) {
+                    throw r.Fail("a number takes one to eight decimals", from);
                 }
 
-                atom.number += decimal.Parse(places, CultureInfo.InvariantCulture) / (places.Length == 1 ? 10 : 100);
+                atom.number += decimal.Parse("0." + places, CultureInfo.InvariantCulture);
             }
 
             if (sign == '-') {
@@ -495,6 +535,17 @@ public class RandomizerInventory : SaveSerialize {
         }
 
         private void ParseRead(Reader r, string inner) {
+            if (Is(inner, "T")) {
+                kind = 't';
+                return;
+            }
+
+            if (inner.Length == 5 && Is(inner.Substring(0, 4), "Pos.") && (inner[4] is 'x' or 'X' or 'y' or 'Y')) {
+                kind = 'o';
+                id = inner[4] is 'x' or 'X' ? 0 : 1;
+                return;
+            }
+
             if (inner.Length > 1 && (inner[0] == 'B' || inner[0] == 'b')) {
                 var dot = inner.IndexOf('.');
                 var part = dot < 0 ? "" : inner.Substring(dot + 1);
@@ -508,17 +559,43 @@ public class RandomizerInventory : SaveSerialize {
                 return;
             }
 
-            throw r.Fail("expected {slot}, {Bn}, {Bn.x} or {Bn.y}");
+            throw r.Fail("expected {slot}, {Bn}, {Bn.x}, {Bn.y}, {T}, {Pos.x} or {Pos.y}");
         }
 
-        public decimal Value() {
-            var value = kind switch {
-                'n' => number,
-                's' => Read(id),
-                _ => ReadBox(id, kind),
-            };
-            return minus ? -value : value;
+        public bool Eval(out decimal value, out string problem) {
+            problem = null;
+            if (kind == 'f') {
+                if (!inner.Eval(out value, out problem)) {
+                    return false;
+                }
+
+                value = SinCos(value, cosine);
+            } else {
+                value = kind switch {
+                    'n' => number,
+                    's' => Read(id),
+                    't' => Read(TickSlot),
+                    'o' => ReadOri(id),
+                    _ => ReadBox(id, kind),
+                };
+            }
+
+            value = minus ? -value : value;
+            return true;
         }
+    }
+
+    public static Func<Vector2?> OriPosition = () => Characters.Sein ? (Vector2?)Characters.Sein.Position : null;
+
+    // {Pos.x} and {Pos.y}: Ori's position, rounded to hundredths like a box's corner
+    public static decimal ReadOri(int part) {
+        var at = OriPosition();
+        if (at == null) {
+            Complain("{Pos}", "{Pos." + (part == 0 ? "x" : "y") + "}: Ori isn't in the world");
+            return 0;
+        }
+
+        return Math.Round((decimal)(part == 0 ? at.Value.x : at.Value.y), 2, MidpointRounding.AwayFromZero);
     }
 
     // {Bn} is 1 while box n is on; {Bn.x} and {Bn.y} its top-left corner, moves included
@@ -537,7 +614,7 @@ public class RandomizerInventory : SaveSerialize {
             return 0;
         }
 
-        MoveOffset(box, out var dx, out var dy);
+        RandomizerBoxes.Offset(box, out var dx, out var dy);
         return (part == 'x' ? x + dx : y + dy) / 100m;
     }
 
@@ -566,8 +643,18 @@ public class RandomizerInventory : SaveSerialize {
             return c is >= 'a' and <= 'z' or >= 'A' and <= 'Z';
         }
 
+        public bool Trig;
+
         public bool AtWord() {
             return IsLetter(Peek());
+        }
+
+        // NOT starts a comparison; any other word starts math
+        public bool AtNot() {
+            var at = At;
+            var word = Word();
+            At = at;
+            return word != null && Is(word, "NOT");
         }
 
         // a run of letters, or null
@@ -643,7 +730,7 @@ public class RandomizerInventory : SaveSerialize {
         }
 
         var whole = ToSlot(value, out var rounded);
-        if (rounded) {
+        if (rounded && !Parsed(text.Substring(eq + 1)).Trig) {
             Complain(key, key + ": a slot holds whole numbers, so " + Show(value) + " became " + whole);
         }
 
@@ -657,9 +744,9 @@ public class RandomizerInventory : SaveSerialize {
 
     private const string Operators = "+-*/%";
 
-    private static readonly Regex SlotRef = new Regex(@"\{(-?\d+|[Bb]\d+(?:\.[XxYy])?)\}");
+    private static readonly Regex SlotRef = new Regex(@"\{(-?\d+|[Bb]\d+(?:\.[XxYy])?|[Tt]|[Pp][Oo][Ss]\.[XxYy])\}");
 
-    // {n} in a message is whatever slot n holds, {Bn} and {Bn.x} what box n reads
+    // {n} in a message is whatever slot n holds, {Bn} and {Bn.x} what box n reads, {T} and {Pos.x} the same as in math
     public static string ResolveSlots(string text) {
         if (text == null || text.IndexOf('{') < 0) {
             return text;
@@ -667,6 +754,14 @@ public class RandomizerInventory : SaveSerialize {
 
         return SlotRef.Replace(text, m => {
             var name = m.Groups[1].Value;
+            if (name is "T" or "t") {
+                return Read(TickSlot).ToString();
+            }
+
+            if (name.Length == 5 && name[0] is 'P' or 'p') {
+                return Show(ReadOri(name[4] is 'x' or 'X' ? 0 : 1));
+            }
+
             int id;
             if (name[0] == 'B' || name[0] == 'b') {
                 var dot = name.IndexOf('.');

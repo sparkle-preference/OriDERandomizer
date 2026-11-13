@@ -1,5 +1,6 @@
 """Pickup codes: multipickup values, cross-world lines, names and RI slot expressions read as the server writes them."""
 import logging
+import math
 import operator
 import os
 import re
@@ -12,8 +13,9 @@ from hypothesis import event, given, settings, strategies as st
 from client_props.base import CLIENT, HERE, examples
 from client_props.cs_bridge import outcome, slice_bridge
 from client_props.strategies.pickups import (BROKEN_RULES, INT_MAX, INT_MIN, EDGE_SLOTS, EDGE_VALUES, any_code, any_id,
-                                             boxes, br_stmt, emitted, inventory, legacy_value_expr, mw_line, name_query,
-                                             name_rules, ri_stmt, slot_id, slot_message, value_expr)
+                                             box_offsets, boxes, br_stmt, degrees, eight_places, emitted, hundredths, inventory,
+                                             legacy_value_expr, mw_line, name_query, name_rules, ori_at, ri_stmt, slot_id,
+                                             slot_message, value_expr)
 from pickups import Event, MultiworldItem, Pickup, Skill, Teleporter, Upgrade
 from test.js_bridge import call as js
 from test.strategies.wire import line_text, pieces, raw_multi, real_pickup, slashy_text
@@ -362,10 +364,19 @@ class Refused(Exception):
 
 _LETTERS = re.compile(r"[A-Za-z]+")
 _DIGITS = re.compile(r"[0-9]+")
+PLACES = 8
+UNIT = 10 ** PLACES
+HUNDREDTH = UNIT // 100
+TICK_SLOT = 11000
 
 
 def _read_atom(inner):
-    """("s", slot) for {n}; ("b", box), ("x", box) or ("y", box) for {Bn}, {Bn.x}, {Bn.y}."""
+    """("s", slot) for {n}, ("t", None) for {T}, ("o", 0 or 1) for {Pos.x} or {Pos.y}; ("b", box), ("x", box) or
+    ("y", box) for {Bn}, {Bn.x}, {Bn.y}."""
+    if inner in ("T", "t"):
+        return "t", None
+    if len(inner) == 5 and inner[:4].upper() == "POS." and inner[4] in "xXyY":
+        return "o", int(inner[4] in "yY")
     if len(inner) > 1 and inner[0] in "Bb":
         dot = inner.find(".")
         num, part = (inner[1:], "") if dot < 0 else (inner[1:dot], inner[dot + 1:])
@@ -379,11 +390,12 @@ def _read_atom(inner):
 
 
 def parse_slot_value(text):
-    """("sum", (atoms, ops)) or ("any", [[(not, left, op, right)]]), ORs of ANDs; None when refused.
+    """(kind, body, trig): ("sum", (atoms, ops)) or ("any", [[(not, left, op, right)]]), ORs of ANDs, and whether a
+    sin or cos is in it; None when refused.
 
-    An atom is (kind, n, minus): ("n", hundredths), or a read as _read_atom has it; whitespace is
-    Trim's set, keywords any case."""
-    t, at = text or "", 0
+    An atom is (kind, n, minus): ("n", units of 1e-8), ("f", (cosine?, sum)), or a read as _read_atom has it;
+    whitespace is Trim's set, keywords any case. Only a value opening with ( or NOT is comparisons."""
+    t, at, trig = text or "", 0, False
 
     def skip():
         nonlocal at
@@ -401,10 +413,21 @@ def parse_slot_value(text):
         return m.group().upper()
 
     def atom():
-        nonlocal at
+        nonlocal at, trig
         sign = skip()
         if sign in ("+", "-"):
             at += 1
+        w = word()
+        if w is not None:
+            if w not in ("SIN", "COS") or skip() != "(":
+                raise Refused
+            at += 1
+            inner = sum_()
+            if skip() != ")":
+                raise Refused
+            at += 1
+            trig = True
+            return "f", (w == "COS", inner), sign == "-"
         if skip() == "{":
             close = t.find("}", at)
             if close < 0:
@@ -419,13 +442,13 @@ def parse_slot_value(text):
         whole = m.group().lstrip("0")
         if len(whole) > 10 or len(whole) == 10 and whole > ("2147483648" if sign == "-" else "2147483647"):
             raise Refused
-        n = int(whole or "0") * 100
+        n = int(whole or "0") * UNIT
         if t[at:at + 1] == ".":
             p = _DIGITS.match(t, at + 1)
-            if not p or len(p.group()) > 2:
+            if not p or len(p.group()) > PLACES:
                 raise Refused
             at = p.end()
-            n += int(p.group().ljust(2, "0"))
+            n += int(p.group().ljust(PLACES, "0"))
         return "n", -n if sign == "-" else n, False
 
     def sum_():
@@ -460,7 +483,9 @@ def parse_slot_value(text):
         return neg, left, op, right
 
     try:
-        if skip() == "(" or _LETTERS.match(t, at):
+        skip()
+        lead = _LETTERS.match(t, at)
+        if t[at:at + 1] == "(" or lead and lead.group().upper() == "NOT":
             groups = [[clause()]]
             while (w := word()) is not None:
                 if w == "AND":
@@ -474,7 +499,7 @@ def parse_slot_value(text):
             parsed = "sum", sum_()
         if skip():
             raise Refused
-        return parsed
+        return parsed + (trig,)
     except Refused:
         return None
 
@@ -512,8 +537,25 @@ def writable(slot):
     return slot >= 0 and not 940 <= slot <= EXTRA_ITEMS_APPLIED and not 10000 <= slot <= 19999
 
 
-BIGGEST = 10 ** 22   # 1e20, in hundredths
-FIRST_MOVE, MOVABLE = 11000, 4500
+BIGGEST = 10 ** 19 * UNIT
+TURN = 360 * UNIT
+
+
+def round_away(n, unit):
+    """n / unit to a whole number, halves away from zero."""
+    q, r = divmod(abs(n), unit)
+    q += 2 * r >= unit
+    return -q if n < 0 else q
+
+
+def sin_cos(degrees, cosine):
+    """SinCos in units: the turn exact, then double math in C#'s order, rounded to eight places by hand."""
+    n = degrees - TURN * cs_div(degrees, TURN)
+    scaled = (math.cos if cosine else math.sin)(float(n) / 1e8 * math.pi / 180) * 1e8
+    whole = float(math.trunc(scaled))
+    if abs(scaled - whole) >= 0.5:
+        whole += math.copysign(1, scaled)
+    return int(whole)
 
 
 def show(h):
@@ -527,11 +569,12 @@ def show(h):
 class Model:
     """RI Format.txt and the comments in RandomizerInventory, as Python: one instance per expression.
 
-    Numbers are exact integers in hundredths; boxes are (x, y, deleted, off), corners in hundredths."""
+    Numbers are exact integers in units of 1e-8; boxes are (x, y, deleted, off), corners in hundredths; offsets
+    are each moved box's (x, y) in hundredths; ori is Ori's (x, y) in hundredths, or None for no Ori."""
 
-    def __init__(self, inv, boxes=()):
+    def __init__(self, inv, boxes=(), offsets=None, ori=None):
         self.inv, self.errors, self.logs, self.masks, self.moves = dict(inv), 0, 0, [], []
-        self.boxes = list(boxes)
+        self.boxes, self.offsets, self.ori = list(boxes), dict(offsets or {}), ori
         self.now, self.complained = 0, {}
 
     def complain(self, key):
@@ -541,23 +584,24 @@ class Model:
         self.complained[key] = self.now
         self.errors += 1
 
-    def offset(self, n):
-        if not 0 <= n < MOVABLE:
-            return 0, 0
-        return self.inv.get(FIRST_MOVE + 2 * n, 0), self.inv.get(FIRST_MOVE + 2 * n + 1, 0)
-
     def read_box(self, n, part):
         if not 0 <= n < len(self.boxes):
             self.complain("{B%d}" % n)
             return 0
         x, y, gone, off = self.boxes[n]
         if part == "b":
-            return 0 if gone or off else 100
+            return 0 if gone or off else UNIT
         if not (abs(x) < 10 ** 9 and abs(y) < 10 ** 9):
             self.complain("{B%d}" % n)
             return 0
-        dx, dy = self.offset(n)
-        return x + dx if part == "x" else y + dy
+        dx, dy = self.offsets.get(n, (0, 0))
+        return (x + dx if part == "x" else y + dy) * HUNDREDTH
+
+    def read_ori(self, part):
+        if self.ori is None:
+            self.complain("{Pos}")
+            return 0
+        return self.ori[part] * HUNDREDTH
 
     def read(self, slot):
         if slot < 0:
@@ -567,24 +611,39 @@ class Model:
 
     @staticmethod
     def arith(a, op, b):
-        """/ drops the remainder, % is what it dropped, * cuts past two places; None past 1e20."""
+        """/ drops the remainder, % is what it dropped, * rounds to eight places, halves away from zero; None at 1e19."""
         if op in "/%" and b == 0:
             return None
-        r = {"+": lambda: a + b, "-": lambda: a - b, "*": lambda: cs_div(a * b, 100),
-             "/": lambda: cs_div(a, b) * 100, "%": lambda: a - b * cs_div(a, b)}[op]()
+        r = {"+": lambda: a + b, "-": lambda: a - b, "*": lambda: round_away(a * b, UNIT),
+             "/": lambda: cs_div(a, b) * UNIT, "%": lambda: a - b * cs_div(a, b)}[op]()
         return r if abs(r) < BIGGEST else None
 
     def atom(self, a):
+        """None when the math inside a sin or cos is refused."""
         kind, n, minus = a
-        v = n if kind == "n" else self.read(n) * 100 if kind == "s" else self.read_box(n, kind)
+        if kind == "f":
+            v = self.sum(n[1])
+            if v is None:
+                return None
+            v = sin_cos(v, n[0])
+        elif kind == "n":
+            v = n
+        elif kind in "st":
+            v = self.read(TICK_SLOT if kind == "t" else n) * UNIT
+        else:
+            v = self.read_ori(n) if kind == "o" else self.read_box(n, kind)
         return -v if minus else v
 
     def sum(self, s):
         """Left to right, a * / % run folded into its term; reads stop at the first refusal."""
         atoms, ops = s
         total, pending, term = 0, "+", self.atom(atoms[0])
+        if term is None:
+            return None
         for op, a in zip(ops, atoms[1:]):
             v = self.atom(a)
+            if v is None:
+                return None
             if op in "+-":
                 total = self.arith(total, pending, term)
                 if total is None:
@@ -597,11 +656,13 @@ class Model:
         return self.arith(total, pending, term)
 
     def number(self, text):
-        """The value in hundredths, or None when refused."""
-        parsed = parse_slot_value(text)
+        """The value in units, or None when refused."""
+        return self.value(parse_slot_value(text))
+
+    def value(self, parsed):
         if parsed is None:
             return None
-        kind, body = parsed
+        kind, body, _ = parsed
         if kind == "sum":
             return self.sum(body)
         for group in body:
@@ -613,20 +674,18 @@ class Model:
                 if HOLDS[op](a, b) == neg:
                     break
             else:
-                return 100
+                return UNIT
         return 0
 
     @staticmethod
-    def to_slot(h):
+    def to_slot(u):
         """(whole, rounded?): halves away from zero, then wrapped to 32 bits."""
-        q, r = divmod(abs(h), 100)
-        q += r >= 50
-        return wrap(-q if h < 0 else q), r != 0
+        return wrap(round_away(u, UNIT)), u % UNIT != 0
 
     def parse_value(self, text):
         """The value as a slot takes it."""
-        h = self.number(text)
-        return None if h is None else self.to_slot(h)[0]
+        u = self.number(text)
+        return None if u is None else self.to_slot(u)[0]
 
     def apply(self, text):
         key = "RI|" + text
@@ -638,13 +697,15 @@ class Model:
         slot = cs_int(cs_trim(left[:-1]) if op != "=" else left)
         if slot is None:
             return self.complain(key)
-        value = self.number(text[eq + 1:])
+        parsed = parse_slot_value(text[eq + 1:])
+        value = self.value(parsed)
         if value is not None and op != "=":
-            value = self.arith(self.read(slot) * 100, op, value)
+            value = self.arith(self.read(slot) * UNIT, op, value)
         if value is None:
             return self.complain(key)
         whole, rounded = self.to_slot(value)
-        if rounded:
+        # a value with sin or cos in it rounds silently
+        if rounded and not parsed[2]:
             self.complain(key)
         if not writable(slot):
             return self.complain(key)
@@ -664,8 +725,6 @@ class Model:
             return self.complain(key)
         if self.boxes[n][2]:
             return
-        if n >= MOVABLE:
-            return self.complain(key)
         x, y = 0, 0
         if eq >= 0:
             xy = text[eq + 1:]
@@ -675,13 +734,17 @@ class Model:
             cx, cy = self.boxes[n][:2]
             if dy is None or not (abs(cx) < 10 ** 9 and abs(cy) < 10 ** 9):
                 return self.complain(key)
-            wx, wy = self.offset(n)
+            hx, hy = round_away(dx, HUNDREDTH), round_away(dy, HUNDREDTH)
+            wx, wy = self.offsets.get(n, (0, 0))
             sign = -1 if op == "-" else 1
-            x, y = (dx - cx, dy - cy) if op == "=" else (wx + sign * dx, wy + sign * dy)
+            x, y = (hx - cx, hy - cy) if op == "=" else (wx + sign * hx, wy + sign * hy)
         if not (INT_MIN <= x <= INT_MAX and INT_MIN <= y <= INT_MAX):
             return self.complain(key)
-        self.inv[FIRST_MOVE + 2 * n], self.inv[FIRST_MOVE + 2 * n + 1] = x, y
-        self.moves += [n, n]
+        if (x, y) == (0, 0):
+            self.offsets.pop(n, None)
+        else:
+            self.offsets[n] = (x, y)
+        self.moves.append(n)
 
     def resolve(self, text):
         if "{" not in text:
@@ -689,29 +752,46 @@ class Model:
 
         def one(m):
             name = m.group(1)
+            if name in ("T", "t"):
+                return str(self.read(TICK_SLOT))
+            if len(name) == 5 and name[0] in "Pp":
+                return show(self.read_ori(int(name[4] in "yY")) // HUNDREDTH)
             if name[0] in "Bb":
                 dot = name.find(".")
                 num = name[1:] if dot < 0 else name[1:dot]
                 if not re.fullmatch("[0-9]+", num) or int(num) > INT_MAX:
                     self.logs += 1
                     return "0"
-                return show(self.read_box(int(num), "b" if dot < 0 else name[dot + 1].lower()))
+                return show(self.read_box(int(num), "b" if dot < 0 else name[dot + 1].lower()) // HUNDREDTH)
             slot = cs_int(name)
             if slot is None:
                 self.logs += 1
                 return "0"
             return str(self.read(slot))
-        return re.sub(r"\{(-?\d+|[Bb]\d+(?:\.[XxYy])?)\}", one, text)
+        return re.sub(r"\{(-?\d+|[Bb]\d+(?:\.[XxYy])?|[Tt]|[Pp][Oo][Ss]\.[XxYy])\}", one, text)
 
 
 def errors():
     return len(B.get("Randomizer.Errors"))
 
 
-def reset(inv, bxs=()):
+def reset(inv, bxs=(), moved=None, at=None):
     B.call("PickupsGlue.Reset", inv)
     if bxs:
         B.call("PickupsGlue.Boxes", *([b[i] for b in bxs] for i in range(4)))
+    if moved:
+        B.call("PickupsGlue.SetOffsets", list(moved), [x for x, _ in moved.values()], [y for _, y in moved.values()])
+    if at is not None:
+        B.call("PickupsGlue.Ori", at[0] / 100, at[1] / 100)
+
+
+def offsets():
+    return {n: (x, y) for n, x, y in B.call("PickupsGlue.Offsets")}
+
+
+def typed(u):
+    """Units as a number typed with eight decimals."""
+    return "%s%d.%08d" % ("-" if u < 0 else "", abs(u) // UNIT, abs(u) % UNIT)
 
 
 def snapshot():
@@ -734,6 +814,7 @@ class SlotExpressions(Quiet):
                              (box, "RandomizerBoxes.FirstBitId"), (box, "RandomizerBoxes.LastBitId")]:
             self.assertEqual(const(text, member.split(".")[1]), B.get(member), member)
         self.assertEqual(const(mw, "ExtraItemsApplied"), EXTRA_ITEMS_APPLIED)
+        self.assertEqual(B.get("RandomizerInventory.TickSlot"), TICK_SLOT)
 
     @settings(max_examples=examples(500))
     @given(st.one_of(st.sampled_from(EDGE_SLOTS), slot_id, st.integers(930, 960), st.integers(9990, 10010),
@@ -749,28 +830,30 @@ class SlotExpressions(Quiet):
         self.assertFalse(B.call("RandomizerInventory.Writable", EXTRA_ITEMS_APPLIED))
 
     @settings(max_examples=examples(600))
-    @given(value_expr(), inventory, boxes)
-    def test_parse_value_matches_the_format(self, text, inv, bxs):
-        reset(inv, bxs)
-        model = Model(inv, bxs)
+    @given(value_expr(), inventory, boxes, box_offsets, ori_at)
+    def test_parse_value_matches_the_format(self, text, inv, bxs, moved, at):
+        reset(inv, bxs, moved, at)
+        model = Model(inv, bxs, moved, at)
         want = model.parse_value(text)
         event("parses" if want is not None else "refused")
         self.assertEqual(B.call("RandomizerInventory.ParseValue", text), (want is not None, [want or 0]))
         self.assertEqual(errors(), model.errors)
 
     @settings(max_examples=examples(600))
-    @given(value_expr(), inventory, boxes)
-    def test_a_number_matches_the_format(self, text, inv, bxs):
-        reset(inv, bxs)
-        model = Model(inv, bxs)
+    @given(value_expr(), inventory, boxes, box_offsets, ori_at)
+    def test_a_number_matches_the_format(self, text, inv, bxs, moved, at):
+        reset(inv, bxs, moved, at)
+        model = Model(inv, bxs, moved, at)
         want = model.number(text)
-        event("a number" if want is None or want % 100 == 0 else "a fraction")
+        event("a number" if want is None or want % UNIT == 0 else "a fraction")
+        if want is not None and parse_slot_value(text)[2]:
+            event("with sin or cos")
         ok, value, _ = B.call("PickupsGlue.Evaluate", text)
-        self.assertEqual((ok == "ok", Decimal(value) * 100 if ok == "ok" else None), (want is not None, want))
+        self.assertEqual((ok == "ok", Decimal(value) * UNIT if ok == "ok" else None), (want is not None, want))
         self.assertEqual(errors(), model.errors)
 
     def test_the_format_examples(self):
-        inv = {8000: 2, 8001: 0, 20000: 5, 11002: 150, 11003: -50}
+        inv, moved = {8000: 2, 8001: 0, 20000: 5}, {1: (150, -50)}
         bxs = [(10050, -4000, False, False), (-200, 300, False, True), (0, 0, True, False)]
         for text, want in [("{20000}*2 - 1", 9), ("1 + {8000}*3", 7), ("7 - 2 - 1", 4), ("-7/2", -3), ("-7%2", -1),
                            ("-2147483648", INT_MIN), ("-{8000}", -2), ("2147483647+1", INT_MIN),
@@ -782,11 +865,92 @@ class SlotExpressions(Quiet):
                            ("0.65", 1), ("2.5", 3), ("-2.5", -3), ("0.49", 0), ("-0.5", -1), ("0.65*{20000}/1", 3), ("2.5*2", 5), ("7.5/2", 3), ("7.5%2*2", 3),
                            ("{B0.x}*100", 10050), ("{b0.Y}", -40), ("{B1.x}*100", -50), ("{B1.y}*2", 5),
                            ("{B0}+{B1}+{B2}", 1), ("({B0.x} > 100.25)", 1), ("{B3}", 0), ("{B0.z}", None),
-                           ("1.234", None), ("1.", None), (".5", None), ("2147483647.5*2/1", INT_MAX * 2 + 1 - 2 ** 32),
-                           ("({B0.x}+{B1.x})*0.5", None), ("{B0.x}*0.5+{B1.x}*0.5", 50)]:
-            reset(inv, bxs)
+                           ("1.234", 1), ("1.", None), (".5", None), ("2147483647.5*2/1", INT_MAX * 2 + 1 - 2 ** 32),
+                           ("({B0.x}+{B1.x})*0.5", None), ("{B0.x}*0.5+{B1.x}*0.5", 50), ("1.23456789", 1),
+                           ("1.234567891", None), ("sin(30)", 1), ("sin(30)*2", 1), ("2*sin(45)", 1), ("cos(90)", 0),
+                           ("-sin(30)", -1), ("SIN(30)+1", 2), ("Cos (0) + sin(cos(0)*90)", 2), ("(sin(30) == 0.5)", 1),
+                           ("NOT (sin(30) > 0.5)", 1), ("sin(30) AND (1==1)", None), ("tan(30)", None),
+                           ("sin 30", None), ("sin(30", None), ("sin()", None), ("sin((30))", None),
+                           ("sin(1==1)", None), ("sin(1/0)", None), ("sin(2147483647*2147483647*3)", None),
+                           ("and (1==1)", None), ("x", None)]:
+            reset(inv, bxs, moved)
             self.assertEqual(B.call("RandomizerInventory.ParseValue", text), (want is not None, [want or 0]), text)
-            self.assertEqual(Model(inv, bxs).parse_value(text), want, text)
+            self.assertEqual(Model(inv, bxs, moved).parse_value(text), want, text)
+
+    def test_the_number_examples(self):
+        reset({})
+        for text, want in [("sin(30)", "0.5"), ("cos(90)", "0"), ("sin(-30)", "-0.5"), ("sin(390)", "0.5"),
+                           ("cos(0)", "1"), ("sin(cos(0)*90)", "1"), ("2*sin(45)", "1.41421356"), ("cos(60)", "0.5"),
+                           ("-cos(180)", "1"), ("sin(30)+1", "1.5"), ("0.12345678", "0.12345678"),
+                           ("0.12345678*2", "0.24691356"), ("0.00000005*0.1", "0.00000001"),
+                           ("-0.00000005*0.1", "-0.00000001"), ("0.00000004*0.1", "0"), ("0.05*0.1", "0.005"),
+                           ("1.99*0.5", "0.995"), ("0.33333333*3", "0.99999999"), ("1.5*-1.5", "-2.25"),
+                           ("7.5%2", "1.5"), ("1/3*3", "0"), ("2147483647*2147483647*2", "9223372028264841218"),
+                           ("2147483647*2147483647*3", None), ("100000000*100000000*999.99999999", "9999999999900000000"),
+                           ("100000000*100000000*1000", None), ("100000000*100000000*1000-1", None)]:
+            ok, value, _ = B.call("PickupsGlue.Evaluate", text)
+            self.assertEqual(Decimal(value) if ok == "ok" else None, want and Decimal(want), text)
+            self.assertEqual(Model({}).number(text), want and int(Decimal(want) * UNIT), text)
+        self.assertEqual(errors(), 0)
+
+    @settings(max_examples=examples(500))
+    @given(st.lists(eight_places, min_size=2, max_size=3), st.lists(st.sampled_from("+-*/%"), min_size=2, max_size=2))
+    def test_arithmetic_at_eight_places_matches_the_format(self, nums, ops):
+        text = typed(nums[0]) + "".join(op + typed(n) for op, n in zip(ops, nums[1:]))
+        reset({})
+        want = Model({}).number(text)
+        event("refused" if want is None else "past hundredths" if want % HUNDREDTH else "hundredths")
+        ok, value, _ = B.call("PickupsGlue.Evaluate", text)
+        self.assertEqual((ok == "ok", Decimal(value) * UNIT if ok == "ok" else None), (want is not None, want), text)
+
+    @settings(max_examples=examples(500))
+    @given(degrees, st.booleans(), st.booleans())
+    def test_sin_and_cos_match_the_format(self, u, cosine, minus):
+        text = ("-" if minus else "") + ("cos(" if cosine else "sin(") + typed(u) + ")"
+        reset({})
+        ok, value, _ = B.call("PickupsGlue.Evaluate", text)
+        self.assertEqual((ok, Decimal(value) * UNIT), ("ok", Model({}).number(text)), text)
+
+    @settings(max_examples=examples(300))
+    @given(hundredths, hundredths)
+    def test_pos_reads_to_the_hundredth(self, x, y):
+        reset({}, at=(x, y))
+        self.assertEqual([Decimal(B.call("PickupsGlue.Evaluate", t)[1]) * 100 for t in ("{Pos.x}", "{Pos.y}")], [x, y])
+
+    def test_the_tick_count_reads_as_T(self):
+        reset({})
+        for _ in range(3):
+            B.call("PickupsGlue.CountTick")
+        self.assertEqual(snapshot(), {TICK_SLOT: 3})
+        for text, want in [("{T}", 3), ("{t}*2", 6), ("{ T }-{11000}", 0), ("sin({T}*10)*2", 1)]:
+            self.assertEqual(B.call("RandomizerInventory.ParseValue", text), (True, [want]), text)
+        self.assertEqual(B.call("RandomizerInventory.ResolveSlots", "tick {T}, {t}, { T}"), "tick 3, 3, { T}")
+        B.call("RandomizerInventory.Apply", "11000=0")
+        self.assertEqual((snapshot(), errors()), ({TICK_SLOT: 3}, 1))
+
+    def test_pos_reads_where_ori_is(self):
+        reset({})
+        for text, want in [("{Pos.x}", 0), ("{pos.Y}+1", 1), ("{POS.X}*{Pos.y}", 0)]:
+            self.assertEqual(B.call("RandomizerInventory.ParseValue", text), (True, [want]), text)
+        self.assertEqual(B.call("RandomizerInventory.ResolveSlots", "at {Pos.x},{Pos.y}"), "at 0,0")
+        self.assertEqual(errors(), 1, "every read without Ori complains under one key")
+        reset({}, at=(1234, -550))
+        for text, want in [("{Pos.x}", "12.34"), ("{pOS.y}", "-5.5"), ("{Pos.x}+{Pos.y}*2", "1.34")]:
+            ok, value, _ = B.call("PickupsGlue.Evaluate", text)
+            self.assertEqual((ok, Decimal(value)), ("ok", Decimal(want)), text)
+        self.assertEqual(B.call("RandomizerInventory.ResolveSlots", "at {Pos.x},{POS.Y}"), "at 12.34,-5.5")
+        self.assertEqual(errors(), 0)
+
+    def test_a_value_with_sin_or_cos_rounds_into_a_slot_silently(self):
+        for text, want, warned in [("8000=sin(30)*2", 1, 0), ("8000=sin(30)", 1, 0), ("8000=sin(45)*10", 7, 0),
+                                   ("8000=-sin(30)", -1, 0), ("8000+=cos(60)", 3, 0), ("8000=sin(30)/1", 0, 0),
+                                   ("8000=0.5", 1, 1), ("8000=1.25*{8000}", 3, 1)]:
+            reset({8000: 2})
+            model = Model({8000: 2})
+            model.apply(text)
+            B.call("RandomizerInventory.Apply", text)
+            self.assertEqual((snapshot(), errors()), ({8000: want}, warned), text)
+            self.assertEqual((model.inv, model.errors), ({8000: want}, warned), text)
 
     def test_errors_are_capped_per_statement_for_five_seconds(self):
         reset({})
@@ -803,13 +967,14 @@ class SlotExpressions(Quiet):
 
     @settings(max_examples=examples(300))
     @given(st.lists(st.one_of(ri_stmt().map(lambda t: ("RI", t)), br_stmt().map(lambda t: ("BR", t))), min_size=1, max_size=3),
-           st.lists(st.tuples(st.integers(0, 2), st.sampled_from([0, 0, 1000, 4999, 5000])), max_size=8), inventory, boxes)
-    def test_the_error_cap_matches_the_format(self, pool, picks, inv, bxs):
+           st.lists(st.tuples(st.integers(0, 2), st.sampled_from([0, 0, 1000, 4999, 5000])), max_size=8), inventory, boxes,
+           box_offsets, ori_at)
+    def test_the_error_cap_matches_the_format(self, pool, picks, inv, bxs, moved, at):
         if any(code == "RI" and the_extra_items_counter(statement_slot(text)) for code, text in pool):
             event("masked: the extra items counter")
             return
-        reset(inv, bxs)
-        model = Model(inv, bxs)
+        reset(inv, bxs, moved, at)
+        model = Model(inv, bxs, moved, at)
         for k, ms in picks:
             code, text = pool[k % len(pool)]
             B.call("PickupsGlue.Tick", ms)
@@ -817,33 +982,51 @@ class SlotExpressions(Quiet):
             B.call("RandomizerInventory.Apply" if code == "RI" else "RandomizerInventory.MoveBox", text)
             (model.apply if code == "RI" else model.move_box)(text)
         self.assertEqual(snapshot(), model.inv)
+        self.assertEqual(offsets(), model.offsets)
         self.assertEqual(errors(), model.errors)
 
     def test_a_box_move_example(self):
         bxs = [(10050, -4000, False, False), (0, 0, True, False)]
         for text, want in [("0=120,-40", (1950, 0)), ("0=120.5,-39.99", (2000, 1)), ("0+=3,0.5", (300, 50)),
-                           ("0-=1,1", (-100, -100)), ("0", (0, 0)), ("0={B0.x}+1,{B0.y}", (100, 0))]:
+                           ("0-=1,1", (-100, -100)), ("0", None), ("0={B0.x}+1,{B0.y}", (100, 0)),
+                           ("0=sin(30),0", (-10000, 4000)), ("0+=0.005,-0.005", (1, -1)),
+                           ("0+=0.00499999,0.01499999", (0, 1)), ("0-=0.125,0", (-13, 0)), ("0=100.5,-40", None)]:
             reset({}, bxs)
             model = Model({}, bxs)
             model.move_box(text)
             B.call("RandomizerInventory.MoveBox", text)
-            self.assertEqual(model.offset(0), want, text)
-            self.assertEqual(snapshot(), model.inv, text)
-            self.assertEqual(errors(), 0, text)
-        for text in ["1=5,5", "7=1,1", "0=1", "0=1,0.5x", "0=99999999,0"]:
+            self.assertEqual(offsets(), {} if want is None else {0: want}, text)
+            self.assertEqual(model.offsets, offsets(), text)
+            self.assertEqual((snapshot(), errors()), ({}, 0), text)
+        for text in ["1=5,5", "7=1,1", "0=1", "0=1,0.5x", "0=99999999,0", "0=sin(1/0),0"]:
             reset({}, bxs)
             B.call("RandomizerInventory.MoveBox", text)
-            self.assertEqual((snapshot(), errors()), ({}, 0 if text.startswith("1=") else 1), text)
+            self.assertEqual((offsets(), snapshot(), errors()), ({}, {}, 0 if text.startswith("1=") else 1), text)
+
+    @settings(max_examples=examples(400))
+    @given(st.sampled_from(["", "+", "-"]), eight_places, eight_places, boxes.filter(len), box_offsets)
+    def test_a_move_rounds_to_hundredths(self, op, dx, dy, bxs, moved):
+        text = "0%s=%s,%s" % (op, typed(dx), typed(dy))
+        reset({}, bxs, moved)
+        model = Model({}, bxs, moved)
+        model.move_box(text)
+        B.call("RandomizerInventory.MoveBox", text)
+        self.assertEqual((offsets(), errors()), (model.offsets, model.errors), text)
+
+    def test_every_box_can_move(self):
+        reset({}, [(0, 0, False, False)] * 4501)
+        B.call("RandomizerInventory.MoveBox", "4500+=1,2")
+        self.assertEqual((offsets(), snapshot(), errors()), ({4500: (100, 200)}, {}, 0))
 
     @settings(max_examples=examples(600))
-    @given(br_stmt(), inventory, boxes, st.dictionaries(st.integers(11000, 11013), st.integers(-10 ** 6, 10 ** 6), max_size=4))
-    def test_a_box_move_matches_the_format(self, text, inv, bxs, moved):
-        inv = {**inv, **moved}
-        reset(inv, bxs)
-        model = Model(inv, bxs)
+    @given(br_stmt(), inventory, boxes, box_offsets, ori_at)
+    def test_a_box_move_matches_the_format(self, text, inv, bxs, moved, at):
+        reset(inv, bxs, moved, at)
+        model = Model(inv, bxs, moved, at)
         model.move_box(text)
         event("refused" if model.errors else "moved" if model.moves else "left alone")
         B.call("RandomizerInventory.MoveBox", text)
+        self.assertEqual(offsets(), model.offsets)
         self.assertEqual(snapshot(), model.inv)
         self.assertEqual(errors(), model.errors)
         self.assertEqual(B.get("RandomizerBoxes.Moves"), model.moves)
@@ -859,13 +1042,13 @@ class SlotExpressions(Quiet):
         self.assertEqual(B.call("RandomizerInventory.ParseValue", text), (True, [old]))
 
     @settings(max_examples=examples(600))
-    @given(ri_stmt(), inventory)
-    def test_a_slot_write_matches_the_format(self, text, inv):
+    @given(ri_stmt(), inventory, ori_at)
+    def test_a_slot_write_matches_the_format(self, text, inv, at):
         if the_extra_items_counter(statement_slot(text)):
             event("masked: the extra items counter")
             return
-        B.call("PickupsGlue.Reset", inv)
-        model = Model(inv)
+        reset(inv, at=at)
+        model = Model(inv, ori=at)
         model.apply(text)
         event("refused" if model.errors else "written")
         B.call("RandomizerInventory.Apply", text)
@@ -887,18 +1070,18 @@ class SlotExpressions(Quiet):
         self.assertEqual(errors(), model.errors)
 
     @settings(max_examples=examples(400))
-    @given(slot_message, inventory, boxes)
-    def test_a_message_reads_the_slots_it_names(self, text, inv, bxs):
-        reset(inv, bxs)
-        model = Model(inv, bxs)
+    @given(slot_message, inventory, boxes, box_offsets, ori_at)
+    def test_a_message_reads_the_slots_it_names(self, text, inv, bxs, moved, at):
+        reset(inv, bxs, moved, at)
+        model = Model(inv, bxs, moved, at)
         self.assertEqual(B.call("RandomizerInventory.ResolveSlots", text), model.resolve(text))
         self.assertEqual(errors(), model.errors)
         self.assertEqual(len(B.get("Randomizer.Logs")), model.logs)
 
     @settings(max_examples=examples(300))
-    @given(st.text(max_size=20), inventory, boxes)
-    def test_slot_expressions_never_throw(self, text, inv, bxs):
-        reset(inv, bxs)
+    @given(st.one_of(st.text(max_size=20), value_expr()), inventory, boxes, ori_at)
+    def test_slot_expressions_never_throw(self, text, inv, bxs, at):
+        reset(inv, bxs, at=at)
         for fn in ("ParseValue", "Apply", "ResolveSlots", "MoveBox"):
             self.assertEqual(outcome(B.call, "RandomizerInventory." + fn, text)[0], "ok", fn)
 
