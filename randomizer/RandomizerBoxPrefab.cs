@@ -104,46 +104,56 @@ public class RandomizerBoxPrefab : MonoBehaviour {
     }
 
     private Mesh CreateMesh(Color color, Color edgeColor, float zPos) {
-        var mesh = new Mesh();
         var size = Box.Rect.size;
-        var xMin = -size.x * 0.5f;
-        var xMax = size.x * 0.5f;
-        var yMin = -size.y * 0.5f;
-        var yMax = size.y * 0.5f;
-        mesh.SetVertices(
-            [
-                new Vector3(xMin, yMin, zPos),
-                new Vector3(xMin, yMax, zPos),
-                new Vector3(xMax, yMax, zPos),
-                new Vector3(xMax, yMin, zPos),
-                new Vector3(xMin, yMin, zPos),
-                new Vector3(xMin, yMax, zPos),
-                new Vector3(xMax, yMax, zPos),
-                new Vector3(xMax, yMin, zPos),
-                new Vector3(xMin + EdgeWidth, yMin + EdgeWidth, zPos),
-                new Vector3(xMin + EdgeWidth, yMax - EdgeWidth, zPos),
-                new Vector3(xMax - EdgeWidth, yMax - EdgeWidth, zPos),
-                new Vector3(xMax - EdgeWidth, yMin + EdgeWidth, zPos),
-            ]
-        );
+        float hx = size.x * 0.5f, hy = size.y * 0.5f;
+        // every hard boundary fades across a pixel centered on it, so a tilted camera's slanted edges don't stair-step
+        var h = Mathf.Min(FeatherWidth * 0.5f, Mathf.Min(hx, hy));
+        var clearFill = new Color(color.r, color.g, color.b, 0f);
+        var clearEdge = new Color(edgeColor.r, edgeColor.g, edgeColor.b, 0f);
+        var verts = new List<Vector3>();
+        var colors = new List<Color>();
+        var tris = new List<int>();
 
-        var colors = new List<Color>(12);
-        for (var i = 0; i < 4; ++i) {
-            colors.Add(color);
+        void Corners(float inset, Color c) {
+            verts.Add(new Vector3(-hx + inset, -hy + inset, zPos));
+            verts.Add(new Vector3(-hx + inset, hy - inset, zPos));
+            verts.Add(new Vector3(hx - inset, hy - inset, zPos));
+            verts.Add(new Vector3(hx - inset, -hy + inset, zPos));
+            colors.AddRange(new[] { c, c, c, c });
         }
 
-        for (var i = 4; i < 12; ++i) {
-            colors.Add(edgeColor);
+        void Solid(float inset, Color c) {
+            var at = verts.Count;
+            Corners(inset, c);
+            tris.AddRange(new[] { at, at + 2, at + 1, at, at + 3, at + 2 });
         }
 
-        mesh.SetColors(colors);
+        void Ring(float outer, Color outerColor, float inner, Color innerColor) {
+            var at = verts.Count;
+            Corners(outer, outerColor);
+            Corners(inner, innerColor);
+            for (var k = 0; k < 4; k++) {
+                int o = at + k, next = at + (k + 1) % 4;
+                tris.AddRange(new[] { o, o + 4, next, o + 4, next + 4, next });
+            }
+        }
 
-        if (size.x <= 2f * EdgeWidth || size.y <= 2f * EdgeWidth) {
-            mesh.triangles = [4, 6, 5, 4, 7, 6];
+        if (hx <= EdgeWidth || hy <= EdgeWidth) {
+            Solid(h, edgeColor);
+            Ring(-h, clearEdge, h, edgeColor);
         } else {
-            mesh.triangles = [0, 2, 1, 0, 3, 2, 4, 8, 5, 8, 9, 5, 5, 9, 6, 9, 10, 6, 6, 10, 7, 10, 11, 7, 7, 11, 4, 11, 8, 4];
+            Solid(h, color);
+            Ring(-h, clearFill, h, color);
+            Ring(-h, clearEdge, h, edgeColor);
+            var seam = Mathf.Min(h, Mathf.Min(hx, hy) - EdgeWidth);
+            Ring(h, edgeColor, EdgeWidth - seam, edgeColor);
+            Ring(EdgeWidth - seam, edgeColor, EdgeWidth + seam, clearEdge);
         }
 
+        var mesh = new Mesh();
+        mesh.SetVertices(verts);
+        mesh.SetColors(colors);
+        mesh.triangles = tris.ToArray();
         mesh.RecalculateBounds();
         return mesh;
     }
@@ -170,12 +180,25 @@ public class RandomizerBoxPrefab : MonoBehaviour {
             return material;
         }
 
-        material = Instantiate(Material);
+        material = CreateMaterial();
         MaterialsByDepth[renderDepth] = material;
         return material;
     }
 
+    // the game reads each frame's alpha back a frame late, so a box that wrote alpha would trail a ghost;
+    // built fresh each time, since a copy drops the properties UI/Default doesn't declare
     private static Material CreateMaterial() {
+        var ui = Shader.Find("UI/Default");
+        if (ui != null) {
+            var colorOnly = new Material(ui) {
+                name = "Randomizer Box Material",
+            };
+            colorOnly.SetFloat("_ColorMask", (float)(UnityEngine.Rendering.ColorWriteMask.Red | UnityEngine.Rendering.ColorWriteMask.Green | UnityEngine.Rendering.ColorWriteMask.Blue));
+            colorOnly.SetVector("_ClipRect", new Vector4(-1e7f, -1e7f, 1e7f, 1e7f));
+            colorOnly.SetFloat("unity_GUIZTestMode", (float)UnityEngine.Rendering.CompareFunction.Always);
+            return colorOnly;
+        }
+
         var material = new Material(Shader.Find("Hidden/Internal-Colored")) {
             name = "Randomizer Box Material",
         };
@@ -189,11 +212,12 @@ public class RandomizerBoxPrefab : MonoBehaviour {
 
     public const float EdgeWidth = 0.25f;
 
+    // a pixel of world at the usual zoom, which shows about 36 units of height
+    private static float FeatherWidth => 36f / Math.Max(Screen.height, 1);
+
     private static Transform BoxParent => field ??= new GameObject("RandomizerBoxes").transform;
 
     private static RandomizerBoxPrefab PrefabInstance => field ??= CreatePrefab();
-
-    private static Material Material => field ??= CreateMaterial();
 
     private static readonly Dictionary<float, Material> MaterialsByDepth = new();
 

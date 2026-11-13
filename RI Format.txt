@@ -31,10 +31,12 @@ Boxes
 Box n is the seed's nth BX line, counting from 0. {Bn} reads 1 while box n is on and 0
 while it is off; {Bn.x} and {Bn.y} read its top-left corner. They work anywhere {n} does.
 
-BR moves a box by its top-left corner, keeping its size:
+BR (Box Relocate) relocates a box using its top-left corner as a reference, preserving its size:
 - BR|4=120.5,-40 -> box 4's top-left corner goes to (120.5, -40)
 - BR|4+=3,0 -> box 4 moves 3 to the right (-= moves it the other way)
 - BR|4 -> box 4 goes back to where its line puts it
 - BR|5={B4.x},{B4.y}+10 -> box 5 sits 10 above box 4
-Moves are saved with the game and undone by a death, like a box switching on or off. A
-moving box doesn't carry Ori with it. The box editors show boxes where their lines put them.
+
+Some notes: Moves are saved with the game and undone by a death, like a box switching on or off. A
+solid box carries Ori as it moves, just like any other physics object Ori can stand on. The box
+editors always show boxes at their starting positions.
