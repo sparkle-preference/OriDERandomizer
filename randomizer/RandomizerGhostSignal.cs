@@ -364,7 +364,7 @@ public static class RandomizerGhostSignal {
         Misses.TryGetValue(pid, out n);
         Misses[pid] = ++n;
         if (n >= MissLimit && (viaRelay || RelayUrl == null) && Unreachable.Add(pid)) {
-            Say("Can't show " + RandomizerMW.PlayerName(pid) + "'s ghost: a firewall or VPN is probably blocking the connection.");
+            Say("Can't show " + RandomizerMW.PlayerName(pid) + "'s ghost!\n(A firewall or VPN is likely blocking the connection.)");
         }
     }
 
