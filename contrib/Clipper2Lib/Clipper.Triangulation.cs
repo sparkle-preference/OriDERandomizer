@@ -553,21 +553,15 @@ namespace Clipper2Lib
       if (eBelow == null) return null;
 
       Vertex2 vBest = (eBelow.vT.pt.Y <= yAbove) ? eBelow.vB : eBelow.vT;
-      long xBest = vBest.pt.X;
-      long yBest = vBest.pt.Y;
 
       e = firstActive;
-      if (xBest < xAbove)
+      if (vBest.pt.X < xAbove)
       {
         while (e != null)
         {
-          if (e.vR.pt.X > xBest && e.vL.pt.X < xAbove &&
-              e.vB.pt.Y > yAbove && e.vT.pt.Y < yBest &&
-              SegsIntersect(e.vB.pt, e.vT.pt, vBest.pt, vAbove.pt) == IntersectKind.intersect)
+          if (SegsIntersect(e.vB.pt, e.vT.pt, vBest.pt, vAbove.pt) == IntersectKind.intersect)
           {
             vBest = (e.vT.pt.Y > yAbove) ? e.vT : e.vB;
-            xBest = vBest.pt.X;
-            yBest = vBest.pt.Y;
           }
           e = e.nextE;
         }
@@ -576,13 +570,9 @@ namespace Clipper2Lib
       {
         while (e != null)
         {
-          if (e.vR.pt.X < xBest && e.vL.pt.X > xAbove &&
-              e.vB.pt.Y > yAbove && e.vT.pt.Y < yBest &&
-              SegsIntersect(e.vB.pt, e.vT.pt, vBest.pt, vAbove.pt) == IntersectKind.intersect)
+          if (SegsIntersect(e.vB.pt, e.vT.pt, vBest.pt, vAbove.pt) == IntersectKind.intersect)
           {
             vBest = (e.vT.pt.Y > yAbove) ? e.vT : e.vB;
-            xBest = vBest.pt.X;
-            yBest = vBest.pt.Y;
           }
           e = e.nextE;
         }
