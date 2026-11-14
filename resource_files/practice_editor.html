@@ -979,12 +979,15 @@
 
   function rebuildShapes() {
     state.shapes.forEach(function (s) { s.layers.forEach(function (l) { state.map.removeLayer(l); }); }); state.shapes = [];
-    allBoxes().forEach(function (entry) {
+    // locked boxes go underneath and let clicks through, so they never block the boxes around them
+    var entries = allBoxes();
+    entries.filter(function (e) { return e.locked; }).concat(entries.filter(function (e) { return !e.locked; })).forEach(function (entry) {
       var b = entry.b.box; if (!b || b.length !== 4) return;
       var color = boxColor(entry);
       var r = L.rectangle(bounds(b), { color: color, weight: 2, opacity: entry.locked ? 0.5 : 1, fillOpacity: entry.locked ? 0.05 : state.editing ? 0.3 : 0.15,
-        dashArray: hidden(entry.b) ? '4 4' : null }).addTo(state.map);
-      r.bindTooltip(asText(entry.label + (entry.locked ? ' (locked)' : '')), { sticky: true });
+        dashArray: hidden(entry.b) ? '4 4' : null, interactive: !entry.locked }).addTo(state.map);
+      if (entry.locked) { state.shapes.push({ entry: entry, layers: [r] }); return; }
+      r.bindTooltip(asText(entry.label), { sticky: true });
       var shape = { entry: entry, layers: [r] };
       if (state.editing && !entry.locked) attachEditing(shape, r);
       else r.on('click', function () { jumpTo(entry.rowId); });
@@ -1142,6 +1145,15 @@
   function saveLocks() { try { localStorage.setItem('box-locks:' + state.path, JSON.stringify(state.locks)); } catch (e) {} }
   function locked(owner, i) { return !!(state.locks || {})[owner + ':' + i]; }
   function setLock(owner, i, on) { if (on) state.locks[owner + ':' + i] = true; else delete state.locks[owner + ':' + i]; saveLocks(); }
+  // a row inserted at `from` moves the locks at and after it down one, so they stay on their boxes
+  function shiftLocks(owner, from) {
+    var moved = {};
+    Object.keys(state.locks).forEach(function (k) {
+      var cut = k.lastIndexOf(':'), n = parseInt(k.slice(cut + 1), 10);
+      moved[k.slice(0, cut) === owner && n >= from ? owner + ':' + (n + 1) : k] = true;
+    });
+    state.locks = moved; saveLocks();
+  }
   function lockEvery(on) {
     boxLists(state).forEach(function (l) { l.boxes.forEach(function (b, i) { if (!gone(b)) setLock(l.id || 'shared', i, on); }); });
     render();
@@ -1193,7 +1205,9 @@
         var at = end.goal && typeof end.goal.at === 'number' ? end.goal.at : null;
         if (at !== null) {
           var list = state.segment.boxes = state.segment.boxes || [];
-          list.splice(Math.max(0, Math.min(at, list.length)), 0, { flags: 'tombstone', box: [0, 0, 0, 0] });
+          var row = Math.max(0, Math.min(at, list.length));
+          list.splice(row, 0, { flags: 'tombstone', box: [0, 0, 0, 0] });
+          shiftLocks('shared', row);
         }
         delete end.box; delete end.goal; render();
       };
@@ -1229,20 +1243,24 @@
       drawEye();
       hide.onclick = function () { if (hidden(b)) delete b.color; else b.color = 'none'; drawEye(); recolorBox(coords); };
       tr.appendChild(td(hide));
-      var isLocked = locked(owner, i);
-      var lock = document.createElement('button'); lock.className = 'quiet icon' + (isLocked ? ' on' : '');
-      lock.innerHTML = isLocked ? LOCK : UNLOCK;
-      lock.title = isLocked ? 'Locked: no edits, no dragging. Click to unlock.' : 'Unlocked. Click to lock: no edits, no dragging, no corners.';
-      lock.onclick = function () { setLock(owner, i, !isLocked); render(); };
+      var lock = document.createElement('button');
       var lockCell = td(lock); lockCell.className = 'lockcell';
       tr.appendChild(lockCell);
       var del = document.createElement('button'); del.className = 'danger icon'; del.innerHTML = '&times;'; del.title = 'Remove this box';
       del.onclick = function () { if (state.lastBox === b) state.lastBox = null; boxes[i] = { flags: 'tombstone', box: [0, 0, 0, 0] }; render(); };
       tr.appendChild(td(del));
-      if (isLocked) {
-        tr.classList.add('locked');
-        tr.querySelectorAll('input, button, select, textarea').forEach(function (el) { if (el !== lock) el.disabled = true; });
+      // a lock changes this row and the map only, so it skips the full render
+      function drawLock() {
+        var isLocked = locked(owner, i);
+        lock.className = 'quiet icon' + (isLocked ? ' on' : '');
+        lock.innerHTML = isLocked ? LOCK : UNLOCK;
+        lock.title = isLocked ? 'Locked: no edits, no dragging. Click to unlock.' : 'Unlocked. Click to lock: no edits, no dragging, no corners.';
+        tr.classList.toggle('locked', isLocked);
+        tr.querySelectorAll('input, button, select, textarea').forEach(function (el) { if (el !== lock) el.disabled = isLocked; });
+        if (!isLocked) drawEye();
       }
+      lock.onclick = function () { setLock(owner, i, !locked(owner, i)); drawLock(); rebuildShapes(); };
+      drawLock();
       tbody.appendChild(tr);
     });
   }
