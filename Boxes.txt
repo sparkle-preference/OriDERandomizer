@@ -1,7 +1,7 @@
 ﻿RANDOMIZER BOXES
 
 Boxes are specified in a seed via BX lines in seed files, with the following format:
-BX|<flags>|<rect>|<color>|<item>
+BX|<flags>|<shape>|<color>|<item>
 
 
 
@@ -30,14 +30,57 @@ BX|unsafe|400,-15,640,1000|none
 
 
 
-RECT
+SHAPE
+=====
+The shape of the box. The possible shapes are (described in more detail below):
+- Rectangle
+- Convex
+- Polygon
+
+BR|n moves box n during the game, keeping its size; {Bn.x} and {Bn.y} read where its top-left corner is,
+and {Bn} whether it is on. See RI Format.txt.
+
+If the box is not a rectangle, {Bn.x} and {Bn.y} refer to the top-left corner of the bounding rect.
+
+
+
+Rectangle
 =====
 The rect is defined as "x1,y1,x2,y2" and defines the position and size of the box.
 Both (x1,y1) and (x2,y2) are points in the game's coordinate system and define two opposing corners of the box
 (any two corners in any order).
 
-BR|n moves box n during the game, keeping its size; {Bn.x} and {Bn.y} read where its top-left corner is,
-and {Bn} whether it is on. See RI Format.txt.
+
+
+Convex
+=====
+Convex boxes are defined as "convex,x1,y1,x2,y2,...,xN,yN".
+The box will be the convex hull of all points (xN, yN).
+At least three points need to be specified.
+
+Special notes: "unsafe" and "goal" boxes cannot be convex.
+
+
+
+Polygon
+=====
+Polygon boxes can have arbitrary shapes.
+They are defined as "loop,x1,y1,x2,y2,...,xN,yN".
+The box will be a polygon connecting all points (xN, yN), in the order specified.
+At least three points need to be specified.
+If the polygon self-intersects, it is filled according to the even-odd rule.
+
+It is possible to specify multiple loops: "loop,x1,y1,x2,y2,...,xN,yN,loop,x1,y1,x2,y2,...,xM,yM,...,loop,x1,y1,x2,y2,...,xO,yO".
+In that case the shape of the box will be the union of all loops:
+- Each loop is still individually filled according to the even-odd rule.
+- Afterwards, the union of all loops is calculated using the positive rule.
+The loops may overlap, but can also be entirely separate.
+
+Special notes:
+- Polygon boxes cannot be "unsafe" or "goal"
+- Polygon boxes must be either solid or decorative (i.e. no damage, no item, not "once")
+- Solid polygon boxes are hollow, in contrast to rectangle and convex boxes.
+  This means that only the edges have collisions, and only from the outside. The inside has no collision.
 
 
 

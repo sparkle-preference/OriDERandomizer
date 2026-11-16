@@ -38,6 +38,7 @@ Boxes
 ===
 Box n is the seed's nth BX line, counting from 0. {Bn} reads 1 while box n is on and 0
 while it is off; {Bn.x} and {Bn.y} read its top-left corner. They work anywhere {n} does.
+If Box n is not a rectangle, the top-left corner of its bounding rect is used.
 
 BR (Box Relocate) relocates a box using its top-left corner as a reference, preserving its size:
 - BR|4=120.5,-40 -> box 4's top-left corner goes to (120.5, -40)
