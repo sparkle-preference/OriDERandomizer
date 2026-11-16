@@ -277,35 +277,35 @@ public class RandomizerBox {
     }
 
     private void ParseShape(string shape, string line) {
-        var corners = shape.Split(',');
+        var parts = shape.Split(',');
 
-        if (corners[0].Equals("convex",  StringComparison.InvariantCultureIgnoreCase)) {
+        if (parts[0].Equals("convex",  StringComparison.InvariantCultureIgnoreCase)) {
             ShapeType = BoxShapeType.ConvexHull;
-            ParsePoints(corners, line, true, false);
+            ParsePoints(parts, line, true, false);
             return;
         }
 
-        if (corners[0].Equals("loop",  StringComparison.InvariantCultureIgnoreCase)) {
+        if (parts[0].Equals("loop",  StringComparison.InvariantCultureIgnoreCase)) {
             ShapeType = BoxShapeType.Polygon;
-            ParsePoints(corners, line, true, true);
+            ParsePoints(parts, line, true, true);
             return;
         }
 
-        if (corners[0].Equals("previewLoop", StringComparison.InvariantCultureIgnoreCase)) {
+        if (parts[0].Equals("previewLoop", StringComparison.InvariantCultureIgnoreCase)) {
             // ONLY for use in the practice editor. Do not use in seed files.
             ShapeType = BoxShapeType.PreviewPolygon;
-            ParsePoints(corners, line, false, true);
+            ParsePoints(parts, line, false, true);
             return;
         }
 
-        if (corners.Length != 4) {
+        if (parts.Length != 4) {
             throw new FormatException("a box needs four corners, x1,y1,x2,y2");
         }
 
         var c = new float[4];
         for (var i = 0; i < 4; i++) {
-            if (!float.TryParse(corners[i], NumberStyles.Number, CultureInfo.InvariantCulture, out c[i])) {
-                throw new FormatException("'" + corners[i] + "' is not a number");
+            if (!float.TryParse(parts[i], NumberStyles.Number, CultureInfo.InvariantCulture, out c[i])) {
+                throw new FormatException("'" + parts[i] + "' is not a number");
             }
         }
 
@@ -407,6 +407,9 @@ public class RandomizerBox {
         corners.Add(JsonValue.Of(Math.Round(rect.xMax, 2)));
         corners.Add(JsonValue.Of(Math.Round(rect.yMax, 2)));
         json.Set("box", corners);
+        if (ShapeType != BoxShapeType.Rectangle) {
+            json.Set("shape", JsonValue.Of(fields[2]));
+        }
         json.Set("color", JsonValue.Of(fields.Length > 3 ? fields[3] : ""));
         json.Set("give", JsonValue.Of(fields.Length > 4 ? fields[4] : ""));
         return json;
@@ -418,17 +421,21 @@ public class RandomizerBox {
             throw new FormatException("a box needs four corners");
         }
 
+        if (json["shape"] is not { Str: {} shape }) {
+            shape = string.Join(
+                ",",
+                new[] {
+                    Num((float)corners[0].Num), Num((float)corners[1].Num), Num((float)corners[2].Num), Num((float)corners[3].Num)
+                }
+            );
+        }
+
         var flags = json["flags"].IsString ? json["flags"].Str : LegacyFlags(json);
         if (Deleting(flags)) {
             return Parse(Tombstone);
         }
 
-        var line = Prefix + flags + "|" + string.Join(
-            ",",
-            new[] {
-                Num((float)corners[0].Num), Num((float)corners[1].Num), Num((float)corners[2].Num), Num((float)corners[3].Num)
-            }
-        );
+        var line = Prefix + flags + "|" + shape;
         var color = json["color"].IsString ? json["color"].Str.TrimStart('#') : "";
         var give = json["give"].IsString ? json["give"].Str : "";
         if (color != "" || give != "") {
@@ -470,7 +477,7 @@ public class RandomizerBox {
 
     public Rect Rect { get; private set; }
 
-    public BoxShapeType ShapeType { get; private set; }
+    public BoxShapeType ShapeType { get; private set; } = BoxShapeType.Rectangle;
 
     public List<List<Vector2>>? Points { get; private set; }
 
@@ -578,17 +585,6 @@ public static class RandomizerBoxes {
         }
 
         Moved(box);
-    }
-
-    // every box back where its line puts it; true when any had moved
-    public static bool ForgetMoves() {
-        var moved = new List<int>(Offsets.Keys);
-        Offsets.Clear();
-        foreach (var box in moved) {
-            Moved(box);
-        }
-
-        return moved.Count > 0;
     }
 
     // version 2 adds the offsets; a version 1 save has every box unmoved
@@ -836,7 +832,8 @@ public static class RandomizerBoxes {
             }
         }
 
-        cleared |= ForgetMoves();
+        cleared |= Offsets.Count > 0;
+        Offsets.Clear();
         cleared |= ActiveBoxes.Count > 0;
         ActiveBoxes.Clear();
         ActiveThisTick.Clear();

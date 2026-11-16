@@ -2057,7 +2057,7 @@ public static class Randomizer {
 
     public static void SetupNewGame() {
         Inventory.Clear();
-        RandomizerBoxes.ForgetMoves();
+        RandomizerBoxes.Serialize(null);
         TeleporterController.RemoveCustomTeleporters();
         var spawnHCs = 0;
         var spawnECs = 0;
