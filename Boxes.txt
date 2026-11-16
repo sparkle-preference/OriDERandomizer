@@ -84,6 +84,8 @@ Available flags:
 
 - "ritem": Implies color 80d9ff40 (unless an explicit color is specified)
 
+- "unlit": Disabled lighting for this box. Can prevent ghosting from moving boxes.
+
 - "on=<trigger>": Specifies when the box is collected (see COLLECTION section for more details).
     Possible values:
     - "Enter" (default): collects the box on the first (physics) tick ori collides with the box

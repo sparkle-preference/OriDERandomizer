@@ -1148,7 +1148,7 @@ public static class PracticeEditor {
                 shown = new GameObject("practiceEditorHighlight") { layer = RandomizerLayers.Solids };
                 mesh = new Mesh();
                 shown.AddComponent<MeshFilter>().sharedMesh = mesh;
-                shown.AddComponent<MeshRenderer>().sharedMaterial = RandomizerBoxPrefab.GetMaterial(Depth);
+                shown.AddComponent<MeshRenderer>().sharedMaterial = RandomizerBoxPrefab.GetMaterial(true, Depth);
                 UberShaderRenderQueue.SetRenderQueueExplicit(shown, Depth);
                 edges = -1;
             }

@@ -65,7 +65,7 @@ public class RandomizerBoxPrefab : MonoBehaviour {
             }
         } else {
             meshFilter.sharedMesh = rendererMesh ?? CreateRectangleMesh(fillColor, edgeColor, box.ParallaxDepth);
-            renderer.sharedMaterial = GetMaterial(box.RenderDepth);
+            renderer.sharedMaterial = GetMaterial(box.Unlit, box.RenderDepth);
             UberShaderRenderQueue.SetRenderQueueExplicit(gameObject, box.RenderDepth);
         }
 
@@ -382,30 +382,30 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         return rb;
     }
 
-    public static Material GetMaterial(float renderDepth) {
-        if (MaterialsByDepth.TryGetValue(renderDepth, out var material)) {
+    public static Material GetMaterial(bool unlit, float renderDepth) {
+        if (MaterialCache.TryGetValue((unlit, renderDepth), out var material)) {
             return material;
         }
 
-        material = CreateMaterial();
-        MaterialsByDepth[renderDepth] = material;
+        material = unlit ? CreateUnlitMaterial() : Instantiate(LitMaterial);
+        MaterialCache[(unlit, renderDepth)] = material;
         return material;
     }
 
     // the game reads each frame's alpha back a frame late, so a box that wrote alpha would trail a ghost;
     // built fresh each time, since a copy drops the properties UI/Default doesn't declare
-    private static Material CreateMaterial() {
-        var ui = Shader.Find("UI/Default");
-        if (ui != null) {
-            var colorOnly = new Material(ui) {
-                name = "Randomizer Box Material",
-            };
-            colorOnly.SetFloat("_ColorMask", (float)(UnityEngine.Rendering.ColorWriteMask.Red | UnityEngine.Rendering.ColorWriteMask.Green | UnityEngine.Rendering.ColorWriteMask.Blue));
-            colorOnly.SetVector("_ClipRect", new Vector4(-1e7f, -1e7f, 1e7f, 1e7f));
-            colorOnly.SetFloat("unity_GUIZTestMode", (float)UnityEngine.Rendering.CompareFunction.Always);
-            return colorOnly;
-        }
+    private static Material CreateUnlitMaterial() {
+        var material = new Material(Shader.Find("UI/Default")) {
+            name = "Randomizer Box Material (Unlit)",
+        };
+        material.SetFloat("_ColorMask", (float)(UnityEngine.Rendering.ColorWriteMask.Red | UnityEngine.Rendering.ColorWriteMask.Green | UnityEngine.Rendering.ColorWriteMask.Blue));
+        material.SetVector("_ClipRect", new Vector4(-1e7f, -1e7f, 1e7f, 1e7f));
+        material.SetFloat("unity_GUIZTestMode", (float)UnityEngine.Rendering.CompareFunction.Always);
+        return material;
 
+    }
+
+    private static Material CreateLitMaterial() {
         var material = new Material(Shader.Find("Hidden/Internal-Colored")) {
             name = "Randomizer Box Material",
         };
@@ -428,7 +428,9 @@ public class RandomizerBoxPrefab : MonoBehaviour {
 
     private static RandomizerBoxPrefab PrefabInstance => field ??= CreatePrefab();
 
-    private static readonly Dictionary<float, Material> MaterialsByDepth = new();
+    private static readonly Dictionary<(bool, float), Material> MaterialCache = new();
+
+    private static Material LitMaterial => field ??= CreateLitMaterial();
 
     public RandomizerBox Box = null!;
 

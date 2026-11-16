@@ -220,6 +220,9 @@ public class RandomizerBox {
                 case "unsafe":
                     Unsafe = true;
                     break;
+                case "unlit":
+                    Unlit = true;
+                    break;
                 case "renderdepth": {
                     if (flag.Length == 1) {
                         Randomizer.log("box flag \"renderDepth\" requires a value");
@@ -488,6 +491,8 @@ public class RandomizerBox {
     public Color32 Color { get; private set; } = new(128, 128, 128, 64);
 
     public bool Invisible { get; private set; }
+
+    public bool Unlit { get; private set; }
 
     public RandomizerAction? Item { get; private set; }
 
