@@ -799,15 +799,17 @@
   // the flags menu, presets first; goal still loads and shows, but isn't offered
   var SUGGEST = [['kill', 'box kills Ori'], ['item', 'grants an item once'], ['solid', 'box with collision'],
     ['ritem', 'grants an item repeatedly'], ['once', 'box toggles off when collected'], ['unsafe', 'saves disabled inside box'],
-    ['on=Tick', 'grant 60 times a second while inside box'], ['on=Tick/60/60', 'grant once a second while inside box'],
+    ['unlit', 'box ignores lighting; stops ghosting when moved'],
+    ['on=Tick','grant 60 times a second while inside box'], ['on=Tick/60/60', 'grant once a second while inside box'],
     ['on=Frame', 'grant every frame while inside box'],
     ['damage=1', 'box damages entities touching it'], ['renderDepth=-99', 'draw box over terrain'],
     ['parallaxDepth=10', 'box scrolls like background art']];
   // the flags the game reads; any other is kept, and the game logs it
-  var FLAGS = ['once', 'on', 'damage', 'solid', 'unsafe', 'renderdepth', 'parallaxdepth', 'goal', 'kill', 'item', 'ritem', 'tombstone'];
+  var FLAGS = ['once', 'on', 'damage', 'solid', 'unsafe', 'unlit', 'renderdepth', 'parallaxdepth', 'goal', 'kill', 'item', 'ritem', 'tombstone'];
   var VALUED = ['on', 'damage', 'renderdepth', 'parallaxdepth'];
   var FLAG_TEXT = { kill: 'box kills Ori', item: 'grants an item once', solid: 'box with collision', ritem: 'grants an item repeatedly',
-    once: 'box toggles off when collected', unsafe: 'saves disabled inside box', goal: 'ends a practice segment' };
+    once: 'box toggles off when collected', unsafe: 'saves disabled inside box', unlit: 'box ignores lighting; stops ghosting when moved',
+    goal: 'ends a practice segment' };
   var TRIGGER_TEXT = { Enter: 'grants when Ori enters the box', Tick: 'grants 60 times a second while Ori is inside',
     Frame: 'grants every frame while Ori is inside' };
   // the game's DamageType names, which it matches case-insensitively
@@ -898,7 +900,71 @@
     return { text: FLAG_TEXT[key] ? capital(FLAG_TEXT[key]) : '' };
   }
   // a deleted box keeps its line so later boxes keep their BM|n numbers; none is the tombstone's old name
-  function settle(b) { if (hasFlag(b, 'none')) { b.flags = 'tombstone'; b.box = [0, 0, 0, 0]; } }
+  function settle(b) { if (hasFlag(b, 'none')) { b.flags = 'tombstone'; b.box = [0, 0, 0, 0]; delete b.shape; } }
+
+  // ---- shaped boxes: b.shape is the line's third field, read as the game does (the plando builder's boxes.js) ----
+  var SHAPE_WORDS = { convex: 'convex', loop: 'loop', previewloop: 'previewLoop' };
+  // {kind, loops of [x, y]}, or null where the game throws: every loop needs three points, a last x alone is dropped
+  function parseShape(text) {
+    var parts = (text || '').split(','), kind = parts[0].toLowerCase(), loops = [[]];
+    if (!SHAPE_WORDS.hasOwnProperty(kind)) return null;
+    for (var k = 1; k < parts.length;) {
+      if (kind !== 'convex' && parts[k].toLowerCase() === 'loop') { loops.push([]); k++; }
+      else if (k === parts.length - 1) break;
+      else if (!numeric(parts[k]) || !numeric(parts[k + 1])) return null;
+      else { loops[loops.length - 1].push([Number(parts[k]), Number(parts[k + 1])]); k += 2; }
+    }
+    return kind !== 'previewloop' && loops.some(function (l) { return l.length < 3; }) ? null : { kind: kind, loops: loops };
+  }
+  function writeShape(read) {
+    return SHAPE_WORDS[read.kind] + read.loops.map(function (l) { return l.map(function (p) { return ',' + num(p[0]) + ',' + num(p[1]); }).join(''); }).join(',loop');
+  }
+  // '', 'convex' or 'loop'
+  function shapeKind(b) { var read = b.shape ? parseShape(b.shape) : null; return read ? read.kind.replace('preview', '') : ''; }
+  // the hull's corners in order, by Andrew's monotone chain
+  function hull(points) {
+    var sorted = points.slice().sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    function turn(o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); }
+    function half(list) {
+      var out = [];
+      list.forEach(function (p) {
+        while (out.length > 1 && turn(out[out.length - 2], out[out.length - 1], p) <= 0) out.pop();
+        out.push(p);
+      });
+      return out.slice(0, -1);
+    }
+    return sorted.length < 3 ? sorted : half(sorted).concat(half(sorted.reverse()));
+  }
+  // What a shaped box covers, as rings of [lat, lng]: a convex box's hull, or each loop. A loop fills even-odd
+  // and the game unions the loops, so they are drawn one apiece.
+  function ringsOf(b) {
+    var read = b.shape ? parseShape(b.shape) : null;
+    if (!read) return [];
+    var rings = read.kind === 'convex' ? [hull(read.loops[0])] : read.loops.filter(function (l) { return l.length; });
+    return rings.map(function (ring) { return ring.map(function (p) { return [p[1], p[0]]; }); });
+  }
+  // The box (dx, dy) from where the shape `from` had it: every point moves by whole hundredths, so it keeps
+  // its shape, and its corners follow in place.
+  function shiftShape(b, from, dx, dy) {
+    var read = parseShape(from); if (!read) return;
+    var mx = num(dx), my = num(dy);
+    b.shape = writeShape({ kind: read.kind, loops: read.loops.map(function (l) { return l.map(function (p) { return [p[0] + mx, p[1] + my]; }); }) });
+    var points = [].concat.apply([], parseShape(b.shape).loops);
+    if (!points.length) return;
+    var xs = points.map(function (p) { return p[0]; }), ys = points.map(function (p) { return p[1]; });
+    b.box[0] = Math.min.apply(null, xs); b.box[1] = Math.min.apply(null, ys); b.box[2] = Math.max.apply(null, xs); b.box[3] = Math.max.apply(null, ys);
+  }
+  // what only a rectangle does, and what a loop box does only when solid: it has no inside to touch
+  var RECT_ONLY = { unsafe: 'Only a rectangle can be unsafe', goal: 'Only a rectangle can be a goal' };
+  var NEEDS_INSIDE = ['kill', 'damage', 'once', 'item', 'ritem'];
+  // a chip on this box: it warns where the box can't honor the flag
+  function describeOn(b, f) {
+    var key = f.split('=')[0].trim().toLowerCase(), kind = shapeKind(b);
+    if (kind && RECT_ONLY[key]) return { text: RECT_ONLY[key], warn: true };
+    if (kind === 'loop' && !hasFlag(b, 'solid') && NEEDS_INSIDE.indexOf(key) >= 0 && (b.give || !/item$/.test(key)))
+      return { text: 'A loop box only works solid or as decoration', warn: true };
+    return key === 'kill' && b.give ? { text: KILL_GIVES, warn: true } : describeFlag(f);
+  }
   // colors travel as rrggbb; none is an invisible box
   function hidden(b) { return b.color === 'none' || b.color === '0'; }
   // every flag counts the same; the list keeps the order it was written in
@@ -949,6 +1015,11 @@
     if (!s) return rebuildShapes();
     if (s.redraw) s.redraw(); else s.layers[0].setBounds(bounds(coords));
   }
+  // a shaped box's outlines, where its points are now
+  function drawShaped(s) {
+    var rings = ringsOf(s.entry.b);
+    s.faces.forEach(function (f, k) { if (rings[k]) f.setLatLngs(rings[k]); });
+  }
   // a drag already knows its box: those four inputs are the whole table update
   function syncRow(entry) {
     var row = document.getElementById(entry.rowId); if (!row) return;
@@ -959,7 +1030,7 @@
   function recolorBox(coords) {
     var s = shapeFor(coords);
     if (!s) return rebuildShapes();
-    s.layers[0].setStyle({ color: boxColor(s.entry), dashArray: hidden(s.entry.b) ? '4 4' : null });
+    s.faces.forEach(function (f) { f.setStyle({ color: boxColor(s.entry), dashArray: hidden(s.entry.b) ? '4 4' : null }); });
   }
   // a variant's box wears the variant color unless it was given one of its own
   function boxColor(entry) {
@@ -983,15 +1054,18 @@
     var entries = allBoxes();
     entries.filter(function (e) { return e.locked; }).concat(entries.filter(function (e) { return !e.locked; })).forEach(function (entry) {
       var b = entry.b.box; if (!b || b.length !== 4) return;
-      var color = boxColor(entry);
-      var r = L.rectangle(bounds(b), { color: color, weight: 2, opacity: entry.locked ? 0.5 : 1, fillOpacity: entry.locked ? 0.05 : state.editing ? 0.3 : 0.15,
-        dashArray: hidden(entry.b) ? '4 4' : null, interactive: !entry.locked }).addTo(state.map);
-      if (entry.locked) { state.shapes.push({ entry: entry, layers: [r] }); return; }
-      r.bindTooltip(asText(entry.label), { sticky: true });
-      var shape = { entry: entry, layers: [r] };
-      if (state.editing && !entry.locked) attachEditing(shape, r);
-      else r.on('click', function () { jumpTo(entry.rowId); });
+      var look = { color: boxColor(entry), weight: 2, opacity: entry.locked ? 0.5 : 1, fillOpacity: entry.locked ? 0.05 : state.editing ? 0.3 : 0.15,
+        dashArray: hidden(entry.b) ? '4 4' : null, interactive: !entry.locked };
+      // a shape this page can't read still shows, as the rectangle around it
+      var rings = ringsOf(entry.b);
+      var faces = rings.length ? rings.map(function (ring) { return L.polygon(ring, look).addTo(state.map); }) : [L.rectangle(bounds(b), look).addTo(state.map)];
+      var shape = { entry: entry, layers: faces.slice(), faces: faces };
+      if (rings.length) shape.redraw = function () { drawShaped(shape); };
       state.shapes.push(shape);
+      if (entry.locked) return;
+      faces.forEach(function (f) { f.bindTooltip(asText(entry.label), { sticky: true }); });
+      if (state.editing) attachEditing(shape);
+      else faces.forEach(function (f) { f.on('click', function () { jumpTo(entry.rowId); }); });
     });
   }
   // Leaflet sets a string tooltip as HTML, and labels carry text from shared files
@@ -1003,18 +1077,22 @@
     row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600);
   }
 
-  // drag a box to move it, a corner to resize it; the table catches up on release
-  function attachEditing(shape, rect) {
-    var b = shape.entry.b.box;
+  // drag a box to move it, a corner to resize it; the table catches up on release. A shaped box only moves.
+  function attachEditing(shape) {
+    var b = shape.entry.b.box, rect = shape.faces[0], shaped = !!shape.redraw;
     var map = state.map;
     function normalize() {
+      if (shaped) return;
       var x1 = num(Math.min(b[0], b[2])), x2 = num(Math.max(b[0], b[2])), y1 = num(Math.min(b[1], b[3])), y2 = num(Math.max(b[1], b[3]));
       b[0] = x1; b[1] = y1; b[2] = x2; b[3] = y2;
     }
-    function redraw() { rect.setBounds(bounds(b)); shape.layers.slice(1).forEach(function (h, k) { h.setLatLng(cornerLatLng(k)); }); }
+    function redraw() {
+      if (shaped) return drawShaped(shape);
+      rect.setBounds(bounds(b)); shape.layers.slice(1).forEach(function (h, k) { h.setLatLng(cornerLatLng(k)); });
+    }
     shape.redraw = redraw;   // so a number typed in the table moves this box and nothing else
     function cornerLatLng(k) { var xs = [b[0], b[2], b[2], b[0]], ys = [b[1], b[1], b[3], b[3]]; return [ys[k], xs[k]]; }
-    for (var k = 0; k < 4; k++) (function (k) {
+    for (var k = 0; k < 4 && !shaped; k++) (function (k) {
       var h = L.marker(cornerLatLng(k), { draggable: true, icon: L.divIcon({ className: 'handle', iconSize: [10, 10] }) }).addTo(map);
       h.on('drag', function (ev) {
         var p = ev.target.getLatLng();
@@ -1025,18 +1103,21 @@
       h.on('dragend', function () { normalize(); redraw(); syncRow(shape.entry); });
       shape.layers.push(h);
     })(k);
-    var start = null, from = null;
-    rect.on('mousedown', function (ev) {
-      L.DomEvent.stop(ev);
-      map.dragging.disable();
-      start = ev.latlng; from = b.slice();
-      map.on('mousemove', move); map.on('mouseup', stop);
-      L.DomEvent.on(document, 'mouseup', stop);
+    var start = null, from = null, fromShape = null;
+    shape.faces.forEach(function (face) {
+      face.on('mousedown', function (ev) {
+        L.DomEvent.stop(ev);
+        map.dragging.disable();
+        start = ev.latlng; from = b.slice(); fromShape = shape.entry.b.shape;
+        map.on('mousemove', move); map.on('mouseup', stop);
+        L.DomEvent.on(document, 'mouseup', stop);
+      });
     });
     function move(ev) {
       if (!start) return;
       var dx = ev.latlng.lng - start.lng, dy = ev.latlng.lat - start.lat;
-      b[0] = from[0] + dx; b[2] = from[2] + dx; b[1] = from[1] + dy; b[3] = from[3] + dy;
+      if (shaped) shiftShape(shape.entry.b, fromShape, dx, dy);
+      else { b[0] = from[0] + dx; b[2] = from[2] + dx; b[1] = from[1] + dy; b[3] = from[3] + dy; }
       redraw();
     }
     function stop() {
@@ -1223,11 +1304,20 @@
       var coords = b.box && b.box.length === 4 ? b.box : [0, 0, 0, 0];
       b.box = coords;
       var flags = flagSelect({ get: function () { return flagsOf(b); }, set: function (l) { setFlags(b, l); drawEye(); gives.refresh(); rebuildShapes(); },
-        describe: function (f) { return f.toLowerCase() === 'kill' && b.give ? { text: KILL_GIVES, warn: true } : describeFlag(f); } });
+        describe: function (f) { return describeOn(b, f); } });
       var gives = pickSelect({ get: function () { return splitCode(b.give); }, set: function (l) { b.give = joinCodes(l); flags.refresh(); rebuildShapes(); },
         placeholder: function () { return hasFlag(b, 'kill') ? 'kills Ori' : 'what it gives; a message is SH|text'; } });
       tr.appendChild(td(flags));
-      for (var k = 0; k < 4; k++) (function (k) { tr.appendChild(td(numInput(coords[k], function (v) { coords[k] = v; moveBox(coords); }))); })(k);
+      for (var k = 0; k < 4; k++) (function (k) {
+        var input = numInput(coords[k], function (v) {
+          // a shaped box keeps its size: its low corner moves all of it
+          if (b.shape) { shiftShape(b, b.shape, k === 0 ? v - coords[0] : 0, k === 1 ? v - coords[1] : 0); syncRow({ rowId: tr.id, b: b }); }
+          else coords[k] = v;
+          moveBox(coords);
+        });
+        if (b.shape && k > 1) { input.readOnly = true; input.title = 'A shaped box keeps its size'; }
+        tr.appendChild(td(input));
+      })(k);
       tr.appendChild(td(gives));
       // any box can wear its own color; its flags pick the default
       var color = document.createElement('input'); color.type = 'color'; color.title = b.color ? 'own color' : 'the default for its flags';
