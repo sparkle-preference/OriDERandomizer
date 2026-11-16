@@ -1,35 +1,66 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Game;
+using JetBrains.Annotations;
+using RandoExts;
 using UnityEngine;
 
 // The in-game box editor: boxes drawn with the mouse over the frozen world, kept as BX lines in a practice
 // container's placements.bfr or, outside practice, the loaded seed. Create snapshots a save into a new container.
 public static class PracticeEditor {
+    private enum EditMode {
+        [Description("Create Box")] Create,
+        [Description("Adjust Boxes")] Adjust,
+        [Description("Delete Boxes")] Delete,
+    }
+
+    private enum BoxShape {
+        Rectangle,
+        Convex,
+        Polygon,
+    }
+
+    private enum BoxType {
+        Item,
+        Solid,
+        Kill,
+        Unsafe,
+        Goal,
+    }
+
     public static bool Active;
 
     // editing the loaded seed's boxes rather than a practice segment's
     public static bool Seed;
 
+    private static Rect guiWindowRect = new(10f, 10f, 500f, 300f);
+
+    private static Rect guiButtonRect = new(10f, 10f, 90f, 25f);
+
+    private static bool showWindow = true;
+
+    private static EditMode mode = EditMode.Create;
+
+    private static BoxShape boxShape;
+
     // the rectangle being dragged, in world units
-    public static RandomizerBox? Draft;
+    public static RandomizerBox? DraftObject;
 
     private static Vector2 dragFrom;
 
-    private static bool doMotionBlur;
-
     private static bool dragging;
 
-    private static string tool = "item";
+    private static List<List<Vector2>> points = [];
+
+    private static BoxType boxType;
 
     // with a variant running its own list takes the boxes, unless V says the shared one
     private static bool toVariant = true;
-
-    // M: the mouse moves and resizes boxes instead of drawing them
-    private static bool adjusting;
 
     // an adjust drag's box: its list, index and rect when grabbed, and the edges that move
     private static string grabTarget;
@@ -89,6 +120,8 @@ public static class PracticeEditor {
     // the bind pressed with unsaved edits asks first; pressed again it drops them
     private static bool leaveArmed;
 
+    private static bool doMotionBlur;
+
     private const float PanSpeed = 24f;
 
     // the thinnest side a drawn box or a resize leaves
@@ -111,7 +144,6 @@ public static class PracticeEditor {
         Open();
         // the server first, so the help can say where the page is
         PracticeServer.OpenOnce();
-        Help();
         if (given) {
             Say("Extracted to the folder " + PracticeFolder.NameOf(PracticeController.File.Path) + " for editing", 300);
         }
@@ -164,18 +196,15 @@ public static class PracticeEditor {
 
         Seed = true;
         seedMoved = false;
-        tool = "item";
         PracticeController.Freeze();
         Open();
         SeedBoxes.Current.Apply();
-        Help();
     }
 
     private static void Open() {
         Active = true;
-        Draft = null;
-        dragging = false;
-        adjusting = false;
+        showWindow = true;
+        DiscardDraft();
         grabIndex = -1;
         undoIndex = -1;
         leaveArmed = false;
@@ -190,8 +219,7 @@ public static class PracticeEditor {
     // what is drawn over the world goes with the editor, whichever way it is left
     public static void Stop() {
         DropGrab();
-        Draft?.DeInit();
-        Draft = null;
+        ClearDraftObject();
         Highlight.Hide();
         lit = null;
         Active = false;
@@ -257,12 +285,12 @@ public static class PracticeEditor {
     }
 
     // save what was drawn and run it; with nothing to end the run yet, stay
-    public static void SaveAndRetry() {
+    public static void LeaveEditor(bool save) {
         if (!Active) {
             return;
         }
 
-        if (!Write()) {
+        if (save && !Write()) {
             Say("The segment could not be saved; see randomizer.log", 300);
             return;
         }
@@ -337,78 +365,52 @@ public static class PracticeEditor {
         }
     }
 
-    public static void Tick() {
-        Draft?.DeInit();
-        Draft = null;
+    public static void FixedUpdate() {
+        ClearDraftObject();
         Highlight.Hide();
 
         if (!Active || Characters.Sein == null || GameController.Instance == null || GameController.Instance.GameInTitleScreen) {
             return;
         }
 
-        // Ctrl and a letter is a command, not a pan
-        var ctrl = UnityEngine.Input.GetKey(KeyCode.LeftControl) || UnityEngine.Input.GetKey(KeyCode.RightControl);
-        if (ctrl) {
-            if (UnityEngine.Input.GetKeyDown(KeyCode.S)) {
-                Save();
-            } else if (UnityEngine.Input.GetKeyDown(KeyCode.R)) {
-                Reload();
-            } else if (UnityEngine.Input.GetKeyDown(KeyCode.C)) {
-                CopyLines();
-            }
-        } else {
-            Pan();
-        }
-
-        // number keys: the letters are taken by the pan
-        if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha1) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad1)) {
-            Tool("item");
-        } else if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha2) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad2)) {
-            Tool("solid");
-        } else if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha3) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad3)) {
-            Tool("kill");
-        } else if ((UnityEngine.Input.GetKeyDown(KeyCode.Alpha4) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad4)) && !Seed) {
-            Tool("goal");
-        } else if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha5) || UnityEngine.Input.GetKeyDown(KeyCode.Keypad5)) {
-            PracticeServer.Open();
-        } else if (UnityEngine.Input.GetKeyDown(KeyCode.M)) {
-            adjusting = !adjusting;
-            DropGrab();
-            dragging = false;
-            Randomizer.clearMessage();
-            Help();
-        } else if (UnityEngine.Input.GetKeyDown(KeyCode.V) && !Seed) {
-            toVariant = !toVariant;
-            Randomizer.clearMessage();
-            Help();
-        } else if (UnityEngine.Input.GetKeyDown(KeyCode.Z)) {
-            Undo();
-        } else if (UnityEngine.Input.GetKeyDown(KeyCode.X)) {
-            DeleteUnderCursor();
-        } else if (UnityEngine.Input.GetKeyDown(KeyCode.Return) || UnityEngine.Input.GetKeyDown(KeyCode.KeypadEnter)) {
-            SaveAndRetry();
+        if (!Seed && PracticeController.Current != PracticeController.Phase.Editing) {
             return;
         }
 
-        // the legend is this mode's HUD, not a one-off: it goes back up as it runs out
-        if (Time.unscaledTime - helped > HelpAgain && Randomizer.MessageQueue.Count == 0
-                && Randomizer.MessageQueueTime <= 0f) {
-            Help();
-        }
+        Pan();
+
+        // Unfortunately OnGUI runs after Tick, so we can't consume/block any events there
+        var mousePos = Input.mousePosition;
+        mousePos.y = Screen.height - mousePos.y;
+        var guiRect = showWindow ? guiWindowRect : guiButtonRect;
+        var overGui = guiRect.Contains(mousePos) || UI.MainMenuVisible;
 
         var at = World(Core.Input.CursorPosition);
         // right click stands Ori where you are looking, which is how the scenes there load
-        if (Core.Input.RightClick.OnPressed && !Game.UI.MainMenuVisible) {
+        if (Core.Input.RightClick.OnPressed && !overGui) {
             Characters.Sein.Position = at;
             seedMoved = Seed;
         }
 
-        if (Core.Input.LeftClick.OnPressed && !Game.UI.MainMenuVisible) {
-            if (adjusting) {
-                Grab(at);
-            } else {
-                dragFrom = at;
-                dragging = true;
+        if (Core.Input.LeftClick.OnPressed && !overGui) {
+            switch (mode) {
+                case EditMode.Adjust:
+                    Grab(at);
+                    break;
+                case EditMode.Create when boxShape == BoxShape.Rectangle:
+                    dragFrom = at;
+                    dragging = true;
+                    break;
+                case EditMode.Create:
+                    if (points.Count == 0) {
+                        points.Add([]);
+                    }
+                    points[^1].Add(at);
+                    dragging = true;
+                    break;
+                case EditMode.Delete:
+                    DeleteUnderCursor();
+                    break;
             }
         }
 
@@ -417,40 +419,245 @@ public static class PracticeEditor {
             return;
         }
 
-        if (adjusting && !Game.UI.MainMenuVisible) {
-            Hover(at);
+        if (mode == EditMode.Adjust && !overGui) {
+            Hover(at, true);
+        } else if (mode == EditMode.Delete && !overGui) {
+            Hover(at, false);
         } else {
             lit = null;
+        }
+
+        if (boxShape != BoxShape.Rectangle) {
+            SetDraftObject(RenderShape(true));
         }
 
         if (!dragging) {
             return;
         }
 
-        // a press that barely moved is a click, not a box
-        var moved = Mathf.Max(Mathf.Abs(at.x - dragFrom.x), Mathf.Abs(at.y - dragFrom.y)) >= Least();
-        var drawn = Drawn(dragFrom, at);
-        if (moved) {
-            Draft = CreateBox(drawn, "renderDepth=-99", "ffff99", "");
-            Draft!.Init(-1);
+        if (points.Count > 0) {
+            points[^1][^1] = at;
         }
 
-        if (Core.Input.LeftClick.OnReleased) {
-            dragging = false;
-            Draft?.DeInit();
-            Draft = null;
+        // a press that barely moved is a click, not a box
+        var moved = false;
+        if (boxShape == BoxShape.Rectangle) {
+            moved = Mathf.Max(Mathf.Abs(at.x - dragFrom.x), Mathf.Abs(at.y - dragFrom.y)) >= Least();
+            var drawn = Drawn(dragFrom, at);
             if (moved) {
-                Commit(drawn);
+                SetDraftObject(RenderRect(drawn));
             }
+        }
+
+        if (!Core.Input.LeftClick.OnReleased) {
+            return;
+        }
+
+        dragging = false;
+        if (boxShape == BoxShape.Rectangle) {
+            if (moved) {
+                CommitDraftObject();
+            }
+
+            ClearDraftObject();
         }
     }
 
-    private static void Tool(string name) {
-        tool = name;
-        adjusting = false;
-        // the legend is what says which box you are drawing, so it changes as you change it
-        Randomizer.clearMessage();
-        Help();
+    private static void SetDraftObject([CanBeNull] string shape) {
+        DraftObject?.DeInit();
+
+        if (shape == null) {
+            return;
+        }
+
+        DraftObject = CreateBox(shape, "renderDepth=-99", "ffff99", "");
+        DraftObject!.Init(-1);
+    }
+
+    private static void ClearDraftObject() {
+        DraftObject?.DeInit();
+        DraftObject = null;
+    }
+
+    public static void OnGUI() {
+        if (!Active || Characters.Sein == null || GameController.Instance == null || GameController.Instance.GameInTitleScreen || UI.MainMenuVisible) {
+            return;
+        }
+
+        if (showWindow) {
+            guiWindowRect = GUILayout.Window(491819877, guiWindowRect, EditWindow, "Edit Boxes");
+        } else {
+            showWindow = GUI.Button(guiButtonRect, "Show Menu");
+        }
+    }
+
+    private static void EditWindow(int windowId) {
+        showWindow = !GUILayout.Button("Minimize");
+
+        MenuRow();
+        GUILayout.Label("Right click to teleport Ori.");
+        GUILayout.Label("");
+
+        if (!Seed && HasVariant) {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Edit Variant?");
+            EnumButton(ref toVariant, false, "Shared");
+            EnumButton(ref toVariant, true, $"Variant {VariantLabel()}");
+            GUILayout.EndHorizontal();
+        }
+
+        if (EnumButtonRow(ref mode, [EditMode.Create, EditMode.Adjust, EditMode.Delete])) {
+            DiscardDraft();
+        }
+
+        switch (mode) {
+            case EditMode.Create:
+                BoxCreateGui();
+                break;
+            case EditMode.Adjust:
+                GUILayout.Label("Move & Resize boxes by clicking & dragging them or their edges.");
+                break;
+            case EditMode.Delete:
+                GUILayout.Label("Delete boxes by clicking on them.");
+                break;
+            default:
+                Randomizer.log($"PracticeEditor.mode has invalid value {mode}");
+                break;
+        }
+
+        GUI.DragWindow();
+    }
+
+    private static void MenuRow() {
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("Save")) {
+            DiscardDraft();
+            Save();
+        }
+
+        var buttonText = Seed ? "Save & Continue" : "Save & Retry";
+        if (GUILayout.Button(buttonText)) {
+            LeaveEditor(true);
+        }
+
+        if (GUILayout.Button("Reload")) {
+            DiscardDraft();
+            Reload();
+        }
+
+        buttonText = Seed ? "Reload & Continue" : "Reload & Retry";
+        if (GUILayout.Button(buttonText)) {
+            LeaveEditor(false);
+        }
+
+        GUILayout.EndHorizontal();
+        GUILayout.BeginHorizontal();
+        GUI.enabled = undoIndex >= 0;
+        if (GUILayout.Button("Undo")) {
+            Undo();
+        }
+
+        GUI.enabled = true;
+        if (GUILayout.Button("Copy Lines")) {
+            CopyLines();
+        }
+
+        if (GUILayout.Button("Open in Browser")) {
+            PracticeServer.Open();
+        }
+
+        GUILayout.EndHorizontal();
+    }
+
+    private static void BoxCreateGui() {
+        GUILayout.Label("Box Type");
+        BoxType[] boxTypes = [BoxType.Item, BoxType.Solid, BoxType.Kill, BoxType.Unsafe];
+        if (!Seed) {
+            boxTypes = [.. boxTypes, BoxType.Goal];
+        }
+
+        EnumButtonRow(ref boxType, boxTypes);
+
+        BoxShape[] availableShapes = boxType switch {
+            BoxType.Solid => [BoxShape.Rectangle, BoxShape.Convex, BoxShape.Polygon],
+            BoxType.Item or BoxType.Kill => [BoxShape.Rectangle, BoxShape.Convex],
+            BoxType.Unsafe or BoxType.Goal => [BoxShape.Rectangle],
+            _ => throw new ArgumentOutOfRangeException(),
+        };
+        if (!availableShapes.Contains(boxShape)) {
+            DiscardDraft();
+            boxShape = availableShapes[0];
+        }
+
+        GUILayout.Label("Box Shape");
+        if (EnumButtonRow(ref boxShape, availableShapes)) {
+            DiscardDraft();
+        }
+
+        var helpLabel = boxShape switch {
+            BoxShape.Rectangle => "Click & Drag to draw a box.",
+            BoxShape.Convex => "The polygon will grow to include all points clicked on.",
+            BoxShape.Polygon => "Each loop produces a polygon connecting all points clicked on.\nThe final box is the union of all loops.",
+            _ => throw new ArgumentOutOfRangeException(),
+        };
+        GUILayout.Label(helpLabel);
+
+        if (boxShape != BoxShape.Rectangle) {
+            GUILayout.BeginHorizontal();
+            GUI.enabled = points.Count > 0;
+            if (GUILayout.Button("Discard")) {
+                points.Clear();
+            }
+
+            GUI.enabled = CanConfirmPolygon();
+            if (boxShape == BoxShape.Polygon && GUILayout.Button("Add Loop")) {
+                dragging = false;
+                points.Add([]);
+            }
+
+            if (GUILayout.Button("Confirm")) {
+                SetDraftObject(RenderShape(false));
+                CommitDraftObject();
+                points.Clear();
+            }
+
+            GUILayout.EndHorizontal();
+            if (!GUI.enabled) {
+                GUILayout.Label("Box must contain at least 3 points.");
+            }
+            GUI.enabled = true;
+        }
+    }
+
+    private static bool CanConfirmPolygon() {
+        return points.Count > 0 && points[^1].Count >= 3;
+    }
+
+    private static bool EnumButton<T>(ref T currentValue, T buttonValue) where T : Enum =>
+        EnumButton(ref currentValue, buttonValue, buttonValue.Desc());
+
+    private static bool EnumButton<T>(ref T currentValue, T buttonValue, string label) where T : IComparable {
+        var guiEnabled = GUI.enabled;
+        GUI.enabled &= currentValue.CompareTo(buttonValue) != 0;
+
+        var clicked = GUILayout.Button(label);
+        if (clicked) {
+            currentValue = buttonValue;
+        }
+
+        GUI.enabled = guiEnabled;
+        return clicked;
+    }
+
+    private static bool EnumButtonRow<T>(ref T currentValue, T[] buttonValues) where T : Enum {
+        GUILayout.BeginHorizontal();
+        var changed = false;
+        foreach (var value in buttonValues) {
+            changed |= EnumButton(ref currentValue, value);
+        }
+
+        GUILayout.EndHorizontal();
+        return changed;
     }
 
     private static bool HasVariant {
@@ -487,39 +694,10 @@ public static class PracticeEditor {
         }
     }
 
-    // the legend's own duration, less a moment, so it never blinks out between showings
-    private const float HelpAgain = 25f;
-
-    private static float helped = -100f;
-
     // goes up ahead of the legend, which then waits its turn
     private static void Say(string text, int frames) {
         Randomizer.clearMessage();
         Randomizer.printInfo(text, frames);
-        helped = Time.unscaledTime - HelpAgain + frames / 60f;
-    }
-
-    private static void Help() {
-        helped = Time.unscaledTime;
-        var doing = adjusting ? "MOVING BOXES   M: draw instead"
-            : "drag to draw " + (tool == "item" ? "an " : "a ") + "*" + tool + "* box   M: move and resize";
-        // moving has no tools, so their row says how to move instead
-        var keys = (adjusting ? "click&drag to move/resize boxes"
-            : Seed ? "1: item   2: solid   3: kill" : "1: item   2: solid   3: kill   4: goal")
-            + "   Z: undo   X: delete under cursor   Ctrl+C: copy box lines\n";
-        if (Seed) {
-            Randomizer.printQuiet("EDITING SEED BOXES - " + doing + "\n" + keys
-                + "WASD: pan   right click: stand Ori here   Ctrl+S: save   Ctrl+R: reload from the file   Enter: save and play\n"
-                + "[[Retry Practice Segment]]: leave without saving   5: fill in the boxes in a browser"
-                + (PracticeServer.Running ? "   " + PracticeServer.Url : ""), 1800);
-            return;
-        }
-
-        var where = !HasVariant ? "" : "\n("
-            + (TargetVariant ? "adding boxes to variant " + VariantLabel() : "adding boxes to the shared list") + "   V: switch)";
-        Randomizer.printQuiet("EDITING - " + doing + "\n" + keys
-            + "WASD: pan   right click: stand Ori here   Ctrl+S: save   Ctrl+R: reload from disk   Enter: save and retry\n"
-            + "5: open the segment editor in a browser" + (PracticeServer.Running ? "   " + PracticeServer.Url : "") + where, 1800);
     }
 
     // the running variant's name, or its id, cut to fit the legend
@@ -608,11 +786,16 @@ public static class PracticeEditor {
     }
 
     // The goal is shared and single; other boxes join the target list.
-    private static void Commit(Rect area) {
-        var target = tool != "goal" ? Target : "";
-        // each tool is named for its box's flag
-        var box = CreateBox(area, tool, "", "");
+    private static void CommitDraftObject() {
+        if (DraftObject == null) {
+            Randomizer.LogError("Cannot commit box, because the draft object is not set");
+            return;
+        }
 
+        var shape = MapShape(DraftObject.SimplifiedShape, p => p);
+        var box = CreateBox(shape, BoxFlag(boxType), "", "");
+
+        var target = boxType != BoxType.Goal ? Target : "";
         var boxes = BoxesOf(target);
         if (box.Goal) {
             for (var i = 0; i < boxes.Count; i++) {
@@ -627,9 +810,69 @@ public static class PracticeEditor {
         Remember(target, boxes.Count - 1, null);
     }
 
+    private static void DiscardDraft() {
+        dragging = false;
+        points.Clear();
+        ClearDraftObject();
+    }
+
+    private static string RenderPoint(Vector2 point) =>
+        string.Format(CultureInfo.InvariantCulture, "{0:0.##},{1:0.##}", point.x, point.y);
+
+    [CanBeNull]
+    private static string RenderShape(bool allowPreview) {
+        if (boxShape == BoxShape.Rectangle) {
+                Randomizer.LogError("RenderShape() may not be called for a rectangle");
+                return null;
+        }
+
+        if (points.Count == 0) {
+            return null;
+        }
+
+        var sb = new  StringBuilder();
+        switch (boxShape) {
+            case BoxShape.Polygon when allowPreview:
+            case BoxShape.Convex when allowPreview && points[^1].Count < 3:
+                sb.Append("previewLoop");
+                break;
+            case BoxShape.Convex:
+                sb.Append("convex");
+                break;
+            case BoxShape.Polygon:
+                sb.Append("loop");
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        for (var i = 0; i < points.Count; i++) {
+            if (i > 0) {
+                sb.Append(",loop");
+            }
+
+            foreach (var point in points[i]) {
+                sb.Append(',');
+                sb.Append(RenderPoint(point));
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static string BoxFlag(BoxType type) => type switch
+    {
+        BoxType.Item => "item",
+        BoxType.Solid => "solid",
+        BoxType.Kill => "kill",
+        BoxType.Unsafe => "unsafe",
+        BoxType.Goal => "goal",
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+    };
+
     // empty trailing fields are left off, as the page writes them
-    private static RandomizerBox CreateBox(Rect area, string flags, string color, string item) {
-        var line = $"BX|{flags}|{Corners(area)}";
+    private static RandomizerBox CreateBox(string shape, string flags, string color, string item) {
+        var line = $"BX|{flags}|{shape}";
         if (color != "" || item != "") {
             line += "|" + color;
         }
@@ -641,32 +884,44 @@ public static class PracticeEditor {
         return RandomizerBox.Parse(line);
     }
 
-    private static string Corners(Rect area) {
+    private static string RenderRect(Rect area) {
         return string.Format(CultureInfo.InvariantCulture, "{0:0.##},{1:0.##},{2:0.##},{3:0.##}", area.min.x, area.min.y, area.max.x, area.max.y);
     }
 
-    // the same line at new corners
     private static RandomizerBox Moved(RandomizerBox box, Rect area) {
         var fields = box.Line.Split('|');
-        fields[2] = Corners(area);
+        fields[2] = TransformBox(box, area);
         return RandomizerBox.Parse(string.Join("|", fields));
     }
 
+    private static string TransformBox(RandomizerBox box, Rect newRect) {
+        var oldOrigin = box.Rect.min;
+        var newOrigin = newRect.min;
+        var scale = newRect.size / box.Rect.size;
+
+        return MapShape(box.SimplifiedShape, p => newOrigin + (p - oldOrigin) * scale);
+    }
+
+    private static string MapShape(List<object> rawShape, Func<Vector2, Vector2> mapPoint) {
+        string MapPart(object part) {
+            switch (part) {
+                case Vector2 point:
+                    return RenderPoint(mapPoint(point));
+                case string str:
+                    return str;
+                default:
+                    Randomizer.LogError($"PracticeEditor.ModifyShape encountered a part of unknown type {part?.GetType().Name}");
+                    return "" + part;
+            }
+        }
+
+        return string.Join(",", rawShape.Select(MapPart));
+    }
+
     // a grip's reach either side of an edge: about a dozen pixels, down to four on a thin box
-    private static float Reach() {
-        return Mathf.Max(0.05f, Pixels(12f));
-    }
+    private static float Reach() => RandomizerBoxPrefab.EdgeWidth;
 
-    private static float Least() {
-        return Mathf.Min(Reach(), Pixels(4f));
-    }
-
-    // n screen pixels in world units at the current zoom
-    private static float Pixels(float n) {
-        var a = World(new Vector2(0f, 0f));
-        var b = World(new Vector2(n / Screen.width, 0f));
-        return Mathf.Abs(b.x - a.x);
-    }
+    private static float Least() => RandomizerBoxPrefab.EdgeWidth / 3f;
 
     // the topmost box under the cursor, by an edge or corner when the cursor is near one (edges), else whole
     private static bool Hit(Vector2 at, Func<string, List<RandomizerBox>> read, out string target, out int index, out RandomizerBox box, out int edges) {
@@ -725,7 +980,7 @@ public static class PracticeEditor {
     }
 
     // what a click would take: the whole box tinted, or the edges it would drag lit
-    private static void Hover(Vector2 at) {
+    private static void Hover(Vector2 at, bool edges) {
         var source = Seed ? (object)SeedBoxes.Current.Revision : PracticeController.Segment;
         var fresh = hoverLists == null || !Equals(source, hoverSource);
         if (fresh) {
@@ -742,7 +997,7 @@ public static class PracticeEditor {
             Hit(at, target => hoverLists[target], out _, out _, out hoverBox, out hoverEdges);
         }
 
-        Glow(hoverBox, hoverEdges);
+        Glow(hoverBox, edges ? hoverEdges : 0);
     }
 
     // Fades the highlight in on what the cursor is on, pulses it there, and fades it out once the cursor leaves.
@@ -825,25 +1080,25 @@ public static class PracticeEditor {
         }
 
         var area = Between(new Vector2(x1, y1), new Vector2(x2, y2));
-        if (grabEdges == 0) {
-            Draft = CreateBox(area, "renderDepth=-99", "ffff99", "");
-            Draft!.Init(-1);
-        } else {
+
+        Conceal(grabBox.Line);
+        if (grabBox.ShapeType == RandomizerBox.BoxShapeType.Rectangle && grabEdges != 0) {
             // a resize shows the box itself with only the edges it drags, in white
-            Conceal(grabBox.Line);
-            Highlight.Show(area, grabBox.Invisible ? DraftFill : (Color)grabBox.Color, grabEdges, grabBox.ParallaxDepth);
+            Highlight.Show(area, grabBox.Invisible ? DraftFill : grabBox.Color, grabEdges, grabBox.ParallaxDepth);
+        } else {
+            SetDraftObject(TransformBox(grabBox, area));
+            if (grabBox.ShapeType != RandomizerBox.BoxShapeType.Rectangle) {
+                Highlight.Show(area, new Color(), grabEdges, grabBox.ParallaxDepth);
+            }
         }
 
         if (!Core.Input.LeftClick.OnReleased) {
             return;
         }
 
-        Draft?.DeInit();
-        Draft = null;
+        ClearDraftObject();
         Highlight.Hide();
-        if (grabEdges != 0) {
-            Conceal(null);
-        }
+        Conceal(null);
 
         var target = grabTarget;
         var index = grabIndex;

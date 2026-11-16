@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
-using System.Linq;
+using System.Reflection;
+using UnityEngine;
 
 namespace RandoExts {
     public static class RandomizerExtensions {
@@ -10,17 +11,10 @@ namespace RandoExts {
             return Arr.Length == j ? Arr[0] : Arr[j];
         }
 
-        public static string Desc(this Enum GenericEnum) {
-            var genericEnumType = GenericEnum.GetType();
-            var memberInfo = genericEnumType.GetMember(GenericEnum.ToString());
-            if (memberInfo != null && memberInfo.Length > 0) {
-                var _Attribs = memberInfo[0].GetCustomAttributes(typeof(DescriptionAttribute), false);
-                if (_Attribs != null && _Attribs.Count() > 0) {
-                    return ((DescriptionAttribute)_Attribs.ElementAt(0)).Description;
-                }
-            }
-
-            return GenericEnum.ToString();
+        public static string Desc<T>(this T value) where T : Enum {
+            var field = typeof(T).GetField(value.ToString(), BindingFlags.Static | BindingFlags.Public);
+            var attrs = (DescriptionAttribute[])field?.GetCustomAttributes(typeof(DescriptionAttribute), false);
+            return attrs is [var desc, ..] ? desc.Description : value.ToString();
         }
         public static bool IsNullOrWhitespace(this string value) => string.IsNullOrEmpty(value) || value.Trim().Length == 0;
         public static bool IsWhitespace(this char value) => value.ToString().Trim().Length == 0;
@@ -34,6 +28,14 @@ namespace RandoExts {
                 parsedValue = default;
                 return false;
             }
+        }
+
+        extension(Vector2) {
+            public static Vector2 operator /(Vector2 a, Vector2 b) =>
+                new(a.x / b.x, a.y / b.y);
+
+            public static Vector2 operator *(Vector2 a, Vector2 b) =>
+                new(a.x * b.x, a.y * b.y);
         }
     }
 }

@@ -2,11 +2,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Clipper2Lib;
 using Game;
 using UnityEngine;
+using static RandomizerBox;
 
 public class RandomizerBoxPrefab : MonoBehaviour {
     private void OnDestroy() {
@@ -45,13 +45,12 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         Mesh? rendererMesh = null;
         Mesh? colliderMesh = null;
         if (box.Points != null) {
-            var points = box.Points.Select(p => p - rect.center).ToList();
-            if (box.Convex) {
-                points = QuickHull.Compute(points);
-            }
+            var points = !box.Convex ? box.Points : [QuickHull.Compute(box.Points[0])];
 
-            var isLine = box.ShapeType == RandomizerBox.BoxShapeType.PreviewLine;
-            CreateMeshes(isLine, points, box.ParallaxDepth, fillColor, edgeColor, out rendererMesh, out colliderMesh);
+            CreateMeshes(box.ShapeType, points, rect.center, box.ParallaxDepth, fillColor, edgeColor, out rendererMesh, out colliderMesh, out var simplifiedShape);
+            if (simplifiedShape != null) {
+                box.SimplifiedShape = simplifiedShape;
+            }
         }
 
         if (box.Invisible) {
@@ -104,7 +103,7 @@ public class RandomizerBoxPrefab : MonoBehaviour {
             var dd = ddGo.AddComponent<DamageDealer>();
             dd.Damage = box.DamageAmount;
             dd.DamageType = box.DamageType;
-            dd.PlayerOnly = box.DamageTarget == RandomizerBox.BoxDamageTarget.Player;
+            dd.PlayerOnly = box.DamageTarget == BoxDamageTarget.Player;
             dd.UseExtendedHitboxes = box.ExtendedHitboxes;
         }
 
@@ -118,46 +117,65 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         }
     }
 
-    private void CreateMeshes(bool isLine, List<Vector2> points, float z, Color fillColor, Color edgeColor,
-        [NotNullWhen(true)] out Mesh? visualMesh, [NotNullWhen(true)] out Mesh? colliderMesh) {
+    private void CreateMeshes(BoxShapeType shapeType, List<List<Vector2>> points, Vector2 offset, float z, Color fillColor, Color edgeColor,
+        out Mesh? visualMesh, out Mesh? colliderMesh, out List<object>? simplifiedShape) {
+
+        if (points.Count == 0) {
+            visualMesh = new Mesh();
+            colliderMesh = new Mesh();
+            simplifiedShape = null;
+            return;
+        }
+
         const float scale = 1024f;
         const float scaleDown = 1f / scale;
 
-        var path = new long[points.Count * 2];
+        var isPreview = shapeType == BoxShapeType.PreviewPolygon;
+
+        Paths64 previewPaths = [];
+        Paths64 outerPaths = [];
         for (var i = 0; i < points.Count; i++) {
-            path[2 * i] = (long)(points[i].x * scale);
-            path[2 * i + 1] = (long)(points[i].y * scale);
-        }
-
-        var outerPaths = new Paths64([Clipper.MakePath(path)]);
-
-        Paths64 edgeTriangulation;
-        Paths64 innerTriangulation;
-
-        if (isLine) {
-            outerPaths = Clipper.InflatePaths(outerPaths, 0.2 * scale, JoinType.Round, EndType.Round);
-            Clipper.Triangulate(outerPaths, out edgeTriangulation);
-            innerTriangulation = new();
-        } else {
-            outerPaths = Clipper.Union(outerPaths, FillRule.EvenOdd);
-            var innerPaths = Clipper.InflatePaths(outerPaths, -EdgeWidth * scale, JoinType.Miter, EndType.Polygon);
-            var edge = Clipper.Difference(outerPaths, innerPaths, FillRule.EvenOdd);
-
-            var edgeResult = Clipper.Triangulate(edge, out edgeTriangulation);
-            if (edgeResult != TriangulateResult.success) {
-                Randomizer.log($"Edge triangulation of failed, box will have no edge");
-                if (Clipper.Triangulate(outerPaths, out innerTriangulation) != TriangulateResult.success) {
-                    Randomizer.log("Outer path also failed to triangulate, falling back to rectangle");
-                    visualMesh = colliderMesh = null;
-                    return;
+            var loop = points[i];
+            Path64 loopPath = [.. loop.Select(p => new Point64((p.x - offset.x) * scale, (p.y - offset.y) * scale))];
+            if (loopPath.Count < 3) {
+                if (isPreview && loopPath.Count > 0) {
+                    previewPaths.Add(loopPath);
                 }
             } else {
-                Clipper.Triangulate(innerPaths, out innerTriangulation);
+                outerPaths.AddRange(Clipper.Union([loopPath], FillRule.EvenOdd));
+                if (isPreview && i == points.Count - 1) {
+                    previewPaths.Add([loopPath[0]]);
+                }
             }
+        }
+
+        outerPaths = Clipper.Union(outerPaths, FillRule.NonZero);
+        var innerPaths = Clipper.InflatePaths(outerPaths, -EdgeWidth * scale, JoinType.Miter, EndType.Polygon);
+        var edge = Clipper.Difference(outerPaths, innerPaths, FillRule.Positive);
+
+        var edgeResult = Clipper.Triangulate(edge, out var edgeTriangulation, false);
+        Paths64 innerTriangulation;
+        if (edgeResult is not (TriangulateResult.success or TriangulateResult.noPolygons)) {
+            Randomizer.log($"Edge triangulation of failed, box will have no edge");
+            if (Clipper.Triangulate(outerPaths, out innerTriangulation, false) != TriangulateResult.success) {
+                Randomizer.log("Outer path also failed to triangulate, falling back to rectangle");
+                visualMesh = colliderMesh = null;
+                simplifiedShape = null;
+                return;
+            }
+        } else {
+            Clipper.Triangulate(innerPaths, out innerTriangulation, false);
+        }
+
+        if (isPreview) {
+            previewPaths = Clipper.InflatePaths(previewPaths, 0.1 * scale, JoinType.Round, EndType.Round);
+            Clipper.Triangulate(previewPaths, out var previewTriangulation, false);
+            edgeTriangulation.AddRange(previewTriangulation);
         }
 
         visualMesh = CreateVisualMesh(edgeTriangulation, innerTriangulation, scaleDown, z, fillColor, edgeColor);
         colliderMesh = CreateColliderMesh(outerPaths, scaleDown);
+        simplifiedShape = ToRawShape(shapeType, outerPaths, scaleDown, offset);
     }
 
     private Mesh CreateVisualMesh(Paths64 edgeTriangulation, Paths64 innerTriangulation, float scaleDown, float z, Color fillColor, Color edgeColor) {
@@ -245,6 +263,27 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         mesh.RecalculateBounds();
         mesh.Optimize();
         return mesh;
+    }
+
+    private List<object> ToRawShape(BoxShapeType shapeType, Paths64 paths, float scaleDown, Vector2 offset) {
+        List<object> rawShape = [shapeType switch {
+            BoxShapeType.ConvexHull => "convex",
+            BoxShapeType.Polygon => "loop",
+            BoxShapeType.PreviewPolygon => "previewLoop",
+            _ => throw new ArgumentOutOfRangeException(nameof(shapeType), shapeType, null),
+        }];
+
+        for (var i = 0; i < paths.Count; i++) {
+            if (i != 0) {
+                rawShape.Add("loop");
+            }
+
+            foreach (var point in paths[i]) {
+                rawShape.Add(new Vector2(point.X * scaleDown + offset.x, point.Y * scaleDown + offset.y));
+            }
+        }
+
+        return rawShape;
     }
 
     private void OnTriggerStay(Collider other) {

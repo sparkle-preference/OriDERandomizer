@@ -348,6 +348,10 @@ public class GameController : SaveSerialize, ISuspendable {
         Randomizer.OnApplicationQuit();
     }
 
+    public void OnGUI() {
+        Randomizer.OnGUI();
+    }
+
     public void Update() {
         Randomizer.Update();
 

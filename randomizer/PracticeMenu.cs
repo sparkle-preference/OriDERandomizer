@@ -447,7 +447,7 @@ public static class PracticeMenu {
 
     private static void SaveAndRetry() {
         Game.UI.Menu.HideMenuScreen(true);
-        PracticeEditor.SaveAndRetry();
+        PracticeEditor.LeaveEditor(true);
     }
 
     private static void Save() {

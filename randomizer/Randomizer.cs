@@ -801,6 +801,11 @@ public static class Randomizer {
 
     public static void FixedUpdate() {
         RandomizerBoxes.FixedUpdate();
+        PracticeEditor.FixedUpdate();
+    }
+
+    public static void OnGUI() {
+        PracticeEditor.OnGUI();
     }
 
     public static void Update() {
@@ -808,9 +813,6 @@ public static class Randomizer {
         RandomizerKeyIcons.Register();
         RandomizerHoldRing.Prepare();
         PracticeController.Tick();
-        if (PracticeEditor.Seed) {
-            PracticeEditor.Tick();
-        }
 
         PracticeSelect.Tick();
         PracticeServer.Tick();

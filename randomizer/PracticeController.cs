@@ -556,11 +556,6 @@ public static class PracticeController {
             return;
         }
 
-        if (Current == Phase.Editing) {
-            PracticeEditor.Tick();
-            return;
-        }
-
         if (Current != Phase.Running) {
             return;
         }

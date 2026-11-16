@@ -85,7 +85,7 @@ public class RandomizerBox {
             }
         }
 
-        if (box.Points != null && box.Unsafe) {
+        if (box.ShapeType != BoxShapeType.Rectangle && box.Unsafe) {
             Randomizer.log($"Unsafe boxes must be rectangular; error is in line {line}");
         }
 
@@ -267,20 +267,20 @@ public class RandomizerBox {
 
         if (corners[0].Equals("convex",  StringComparison.InvariantCultureIgnoreCase)) {
             ShapeType = BoxShapeType.ConvexHull;
-            ParsePoints(corners, line, true);
+            ParsePoints(corners, line, true, false);
             return;
         }
 
         if (corners[0].Equals("loop",  StringComparison.InvariantCultureIgnoreCase)) {
             ShapeType = BoxShapeType.Polygon;
-            ParsePoints(corners, line, true);
+            ParsePoints(corners, line, true, true);
             return;
         }
 
-        if (corners[0].Equals("previewLine", StringComparison.InvariantCultureIgnoreCase)) {
+        if (corners[0].Equals("previewLoop", StringComparison.InvariantCultureIgnoreCase)) {
             // ONLY for use in the practice editor. Do not use in seed files.
-            ShapeType = BoxShapeType.PreviewLine;
-            ParsePoints(corners, line, false);
+            ShapeType = BoxShapeType.PreviewPolygon;
+            ParsePoints(corners, line, false, true);
             return;
         }
 
@@ -295,13 +295,24 @@ public class RandomizerBox {
             }
         }
 
-        Rect = Between(c[0], c[1], c[2], c[3]);
+        var a = new Vector2(c[0], c[1]);
+        var b = new Vector2(c[2], c[3]);
+        SimplifiedShape = [a, b];
+        Rect = Between(a.x, a.y, b.x, b.y);
     }
 
-    private void ParsePoints(string[] values, string line, bool checkLength) {
-        var points = new List<Vector2>();
+    private void ParsePoints(string[] values, string line, bool checkLength, bool loops) {
+        Points = [[]];
+        SimplifiedShape = [values[0]];
 
-        for (var i = 1; i < values.Length; i += 2) {
+        for (var i = 1; i < values.Length;) {
+            if (loops && values[i].Equals("loop", StringComparison.InvariantCultureIgnoreCase)) {
+                SimplifiedShape.Add("loop");
+                Points.Add([]);
+                i += 1;
+                continue;
+            }
+
             if (i == values.Length - 1) {
                 Randomizer.log($"Missing y-coordinate for last point in loop in line {line}");
                 break;
@@ -315,20 +326,27 @@ public class RandomizerBox {
                 throw new FormatException($"'{values[i + 1]}' is not a number");
             }
 
-            points.Add(new Vector2(x, y));
+            Points[^1].Add(new Vector2(x, y));
+            SimplifiedShape.Add(new Vector2(x, y));
+            i += 2;
         }
 
-        if (checkLength && points.Count < 3) {
-            throw new ArgumentException($"A loop needs at least three points. This box has only {points.Count} points.");
+        if (checkLength && Points.Any(l => l.Count < 3)) {
+            throw new ArgumentException($"A loop needs at least three points. This box has only {Points.Count} points.");
         }
 
-        var bounds = new Bounds(points[0], Vector3.zero);
-        for (var i = 1; i < points.Count; ++i) {
-            bounds.Encapsulate(points[i]);
+        using var allPoints = Points.SelectMany(l => l).GetEnumerator();
+        if (!allPoints.MoveNext()) {
+            Rect = new Rect();
+            return;
+        }
+
+        var bounds = new Bounds(allPoints.Current, Vector3.zero);
+        while (allPoints.MoveNext()) {
+            bounds.Encapsulate(allPoints.Current);
         }
 
         Rect = new Rect(bounds.min, bounds.size);
-        Points = points.ToArray();
     }
 
     private static string Num(float value) {
@@ -438,9 +456,13 @@ public class RandomizerBox {
 
     public Rect Rect { get; private set; }
 
-    public Vector2[]? Points { get; private set; }
-
     public BoxShapeType ShapeType { get; private set; }
+
+    public List<List<Vector2>>? Points { get; private set; }
+
+    // objects are all either string or Vector2.
+    // May not be simplified if the box was never (successfully) initialized.
+    public List<object> SimplifiedShape = [];
 
     public Color32 Color { get; private set; } = new(128, 128, 128, 64);
 
@@ -497,7 +519,7 @@ public class RandomizerBox {
         Rectangle,
         ConvexHull,
         Polygon,
-        PreviewLine, // ONLY for use in the practice editor. Do not use in seed files.
+        PreviewPolygon, // ONLY for use in the practice editor. Do not use in seed files.
     }
 }
 
