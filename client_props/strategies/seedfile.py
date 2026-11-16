@@ -85,7 +85,7 @@ def box_models(draw, hash_ok=True, deleted_ok=True, gives=GIVES):
             "give": draw(st.sampled_from(gives))}
 
 
-SHAPE_WORDS = ["convex", "Convex", "CONVEX", "loop", "Loop", "LOOP", "previewLoop", "PREVIEWLOOP"]
+SHAPE_WORDS = ["convex", "Convex", "CONVEX", "loop", "Loop", "LOOP", "orientedLoop", "ORIENTEDLOOP", "previewLoop", "PREVIEWLOOP"]
 NUMBERS = ["0", "1", "-2.5", "+3", ".5", "5.", " 4", "4 ", "007", "-0", "123.45", "-4000"]
 NOT_NUMBERS = ["", "x", "1e3", "1.2.3", "0x10", "--1", "1 2", "+", "."]
 hundredth = st.integers(-500000, 500000).map(lambda n: n / 100)
@@ -95,7 +95,7 @@ hundredth = st.integers(-500000, 500000).map(lambda n: n / 100)
 def shape_fields(draw, corners=True):
     """A box line's third field, near the grammar: corners, a convex or loops, now and then with a wrong token."""
     number = st.sampled_from(NUMBERS if draw(st.integers(0, 2)) else NUMBERS + NOT_NUMBERS)
-    word = draw(st.sampled_from(["", ""] * corners + SHAPE_WORDS + ["hull", " convex", "loop "]))
+    word = draw(st.sampled_from(["", ""] * corners + SHAPE_WORDS + ["hull", " convex", "loop ", "oriented"]))
     if not word:
         return ",".join(draw(st.lists(number, min_size=4 if draw(st.integers(0, 4)) else 3, max_size=4)))
     parts = [word]
@@ -109,12 +109,16 @@ def shape_fields(draw, corners=True):
 
 @st.composite
 def shapes(draw):
-    """A convex or loop field the game reads, its points at hundredths."""
+    """A convex, loop or orientedLoop field the game reads, its points at hundredths."""
     points = st.lists(st.tuples(hundredth, hundredth), min_size=3, max_size=6)
     loop = lambda: ",".join("%r,%r" % p for p in draw(points))
-    if draw(st.booleans()):
+    kind = draw(st.integers(0, 2))
+    if kind == 0:
         return draw(st.sampled_from(["convex", "Convex"])) + "," + loop()
-    return ",".join(draw(st.sampled_from(["loop", "LOOP"])) + "," + loop() for _ in range(draw(st.integers(1, 3))))
+    loops = [loop() for _ in range(draw(st.integers(1, 3)))]
+    if kind == 2:
+        return draw(st.sampled_from(["orientedLoop", "ORIENTEDLOOP"])) + "," + ",loop,".join(loops)
+    return ",".join(draw(st.sampled_from(["loop", "LOOP"])) + "," + l for l in loops)
 
 
 quarter = st.integers(-48, 48).map(lambda n: n / 4)
@@ -122,11 +126,11 @@ quarter = st.integers(-48, 48).map(lambda n: n / 4)
 
 @st.composite
 def drawn_shapes(draw):
-    """A convex or loop field on quarter units, small enough to sample points of: (field, kind, loops)."""
-    kind = draw(st.sampled_from(["convex", "loop"]))
+    """A convex, loop or orientedLoop field on quarter units, small enough to sample points of: (field, kind lowered, loops)."""
+    kind = draw(st.sampled_from(["convex", "loop", "orientedLoop"]))
     loops = draw(st.lists(st.lists(st.tuples(quarter, quarter), min_size=3, max_size=7), min_size=1,
                           max_size=1 if kind == "convex" else 3))
-    return ",".join(kind + "," + ",".join("%r,%r" % p for p in l) for l in loops), kind, loops
+    return kind + "," + ",loop,".join(",".join("%r,%r" % p for p in l) for l in loops), kind.lower(), loops
 
 
 # sixteenths between the quarter lines, so few of them land on an outline

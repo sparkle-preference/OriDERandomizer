@@ -19,24 +19,32 @@ A segment with nothing to end it yet says "Unfinished" and "click to edit" in th
 To edit a segment, press Copy on its card (C, or X on a controller), or pause mid-run and choose EDIT PRACTICE SEGMENT. The world freezes and you draw boxes with the mouse.
 A .bfrp you were given only runs until you extract it: hold Copy on its card. It unpacks into a folder of the same name, which takes its place in the list, and the .bfrp moves inside that folder. Editing a .bfrp mid-run (pause menu or page) extracts it too.
 
-Editor keys:
-1 / 2 / 3 / 4       Item, solid, kill or goal tool
-Drag                Draw a box
-M                   Switch between drawing boxes and moving them: drag a box to move it, an edge or corner to resize it
-Z                   Undo the last box drawn, moved or deleted
-X                   Delete the box under the cursor
-Ctrl+C              Copy the box lines, to paste into the plando builder
+The editor is the Edit Boxes window. Drag it out of the way, or Minimize it to a Show Menu button.
+Save                Save and keep editing
+Save & Retry        Save and restart the attempt
+Reload              Reload from disk, dropping edits since the last save
+Reload & Retry      The same, then restart the attempt
+Undo                Undo the last box drawn, moved or deleted
+Copy Lines          Copy the box lines, to paste into the plando builder
+Open in Browser     Open the segment editor page
+Create Box          Pick a type (item, solid, kill, unsafe or goal) and a shape, then draw
+Adjust Boxes        Drag a box to move it, an edge or corner to resize it
+Delete Boxes        Click a box to delete it
+Edit Variant?       With variants: whether new boxes are shared or belong to the variant you are running
 WASD                Pan the camera
 Right click         Stand Ori at the cursor (loads the scenes there)
-5                   Open the segment editor page in a browser
-Ctrl+S              Save and keep editing
-Ctrl+R              Reload from disk, dropping edits since the last save
-Enter               Save and restart the attempt
+
+Box shapes:
+Rectangle           Drag from corner to corner
+Convex              Click points and the box stretches around all of them; Confirm once there are three. Not for unsafe or goal boxes
+Polygon             Click the corners of an outline in order, then Confirm. Add Loop starts another outline in the same box. Solid boxes only
+Discard throws away the points clicked so far.
 
 The pause menu while editing: BACK TO EDITING, SAVE, RELOAD FROM DISK, EXIT TO PRACTICE MENU, SAVE AND RETRY.
 
 Everything else is on the segment editor page, which opens in your browser the first time you edit: the name, what ends the run, hint text, item boxes, shuffle groups, variants and ghosts.
 Save to game writes it back, and a running attempt uses the new rules at once.
+With "edit boxes on the map" on, its map moves and resizes boxes; on a convex or loop box, right-click a side to add a point or a point to remove it. The shape column turns a box into a rectangle, a convex box or a loop.
 The page can also swap the segment's starting save for another of your saves ("Starts from ... change"); the game reloads from it.
 Its Placements box takes placement and box lines pasted in or loaded from a file (a whole seed file works) and replaces the segment's list with them.
 The page's map downloads the world map tiles once (about 20 MB) into the practice folder.
@@ -118,8 +126,8 @@ Alt+L               Retry Practice Segment: start the attempt over, or start aft
 Editing a seed's boxes
 ===
 Outside practice, the Edit Seed Boxes bind (unbound by default) or "Edit Seed Boxes" in the debug menu opens the same editor on the boxes of the seed you have loaded.
-1 / 2 / 3 draw item, solid or kill boxes, and 5 opens a page in your browser for giving them items and flags.
-Saving writes the boxes into the seed file; the first save keeps a copy of the original next to it (.before-boxes). Enter saves and plays on; Alt+L (Retry Practice Segment) or the bind again leaves without saving. Either way you play on from wherever right click left Ori.
+There are no goal boxes here, and Open in Browser opens a page for giving boxes items and flags.
+Saving writes the boxes into the seed file; the first save keeps a copy of the original next to it (.before-boxes). Save & Continue saves and plays on; Reload & Continue, Alt+L (Retry Practice Segment) or the bind again leaves without saving. Either way you play on from wherever right click left Ori.
 A seed with a Sync flag (an online game) can't be edited this way: remove the flag from the seed's first line if you want to.
 
 

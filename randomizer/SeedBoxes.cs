@@ -105,7 +105,7 @@ public class SeedBoxes {
     // other lines stay byte for byte and a deleted box is written as the tombstone; the first save keeps a backup
     public void Save() {
         if (File.ReadAllText(Path) != found) {
-            throw new IOException("the seed file changed on disk since it was read; Ctrl+R reads it again");
+            throw new IOException("the seed file changed on disk since it was read; Reload reads it again");
         }
 
         var output = new List<string>(lines);

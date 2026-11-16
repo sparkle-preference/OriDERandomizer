@@ -651,7 +651,7 @@ def cs_float(text):
     return re.fullmatch(r"[ \t\n\v\f\r]*[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)[ \t\n\v\f\r]*", text) is not None
 
 
-SHAPE_TYPES = {"convex": "ConvexHull", "loop": "Polygon", "previewloop": "PreviewPolygon"}
+SHAPE_TYPES = {"convex": "ConvexHull", "loop": "Polygon", "orientedloop": "OrientedPolygon", "previewloop": "PreviewPolygon"}
 
 
 def shape_model(field):
@@ -883,6 +883,22 @@ def even_odd(ring, x, y):
     return hit
 
 
+def winding(ring, x, y):
+    """The ring's turns around the point, by signed crossings; only sound off the ring itself."""
+    turns = 0
+    for (x1, y1), (x2, y2) in zip(ring, ring[1:] + ring[:1]):
+        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+            turns += 1 if y2 > y1 else -1
+    return turns
+
+
+def holds_model(kind, rings, p):
+    """An orientedLoop's loops fill together by nonzero winding; any other kind's rings each even-odd."""
+    if kind == "orientedloop":
+        return sum(winding(r, *p) for r in rings) != 0
+    return any(even_odd(r, *p) for r in rings)
+
+
 def reach(p, a, b):
     """The distance from p to the segment ab."""
     dx, dy = b[0] - a[0], b[1] - a[1]
@@ -906,8 +922,12 @@ def in_triangles(triangles, p):
 
 
 def geometry(field):
-    """SeedfileGlue.Geometry for a solid box of this shape, its paths as tuples and its triangles in one list."""
+    """SeedfileGlue.Geometry for a solid box of this shape, its paths as tuples and its triangles in one list;
+    None where the game draws the rectangle around it instead."""
     g = B.call("SeedfileGlue.Geometry", "BX|solid|" + field)
+    if g is None:
+        event("masked: the game drew the rectangle")
+        return None
     for key in ("outline", "edge", "fill"):
         g[key] = [[tuple(p) for p in path] for path in g[key]]
     g["mesh"] = g["edge"] + g["fill"]
@@ -929,10 +949,12 @@ class BoxGeometry(unittest.TestCase):
         field, kind, loops = shape
         rings = [hull_model(loops[0])] if kind == "convex" else loops
         g, site = geometry(field), js("parse_box_line", "BX|solid|" + field)
+        if g is None:
+            return
         for p in spots:
             if not clear_of(rings, p):
                 continue
-            want = any(even_odd(r, *p) for r in rings)
+            want = holds_model(kind, rings, p)
             event("a spot %s the box" % ("in" if want else "out of"))
             self.assertEqual(in_triangles(g["mesh"], p), want, p)
             self.assertEqual(js("box_holds", site, *p), want, p)
@@ -941,6 +963,8 @@ class BoxGeometry(unittest.TestCase):
     @given(SF.drawn_shapes())
     def test_a_shaped_box_s_triangles_tile_its_outline(self, shape):
         g = geometry(shape[0])
+        if g is None:
+            return
         self.assertAlmostEqual(sum(abs(area(t)) for t in g["mesh"]), covered(g), delta=1e-3 * (1 + rim(g)))
         self.assertEqual([tuple(v) for v in g["vertices"]], [p + (0.0,) for t in g["mesh"] for p in t])
         self.assertEqual(g["triangles"], list(range(len(g["vertices"]))))
@@ -949,7 +973,7 @@ class BoxGeometry(unittest.TestCase):
     @settings(max_examples=examples(150))
     @given(SF.drawn_shapes())
     def test_the_fill_keeps_an_edge_s_width_off_the_outline(self, shape):
-        g = geometry(shape[0])
+        g = geometry(shape[0]) or {"fill": []}
         for p in {p for t in g["fill"] for p in t}:
             self.assertGreater(min(reach(p, a, b) for a, b in sides(g["outline"])), 0.24, p)
 
@@ -958,6 +982,8 @@ class BoxGeometry(unittest.TestCase):
     @given(SF.drawn_shapes())
     def test_the_collider_s_walls_stand_on_the_outline_facing_out(self, shape):
         g = geometry(shape[0])
+        if g is None:
+            return
         corners = [p for path in g["outline"] for p in path]
         self.assertEqual([tuple(w) for w in g["walls"]], [p + (z,) for p in corners for z in (50.0, -50.0)])
         want, at = [], 0
@@ -972,19 +998,20 @@ class BoxGeometry(unittest.TestCase):
     @given(SF.drawn_shapes(), SF.spots)
     def test_a_shape_the_in_game_editor_rewrites_covers_what_it_did(self, shape, spots):
         g = geometry(shape[0])
+        if g is None:
+            return
         if not g["outline"]:
             event("masked: a shape with no area")
             return
         if any(area(path) < 0 for path in g["outline"]):
-            event("masked: a hole")
-            return
+            event("a hole")
         again = geometry(g["rewrite"])
+        self.assertIsNotNone(again, g["rewrite"])
         self.assertAlmostEqual(covered(again), covered(g), delta=0.01 * (1 + rim(g)))
         for p in spots:
             if clear_of(g["outline"], p):
                 self.assertEqual(in_triangles(again["mesh"], p), in_triangles(g["mesh"], p), p)
 
-    @unittest.expectedFailure
     def test_a_hole_survives_the_in_game_editor_rewriting_the_shape(self):
         g = geometry("loop,0,0,10,0,10,10,0,10,0,0,3,3,3,7,7,7,7,3,3,3")
         self.assertEqual(covered(geometry(g["rewrite"])), covered(g))
@@ -993,6 +1020,16 @@ class BoxGeometry(unittest.TestCase):
     def test_a_shape_with_no_area_survives_the_in_game_editor_rewriting_it(self):
         g = geometry("convex,0,0,1,1,2,2")
         self.assertEqual(outcome(B.call, "SeedfileGlue.Box", "BX|solid|" + g["rewrite"])[0], "ok")
+
+    # one triangle turns against part of the bow, so their overlap cancels to empty
+    @unittest.expectedFailure
+    def test_an_oriented_loop_that_cancels_part_of_another_still_draws(self):
+        self.assertIsNotNone(geometry("orientedLoop,-4,4,0,-8,0,-4,loop,0,0,0,4,-4,0,-4,4"))
+
+    @unittest.expectedFailure
+    def test_a_thin_loop_s_triangles_cover_its_outline(self):
+        g = geometry("loop,0,0,0,0.25,-0.25,3.5,loop,0,0.5,-0.25,3.5,0,-0.25,-0.5,6.75")
+        self.assertAlmostEqual(sum(abs(area(t)) for t in g["mesh"]), covered(g), places=3)
 
 
 TABLE = []

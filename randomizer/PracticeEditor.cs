@@ -156,7 +156,7 @@ public static class PracticeEditor {
         if (Active && Seed) {
             if (SeedBoxes.Current != null && SeedBoxes.Current.Dirty && !leaveArmed) {
                 leaveArmed = true;
-                Say("Unsaved box edits: Enter saves them, " + RandomizerRebinding.EditSeedBoxes + " again throws them away", 360);
+                Say("Unsaved box edits: Save keeps them, " + RandomizerRebinding.EditSeedBoxes + " again throws them away", 360);
                 return;
             }
 
@@ -305,7 +305,7 @@ public static class PracticeEditor {
         }
 
         if (PracticeController.Segment != null && !PracticeController.Segment.HasEnd) {
-            Say("Saved. Nothing ends this segment yet: draw a goal box with 4, or set the end condition on the page", 600);
+            Say("Saved. Nothing ends this segment yet: draw a goal box, or set the end condition on the page", 600);
             return;
         }
 

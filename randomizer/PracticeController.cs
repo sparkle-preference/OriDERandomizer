@@ -174,7 +174,7 @@ public static class PracticeController {
             return;
         }
 
-        // in the editor it runs what is on disk, dropping unsaved edits as Ctrl+R does
+        // in the editor it runs what is on disk, dropping unsaved edits as Reload does
         if (PracticeEditor.Active && !PracticeEditor.Reload()) {
             return;
         }

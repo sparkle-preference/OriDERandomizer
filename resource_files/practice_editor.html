@@ -59,6 +59,7 @@
   .leaflet-container { font: inherit; }
   .leaflet-tooltip { background: #0f1317; color: #e6e9ee; border: 1px solid #3a4553; }
   .handle { width: 10px; height: 10px; background: #fff; border: 1px solid #000; border-radius: 2px; }
+  .handle.point { background: #3b8fff; }
   #status { position: fixed; bottom: 0; left: 0; right: 0; background: #0f1317; padding: 10px 24px; border-top: 1px solid #2b333d; }
   .ok { color: #8fe3a0; } .bad { color: #ff9a9a; }
   .variant, .group, .boxlist { border: 1px dashed #3a4553; border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
@@ -125,7 +126,7 @@
 <div class="seedonly muted" style="margin: 10px 0; max-width: 900px">
   These are the boxes in the seed you have loaded. Give them items and flags here, then <b>Save to game</b>: it writes them
   into the seed file (the first save keeps a copy of the original next to it). Flags are explained in Boxes.txt.
-  In the game, <b>M</b> moves and resizes boxes and <b>Ctrl+C</b> copies their lines for the plando builder.
+  In the game, <b>Adjust Boxes</b> moves and resizes boxes and <b>Copy Lines</b> copies their lines for the plando builder.
 </div>
 
 <details class="segonly" style="margin: 10px 0">
@@ -135,10 +136,10 @@
     <b>PRACTICE MODE</b> on the title screen to enter the segment select menu. Pick a segment to <b>run</b> it, or press Copy (<b>C</b> by default) on it to <b>edit</b> it. Unfinished segments jump straight to the editor.
     A <b>.bfrp</b> someone gave you only runs until you hold Copy on its card to extract it into a folder.</p>
 
-    <p><b>Editor:</b> The editor freezes the world and gives you several control options:
-    <b>Drag the left mouse</b> to create a box (<b>1</b> item, <b>2</b> solid, <b>3</b> kill, <b>4</b> goal), <b>Z</b> to undo a placement, <b>X</b> to delete a box under the cursor.
-    <b>WASD</b> pans the view and <b>right click</b> warps Ori to the mouse and loads nearby scenes. <b>Ctrl+S</b> saves, <b>Ctrl+R</b> reloads from disk, 
-    <b>Enter</b> saves and begins a run on the segment, and <b>5</b> opens this page.
+    <p><b>Editor:</b> The editor freezes the world and opens the <b>Edit Boxes</b> window:
+    <b>Create Box</b> draws a box (item, solid, kill, unsafe or goal), <b>Adjust Boxes</b> moves and resizes them, <b>Delete Boxes</b> deletes the one you click, and <b>Undo</b> takes back the last change.
+    <b>WASD</b> pans the view and <b>right click</b> warps Ori to the mouse and loads nearby scenes. <b>Save</b> saves, <b>Reload</b> reloads from disk, 
+    <b>Save &amp; Retry</b> saves and begins a run on the segment, and <b>Open in Browser</b> opens this page.
     While you are editing, the randomizer's other keybinds are off, and the pause menu is replaced with practice-specific options.</p>
 
     <p><b>Web Editing Helper:</b> This page allows for advanced configuration of practice segments - QTM compatibility, box options (color, position, visibility, and items), 
@@ -171,7 +172,7 @@
 
 <section class="segonly">
   <h2>End condition(s) <span class="muted">(need at least 1)</span></h2>
-  <div class="row">Goal box <span id="goalBox" class="muted">none</span> <span class="muted">— edit it in the Boxes table, or draw one in the game with the 4 key</span></div>
+  <div class="row">Goal box <span id="goalBox" class="muted">none</span> <span class="muted">— edit it in the Boxes table, or draw one in the game</span></div>
   <div class="row">Items held <span id="endItems"></span></div>
   <div class="row">Pickup count <input type="number" id="count" min="0" placeholder="any"> <span class="muted">blank for none</span></div>
   <div class="row">Locations <span id="locChips" class="chips"></span> <button class="quiet" id="pickEnd">pick</button></div>
@@ -191,7 +192,7 @@
       <div class="row muted">Or click a marker. Clicking a box jumps to its row.</div>
       <div id="targetChips" class="chips"></div>
       </div>
-      <div class="row" style="margin-top:14px"><button class="quiet" id="editBoxes">edit boxes on the map</button> <span class="muted">drag a box to move it, a corner to resize it</span></div>
+      <div class="row" style="margin-top:14px"><button class="quiet" id="editBoxes">edit boxes on the map</button> <span class="muted">drag a box to move it, a corner to resize it; on a convex or loop box, right-click a side to add a point, a point to remove it</span></div>
       <div id="tileStatus" class="muted"></div>
     </div>
   </div>
@@ -205,7 +206,7 @@
     <div class="row"><button class="quiet" id="addBox">add box</button> <button class="quiet segonly" id="addGoal">add goal box</button>
       <button class="quiet" id="lockAll" title="Lock every box: no edits, no dragging. Locks are this page's, kept in this browser.">lock all</button>
       <button class="quiet" id="unlockAll">unlock all</button></div>
-    <table id="boxes" class="boxes"><thead><tr><th title="The number BM|n uses">#</th><th>flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th></th><th></th><th></th><th></th></tr></thead><tbody></tbody></table>
+    <table id="boxes" class="boxes"><thead><tr><th title="The number BM|n uses">#</th><th>flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>shape</th><th>gives</th><th></th><th></th><th></th><th></th></tr></thead><tbody></tbody></table>
   </div>
   <div id="variantBoxes" class="segonly"></div>
 </section>
@@ -264,7 +265,7 @@
 <script src="/leaflet.js"></script>
 <script>
 (function () {
-  var state = { segment: null, variants: {}, catalog: null, map: null, markers: {}, shapes: [], target: 'end', playing: '', editing: false, ghosts: [] };
+  var state = { segment: null, variants: {}, catalog: null, map: null, markers: {}, shapes: [], handles: [], selectedBox: null, target: 'end', playing: '', editing: false, ghosts: [] };
   var $ = function (id) { return document.getElementById(id); };
   var say = function (text, cls) { var m = $('message'); m.textContent = text; m.className = cls || 'muted'; m.title = ''; };
 
@@ -903,7 +904,7 @@
   function settle(b) { if (hasFlag(b, 'none')) { b.flags = 'tombstone'; b.box = [0, 0, 0, 0]; delete b.shape; } }
 
   // ---- shaped boxes: b.shape is the line's third field, read as the game does (the plando builder's boxes.js) ----
-  var SHAPE_WORDS = { convex: 'convex', loop: 'loop', previewloop: 'previewLoop' };
+  var SHAPE_WORDS = { convex: 'convex', loop: 'loop', orientedloop: 'orientedLoop', previewloop: 'previewLoop' };
   // {kind, loops of [x, y]}, or null where the game throws: every loop needs three points, a last x alone is dropped
   function parseShape(text) {
     var parts = (text || '').split(','), kind = parts[0].toLowerCase(), loops = [[]];
@@ -919,8 +920,11 @@
   function writeShape(read) {
     return SHAPE_WORDS[read.kind] + read.loops.map(function (l) { return l.map(function (p) { return ',' + num(p[0]) + ',' + num(p[1]); }).join(''); }).join(',loop');
   }
-  // '', 'convex' or 'loop'
-  function shapeKind(b) { var read = b.shape ? parseShape(b.shape) : null; return read ? read.kind.replace('preview', '') : ''; }
+  // '', 'convex' or 'loop'; an orientedLoop or previewLoop is a loop
+  function shapeKind(b) { var read = b.shape ? parseShape(b.shape) : null; return !read ? '' : read.kind === 'convex' ? 'convex' : 'loop'; }
+  // an orientedLoop's loops fill as one, by nonzero winding, so a loop wound against another cuts a hole
+  function windsTogether(b) { var read = b.shape ? parseShape(b.shape) : null; return !!read && read.kind === 'orientedloop'; }
+  function signedArea(ring) { return ring.reduce(function (s, p, k) { var q = ring[(k + 1) % ring.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0) / 2; }
   // the hull's corners in order, by Andrew's monotone chain
   function hull(points) {
     var sorted = points.slice().sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
@@ -943,16 +947,75 @@
     var rings = read.kind === 'convex' ? [hull(read.loops[0])] : read.loops.filter(function (l) { return l.length; });
     return rings.map(function (ring) { return ring.map(function (p) { return [p[1], p[0]]; }); });
   }
+  // what L.polygon draws: a face per ring, or one face holding every ring of an orientedLoop
+  function facesOf(b) { var rings = ringsOf(b); return windsTogether(b) && rings.length ? [rings] : rings; }
   // The box (dx, dy) from where the shape `from` had it: every point moves by whole hundredths, so it keeps
   // its shape, and its corners follow in place.
   function shiftShape(b, from, dx, dy) {
     var read = parseShape(from); if (!read) return;
     var mx = num(dx), my = num(dy);
-    b.shape = writeShape({ kind: read.kind, loops: read.loops.map(function (l) { return l.map(function (p) { return [p[0] + mx, p[1] + my]; }); }) });
+    setShape(b, { kind: read.kind, loops: read.loops.map(function (l) { return l.map(function (p) { return [p[0] + mx, p[1] + my]; }); }) });
+  }
+  // b.shape rewritten from its points, its corners following in place: the map finds a box by its corners array
+  function setShape(b, read) {
+    b.shape = writeShape(read);
     var points = [].concat.apply([], parseShape(b.shape).loops);
     if (!points.length) return;
     var xs = points.map(function (p) { return p[0]; }), ys = points.map(function (p) { return p[1]; });
     b.box[0] = Math.min.apply(null, xs); b.box[1] = Math.min.apply(null, ys); b.box[2] = Math.max.apply(null, xs); b.box[3] = Math.max.apply(null, ys);
+  }
+  // the spot on a segment nearest (x, y), and how far off that is
+  function onto(a, b, x, y) {
+    var dx = b[0] - a[0], dy = b[1] - a[1], len = dx * dx + dy * dy;
+    var t = len ? Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / len)) : 0;
+    var px = a[0] + t * dx, py = a[1] + t * dy;
+    return { x: px, y: py, d: Math.sqrt((x - px) * (x - px) + (y - py) * (y - py)) };
+  }
+  // The side of a shaped box nearest (x, y): the spot on it, how far off (d), and where a point there goes.
+  // A convex box's sides are its hull's and its points have no order, so a new one goes last.
+  function nearestSide(b, x, y) {
+    var read = b.shape ? parseShape(b.shape) : null; if (!read) return null;
+    var convex = read.kind === 'convex', best = null;
+    (convex ? [hull(read.loops[0])] : read.loops).forEach(function (ring, loop) {
+      ring.forEach(function (p, k) {
+        var spot = onto(p, ring[(k + 1) % ring.length], x, y);
+        if (!best || spot.d < best.d) { spot.loop = loop; spot.k = convex ? read.loops[0].length : k + 1; best = spot; }
+      });
+    });
+    return best;
+  }
+  // a loop keeps three points: at three, removing one removes the loop, and a box's only loop stays (false)
+  function removePoint(b, loop, k) {
+    var read = parseShape(b.shape);
+    if (read.loops[loop].length > 3) read.loops[loop].splice(k, 1);
+    else if (read.loops.length > 1) read.loops.splice(loop, 1);
+    else return false;
+    setShape(b, read);
+    return true;
+  }
+  // a convex box's points on its hull's outline, to a hundredth: one inside moves nothing when dragged
+  function tidyShape(b) {
+    var read = b.shape ? parseShape(b.shape) : null; if (!read || read.kind !== 'convex') return;
+    var h = hull(read.loops[0]);
+    var kept = read.loops[0].filter(function (p) { return h.some(function (a, k) { return onto(a, h[(k + 1) % h.length], p[0], p[1]).d <= 0.01; }); });
+    if (kept.length >= 3 && kept.length < read.loops[0].length) setShape(b, { kind: 'convex', loops: [kept] });
+  }
+  // The same ground as another kind: '' is the rectangle around it, a convex is the hull of every point,
+  // a loop is the outline it had. A box too flat to have a hull stays as it is.
+  function reshape(b, kind) {
+    if (kind === shapeKind(b)) return;
+    if (!kind) { delete b.shape; return; }
+    var c = b.box, x1 = Math.min(c[0], c[2]), y1 = Math.min(c[1], c[3]), x2 = Math.max(c[0], c[2]), y2 = Math.max(c[1], c[3]);
+    var read = b.shape ? parseShape(b.shape) : null;
+    var rings = !read ? [[[x1, y1], [x2, y1], [x2, y2], [x1, y2]]] : read.kind === 'convex' ? [hull(read.loops[0])] : read.loops;
+    if (kind === 'convex') rings = [hull([].concat.apply([], rings))];
+    if (rings.every(function (ring) { return ring.length >= 3; })) setShape(b, { kind: kind, loops: rings });
+  }
+  // a loop box with one more loop: a small triangle past its right side, wound with the box's net turn so it adds ground
+  function addLoop(b) {
+    var read = parseShape(b.shape), c = b.box, tri = [[c[2] + 1, c[1]], [c[2] + 3, c[1]], [c[2] + 2, c[1] + 2]];
+    read.loops.push(read.loops.reduce(function (s, l) { return s + signedArea(l); }, 0) < 0 ? tri.reverse() : tri);
+    setShape(b, read);
   }
   // what only a rectangle does, and what a loop box does only when solid: it has no inside to touch
   var RECT_ONLY = { unsafe: 'Only a rectangle can be unsafe', goal: 'Only a rectangle can be a goal' };
@@ -1017,8 +1080,8 @@
   }
   // a shaped box's outlines, where its points are now
   function drawShaped(s) {
-    var rings = ringsOf(s.entry.b);
-    s.faces.forEach(function (f, k) { if (rings[k]) f.setLatLngs(rings[k]); });
+    var faces = facesOf(s.entry.b);
+    s.faces.forEach(function (f, k) { if (faces[k]) f.setLatLngs(faces[k]); });
   }
   // a drag already knows its box: those four inputs are the whole table update
   function syncRow(entry) {
@@ -1057,15 +1120,39 @@
       var look = { color: boxColor(entry), weight: 2, opacity: entry.locked ? 0.5 : 1, fillOpacity: entry.locked ? 0.05 : state.editing ? 0.3 : 0.15,
         dashArray: hidden(entry.b) ? '4 4' : null, interactive: !entry.locked };
       // a shape this page can't read still shows, as the rectangle around it
-      var rings = ringsOf(entry.b);
-      var faces = rings.length ? rings.map(function (ring) { return L.polygon(ring, look).addTo(state.map); }) : [L.rectangle(bounds(b), look).addTo(state.map)];
+      var drawn = facesOf(entry.b);
+      if (windsTogether(entry.b)) look.fillRule = 'nonzero';
+      var faces = drawn.length ? drawn.map(function (face) { return L.polygon(face, look).addTo(state.map); }) : [L.rectangle(bounds(b), look).addTo(state.map)];
       var shape = { entry: entry, layers: faces.slice(), faces: faces };
-      if (rings.length) shape.redraw = function () { drawShaped(shape); };
+      if (drawn.length) shape.redraw = function () { drawShaped(shape); };
       state.shapes.push(shape);
       if (entry.locked) return;
       faces.forEach(function (f) { f.bindTooltip(asText(entry.label), { sticky: true }); });
       if (state.editing) attachEditing(shape);
       else faces.forEach(function (f) { f.on('click', function () { jumpTo(entry.rowId); }); });
+    });
+    drawHandles();
+  }
+  // The points of the shaped box last clicked, as handles: drag one to move it, right-click it to remove it.
+  // Only that box shows its points, or a screen of shaped boxes is all handles.
+  function drawHandles() {
+    state.handles.forEach(function (h) { state.map.removeLayer(h); }); state.handles = [];
+    var shape = null;
+    state.shapes.forEach(function (s) { if (s.entry.b === state.selectedBox && !s.entry.locked && shapeKind(s.entry.b)) shape = s; });
+    if (!state.editing || !shape) return;
+    var b = shape.entry.b;
+    parseShape(b.shape).loops.forEach(function (l, loop) {
+      l.forEach(function (p, k) {
+        var h = L.marker([p[1], p[0]], { draggable: true, icon: L.divIcon({ className: 'handle point', iconSize: [10, 10] }) }).addTo(state.map);
+        h.on('drag', function (ev) {
+          var at = ev.target.getLatLng(), read = parseShape(b.shape);
+          read.loops[loop][k] = [at.lng, at.lat];
+          setShape(b, read); drawShaped(shape);
+        });
+        h.on('dragend', function () { tidyShape(b); drawShaped(shape); drawHandles(); syncRow(shape.entry); });
+        h.on('contextmenu', function () { if (removePoint(b, loop, k)) { rebuildShapes(); syncRow(shape.entry); } });
+        state.handles.push(h);
+      });
     });
   }
   // Leaflet sets a string tooltip as HTML, and labels carry text from shared files
@@ -1077,7 +1164,7 @@
     row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600);
   }
 
-  // drag a box to move it, a corner to resize it; the table catches up on release. A shaped box only moves.
+  // drag a box to move it, a corner to resize it; the table catches up on release. A shaped box's points are drawHandles'.
   function attachEditing(shape) {
     var b = shape.entry.b.box, rect = shape.faces[0], shaped = !!shape.redraw;
     var map = state.map;
@@ -1106,17 +1193,29 @@
     var start = null, from = null, fromShape = null;
     shape.faces.forEach(function (face) {
       face.on('mousedown', function (ev) {
+        if (ev.originalEvent.button) return;
         L.DomEvent.stop(ev);
         map.dragging.disable();
         start = ev.latlng; from = b.slice(); fromShape = shape.entry.b.shape;
+        state.selectedBox = shape.entry.b; drawHandles();
         map.on('mousemove', move); map.on('mouseup', stop);
         L.DomEvent.on(document, 'mouseup', stop);
+      });
+      // a right click within ten pixels of a shaped box's side puts a point on it
+      if (shaped) face.on('contextmenu', function (ev) {
+        var eb = shape.entry.b, side = nearestSide(eb, ev.latlng.lng, ev.latlng.lat);
+        var pixel = Math.abs(map.containerPointToLatLng([1, 0]).lng - map.containerPointToLatLng([0, 0]).lng);
+        if (!side || side.d > 10 * pixel) return;
+        var read = parseShape(eb.shape);
+        read.loops[side.loop].splice(side.k, 0, [side.x, side.y]);
+        setShape(eb, read);
+        state.selectedBox = eb; redraw(); drawHandles(); syncRow(shape.entry);
       });
     });
     function move(ev) {
       if (!start) return;
       var dx = ev.latlng.lng - start.lng, dy = ev.latlng.lat - start.lat;
-      if (shaped) shiftShape(shape.entry.b, fromShape, dx, dy);
+      if (shaped) { shiftShape(shape.entry.b, fromShape, dx, dy); drawHandles(); }
       else { b[0] = from[0] + dx; b[2] = from[2] + dx; b[1] = from[1] + dy; b[3] = from[3] + dy; }
       redraw();
     }
@@ -1278,6 +1377,7 @@
       });
       tr0.appendChild(td(goalFlags));
       for (var g = 0; g < 4; g++) (function (g) { tr0.appendChild(td(numInput(end.box[g], function (v) { end.box[g] = v; moveBox(end.box); $('goalBox').textContent = end.box.join(', '); }))); })(g);
+      tr0.appendChild(td(document.createElement('span')));
       var ends = document.createElement('span'); ends.className = 'muted'; ends.textContent = 'ends the run'; tr0.appendChild(td(ends));
       tr0.appendChild(td(document.createElement('span'))); tr0.appendChild(td(document.createElement('span')));
       var clear = document.createElement('button'); clear.className = 'danger icon'; clear.innerHTML = '&times;'; clear.title = 'Remove the goal box';
@@ -1318,6 +1418,14 @@
         if (b.shape && k > 1) { input.readOnly = true; input.title = 'A shaped box keeps its size'; }
         tr.appendChild(td(input));
       })(k);
+      var pick = document.createElement('select');
+      pick.title = 'Shape: a rectangle, the hull around its points (convex), or outlines drawn point by point (loop)';
+      [['', 'rect'], ['convex', 'convex'], ['loop', 'loop']].concat(shapeKind(b) === 'loop' ? [['add', '+ loop']] : []).forEach(function (o) {
+        var opt = document.createElement('option'); opt.value = o[0]; opt.textContent = o[1]; pick.appendChild(opt);
+      });
+      pick.value = shapeKind(b);
+      pick.onchange = function () { if (pick.value === 'add') addLoop(b); else reshape(b, pick.value); state.selectedBox = b; render(); };
+      tr.appendChild(td(pick));
       tr.appendChild(td(gives));
       // any box can wear its own color; its flags pick the default
       var color = document.createElement('input'); color.type = 'color'; color.title = b.color ? 'own color' : 'the default for its flags';
@@ -1374,7 +1482,7 @@
       var add = document.createElement('button'); add.className = 'quiet'; add.textContent = 'add box'; add.style.margin = '6px 0'; add.onclick = function () { v.boxes.push(freshBox()); render(); };
       part.appendChild(add);
       var table = document.createElement('table'); table.className = 'boxes';
-      table.innerHTML = '<thead><tr><th title="The number BM|n uses">#</th><th>flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>gives</th><th></th><th></th><th></th><th></th></tr></thead><tbody></tbody>';
+      table.innerHTML = '<thead><tr><th title="The number BM|n uses">#</th><th>flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>shape</th><th>gives</th><th></th><th></th><th></th><th></th></tr></thead><tbody></tbody>';
       renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id, false);
       table.hidden = !table.querySelector('tbody').rows.length;
       part.appendChild(table);

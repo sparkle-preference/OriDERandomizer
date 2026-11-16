@@ -360,7 +360,7 @@ public static class SeedfileGlue {
         RandomizerBoxGeometry.VisualVertices(shape, 0f, UnityEngine.Color.white, UnityEngine.Color.black, out var vertices, out var triangles, out var colors);
         RandomizerBoxGeometry.ColliderVertices(shape.Outline, out var walls, out var wallTriangles);
         Func<UnityEngine.Vector2, UnityEngine.Vector2> same = p => p;
-        var raw = RandomizerBoxGeometry.ToRawShape(box.ShapeType, shape.Outline, offset);
+        var raw = RandomizerBoxGeometry.ToRawShape(box.ShapeType, shape.Outline, offset) ?? box.SimplifiedShape;
         return new Dictionary<string, object> {
             { "outline", world(shape.Outline) },
             { "edge", world(shape.EdgeTriangles) },
