@@ -386,6 +386,7 @@
         "randomizer/RandomizerBootstrap.cs",
         "randomizer/RandomizerBootstrapEscapes.cs",
         "randomizer/RandomizerBox.cs",
+        "randomizer/RandomizerBoxGeometry.cs",
         "randomizer/RandomizerBoxPrefab.cs",
         "randomizer/RandomizerChaosColor.cs",
         "randomizer/RandomizerChaosDamageModifier.cs",
