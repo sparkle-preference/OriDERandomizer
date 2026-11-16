@@ -20,6 +20,46 @@ public static class RandomizerSettings {
         return at < 0 ? line : line.Substring(0, at);
     }
 
+    // every 5.0 dll writes its built-in host: a file without one is 4.2's
+    private static bool IsPreV5File() {
+        try {
+            return File.Exists("RandomizerSettings.txt")
+                && !File.ReadAllText("RandomizerSettings.txt").Contains(DevSettings.BuiltinHost.Name + ":");
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    // 5.0 rewrites these on its first run; PreV5Backups keeps what 4.2 left, once.
+    public static void BackupPreV5Files(params string[] paths) {
+        const string dir = "PreV5Backups";
+        var preV5 = IsPreV5File();
+        foreach (var path in paths) {
+            var backup = Path.Combine(dir, Path.GetFileName(path));
+            // the beta's own copy is the 4.2 file: it moves in rather than being copied over
+            var betaBackup = path + ".pre5.0beta.backup";
+            try {
+                if (File.Exists(backup)) {
+                    continue;
+                }
+
+                if (File.Exists(betaBackup)) {
+                    Directory.CreateDirectory(dir);
+                    // copy and delete: Move fails across drives
+                    File.Copy(betaBackup, backup);
+                    File.Delete(betaBackup);
+                    Randomizer.log($"moved {betaBackup} to {backup}");
+                } else if (preV5 && File.Exists(path)) {
+                    Directory.CreateDirectory(dir);
+                    File.Copy(path, backup);
+                    Randomizer.log($"backed up {path} to {backup}");
+                }
+            } catch (Exception e) {
+                Randomizer.log($"backup of {path} failed: {e.Message}");
+            }
+        }
+    }
+
     public static void ParseSettings() {
         if (!File.Exists("RandomizerSettings.txt")) {
             WriteDefaultFile();

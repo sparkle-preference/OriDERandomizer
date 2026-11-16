@@ -44,7 +44,6 @@ public static class Randomizer {
             PlayedGoodLuckOnce = false;
             MessageProvider = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
             RandomizerUI.Instance.ClearRecentNotifications();
-            ProgressiveMapStones = true;
             ForceTrees = false;
             CluesMode = false;
             Shards = false;
@@ -124,6 +123,7 @@ public static class Randomizer {
             SpawnPosition = new Vector3(0, 0, 0);
             SpawnScene = null;
             ShouldHideGladesStart = false;
+            RandomizerLocationManager.KeyTiers = null;
 
             if (SeedFilePath == null || IsDefaultSeedFilePath(SeedFilePath)) {
                 SeedFilePath = DefaultSeedFilePath();
@@ -143,6 +143,8 @@ public static class Randomizer {
 
                 if (File.Exists(SeedFilePath)) {
                     var allLines = File.ReadAllLines(SeedFilePath).ToList();
+                    // a header that throws must not leave the last seed's items at their locations
+                    RandomizerLocationManager.ClearPickups();
 
                     lastLine = allLines[0];
                     lastLineNum = 0;
@@ -175,7 +177,6 @@ public static class Randomizer {
                     if (!PracticeEditor.Seed) {
                         SeedBoxes.Current = null;
                     }
-                    RandomizerLocationManager.ClearPickups();
                     var badLines = 0;
                     var firstBad = "";
                     foreach (var line in allLines.Skip(1)) {
@@ -246,7 +247,7 @@ public static class Randomizer {
         // MW lines are only readable under format 2; a format 1 one mis-parses silently
         if (lineParts[1] == "MW" && SeedFormat < 2) {
             throw new Exception(
-                "this seed's multiworld lines are too old - re-download it");
+                "this multiworld seed was made before 5.0 - roll a new one");
         }
 
         if (RandomizerMW.IsManifestLine(coords, lineParts[1])) {
@@ -288,29 +289,10 @@ public static class Randomizer {
         return primaryPath;
     }
 
-    // The beta rewrites these on its first run; keep a copy of what 4.2 left, once.
-    private static void BackupPreBetaFiles() {
-        if (!IsBeta) {
-            return;
-        }
-
-        foreach (var path in new[] { "RandomizerSettings.txt", "RandomizerRebinding.txt", PlayerInputRebinding.KeyRebindingFile }) {
-            var backup = path + ".pre5.0beta.backup";
-            try {
-                if (File.Exists(path) && !File.Exists(backup)) {
-                    File.Copy(path, backup);
-                    log($"backed up {path} to {backup}");
-                }
-            } catch (Exception e) {
-                log($"backup of {path} failed: {e.Message}");
-            }
-        }
-    }
-
     public static void InitializeOnce() {
         Events.Scheduler.OnGameSerializeLoad.Add(OnGameSerializeLoad);
 
-        BackupPreBetaFiles();
+        RandomizerSettings.BackupPreV5Files("RandomizerSettings.txt", "RandomizerRebinding.txt", PlayerInputRebinding.KeyRebindingFile);
         RandomizerSettings.ParseSettings();
 
         // main thread only, so before the location manager starts the logic thread
@@ -1405,6 +1387,10 @@ public static class Randomizer {
             DebugMenuB.DebugControlsEnabled = true;
         }
 
+        if (Characters.Sein && Characters.Sein.Inventory != null) {
+            RandomizerEnemies.Want(RandomizerBonusSkill.Pokeball - 1);
+        }
+
         if (Scenes.Manager.CurrentScene?.Scene != "titleScreenSwallowsNest") {
             RandomizerTrackedDataManager.Reset();
             RandomizerTrackedDataManager.UpdateBitfields();
@@ -1765,8 +1751,9 @@ public static class Randomizer {
                     syncMode = 4;
                 } else if (modeStr == "multiworld") {
                     syncMode = 5;
-                } else {
-                    syncMode = int.Parse(modeStr);
+                } else if (!int.TryParse(modeStr, out syncMode)) {
+                    // the client tells only multiworld apart; SplitShards and Bingo games sync like none
+                    syncMode = 4;
                 }
 
                 SyncMode = syncMode;
@@ -1779,8 +1766,6 @@ public static class Randomizer {
                 ZeroXP = true;
             } else if (flag == "nobonus") {
                 BonusActive = false;
-            } else if (flag == "nonprogressivemapstones") {
-                ProgressiveMapStones = false;
             } else if (flag == "forcetrees") {
                 ForceTrees = true;
             } else if (flag == "forcemaps") {
@@ -2072,6 +2057,7 @@ public static class Randomizer {
 
     public static void SetupNewGame() {
         Inventory.Clear();
+        RandomizerBoxes.ForgetMoves();
         TeleporterController.RemoveCustomTeleporters();
         var spawnHCs = 0;
         var spawnECs = 0;
@@ -2166,7 +2152,6 @@ public static class Randomizer {
     public static bool Chaos;
     public static bool ChaosVerbose;
     public static float DamageModifier;
-    public static bool ProgressiveMapStones;
     public static bool ForceTrees;
     public static string SeedMeta;
 

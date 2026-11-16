@@ -1090,8 +1090,8 @@ public static class RandomizerSyncManager {
         }
 
         public string GetURL() {
-            var url = RootUrl + "/found/" + coords + "/" + type + "/" + CleanedId;
-            url += "?zone=" + RandomizerStatsManager.CurrentZone();
+            var url = RootUrl + "/found/" + coords + "/" + type + "/" + Uri.EscapeDataString(CleanedId);
+            url += "?zone=" + Uri.EscapeDataString(RandomizerStatsManager.CurrentZone());
 
             return RequestUrl(url);
         }

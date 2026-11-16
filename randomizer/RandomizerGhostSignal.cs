@@ -101,9 +101,13 @@ public static class RandomizerGhostSignal {
             }
         }
 
+        // every re-announce gets a roster back, so only a changed one is news
+        if (host != Host || present.Count != Roster.Count || !present.TrueForAll(Roster.Contains)) {
+            Randomizer.log("ghost signal: roster host=" + host + " players=" + present.Count);
+        }
+
         Host = host;
         Roster = present;
-        Randomizer.log("ghost signal: roster host=" + host + " players=" + present.Count);
 
         // anyone who left takes their peer and their ghost with them
         for (var i = Links.Count - 1; i >= 0; i--) {
@@ -360,7 +364,7 @@ public static class RandomizerGhostSignal {
         Misses.TryGetValue(pid, out n);
         Misses[pid] = ++n;
         if (n >= MissLimit && (viaRelay || RelayUrl == null) && Unreachable.Add(pid)) {
-            Say("Can't show " + RandomizerMW.PlayerName(pid) + "'s ghost: a firewall or VPN is probably blocking the connection.");
+            Say("Can't show " + RandomizerMW.PlayerName(pid) + "'s ghost!\n(A firewall or VPN is likely blocking the connection.)");
         }
     }
 

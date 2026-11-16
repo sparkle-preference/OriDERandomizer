@@ -40,7 +40,7 @@ namespace Protogen {
             reachable.Add(startNode);
             reachedWithKeystones[startNode] = 0;
 
-            var accessibleMapstones = new List<Node>();
+            var accessibleMapstones = new HashSet<string>();
             var accessedMapstones = 0;
 
             var newNodes = new HashSet<string>();
@@ -80,7 +80,7 @@ namespace Protogen {
                             )
                             .Select(conn => {
                                 if (conn.Requirement.Unlocks.Contains("Mapstone")) {
-                                    accessibleMapstones.Add(conn.Destination);
+                                    accessibleMapstones.Add(conn.Destination.Name);
                                 }
 
                                 var destinationKeystonesUsed = reachedWithKeystones.ContainsKey(conn.Destination.Name) ? reachedWithKeystones[conn.Destination.Name] : 9999;
@@ -98,19 +98,20 @@ namespace Protogen {
                     reachable.UnionWith(newNodes);
                 } while (newNodes.Count != 0);
 
-                // Accumulate progressive map locations
-                var mapstonesReachable = Math.Min(inventory.Mapstones, accessibleMapstones.Count);
-                if (accessedMapstones < mapstonesReachable) {
+                // Accumulate progressive map locations: Map i needs i pedestals and its own stone count
+                if (accessedMapstones < accessibleMapstones.Count) {
                     // the Map nodes hang off Origin whatever the spawn
                     foreach (var connection in graph.OutgoingConnections[graph.Origin.Name].Where(conn =>
-                            conn.Requirement.Mapstones > accessedMapstones &&
-                            conn.Requirement.Mapstones <= mapstonesReachable
-                        )) {
-                        foundAny = true;
-                        reachable.Add(connection.Destination.Name);
+                                conn.Requirement.Mapstones > 0 && conn.Requirement.Mapstones <= inventory.Mapstones
+                            )
+                            .OrderBy(conn => conn.Requirement.Mapstones)
+                            .Take(accessibleMapstones.Count)) {
+                        if (reachable.Add(connection.Destination.Name)) {
+                            foundAny = true;
+                        }
                     }
 
-                    accessedMapstones = mapstonesReachable;
+                    accessedMapstones = accessibleMapstones.Count;
                 }
 
                 // Only do keystone doors if we have no other options to progress

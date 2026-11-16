@@ -235,6 +235,12 @@ public class RandomizerBootstrap {
                 leverSystem.LeverLeftAction = null;
                 leverSystem.LeverMiddleAction = null;
                 leverSystem.LeverRightAction = null;
+
+                // the lever above the gate; the other one is to its right
+                var above = leverSystem.Lever.MoonGuid == new MoonGuid(1108763030, 1147829718, 119937957, 492548545);
+                var message = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
+                message.SetMessage("Pulling this lever doesn't do anything!\n(The door " + (above ? "below" : "to the left") + " is already open)");
+                leverSystem.Lever.gameObject.AddComponent<RandomizerLeverHint>().Message = message;
             } else if (child.name == "gate") {
                 var doorAnimator = child.GetComponent<LegacyTranslateAnimator>();
                 doorAnimator.TimeOffset = doorAnimator.TimeOfLastCurvePoint;

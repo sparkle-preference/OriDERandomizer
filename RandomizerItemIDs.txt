@@ -57,6 +57,9 @@ Randomizer inventory ids.
 85 - Last AltR y position
 86 - Last Soul Link x position
 87 - Last Soul Link y position
+88 - Pokeball contents (the caught enemy's variant + 1)
+89 - Pokeball catch offset along Ori's facing, in hundredths
+90 - Pokeball catch offset up, in hundredths
 
 
 === Bonus Skills ===
@@ -72,7 +75,7 @@ Randomizer inventory ids.
 109 - Timewarp
 110 - Invincibility
 111 - Wither
-112 - Pokeball (unfinished/nonfunctional)
+112 - Pokeball
 113 - Toggle Bash/Stomp Damage
 114 - Summon Mom (unfinished/nonfunctional)
 115 - Toggle Enhanced Effects
@@ -409,7 +412,9 @@ Enhanced mode -- April Fools :)
 
 10001-10999 - Practice run stat block
 
-11000-19999 - unused, reserved for the randomizer
+11000 - Tick count, read as {T}
+
+11001-19999 - unused, reserved for the randomizer
 
 20000+ - plando-reserved ID range. currently uncapped
 

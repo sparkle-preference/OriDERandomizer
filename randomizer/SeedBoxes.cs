@@ -75,6 +75,27 @@ public class SeedBoxes {
         Dirty = false;
     }
 
+    public const string RollsPrefix = "//EnemyRolls=";
+
+    private static bool IsRolls(string line) {
+        return line.StartsWith(RollsPrefix, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // the seed's //EnemyRolls= line, or null
+    public string EnemyRolls {
+        get { return lines.FirstOrDefault(IsRolls); }
+    }
+
+    // rewritten in place; a seed without the line gets none
+    public void SetEnemyRolls(string line) {
+        var i = lines.FindIndex(IsRolls);
+        if (i >= 0 && lines[i] != line) {
+            lines[i] = line;
+            Dirty = true;
+            Revision++;
+        }
+    }
+
     public void SetBoxes(List<RandomizerBox> boxes) {
         Boxes = new List<RandomizerBox>(boxes);
         Dirty = true;
@@ -118,9 +139,9 @@ public class SeedBoxes {
         Revision++;
     }
 
-    // every line but the boxes: what tells one seed from another
+    // every line but the boxes and the enemy rolls, the two things saves here change: what tells one seed from another
     private static string Unboxed(string text) {
-        return string.Join("\n", text.Replace("\r\n", "\n").Split('\n').Where(line => !RandomizerBox.IsLine(line)).ToArray());
+        return string.Join("\n", text.Replace("\r\n", "\n").Split('\n').Where(line => !RandomizerBox.IsLine(line) && !IsRolls(line)).ToArray());
     }
 
     // what is on disk replaces every unsaved edit

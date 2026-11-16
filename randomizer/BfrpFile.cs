@@ -225,7 +225,7 @@ public class BfrpFile {
         }
     }
 
-    // BM|n, BM|n=... name box n; MU and RP name what their pieces do
+    // BM|n, BR|n and a {Bn} read anywhere name box n; MU and RP name what their pieces do
     private static int Named(RandomizerAction action) {
         if (action.Action == "MU" || action.Action == "RP") {
             var named = -1;
@@ -236,14 +236,16 @@ public class BfrpFile {
             return named;
         }
 
-        if (action.Action != "BM") {
-            return -1;
+        var read = action.IsStringVal() ? RandomizerInventory.HighestBoxRead((string)action.Value) : -1;
+        if (action.Action != "BM" && action.Action != "BR") {
+            return read;
         }
 
         var value = (string)action.Value;
         var eq = value.IndexOf('=');
+        var box = (eq < 0 ? value : value.Substring(0, eq)).Trim().TrimEnd('+', '-').Trim();
         int n;
-        return int.TryParse((eq < 0 ? value : value.Substring(0, eq)).Trim(), out n) ? n : -1;
+        return int.TryParse(box, out n) ? Math.Max(n, read) : read;
     }
 
     private static bool Parses(string line) {

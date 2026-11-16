@@ -80,7 +80,7 @@ public class SeinSoulFlame : CharacterState, ISeinReceiver {
 
             for (var l = 0; l < RespawningPlaceholder.All.Count; l++) {
                 var respawningPlaceholder = RespawningPlaceholder.All[l];
-                if (!respawningPlaceholder.EntityIsDead && Vector3.Distance(position, respawningPlaceholder.Position) < 10f) {
+                if (!respawningPlaceholder.EntityIsDead && Vector3.Distance(position, respawningPlaceholder.Position) < 10f && !RandomizerEnemies.Pocketed(respawningPlaceholder)) {
                     return SoulFlamePlacementSafety.UnsafeEnemies;
                 }
             }

@@ -241,7 +241,7 @@ public static class RandomizerMapWarp {
     }
 
     // whatever turns off Alt+R (the noaltr flag, RB|34) turns off map warps too
-    private static bool Disabled() {
+    public static bool Disabled() {
         return Randomizer.AltRDisabled || RandomizerBonus.AltRDisabled();
     }
 

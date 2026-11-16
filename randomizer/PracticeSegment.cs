@@ -8,7 +8,7 @@ using UnityEngine;
 public class PracticeSegment {
     public List<RandomizerBox> Boxes = new List<RandomizerBox>();
 
-    public Rect? GoalArea;
+    public RandomizerBox GoalBox;
 
     public List<string> EndItems = new List<string>();
 
@@ -20,7 +20,7 @@ public class PracticeSegment {
     public int EndCount = -1;
 
     public bool HasEnd {
-        get { return GoalArea.HasValue || EndItems.Count > 0 || EndLocations.Count > 0 || EndCount >= 0; }
+        get { return GoalBox != null || EndItems.Count > 0 || EndLocations.Count > 0 || EndCount >= 0; }
     }
 
     // a variant's own loadout; its boxes join the shared ones, and the ending stays shared
@@ -85,7 +85,7 @@ public class PracticeSegment {
 
         foreach (var box in seg.Boxes) {
             if (box.Goal && !box.Deleted) {
-                seg.GoalArea = box.Rect;
+                seg.GoalBox = box;
                 break;
             }
         }
@@ -308,7 +308,7 @@ public class PracticeSegment {
             return false;
         }
 
-        if (GoalArea.HasValue && !GoalArea.Value.Contains(at)) {
+        if (GoalBox != null && !GoalBox.CurrentRect.Contains(at)) {
             return false;
         }
 
