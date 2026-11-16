@@ -77,9 +77,8 @@ public static class QuickHull {
                 allPoints[aEnd++] = new Vector3(point.x, point.y, distA);
             }
             else if (rayB.Dist(point) is var distB and > 0f) {
-                var temp = allPoints[--bStart];
+                allPoints[i--] = allPoints[--bStart];
                 allPoints[bStart] = new Vector3(point.x, point.y, distB);
-                allPoints[i--] = temp;
             }
         }
 
