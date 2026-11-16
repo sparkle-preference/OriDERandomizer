@@ -484,6 +484,13 @@ public static class PracticeEditor {
         DraftObject = null;
     }
 
+    // the window opens over the map stone count; SeinUI shows it again every fixed step, so this only holds while it runs
+    public static void Update() {
+        if (Active && showWindow && UI.SeinUI != null && UI.SeinUI.MapStoneUI != null && UI.SeinUI.MapStoneUI.activeSelf) {
+            UI.SeinUI.MapStoneUI.SetActive(false);
+        }
+    }
+
     public static void OnGUI() {
         if (!Active || Characters.Sein == null || GameController.Instance == null || GameController.Instance.GameInTitleScreen || UI.MainMenuVisible) {
             return;

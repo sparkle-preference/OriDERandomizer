@@ -795,6 +795,7 @@ public static class Randomizer {
         RandomizerKeyIcons.Register();
         RandomizerHoldRing.Prepare();
         PracticeController.Tick();
+        PracticeEditor.Update();
 
         PracticeSelect.Tick();
         PracticeServer.Tick();
