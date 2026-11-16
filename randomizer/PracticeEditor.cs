@@ -40,6 +40,8 @@ public static class PracticeEditor {
 
     private static Rect guiWindowRect = new(10f, 10f, 500f, 300f);
 
+    private static float guiScale = 1f;
+
     private static Rect guiButtonRect = new(10f, 10f, 90f, 25f);
 
     private static bool showWindow = true;
@@ -385,6 +387,7 @@ public static class PracticeEditor {
         var mousePos = Input.mousePosition;
         mousePos.y = Screen.height - mousePos.y;
         var guiRect = showWindow ? guiWindowRect : guiButtonRect;
+        guiRect = new Rect(guiRect.min * guiScale, guiRect.size * guiScale);
         var overGui = guiRect.Contains(mousePos) || UI.MainMenuVisible;
 
         var at = World(Core.Input.CursorPosition);
@@ -486,15 +489,16 @@ public static class PracticeEditor {
             return;
         }
 
+        var oldMatrix = GUI.matrix;
+        guiScale = Screen.height / 1080f;
+        GUI.matrix = Matrix4x4.Scale(new Vector3(guiScale, guiScale, guiScale));
         if (showWindow) {
-            var oldMatrix = GUI.matrix;
-            var scale = Screen.height / 1080f;
-            GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, scale));
             guiWindowRect = GUILayout.Window(491819877, guiWindowRect, EditWindow, "Edit Boxes");
-            GUI.matrix = oldMatrix;
         } else {
             showWindow = GUI.Button(guiButtonRect, "Show Menu");
         }
+
+        GUI.matrix = oldMatrix;
     }
 
     private static void EditWindow(int windowId) {
