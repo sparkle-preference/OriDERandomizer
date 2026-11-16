@@ -487,7 +487,11 @@ public static class PracticeEditor {
         }
 
         if (showWindow) {
+            var oldMatrix = GUI.matrix;
+            var scale = Screen.height / 1080f;
+            GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, scale));
             guiWindowRect = GUILayout.Window(491819877, guiWindowRect, EditWindow, "Edit Boxes");
+            GUI.matrix = oldMatrix;
         } else {
             showWindow = GUI.Button(guiButtonRect, "Show Menu");
         }
