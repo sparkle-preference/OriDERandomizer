@@ -23,7 +23,9 @@ from client_props.strategies import practice as S
 SOURCES = ["randomizer/" + f for f in ("JsonValue.cs", "ZipStore.cs", "FolderStore.cs", "PracticeFolder.cs",
                                         "PracticeDefaults.cs", "BfrpFile.cs", "PracticeSegment.cs", "SeedBoxes.cs",
                                         "RandomizerBox.cs", "RandomizerAction.cs", "RandomizerInventory.cs")]
-EXTRA = [os.path.join(HERE, "cs", "practice", f) for f in ("Stubs.cs", "Glue.cs")]
+# RandomizerBox.cs indexes from the end, which the compiler lowers to System.Index
+SOURCES += ["language_support/Index.cs", "language_support/NullableAttributes.cs"]
+EXTRA =[os.path.join(HERE, "cs", "practice", f) for f in ("Stubs.cs", "Glue.cs")]
 WORK = os.path.join(os.environ.get("TEMP", HERE), "client_props", "work", "practice")
 os.makedirs(WORK, exist_ok=True)
 # .NET's GetFullPath expands 8.3 names like WORSTM~1, so paths are compared in long form
@@ -831,14 +833,15 @@ csv_rows = st.lists(st.lists(csv_field, min_size=1, max_size=4).map(",".join), m
 
 def line_break_in_page_box(box):
     """A page box whose flags, color or give holds a line feed."""
-    return any("\n" in (box.get(k) or "") for k in ("flags", "color", "give"))
+    return any("\n" in (box.get(k) or "") for k in ("flags", "shape", "color", "give"))
 
 
 page_text = st.text(st.sampled_from("ab |\n\r\t#"), max_size=6)
 page_box = st.fixed_dictionaries({
     "flags": st.sampled_from(["kill", "ritem", "solid,once", "item"]) | page_text,
     "box": st.lists(st.sampled_from([0, 1.5, -20.25, 300]), min_size=4, max_size=4),
-}, optional={"color": st.sampled_from(["", "ff0000", "#00a2e8"]) | page_text,
+}, optional={"shape": st.sampled_from(["convex,0,0,4,0,2,3", "Loop,0,0,4,0,2,3,loop,1,1,2,1,2,2", "convex,0,0"]) | page_text,
+             "color": st.sampled_from(["", "ff0000", "#00a2e8"]) | page_text,
              "give": st.sampled_from(["", "SK|3", "SH|hello", "MU|SK/3/EX/15"]) | page_text.map(lambda t: "SH|" + t)})
 
 

@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from collections import defaultdict
 
-from hypothesis import event, given, note, settings, strategies as st
+from hypothesis import event, example, given, note, settings, strategies as st
 
 from client_props.base import HERE, deep_only, examples
 from client_props.cs_bridge import outcome, slice_bridge
@@ -646,6 +646,69 @@ def a_lone_carriage_return(text):
     return re.search(r"\r(?!\n)", text) is not None
 
 
+def cs_float(text):
+    """float.TryParse with NumberStyles.Number on a plain decimal: whitespace around it and one leading sign."""
+    return re.fullmatch(r"[ \t\n\v\f\r]*[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)[ \t\n\v\f\r]*", text) is not None
+
+
+SHAPE_TYPES = {"convex": "ConvexHull", "loop": "Polygon", "previewloop": "PreviewPolygon"}
+
+
+def shape_model(field):
+    """RandomizerBox.ParseShape on a line's third field: (ShapeType, loops of (x, y), corners), or None where it throws."""
+    parts = field.split(",")
+    kind = parts[0].lower()
+    if kind not in SHAPE_TYPES:
+        if len(parts) != 4 or not all(cs_float(p) for p in parts):
+            return None
+        x1, y1, x2, y2 = [float(p) for p in parts]
+        return "Rectangle", None, [min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)]
+    loops, k = [[]], 1
+    while k < len(parts):
+        if kind != "convex" and parts[k].lower() == "loop":
+            loops.append([])
+            k += 1
+        elif k == len(parts) - 1:
+            break
+        elif not (cs_float(parts[k]) and cs_float(parts[k + 1])):
+            return None
+        else:
+            loops[-1].append((float(parts[k]), float(parts[k + 1])))
+            k += 2
+    if kind != "previewloop" and any(len(l) < 3 for l in loops):
+        return None
+    points = [p for l in loops for p in l]
+    xs, ys = [p[0] for p in points] or [0.0], [p[1] for p in points] or [0.0]
+    return SHAPE_TYPES[kind], loops, [min(xs), min(ys), max(xs), max(ys)]
+
+
+def near(a, b):
+    return math.isclose(a, f32(b), rel_tol=1e-6, abs_tol=1e-3)
+
+
+def turn(o, a, b):
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+
+def hull_model(points):
+    """The convex hull's corners, counterclockwise, by Andrew's monotone chain."""
+    points = sorted(set(points))
+
+    def half(seq):
+        out = []
+        for p in seq:
+            while len(out) > 1 and turn(out[-2], out[-1], p) <= 0:
+                out.pop()
+            out.append(p)
+        return out[:-1]
+    return points if len(points) < 3 else half(points) + half(points[::-1])
+
+
+def area(ring):
+    """Signed: positive for a counterclockwise ring."""
+    return sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(ring, ring[1:] + ring[:1])) / 2
+
+
 class Boxes(unittest.TestCase):
 
     @settings(max_examples=examples(150))
@@ -682,11 +745,114 @@ class Boxes(unittest.TestCase):
         line = js("box_line", model)
         self.assertEqual(B.call("SeedfileGlue.BoxFromJson", model["flags"], model["box"], model["color"], model["give"]), line)
 
+    @settings(max_examples=examples(300))
+    @given(SF.shape_fields())
+    def test_a_shape_reads_the_same_in_the_game_the_plando_builder_and_the_model(self, field):
+        # a color after it: the builder trims a pasted line's end
+        line = "BX|solid|" + field + "|ff0000"
+        want, got, site = shape_model(field), outcome(B.call, "SeedfileGlue.Box", line), js("parse_box_line", line)
+        self.assertEqual(got[0] == "ok", want is not None, got)
+        self.assertEqual(site is not None, want is not None, site)
+        if want is None:
+            return
+        kind, loops, corners = want
+        box = got[1]
+        self.assertEqual(box["shape"], kind)
+        for a, b in zip(box["corners"], corners):
+            self.assertTrue(near(a, b), (box["corners"], corners))
+        if loops is None:
+            x1, y1, x2, y2 = site["box"]
+            self.assertEqual([min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)], corners)
+            self.assertEqual(site["shape"], "")
+            self.assertIsNone(box["points"])
+            return
+        self.assertEqual(site["box"], corners)
+        self.assertEqual(site["shape"], field)
+        self.assertEqual(js("box_line", site), line)
+        self.assertEqual([len(l) for l in box["points"]], [len(l) for l in loops])
+        for mine, theirs in zip(loops, box["points"]):
+            for p, q in zip(mine, theirs):
+                self.assertTrue(near(q[0], p[0]) and near(q[1], p[1]), (p, q))
+        self.assertEqual(js("parse_shape", field)["loops"], [[list(p) for p in l] for l in loops])
+
+    @settings(max_examples=examples(150))
+    @given(SF.shapes(), st.floats(-2000, 2000), st.floats(-2000, 2000))
+    def test_a_shaped_box_the_editor_moves_reads_back_where_it_was_put(self, shape, dx, dy):
+        was = js("parse_box_line", "BX|solid|" + shape)
+        moved = dict(was, **js("move_box", was, dx, dy))
+        line = js("box_line", moved)
+        note(line)
+        box = B.call("SeedfileGlue.Box", line)
+        mx, my = SF.page_number(dx), SF.page_number(dy)
+        for a, b, d in zip(box["corners"], was["box"], (mx, my, mx, my)):
+            self.assertTrue(near(a, b + d), (box["corners"], was["box"], dx, dy))
+        loops = shape_model(shape)[1]
+        self.assertEqual([len(l) for l in box["points"]], [len(l) for l in loops])
+        for mine, theirs in zip(loops, box["points"]):
+            for p, q in zip(mine, theirs):
+                self.assertTrue(near(q[0], p[0] + mx) and near(q[1], p[1] + my), (p, q, dx, dy))
+
+    @settings(max_examples=examples(150))
+    @given(SF.shapes(), st.lists(st.tuples(st.sampled_from(["set", "insert", "remove", "tidy", "add", "convex", "loop", ""]),
+                                           st.integers(0, 50), SF.hundredth, SF.hundredth), min_size=1, max_size=6))
+    def test_a_shape_the_editor_reshapes_reads_in_the_game_as_it_does_on_the_site(self, shape, edits):
+        box = js("parse_box_line", "BX|solid|" + shape)
+        for op, at, x, y in edits:
+            points = js("box_points", box)
+            p = points[at % len(points)] if points else None
+            if op in ("convex", "loop", ""):
+                patch = js("reshape_box", box, op)
+            elif not p:
+                continue
+            elif op == "set":
+                patch = js("set_point", box, p["loop"], p["k"], x, y)
+            elif op == "insert":
+                side = js("nearest_side", box, x, y)
+                patch = js("insert_point", box, side["loop"], side["k"], side["x"], side["y"])
+            elif op == "remove":
+                patch = js("remove_point", box, p["loop"], p["k"]) or {}
+            else:
+                patch = js("tidy_shape" if op == "tidy" else "add_loop", box)
+            box = dict(box, **patch)
+        line = js("box_line", box)
+        note(line)
+        game, read = B.call("SeedfileGlue.Box", line), js("parse_shape", box["shape"])
+        self.assertEqual(game["shape"], SHAPE_TYPES[read["kind"]] if read else "Rectangle")
+        for a, b in zip(game["corners"], box["box"]):
+            self.assertTrue(near(a, b), (game["corners"], box["box"]))
+        self.assertEqual([len(l) for l in game["points"] or []], [len(l) for l in read["loops"]] if read else [])
+        for mine, theirs in zip(read["loops"] if read else [], game["points"] or []):
+            for p, q in zip(mine, theirs):
+                self.assertTrue(near(q[0], p[0]) and near(q[1], p[1]), (p, q))
+
+    @settings(max_examples=examples(100))
+    @given(SF.box_models(hash_ok=False), SF.shapes())
+    def test_both_editors_write_a_shaped_page_box_the_same_line(self, model, shape):
+        model = dict(js("parse_box_line", "BX|solid|" + shape), flags=model["flags"], color=model["color"], give=model["give"])
+        line = js("box_line", model)
+        self.assertEqual(B.call("SeedfileGlue.ShapedBoxFromJson", model["flags"], model["box"], shape, model["color"],
+                                model["give"]), line)
+
+    @settings(max_examples=examples(200))
+    @given(st.lists(st.tuples(st.integers(-40, 40), st.integers(-40, 40)), min_size=3, max_size=12))
+    @example([(0, 0), (0, -4), (1, 0), (0, -3), (-1, -4), (-2, 1)])
+    def test_a_convex_box_covers_the_hull_of_its_points(self, points):
+        want = hull_model(points)
+        if len(want) < 3:
+            event("masked: points on one line")
+            return
+        got = [tuple(p) for p in B.call("SeedfileGlue.Hull", [float(x) for x, _ in points], [float(y) for _, y in points])]
+        note(got)
+        self.assertLessEqual(set(got), set(points))
+        self.assertLessEqual(set(want), set(got))
+        self.assertAlmostEqual(area(got), area(want), places=3)
+
     @settings(max_examples=examples(80))
     @given(st.data())
     def test_box_numbers_agree_across_readers(self, data):
         items = data.draw(st.lists(st.one_of(
             SF.box_models().map(lambda m: js("box_line", m)),
+            SF.shape_fields(corners=False).map(lambda f: "BX|kill|" + f + "|ff0000"),
             st.sampled_from(["-280256|EC|1|Glades", "2|MU|EC/1|Glades", "// PLAYERS: 2", "", "   ", "BX|kill|1,2,3",
                              "BX|kill|a,b,c,d", "BX", "bx|kill|0,0,1,1", "BXkill|0,0,1,1"])), max_size=10))
         endings = data.draw(st.lists(st.sampled_from(["\n", "\r\n", "\r"]), min_size=len(items) + 1,
@@ -706,6 +872,127 @@ class Boxes(unittest.TestCase):
     def test_the_box_editor_numbers_boxes_as_the_game_does(self):
         report, path = load("Standard|seed\nBX|kill|0,0,1,1\rBX|kill|2,2,3,3\n")
         self.assertEqual(B.call("SeedfileGlue.EditorBoxLines", path), B.call("SeedfileGlue.LoadedBoxLines"))
+
+
+def even_odd(ring, x, y):
+    """Whether the ring holds the point, by crossings; only sound off the ring itself."""
+    hit = False
+    for (x1, y1), (x2, y2) in zip(ring, ring[1:] + ring[:1]):
+        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+            hit = not hit
+    return hit
+
+
+def reach(p, a, b):
+    """The distance from p to the segment ab."""
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    t = max(0, min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy))) if dx or dy else 0
+    return math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy)
+
+
+def sides(rings):
+    return [(a, b) for r in rings for a, b in zip(r, r[1:] + r[:1])]
+
+
+def clear_of(rings, p):
+    return all(reach(p, a, b) > 0.05 for a, b in sides(rings))
+
+
+def in_triangles(triangles, p):
+    def holds(t):
+        turns = [turn(t[k], t[(k + 1) % 3], p) for k in range(3)]
+        return abs(area(t)) > 1e-9 and (min(turns) >= -1e-9 or max(turns) <= 1e-9)
+    return any(holds(t) for t in triangles)
+
+
+def geometry(field):
+    """SeedfileGlue.Geometry for a solid box of this shape, its paths as tuples and its triangles in one list."""
+    g = B.call("SeedfileGlue.Geometry", "BX|solid|" + field)
+    for key in ("outline", "edge", "fill"):
+        g[key] = [[tuple(p) for p in path] for path in g[key]]
+    g["mesh"] = g["edge"] + g["fill"]
+    return g
+
+
+def covered(g):
+    return sum(area(path) for path in g["outline"])
+
+
+def rim(g):
+    return sum(math.dist(a, b) for a, b in sides(g["outline"]))
+
+
+class BoxGeometry(unittest.TestCase):
+    @settings(max_examples=examples(150))
+    @given(SF.drawn_shapes(), SF.spots)
+    def test_a_shaped_box_fills_what_the_plando_builder_says_it_holds(self, shape, spots):
+        field, kind, loops = shape
+        rings = [hull_model(loops[0])] if kind == "convex" else loops
+        g, site = geometry(field), js("parse_box_line", "BX|solid|" + field)
+        for p in spots:
+            if not clear_of(rings, p):
+                continue
+            want = any(even_odd(r, *p) for r in rings)
+            event("a spot %s the box" % ("in" if want else "out of"))
+            self.assertEqual(in_triangles(g["mesh"], p), want, p)
+            self.assertEqual(js("box_holds", site, *p), want, p)
+
+    @settings(max_examples=examples(150))
+    @given(SF.drawn_shapes())
+    def test_a_shaped_box_s_triangles_tile_its_outline(self, shape):
+        g = geometry(shape[0])
+        self.assertAlmostEqual(sum(abs(area(t)) for t in g["mesh"]), covered(g), delta=1e-3 * (1 + rim(g)))
+        self.assertEqual([tuple(v) for v in g["vertices"]], [p + (0.0,) for t in g["mesh"] for p in t])
+        self.assertEqual(g["triangles"], list(range(len(g["vertices"]))))
+        self.assertEqual(g["edgeColored"], 3 * len(g["edge"]))
+
+    @settings(max_examples=examples(150))
+    @given(SF.drawn_shapes())
+    def test_the_fill_keeps_an_edge_s_width_off_the_outline(self, shape):
+        g = geometry(shape[0])
+        for p in {p for t in g["fill"] for p in t}:
+            self.assertGreater(min(reach(p, a, b) for a, b in sides(g["outline"])), 0.24, p)
+
+    # an outline runs counterclockwise around the box and clockwise around a hole, so a wall's front is on its right
+    @settings(max_examples=examples(150))
+    @given(SF.drawn_shapes())
+    def test_the_collider_s_walls_stand_on_the_outline_facing_out(self, shape):
+        g = geometry(shape[0])
+        corners = [p for path in g["outline"] for p in path]
+        self.assertEqual([tuple(w) for w in g["walls"]], [p + (z,) for p in corners for z in (50.0, -50.0)])
+        want, at = [], 0
+        for path in g["outline"]:
+            for k in range(len(path)):
+                a, b = at + 2 * k, at + 2 * ((k + 1) % len(path))
+                want += [a, a + 1, b, a + 1, b + 1, b]
+            at += 2 * len(path)
+        self.assertEqual(g["wallTriangles"], want)
+
+    @settings(max_examples=examples(150))
+    @given(SF.drawn_shapes(), SF.spots)
+    def test_a_shape_the_in_game_editor_rewrites_covers_what_it_did(self, shape, spots):
+        g = geometry(shape[0])
+        if not g["outline"]:
+            event("masked: a shape with no area")
+            return
+        if any(area(path) < 0 for path in g["outline"]):
+            event("masked: a hole")
+            return
+        again = geometry(g["rewrite"])
+        self.assertAlmostEqual(covered(again), covered(g), delta=0.01 * (1 + rim(g)))
+        for p in spots:
+            if clear_of(g["outline"], p):
+                self.assertEqual(in_triangles(again["mesh"], p), in_triangles(g["mesh"], p), p)
+
+    @unittest.expectedFailure
+    def test_a_hole_survives_the_in_game_editor_rewriting_the_shape(self):
+        g = geometry("loop,0,0,10,0,10,10,0,10,0,0,3,3,3,7,7,7,7,3,3,3")
+        self.assertEqual(covered(geometry(g["rewrite"])), covered(g))
+
+    @unittest.expectedFailure
+    def test_a_shape_with_no_area_survives_the_in_game_editor_rewriting_it(self):
+        g = geometry("convex,0,0,1,1,2,2")
+        self.assertEqual(outcome(B.call, "SeedfileGlue.Box", "BX|solid|" + g["rewrite"])[0], "ok")
 
 
 TABLE = []

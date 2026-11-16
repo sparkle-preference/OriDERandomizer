@@ -297,12 +297,14 @@ public static class SeedfileGlue {
         return SeedBoxes.Load(path).Boxes.Select(b => b.Line).ToList();
     }
 
-    // a box as plain values: corners, RGBA (null when invisible), flags, payload
+    // a box as plain values: corners, shape and its loops of [x, y] (null for a rectangle), RGBA (null when invisible), flags, payload
     public static Dictionary<string, object> Box(string line) {
         var box = RandomizerBox.Parse(line);
         var c = box.Color;
         return new Dictionary<string, object> {
             { "corners", new List<double> { box.Rect.xMin, box.Rect.yMin, box.Rect.xMax, box.Rect.yMax } },
+            { "shape", box.ShapeType.ToString() },
+            { "points", box.Points == null ? null : box.Points.Select(l => l.Select(p => new List<double> { p.x, p.y }).ToList()).ToList() },
             { "color", box.Invisible ? null : new List<int> { c.r, c.g, c.b, c.a } },
             { "once", box.Once }, { "solid", box.Solid }, { "goal", box.Goal }, { "deleted", box.Deleted },
             { "unsafe", box.Unsafe }, { "trigger", box.Trigger.ToString() },
@@ -312,6 +314,11 @@ public static class SeedfileGlue {
 
     // RandomizerBox.FromJson for the editors' {flags, box, color, give}: the line it keeps
     public static string BoxFromJson(string flags, double[] corners, string color, string give) {
+        return ShapedBoxFromJson(flags, corners, null, color, give);
+    }
+
+    // the same for a box with a shape, which the page sends beside its corners
+    public static string ShapedBoxFromJson(string flags, double[] corners, string shape, string color, string give) {
         var json = JsonValue.NewObject();
         json.Set("flags", JsonValue.Of(flags));
         var arr = JsonValue.NewArray();
@@ -320,8 +327,50 @@ public static class SeedfileGlue {
         }
 
         json.Set("box", arr);
+        if (shape != null) {
+            json.Set("shape", JsonValue.Of(shape));
+        }
+
         json.Set("color", JsonValue.Of(color));
         json.Set("give", JsonValue.Of(give));
         return RandomizerBox.FromJson(json).Line;
+    }
+
+    // QuickHull.Compute over the points (xs[i], ys[i]), as [x, y] in its order
+    public static List<List<double>> Hull(double[] xs, double[] ys) {
+        var points = xs.Select((x, i) => new UnityEngine.Vector2((float)x, (float)ys[i])).ToList();
+        return QuickHull.Compute(points).Select(p => new List<double> { p.x, p.y }).ToList();
+    }
+
+    static readonly MethodInfo MapShape = typeof(PracticeEditor).GetMethod("MapShape", BindingFlags.NonPublic | BindingFlags.Static);
+
+    // a shaped box as RandomizerBoxGeometry builds it, in world units, and the shape the in-game editor rewrites it as; null where the game draws the rectangle
+    public static Dictionary<string, object> Geometry(string line) {
+        var box = RandomizerBox.Parse(line);
+        var offset = box.Rect.center;
+        var shape = RandomizerBoxGeometry.Compute(box.ShapeType, RandomizerBoxGeometry.Loops(box), offset);
+        if (shape == null) {
+            return null;
+        }
+
+        Func<Clipper2Lib.Paths64, List<List<List<double>>>> world = paths => paths.Select(path => path.Select(p => new List<double> {
+            p.X * (double)RandomizerBoxGeometry.ScaleDown + offset.x, p.Y * (double)RandomizerBoxGeometry.ScaleDown + offset.y,
+        }).ToList()).ToList();
+        Func<UnityEngine.Vector3, List<double>> placed = v => new List<double> { v.x + (double)offset.x, v.y + (double)offset.y, v.z };
+        RandomizerBoxGeometry.VisualVertices(shape, 0f, UnityEngine.Color.white, UnityEngine.Color.black, out var vertices, out var triangles, out var colors);
+        RandomizerBoxGeometry.ColliderVertices(shape.Outline, out var walls, out var wallTriangles);
+        Func<UnityEngine.Vector2, UnityEngine.Vector2> same = p => p;
+        var raw = RandomizerBoxGeometry.ToRawShape(box.ShapeType, shape.Outline, offset);
+        return new Dictionary<string, object> {
+            { "outline", world(shape.Outline) },
+            { "edge", world(shape.EdgeTriangles) },
+            { "fill", world(shape.FillTriangles) },
+            { "vertices", vertices.Select(placed).ToList() },
+            { "triangles", triangles.ToList() },
+            { "edgeColored", colors.Count(c => c == UnityEngine.Color.black) },
+            { "walls", walls.Select(placed).ToList() },
+            { "wallTriangles", wallTriangles },
+            { "rewrite", (string)MapShape.Invoke(null, new object[] { raw, same }) },
+        };
     }
 }
