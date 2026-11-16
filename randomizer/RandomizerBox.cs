@@ -103,7 +103,7 @@ public class RandomizerBox {
             Randomizer.log($"Unsafe boxes must be rectangular; error is in line {line}");
         }
 
-        if (box.ShapeType == BoxShapeType.Polygon && !box.Solid && (box.DamageAmount > 0f || box.Item != null)) {
+        if (box.ShapeType == BoxShapeType.Polygon && !box.Solid && (box.DamageAmount > 0f || box.Item != null || box.Once)) {
             Randomizer.log($"Boxes with \"loop\" shape must be solid or decorative; error is in line {line}");
         }
 
