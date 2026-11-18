@@ -71,14 +71,6 @@ public static class RandomizerGhostSignal {
         if (!want) {
             DropAll();
         }
-
-        // logged on a change of mind (the setting, or a sidecar without rtc), not per reconnect
-        var mind = NativeWebSocket.RtcAvailable &&
-            RandomizerSettings.Customization.ShowOtherPlayers.Value;
-        if (mind != Minded) {
-            Minded = mind;
-            Randomizer.log("ghost signal: " + (mind ? "joined" : "left"));
-        }
     }
 
     // "ghosts:<host>:<pids>" -- on every change and in reply to each announce.
@@ -101,13 +93,14 @@ public static class RandomizerGhostSignal {
             }
         }
 
-        // every re-announce gets a roster back, so only a changed one is news
-        if (host != Host || present.Count != Roster.Count || !present.TrueForAll(Roster.Contains)) {
-            Randomizer.log("ghost signal: roster host=" + host + " players=" + present.Count);
-        }
-
+        var changed = host != Host || present.Count != Roster.Count || !present.TrueForAll(Roster.Contains);
+        var wasShared = Roster.Count > 1;
         Host = host;
         Roster = present;
+        // every re-announce gets a roster back, so only a changed one is news; the drop to just us is too
+        if (changed && (wasShared || present.Count > 1)) {
+            Randomizer.log("ghost signal: roster host=" + host + " players=" + present.Count);
+        }
 
         // anyone who left takes their peer and their ghost with them
         for (var i = Links.Count - 1; i >= 0; i--) {
@@ -131,7 +124,7 @@ public static class RandomizerGhostSignal {
         if (host != Me) {
             for (var i = Links.Count - 1; i >= 0; i--) {
                 if (Links[i].PlayerId != host) {
-                    Randomizer.log("ghost signal: dropping the link to " + Links[i].PlayerId +
+                    Log("dropping the link to " + Links[i].PlayerId +
                         ", host is " + host);
                     Drop(Links[i]);
                     Links.RemoveAt(i);
@@ -154,24 +147,24 @@ public static class RandomizerGhostSignal {
         // every rejection below is logged: a silent drop leaves the far side waiting forever
         var sep = body.IndexOf(':');
         if (sep < 0) {
-            Randomizer.log("ghost signal: description with no sender, dropped");
+            Log("description with no sender, dropped");
             return;
         }
 
         int from;
         if (!int.TryParse(body.Substring(0, sep), out from)) {
-            Randomizer.log("ghost signal: description from an unreadable player id, dropped");
+            Log("description from an unreadable player id, dropped");
             return;
         }
 
         var payload = body.Substring(sep + 1);
         var bar = payload.IndexOf('|');
         if (bar < 0) {
-            Randomizer.log("ghost signal: description from " + from + " has no type, dropped");
+            Log("description from " + from + " has no type, dropped");
             return;
         }
 
-        Randomizer.log("ghost signal: got " + payload.Substring(0, bar) + " from " + from +
+        Log("got " + payload.Substring(0, bar) + " from " + from +
             ", " + payload.Length + " chars, joined " + Joined);
         // in flight when we left: answering it would open a link nobody wants
         if (!Joined) {
@@ -188,7 +181,7 @@ public static class RandomizerGhostSignal {
         try {
             sdp = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(b64));
         } catch (Exception) {
-            Randomizer.log("ghost signal: undecodable description from " + from);
+            Log("undecodable description from " + from);
             return;
         }
 
@@ -207,16 +200,16 @@ public static class RandomizerGhostSignal {
         }
 
         if (link == null) {
-            Randomizer.log("ghost signal: " + type + " from " + from + " with no peer waiting");
+            Log(type + " from " + from + " with no peer waiting");
             return;
         }
 
         link.OtherClips = clips != Clips;
         if (NativeWebSocket.RtcSetRemote(link.Handle, type, sdp) < 0) {
-            Randomizer.log("ghost signal: " + type + " from " + from + " rejected, " +
+            Log(type + " from " + from + " rejected, " +
                 NativeWebSocket.RtcLastError());
         } else {
-            Randomizer.log("ghost signal: accepted " + type + " from " + from + " on handle " +
+            Log("accepted " + type + " from " + from + " on handle " +
                 link.Handle + (link.OtherClips ? ", clip table " + clips + " is not ours, not animating" : ""));
         }
     }
@@ -243,7 +236,7 @@ public static class RandomizerGhostSignal {
             if (link.Announced && !NativeWebSocket.RtcIsOpen(link.Handle)) {
                 var was = link.PlayerId;
                 var host = link.Offering;
-                Randomizer.log("ghost signal: channel to " + was + " closed, " +
+                Log("channel to " + was + " closed, " +
                     (host ? "re-offering" : "waiting for a fresh offer"));
                 Drop(link);
                 Links.RemoveAt(i);
@@ -261,7 +254,7 @@ public static class RandomizerGhostSignal {
                 now - link.Since > patience) {
                 var pid = link.PlayerId;
                 var attempt = link.Attempt + 1;
-                Randomizer.log("ghost signal: peer " + pid + " never connected in " +
+                Log("peer " + pid + " never connected in " +
                     patience + "s, state " + NativeWebSocket.RtcGetState(link.Handle) +
                     "; " + (link.Offering ? "retrying" : "dropping and waiting for an offer"));
                 var offering = link.Offering;
@@ -287,14 +280,14 @@ public static class RandomizerGhostSignal {
                 NativeWebSocket.SendText("ghost:" + link.PlayerId + ":" +
                     (link.Offering ? "offer" : "answer") + "|" +
                     Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sdp)) + "|" + Clips);
-                Randomizer.log("ghost signal: sent " + (link.Offering ? "offer" : "answer") +
+                Log("sent " + (link.Offering ? "offer" : "answer") +
                     " to " + link.PlayerId + ", " + sdp.Length + " bytes");
             }
 
             if (!link.Announced && NativeWebSocket.RtcIsOpen(link.Handle)) {
                 link.Announced = true;
                 Misses.Remove(link.PlayerId);
-                Randomizer.log("ghost signal: channel open to " + link.PlayerId);
+                Log("channel open to " + link.PlayerId);
             }
 
             while (NativeWebSocket.RtcHasMessage(link.Handle)) {
@@ -346,14 +339,14 @@ public static class RandomizerGhostSignal {
 
         var handle = NativeWebSocket.RtcCreate(offering, relayed ? StunServers + "," + RelayUrl : StunServers);
         if (handle == 0) {
-            Randomizer.log("ghost signal: could not create a peer for " + pid + ", " +
+            Log("could not create a peer for " + pid + ", " +
                 NativeWebSocket.RtcLastError());
             return null;
         }
 
         var link = new Link { Handle = handle, PlayerId = pid, Offering = offering, Since = Time.time, ViaRelay = relayed };
         Links.Add(link);
-        Randomizer.log("ghost signal: " + (offering ? "offering to " : "answering ") + pid +
+        Log((offering ? "offering to " : "answering ") + pid +
             ", handle " + handle + ", " + Links.Count + " link(s)" + (relayed ? ", via the relay" : ""));
         return link;
     }
@@ -388,7 +381,7 @@ public static class RandomizerGhostSignal {
         try {
             parsed = JsonValue.Parse(body);
         } catch (Exception) {
-            Randomizer.log("ghost signal: unreadable relay config");
+            Log("unreadable relay config");
             return;
         }
 
@@ -397,14 +390,14 @@ public static class RandomizerGhostSignal {
         var secret = parsed["credential"];
         if (!urls.IsArray || urls.Count == 0 || !urls[0].IsString ||
             !user.IsString || !secret.IsString) {
-            Randomizer.log("ghost signal: relay config missing a field");
+            Log("relay config missing a field");
             return;
         }
 
         var url = urls[0].Str;
         var scheme = url.IndexOf(':');
         if (scheme < 0) {
-            Randomizer.log("ghost signal: relay url has no scheme");
+            Log("relay url has no scheme");
             return;
         }
 
@@ -416,7 +409,7 @@ public static class RandomizerGhostSignal {
         var ttl = parsed["ttl"];
         RelayExpires = ttl.IsNumber && ttl.Num > 0
             ? Time.realtimeSinceStartup + (float)(ttl.Num / 2) : float.MaxValue;
-        Randomizer.log("ghost signal: relay configured" + (ttl.IsNumber ? ", ttl " + ttl.Num + "s" : ""));
+        Log("relay configured" + (ttl.IsNumber ? ", ttl " + ttl.Num + "s" : ""));
 
         // whoever we are already failing against should not wait out another retry
         for (var i = Links.Count - 1; i >= 0; i--) {
@@ -500,7 +493,7 @@ public static class RandomizerGhostSignal {
             ghost = new LiveGhostSource("p" + who, who, RandomizerGhost.InterpolationDelay);
             Ghosts[who] = ghost;
             RandomizerGhost.AddLive(ghost);
-            Randomizer.log("ghost signal: ghost for " + who + (known ? " restored" : " up"));
+            Log("ghost for " + who + (known ? " restored" : " up"));
         }
 
         ghost.Accept(got);
@@ -546,6 +539,13 @@ public static class RandomizerGhostSignal {
         Randomizer.showHint(RandomizerUI.Message.InfoMessage(message, 3));
     }
 
+    // alone there is no one to signal, so nothing here is worth a line
+    private static void Log(string message) {
+        if (Roster.Count > 1) {
+            Randomizer.log("ghost signal: " + message);
+        }
+    }
+
     private static readonly List<Link> Links = new List<Link>();
 
     // the players in the last roster; a packet naming anyone else is dropped
@@ -570,8 +570,6 @@ public static class RandomizerGhostSignal {
     private static readonly Dictionary<int, LiveGhostSource> Ghosts = new Dictionary<int, LiveGhostSource>();
 
     private static readonly byte[] Buffer = new byte[RandomizerGhostPacket.MaxSize];
-
-    private static bool Minded;
 
     // which socket the last ghosts: frame went out on, and when
     private static int announcedOn = -1;
