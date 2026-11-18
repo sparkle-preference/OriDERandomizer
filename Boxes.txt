@@ -36,6 +36,7 @@ The shape of the box. The possible shapes are (described in more detail below):
 - Rectangle
 - Convex
 - Polygon
+- Oriented Polygon
 
 BR|n moves box n during the game, keeping its size; {Bn.x} and {Bn.y} read where its top-left corner is,
 and {Bn} whether it is on. See RI Format.txt.
@@ -73,7 +74,7 @@ If the polygon self-intersects, it is filled according to the even-odd rule.
 It is possible to specify multiple loops: "loop,x1,y1,x2,y2,...,xN,yN,loop,x1,y1,x2,y2,...,xM,yM,...,loop,x1,y1,x2,y2,...,xO,yO".
 In that case the shape of the box will be the union of all loops:
 - Each loop is still individually filled according to the even-odd rule.
-- Afterwards, the union of all loops is calculated using the positive rule.
+- Afterwards, the union of all loops is calculated using the non-zero rule.
 The loops may overlap, but can also be entirely separate.
 
 Special notes:
@@ -81,6 +82,13 @@ Special notes:
 - Polygon boxes must be either solid or decorative (i.e. no damage, no item, not "once")
 - Solid polygon boxes are hollow, in contrast to rectangle and convex boxes.
   This means that only the edges have collisions, and only from the outside. The inside has no collision.
+
+
+
+Oriented Polygon
+=====
+Identical to Polygon, except that the individual even-odd fills are not performed.
+Only the final non-zero union over all loops is performed.
 
 
 

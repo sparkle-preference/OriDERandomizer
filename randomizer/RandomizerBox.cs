@@ -294,6 +294,12 @@ public class RandomizerBox {
             return;
         }
 
+        if (parts[0].Equals("orientedLoop", StringComparison.InvariantCultureIgnoreCase)) {
+            ShapeType = BoxShapeType.OrientedPolygon;
+            ParsePoints(parts, line, true, true);
+            return;
+        }
+
         if (parts[0].Equals("previewLoop", StringComparison.InvariantCultureIgnoreCase)) {
             // ONLY for use in the practice editor. Do not use in seed files.
             ShapeType = BoxShapeType.PreviewPolygon;
@@ -545,6 +551,7 @@ public class RandomizerBox {
         Rectangle,
         ConvexHull,
         Polygon,
+        OrientedPolygon,
         PreviewPolygon, // ONLY for use in the practice editor. Do not use in seed files.
     }
 }

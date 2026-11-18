@@ -146,6 +146,8 @@ public class RandomizerBoxPrefab : MonoBehaviour {
                 if (isPreview && loopPath.Count > 0) {
                     previewPaths.Add(loopPath);
                 }
+            } else if (shapeType == BoxShapeType.OrientedPolygon) {
+                outerPaths.Add(loopPath);
             } else {
                 outerPaths.AddRange(Clipper.Union([loopPath], FillRule.EvenOdd));
                 if (isPreview && i == points.Count - 1) {
@@ -270,11 +272,14 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         return mesh;
     }
 
-    private List<object> ToRawShape(BoxShapeType shapeType, Paths64 paths, float scaleDown, Vector2 offset) {
+    private List<object>? ToRawShape(BoxShapeType shapeType, Paths64 paths, float scaleDown, Vector2 offset) {
+        if (shapeType == BoxShapeType.PreviewPolygon) {
+            return null;
+        }
+
         List<object> rawShape = [shapeType switch {
             BoxShapeType.ConvexHull => "convex",
-            BoxShapeType.Polygon => "loop",
-            BoxShapeType.PreviewPolygon => "previewLoop",
+            BoxShapeType.Polygon or BoxShapeType.OrientedPolygon => "orientedLoop",
             _ => throw new ArgumentOutOfRangeException(nameof(shapeType), shapeType, null),
         }];
 
