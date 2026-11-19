@@ -36,13 +36,13 @@
   th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #2b333d; vertical-align: top; }
   th { color: #8b95a3; font-weight: normal; }
   td .pick { min-width: 190px; }
-  /* fixed columns line the tables up; no scrolling wrapper, which would clip a picker's menu */
+  /* fixed columns line the tables up, flags and gives split the rest; no scrolling wrapper, which would clip a picker's menu */
   table.boxes { table-layout: fixed; }
   table.boxes th:nth-child(1) { width: 34px; }
-  table.boxes th:nth-child(2) { width: 36%; }
   table.boxes th:nth-child(n+3):nth-child(-n+6) { width: 70px; }
-  table.boxes th:nth-child(8) { width: 52px; }
-  table.boxes th:nth-child(n+9) { width: 36px; }
+  table.boxes th:nth-child(7) { width: 80px; }
+  table.boxes th:nth-child(9) { width: 52px; }
+  table.boxes th:nth-child(n+10) { width: 36px; }
   table.boxes th:first-child, table.boxes td:first-child { text-align: right; padding-right: 2px; }
   table.boxes .num { display: inline-block; padding-top: 5px; color: #888; font-size: 12px; font-variant-numeric: tabular-nums; }
   table.boxes .pick { min-width: 0; }
@@ -67,7 +67,7 @@
   /* the pickup picker: chips and a typed search over the site's item groups */
   .pick { position: relative; display: flex; flex-wrap: wrap; align-items: center; vertical-align: middle; min-width: 340px; max-width: 100%; background: #0f1317; border: 1px solid #3a4553; border-radius: 4px; padding: 2px 4px; }
   .pick > span { min-width: 0; }
-  .pick .chip { display: inline-block; background: #2b333d; border-radius: 12px; padding: 1px 8px; margin: 2px 4px 2px 0; cursor: pointer; }
+  .pick .chip { display: inline-block; background: #2b333d; border-radius: 12px; padding: 1px 8px; margin: 2px 4px 2px 0; cursor: pointer; overflow-wrap: anywhere; }
   .pick .chip b { margin-left: 6px; color: #ff9a9a; }
   .pick input { border: 0; background: transparent; color: inherit; flex: 1 1 60px; min-width: 60px; padding: 3px 4px; outline: none; }
   .pick .menu { display: none; position: absolute; z-index: 1000; left: 0; right: 0; top: 100%; max-height: 280px; overflow: auto; background: #1c2229; border: 1px solid #3a4553; border-radius: 4px; }
@@ -164,7 +164,7 @@
     <select id="showGhost"><option value="">pinned, else fastest</option><option value="fastest">fastest</option><option value="pinned">pinned</option><option value="recent">most recent</option><option value="none">none</option></select>
   </label></div>
   <div class="row"><label><input type="checkbox" id="qtm"> QTM enabled.</label></div>
-  <div class="row"><label style="display:block">Briefing <span class="muted">shown once a session before the first run; the player presses retry to start</span><br>
+  <div class="row"><label style="display:block">Briefing <span class="muted">shown once a session before the first run; the player presses retry to start. A variant's own replaces it</span><br>
     <textarea id="about" rows="3" cols="60" placeholder="what this segment is for"></textarea></label></div>
   <div class="row">Starts from <span id="baseInfo" class="muted">the segment's save</span> <button class="quiet" id="changeSave">change</button></div>
   <div id="changeSaves" class="saves" hidden></div>
@@ -228,7 +228,7 @@
   <h2>Variants</h2>
   <div id="variants"></div>
   <button class="quiet" id="addVariant">add variant</button>
-  <div class="muted">A segment with variants always runs one of them: they share the start and the end condition, and each keeps its own loadout, boxes, history and ghosts. Its boxes are under Boxes.</div>
+  <div class="muted">A segment with variants always runs one of them: they share the start and the end condition, and each keeps its own loadout, boxes, history and ghosts. Its boxes are under Boxes. The arrows set the order the game lists them in.</div>
 </section>
 
 <div class="stack">
@@ -559,7 +559,7 @@
     var input = document.createElement('input'); input.type = 'text'; input.placeholder = placeholder();
     var menu = document.createElement('div'); menu.className = 'menu';
     root.appendChild(chips); root.appendChild(input); root.appendChild(menu);
-    var hi = -1, shown = [];
+    var hi = -1, shown = [], dragFrom = null;
 
     function placeholder() { return (typeof cfg.placeholder === 'function' ? cfg.placeholder() : cfg.placeholder) || 'type to search items'; }
     function list() { return cfg.get() || []; }
@@ -571,6 +571,17 @@
         var b = document.createElement('b'); b.textContent = '×';
         b.onclick = function (ev) { ev.stopPropagation(); var l = list().slice(); l.splice(i, 1); commit(l); };
         s.onclick = function () { var l = list().slice(); l.splice(i, 1); commit(l); input.value = v; input.focus(); open(); };
+        // dropping a chip on another puts it at that chip's place, as the plando editor does
+        s.draggable = true;
+        s.ondragstart = function (ev) { dragFrom = i; ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', v); };
+        s.ondragover = function (ev) { if (dragFrom !== null) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; } };
+        s.ondrop = function (ev) {
+          ev.preventDefault(); ev.stopPropagation();
+          var from = dragFrom; dragFrom = null;
+          if (from === null || from === i) return;
+          var l = list().slice(); l.splice(i, 0, l.splice(from, 1)[0]); commit(l);
+        };
+        s.ondragend = function () { dragFrom = null; };
         s.appendChild(b); chips.appendChild(s);
       });
       input.placeholder = list().length ? '' : placeholder();
@@ -1465,7 +1476,7 @@
 
   // the shared list and each variant's, every one bounded once there are variants
   function renderBoxLists() {
-    var ids = Object.keys(state.variants);
+    var ids = variantIds();
     $('sharedBoxes').classList.toggle('boxlist', ids.length > 0);
     $('sharedHead').hidden = ids.length === 0;
     renderBoxes($('boxes').querySelector('tbody'), state.segment.boxes || (state.segment.boxes = []), 'shared', true);
@@ -1534,12 +1545,37 @@
   }
   $('pinGhost').onclick = function () { api('/api/ghost/pin', { method: 'POST' }).then(loadGhosts).then(function () { say('Pinned the most recent run.', 'ok'); }).catch(function (e) { say(e.message, 'bad'); }); };
 
+  // the game's order: variantOrder's ids as listed, then the rest alphabetically (BfrpFile.Variants)
+  function variantIds() {
+    var seen = {}, low = function (s) { return s.toLowerCase(); };
+    var listed = (state.segment.variantOrder || []).filter(function (id) {
+      var keep = typeof id === 'string' && state.variants.hasOwnProperty(id) && !seen[id];
+      if (keep) seen[id] = true;
+      return keep;
+    });
+    return listed.concat(Object.keys(state.variants).filter(function (id) { return !seen[id]; })
+      .sort(function (a, b) { return low(a) < low(b) ? -1 : low(a) > low(b) ? 1 : 0; }));
+  }
+  function moveVariant(id, by) {
+    var ids = variantIds(), to = ids.indexOf(id) + by;
+    if (to < 0 || to >= ids.length) return;
+    ids.splice(ids.indexOf(id), 1); ids.splice(to, 0, id);
+    state.segment.variantOrder = ids; render();
+  }
+
   function renderVariants() {
     var root = $('variants'); root.innerHTML = '';
-    Object.keys(state.variants).forEach(function (id) {
+    var ids = variantIds();
+    ids.forEach(function (id, at) {
       var v = state.variants[id];
       var box = document.createElement('div'); box.className = 'variant';
       var head = document.createElement('div');
+      [['↑', 'move up', -1], ['↓', 'move down', 1]].forEach(function (m) {
+        var b = document.createElement('button'); b.className = 'quiet'; b.textContent = m[0]; b.title = m[1]; b.style.marginRight = '4px';
+        b.disabled = at + m[2] < 0 || at + m[2] >= ids.length;
+        b.onclick = function () { moveVariant(id, m[2]); };
+        head.appendChild(b);
+      });
       head.appendChild(document.createTextNode('Variant ' + id + (id === state.playing ? ' (running) ' : '  ') + ' name '));
       var name = document.createElement('input'); name.type = 'text'; name.size = 30; name.value = v.name || ''; name.onchange = function () { v.name = name.value; renderBoxLists(); };
       head.appendChild(name);
@@ -1552,6 +1588,11 @@
       var inv = document.createElement('div'); inv.className = 'row'; inv.appendChild(document.createTextNode('Starting items '));
       inv.appendChild(pickSelect({ get: function () { return v.inventory || []; }, set: function (l) { v.inventory = l; }, placeholder: 'given at the start' }));
       box.appendChild(inv);
+      var brief = document.createElement('label'); brief.className = 'row'; brief.style.display = 'block'; brief.appendChild(document.createTextNode('Briefing'));
+      var about = document.createElement('textarea'); about.rows = 2; about.cols = 60; about.value = v.about || ''; about.placeholder = "blank shows the segment's briefing";
+      about.onchange = function () { var t = about.value.trim(); if (t) v.about = t; else delete v.about; };
+      brief.appendChild(document.createElement('br')); brief.appendChild(about);
+      box.appendChild(brief);
       root.appendChild(box);
     });
   }
@@ -1567,6 +1608,8 @@
     state.lastBox = b;
     return b;
   }
+  // render() redraws these from state, so an edit has to reach state before the next redraw
+  ['about', 'mode', 'showGhost', 'qtm', 'count'].forEach(function (id) { $(id).addEventListener('change', collect); });
   $('addBox').onclick = function () { (state.segment.boxes = state.segment.boxes || []).push(freshBox()); render(); };
   $('addGoal').onclick = function () { var end = state.segment.end = state.segment.end || {}; end.box = lookingAt(); render(); };
   $('addGroup').onclick = function () { (state.segment.shuffle = state.segment.shuffle || []).push({ give: [], among: [] }); state.target = String(state.segment.shuffle.length - 1); render(); };
@@ -1585,6 +1628,8 @@
     seg.version = seg.version || 1;
     var about = $('about').value.trim();
     if (about) { seg.about = about; } else { delete seg.about; }
+    if (seg.variantOrder) seg.variantOrder = variantIds();
+    if (seg.variantOrder && !seg.variantOrder.length) delete seg.variantOrder;
     seg.timing = seg.timing || {};
     seg.timing.mode = $('mode').value;
     if ($('showGhost').value) seg.timing.showGhost = $('showGhost').value; else delete seg.timing.showGhost;
@@ -1705,7 +1750,7 @@
     sel.innerHTML = '';
     var add = function (v, t) { var o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
     add('', 'the segment');
-    Object.keys(state.variants).forEach(function (id) { add(id, 'variant ' + (state.variants[id].name || id)); });
+    variantIds().forEach(function (id) { add(id, 'variant ' + (state.variants[id].name || id)); });
     sel.value = keep; if (sel.value !== keep) sel.value = '';
     $('placeText').value = state.placements[sel.value] || '';
   }

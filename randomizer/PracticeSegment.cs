@@ -29,7 +29,8 @@ public class PracticeSegment {
     // the pause menu stays the game's own, and Exit keeps the session, when this is set
     public bool QuitToMenu;
 
-    // what the segment is for, in the maker's words; shown once a session before the first run
+    // what the segment is for, in the maker's words; shown once a session before the first run.
+    // A variant's own replaces the segment's.
     public string About = "";
 
     // set while the chooser lists segments: parse problems go to the log under the file's name
@@ -74,6 +75,10 @@ public class PracticeSegment {
             }
 
             seg.Boxes.AddRange(own);
+            if (json["about"].IsString && json["about"].Str.Trim().Length > 0) {
+                seg.About = json["about"].Str;
+            }
+
             var items = json["inventory"];
             for (var i = 0; i < items.Count; i++) {
                 var action = Action(items[i]);

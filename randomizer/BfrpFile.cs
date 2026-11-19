@@ -275,6 +275,17 @@ public class BfrpFile {
             }
 
             found.Sort(StringComparer.OrdinalIgnoreCase);
+            // the segment's variantOrder first, as listed; ids it doesn't name follow alphabetically
+            var order = Segment["variantOrder"];
+            var at = 0;
+            for (var i = 0; i < order.Count; i++) {
+                var where = order[i].IsString ? found.IndexOf(order[i].Str, at) : -1;
+                if (where >= 0) {
+                    found.RemoveAt(where);
+                    found.Insert(at++, order[i].Str);
+                }
+            }
+
             return found;
         }
     }

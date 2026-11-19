@@ -68,6 +68,7 @@ Shuffle groups scatter a set of pickups over a set of locations, chosen fresh ea
 Example: 3 keystones over 5 spots puts them in a different 3 of the 5 every attempt.
 
 Variants share the start and the end condition and bring their own loadout, boxes, history and ghosts. A segment with variants always runs one of them.
+The editor page sets the order they're listed in.
 Example: one variant starts with Charge Jump and another with Double Jump, and each keeps its own best time.
 
 
@@ -77,6 +78,7 @@ Running a segment
 PRACTICE MODE on the title menu lists your segments. Up and Down pick a variant, Space starts.
 After a three second countdown the clock runs in real time through everything: pauses, deaths, quitting to the menu.
 A segment can open with a briefing (its "about" text on the page); the countdown waits until you press Retry Practice Segment.
+A variant can have its own briefing, shown instead of the segment's.
 Every run is kept in the segment's history.
 
 The pause menu during an attempt:
