@@ -315,6 +315,9 @@ public class TeleporterController : SaveSerialize, ISuspendable {
             Randomizer.DisableMistyVfxTriggers();
         }
 
+        // only a cutscene in the scene being left sets these mid-teleport, and its unlock unloads with it
+        GameController.Instance.LockInputByAction = false;
+        Letterbox.ShowLetterboxes = false;
         Characters.Sein.Position = m_teleporterTargetPosition + Vector3.up * 1.6f;
         CameraPivotZone.InstantUpdate();
         Scenes.Manager.UpdatePosition();
