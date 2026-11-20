@@ -35,6 +35,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
             // Remove excess teleporters.
             while (Teleporters.Count > 12 + requiredCustomTeleporterCount) {
+                Teleporters[Teleporters.Count - 1].Hide();
                 Teleporters.RemoveAt(Teleporters.Count - 1);
             }
 
@@ -203,6 +204,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         if (!Instance.DontTeleportForAnimationTesting) {
             Scenes.Manager.AdditivelyLoadScenesAtPosition(selectedTeleporter.WorldPosition, true, false, true);
             Instance.m_teleporterTargetPosition = selectedTeleporter.WorldPosition;
+            Instance.m_teleporterTargetName = selectedTeleporter.Identifier;
         }
 
         Instance.m_isTeleporting = true;
@@ -329,6 +331,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
             Characters.Ori.BackToPlayerController();
         }
 
+        Landed(m_teleporterTargetName);
         GameController.Instance.CreateCheckpoint();
         GameController.Instance.PerformSaveGameSequence();
         RandomizerStatsManager.UsedTeleporter();
@@ -395,6 +398,53 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         Instance.Teleporters.Add(teleporter);
     }
 
+    // custom warps sit after the twelve wells, as Serialize lays them out
+    public static void RemoveCustomTeleporter(string name) {
+        if (Instance == null || !Instance.customWarps.Remove(name)) {
+            return;
+        }
+
+        for (var i = Instance.Teleporters.Count - 1; i >= 12; i--) {
+            if (Instance.Teleporters[i].Identifier == name) {
+                Instance.Teleporters[i].Hide();
+                Instance.Teleporters.RemoveAt(i);
+            }
+        }
+    }
+
+    // a Glades spawn that warps out before Spirit Flame has no lit well to warp back to
+    private const string GladesRescue = "Glades";
+
+    private static readonly Vector3 GladesRescueSpot = new Vector3(87.78f, -258.22f, 0f);
+
+    private static bool GladesLit() {
+        return Characters.Sein.PlayerAbilities.SpiritFlame.HasAbility ||
+            RandomizerSyncManager.isTeleporterActivated("sunkenGlades", false);
+    }
+
+    // Every warp landing comes through here before its save; target is the well's id, or null.
+    public static void Landed(string target) {
+        if (Instance == null || Characters.Sein == null || PracticeController.Active) {
+            return;
+        }
+
+        if (target == GladesRescue) {
+            RemoveCustomTeleporter(GladesRescue);
+        } else if (!(Randomizer.SpawnWith ?? "").Contains("WS") && !GladesLit() &&
+                RandomizerStatsManager.CurrentZone() != "sunkenGlades" && Instance.customWarps.Add(GladesRescue)) {
+            // lit directly: Activate would report it to sync, stats and bingo as a found well
+            Instance.Teleporters.Add(new GameMapTeleporter(GladesRescue, GladesRescueSpot, true));
+        }
+    }
+
+    // The teleport menu indexes this list, so removal waits for the menus to close.
+    public static void RetireGladesRescue() {
+        if (Instance != null && Characters.Sein != null && !UI.MainMenuVisible &&
+                Instance.customWarps.Contains(GladesRescue) && GladesLit()) {
+            RemoveCustomTeleporter(GladesRescue);
+        }
+    }
+
     public static bool IsTeleporting => Instance && (Instance.m_isTeleporting || Instance.m_isBlooming);
 
     public static bool IsBlooming => Instance && Instance.m_isBlooming;
@@ -442,6 +492,8 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     private float m_bloomCurrentTime;
 
     private Vector3 m_teleporterTargetPosition;
+
+    private string m_teleporterTargetName;
 
     public static TimelineSequence TeleportAnywhereEffect;
 }

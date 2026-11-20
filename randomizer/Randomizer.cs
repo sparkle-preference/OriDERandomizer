@@ -883,6 +883,10 @@ public static class Randomizer {
                         Warping--;
                     }
 
+                    if (Warping == 0) {
+                        TeleporterController.Landed(null);
+                    }
+
                     if (Warping == 0 && SaveAfterWarp) {
                         GameController.Instance.CreateCheckpoint();
                         RandomizerStatsManager.OnSave(false);
@@ -1683,6 +1687,8 @@ public static class Randomizer {
                             }
                         }
                     }
+
+                    TeleporterController.RetireGladesRescue();
                 }
             }
         } catch (Exception e2) {
