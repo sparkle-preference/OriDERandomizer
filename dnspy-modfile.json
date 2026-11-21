@@ -385,6 +385,7 @@
         "randomizer/RandomizerBonusSkill.cs",
         "randomizer/RandomizerBootstrap.cs",
         "randomizer/RandomizerBootstrapEscapes.cs",
+        "randomizer/RandomizerBoulderRespawn.cs",
         "randomizer/RandomizerBox.cs",
         "randomizer/RandomizerBoxGeometry.cs",
         "randomizer/RandomizerBoxPrefab.cs",

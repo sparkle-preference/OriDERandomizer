@@ -1073,6 +1073,22 @@ public class RandomizerBootstrap {
         // the gate leaves him out of Relaxed, and logic that counts on him has to hold there too
         enemies.GetComponent<DifficultyCondition>().Easy = true;
         enemies.FindChild("target/jumperEnemyPlaceholder").GetComponent<JumperEnemyPlaceholder>().RespawnOnTimeout = true;
+
+        // his paths break the rolled boulder, so it has to come back for them
+        var timeline = sceneRoot.transform.FindChild("*boulderSetup/boulderTimeline");
+        var respawn = new GameObject("boulderRespawn");
+        respawn.transform.SetParent(sceneRoot.transform, false);
+        var boulder = respawn.AddComponent<RandomizerBoulderRespawn>();
+        boulder.Boulder = timeline.FindChild("boulder/boulderRotation/boulderStompableAfterChase").GetComponent<EntityDamageReciever>();
+        boulder.WallCollider = timeline.FindChild("wallCollider").gameObject;
+        boulder.Chaser = timeline.FindChild("boulder/boulderRotation/boulderDuringChase").gameObject;
+    }
+
+    private static void BootstrapBlackrootBoulderAfterSerialize(SceneRoot sceneRoot) {
+        var respawn = sceneRoot.GetComponentInChildren<RandomizerBoulderRespawn>();
+        if (respawn != null) {
+            respawn.CheckNow = true;
+        }
     }
 
     // Vanilla switches this fronkey off for good once the floor breaks; now he only slows down.
@@ -1277,6 +1293,7 @@ public class RandomizerBootstrap {
         { "sunkenGladesOriRoom", BootstrapSeinRoomWall },
         { "ginsoTreePuzzles", BootstrapGinsoLowerMiniboss },
         { "upperGladesSwarmIntroduction", UnlessVanillaRespawns(BootstrapSpiritTreeFronkeyAfterSerialize) },
+        { "mangroveFallsDashEscalation", BootstrapBlackrootBoulderAfterSerialize },
         { "forlornRuinsWindShaftMockupB", RandomizerBootstrapEscapes.GenericResetScene },
         { "forlornRuinsWindShaftMockupC", RandomizerBootstrapEscapes.GenericResetScene },
         { "forlornRuinsNestC", RandomizerBootstrapEscapes.GenericResetScene },
