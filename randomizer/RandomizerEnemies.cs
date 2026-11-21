@@ -136,6 +136,9 @@ public static class RandomizerEnemies {
     // how far a clinger looks for the surface its spot faces
     public static float SettleReach = 20f;
 
+    // a worm rests this far off its surface, as vanilla's do; lower, its aim test starts underground and it never emerges
+    public static float WormLift = 1.9f;
+
     // a slime admitted to a water spot faces the surface within this reach that admitted it
     public static float WaterReach = 8f;
 
@@ -984,7 +987,7 @@ public static class RandomizerEnemies {
             return;
         }
 
-        entity.transform.position += down * hit.distance;
+        entity.transform.position += down * (hit.distance - (entity is MortarWormEnemy ? WormLift : 0f));
         if (slug != null) {
             typeof(TraceGroundMovement).GetField("m_floorNormal", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(slug.Movement, hit.normal);
             entity.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(Vector3.Cross(Vector3.back, hit.normal)));
