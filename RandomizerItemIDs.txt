@@ -280,6 +280,10 @@ Enhanced mode -- April Fools :)
 
 1650 - LevelUpKills
 1651 - Practice pickups collected this attempt
+1655-1662 - Map layers: Misty reveal cells visited (bit n is cell n + 1 of map_layers/misty_NN_cells.png)
+1663-1670 - Map layers: Forlorn escape reveal cells visited
+1671-1678 - Map layers: Horu escape reveal cells visited
+1679 - Map layers: Misty states the save has been in (bit n is state n)
 
 
 1700-1999 - Box bitfields: which boxes (BX lines) are turned off (e.g., one-shot item boxes taken)

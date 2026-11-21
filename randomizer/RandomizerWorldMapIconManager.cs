@@ -47,7 +47,7 @@ public class RandomizerWorldMapIconManager {
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-1083f, 8.3f), "MistyMortarCorridorUpperExp"),
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-1009f, -35f), "MistyMortarCorridorHiddenExp"),
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Plant, new Vector3(-1102f, -67f), "MistyPlant"),
-        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.SkillTree, new Vector3(-1188f, -100f), "ClimbSkillTree"),
+        new RandomizerWorldMapIcon(RandomizerWorldMapIconType.SkillTree, new Vector3(-1188f, -96f), "ClimbSkillTree"),
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Keystone, new Vector3(-912f, -36f), "MistyKeystone3"),
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-837.7f, -123.5f), "MistyPostClimbSpikeCave"),
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-796f, -144f), "MistyPostClimbAboveSpikePit"),

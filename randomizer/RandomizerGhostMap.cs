@@ -33,8 +33,7 @@ public static class RandomizerGhostMap {
             }
 
             // the same transform the player's own marker goes through, so the two agree
-            icon.transform.localPosition = map.Navigation.WorldToMapPosition(
-                marker.Position + map.PlayerPositionOffset + Vector3.up);
+            icon.transform.localPosition = map.MarkerMapPosition(marker.Position, icon.transform);
         }
 
         Retire(Icons, Wanted.Count);

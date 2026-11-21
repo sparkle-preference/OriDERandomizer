@@ -327,7 +327,8 @@ public class AreaMapNavigation : MonoBehaviour {
             AreaMapUI.Instance.RandomizerTooltip.transform.localScale = textScale;
 
             if (RandomizerLocationManager.LocationsByWorldMapGuid.TryGetValue(candidate.Guid, out var pickupLocation)) {
-                AreaMapUI.Instance.RandomizerTooltip.OverrideText = pickupLocation.FriendlyName;
+                var layerNote = RandomizerMapLayers.LayerNote(candidate.Guid, candidate.Position);
+                AreaMapUI.Instance.RandomizerTooltip.OverrideText = pickupLocation.FriendlyName + (layerNote == null ? "" : $" ({layerNote})");
                 if (DebugMenuB.DebugControlsEnabled && (MoonInput.GetKey(KeyCode.LeftShift) || MoonInput.GetKey(KeyCode.RightShift)) && Input.RightClick.OnPressed) {
                     candidate.Hide();
                     RandomizerLocationManager.GivePickupByWorldMapGuid(candidate.Guid);

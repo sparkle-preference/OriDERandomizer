@@ -21,6 +21,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
     public Transform FadeOutGroup => FadeOutAnimator.transform;
 
     public void Hide() {
+        RandomizerMapLayers.Closed();
         gameObject.SetActive(false);
     }
 
@@ -122,6 +123,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
         if (!GameMapUI.Instance.IsVisible) {
             RandomizerMapWarp.Closed();
+            RandomizerMapLayers.Closed();
             return;
         }
 
@@ -130,6 +132,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
         UpdatePlayerPositionMarker();
         UpdateSoulFlamePositionMarker();
         RandomizerGhostMap.Update(this);
+        RandomizerMapLayers.Update(this);
         RandomizerMapWarp.Icons(this);
         UpdateCurrentArea();
 
@@ -163,6 +166,10 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
                 }
                 IconManager.ShowAreaIcons();
             }
+
+            if (RandomizerRebinding.CycleMapLayer.OnPressed && RandomizerMapLayers.Cycle()) {
+                IconManager.ShowAreaIcons();
+            }
         }
     }
 
@@ -191,9 +198,26 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
     private void UpdatePlayerPositionMarker() {
         if (PlayerPositionMarker) {
-            PlayerPositionMarker.transform.localPosition = Navigation.WorldToMapPosition(PlayerMarkerWorldPosition);
+            PlayerPositionMarker.transform.localPosition = MarkerMapPosition(UI.Cameras.Current.Target.position, PlayerPositionMarker.transform);
         }
     }
+
+    // a face marker's place for a character at a world position: its chin on the ground under them, at every zoom and pulse
+    public Vector3 MarkerMapPosition(Vector3 character, Transform marker) {
+        if (marker.childCount == 0 || marker.GetChild(0).childCount == 0) {
+            return Navigation.WorldToMapPosition(character + PlayerPositionOffset + Vector3.up);
+        }
+
+        var scale = marker.GetChild(0);
+        var face = scale.GetChild(0);
+        var chin = (scale.localPosition.y + (face.localPosition.y - FaceChin * face.localScale.y) * scale.localScale.y) * marker.localScale.y;
+        return Navigation.WorldToMapPosition(character + PlayerPositionOffset + Vector3.down * FeetBelow) - Vector3.up * chin;
+    }
+
+    // a standing character's position above the ground; the face's lower end under the sprite's middle, in sprite heights
+    private const float FeetBelow = 0.513f;
+
+    private const float FaceChin = 0.215f;
 
     private void UpdateSoulFlamePositionMarker() {
         if (SoulFlamePositionMarker == null) {

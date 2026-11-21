@@ -294,6 +294,7 @@ public static class RandomizerRebinding {
         { "Color Shift", "Alt+C" },
         { "Double Bash", "Grenade" },
         { "Toggle Map Mode", "Grenade" },
+        { "Swap Misty Layouts", "M, _RB" },
         { "Map Warp", "Bash" },
         { "Grenade Jump", "Grenade+Jump" },
         { "Show Bonuses", "Alt+B" },
@@ -342,6 +343,7 @@ public static class RandomizerRebinding {
     public static BindSet DoubleBash = new BindSet(new List<SingleBind>());
     public static BindSet FreeGrenadeJump = new BindSet(new List<SingleBind>());
     public static BindSet ToggleMapMode = new BindSet(new List<SingleBind>());
+    public static BindSet CycleMapLayer = new BindSet(new List<SingleBind>());
     public static BindSet MapWarp = new BindSet(new List<SingleBind>());
     public static BindSet ShowBonuses = new BindSet(new List<SingleBind>());
     public static BindSet BonusSwitch = new BindSet(new List<SingleBind>());
@@ -401,6 +403,7 @@ public static class RandomizerRebinding {
         { "Double Bash", DoubleBash },
         { "Grenade Jump", FreeGrenadeJump },
         { "Toggle Map Mode", ToggleMapMode },
+        { "Swap Misty Layouts", CycleMapLayer },
         { "Map Warp", MapWarp },
         { "Show Bonuses", ShowBonuses },
         { "Bonus Switch", BonusSwitch },
@@ -524,7 +527,7 @@ public static class RandomizerRebinding {
                 case ActionType.CoreInput:
                     return $"[{(coreInputNameRepl.ContainsKey(raw) ? coreInputNameRepl[raw] : raw)}]";
                 case ActionType.ControllerButton:
-                    return "_" + Button;
+                    return PadIcon() ?? "_" + Button;
                 case ActionType.KeyCode:
                     return RandomizerKeyIcons.Caption(Key);
                 case ActionType.EitherKey:
@@ -533,6 +536,16 @@ public static class RandomizerRebinding {
                 default:
                     return "";
             }
+        }
+
+        // the game's own icon for the pad button, null where it drew none
+        private string PadIcon() {
+            if (pad == null && PlayerInput.Instance != null) {
+                pad = PlayerInput.Instance.ControllerButtonToButtonInput(Button);
+            }
+
+            var plain = pad as SmartInput.ControllerButtonInput;
+            return plain == null ? null : ButtonIconUtility.IconFor(plain.Button);
         }
 
         public string RawStr() {
@@ -611,6 +624,17 @@ public static class RandomizerRebinding {
 
         public string FirstBindName() {
             return HasBind() ? Binds[0].ToString() : "<NO BIND>";
+        }
+
+        // the first bind a player on a pad, or off one, can press; the first of all when none fits
+        public string BindNameFor(bool onPad) {
+            foreach (var bind in Binds) {
+                if (bind.Inputs.All(input => input.Type == SingleInput.ActionType.CoreInput || (input.Type == SingleInput.ActionType.ControllerButton) == onPad)) {
+                    return bind.ToString();
+                }
+            }
+
+            return FirstBindName();
         }
 
         // Binds differing only in one modifier's side merge into the unsided form; a lone sided

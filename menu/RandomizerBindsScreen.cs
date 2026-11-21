@@ -8,6 +8,7 @@ public class RandomizerBindsScreen : CustomSettingsScreen {
         AddHeader("BASIC");
         AddRandomizerBind("Warp", "Open the teleportation map to start a warp");
         AddRandomizerBind("Map Warp", "Hold to warp to a highlighted target from the area map");
+        AddRandomizerBind("Swap Misty Layouts", "Step through Misty Woods' layouts on the map");
         AddRandomizerBind("Reload Seed", "Load the seed file from disk (and re-initialize the randomizer)");
         AddRandomizerBind("Replay Message", "Show the last displayed message again; hold to see the last five");
         AddRandomizerBind("Show Progress", "Display total pickup count, dungeon keys, and goal progress");

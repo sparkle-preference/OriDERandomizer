@@ -13,6 +13,10 @@ public class RuntimeWorldMapIcon {
     }
 
     public bool IsVisible(AreaMapUI areaMap) {
+        if (RandomizerMapLayers.Hides(Icon, Position, Guid)) {
+            return false;
+        }
+
         // Sein.
         if (Guid == SeinIcon) {
             RandomizerLocationManager.Location loc;
@@ -52,14 +56,13 @@ public class RuntimeWorldMapIcon {
 
         if (m_iconGameObject) {
             m_iconGameObject.SetActive(true);
-            return;
-        }
-
-        if (RandomizerIconType != RandomizerWorldMapIconType.None) {
+        } else if (RandomizerIconType != RandomizerWorldMapIconType.None) {
             InitRandomizerIcon();
         } else {
             InitStandardIcon(Icon);
         }
+
+        RandomizerMapLayers.StyleIcon(m_iconGameObject, Position, Icon, RandomizerIconType, Guid);
     }
 
     private void InitStandardIcon(WorldMapIconType iconType) {

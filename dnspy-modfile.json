@@ -442,6 +442,8 @@
         "randomizer/RandomizerLoadSceneAtPositionAction.cs",
         "randomizer/RandomizerLocationData.cs",
         "randomizer/RandomizerLocationManager.cs",
+        "randomizer/RandomizerMapAssets.cs",
+        "randomizer/RandomizerMapLayers.cs",
         "randomizer/RandomizerMapWarp.cs",
         "randomizer/RandomizerMessageProvider.cs",
         "randomizer/RandomizerMistyAnimationFixAction.cs",

@@ -163,6 +163,12 @@ public static class ButtonIconUtility {
         return KeyCodeToString(keyCode);
     }
 
+    // the game's own icon for a pad button, null where it drew none
+    public static string IconFor(XboxControllerInput.Button button) {
+        string icon;
+        return m_controllerButtonToIconString.TryGetValue(button, out icon) && icon.StartsWith("<icon>") ? icon : null;
+    }
+
     private static string KeyCodeToString(KeyCode keyCode) {
         if (keyCode == KeyCode.Alpha7 && GameSettings.Instance.KeyboardScheme == ControlScheme.Keyboard) {
             return "<icon>K</>";

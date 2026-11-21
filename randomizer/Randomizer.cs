@@ -53,6 +53,8 @@ public static class Randomizer {
             PlayerCount = 0;
             MistySim = new WorldEvents();
             MistySim.MoonGuid = new MoonGuid(1061758509, 1206015992, 824243626, -2026069462);
+            // the game's own asset starts at 1, and whoever reads the event first creates it
+            MistySim.DefaultValue = 1;
             TeleportTable = new Hashtable();
             TeleportTable["Forlorn"] = "forlorn";
             TeleportTable["Grotto"] = "moonGrotto";
@@ -803,6 +805,7 @@ public static class Randomizer {
         RandomizerPreloader.Tick();
         RandomizerDirtyWater.Tick();
         RandomizerEnemies.Tick();
+        RandomizerMapLayers.Tick();
         RandomizerGhost.Update();
         UpdateMessages();
         UpdatePendingWin();

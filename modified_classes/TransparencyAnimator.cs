@@ -163,6 +163,32 @@ public class TransparencyAnimator : BaseAnimator {
 
     public float FinalOpacity => m_opacity * m_parentOpacity;
 
+    // Holds a renderer at a share of the opacity its animator gives it.
+    public static void SetShare(Renderer renderer, float share) {
+        float was;
+        if (!s_share.TryGetValue(renderer, out was)) {
+            was = 1f;
+        }
+
+        if (Mathf.Approximately(was, share)) {
+            return;
+        }
+
+        if (Mathf.Approximately(share, 1f)) {
+            s_share.Remove(renderer);
+        } else {
+            s_share[renderer] = share;
+        }
+
+        // an animator writes only when its opacity moves, so the share goes in now too
+        var material = renderer.material;
+        var color = material.color;
+        color.a *= share / was;
+        material.color = color;
+    }
+
+    private static readonly Dictionary<Renderer, float> s_share = new Dictionary<Renderer, float>();
+
     public override float Duration => AnimationCurveTimeToTime(AnimationCurve.CurveDuration());
 
     public override void RestoreToOriginalState() {
@@ -250,7 +276,8 @@ public class TransparencyAnimator : BaseAnimator {
                 Renderer.enabled = value > 0.01f;
             }
 
-            var a = value * OriginalAlpha;
+            float share;
+            var a = value * OriginalAlpha * (s_share.Count > 0 && s_share.TryGetValue(Renderer, out share) ? share : 1f);
             var material = !useSharedMaterial ? Renderer.material : Renderer.sharedMaterial;
             var color = material.GetColor(propertyID);
             color.a = a;
