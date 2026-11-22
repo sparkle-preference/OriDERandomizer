@@ -103,7 +103,14 @@ public static class PracticeController {
         ResetGhosts();
         PracticeEditor.Stop();
         // Active before any slot work: the save code only admits slots 50-52 during a session
+        var starting = !Active;
         Current = Phase.Countdown;
+        // the loaded seed sits out the whole session
+        if (starting) {
+            Randomizer.initialize();
+        }
+
+        PracticeSegment.UseEnemyLines(File, variant);
         PracticeHud.HideTally();
         PracticeHud.Refresh();
         // a warp still in flight from the last attempt would drag Ori off the start
@@ -240,6 +247,7 @@ public static class PracticeController {
         Resume();
         pendingSetup = false;
         Current = Phase.None;
+        Randomizer.initialize();
         if (File != null) {
             PracticeSelect.Remember(File.Path);
         }
@@ -492,6 +500,10 @@ public static class PracticeController {
                 }
 
                 Uncharge();
+                if (Segment != null && Segment.FaceLeft) {
+                    Characters.Sein.FaceLeft = true;
+                }
+
                 // the base save may carry a seed's taken boxes or a held count; this attempt starts clear
                 var changed = RandomizerBoxes.ClearState();
                 if (Get(Held) != 0) {
@@ -710,6 +722,10 @@ public static class PracticeController {
 
     private static IGhostSource racing;
 
+    private static IGhostSource racingDemo;
+
+    private const string DemoSlot = BfrpFile.DemoGhost;
+
     private static bool recording;
 
     private static double lastSampleMs;
@@ -737,19 +753,33 @@ public static class PracticeController {
             slot = File.GetGhost(File.Variant, "pinned") != null ? "pinned" : "fastest";
         }
 
-        if (slot == "none") {
-            return;
+        // the demo stands in for an empty slot, and races beside any other with Practice Demo Ghost
+        if (slot != "none" && Stored(slot).Count < 2) {
+            slot = DemoSlot;
         }
 
-        var samples = RandomizerGhostPacket.Unpack(File.GetGhost(File.Variant, slot));
+        if (slot != "none") {
+            racing = Race(slot);
+        }
+
+        if (slot != DemoSlot && RandomizerSettings.Practice.DemoGhost != null && RandomizerSettings.Practice.DemoGhost.Value) {
+            racingDemo = Race(DemoSlot);
+        }
+    }
+
+    private static List<RandomizerGhost.Sample> Stored(string slot) {
+        return RandomizerGhostPacket.Unpack(File.GetGhost(File.Variant, slot));
+    }
+
+    // null when the slot holds no run or the ghost can't be drawn
+    private static IGhostSource Race(string slot) {
+        var samples = Stored(slot);
         if (samples.Count < 2) {
-            return;
+            return null;
         }
 
-        racing = new RecordedGhostSource(samples, slot, 0f);
-        if (!RandomizerGhost.AddLive(racing)) {
-            racing = null;
-        }
+        var source = new RecordedGhostSource(samples, slot, 0f, slot == DemoSlot ? RandomizerGhost.DemoTint : (Color?)null);
+        return RandomizerGhost.AddLive(source) ? source : null;
     }
 
     private static void ResetGhosts() {
@@ -759,6 +789,11 @@ public static class PracticeController {
         if (racing != null) {
             RandomizerGhost.Remove(racing);
             racing = null;
+        }
+
+        if (racingDemo != null) {
+            RandomizerGhost.Remove(racingDemo);
+            racingDemo = null;
         }
     }
 

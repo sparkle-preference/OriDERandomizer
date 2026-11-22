@@ -29,6 +29,9 @@ public class PracticeSegment {
     // the pause menu stays the game's own, and Exit keeps the session, when this is set
     public bool QuitToMenu;
 
+    // a save can't hold facing (the load drops it), so the segment says it
+    public bool FaceLeft;
+
     // what the segment is for, in the maker's words; shown once a session before the first run.
     // A variant's own replaces the segment's.
     public string About = "";
@@ -134,6 +137,7 @@ public class PracticeSegment {
     public static PracticeSegment Parse(JsonValue json) {
         var seg = new PracticeSegment();
         seg.QuitToMenu = json["qtm_enabled"].IsBool && json["qtm_enabled"].Flag;
+        seg.FaceLeft = json["faceLeft"].IsBool && json["faceLeft"].Flag;
         var end = json["end"];
         if (end.IsObject) {
             // validated here, never per frame: Met must neither throw nor make HaveCoord print
@@ -245,6 +249,28 @@ public class PracticeSegment {
         }
 
         return table;
+    }
+
+    // the segment's own //Enemies= and //EnemyRolls= lines, shared then the variant's; without rolls, vanilla enemies
+    public static void UseEnemyLines(BfrpFile file, string variant) {
+        RandomizerEnemies.ResetOptions();
+        RandomizerEnemies.Reset();
+        var lines = file.PlacementLines("");
+        lines.AddRange(file.PlacementLines(variant));
+        foreach (var line in lines) {
+            var meta = line.StartsWith("//") ? line.Substring(2).Trim() : "";
+            var key = meta.ToLower();
+            if (!key.StartsWith("enemies=") && !key.StartsWith("enemyrolls=")) {
+                continue;
+            }
+
+            try {
+                Randomizer.ParseMetaLine(meta);
+                RandomizerEnemies.Active |= key.StartsWith("enemyrolls=");
+            } catch (Exception e) {
+                Report("'" + line + "' did not parse: " + e.Message);
+            }
+        }
     }
 
     // pasted text as the lines an attempt can use; the rest go to skipped, except a seed file's flag line

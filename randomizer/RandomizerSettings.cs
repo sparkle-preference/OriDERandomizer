@@ -13,7 +13,7 @@ public static class RandomizerSettings {
     }
 
     // move this with every new setting, or existing installs take the nag path on update
-    public static string LastAddedSetting = "Debug Controls";
+    public static string LastAddedSetting = "Practice Demo Ghost";
 
     private static string StripComment(string line) {
         var at = line.IndexOf("//");
@@ -345,7 +345,8 @@ public static class RandomizerSettings {
         QOL.DebugControls = new EnumSetting<DebugControls>("Debug Controls", DebugControls.Default, "Default (default): Default/Vanilla debug controls.\nFast: Debug controls are twice as fast and stay on screen.", false);
 
         Practice.Folder = new StringSetting("Practice Folder", "practice", "Where practice segments are kept: a folder name inside the game folder, or a full path.", false);
-        Practice.Ghost = new EnumSetting<PracticeGhost>("Practice Ghost", PracticeGhost.Segment, "Which ghost to race in practice mode.\nSegment (default): Pinned run if there is one; fastest otherwise.\nFastest, Pinned, Recent: always that one. None: no ghosts in practice mode.", false);
+        Practice.Ghost = new EnumSetting<PracticeGhost>("Practice Ghost", PracticeGhost.Segment, "Which ghost to race in practice mode.\nSegment (default): Pinned run if there is one; fastest otherwise.\nFastest, Pinned, Recent: always that one. None: no ghosts in practice mode.\nUntil you have that ghost, the segment's demo run races instead.", false);
+        Practice.DemoGhost = new BoolSetting("Practice Demo Ghost", false, "True: race the segment's demo run alongside your own ghost.\nFalse (default): the demo only races until you have a ghost of your own.", false);
         Practice.Timer = new BoolSetting("Practice Timer", true, "Show time elapsed and the time to beat in the top right during a practice run.", false);
 
         Game.DefaultDifficulty = new EnumSetting<Difficulty>("Default Difficulty", Difficulty.Relaxing, "(Relaxing (default), Challenging, Punishing, OneLife): The default difficulty on new file selection.", false);
@@ -519,6 +520,7 @@ public static class RandomizerSettings {
         public static StringSetting Folder;
 
         public static EnumSetting<PracticeGhost> Ghost;
+        public static BoolSetting DemoGhost;
         public static BoolSetting Timer;
     }
 

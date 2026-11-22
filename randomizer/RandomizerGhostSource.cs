@@ -25,11 +25,15 @@ public interface IGhostSource {
 
 // A finished recording played from the moment it started.
 public class RecordedGhostSource : IGhostSource {
-    public RecordedGhostSource(List<Sample> samples, string label, float offset) {
+    public RecordedGhostSource(List<Sample> samples, string label, float offset, Color? shade = null) {
         Recorded = samples;
         Name = label;
         Started = Time.time - offset;
+        Shade = shade ?? RandomizerGhost.Tint;
     }
+
+    // drawn in this instead of a player's color
+    public readonly Color Shade;
 
     public List<Sample> Samples { get { return Recorded; } }
 

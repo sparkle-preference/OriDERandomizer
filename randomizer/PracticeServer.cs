@@ -316,6 +316,9 @@ public static class PracticeServer {
             content = Reply(OnMain(Ghosts, out error), error, out status);
         } else if (method == "POST" && path == "/api/ghost/pin") {
             content = Reply(OnMain(Pin, out error), error, out status);
+        } else if (method == "POST" && path == "/api/ghost/demo") {
+            var from = Arg(args, "from");
+            content = Reply(OnMain(delegate { return MakeDemo(from); }, out error), error, out status);
         } else if (method == "DELETE" && path.StartsWith("/api/ghost/")) {
             var slot = Uri.UnescapeDataString(path.Substring("/api/ghost/".Length));
             content = Reply(OnMain(delegate { return DeleteGhost(slot); }, out error), error, out status);
@@ -1134,6 +1137,22 @@ public static class PracticeServer {
             throw new Exception("there is no recent run to pin");
         }
 
+        return "{\"ok\":true}";
+    }
+
+    private static string MakeDemo(string from) {
+        var file = PracticeController.File;
+        if (file == null) {
+            throw new Exception("no practice session is running");
+        }
+
+        if (from == BfrpFile.DemoGhost || !file.GhostSlots(file.Variant).Contains(from)) {
+            throw new Exception("there is no ghost " + from + " to copy");
+        }
+
+        file.SetGhost(file.Variant, BfrpFile.DemoGhost, file.GetGhost(file.Variant, from));
+        file.Save();
+        Randomizer.log("practice: the " + from + " ghost made the demo from the editor page");
         return "{\"ok\":true}";
     }
 

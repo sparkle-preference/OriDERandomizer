@@ -127,6 +127,15 @@ public static class Randomizer {
             ShouldHideGladesStart = false;
             RandomizerLocationManager.KeyTiers = null;
 
+            // a practice session never reads the seed; its segment brings its own enemy lines
+            if (PracticeController.Active) {
+                RandomizerLocationManager.ClearPickups();
+                BingoController.Active = false;
+                RandomizerBoxes.Seed.Clear();
+                RandomizerBonusSkill.Reset();
+                return;
+            }
+
             if (SeedFilePath == null || IsDefaultSeedFilePath(SeedFilePath)) {
                 SeedFilePath = DefaultSeedFilePath();
             }

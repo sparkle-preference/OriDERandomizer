@@ -98,7 +98,8 @@ public static class RandomizerGhost {
     }
 
     private static Color Shade(IGhostSource source) {
-        return ShadeOf(source.PlayerId);
+        var recorded = source as RecordedGhostSource;
+        return recorded != null ? recorded.Shade : ShadeOf(source.PlayerId);
     }
 
     // Keyed on the player. Player zero is your own replay.
@@ -1191,6 +1192,9 @@ public static class RandomizerGhost {
     internal static readonly Vector3 FeetOffset = new Vector3(0f, -0.5f, 0f);
 
     internal static readonly Color Tint = new Color(0.55f, 0.8f, 1f, 0.35f);
+
+    // a practice segment's demo run
+    internal static readonly Color DemoTint = new Color(0f, 0.6f, 1f, 0.35f);
 
     // Hues follow the website's player_icons() (map/src/common.js) so ghost and map icon agree.
     private static readonly Color[] Palette = {

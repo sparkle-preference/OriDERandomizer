@@ -14,6 +14,9 @@ public class BfrpFile {
 
     public const string PlacementsEntry = "placements.bfr";
 
+    // the ghost slot of a run shipped with the segment: no attempt writes it, the page copies one in
+    public const string DemoGhost = "demo";
+
     public string Path;
 
     public JsonValue Segment;
@@ -336,7 +339,7 @@ public class BfrpFile {
         return slots;
     }
 
-    // An export shares the segment, not its history: no runs.csv, and of the ghosts only the pinned ones.
+    // An export shares the segment, not its history: no runs.csv, and of the ghosts only pinned and demo.
     public static bool Exported(string entry) {
         var own = entry;
         if (own.StartsWith(VariantRoot)) {
@@ -349,7 +352,7 @@ public class BfrpFile {
         }
 
         var ghost = own.StartsWith("ghosts/") && own.EndsWith(".ghost") && own.IndexOf('/', "ghosts/".Length) < 0;
-        return !ghost || own == "ghosts/pinned.ghost";
+        return !ghost || own == "ghosts/pinned.ghost" || own == "ghosts/" + DemoGhost + ".ghost";
     }
 
     // everything the variant owns: its json, history and ghosts

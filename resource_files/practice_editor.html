@@ -161,9 +161,9 @@
     <select id="mode"><option value="best">best time (ghosts on)</option><option value="average">average time (no ghosts)</option></select>
   </label>
   <label>Ghost shown
-    <select id="showGhost"><option value="">pinned, else fastest</option><option value="fastest">fastest</option><option value="pinned">pinned</option><option value="recent">most recent</option><option value="none">none</option></select>
+    <select id="showGhost"><option value="">pinned, else fastest, else demo</option><option value="fastest">fastest</option><option value="pinned">pinned</option><option value="recent">most recent</option><option value="none">none</option></select>
   </label></div>
-  <div class="row"><label><input type="checkbox" id="qtm"> QTM enabled.</label></div>
+  <div class="row"><label><input type="checkbox" id="qtm"> QTM enabled.</label> <label><input type="checkbox" id="faceLeft"> Ori starts facing left.</label></div>
   <div class="row"><label style="display:block">Briefing <span class="muted">shown once a session before the first run; the player presses retry to start. A variant's own replaces it</span><br>
     <textarea id="about" rows="3" cols="60" placeholder="what this segment is for"></textarea></label></div>
   <div class="row">Starts from <span id="baseInfo" class="muted">the segment's save</span> <button class="quiet" id="changeSave">change</button></div>
@@ -243,7 +243,7 @@
   <h2>Ghosts <span class="muted" id="ghostVariant"></span></h2>
   <div id="ghosts" class="muted">none</div>
   <div class="row"><button class="quiet" id="pinGhost">pin the most recent run</button></div>
-  <div class="muted">A pinned run is raced instead of the fastest until it is removed.</div>
+  <div class="muted">A pinned run is raced instead of the fastest until it is removed. The demo is a run you ship with the segment: exports keep it, and players race it until they have a ghost of their own.</div>
 </section>
 </div>
 </div>
@@ -1253,6 +1253,7 @@
     $('mode').value = timing.mode === 'average' ? 'average' : 'best';
     $('showGhost').value = timing.showGhost || '';
     $('qtm').checked = !!seg.qtm_enabled;
+    $('faceLeft').checked = !!seg.faceLeft;
     renderBase();
     var end = seg.end = seg.end || {};
     $('goalBox').textContent = end.box && end.box.length === 4 ? end.box.join(', ') : 'none';
@@ -1537,6 +1538,11 @@
       state.ghosts.forEach(function (gh) {
         var row = document.createElement('div');
         row.appendChild(document.createTextNode(gh.slot + ': ' + (gh.seconds != null ? gh.seconds.toFixed(2) + ' s, ' + gh.samples + ' samples' : gh.bytes + ' bytes') + ' '));
+        if (gh.slot !== 'demo') {
+          var demo = document.createElement('button'); demo.className = 'quiet'; demo.textContent = 'make demo';
+          demo.onclick = function () { api('/api/ghost/demo?from=' + encodeURIComponent(gh.slot), { method: 'POST' }).then(loadGhosts).then(function () { say('The ' + gh.slot + ' run is the demo now.', 'ok'); }).catch(function (e) { say(e.message, 'bad'); }); };
+          row.appendChild(demo);
+        }
         var del = document.createElement('button'); del.className = 'danger'; del.textContent = 'remove';
         del.onclick = function () { api('/api/ghost/' + encodeURIComponent(gh.slot), { method: 'DELETE' }).then(loadGhosts).then(function () { say('Ghost ' + gh.slot + ' removed.', 'ok'); }).catch(function (e) { say(e.message, 'bad'); }); };
         row.appendChild(del); root.appendChild(row);
@@ -1611,7 +1617,7 @@
     return b;
   }
   // render() redraws these from state, so an edit has to reach state before the next redraw
-  ['about', 'mode', 'showGhost', 'qtm', 'count'].forEach(function (id) { $(id).addEventListener('change', collect); });
+  ['about', 'mode', 'showGhost', 'qtm', 'faceLeft', 'count'].forEach(function (id) { $(id).addEventListener('change', collect); });
   $('addBox').onclick = function () { (state.segment.boxes = state.segment.boxes || []).push(freshBox()); render(); };
   $('addGoal').onclick = function () { var end = state.segment.end = state.segment.end || {}; end.box = lookingAt(); render(); };
   $('addGroup').onclick = function () { (state.segment.shuffle = state.segment.shuffle || []).push({ give: [], among: [] }); state.target = String(state.segment.shuffle.length - 1); render(); };
@@ -1636,6 +1642,7 @@
     seg.timing.mode = $('mode').value;
     if ($('showGhost').value) seg.timing.showGhost = $('showGhost').value; else delete seg.timing.showGhost;
     if ($('qtm').checked) seg.qtm_enabled = true; else delete seg.qtm_enabled;
+    if ($('faceLeft').checked) seg.faceLeft = true; else delete seg.faceLeft;
     seg.end = seg.end || {};
     var count = $('count').value.trim();
     if (count === '') delete seg.end.count; else seg.end.count = parseInt(count, 10);
