@@ -114,8 +114,11 @@ public class DebugWidget : MonoBehaviour {
                 break;
             case MeshFilter mf:
                 list.Add(new TextEntry("  - Mesh: " + mf.sharedMesh, 1));
-                list.Add(new TextEntry("    - Vertices: " + mf.sharedMesh.vertexCount, 2));
-                list.Add(new TextEntry("    - Bounds: " + mf.sharedMesh.bounds, 2));
+                if (mf.sharedMesh != null) {
+                    list.Add(new TextEntry("    - Vertices: " + mf.sharedMesh.vertexCount, 2));
+                    list.Add(new TextEntry("    - Bounds: " + mf.sharedMesh.bounds, 2));
+                }
+
                 break;
             case Renderer mr:
                 list.Add(new ListEntry("  - Materials: " + mr.sharedMaterials.Length + " items", 1, mr.sharedMaterials));

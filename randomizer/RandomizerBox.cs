@@ -359,7 +359,7 @@ public class RandomizerBox {
         }
 
         if (checkLength && Points.Any(l => l.Count < 3)) {
-            throw new ArgumentException($"A loop needs at least three points. This box has only {Points.Count} points.");
+            throw new ArgumentException($"A loop needs at least three points. This box has one with only {Points.First(l => l.Count < 3).Count} points.");
         }
 
         using var allPoints = Points.SelectMany(l => l).GetEnumerator();
