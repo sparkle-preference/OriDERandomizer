@@ -305,7 +305,7 @@ public static class PracticeEditor {
         }
 
         if (PracticeController.Segment != null && !PracticeController.Segment.HasEnd) {
-            Say("Saved. Nothing ends this segment yet: draw a goal box, or set the end condition on the page", 600);
+            Say("Saved. (Can't run the segment, as it has no defined end: draw a goal box, or set some other end condition in the web helper.)", 600);
             return;
         }
 

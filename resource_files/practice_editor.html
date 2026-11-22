@@ -192,7 +192,7 @@
       <div class="row muted">Or click a marker. Clicking a box jumps to its row.</div>
       <div id="targetChips" class="chips"></div>
       </div>
-      <div class="row" style="margin-top:14px"><button class="quiet" id="editBoxes">edit boxes on the map</button> <span class="muted">drag a box to move it, a corner to resize it; on a convex or loop box, right-click a side to add a point, a point to remove it</span></div>
+      <div class="row" style="margin-top:14px"><button class="quiet" id="editBoxes">edit boxes on the map</button> <span class="muted">drag a box to move it, a corner to resize it; on a convex or loop box, right-click a side to add a point or a point to remove it</span></div>
       <div id="tileStatus" class="muted"></div>
     </div>
   </div>
@@ -811,7 +811,7 @@
   // the flags menu, presets first; goal still loads and shows, but isn't offered
   var SUGGEST = [['kill', 'box kills Ori'], ['item', 'grants an item once'], ['solid', 'box with collision'],
     ['ritem', 'grants an item repeatedly'], ['once', 'box toggles off when collected'], ['unsafe', 'saves disabled inside box'],
-    ['unlit', 'box ignores lighting; stops ghosting when moved'],
+    ['unlit', 'box ignores lighting (prevents ghosting during movement)'],
     ['on=Tick','grant 60 times a second while inside box'], ['on=Tick/60/60', 'grant once a second while inside box'],
     ['on=Frame', 'grant every frame while inside box'],
     ['damage=1', 'box damages entities touching it'], ['renderDepth=-99', 'draw box over terrain'],
@@ -820,7 +820,7 @@
   var FLAGS = ['once', 'on', 'damage', 'solid', 'unsafe', 'unlit', 'renderdepth', 'parallaxdepth', 'goal', 'kill', 'item', 'ritem', 'tombstone'];
   var VALUED = ['on', 'damage', 'renderdepth', 'parallaxdepth'];
   var FLAG_TEXT = { kill: 'box kills Ori', item: 'grants an item once', solid: 'box with collision', ritem: 'grants an item repeatedly',
-    once: 'box toggles off when collected', unsafe: 'saves disabled inside box', unlit: 'box ignores lighting; stops ghosting when moved',
+    once: 'box toggles off when collected', unsafe: 'saves disabled inside box', unlit: 'box ignores lighting (prevents ghosting during movement)',
     goal: 'ends a practice segment' };
   var TRIGGER_TEXT = { Enter: 'grants when Ori enters the box', Tick: 'grants 60 times a second while Ori is inside',
     Frame: 'grants every frame while Ori is inside' };
@@ -1029,14 +1029,14 @@
     setShape(b, read);
   }
   // what only a rectangle does, and what a loop box does only when solid: it has no inside to touch
-  var RECT_ONLY = { unsafe: 'Only a rectangle can be unsafe', goal: 'Only a rectangle can be a goal' };
+  var RECT_ONLY = { unsafe: 'Unsafe boxes must be rectangular', goal: 'Goal boxes must be rectangular' };
   var NEEDS_INSIDE = ['kill', 'damage', 'once', 'item', 'ritem'];
   // a chip on this box: it warns where the box can't honor the flag
   function describeOn(b, f) {
     var key = f.split('=')[0].trim().toLowerCase(), kind = shapeKind(b);
     if (kind && RECT_ONLY[key]) return { text: RECT_ONLY[key], warn: true };
     if (kind === 'loop' && !hasFlag(b, 'solid') && NEEDS_INSIDE.indexOf(key) >= 0 && (b.give || !/item$/.test(key)))
-      return { text: 'A loop box only works solid or as decoration', warn: true };
+      return { text: 'Loop boxes must be solid', warn: true };
     return key === 'kill' && b.give ? { text: KILL_GIVES, warn: true } : describeFlag(f);
   }
   // colors travel as rrggbb; none is an invisible box
@@ -1426,7 +1426,7 @@
           else coords[k] = v;
           moveBox(coords);
         });
-        if (b.shape && k > 1) { input.readOnly = true; input.title = 'A shaped box keeps its size'; }
+        if (b.shape && k > 1) { input.readOnly = true; input.title = 'Non-rectangular boxes must be edited on the map'; }
         tr.appendChild(td(input));
       })(k);
       var pick = document.createElement('select');

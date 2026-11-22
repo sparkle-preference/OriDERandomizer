@@ -19,7 +19,7 @@ A segment with nothing to end it yet says "Unfinished" and "click to edit" in th
 To edit a segment, press Copy on its card (C, or X on a controller), or pause mid-run and choose EDIT PRACTICE SEGMENT. The world freezes and you draw boxes with the mouse.
 A .bfrp you were given only runs until you extract it: hold Copy on its card. It unpacks into a folder of the same name, which takes its place in the list, and the .bfrp moves inside that folder. Editing a .bfrp mid-run (pause menu or page) extracts it too.
 
-The editor is the Edit Boxes window. Drag it out of the way, or Minimize it to a Show Menu button.
+Box Edit Window Buttons:
 Save                Save and keep editing
 Save & Retry        Save and restart the attempt
 Reload              Reload from disk, dropping edits since the last save
@@ -30,7 +30,7 @@ Open in Browser     Open the segment editor page
 Create Box          Pick a type (item, solid, kill, unsafe or goal) and a shape, then draw
 Adjust Boxes        Drag a box to move it, an edge or corner to resize it
 Delete Boxes        Click a box to delete it
-Edit Variant?       With variants: whether new boxes are shared or belong to the variant you are running
+Edit Variant?       With variants: whether new boxes are shared or belong to the currently active variant
 WASD                Pan the camera
 Right click         Stand Ori at the cursor (loads the scenes there)
 
@@ -128,7 +128,7 @@ Alt+L               Retry Practice Segment: start the attempt over, or start aft
 Editing a seed's boxes
 ===
 Outside practice, the Edit Seed Boxes bind (unbound by default) or "Edit Seed Boxes" in the debug menu opens the same editor on the boxes of the seed you have loaded.
-There are no goal boxes here, and Open in Browser opens a page for giving boxes items and flags.
+Open in Browser opens a page for giving boxes items and flags.
 Saving writes the boxes into the seed file; the first save keeps a copy of the original next to it (.before-boxes). Save & Continue saves and plays on; Reload & Continue, Alt+L (Retry Practice Segment) or the bind again leaves without saving. Either way you play on from wherever right click left Ori.
 A seed with a Sync flag (an online game) can't be edited this way: remove the flag from the seed's first line if you want to.
 
