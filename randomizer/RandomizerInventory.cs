@@ -181,7 +181,7 @@ public class RandomizerInventory : SaveSerialize {
         return problem == null && parsed.Eval(out value, out problem);
     }
 
-    // a slot holds whole numbers, so a fraction rounds, halves away from zero; past 32 bits it wraps, as += always has
+    // a slot holds whole numbers, so a fraction rounds, halves away from zero; past 32 bits it wraps
     private static int ToSlot(decimal number, out bool rounded) {
         var whole = Math.Round(number, MidpointRounding.AwayFromZero);
         rounded = whole != number;

@@ -50,7 +50,7 @@ public static class PracticeEditor {
 
     private static BoxShape boxShape;
 
-    // the rectangle being dragged, in world units
+    // the shape being drawn or dragged, in world units
     public static RandomizerBox? DraftObject;
 
     private static Vector2 dragFrom;
@@ -61,7 +61,7 @@ public static class PracticeEditor {
 
     private static BoxType boxType;
 
-    // with a variant running its own list takes the boxes, unless V says the shared one
+    // with a variant running its own list takes the boxes, unless Edit Variant? picks the shared one
     private static bool toVariant = true;
 
     // an adjust drag's box: its list, index and rect when grabbed, and the edges that move
@@ -109,7 +109,7 @@ public static class PracticeEditor {
 
     private const int Left = 1, Right = 2, Bottom = 4, Top = 8;
 
-    // what Z takes back: a box's list and index, and the box it replaced (null: it was added)
+    // what Undo takes back: a box's list and index, and the box it replaced (null: it was added)
     private static string undoTarget;
 
     private static int undoIndex = -1;
@@ -129,7 +129,7 @@ public static class PracticeEditor {
     // the thinnest side a drawn box or a resize leaves
     private const float MinSide = 0.5f;
 
-    // the attempt freezes where it is and boxes are drawn over it; Enter saves and retries
+    // the attempt freezes where it is and boxes are drawn over it
     public static void Begin() {
         if (!PracticeController.Active || PracticeController.File == null) {
             return;
@@ -288,7 +288,7 @@ public static class PracticeEditor {
         PracticeController.Resume();
     }
 
-    // save what was drawn and run it; with nothing to end the run yet, stay
+    // back to the run on what is on disk, saving first when asked; with nothing to end the run yet, stay
     public static void LeaveEditor(bool save) {
         if (!Active) {
             return;
@@ -329,7 +329,7 @@ public static class PracticeEditor {
     private static bool Write() {
         try {
             if (Seed) {
-                // with nothing unsaved the file is left alone, so reload and Enter leave it as found
+                // with nothing unsaved the file is left alone
                 if (SeedBoxes.Current.Dirty) {
                     SeedBoxes.Current.Save();
                 }
@@ -716,13 +716,12 @@ public static class PracticeEditor {
         }
     }
 
-    // goes up ahead of the legend, which then waits its turn
     private static void Say(string text, int frames) {
         Randomizer.clearMessage();
         Randomizer.printInfo(text, frames);
     }
 
-    // the running variant's name, or its id, cut to fit the legend
+    // the running variant's name, or its id, cut to fit its button
     private static string VariantLabel() {
         var id = PracticeController.File.Variant;
         var name = PracticeController.File.VariantSegment(id)["name"];
@@ -940,7 +939,7 @@ public static class PracticeEditor {
         return string.Join(",", rawShape.Select(MapPart));
     }
 
-    // a grip's reach either side of an edge: about a dozen pixels, down to four on a thin box
+    // a grip's reach either side of an edge: one drawn edge width
     private static float Reach() => RandomizerBoxPrefab.EdgeWidth;
 
     private static float Least() => RandomizerBoxPrefab.EdgeWidth / 3f;
