@@ -258,7 +258,7 @@ public static class PracticeSelect {
             }
 
             var skipped = new List<string>();
-            foreach (var path in PracticeFolder.List(Folder)) {
+            foreach (var path in PracticeDefaults.Arrange(Folder, PracticeFolder.List(Folder))) {
                 try {
                     Files.Add(BfrpFile.Load(path));
                 } catch (Exception e) {
@@ -319,7 +319,8 @@ public static class PracticeSelect {
     public static void Shown(SaveSlotsUI screen) {
         Legend(screen, !Choosing);
         if (Choosing) {
-            Rewind(screen, Mathf.Clamp(chosen, 0, Mathf.Max(0, Count - 1)));
+            var at = chosenPath == null ? -1 : IndexOf(chosenPath);
+            Rewind(screen, Mathf.Clamp(at >= 0 ? at : chosen, 0, Mathf.Max(0, Count - 1)));
         } else if (PracticeController.Active) {
             // the run's own slot, the middle card
             screen.SetCurrentItemAndScroll(PracticeController.LoadedSlot - PracticeController.FirstSlot);
@@ -339,8 +340,21 @@ public static class PracticeSelect {
 
     private static int savedIndex = -1;
 
-    // the segment card last picked, so the chooser reopens where it was left
+    // the segment card last picked, so the chooser reopens where it was left: by path, as a rename can
+    // move its card, else by index
     private static int chosen;
+
+    private static string chosenPath;
+
+    private static void Pick(int index) {
+        chosen = index;
+        chosenPath = index >= 0 && index < Files.Count ? Files[index].Path : null;
+    }
+
+    // the session's segment, wherever a rename or an extract left it
+    public static void Remember(string path) {
+        chosenPath = path;
+    }
 
     public static void Hidden(SaveSlotsUI screen) {
         LetGo();
@@ -355,7 +369,7 @@ public static class PracticeSelect {
 
         // the slot list held segments: rebuild the saves now, while nothing is shown
         Choosing = false;
-        chosen = screen.CurrentSlotIndex;
+        Pick(screen.CurrentSlotIndex);
         Legend(screen, true);
         SaveSlotsManager.PrepareSlots();
         screen.ItemsUI.Refresh();
@@ -673,7 +687,7 @@ public static class PracticeSelect {
         var variant = variants.Count > 0 ? variants[picked] : "";
         var ended = Ended(file, variant);
         if (ended || file.IsFolder) {
-            chosen = index;
+            Pick(index);
             Start(screen, file, variant, !ended);
         } else {
             Randomizer.printInfo("Nothing ends this segment yet: extract it to edit it", 300);
@@ -720,7 +734,7 @@ public static class PracticeSelect {
             // on the card itself rather than a variant's row, the first variant
             var variant = picked >= 0 && picked < variants.Count ? variants[picked] : variants.Count > 0 ? variants[0] : "";
             if (file.IsFolder) {
-                chosen = index;
+                Pick(index);
                 Start(screen, file, variant, true);
                 return true;
             }
@@ -780,7 +794,7 @@ public static class PracticeSelect {
         var copy = Files[at];
         var variants = copy.Variants;
         screen.SetCurrentItemAndScroll(at);
-        chosen = at;
+        Pick(at);
         Start(screen, copy, variants.Contains(variant) ? variant : variants.Count > 0 ? variants[0] : "", true);
     }
 
@@ -944,7 +958,7 @@ public static class PracticeSelect {
             return;
         }
 
-        chosen = Mathf.Max(0, index - 1);
+        Pick(Mathf.Max(0, index - 1));
         Open();
     }
 
@@ -1004,7 +1018,7 @@ public static class PracticeSelect {
         }
 
         screen.SetCurrentItemAndScroll(at);
-        chosen = at;
+        Pick(at);
         Start(screen, Files[at], "", false);
         return true;
     }

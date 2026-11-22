@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -8,6 +9,9 @@ using System.Threading;
 // one ever added here, so a default the player deleted or renamed never comes back.
 public static class PracticeDefaults {
     public const string Ledger = ".defaults";
+
+    // this launch's list from the server, in its order; null until the fetch lands
+    private static volatile string[] listed;
 
     // main thread: the settings are read here, and the transfers wait out the boot-time areas fetch
     public static void Start() {
@@ -47,6 +51,10 @@ public static class PracticeDefaults {
             // an empty body may leave no file at all
             var offered = status == 200 && File.Exists(list) ? File.ReadAllLines(list, Encoding.UTF8) : new string[0];
             File.Delete(list);
+            if (status == 200) {
+                listed = offered;
+            }
+
             Sync(folder, offered, (name, to) => NativeWebSocket.HttpDownload(url + "/" + Uri.EscapeDataString(name + PracticeFolder.Extension), to));
         } catch (Exception e) {
             Randomizer.log("practice defaults: " + e.Message);
@@ -57,13 +65,7 @@ public static class PracticeDefaults {
     public static List<string> Sync(string folder, IEnumerable<string> offered, Func<string, string, int> download) {
         var added = new List<string>();
         var ledger = Path.Combine(folder, Ledger);
-        var had = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (File.Exists(ledger)) {
-            foreach (var line in File.ReadAllLines(ledger, Encoding.UTF8)) {
-                had.Add(line.Trim());
-            }
-        }
-
+        var had = new HashSet<string>(Delivered(ledger), StringComparer.OrdinalIgnoreCase);
         foreach (var line in offered) {
             var name = line.Trim();
             if (name.Length == 0 || had.Contains(name)) {
@@ -116,6 +118,45 @@ public static class PracticeDefaults {
             } catch (Exception) {
             }
         }
+    }
+
+    // The chooser's order: the player's own segments as given, then the defaults in the server's order,
+    // or the order they arrived in until this launch's list does.
+    public static List<string> Arrange(string folder, List<string> paths) {
+        List<string> delivered;
+        try {
+            delivered = Delivered(Path.Combine(folder, Ledger));
+        } catch (Exception e) {
+            Randomizer.log("practice defaults: could not read the ledger: " + e.Message);
+            return paths;
+        }
+
+        var rank = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var name in (listed ?? new string[0]).Select(line => line.Trim()).Concat(delivered)) {
+            if (!rank.ContainsKey(name)) {
+                rank[name] = rank.Count;
+            }
+        }
+
+        var had = new HashSet<string>(delivered, StringComparer.OrdinalIgnoreCase);
+        var own = paths.Where(path => !had.Contains(PracticeFolder.NameOf(path))).ToList();
+        // OrderBy is stable, so a folder and a .bfrp of one name keep the order given
+        own.AddRange(paths.Where(path => had.Contains(PracticeFolder.NameOf(path))).OrderBy(path => rank[PracticeFolder.NameOf(path)]));
+        return own;
+    }
+
+    // the ledger's names, in the order they were delivered
+    private static List<string> Delivered(string ledger) {
+        var names = new List<string>();
+        if (File.Exists(ledger)) {
+            foreach (var line in File.ReadAllLines(ledger, Encoding.UTF8)) {
+                if (line.Trim().Length > 0) {
+                    names.Add(line.Trim());
+                }
+            }
+        }
+
+        return names;
     }
 
     // appended, never rewritten: Windows won't truncate a hidden file

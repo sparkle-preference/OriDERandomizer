@@ -228,7 +228,7 @@
   <h2>Variants</h2>
   <div id="variants"></div>
   <button class="quiet" id="addVariant">add variant</button>
-  <div class="muted">A segment with variants always runs one of them: they share the start and the end condition, and each keeps its own loadout, boxes, history and ghosts. Its boxes are under Boxes. The arrows set the order the game lists them in.</div>
+  <div class="muted">A segment with variants always runs one of them: they share the start and the end condition, and each keeps its own loadout, boxes, history and ghosts. Its boxes are under Boxes. The arrows set their order; the game stacks them the same way, the bottom one nearest the card.</div>
 </section>
 
 <div class="stack">
@@ -1476,7 +1476,7 @@
 
   // the shared list and each variant's, every one bounded once there are variants
   function renderBoxLists() {
-    var ids = variantIds();
+    var ids = shownIds();
     $('sharedBoxes').classList.toggle('boxlist', ids.length > 0);
     $('sharedHead').hidden = ids.length === 0;
     renderBoxes($('boxes').querySelector('tbody'), state.segment.boxes || (state.segment.boxes = []), 'shared', true);
@@ -1556,6 +1556,8 @@
     return listed.concat(Object.keys(state.variants).filter(function (id) { return !seen[id]; })
       .sort(function (a, b) { return low(a) < low(b) ? -1 : low(a) > low(b) ? 1 : 0; }));
   }
+  // as the chooser shows them: its rows stack up from the card, so the game's first comes last
+  function shownIds() { return variantIds().reverse(); }
   function moveVariant(id, by) {
     var ids = variantIds(), to = ids.indexOf(id) + by;
     if (to < 0 || to >= ids.length) return;
@@ -1566,11 +1568,11 @@
   function renderVariants() {
     var root = $('variants'); root.innerHTML = '';
     var ids = variantIds();
-    ids.forEach(function (id, at) {
-      var v = state.variants[id];
+    shownIds().forEach(function (id) {
+      var v = state.variants[id], at = ids.indexOf(id);
       var box = document.createElement('div'); box.className = 'variant';
       var head = document.createElement('div');
-      [['↑', 'move up', -1], ['↓', 'move down', 1]].forEach(function (m) {
+      [['↑', 'move up', 1], ['↓', 'move down', -1]].forEach(function (m) {
         var b = document.createElement('button'); b.className = 'quiet'; b.textContent = m[0]; b.title = m[1]; b.style.marginRight = '4px';
         b.disabled = at + m[2] < 0 || at + m[2] >= ids.length;
         b.onclick = function () { moveVariant(id, m[2]); };
@@ -1750,7 +1752,7 @@
     sel.innerHTML = '';
     var add = function (v, t) { var o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
     add('', 'the segment');
-    variantIds().forEach(function (id) { add(id, 'variant ' + (state.variants[id].name || id)); });
+    shownIds().forEach(function (id) { add(id, 'variant ' + (state.variants[id].name || id)); });
     sel.value = keep; if (sel.value !== keep) sel.value = '';
     $('placeText').value = state.placements[sel.value] || '';
   }

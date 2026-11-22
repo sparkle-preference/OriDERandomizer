@@ -240,6 +240,10 @@ public static class PracticeController {
         Resume();
         pendingSetup = false;
         Current = Phase.None;
+        if (File != null) {
+            PracticeSelect.Remember(File.Path);
+        }
+
         File = null;
         Elapsed = 0;
         MenuElapsed = 0;
