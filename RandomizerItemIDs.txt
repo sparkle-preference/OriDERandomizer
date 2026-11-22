@@ -380,6 +380,7 @@ Enhanced mode -- April Fools :)
 4091 - (Archipelago) DeathLink linked deaths
 4092 - (Archipelago) DeathLink last seen token
 
+4098 - Bingo won (the server's win: signal arrived)
 4099 - Finished Horu Escape
 
 4100 - Teleporter Time + teleporter index

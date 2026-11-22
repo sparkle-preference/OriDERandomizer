@@ -1415,8 +1415,15 @@ public static class Randomizer {
         return canFinalEscape(true);
     }
 
+    // goal modes on and not yet met; the Horu gate and the map's objective line share these
+    public static int RelicsFound => get(402);
+    public static bool RelicsShort => WorldTour && RelicsFound < RelicCount;
+    public static bool TreesShort => ForceTrees && RandomizerBonus.SkillTreeProgression() < 10;
+    public static bool FragsShort => fragsEnabled && RandomizerBonus.WarmthFrags() < fragKeyFinish;
+    public static bool MapsShort => ForceMaps && RandomizerBonus.MapStoneProgression() < 9;
+
     public static bool canFinalEscape(bool verbose) {
-        if (fragsEnabled && RandomizerBonus.WarmthFrags() < fragKeyFinish) {
+        if (FragsShort) {
             if (verbose) {
                 printInfo(
                     string.Concat(
@@ -1432,18 +1439,15 @@ public static class Randomizer {
             return false;
         }
 
-        if (WorldTour) {
-            var relics = get(402);
-            if (relics < RelicCount) {
-                if (verbose) {
-                    printInfo("Relics (" + relics + "/" + RelicCount + ")");
-                }
-
-                return false;
+        if (RelicsShort) {
+            if (verbose) {
+                printInfo("Relics (" + RelicsFound + "/" + RelicCount + ")");
             }
+
+            return false;
         }
 
-        if (ForceTrees && RandomizerBonus.SkillTreeProgression() < 10) {
+        if (TreesShort) {
             if (verbose) {
                 printInfo("Trees (" + RandomizerBonus.SkillTreeProgression() + "/10)");
             }
@@ -1451,7 +1455,7 @@ public static class Randomizer {
             return false;
         }
 
-        if (ForceMaps && RandomizerBonus.MapStoneProgression() < 9) {
+        if (MapsShort) {
             if (verbose) {
                 printInfo("Maps (" + RandomizerBonus.MapStoneProgression() + "/9)");
             }

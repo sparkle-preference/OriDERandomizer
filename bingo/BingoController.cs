@@ -1628,6 +1628,13 @@ public static class BingoController {
         return Characters.Sein.Inventory.IncRandomizerItem(item, value);
     }
 
+    // kept on death: the server sends win: only once
+    public static bool Won {
+        get => Characters.Sein != null && get(WonId) > 0;
+        set => set(WonId, value ? 1 : 0);
+    }
+
+    public const int WonId = 4098;
     public static int UpdateTimer = 15;
     public static string UpdateUrl;
     public static bool Active;

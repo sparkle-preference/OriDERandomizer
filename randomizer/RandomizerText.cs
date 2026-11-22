@@ -81,27 +81,54 @@ public static class RandomizerText {
     }
 
     public static string GetObjectiveText() {
-        if (Randomizer.canFinalEscape(false)) {
-            return "Find and Restore #Mount Horu#!";
+        if (BingoController.Active && !BingoController.Won) {
+            return "Complete your #Bingo# goals!";
         }
 
-        if (Randomizer.ForceTrees) {
-            return "Visit all 10 #Skill Trees#";
+        if (Randomizer.RelicsShort) {
+            return $"Find #Relics# hidden throughout #Nibel#! ({Randomizer.RelicsFound}/{Randomizer.RelicCount})";
         }
 
-        if (Randomizer.WorldTour) {
-            return string.Format("Find all {0} #Relics# hidden throughout Nibel", Randomizer.RelicCount);
+        if (Randomizer.TreesShort) {
+            var visited = RandomizerBonus.SkillTreeProgression();
+            var left = visited < 8 ? null : Unfinished(RandomizerTrackedDataManager.Trees, 1, RandomizerTrackedDataManager.GetTree);
+            if (left == null || left.Count == 0 || left.Count > 2) {
+                return $"Visit every #Skill Tree#! ({visited}/10)";
+            }
+
+            return left.Count == 1
+                ? $"Visit the #{left[0]}# #Skill Tree#!"
+                : $"Visit the #{left[0]}# and #{left[1]}# #Skill Trees#!";
         }
 
-        if (Randomizer.ForceMaps) {
-            return "Restore all 9 #Mapstones#";
+        if (Randomizer.FragsShort) {
+            return $"Find #Warmth Fragments# hidden throughout #Nibel#! ({RandomizerBonus.WarmthFrags()}/{Randomizer.fragKeyFinish})";
         }
 
-        if (Randomizer.fragsEnabled) {
-            return string.Format("Find all {0} #Warmth Fragments# hidden throughout Nibel", Randomizer.fragKeyFinish);
+        if (Randomizer.MapsShort) {
+            var turnedIn = RandomizerBonus.MapStoneProgression();
+            var left = turnedIn < 7 ? null : Unfinished(RandomizerTrackedDataManager.MapZonesByBit, 0, RandomizerTrackedDataManager.GetMapstone);
+            if (left == null || left.Count == 0 || left.Count > 2) {
+                return $"Turn in #Map Stones#! ({turnedIn}/9)";
+            }
+
+            return left.Count == 1
+                ? $"Turn in a #Map Stone# at #{left[0]}#!"
+                : $"Turn in #Map Stones# at #{left[0]}# and #{left[1]}#!";
         }
 
-        return "Continue to search for #Skills# and #Resources#";
+        return "Enter and escape #Mount Horu#!";
+    }
+
+    private static List<string> Unfinished(Dictionary<int, string> names, int first, System.Func<int, bool> done) {
+        var left = new List<string>();
+        foreach (var pair in names) {
+            if (pair.Key >= first && !done(pair.Key)) {
+                left.Add(pair.Value);
+            }
+        }
+
+        return left;
     }
 
     public static RandomizerMessageProvider GetDifficultyName(DifficultyMode mode) {

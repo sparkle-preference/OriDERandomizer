@@ -666,6 +666,10 @@ public static class RandomizerSyncManager {
                             Randomizer.printInfo(text.Substring(4), 360);
                         }
                     } else if (text.StartsWith("win:")) {
+                        if (BingoController.Active && Characters.Sein) {
+                            BingoController.Won = true;
+                        }
+
                         if (!RandomizerBonusSkill.UnlockCreditWarp(text.Substring(4))) {
                             if (!RandomizerSwitch.SilentMode) {
                                 Randomizer.QueueWinMessage(text.Substring(4));
