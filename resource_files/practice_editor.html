@@ -162,7 +162,7 @@
     <p><b>The map:</b> Pick locations from the zone and location lists or click them on the map to select locations required to finish the segment or to include in a shuffle group.
     With <i>edit boxes on the map</i> on, drag a box to move it and its corners to resize it.</p>
 
-    <p><b>Misc Info:</b> A run ends when ALL of its end conditions are satisfied and needs to have at least one. The Retry Practice Segment Randomizer Bind (default Alt+L) restarts an attempt, and dismisses an open briefing if one exists. Quitting to menu ends a practice run unless it is QTM-enabled - ending a QTM-enabled run can be done from the main menu. Segments you make are folders in <span id="folder">[Your Ori Install]\practice</span>. To share one, send its <b>export\&lt;name&gt;.bfrp</b>: it is written when a session that changed the segment ends, or by <b>Export .bfrp</b> below. Exports keep a pinned ghost but not your runs.</p>
+    <p><b>Misc Info:</b> A run ends when ALL of its end conditions are satisfied and needs to have at least one. The Retry Practice Segment Randomizer Bind (default Alt+L) restarts an attempt, and dismisses an open briefing if one exists. Quitting to menu ends a practice run unless it is QTM-enabled - ending a QTM-enabled run can be done from the main menu. Segments you make are folders in <span id="folder">[Your Ori Install]\practice</span>. To share one, send its <b>export\&lt;name&gt;.bfrp</b>: it is written when a session that changed the segment ends, or by <b>Export .bfrp</b> below. Exports keep the demo ghost but not your runs.</p>
   </div>
 </details>
 
@@ -176,7 +176,7 @@
   <label>Ghost shown
     <select id="showGhost"><option value="">pinned, else fastest, else demo</option><option value="fastest">fastest</option><option value="pinned">pinned</option><option value="recent">most recent</option><option value="none">none</option></select>
   </label></div>
-  <div class="row"><label><input type="checkbox" id="qtm"> QTM enabled.</label> <label><input type="checkbox" id="faceLeft"> Ori starts facing left.</label></div>
+  <div class="row"><label><input type="checkbox" id="qtm"> QTM enabled.</label> <label><input type="checkbox" id="faceLeft"> Ori starts facing left.</label> <label><input type="checkbox" id="resetOnDeath"> Reset on death.</label></div>
   <div class="row"><label style="display:block">Briefing <span class="muted">shown once a session before the first run; the player presses retry to start. A variant's own replaces it</span><br>
     <textarea id="about" rows="3" cols="60" placeholder="what this segment is for"></textarea></label></div>
   <div class="row">Starts from <span id="baseInfo" class="muted">the segment's save</span> <button class="quiet" id="changeSave">change</button></div>
@@ -1415,6 +1415,7 @@
     $('showGhost').value = timing.showGhost || '';
     $('qtm').checked = !!seg.qtm_enabled;
     $('faceLeft').checked = !!seg.faceLeft;
+    $('resetOnDeath').checked = !!seg.resetOnDeath;
     renderBase();
     var end = seg.end = seg.end || {};
     $('goalBox').textContent = end.box && end.box.length === 4 ? end.box.join(', ') : 'none';
@@ -1778,7 +1779,7 @@
     return b;
   }
   // render() redraws these from state, so an edit has to reach state before the next redraw
-  ['about', 'mode', 'showGhost', 'qtm', 'faceLeft', 'count'].forEach(function (id) { $(id).addEventListener('change', collect); });
+  ['about', 'mode', 'showGhost', 'qtm', 'faceLeft', 'resetOnDeath', 'count'].forEach(function (id) { $(id).addEventListener('change', collect); });
   $('addBox').onclick = function () { (state.segment.boxes = state.segment.boxes || []).push(freshBox()); render(); };
   $('addGoal').onclick = function () { var end = state.segment.end = state.segment.end || {}; end.box = lookingAt(); render(); };
   $('addGroup').onclick = function () { (state.segment.shuffle = state.segment.shuffle || []).push({ give: [], among: [] }); state.target = String(state.segment.shuffle.length - 1); render(); };
@@ -1804,6 +1805,7 @@
     if ($('showGhost').value) seg.timing.showGhost = $('showGhost').value; else delete seg.timing.showGhost;
     if ($('qtm').checked) seg.qtm_enabled = true; else delete seg.qtm_enabled;
     if ($('faceLeft').checked) seg.faceLeft = true; else delete seg.faceLeft;
+    if ($('resetOnDeath').checked) seg.resetOnDeath = true; else delete seg.resetOnDeath;
     seg.end = seg.end || {};
     var count = $('count').value.trim();
     if (count === '') delete seg.end.count; else seg.end.count = parseInt(count, 10);

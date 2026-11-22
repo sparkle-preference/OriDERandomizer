@@ -530,6 +530,10 @@ public static class PracticeSelect {
         } else {
             card.AreaName.SetMessage(new MessageDescriptor(number
                 + SaveSlotsScreenshotManager.Instance.FindAreaName(info.AreaName) + " - " + info.Completion + "%"));
+            // the run's clock at the quit, where a real file shows its game time
+            if (PracticeController.QuitMs >= 0 && PracticeController.FirstSlot + position == PracticeController.QuitSlot) {
+                card.Time.SetMessage(new MessageDescriptor(PracticeController.Clock(PracticeController.QuitMs)));
+            }
         }
     }
 

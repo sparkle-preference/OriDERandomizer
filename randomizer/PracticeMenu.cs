@@ -82,6 +82,9 @@ public static class PracticeMenu {
         var manager = screen.NavigationManager;
         var finished = PracticeController.Current == PracticeController.Phase.Finished;
         var editing = PracticeController.Current == PracticeController.Phase.Editing;
+        if (finished) {
+            finishedAt = Time.realtimeSinceStartup;
+        }
 
         // the row's text is its value box, rewritten from its provider every frame
         if (retryLabel == null) {
@@ -417,13 +420,30 @@ public static class PracticeMenu {
         return null;
     }
 
+    // the finish screen ignores presses this long: a proceed on the scroll wheel overruns the run's last menu
+    private const float FinishGrace = 0.5f;
+
+    private static float finishedAt;
+
+    private static bool TooSoon() {
+        return PracticeController.Current == PracticeController.Phase.Finished && Time.realtimeSinceStartup - finishedAt < FinishGrace;
+    }
+
     private static void Retry() {
+        if (TooSoon()) {
+            return;
+        }
+
         // immediate: a fading menu is frozen mid-fade by the countdown
         Game.UI.Menu.HideMenuScreen(true);
         PracticeController.Retry();
     }
 
     private static void Pin() {
+        if (TooSoon()) {
+            return;
+        }
+
         var box = pinItem == null ? null : pinItem.GetComponentInChildren<MessageBox>(true);
         if (box != null) {
             box.SetMessage(new MessageDescriptor(PracticeController.PinLastGhost() ? "GHOST PINNED" : "NO RUN TO PIN"));
@@ -435,6 +455,10 @@ public static class PracticeMenu {
     }
 
     private static void ExitNow() {
+        if (TooSoon()) {
+            return;
+        }
+
         PracticeController.ReturnToTitle(true);
     }
 

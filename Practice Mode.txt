@@ -48,6 +48,7 @@ Save to game writes it back, and a running attempt uses the new rules at once.
 With "edit boxes on the map" on, its map moves and resizes boxes; on a convex or loop box, right-click a side to add a point or a point to remove it. The shape column turns a box into a rectangle, a convex box or a loop.
 The page can also swap the segment's starting save for another of your saves ("Starts from ... change"); the game reloads from it.
 A save can't say which way Ori faces, so the page has a box to start Ori facing left.
+With "Reset on death" checked, a death restarts the run from 00:00 once Ori respawns.
 Its Placements box takes placement and box lines pasted in or loaded from a file (a whole seed file works) and replaces the segment's list with them.
 The page's map downloads the world map tiles once (about 20 MB) into the practice folder.
 
@@ -56,7 +57,7 @@ The page's map downloads the world map tiles once (about 20 MB) into the practic
 Sharing a segment
 ===
 Send the .bfrp in practice/export/. Ending a session that changed a segment writes it there, named after the segment's folder, and the page's Export .bfrp button writes it any time.
-An export carries the segment, a pinned ghost and the demo; your run history and other ghosts stay in your folder.
+An export carries the segment and the demo; your run history and other ghosts stay in your folder.
 
 
 
@@ -90,7 +91,7 @@ EXIT TO PRACTICE MENU       Back to the segment list
 EDIT PRACTICE SEGMENT       Freeze the world and draw boxes
 
 Finishing shows the time against your best (your average, in average mode), the average over every run, and the attempt's deaths, quits and time in menus.
-The menu there: RETRY, PIN GHOST, EXIT TO PRACTICE MENU.
+The menu there: RETRY, PIN GHOST, EXIT TO PRACTICE MENU. It ignores presses for its first half second, so a proceed bound to the scroll wheel can't start a new run by accident.
 
 
 
@@ -109,6 +110,7 @@ Quit to menu
 A segment can allow quitting to the menu mid-attempt ("quit to menu keeps the run" on the page), for practicing your menuing the way you would in a real run.
 Its pause menu is the normal one, and the practice pause is on the Practice Menu bind instead.
 While the run is parked the title menu shows CONTINUE PRACTICE and END PRACTICE RUN, and Escape there asks whether to end it.
+The run's save shows the run's clock at the quit where a file would show its game time.
 
 
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using Game;
 using UnityEngine;
 
@@ -136,8 +137,10 @@ public static class PracticeController {
         }
 
         pendingSetup = true;
+        resetPending = false;
         Countdown = CountdownSeconds;
         Elapsed = 0;
+        QuitMs = -1;
         MenuElapsed = 0;
         touchedKeys.Clear();
         RandomizerStatsManager.Active = false;
@@ -370,6 +373,70 @@ public static class PracticeController {
         }
     }
 
+    // The load samples idle timelines too, in load order, so the camera can end on an idle cutscene's puppet.
+    private static void ResampleCutscenes() {
+        var sprites = new List<SpriteAnimator>();
+        foreach (var saved in UnityEngine.Object.FindObjectsOfType<BaseAnimatorSerializer>()) {
+            foreach (var animator in saved.GetComponents<BaseAnimator>()) {
+                if (animator.AnimatorDriver.IsPlaying) {
+                    var first = sprites.Count;
+                    SpritesOf(animator, sprites);
+                    for (var i = first; i < sprites.Count; i++) {
+                        Unbind(sprites[i]);
+                    }
+
+                    animator.SampleValue(animator.AnimatorDriver.CurrentTime, true);
+                }
+            }
+        }
+
+        // a sprite's mesh bounds follow only every fifth frame it binds: stale ones are culled until a few play
+        foreach (var sprite in sprites) {
+            var filter = sprite.GetComponent<MeshFilter>();
+            if (filter && filter.sharedMesh) {
+                filter.sharedMesh.RecalculateBounds();
+            }
+        }
+
+        // the countdown freezes the camera before it reaches its puppet
+        var camera = UI.Cameras.Current;
+        if (camera != null && camera.Controller) {
+            camera.Controller.UpdateCamera();
+        }
+    }
+
+    private static void SpritesOf(BaseAnimator animator, List<SpriteAnimator> into) {
+        var sprite = animator as SpriteAnimator;
+        if (sprite != null) {
+            into.Add(sprite);
+            return;
+        }
+
+        var timeline = animator as TimelineSequence;
+        if (timeline == null) {
+            return;
+        }
+
+        foreach (var entry in timeline.Entries) {
+            if (entry.Animator) {
+                SpritesOf(entry.Animator, into);
+            }
+        }
+    }
+
+    private static FieldInfo boundFrame;
+
+    // a sample binds only a frame other than the bound one, so this makes the next sample bind again
+    private static void Unbind(SpriteAnimator sprite) {
+        if (boundFrame == null) {
+            boundFrame = typeof(SpriteAnimator).GetField("m_currentAtlasSpriteTexture", BindingFlags.Instance | BindingFlags.NonPublic);
+        }
+
+        if (boundFrame != null) {
+            boundFrame.SetValue(sprite, null);
+        }
+    }
+
     private static int shownCount;
 
     public static void Freeze() {
@@ -504,6 +571,8 @@ public static class PracticeController {
                     Characters.Sein.FaceLeft = true;
                 }
 
+                ResampleCutscenes();
+                RandomizerColorManager.ShowFirst();
                 // the base save may carry a seed's taken boxes or a held count; this attempt starts clear
                 var changed = RandomizerBoxes.ClearState();
                 if (Get(Held) != 0) {
@@ -573,6 +642,14 @@ public static class PracticeController {
         }
 
         if (Current != Phase.Running) {
+            return;
+        }
+
+        // a reset-on-death segment lets the death play out and retries from the respawn
+        if (resetPending && Characters.Sein != null && Characters.Sein.Active && Characters.Sein.Mortality.Health.Amount > 0f
+                && !GameController.Instance.IsLoadingGame) {
+            resetPending = false;
+            Retry();
             return;
         }
 
@@ -835,9 +912,16 @@ public static class PracticeController {
         }
     }
 
+    // the clock at the last quit to menu and the slot it left; that save's card shows it while parked
+    public static double QuitMs = -1;
+
+    public static int QuitSlot = -1;
+
     public static void OnQuitToMenu() {
         // a freeze that rode along would hold the title's own menu shut
         Resume();
+        QuitMs = Elapsed;
+        QuitSlot = SaveSlotsManager.CurrentSlotIndex;
         Inc(Quits, 1);
         ParkGhostAtLink();
     }
@@ -871,7 +955,10 @@ public static class PracticeController {
 
     public static void OnDeath() {
         Inc(Deaths, 1);
+        resetPending = Current == Phase.Running && Segment != null && Segment.ResetOnDeath;
     }
+
+    private static bool resetPending;
 
     // the boxes were edited: read again, and the new set takes the floor
     public static void Reparse() {

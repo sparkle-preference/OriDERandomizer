@@ -32,6 +32,9 @@ public class PracticeSegment {
     // a save can't hold facing (the load drops it), so the segment says it
     public bool FaceLeft;
 
+    // a death restarts the attempt once Ori has respawned
+    public bool ResetOnDeath;
+
     // what the segment is for, in the maker's words; shown once a session before the first run.
     // A variant's own replaces the segment's.
     public string About = "";
@@ -138,6 +141,7 @@ public class PracticeSegment {
         var seg = new PracticeSegment();
         seg.QuitToMenu = json["qtm_enabled"].IsBool && json["qtm_enabled"].Flag;
         seg.FaceLeft = json["faceLeft"].IsBool && json["faceLeft"].Flag;
+        seg.ResetOnDeath = json["resetOnDeath"].IsBool && json["resetOnDeath"].Flag;
         var end = json["end"];
         if (end.IsObject) {
             // validated here, never per frame: Met must neither throw nor make HaveCoord print

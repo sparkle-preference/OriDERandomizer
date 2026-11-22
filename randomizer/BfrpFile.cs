@@ -339,7 +339,7 @@ public class BfrpFile {
         return slots;
     }
 
-    // An export shares the segment, not its history: no runs.csv, and of the ghosts only pinned and demo.
+    // An export shares the segment, not its history: no runs.csv, and of the ghosts only the demo.
     public static bool Exported(string entry) {
         var own = entry;
         if (own.StartsWith(VariantRoot)) {
@@ -352,7 +352,7 @@ public class BfrpFile {
         }
 
         var ghost = own.StartsWith("ghosts/") && own.EndsWith(".ghost") && own.IndexOf('/', "ghosts/".Length) < 0;
-        return !ghost || own == "ghosts/pinned.ghost" || own == "ghosts/" + DemoGhost + ".ghost";
+        return !ghost || own == "ghosts/" + DemoGhost + ".ghost";
     }
 
     // everything the variant owns: its json, history and ghosts

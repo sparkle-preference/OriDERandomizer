@@ -365,6 +365,11 @@ public static class Randomizer {
             var filePath = Path.GetFullPath(aFiles[0]);
             var fileName = Path.GetFileName(filePath);
             if (fileName.StartsWith("randomizer") && (fileName.EndsWith(".bfr") || fileName.EndsWith(".dat"))) {
+                if (PracticeController.Active) {
+                    printInfo("Reload Seed is off during a practice session", 180);
+                    return;
+                }
+
                 SeedFilePath = aFiles[0];
                 initialize();
                 showSeedInfo();
