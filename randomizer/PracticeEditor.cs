@@ -304,8 +304,13 @@ public static class PracticeEditor {
             return;
         }
 
+        if (!save && !Reload()) {
+            Say("The segment could not be reloaded; see randomizer.log", 300);
+            return;
+        }
+
         if (PracticeController.Segment != null && !PracticeController.Segment.HasEnd) {
-            Say("Saved. (Can't run the segment, as it has no defined end: draw a goal box, or set some other end condition in the web helper.)", 600);
+            Say((save ? "Saved." : "Reloaded.") + " (Can't run the segment, as it has no defined end: draw a goal box, or set some other end condition in the web helper.)", 600);
             return;
         }
 
