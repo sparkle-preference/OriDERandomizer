@@ -479,6 +479,10 @@ public static class RandomizerRebinding {
 
         // the canonical spelling of an unsided modifier, or null for anything else
         public static string Unside(string input) {
+            if (String.Equals(input, "Ctrl", StringComparison.OrdinalIgnoreCase)) {
+                return "Control";
+            }
+
             foreach (var name in Unsided) {
                 if (String.Equals(input, name, StringComparison.OrdinalIgnoreCase)) {
                     return name;
