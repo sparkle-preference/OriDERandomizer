@@ -374,7 +374,19 @@ public static class PracticeEditor {
         }
     }
 
-    public static void FixedUpdate() {
+    public static void Update() {
+        if (Active && showWindow && UI.SeinUI) {
+            // The window opens over the map stone count and can be moved over the keystone count.
+            // SeinUI enables them again every fixed update.
+            if (UI.SeinUI.MapStoneUI) {
+                UI.SeinUI.MapStoneUI.SetActive(false);
+            }
+
+            if (UI.SeinUI.KeystoneUI) {
+                UI.SeinUI.KeystoneUI.SetActive(false);
+            }
+        }
+
         ClearDraftObject();
         Highlight.Hide();
 
@@ -388,21 +400,24 @@ public static class PracticeEditor {
 
         HandleKeys();
 
-        // Unfortunately OnGUI runs after Tick, so we can't consume/block any events there
+        // Unfortunately OnGUI runs after Update, so we can't consume/block any events there
         var mousePos = Input.mousePosition;
         mousePos.y = Screen.height - mousePos.y;
         var guiRect = showWindow ? guiWindowRect : guiButtonRect;
         guiRect = new Rect(guiRect.min * guiScale, guiRect.size * guiScale);
         var overGui = guiRect.Contains(mousePos) || UI.MainMenuVisible;
 
+        // Core.Input *must* be used from FixedUpdate, while Input *must* be used from Update,
+        // otherwise edges (pressed/released this frame) don't always work.
+        // Cursor position is an exception since it doesn't have an edge.
         var at = World(Core.Input.CursorPosition);
         // right click stands Ori where you are looking, which is how the scenes there load
-        if (Core.Input.RightClick.OnPressed && !overGui) {
+        if (Input.GetMouseButtonDown(1) && !overGui) {
             Characters.Sein.Position = at;
             seedMoved = Seed;
         }
 
-        if (Core.Input.LeftClick.OnPressed && !overGui) {
+        if (Input.GetMouseButtonDown(0) && !overGui) {
             switch (mode) {
                 case EditMode.Adjust:
                     Grab(at);
@@ -459,7 +474,7 @@ public static class PracticeEditor {
             }
         }
 
-        if (!Core.Input.LeftClick.OnReleased) {
+        if (Input.GetMouseButton(0)) {
             return;
         }
 
@@ -579,13 +594,6 @@ public static class PracticeEditor {
     private static void ClearDraftObject() {
         DraftObject?.DeInit();
         DraftObject = null;
-    }
-
-    // the window opens over the map stone count; SeinUI shows it again every fixed step, so this only holds while it runs
-    public static void Update() {
-        if (Active && showWindow && UI.SeinUI != null && UI.SeinUI.MapStoneUI != null && UI.SeinUI.MapStoneUI.activeSelf) {
-            UI.SeinUI.MapStoneUI.SetActive(false);
-        }
     }
 
     public static void OnGUI() {
@@ -862,10 +870,10 @@ public static class PracticeEditor {
         }
 
         var move = Vector3.zero;
-        if (UnityEngine.Input.GetKey(KeyCode.W)) { move.y += 1f; }
-        if (UnityEngine.Input.GetKey(KeyCode.S)) { move.y -= 1f; }
-        if (UnityEngine.Input.GetKey(KeyCode.A)) { move.x -= 1f; }
-        if (UnityEngine.Input.GetKey(KeyCode.D)) { move.x += 1f; }
+        if (Input.GetKey(KeyCode.W)) { move.y += 1f; }
+        if (Input.GetKey(KeyCode.S)) { move.y -= 1f; }
+        if (Input.GetKey(KeyCode.A)) { move.x -= 1f; }
+        if (Input.GetKey(KeyCode.D)) { move.x += 1f; }
         if (move == Vector3.zero) {
             return;
         }
@@ -1238,7 +1246,7 @@ public static class PracticeEditor {
             }
         }
 
-        if (!Core.Input.LeftClick.OnReleased) {
+        if (Input.GetMouseButton(0)) {
             return;
         }
 

@@ -785,7 +785,6 @@ public static class Randomizer {
 
     public static void FixedUpdate() {
         RandomizerBoxes.FixedUpdate();
-        PracticeEditor.FixedUpdate();
     }
 
     public static void OnGUI() {
