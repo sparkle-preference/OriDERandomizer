@@ -14,23 +14,23 @@ using UnityEngine;
 // container's placements.bfr or, outside practice, the loaded seed. Create snapshots a save into a new container.
 public static class PracticeEditor {
     private enum EditMode {
-        [Description("Create Box")] Create,
-        [Description("Adjust Boxes")] Adjust,
+        [Description("Create Box (M)")] Create,
+        [Description("Adjust Boxes (M)")] Adjust,
         [Description("Delete Boxes")] Delete,
     }
 
     private enum BoxShape {
-        Rectangle,
-        Convex,
-        Polygon,
+        [Description("Rectangle (Ctrl+1)")] Rectangle,
+        [Description("Convex (Ctrl+2)")] Convex,
+        [Description("Polygon (Ctrl+3)")] Polygon,
     }
 
     private enum BoxType {
-        Item,
-        Solid,
-        Kill,
-        Unsafe,
-        Goal,
+        [Description("Item (1)")] Item,
+        [Description("Solid (2)")] Solid,
+        [Description("Kill (3)")] Kill,
+        [Description("Unsafe (4)")] Unsafe,
+        [Description("Goal (5)")] Goal,
     }
 
     public static bool Active;
@@ -386,7 +386,7 @@ public static class PracticeEditor {
             return;
         }
 
-        Pan();
+        HandleKeys();
 
         // Unfortunately OnGUI runs after Tick, so we can't consume/block any events there
         var mousePos = Input.mousePosition;
@@ -473,6 +473,98 @@ public static class PracticeEditor {
         }
     }
 
+    private static void HandleKeys() {
+        if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) {
+            if (Input.GetKeyDown(KeyCode.Return)) {
+                LeaveEditor(false);
+            }
+
+            if (Input.GetKeyDown(KeyCode.C)) {
+                CopyLines();
+            }
+
+            HandleBoxShapeKeys();
+        } else {
+            if (Input.GetKeyDown(KeyCode.Return)) {
+                LeaveEditor(true);
+            }
+
+            if (Input.GetKeyDown(KeyCode.Z)) {
+                if (CanUndoLastPoint()) {
+                    UndoLastPoint();
+                } else {
+                    Undo();
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.L) && boxShape == BoxShape.Polygon && CanConfirmPolygon()) {
+                dragging = false;
+                points.Add([]);
+            }
+
+            if (Input.GetKeyDown(KeyCode.C) && CanConfirmPolygon()) {
+                ConfirmPolygon();
+            }
+
+            if (Input.GetKeyDown(KeyCode.X)) {
+                if (points.Count > 0) {
+                    DiscardDraft();
+                } else {
+                    DeleteUnderCursor();
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.M)) {
+                mode = mode switch {
+                    EditMode.Create => EditMode.Adjust,
+                    EditMode.Adjust => EditMode.Create,
+                    EditMode.Delete => EditMode.Adjust,
+                    _ => throw new ArgumentOutOfRangeException(),
+                };
+
+                DiscardDraft();
+            }
+
+            HandleBoxTypeKeys();
+
+            HandlePan();
+        }
+    }
+
+    private static void HandleBoxShapeKeys() {
+        var typeKeys = new[] {
+            (KeyCode.Alpha1, BoxShape.Rectangle),
+            (KeyCode.Alpha2, BoxShape.Convex),
+            (KeyCode.Alpha3, BoxShape.Polygon),
+        };
+
+        foreach (var (key, shape) in typeKeys) {
+            if (Input.GetKeyDown(key) && IsBoxShapeValid(shape, out _)) {
+                mode = EditMode.Create;
+                boxShape = shape;
+                DiscardDraft();
+            }
+        }
+    }
+
+    private static void HandleBoxTypeKeys() {
+        var typeKeys = new[] {
+            (KeyCode.Alpha1, BoxType.Item),
+            (KeyCode.Alpha2, BoxType.Solid),
+            (KeyCode.Alpha3, BoxType.Kill),
+            (KeyCode.Alpha4, BoxType.Unsafe),
+            (KeyCode.Alpha5, BoxType.Goal),
+        };
+
+        foreach (var (key, type) in typeKeys) {
+            if (Input.GetKeyDown(key)) {
+                mode = EditMode.Create;
+                boxType = type;
+                FixBoxShapeType(out _);
+            }
+        }
+    }
+
     private static void SetDraftObject([CanBeNull] string shape) {
         DraftObject?.DeInit();
 
@@ -541,6 +633,7 @@ public static class PracticeEditor {
                 break;
             case EditMode.Delete:
                 GUILayout.Label("Delete boxes by clicking on them.");
+                GUILayout.Label("Pressing X while in Create or Adjust mode also deletes boxes.");
                 break;
             default:
                 Randomizer.log($"PracticeEditor.mode has invalid value {mode}");
@@ -557,7 +650,7 @@ public static class PracticeEditor {
             Save();
         }
 
-        var buttonText = Seed ? "Save & Continue" : "Save & Retry";
+        var buttonText = Seed ? "Save & Continue (Enter)" : "Save & Retry (Enter)";
         if (GUILayout.Button(buttonText)) {
             LeaveEditor(true);
         }
@@ -567,7 +660,7 @@ public static class PracticeEditor {
             Reload();
         }
 
-        buttonText = Seed ? "Reload & Continue" : "Reload & Retry";
+        buttonText = Seed ? "Reload & Continue (Ctrl+Enter)" : "Reload & Retry (Ctrl+Enter)";
         if (GUILayout.Button(buttonText)) {
             LeaveEditor(false);
         }
@@ -575,12 +668,12 @@ public static class PracticeEditor {
         GUILayout.EndHorizontal();
         GUILayout.BeginHorizontal();
         GUI.enabled = undoIndex >= 0;
-        if (GUILayout.Button("Undo")) {
+        if (GUILayout.Button("Undo (Z)")) {
             Undo();
         }
 
         GUI.enabled = true;
-        if (GUILayout.Button("Copy Lines")) {
+        if (GUILayout.Button("Copy Lines (Ctrl+C)")) {
             CopyLines();
         }
 
@@ -599,17 +692,7 @@ public static class PracticeEditor {
         }
 
         EnumButtonRow(ref boxType, boxTypes);
-
-        BoxShape[] availableShapes = boxType switch {
-            BoxType.Solid => [BoxShape.Rectangle, BoxShape.Convex, BoxShape.Polygon],
-            BoxType.Item or BoxType.Kill => [BoxShape.Rectangle, BoxShape.Convex],
-            BoxType.Unsafe or BoxType.Goal => [BoxShape.Rectangle],
-            _ => throw new ArgumentOutOfRangeException(),
-        };
-        if (!availableShapes.Contains(boxShape)) {
-            DiscardDraft();
-            boxShape = availableShapes[0];
-        }
+        FixBoxShapeType(out var availableShapes);
 
         GUILayout.Label("Box Shape");
         if (EnumButtonRow(ref boxShape, availableShapes)) {
@@ -627,20 +710,23 @@ public static class PracticeEditor {
         if (boxShape != BoxShape.Rectangle) {
             GUILayout.BeginHorizontal();
             GUI.enabled = points.Count > 0;
-            if (GUILayout.Button("Discard")) {
-                points.Clear();
+            if (GUILayout.Button("Discard (X)")) {
+                DiscardDraft();
+            }
+
+            GUI.enabled = CanUndoLastPoint();
+            if (GUILayout.Button("Undo Last Point (Z)")) {
+                UndoLastPoint();
             }
 
             GUI.enabled = CanConfirmPolygon();
-            if (boxShape == BoxShape.Polygon && GUILayout.Button("Add Loop")) {
+            if (boxShape == BoxShape.Polygon && GUILayout.Button("Add Loop (L)")) {
                 dragging = false;
                 points.Add([]);
             }
 
-            if (GUILayout.Button("Confirm")) {
-                SetDraftObject(RenderShape(false));
-                CommitDraftObject();
-                points.Clear();
+            if (GUILayout.Button("Confirm (C)")) {
+                ConfirmPolygon();
             }
 
             GUILayout.EndHorizontal();
@@ -651,8 +737,47 @@ public static class PracticeEditor {
         }
     }
 
+    private static bool IsBoxShapeValid(BoxShape shape, out BoxShape[] availableShapes) {
+        availableShapes = boxType switch {
+            BoxType.Solid => [BoxShape.Rectangle, BoxShape.Convex, BoxShape.Polygon],
+            BoxType.Item or BoxType.Kill => [BoxShape.Rectangle, BoxShape.Convex],
+            BoxType.Unsafe or BoxType.Goal => [BoxShape.Rectangle],
+            _ => throw new ArgumentOutOfRangeException(),
+        };
+
+        return availableShapes.Contains(shape);
+    }
+
+    private static void FixBoxShapeType(out BoxShape[] availableShapes) {
+        if (!IsBoxShapeValid(boxShape, out availableShapes)) {
+            DiscardDraft();
+            boxShape = availableShapes[0];
+        }
+    }
+
+    private static bool CanUndoLastPoint() {
+        return points.Count > 0 && points[^1].Count > 0;
+    }
+
+    private static void UndoLastPoint() {
+        if (!CanUndoLastPoint()) {
+            return;
+        }
+
+        points[^1].RemoveAt(points[^1].Count - 1);
+        if (points.Count == 1 && points[0].Count == 0) {
+            DiscardDraft();
+        }
+    }
+
     private static bool CanConfirmPolygon() {
         return points.Count > 0 && points[^1].Count >= 3;
+    }
+
+    private static void ConfirmPolygon() {
+        SetDraftObject(RenderShape(false));
+        CommitDraftObject();
+        points.Clear();
     }
 
     private static bool EnumButton<T>(ref T currentValue, T buttonValue) where T : Enum =>
@@ -730,7 +855,7 @@ public static class PracticeEditor {
     }
 
     // WASD walks the camera's own root, which the frozen chase leaves alone
-    private static void Pan() {
+    private static void HandlePan() {
         var cameras = Game.UI.Cameras.Current;
         if (cameras == null || cameras.Transform == null) {
             return;
