@@ -60,6 +60,19 @@
   .leaflet-tooltip { background: #0f1317; color: #e6e9ee; border: 1px solid #3a4553; }
   .handle { width: 10px; height: 10px; background: #fff; border: 1px solid #000; border-radius: 2px; }
   .handle.point { background: #3b8fff; }
+  .map-chip { background: #1c2229; border: 1px solid #3a4553; border-radius: 4px; padding: 3px 9px; cursor: default; }
+  .map-coords { min-width: 11ch; text-align: center; font-variant-numeric: tabular-nums; }
+  .layout-cycle { display: flex; align-items: center; transition: opacity .15s; }
+  .layout-cycle.away { opacity: 0; pointer-events: none; }
+  /* a layout swap dissolves; leaflet's zoom rule is restated so the pictures still zoom with the map */
+  .layout-picture { transition: opacity .35s; }
+  .leaflet-zoom-anim .layout-picture { transition: transform .25s cubic-bezier(0, 0, .25, 1), opacity .35s; }
+  .layout-cycle div { display: flex; flex-direction: column; }
+  .layout-cycle button { margin: 0; padding: 3px 9px; background: #3a4553; border-radius: 3px; }
+  .layout-cycle button + button { margin-top: 1px; }
+  .layout-label { display: inline-grid; margin-left: 3px; }
+  .layout-label > * { grid-area: 1 / 1; text-align: center; }
+  .layout-label > i { visibility: hidden; font-style: normal; }
   #status { position: fixed; bottom: 0; left: 0; right: 0; background: #0f1317; padding: 10px 24px; border-top: 1px solid #2b333d; }
   .ok { color: #8fe3a0; } .bad { color: #ff9a9a; }
   .variant, .group, .boxlist { border: 1px dashed #3a4553; border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
@@ -758,8 +771,16 @@
 
   function initMap() {
     if (state.map || typeof L === 'undefined') return;
-    var map = L.map('map', { crs: gameCrs(), zoomControl: true, minZoom: 2, maxZoom: 9, attributionControl: false });
-    L.tileLayer('/tiles/{z}/{x}/{y}.png', { noWrap: true, maxNativeZoom: 6, maxZoom: 9, tileSize: 256, bounds: [[-500, -400], [700, 800]] }).addTo(map);
+    var map = L.map('map', { crs: gameCrs(), zoomControl: false, minZoom: 2, maxZoom: 9, attributionControl: false });
+    // corners as on the site's maps: zoom top right, the cursor's coordinates top left
+    L.control.zoom({ position: 'topright' }).addTo(map);
+    var coords = L.DomUtil.create('div', 'map-chip map-coords');
+    coords.textContent = '0, 0';
+    var Coords = L.Control.extend({ options: { position: 'topleft' }, onAdd: function () { return coords; } });
+    map.addControl(new Coords());
+    // the site's pyramid is 20480 x 14592 px at zoom 7: no tile is asked for outside it
+    var pyramid = L.latLngBounds(map.unproject([0, 14592], 7), map.unproject([20480, 0], 7));
+    L.tileLayer('/tiles/{z}/{x}/{y}.png', { noWrap: true, maxNativeZoom: 6, maxZoom: 9, tileSize: 256, bounds: pyramid }).addTo(map);
     var start = state.segment && state.segment.start;
     if (start && typeof start.x === 'number' && typeof start.y === 'number') map.setView([start.y, start.x], 6);
     else map.setView([-240, 120], 5);
@@ -773,8 +794,148 @@
       m.on('click', function () { if (!state.editing && pickable(loc)) toggleLocation(loc.key); });
       state.markers[loc.key] = m;
     });
-    map.on('mousemove', function (ev) { $('tileStatus').title = 'x ' + ev.latlng.lng.toFixed(1) + '  y ' + ev.latlng.lat.toFixed(1); });
+    map.on('mousemove', function (ev) { coords.textContent = ev.latlng.lng.toFixed(1) + ', ' + ev.latlng.lat.toFixed(1); });
     pollTiles();
+    initLayers(map);
+  }
+
+  // ---- map layers: the game's Misty layouts and escape maps, drawn over the tiles ----
+  // hides the tiles' own Misty picture, so it sits where the tiles draw Misty, not at world coords
+  var COVER_BOUNDS = [[-39.57, -1092.94], [26.93, -594.44]];
+
+  function parseSheet(set, text) {
+    var sheet = { set: set, order: [], bounds: {}, names: {}, whole: {} };
+    function rect(pic, r) { sheet.bounds[pic] = [[+r[1], +r[0]], [+r[3], +r[2]]]; }
+    text.split('\n').forEach(function (line) {
+      var p = line.trim().split(/\s+/);
+      if (/^\d+$/.test(p[0])) { sheet.order.push(p[0]); rect(p[0], p.slice(1, 5)); }
+      else if (p[0] === 'picture') rect(p[1], p.slice(2, 6));
+      else if (p[0] === 'name') sheet.names[p[1]] = p.slice(2).join(' ');
+      else if (p[0] === 'whole') sheet.whole[p[2]] = p[1];
+    });
+    return sheet;
+  }
+
+  function loadImage(url) {
+    return new Promise(function (done, fail) { var img = new Image(); img.onload = function () { done(img); }; img.onerror = fail; img.src = url; });
+  }
+
+  function layerStem(set, pic) { return set + '_' + (pic.length < 2 ? '0' + pic : pic); }
+
+  // the game tells these two apart by the save; with no save they are one picture, shown once
+  var MERGED = { drop: '8', keep: '9', name: 'Completed' };
+
+  // only while the manifest says they are the same files: if they ever differ, both names return
+  function mergeSame(sheet, manifest) {
+    var sums = {};
+    manifest.split('\n').forEach(function (line) { var p = line.trim().split(/\s+/); if (p[1]) sums[p[0]] = p[1]; });
+    function files(layer) { return ['.jpg', '_alpha.png'].map(function (end) { return sums[layerStem(sheet.set, sheet.whole[layer] || layer) + end]; }); }
+    var kept = files(MERGED.keep);
+    if (!files(MERGED.drop).every(function (sum, i) { return sum && sum === kept[i]; })) return;
+    sheet.order = sheet.order.filter(function (layer) { return layer !== MERGED.drop; });
+    sheet.names[MERGED.keep] = MERGED.name;
+  }
+
+  // a layer is a JPEG plus a gray mask: one decoded image with the mask as its alpha
+  function layerPicture(set, pic) {
+    var file = '/maplayers/' + layerStem(set, pic);
+    return Promise.all([loadImage(file + '.jpg'), loadImage(file + '_alpha.png')]).then(function (pair) {
+      var canvas = document.createElement('canvas'), w = canvas.width = pair[0].naturalWidth, h = canvas.height = pair[0].naturalHeight;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(pair[1], 0, 0, w, h);
+      var mask = ctx.getImageData(0, 0, w, h).data;
+      ctx.drawImage(pair[0], 0, 0);
+      var pixels = ctx.getImageData(0, 0, w, h);
+      for (var i = 0; i < mask.length; i += 4) pixels.data[i + 3] = mask[i];
+      ctx.putImageData(pixels, 0, 0);
+      return new Promise(function (done) { canvas.toBlob(done); });
+    }).then(function (blob) { return loadImage(URL.createObjectURL(blob)); });
+  }
+
+  function initLayers(map) {
+    // over the tiles, under every box and marker
+    map.createPane('layers').style.zIndex = 250;
+    function sheet(set) {
+      return fetch('/maplayers/' + set + '_layers.txt', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+        .then(function (text) { return parseSheet(set, text); });
+    }
+    function draw(s, pic, opacity) {
+      return layerPicture(s.set, pic).then(function (img) { return L.imageOverlay(img, s.bounds[pic], { pane: 'layers', zIndex: 2, opacity: opacity, className: 'layout-picture' }).addTo(map); });
+    }
+    ['forlorn_escape', 'horu_escape'].forEach(function (set) {
+      sheet(set).then(function (s) { return draw(s, s.order[0], 1); }).catch(function () {});
+    });
+    var manifest = fetch('/maplayers/manifest.txt', { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; });
+    Promise.all([sheet('misty'), manifest]).then(function (got) {
+      var misty = got[0];
+      mergeSame(misty, got[1]);
+      if (!misty.order.length) return;
+      var stored = null;
+      try { stored = localStorage.getItem('misty_layout'); } catch (e) {}
+      // a choice of the merged-away layout is a choice of the one that stands for it
+      if (stored === MERGED.drop && misty.order.indexOf(stored) < 0) stored = MERGED.keep;
+      var count = misty.order.length, at = Math.max(0, misty.order.indexOf(stored)), drawn = {}, shown = null, cover = null, label;
+      var area = L.latLngBounds(misty.bounds[misty.order[0]]);
+      Object.keys(misty.bounds).forEach(function (pic) { area.extend(L.latLngBounds(misty.bounds[pic])); });
+      // the page has no save to read, so a layout shows its fullest picture
+      function picture(i) { return misty.whole[misty.order[i]] || misty.order[i]; }
+      // every layout stays on the map, hidden, so a step is a fade between two loaded pictures
+      function layer(pic) {
+        return drawn[pic] = drawn[pic] || draw(misty, pic, 0).catch(function (e) { delete drawn[pic]; throw e; });
+      }
+      function show() {
+        var i = at;
+        layer(picture(i)).then(function (l) {
+          // a later press may have moved on while this one loaded
+          if (i !== at) return;
+          if (!cover) cover = L.imageOverlay('/misty_cover.png', COVER_BOUNDS, { pane: 'layers', zIndex: 1 }).addTo(map);
+          if (shown && shown !== l) shown.setOpacity(0);
+          shown = l.setOpacity(1);
+          // the name moves with the picture, never ahead of it
+          label.textContent = misty.names[misty.order[i]] || misty.order[i];
+        }).catch(function () {});
+      }
+      // the rest, one at a time and in order from the one shown, so a press finds its picture in
+      function fetchAhead(n) {
+        if (n >= count) return;
+        var next = function () { fetchAhead(n + 1); };
+        layer(picture((at + n) % count)).then(next, next);
+      }
+      function step(by) {
+        at = (at + by + count) % count;
+        try { localStorage.setItem('misty_layout', misty.order[at]); } catch (e) {}
+        show();
+      }
+      var Cycle = L.Control.extend({
+        options: { position: 'topleft' },
+        onAdd: function () {
+          var el = L.DomUtil.create('div', 'layout-cycle away');
+          var stack = L.DomUtil.create('div', '', el);
+          var back = L.DomUtil.create('button', '', stack), next = L.DomUtil.create('button', '', stack);
+          back.type = next.type = 'button';
+          back.textContent = '▲'; back.title = 'Previous Misty layout';
+          next.textContent = '▼'; next.title = 'Next Misty layout';
+          back.onclick = function () { step(-1); };
+          next.onclick = function () { step(1); };
+          var box = L.DomUtil.create('span', 'map-chip layout-label', el);
+          box.title = 'Currently displayed Misty layout';
+          // every name shares the one cell, unseen, so the box is always as wide as the longest
+          misty.order.forEach(function (l) { L.DomUtil.create('i', '', box).textContent = misty.names[l] || l; });
+          label = L.DomUtil.create('span', 'layout-name', box);
+          label.textContent = misty.names[misty.order[at]] || misty.order[at];
+          // a double click on an arrow would zoom the map under it
+          L.DomEvent.disableClickPropagation(el);
+          // only while Misty is in view
+          var look = function () { L.DomUtil[map.getBounds().intersects(area) ? 'removeClass' : 'addClass'](el, 'away'); };
+          map.on('move', look);
+          look();
+          return el;
+        }
+      });
+      map.addControl(new Cycle());
+      show();
+      fetchAhead(1);
+    }).catch(function () {});
   }
 
   function pollTiles() {

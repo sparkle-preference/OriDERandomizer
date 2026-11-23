@@ -93,6 +93,9 @@ public static class RandomizerMapAssets {
                 fetched++;
             }
 
+            // kept beside the set it describes: the editor page reads it to tell which layouts share a picture
+            File.Copy(manifest, Path.Combine(Dir, "manifest.txt"), true);
+
             if (fetched > 0) {
                 Randomizer.log($"map layers: {fetched} fetched");
             }

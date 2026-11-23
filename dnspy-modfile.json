@@ -507,6 +507,7 @@
         "resource_files/sense_windrestored.png",
         "resource_files/skill_sense_cave.png",
         "resource_files/leaflet.js",
-        "resource_files/leaflet.css"
+        "resource_files/leaflet.css",
+        "resource_files/misty_cover.png"
     ]
 }

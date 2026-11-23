@@ -277,6 +277,10 @@ public static class PracticeServer {
             content = Resource("leaflet.js", "text/javascript; charset=utf-8", out type, out status);
         } else if (method == "GET" && path == "/leaflet.css") {
             content = Resource("leaflet.css", "text/css; charset=utf-8", out type, out status);
+        } else if (method == "GET" && path == "/misty_cover.png") {
+            content = Resource("misty_cover.png", "image/png", out type, out status);
+        } else if (method == "GET" && path.StartsWith("/maplayers/")) {
+            content = MapLayer(path.Substring("/maplayers/".Length), out type, out status);
         } else if (method == "GET" && path.StartsWith("/tiles/")) {
             content = Tile(path, out type, out status, out location);
         } else if (method == "GET" && path == "/api/tiles") {
@@ -547,6 +551,28 @@ public static class PracticeServer {
         status = 302;
         location = TileHost + z + "/" + x + "/" + y + ".png";
         return new byte[0];
+    }
+
+    // a bare file name only: the name is joined onto the game's folder
+    private static byte[] MapLayer(string name, out string type, out int status) {
+        var dot = name.LastIndexOf('.');
+        var extension = dot > 0 ? name.Substring(dot + 1) : "";
+        var bare = dot > 0;
+        for (var i = 0; bare && i < dot; i++) {
+            var c = name[i];
+            bare = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_';
+        }
+
+        type = extension == "jpg" ? "image/jpeg" : extension == "png" ? "image/png" : "text/plain; charset=utf-8";
+        var content = bare && (extension == "jpg" || extension == "png" || extension == "txt") ? RandomizerMapAssets.Read(name) : null;
+        if (content != null) {
+            status = 200;
+            return content;
+        }
+
+        type = "application/json; charset=utf-8";
+        status = 404;
+        return Encoding.UTF8.GetBytes("{\"error\":\"no such map layer\"}");
     }
 
     private static string TileStatus() {
