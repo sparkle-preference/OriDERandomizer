@@ -13,10 +13,10 @@ using Events = Game.Events;
 using Random = System.Random;
 
 public static class Randomizer {
-    public static string VERSION = "4.9.15";
+    public static string VERSION = "5.0.0";
 
     // the netcode host this build points at; changing it moves every install (RandomizerSettings)
-    public static string NETCODE_HOST = "bfbeta.eiko.blue";
+    public static string NETCODE_HOST = "bf.orirando.com";
 
     // 4.9.x is the 5.0 beta: numeric on the wire, "5.0 beta vN" on screen
     public static bool IsBeta => VERSION.StartsWith("4.9.");

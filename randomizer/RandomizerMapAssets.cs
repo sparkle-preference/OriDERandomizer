@@ -7,7 +7,7 @@ using System.Threading;
 // The map layer pictures, kept out of the dll: fetched from the server repo on GitHub into
 // MapLayers/ at startup, and read from there. Offline, whatever came down before still shows.
 public static class RandomizerMapAssets {
-    private const string Source = "https://raw.githubusercontent.com/sparkle-preference/ori_rando_server/4.3/map_layers/";
+    private const string Source = "https://raw.githubusercontent.com/sparkle-preference/ori_rando_server/master/map_layers/";
 
     private const string Dir = "MapLayers";
 
