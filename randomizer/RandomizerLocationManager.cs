@@ -44,6 +44,7 @@ public class RandomizerLocationManager {
         NoLogicReason = "Logic hasn't been calculated yet";
         ShowNoLogicHint = false;
         DoorsInLogicMask = 0;
+        DoorsInSpendLogicMask = 0;
         warnedDoors.Clear();
 
         if (!HaveDownloadedAreas) {
@@ -365,7 +366,27 @@ public class RandomizerLocationManager {
             primedPaths[ksDoor.Source].Add(ksDoor.Destination);
         }
 
+        if (Randomizer.InLogicWarps) {
+            foreach (var teleporter in TeleporterController.Instance.Teleporters) {
+                if (Randomizer.WarpLogicLocations.Contains(teleporter.Identifier)) {
+                    if (!primedPaths.ContainsKey(spawnNodeName)) {
+                        primedPaths[spawnNodeName] = new HashSet<string>();
+                    }
+
+                    primedPaths[spawnNodeName].Add((string)Randomizer.WarpLogicLocations[teleporter.Identifier]);
+                }
+            }
+        }
+
+        // the spend model's inputs, kept so tiered seeds can tell which warnings only tiers raise
+        Dictionary<string, HashSet<string>> spendPaths = null;
+        var heldKeystones = currentInventory.Keystones;
         if (KeyTiers != null) {
+            spendPaths = new Dictionary<string, HashSet<string>>();
+            foreach (var kvp in primedPaths) {
+                spendPaths[kvp.Key] = new HashSet<string>(kvp.Value);
+            }
+
             // tiered seeds: a door is passable once lifetime keystones clear its tier
             // and never by spending, so the engine's keystone routes are switched off
             var ksLifetime = Randomizer.Inventory.GetRandomizerItem(70);
@@ -385,18 +406,6 @@ public class RandomizerLocationManager {
             currentInventory.Keystones = 0;
         }
 
-        if (Randomizer.InLogicWarps) {
-            foreach (var teleporter in TeleporterController.Instance.Teleporters) {
-                if (Randomizer.WarpLogicLocations.Contains(teleporter.Identifier)) {
-                    if (!primedPaths.ContainsKey(spawnNodeName)) {
-                        primedPaths[spawnNodeName] = new HashSet<string>();
-                    }
-
-                    primedPaths[spawnNodeName].Add((string)Randomizer.WarpLogicLocations[teleporter.Identifier]);
-                }
-            }
-        }
-
         var reachable = OriReachable.Reachable(Areas, currentInventory, spawnNodeName, primedPaths);
 
         if (reachable.Contains("FronkeyFight")) {
@@ -409,30 +418,14 @@ public class RandomizerLocationManager {
             item.Value.Reachable = reachable.Contains(item.Key);
         }
 
-        // key-lock warning mask: KeyTiers seeds charge tiers against lifetime keystones (item 70);
-        // otherwise a door is in logic when its far side is reachable
-        var doorMask = 0;
-        var ksCollected = Randomizer.Inventory.GetRandomizerItem(70);
-        foreach (var ksDoor in KeystoneDoors.Values) {
-            if ((keystoneDoorsOpened & (1 << ksDoor.Index)) != 0 || !reachable.Contains(ksDoor.Source)) {
-                continue;
-            }
-
-            var pos = DoorWirePos[ksDoor.Source];
-            if (Randomizer.OpenWorld && pos == 0) {
-                continue; // the Glades door is pre-opened
-            }
-
-            if (KeyTiers != null) {
-                if (pos < KeyTiers.Length && KeyTiers[pos] > 0 && ksCollected >= KeyTiers[pos]) {
-                    doorMask |= 1 << ksDoor.Index;
-                }
-            } else if (reachable.Contains(ksDoor.Destination)) {
-                doorMask |= 1 << ksDoor.Index;
-            }
+        var spendMask = 0;
+        if (KeyTiers != null) {
+            currentInventory.Keystones = heldKeystones;
+            spendMask = DoorMask(OriReachable.Reachable(Areas, currentInventory, spawnNodeName, spendPaths), false);
         }
 
-        DoorsInLogicMask = doorMask;
+        DoorsInLogicMask = DoorMask(reachable, KeyTiers != null);
+        DoorsInSpendLogicMask = KeyTiers != null ? spendMask : DoorsInLogicMask;
         HasLogic = true;
         /* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
                 {
@@ -498,6 +491,37 @@ public class RandomizerLocationManager {
     // warns before a loaded save's first sweep
     public static int DoorsInLogicMask;
 
+    // the non-tiered verdict on tiered seeds; equals DoorsInLogicMask elsewhere
+    public static int DoorsInSpendLogicMask;
+
+    // key-lock warning mask: tiered charges lifetime keystones (item 70) against tiers;
+    // otherwise a door is in logic when its far side is reachable
+    private static int DoorMask(HashSet<string> reachable, bool tiered) {
+        var doorMask = 0;
+        var opened = Randomizer.Inventory.GetRandomizerItem(72);
+        var ksCollected = Randomizer.Inventory.GetRandomizerItem(70);
+        foreach (var ksDoor in KeystoneDoors.Values) {
+            if ((opened & (1 << ksDoor.Index)) != 0 || !reachable.Contains(ksDoor.Source)) {
+                continue;
+            }
+
+            var pos = DoorWirePos[ksDoor.Source];
+            if (Randomizer.OpenWorld && pos == 0) {
+                continue; // the Glades door is pre-opened
+            }
+
+            if (tiered) {
+                if (pos < KeyTiers.Length && KeyTiers[pos] > 0 && ksCollected >= KeyTiers[pos]) {
+                    doorMask |= 1 << ksDoor.Index;
+                }
+            } else if (reachable.Contains(ksDoor.Destination)) {
+                doorMask |= 1 << ksDoor.Index;
+            }
+        }
+
+        return doorMask;
+    }
+
     // wire order, from the seed's KeyTiers line (AP seeds)
     public static int[] KeyTiers;
 
@@ -513,6 +537,11 @@ public class RandomizerLocationManager {
     };
 
     private static readonly int[] DoorCosts = { 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4 };
+
+    public static readonly string[] DoorNames = {
+        "Glades Pool", "Lower Spirit Caverns", "Grotto", "Swamp", "Upper Spirit Caverns", "Lower Ginso",
+        "Upper Ginso", "Misty", "Forlorn", "Lower Sorrow", "Mid Sorrow", "Upper Sorrow"
+    };
 
     // keys sunk into opened doors; refunds mean partial fills never count
     public static int SpentKeystones() {
@@ -536,7 +565,15 @@ public class RandomizerLocationManager {
         }
 
         var door = KeystoneDoors[doorGuid];
-        if (IsDoorOpen(doorGuid) || (DoorsInLogicMask & (1 << door.Index)) != 0 || warnedDoors.Contains(doorGuid)) {
+        if (IsDoorOpen(doorGuid) || warnedDoors.Contains(doorGuid)) {
+            return;
+        }
+
+        // a cleared tier is safe from anywhere, so only untiered seeds ask where Ori stands
+        var pos = DoorWirePos[door.Source];
+        if (KeyTiers != null
+                ? pos < KeyTiers.Length && KeyTiers[pos] > 0 && Randomizer.Inventory.GetRandomizerItem(70) >= KeyTiers[pos]
+                : (DoorsInLogicMask & (1 << door.Index)) != 0) {
             return;
         }
 
@@ -554,7 +591,43 @@ public class RandomizerLocationManager {
         }
 
         warnedDoors.Add(doorGuid);
-        Randomizer.printInfo("This door is not currently in logic.\n Opening it at this time might render your seed uncompletable.", 300);
+        var next = NextExpectedDoor(door);
+        if ((DoorsInSpendLogicMask & (1 << door.Index)) != 0) {
+            Randomizer.printInfo("This door is out-of-sequence for your Archipelago World."
+                + (next == null ? "" : $"\n#{next}# is the next in-sequence door.")
+                + "\nOpening this door first may render your multiworld uncompletable.", 480);
+        } else {
+            Randomizer.printInfo("This door is not currently in logic.\n Opening it at this time might render your seed uncompletable."
+                + (next == null ? "" : $"\n(next logically expected door: {next})"), 300);
+        }
+    }
+
+    // tiered seeds only: the cheapest unopened tier, null when that is this door
+    private static string NextExpectedDoor(KeystoneDoor current) {
+        if (KeyTiers == null) {
+            return null;
+        }
+
+        var opened = Randomizer.Inventory.GetRandomizerItem(72);
+        KeystoneDoor best = null;
+        var bestRank = int.MaxValue;
+        foreach (var ksDoor in KeystoneDoors.Values) {
+            if ((opened & (1 << ksDoor.Index)) != 0) {
+                continue;
+            }
+
+            var pos = DoorWirePos[ksDoor.Source];
+            if (pos >= KeyTiers.Length || KeyTiers[pos] <= 0) {
+                continue;
+            }
+
+            if (KeyTiers[pos] < bestRank) {
+                bestRank = KeyTiers[pos];
+                best = ksDoor;
+            }
+        }
+
+        return best == null || best == current ? null : DoorNames[DoorWirePos[best.Source]];
     }
 
     public static Dictionary<MoonGuid, MoonGuid> KeystoneDoorMapGuidToMoonGuid = new Dictionary<MoonGuid, MoonGuid>();

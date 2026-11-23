@@ -30,20 +30,8 @@ public class RandomizerKeysanity {
 
         reverseDoorKeyMap = doorKeyMap.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
 
-        hintMap = new Dictionary<int, string> {
-            { 300, "Glades Pool" },
-            { 301, "Lower Spirit Caverns" },
-            { 302, "Grotto" },
-            { 303, "Swamp" },
-            { 304, "Upper Spirit Caverns" },
-            { 305, "Lower Ginso" },
-            { 306, "Upper Ginso" },
-            { 307, "Misty" },
-            { 308, "Forlorn" },
-            { 309, "Lower Sorrow" },
-            { 310, "Mid Sorrow" },
-            { 311, "Upper Sorrow" },
-        };
+        hintMap = Enumerable.Range(0, RandomizerLocationManager.DoorNames.Length)
+            .ToDictionary(i => 300 + i, i => RandomizerLocationManager.DoorNames[i]);
 
         inventory = inv;
     }
