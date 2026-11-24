@@ -1412,8 +1412,9 @@ public static class BingoController {
         }
     }
 
-    public static HashSet<String> ActiveSingleGoals;
-    public static Dictionary<String, HashSet<String>> ActiveMultiGoals;
+    // empty, never null: goals change before the server's list arrives
+    public static HashSet<String> ActiveSingleGoals = new HashSet<String>();
+    public static Dictionary<String, HashSet<String>> ActiveMultiGoals = new Dictionary<String, HashSet<String>>();
 
     // moonGrottoStomperBlock B, A, C, D -- named out of order, left to right
     public static HashSet<MoonGuid> BlackrootCrushers = new HashSet<MoonGuid> {
