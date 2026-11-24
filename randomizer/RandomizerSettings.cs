@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using UnityEngine;
 using Input = Core.Input;
@@ -11,7 +12,53 @@ public static class RandomizerSettings {
         WriteSettings();
     }
 
-    public static string LastAddedSetting = "Temp Row Brightness";
+    // move this with every new setting, or existing installs take the nag path on update
+    public static string LastAddedSetting = "Practice Demo Ghost";
+
+    private static string StripComment(string line) {
+        var at = line.IndexOf("//");
+        return at < 0 ? line : line.Substring(0, at);
+    }
+
+    // every 5.0 dll writes its built-in host: a file without one is 4.2's
+    private static bool IsPreV5File() {
+        try {
+            return File.Exists("RandomizerSettings.txt")
+                && !File.ReadAllText("RandomizerSettings.txt").Contains(DevSettings.BuiltinHost.Name + ":");
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    // 5.0 rewrites these on its first run; PreV5Backups keeps what 4.2 left, once.
+    public static void BackupPreV5Files(params string[] paths) {
+        const string dir = "PreV5Backups";
+        var preV5 = IsPreV5File();
+        foreach (var path in paths) {
+            var backup = Path.Combine(dir, Path.GetFileName(path));
+            // the beta's own copy is the 4.2 file: it moves in rather than being copied over
+            var betaBackup = path + ".pre5.0beta.backup";
+            try {
+                if (File.Exists(backup)) {
+                    continue;
+                }
+
+                if (File.Exists(betaBackup)) {
+                    Directory.CreateDirectory(dir);
+                    // copy and delete: Move fails across drives
+                    File.Copy(betaBackup, backup);
+                    File.Delete(betaBackup);
+                    Randomizer.log($"moved {betaBackup} to {backup}");
+                } else if (preV5 && File.Exists(path)) {
+                    Directory.CreateDirectory(dir);
+                    File.Copy(path, backup);
+                    Randomizer.log($"backed up {path} to {backup}");
+                }
+            } catch (Exception e) {
+                Randomizer.log($"backup of {path} failed: {e.Message}");
+            }
+        }
+    }
 
     public static void ParseSettings() {
         if (!File.Exists("RandomizerSettings.txt")) {
@@ -26,11 +73,7 @@ public static class RandomizerSettings {
 
             // parse step 1: read settings from file
             foreach (var rawLine in lines) {
-                var line = rawLine;
-
-                if (line.Contains("//")) {
-                    line = line.Split(new[] { "//" }, StringSplitOptions.None)[0].Trim();
-                }
+                var line = StripComment(rawLine);
 
                 if (!line.Contains(":")) {
                     continue;
@@ -62,6 +105,7 @@ public static class RandomizerSettings {
                 unseenSettings.Remove(setting);
             }
 
+            var firstSight = unseenSettings.Contains(DevSettings.BuiltinHost.Name);
             foreach (var missing in unseenSettings) {
                 All[missing].Reset();
                 writeList.Add(missing);
@@ -70,6 +114,7 @@ public static class RandomizerSettings {
                 }
             }
 
+            MoveNetcodeHost(firstSight);
             if (writeList.Count > 0 && !dirty) {
                 var writeText = "";
                 var nagList = new List<string>();
@@ -82,19 +127,42 @@ public static class RandomizerSettings {
                 }
 
                 if (nagList.Count > 0) {
-                    Randomizer.printInfo("Default settings written for: " + String.Join(", ", nagList.ToArray()), 120 + 60 * nagList.Count);
+                    Notice("Default settings written for: " + String.Join(", ", nagList.ToArray()), 120 + 60 * nagList.Count);
                 }
 
                 File.AppendAllText("RandomizerSettings.txt", writeText);
             }
 
             CurrentFilter = Customization.DefaultMapFilter.Value;
+            ImportDoubleBashTap();
             if (dirty) {
                 WriteSettings();
             }
+
+            if (Randomizer.MessageQueue != null) {
+                foreach (var notice in pendingNotices) {
+                    Randomizer.printInfo(notice.Key, notice.Value);
+                }
+
+                pendingNotices.Clear();
+            }
+
+            Announce();
         } catch (Exception e) {
             Randomizer.LogError("Error parsing settings: " + e.Message);
         }
+    }
+
+    // Moves a legacy Tap word off the Double Bash bind line; the setting takes it before the line drops it.
+    private static void ImportDoubleBashTap() {
+        if (!RandomizerRebinding.TapWasBound) {
+            return;
+        }
+
+        RandomizerRebinding.TapWasBound = false;
+        Controls.DoubleBash.Value = DoubleBashMode.Tap;
+        dirty = true;
+        RandomizerRebinding.WriteBindsToFile();
     }
 
     public static void ParseSettingLine(string setting, string value) {
@@ -104,16 +172,49 @@ public static class RandomizerSettings {
             }
         } catch (Exception) {
             All[setting].Reset();
-            Randomizer.printInfo("@" + setting + ": failed to parse value '" + value + "'. Using default value: '" + All[setting].ToString() + "'@", 240);
+            Notice(RandomizerText.Error(setting + ": failed to parse value '" + value + "'. Using default value: '" + All[setting].ToString() + "'"), 240);
         }
     }
+
+    // A dll built for another host moves the live host along, whatever it was set to:
+    // once per host change, in either direction.
+    private static void MoveNetcodeHost(bool firstSight) {
+        var builtin = DevSettings.BuiltinHost;
+        var host = DevSettings.NetcodeHost;
+        if (!firstSight && builtin.IsDefault()) {
+            return;
+        }
+
+        var detail = firstSight ? "first run with a built-in host" : $"was {host.Value}, built-in host was {builtin.Value}";
+        Randomizer.log($"netcode host: now {host.Default} ({detail})");
+        if (Dev.Value && (firstSight || host.Value != builtin.Value)) {
+            Notice($"Netcode host is now {host.Default} ({detail})", 600);
+        }
+
+        host.Reset();
+        builtin.Reset();
+        dirty = true;
+    }
+
+    // The boot-time parse runs before the message queue exists, and initialize() makes a
+    // fresh queue anyway, so notices wait for the next parse that can show them.
+    private static void Notice(string message, int frames) {
+        // boot reads the file twice before the first flush; one bad line is one notice
+        if (pendingNotices.Exists(n => n.Key == message)) {
+            return;
+        }
+
+        pendingNotices.Add(new KeyValuePair<string, int>(message, frames));
+    }
+
+    private static readonly List<KeyValuePair<string, int>> pendingNotices = new List<KeyValuePair<string, int>>();
 
     public static void WriteSettings() {
         if (!dirty) {
             return;
         }
 
-        using (var writer = new StreamWriter("RandomizerSettings.txt", false)) {
+        using (var writer = new StringWriter()) {
             writer.WriteLine("// This file contains a variety of randomizer-specific settings.");
             writer.WriteLine("// Lines that start with // are comments - they explain what this file does and how it works");
             writer.WriteLine("// Edit values of settings by changing the text after the \":\" and then saving the file.");
@@ -121,7 +222,7 @@ public static class RandomizerSettings {
             writer.WriteLine("");
             writer.WriteLine("// Words in square brackets ([]) are Ori base game binds (e.g. [Jump], [Climb])");
             writer.WriteLine("//    These binds can be changed in the in-game rebinding editor, or using the editor at orirando.com/rebinds");
-            writer.WriteLine("// Words double square brackets ([[]]) are rando-specific binds (e.g. [[Grenade Jump]])");
+            writer.WriteLine("// Words in double square brackets ([[]]) are rando-specific binds (e.g. [[Grenade Jump]])");
             writer.WriteLine("//    and can be changed in RandomizerRebinding.txt");
             writer.WriteLine("");
             writer.WriteLine("// If you have any questions, please ask for help in the discord (orirando.com/discord, #bf-randomizer)");
@@ -139,9 +240,37 @@ public static class RandomizerSettings {
                 writer.Write(": ");
                 writer.WriteLine($"{setting.Value.ToString()}\n");
             }
+
+            Save("RandomizerSettings.txt", writer.ToString());
         }
 
         dirty = false;
+    }
+
+    // Whole or not at all: a temp file replaces the old one. A symlink, or a file whose holder
+    // refuses the swap, is written in place instead.
+    private static void Save(string path, string text) {
+        var linked = File.Exists(path) && (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+        if (!linked) {
+            var temp = path + ".tmp";
+            try {
+                File.WriteAllText(temp, text);
+                if (File.Exists(path)) {
+                    File.Replace(temp, path, null);
+                } else {
+                    File.Move(temp, path);
+                }
+
+                return;
+            } catch (Exception) {
+                try {
+                    File.Delete(temp);
+                } catch (Exception) {
+                }
+            }
+        }
+
+        File.WriteAllText(path, text);
     }
 
     public static bool IsSwimBoosting() {
@@ -160,60 +289,91 @@ public static class RandomizerSettings {
         return Input.Jump.OnPressed;
     }
 
+    // Settings something has to be told about rather than read from when it needs them.
+    public static void Announce() {
+        RandomizerGhostSignal.Apply();
+        RandomizerPerf.Apply();
+    }
+
     public static void SetDirty() {
         dirty = true;
     }
 
     static RandomizerSettings() {
-        Controls.BashDeadzone = new FloatSetting("Controller Bash Deadzone", 0.5f, "(0.0-1.0, Default=0.5): Size of the controller stick deadzone when aiming Bash.");
+        Controls.BashDeadzone = new FloatSetting("Controller Bash Deadzone", 0.5f, "(0.0-1.0, Default=0.5): Size of the controller stick deadzone when aiming Bash.", min: 0f, max: 1f);
         Controls.FastGrenadeAim = new BoolSetting("Instant Grenade Aim", false, "True: When aiming Grenade on a controller, throw the grenade in the direction and distance the stick is aimed.\nFalse (Default): Vanilla behavior (move the stick to move the target location).");
         Controls.GrenadeAimSpeed = new FloatSetting("Grenade Aim Speed", 1.0f, "(Default 1.0 - higher numbers are faster): The speed at which controller/wsad inputs move the Grenade target.");
         Controls.InvertSwim = new BoolSetting("Invert Swim", false, "True: Ori swims fast by default, and slows down while pressing [Jump].\nFalse (default): Vanilla behavior (hold [Jump] to swim faster).");
         Controls.InvertClimb = new BoolSetting("Invert Climb", false, "True: Ori Climbs on walls by default, and lets go when holding [Climb]\nFalse (default): Vanilla behavior (hold [Climb] to Climb).");
-        Controls.GrenadeJump = new EnumSetting<GrenadeJumpMode>("Grenade Jump Mode", GrenadeJumpMode.Auto, "Auto (default): Grenade Jump by pressing [[Grenade Jump]] (Default [Grenade]+[Jump]).\nManual: Vanilla behavior (Grenade Jump by using Grenade, then Jump 1 frame later).");
+        Controls.GrenadeJump = new EnumSetting<GrenadeJumpMode>("Grenade Jump Mode", GrenadeJumpMode.Auto, "Auto (default): Grenade Jump by pressing [[Grenade Jump]].\nManual: Vanilla behavior (Grenade Jump by pressing [Grenade], then [Jump] 1 frame later).");
+        Controls.DoubleBash = new EnumSetting<DoubleBashMode>("Double Bash Mode", DoubleBashMode.Hold, "Hold (default): Hold [[Double Bash]] while Bashing to double Bash.\nTap: Tap [[Double Bash]] while Bashing to double Bash.");
         Controls.WallChargeMouseAim = new BoolSetting("Wall Charge Mouse Aim", true, "True (default): On Keyboard+Mouse, allows aiming Wall Charge Jumps with the mouse.\nFalse: Vanilla behavior.");
         Controls.SwimmingMouseAim = new BoolSetting("Swimming Mouse Aim", false, "True: On Keyboard+Mouse, Ori will swim towards the mouse cursor.\nFalse (default): Vanilla behavior.");
         Controls.SlowClimbVault = new BoolSetting("Slow Climb Vault", true, "True (default): slightly slows Climb vaults, making it easier to land on small vertical platforms with Climb.\nFalse: Vanilla behavior.");
-        Controls.Autofire = new EnumSetting<AutofireMode>("Autofire", AutofireMode.Off, "Hold: When [SpiritFlame] is held, autofire. Charge Flame by holding [[Suppress Autofire]] and [SpiritFlame].\nToggle: Press [SpiritFlame] to start autofiring. Press it again to stop. (Charge Flame as normal).\nOff: Vanilla behavior (no autofire).");
+        Controls.Autofire = new EnumSetting<AutofireMode>("Autofire", AutofireMode.Off, "Hold: When [Listen] is held, autofire. Charge Flame by holding [[Suppress Autofire]] and [Listen].\nToggle: Press [Listen] to start autofiring. Press it again to stop. (Charge Flame as normal).\nOff: Vanilla behavior (no autofire).");
         Controls.LongerBashAimTime = new BoolSetting("Longer Bash Aim Time", false, "True: Allows holding [Bash] for about 3x as long, giving you more time to aim.\nFalse (default): Vanilla behavior (about 1.7 seconds of Bash aiming time).");
 
-        Customization.ColdColor = new ColorSetting("Cold Color", new Color(0f, 0.5f, 0.5f, 0.5f), 511f, "Red, Blue, Green, Transparency (0-255 for each): The color Ori turns when Sensing an item at max range.");
-        Customization.HotColor = new ColorSetting("Hot Color", new Color(0.5f, 0.1666667f, 0f, 0.5f), 511f, "Red, Blue, Green, Transparency (0-255 for each): The color Ori turns when Sensing an item at range 0.");
-        Customization.DiscoSense = new BoolSetting("Disco Sense", false, "True: Ignore sense colors, and instead speed up the color.txt rotation when sense is active.\nFalse (default): colors.txt rotation is overwritten by Sense colors.", false);
+        Customization.ColdColor = new ColorSetting("Cold Color", new Color(0f, 0.5f, 0.5f, 0.5f), HeadroomScale, "Red, Green, Blue, Transparency (0-255 for each): The color Ori turns when Sensing an item at max range.");
+        Customization.HotColor = new ColorSetting("Hot Color", new Color(0.5f, 0.1666667f, 0f, 0.5f), HeadroomScale, "Red, Green, Blue, Transparency (0-255 for each): The color Ori turns when Sensing an item at range 0.");
+        Customization.DiscoSense = new BoolSetting("Disco Sense", false, "True: Ignore sense colors, and instead speed up the Color.txt rotation when sense is active (if you have one).\nFalse (default): Color.txt rotation is overwritten by Sense colors.", false);
+        Customization.RainbowDash = new BoolSetting("Rainbow Dash", false, "True: Enhance your dashes (cosmetically) with sparkles and rainbows.\nFalse (default): Vanilla dashes.", false);
+        Customization.DirtyWater = new DirtyWaterSetting("Dirty Water", DirtyWaterMode.Partial, "Partial (default): all swimmable water pools appear poisoned until you find Clean Water.\nFull: same as Partial, plus added gloom effects in those areas.\nDisabled: vanilla water in all areas.", false);
+        Customization.TouchedVisibility = new FloatSetting("Touched Pickup Visibility", 0.5f, "(0.0-1.0, Default=0.5): Transparency for pickup icons that have been touched but are not currently collected (usually because they were lost on death). Set to 0 to hide completely; the Uncollected filter still shows them faintly.");
+        Customization.MapWarpHold = new FloatSetting("Map Warp Hold", 1f, "(0.01-3.0, Default=1.0): How long [[Map Warp]] must be held to start a warp on the area map.");
+        Customization.ShowOtherPlayers = new BoolSetting("Show Other Players", true, "True (default): In multiplayer games, other players show up as translucent ghosts when on the same screen and are marked on the map.\nFalse: disables this functionality.", true);
         Customization.MultiplePickupMessages = new BoolSetting("Display Multiple Pickup Messages", false, "True: Shows up to 5 pickup messages at once on the left side of the screen. Hold [[Replay Message]] to show more.\nFalse (default): New pickup messages display one at a time at the top center of the screen.", false);
         Customization.AlwaysShowLastFivePickups = new BoolSetting("Always Show Last Five Pickup Messages", false, "True: Always show the last 5 pickup messages. Only works if Display Multiple Pickups is set to True.\nFalse (default): Only show pickups when found or on pressing [[Replay Message]].", false);
-        Customization.WarpTeleporterColor = new ColorSetting("Warp Teleporter Color", new Color(202f / 255f, 57f / 255f, 243f / 255f, 1f), 255f, "Red, Blue, Green, Transparency (0-255 for each): The color that Warp-created Teleporters are on the map.");
+        Customization.WarpTeleporterColor = new ColorSetting("Warp Teleporter Color", new Color(202f / 255f, 57f / 255f, 243f / 255f, 1f), FullScale, "Red, Green, Blue, Transparency (0-255 for each): The color that Warp-created Teleporters are on the map.");
         Customization.DefaultMapFilter = new EnumSetting<MapFilterMode>("Default Map Filter", MapFilterMode.InLogic, "InLogic (default): Select the In Logic map filter when first opening the map.\nUncollected: Select the Uncollected map filter when first opening the map.", false);
-        Customization.HintLevel = new EnumSetting<HintLevels>("Hints", HintLevels.NewPlayer, "NewPlayer (default): Show loading tips intended for new rando players.\nExperienced: Show loading tips intended for more experienced rando players.\nDisabled: do not show loading screen tips.", false);
+        Customization.HintLevel = new EnumSetting<HintLevels>("Hints", HintLevels.NewPlayer, "NewPlayer (default): Show loading tips intended for new rando players.\nExperienced: Show loading tips intended for more experienced rando players.\nDisabled: Do not show loading screen tips.", false);
+        Customization.CustomPickupNames = new BoolSetting("Custom Pickup Names", false, "True: pickup messages use your names from PickupNames.txt.\nFalse (default): the usual names.", false);
         Customization.RandomizedExpNames = new BoolSetting("Randomized Experience Names", false, "True: Replace the word \"Experience\" with a random currency name whenever you gain experience from a pickup.\nFalse (default): Experience pickups are just called Experience.", false);
         Customization.AlwaysShowDoorHints = new BoolSetting("Always Show Keysanity Door Hints", false, "True: Always show any unlocked Keysanity door hints when viewing the map.\nFalse (default): Only show Keysanity door hints in the map when hovering a door.");
         Customization.KeyLockWarnings = new BoolSetting("Keystone Door Logic Warnings", true, "True (default): Warn when touching a keystone door that is not currently in logic, since opening it early could make the seed uncompletable.\nFalse: no warning.");
-        Customization.PickupMessageBgColor = new ColorSetting("Pickup Message Background Color", new Color(0f, 0f, 0f, 0.5f), 510f, "Red, Blue, Green, Transparency (0-255 for each): Background color for pickup messages.\nDefault: 0, 0, 0, 255", false);
-        Customization.MwPickupMessageBgColor = new ColorSetting("Multiworld Outbound Message Background Color", new Color(64f / 510f, 64f / 510f, 64f / 510f, 255f / 510f), 510f, "Red, Blue, Green, Transparency (0-255 for each): Background color for pickup messages sent to another Player.\nBoth local pickups and pickups received from another player will use the \"Pickup Message Background Color\" color.\nThis is for pickups that you find in your seed and send to another player.\nDefault: 64, 64, 64, 255", false);
+        Customization.PickupMessageBgColor = new ColorSetting("Pickup Message Background Color", new Color(0f, 0f, 0f, 0.5f), HeadroomScale, "Red, Green, Blue, Transparency (0-255 for each): Background color for pickup messages.\nDefault: 0, 0, 0, 255", false);
+        Customization.MwPickupMessageBgColor = new ColorSetting("Multiworld Outbound Message Background Color", new Color(64f / 510f, 64f / 510f, 64f / 510f, 255f / 510f), HeadroomScale, "Red, Green, Blue, Transparency (0-255 for each): Background color for pickup messages sent to another Player.\nBoth local pickups and pickups received from another player will use the \"Pickup Message Background Color\" color.\nThis is for pickups that you find in your seed and send to another player.\nDefault: 64, 64, 64, 255", false);
         Customization.DisableTempResourceRows = new BoolSetting("Disable Temporary Resource Rows", false, "True: temporary health and energy draw inline past your normal cells, as older versions did.\nFalse (default): temporary health and energy get their own smaller row above each bar.", false);
         Customization.TempRowSpacing = new FloatSetting("Temp Row Spacing", 0.8f, "Vertical gap between a HUD bar and its temporary-resource row, in strip heights.", false);
         Customization.TempRowHorizontalOffset = new FloatSetting("Temp Row Horizontal Offset", 0f, "Horizontal shift of the temporary-resource rows, in strip heights. Positive pushes away from the experience wheel.", false);
-        Customization.TempRowScale = new FloatSetting("Temp Row Scale", 0.7f, "Temporary-resource row size relative to the base bar.", false);
+        Customization.TempRowScale = new FloatSetting("Temp Row Scale", 0.7f, "(0.2-2.0) Temporary-resource row size relative to the base bar.", false, min: 0.2f, max: 2f);
         Customization.TempRowBrightness = new FloatSetting("Temp Row Brightness", 0.8f, "Brightness of the temporary-resource rows, relative to the base bars.", false);
 
         QOL.AbilityMenuOpacity = new FloatSetting("Ability Menu Opacity", 0.5f, "(0.0-1.0) The opacity of the ability menu when performing a Save Anywhere.", false);
+        QOL.PauseMenuOpacity = new FloatSetting("Pause Menu Opacity", 1.0f, "(0.0-1.0) The opacity of the pause menu.", false);
         QOL.CursorLock = new BoolSetting("Cursor Lock", false, "True: Locks the mouse cursor inside the window\nFalse (default): Vanilla behavior (cursor can leave the Ori window in borderless / windowed mode).", false);
+        QOL.PerformanceOptimizations = new BoolSetting("Performance Optimizations", true, "True (default): fewer loading freezes and steadier frame pacing.\nFalse: vanilla behavior.", false);
+        QOL.DebugControls = new EnumSetting<DebugControls>("Debug Controls", DebugControls.Default, "Default (default): Default/Vanilla debug controls.\nFast: Debug controls are twice as fast and stay on screen.", false);
+
+        Practice.Folder = new StringSetting("Practice Folder", "practice", "Where practice segments are kept: a folder name inside the game folder, or a full path.", false);
+        Practice.Ghost = new EnumSetting<PracticeGhost>("Practice Ghost", PracticeGhost.Segment, "Which ghost to race in practice mode.\nSegment (default): Pinned run if there is one; fastest otherwise.\nFastest, Pinned, Recent: always that one. None: no ghosts in practice mode.\nUntil you have that ghost, the segment's demo run races instead.", false);
+        Practice.DemoGhost = new BoolSetting("Practice Demo Ghost", false, "True: race the segment's demo run alongside your own ghost.\nFalse (default): the demo only races until you have a ghost of your own.", false);
+        Practice.Timer = new BoolSetting("Practice Timer", true, "Show time elapsed and the time to beat in the top right during a practice run.", false);
 
         Game.DefaultDifficulty = new EnumSetting<Difficulty>("Default Difficulty", Difficulty.Relaxing, "(Relaxing (default), Challenging, Punishing, OneLife): The default difficulty on new file selection.", false);
 
         Accessibility.ApplySoundCompression = new BoolSetting("Apply Sound Compression", false, "True: Caps sound from getting too loud (relevant when e.g. charge jumping very echo-y areas, like Spirit Caverns).\nFalse (default): Vanilla behavior.", false);
-        Accessibility.SoundCompressionFactor = new FloatSetting("Sound Compression Factor", 0.6f, "(0.0-1.0) Higher values mean more sound compression (fewer sounds louder than the rest of them).", false);
+        Accessibility.SoundCompressionFactor = new FloatSetting("Sound Compression Factor", 0.6f, "(0.0-1.0) Higher values mean more sound compression (fewer sounds louder than the rest of them).", false, min: 0f, max: 1f);
         Accessibility.CameraShakeFactor = new FloatSetting("Camera Shake Factor", 1f, "(0.0-1.0) Reduce the intensity of camera shake effects in the game. Set to 0 to disable camera shake entirely.", false);
         Accessibility.DisableMenuBlur = new BoolSetting("Disable Menu Blur", false, "True: Disables the blur effect applied to the game during Save Anywhere.\nFalse (default): Vanilla behavior.", false);
+        Accessibility.ColorlessText = new BoolSetting("Colorless Text", false, "True: text is shown without colors.\nFalse (default): colored text.", false);
+        Accessibility.TextCues = new BoolSetting("Text Cues", false, "True: names say what their color means, like (Skill) or (Key).\nFalse (default): no cues.", false);
 
         Dev = new BoolSetting("Dev", false, "", false, true);
 
         DevSettings.AreasOri = new BoolSetting("Keep Areas.Ori Updated", true, "Update areas.ori from the server. Set to False to disable for local development.", false, true);
         DevSettings.BlackrootOrbRoomClimbAssist = new BoolSetting("Blackroot Orb Room Climb Assist", true, "", false, true);
-        DevSettings.WebEndpoint = new UrlSetting("Root Netcode URL", "bfnc.orirando.com", "The base URL to connect to for sync code.\nIf you change this from the default ('bfnc.orirando.com') it is going to break all netcode. \nDO NOT PUT AN http:// IT WILL NOT WORK IF YOU DO.", false, true);
-        DevSettings.WsEndpoint = new UrlSetting("Websocket Netcode URL", "orirando.com", "The host the websocket netcode connects to (wss://).\nIf you change this from the default ('orirando.com') it is going to break all netcode.", false, true);
-        DevSettings.DisableWebsocket = new BoolSetting("Disable Websocket", false, "True: never use the websocket netcode transport; poll over http like older versions.\nFalse (default): use the websocket when available, falling back to http.", false, true);
+        DevSettings.NetcodeHost = new HostSetting("Netcode Host", Randomizer.NETCODE_HOST, "The server root address for netcode functionality (without the protocol prefix).", false, true);
+        DevSettings.PlainHttp = new BoolSetting("Netcode Plain HTTP", false, "True: connect to the server without encryption (only do this if you're locally hosting! it won't work on the actual site!)\nFalse (default): TLS.", false, true);
+        DevSettings.BuiltinHost = new StringSetting("Built-in Netcode Host", Randomizer.NETCODE_HOST, "Where this dll pointed when it was built. (Not an actual setting. Don't change it.)", false);
+        DevSettings.EchoDelay = new FloatSetting("Echo Delay", 0.5f, "Seconds behind you the first echo runs (the Spawn Echo keybind).", false, true);
+        DevSettings.EchoSpacing = new FloatSetting("Echo Spacing", 0.5f, "Seconds each further echo trails the one before it.", false, true);
     }
+
+    // 0-255 lands at half intensity, leaving room above 255 to over-saturate; seed BGCOLOR uses the same scale
+    public const float HeadroomScale = 510f;
+
+    // a plain color, full intensity at 255
+    public const float FullScale = 255f;
 
     public static Dictionary<string, SettingBase> All = new Dictionary<string, SettingBase>();
 
@@ -236,6 +396,12 @@ public static class RandomizerSettings {
         OneLife
     }
 
+    public enum DirtyWaterMode {
+        Disabled,
+        Partial,
+        Full,
+    }
+
     public enum HintLevels {
         NewPlayer,
         Experienced,
@@ -247,9 +413,19 @@ public static class RandomizerSettings {
         Auto
     }
 
+    public enum DoubleBashMode {
+        Hold,
+        Tap
+    }
+
     public enum MapFilterMode {
         [Description("In Logic")] InLogic,
         [Description("Uncollected")] Uncollected
+    }
+
+    public enum DebugControls {
+        Default,
+        Fast,
     }
 
     public static class Controls {
@@ -264,6 +440,8 @@ public static class RandomizerSettings {
         public static BoolSetting InvertClimb;
 
         public static EnumSetting<GrenadeJumpMode> GrenadeJump;
+
+        public static EnumSetting<DoubleBashMode> DoubleBash;
 
         public static BoolSetting WallChargeMouseAim;
 
@@ -283,6 +461,16 @@ public static class RandomizerSettings {
 
         public static BoolSetting DiscoSense;
 
+        public static BoolSetting RainbowDash;
+
+        public static DirtyWaterSetting DirtyWater;
+
+        public static BoolSetting ShowOtherPlayers;
+
+        public static FloatSetting TouchedVisibility;
+
+        public static FloatSetting MapWarpHold;
+
         public static BoolSetting MultiplePickupMessages;
 
         public static BoolSetting AlwaysShowLastFivePickups;
@@ -294,6 +482,8 @@ public static class RandomizerSettings {
         public static EnumSetting<HintLevels> HintLevel;
 
         public static BoolSetting RandomizedExpNames;
+
+        public static BoolSetting CustomPickupNames;
 
         public static BoolSetting AlwaysShowDoorHints;
 
@@ -317,7 +507,29 @@ public static class RandomizerSettings {
     public static class QOL {
         public static FloatSetting AbilityMenuOpacity;
 
+        public static FloatSetting PauseMenuOpacity;
+
         public static BoolSetting CursorLock;
+
+        public static BoolSetting PerformanceOptimizations;
+
+        public static EnumSetting<DebugControls> DebugControls;
+    }
+
+    public static class Practice {
+        public static StringSetting Folder;
+
+        public static EnumSetting<PracticeGhost> Ghost;
+        public static BoolSetting DemoGhost;
+        public static BoolSetting Timer;
+    }
+
+    public enum PracticeGhost {
+        Segment,
+        Fastest,
+        Pinned,
+        Recent,
+        None
     }
 
     public static class Game {
@@ -332,15 +544,21 @@ public static class RandomizerSettings {
         public static FloatSetting CameraShakeFactor;
 
         public static BoolSetting DisableMenuBlur;
+
+        public static BoolSetting ColorlessText;
+
+        public static BoolSetting TextCues;
     }
 
 
     public static class DevSettings {
         public static BoolSetting AreasOri;
         public static BoolSetting BlackrootOrbRoomClimbAssist;
-        public static UrlSetting WebEndpoint;
-        public static UrlSetting WsEndpoint;
-        public static BoolSetting DisableWebsocket;
+        public static HostSetting NetcodeHost;
+        public static BoolSetting PlainHttp;
+        public static StringSetting BuiltinHost;
+        public static FloatSetting EchoDelay;
+        public static FloatSetting EchoSpacing;
     }
 
     public abstract class SettingBase {
@@ -406,25 +624,61 @@ public static class RandomizerSettings {
     }
 
     public class FloatSetting : Setting<float> {
-        public FloatSetting(string name, float defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
+        public FloatSetting(string name, float defaultValue, string comment = "", bool nag = true, bool hidden = false,
+                float min = float.NegativeInfinity, float max = float.PositiveInfinity) : base(name, defaultValue, comment, nag, hidden) {
+            Min = min;
+            Max = max;
         }
 
+        // either decimal mark reads and a dot is written, whatever the player's locale; NaN is never in range
         public override void Parse(string value) {
-            Value = float.Parse(value);
+            var parsed = float.Parse(value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture);
+            if (!(parsed >= Min && parsed <= Max)) {
+                throw new FormatException("out of range");
+            }
+
+            Value = parsed;
+        }
+
+        public override string ToString() {
+            return Value.ToString(CultureInfo.InvariantCulture);
         }
 
         public override string ValidValues() => "A decimal number";
+
+        public readonly float Min;
+
+        public readonly float Max;
     }
 
-    public class UrlSetting : Setting<String> {
-        public UrlSetting(string name, string defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
+    public class HostSetting : Setting<String> {
+        public HostSetting(string name, string defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
         }
 
-        public override void Parse(string Value) {
-            this.Value = Value;
+        // host or host:port; anything else falls back to the default with the usual nag
+        public override void Parse(string value) {
+            var parts = (value ?? "").Trim().TrimEnd('/').Split(':');
+            int port;
+            if (parts.Length > 2 || Uri.CheckHostName(parts[0]) == UriHostNameType.Unknown
+                    || (parts.Length == 2 && !int.TryParse(parts[1], out port))) {
+                throw new FormatException("expected host or host:port");
+            }
+
+            Value = string.Join(":", parts);
         }
 
-        public override string ValidValues() => "A url";
+        public override string ValidValues() => "A host name (host or host:port), no protocol";
+    }
+
+    public class StringSetting : Setting<String> {
+        public StringSetting(string name, string defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
+        }
+
+        public override void Parse(string value) {
+            Value = string.IsNullOrEmpty(value) ? Default : value.Trim();
+        }
+
+        public override string ValidValues() => "Text";
     }
 
     public class ColorSetting : Setting<Color> {
@@ -436,7 +690,8 @@ public static class RandomizerSettings {
 
         public override void Parse(string value) {
             var parts = value.Split(',');
-            Value = new Color(float.Parse(parts[0]) / divisor, float.Parse(parts[1]) / divisor, float.Parse(parts[2]) / divisor, float.Parse(parts[3]) / divisor);
+            Func<string, float> part = p => float.Parse(p, NumberStyles.Float, CultureInfo.InvariantCulture) / divisor;
+            Value = new Color(part(parts[0]), part(parts[1]), part(parts[2]), part(parts[3]));
         }
 
         public override string ToString() {
@@ -455,5 +710,22 @@ public static class RandomizerSettings {
         }
 
         public override string ValidValues() => $"{String.Join("|", Enum.GetNames(typeof(T)))}";
+    }
+
+    // the old on/off reads as Partial/Disabled, and the file is rewritten with the new word
+    public class DirtyWaterSetting : EnumSetting<DirtyWaterMode> {
+        public DirtyWaterSetting(string name, DirtyWaterMode defaultValue, string comment = "", bool nag = true, bool hidden = false) : base(name, defaultValue, comment, nag, hidden) {
+        }
+
+        public override void Parse(string value) {
+            bool on;
+            if (bool.TryParse(value.Trim(), out on)) {
+                Value = on ? DirtyWaterMode.Partial : DirtyWaterMode.Disabled;
+                dirty = true;
+                return;
+            }
+
+            base.Parse(value);
+        }
     }
 }

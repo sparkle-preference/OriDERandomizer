@@ -1,3 +1,4 @@
+Current patch notes: https://orirando.com/patchnotes (this file stops at v2.6.7)
 
 v2.6.7
 

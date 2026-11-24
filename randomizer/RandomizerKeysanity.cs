@@ -30,20 +30,8 @@ public class RandomizerKeysanity {
 
         reverseDoorKeyMap = doorKeyMap.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
 
-        hintMap = new Dictionary<int, string> {
-            { 300, "Glades Pool" },
-            { 301, "Lower Spirit Caverns" },
-            { 302, "Grotto" },
-            { 303, "Swamp" },
-            { 304, "Upper Spirit Caverns" },
-            { 305, "Lower Ginso" },
-            { 306, "Upper Ginso" },
-            { 307, "Misty" },
-            { 308, "Forlorn" },
-            { 309, "Lower Sorrow" },
-            { 310, "Mid Sorrow" },
-            { 311, "Upper Sorrow" },
-        };
+        hintMap = Enumerable.Range(0, RandomizerLocationManager.DoorNames.Length)
+            .ToDictionary(i => 300 + i, i => RandomizerLocationManager.DoorNames[i]);
 
         inventory = inv;
     }
@@ -106,7 +94,7 @@ public class RandomizerKeysanity {
             }
 
             var count = inventory.GetRandomizerItem(id);
-            if (count == countForDoor(id)) {
+            if (count >= countForDoor(id)) {
                 return $"${hintMap[id]} {count}/{count}\n(Openable!)$";
             }
 
@@ -135,10 +123,8 @@ public class RandomizerKeysanity {
 
     private static int apSlot(int coords) => coords <= -2 && coords >= -257 ? -coords - 2 : -1;
 
-    // Archipelago's fill decides where exported keys really are, so the baked
-    // zone is just the pre-export roll: show progress, not a confident wrong
-    // answer. The bridge's reply (real zone, or "Archipelago" for a key held
-    // outside the Ori worlds) lands in ApHints and takes over from there.
+    // an exported key's baked zone is only the pre-export roll: show "loading" until the
+    // bridge's hint (ApHints) says where it really is
     private string clueArea(RandomizerKeysanityHintInfo rkhi) {
         var slot = apSlot(rkhi.Coords);
         if (RandomizerMW.ApGrants && slot >= 0) {
@@ -186,7 +172,7 @@ public class RandomizerKeysanity {
 
     private string GetProgress(int id, bool printKeystone) {
         if (hintMap.TryGetValue(id, out var baseHint)) {
-            var canOpen = inventory.GetRandomizerItem(id) - countForDoor(id) == 0;
+            var canOpen = inventory.GetRandomizerItem(id) >= countForDoor(id);
             var hint = $"{baseHint}{(printKeystone ? " Keystone " : " ")}({inventory.GetRandomizerItem(id)}/{countForDoor(id)})";
             if (canOpen) {
                 return $"${hint}$";

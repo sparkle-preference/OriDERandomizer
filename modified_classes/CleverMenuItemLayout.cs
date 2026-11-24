@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CleverMenuItemLayout : MonoBehaviour {
@@ -8,6 +9,7 @@ public class CleverMenuItemLayout : MonoBehaviour {
 
     [ContextMenu("Apply")]
     public void Sort() {
+        ApplyWindow();
         var num = 0f;
         foreach (var cleverMenuItem in MenuItems) {
             if (cleverMenuItem.IsVisible) {
@@ -29,6 +31,96 @@ public class CleverMenuItemLayout : MonoBehaviour {
         }
     }
 
+    // Rows outside the window are hidden, not moved: this menu has no mask anywhere, so a
+    // row pushed past the panel edge still draws over whatever is behind it.
+    private void ApplyWindow() {
+        if (MaxVisible <= 0 || MenuItems.Count <= MaxVisible) {
+            for (var i = 0; i < MenuItems.Count; i++) {
+                Show(i, true);
+            }
+
+            ScrollTop = 0;
+            return;
+        }
+
+        if (Selection == null) {
+            Selection = GetComponent<CleverMenuItemSelectionManager>();
+        }
+
+        // navigation may step onto hidden rows (see Navigable), so the window follows the selection
+        var focus = Selection != null ? Mathf.Max(0, Selection.Index) : ScrollTop;
+        ScrollTop = Mathf.Clamp(ScrollTop, focus - MaxVisible + 1, focus);
+        ScrollTop = Mathf.Clamp(ScrollTop, 0, MenuItems.Count - MaxVisible);
+        var last = ScrollTop + MaxVisible - 1;
+        for (var i = 0; i < MenuItems.Count; i++) {
+            Show(i, i >= ScrollTop && i < ScrollTop + MaxVisible);
+        }
+
+        // a half-lit edge row means more past it; the selected row always stays fully lit
+        if (EdgeFade <= 0f) {
+            return;
+        }
+
+        if (ScrollTop > 0 && ScrollTop != focus) {
+            MenuItems[ScrollTop].SetOpacity(EdgeFade);
+        }
+
+        if (last < MenuItems.Count - 1 && last != focus) {
+            MenuItems[last].SetOpacity(EdgeFade);
+        }
+    }
+
+    private void Show(int index, bool visible) {
+        var item = MenuItems[index];
+        var hide = item.GetComponent<RandomizerScrollHide>();
+        if (hide == null) {
+            if (visible) {
+                item.SetOpacity(1f);
+                return;
+            }
+
+            hide = item.gameObject.AddComponent<RandomizerScrollHide>();
+            hide.Inner = item.Visible;
+            item.Visible = hide;
+        }
+
+        hide.Hidden = !visible;
+        item.RefreshVisible();
+        if (visible) {
+            item.SetOpacity(1f);
+        }
+    }
+
+    public void ScrollBy(int rows) {
+        ScrollTo(ScrollTop + rows);
+    }
+
+    // The window follows the selection, so a mouse scroll carries the selection into it.
+    public void ScrollTo(int top) {
+        if (MaxVisible <= 0 || MenuItems.Count <= MaxVisible) {
+            return;
+        }
+
+        var wanted = Mathf.Clamp(top, 0, MenuItems.Count - MaxVisible);
+        if (wanted == ScrollTop) {
+            return;
+        }
+
+        ScrollTop = wanted;
+        if (Selection != null) {
+            var bottom = ScrollTop + MaxVisible - 1;
+            var inside = Mathf.Clamp(Selection.Index, ScrollTop, bottom);
+            if (inside != Selection.Index) {
+                // a header cannot hold the selection: the nearest row inside the window that can
+                var row = Selection.NavigableFrom(inside, ScrollTop, bottom);
+                Selection.SetCurrentItem(row >= 0 ? row : inside);
+                return;
+            }
+        }
+
+        Sort();
+    }
+
     public void AddItem(CleverMenuItem item) {
         MenuItems.Add(item);
         Sort();
@@ -42,6 +134,16 @@ public class CleverMenuItemLayout : MonoBehaviour {
     public List<CleverMenuItem> MenuItems = new List<CleverMenuItem>();
 
     public Alignment VerticalAlignment;
+
+    // 0 = no window: every row laid out
+    [NonSerialized] public int MaxVisible;
+
+    [NonSerialized] public CleverMenuItemSelectionManager Selection;
+
+    [NonSerialized] public int ScrollTop;
+
+    // 0 = no fade; otherwise the opacity of a window edge that has more rows past it
+    [NonSerialized] public float EdgeFade;
 
     public enum Alignment {
         Top,

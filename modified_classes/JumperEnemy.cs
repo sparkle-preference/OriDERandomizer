@@ -108,12 +108,18 @@ public class JumperEnemy : GroundEnemy {
             m_shouldStomp = false;
         } else {
             localSpeed.x = Mathf.Clamp(PositionToPlayerPosition.x / num, -localSpeed.x, localSpeed.x);
-            m_shouldStomp = Mathf.Abs((PlayerPosition + m_playerSmoothSpeed - Position).x) < Settings.StompAttackDistance;
+            var toPlayer = PlayerPosition + m_playerSmoothSpeed - Position;
+            if (PlatformMovement.GravityAngle != 0f) {
+                toPlayer = transform.InverseTransformDirection(toPlayer);
+            }
+
+            m_shouldStomp = Mathf.Abs(toPlayer.x) < Settings.StompAttackDistance;
         }
 
         var vector = new Vector3(localSpeed.x * num * 0.5f, Settings.JumpHeight);
         var flag = Mathf.Sign(localSpeed.x) != FaceLeftSign;
-        if (Physics.Raycast(new Ray(Position, vector.normalized), vector.magnitude, RaycastLayerMask) || !m_shouldStomp) {
+        var reach = PlatformMovement.GravityAngle != 0f ? (Vector3)PlatformMovement.LocalToWorld(vector) : vector;
+        if (Physics.Raycast(new Ray(Position, reach.normalized), reach.magnitude, RaycastLayerMask) || !m_shouldStomp) {
             localSpeed.y = PhysicsHelper.CalculateSpeedFromHeight(Settings.ShortJumpHeight, Settings.Gravity);
             Animation.Play(!flag ? Animations.ShortJump : Animations.JumpFlip, 1, () => !PlatformMovement.IsOnGround);
             m_shouldStomp = false;
@@ -163,9 +169,9 @@ public class JumperEnemy : GroundEnemy {
         var currentStateTime = Controller.StateMachine.CurrentStateTime;
         if (currentState == State.Thrown) {
             var num = 1f - Mathf.InverseLerp(0.3f, 0.6f, currentStateTime);
-            FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(m_thrownDirection) - 90f) * num);
+            FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(m_thrownDirection) - 90f) * num + PlatformMovement.GravityAngle);
         } else {
-            var b = !PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle;
+            var b = (!PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle) + PlatformMovement.GravityAngle;
             FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.2f));
         }
     }

@@ -1,0 +1,142 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+
+public class DamageDealer : MonoBehaviour {
+    public virtual float AmountOfDamage(GameObject target) {
+        return Damage;
+    }
+
+    public void Start() {
+    }
+
+    private void Update() {
+        m_collidedThisTick.Clear();
+    }
+
+    public void OnTriggerStay(Collider collider) {
+        if (GameController.FreezeFixedUpdate) {
+            return;
+        }
+
+        var attachedRigidbody = collider.attachedRigidbody;
+        if (attachedRigidbody) {
+            OnCollision(attachedRigidbody.gameObject);
+        }
+    }
+
+    public void OnCollisionStay(Collision collision) {
+        if (GameController.FreezeFixedUpdate) {
+            return;
+        }
+
+        var attachedRigidbody = collision.collider.attachedRigidbody;
+        if (attachedRigidbody) {
+            OnCollision(attachedRigidbody.gameObject);
+        }
+    }
+
+    public void OnCollision(GameObject collided) {
+        if (!Activated) {
+            return;
+        }
+
+        var target = GetTarget(collided);
+
+        if (target == null || !target.activeInHierarchy) {
+            return;
+        }
+
+        if (!gameObject.activeInHierarchy) {
+            return;
+        }
+
+        if (PlayerOnly) {
+            if (s_oriMask == -1) {
+                s_oriMask = LayerMask.NameToLayer("character");
+            }
+
+            if (target.layer != s_oriMask || (!target.GetComponent<SeinDamageReciever>() && !target.GetComponent<SpiritGrenadeDamageDealer>())) {
+                return;
+            }
+        }
+
+        DealDamage(target);
+    }
+
+    private GameObject GetTarget(GameObject collided) {
+        if (!UseExtendedHitboxes) {
+            return collided;
+        }
+
+        var damageReciever = collided
+            .GetComponentsInChildren<IDamageReciever>()
+            .Select(dr => ((MonoBehaviour)dr).gameObject)
+            .SingleOrDefault(dr => dr.layer == RandomizerLayers.Character);
+
+        if (damageReciever == null) {
+            damageReciever = collided;
+        }
+
+        if (!m_collidedThisTick.Add(damageReciever)) {
+            return null;
+        }
+
+        return damageReciever;
+    }
+
+    public virtual void DealDamage(GameObject target) {
+        if (GetComponent<Collider>() && !GetComponent<Collider>().enabled) {
+            return;
+        }
+
+        if (InstantiateUtility.IsDestroyed(target)) {
+            return;
+        }
+
+        if (Condition && !Condition.Validate(null)) {
+            return;
+        }
+
+        if (ShouldDealDamage != null && !ShouldDealDamage(target)) {
+            return;
+        }
+
+        Vector2 vector = target.transform.position - transform.position;
+        var damage = new Damage(AmountOfDamage(target), vector.normalized, transform.position, DamageType, gameObject);
+        var flag = false;
+        var damageReciever = target.FindComponent<IDamageReciever>();
+        if (damageReciever != null) {
+            damageReciever.OnRecieveDamage(damage);
+            flag = true;
+        }
+
+        if (flag) {
+            OnDamageDealtEvent(target, damage);
+        }
+    }
+
+    public float Damage;
+
+    public DamageType DamageType;
+
+    public bool Activated = true;
+
+    public bool PlayerOnly;
+
+    public Action<GameObject, Damage> OnDamageDealtEvent = delegate {
+    };
+
+    public Func<GameObject, bool> ShouldDealDamage;
+
+    public Condition Condition;
+
+    [NonSerialized] public bool UseExtendedHitboxes;
+
+    private HashSet<GameObject> m_collidedThisTick = new();
+
+    private static int s_oriMask = -1;
+
+    private List<Collider> m_colliders = new List<Collider>();
+}

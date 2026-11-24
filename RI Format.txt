@@ -1,0 +1,51 @@
+﻿
+Slot values
+===
+{n} is replaced with whatever save slot n holds, so a message can read a counter a
+seed keeps for itself. RandomizerItemIDs.txt lists the slots; 8000-8999 and anything
+from 20000 up are free for a seed's own use, the difference being that 8000-8999
+survives a death. RI and BM take the same {n} on the right of an =.
+- "You have found {8000} of them." -> "You have found 3 of them."
+
+{T} counts the game's ticks on this save, 60 a second, and a death sets it back like a
+slot. {Pos.x} and {Pos.y} read Ori's position. Both work anywhere {n} does.
+
+RI and BM also take math on the right of an =: numbers (up to eight decimals) and {n}
+joined by + - * / %, with * / % going first. Division drops the remainder. Math takes no
+parentheses. A slot holds whole numbers, so an RI that comes out fractional is rounded,
+halves away from zero, with a warning; /1 drops the fraction instead. BR rounds to
+hundredths the same way.
+- RI|27000={20000}*2 - 1 -> slot 27000 becomes twice slot 20000, minus 1
+- RI|8000+={8001}*3 -> slot 8000 goes up by three times slot 8001
+- RI|8000={8001}*0.75/1 -> slot 8000 becomes three quarters of slot 8001, fraction dropped
+
+sin(...) and cos(...) take degrees, with any math inside. A value with either in it
+rounds into a slot without the warning.
+- BR|0=100+3*sin({T}*6),-40 -> box 0 swings 3 either side of x=100, once a second
+
+A comparison in parentheses, (a OP b), is 1 when it holds and 0 when it does not: a and
+b are math, OP one of == != < > <= >=. AND, OR and NOT (any case) join comparisons, each
+in its own parentheses. AND goes before OR, and once the answer is known the rest is skipped.
+- BM|4=(5=={8000}) -> box 4 on while slot 8000 holds 5, off otherwise
+- BM|4=({8000}>={8001}) -> box 4 on while slot 8000 is at least slot 8001
+- RI|8002=({8000}!=0) -> slot 8002 becomes 1 or 0
+- BM|4=({8000}>=3) AND NOT ({8001}==0) -> box 4 on if slot 8000 is at least 3 and slot 8001 isn't 0
+- RI|8002=({8000}==0) OR (10/{8000}>2) -> never divides by zero
+
+In a multipickup, / is written //: MU|RI/27000={20000}//2/SH/Halved
+
+Boxes
+===
+Box n is the seed's nth BX line, counting from 0. {Bn} reads 1 while box n is on and 0
+while it is off; {Bn.x} and {Bn.y} read its top-left corner. They work anywhere {n} does.
+If Box n is not a rectangle, the top-left corner of its bounding rect is used.
+
+BR (Box Relocate) relocates a box using its top-left corner as a reference, preserving its size:
+- BR|4=120.5,-40 -> box 4's top-left corner goes to (120.5, -40)
+- BR|4+=3,0 -> box 4 moves 3 to the right (-= moves it the other way)
+- BR|4 -> box 4 goes back to where its line puts it
+- BR|5={B4.x},{B4.y}+10 -> box 5 sits 10 above box 4
+
+Some notes: Moves are saved with the game and undone by a death, like a box switching on or off. A
+solid box carries Ori as it moves, just like any other physics object Ori can stand on. The box
+editors always show boxes at their starting positions.

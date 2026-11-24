@@ -25,15 +25,12 @@ public class CapsuleCrushDetector : CharacterState, ISeinReceiver {
         Sein.Mortality.CrushDetector = this;
     }
 
-    // The crush Damage is built with Sein's own detector as its sender, so this is
-    // the only handle on what did the crushing.
+    // The crush Damage's sender is Sein's own detector, so this is the only handle on the crusher.
     public static GameObject LastCrusher;
 
     public static int LastCrusherFrame = -1;
 
-    // Crushing hazards can also deal Crush damage straight from their own collider,
-    // which never reaches this class -- those deaths would otherwise read whatever
-    // crushed you last. Trust the stash only on the frame it was set.
+    // Null unless this frame's crush came through here; hazards dealing Crush directly never do.
     public static GameObject CrusherThisFrame() {
         return LastCrusherFrame == Time.frameCount ? LastCrusher : null;
     }

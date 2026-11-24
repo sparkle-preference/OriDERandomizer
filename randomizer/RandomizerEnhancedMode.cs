@@ -21,6 +21,10 @@ public class RandomizerEnhancedMode {
     }
 
     public static void BootstrapSceneWater(SceneRoot sceneRoot) {
+        if (sceneRoot.transform.FindChild("enhancedWaterLogic") != null) {
+            return;
+        }
+
         var objectsToDeactivate = WaterBootstrapScenes[sceneRoot.name];
 
         var conditionObj = new GameObject("enhancedWaterLogic");

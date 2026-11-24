@@ -1,0 +1,585 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
+
+using Sample = RandomizerGhost.Sample;
+
+// Ghost multiplayer: WebRTC links signaled over the game's websocket, which relays descriptions verbatim, unread.
+//
+//   out  ghosts:1                         join (or 0 to leave)
+//   in   ghosts:<host>:<pids>             the roster, pushed whenever it changes
+//   out  ghost:<to>:<type>|<b64>|<clips>  a description for one player, and our clip table's Hash
+//   in   ghost:<from>:<type>|<b64>|<clips>
+//   out  ghostice:<peer>                  a peer no direct attempt could reach
+//   in   ice:<json>                       relay credentials for this game
+//
+// The roster names the host (the lowest directly reachable id), which offers to everyone else. Motion is a star: the
+// host relays every packet to every other open link. Ghosts key on the packet's sender id; a client drops its own.
+public static class RandomizerGhostSignal {
+    private class Link {
+        public int Handle;
+        public int PlayerId;
+        public bool Offering;
+        public bool Sent;
+        public bool Announced;
+        public float Since;
+        public int Attempt;
+        public bool ViaRelay;
+        // their clip table is not ours (or unsaid), so their clips are blanked
+        public bool OtherClips;
+    }
+
+    // seconds a handshake gets before it's retried, by misses in a row; a dropped relayed link strands its allocation for 600 s
+    private static readonly float[] RetryAfter = { 15f, 30f, 60f, 300f };
+
+    // misses in a row before a peer counts as unreachable
+    private const int MissLimit = 3;
+
+    private const string StunServers = "stun:stun.l.google.com:19302";
+
+    private const float SendInterval = 1f / 30f;
+
+    public static bool Joined { get; private set; }
+
+    // re-announced this often: the socket it was said on can be replaced unseen
+    private const float ReassertAfter = 15f;
+
+    // Every frame: announces on a change of mind or a new socket, and re-asserts periodically.
+    public static void Apply() {
+        var want = RandomizerSyncManager.WsOpen && NativeWebSocket.RtcAvailable &&
+            RandomizerSettings.Customization.ShowOtherPlayers.Value &&
+            Randomizer.Sync && !PracticeController.Active;
+        var now = Time.realtimeSinceStartup;
+        var told = announcedOn == RandomizerSyncManager.WsGeneration && now - announcedAt < ReassertAfter;
+        if (want == Joined && (!want || told)) {
+            return;
+        }
+
+        // echoes are for playing alone, and echo n would wear real player n+1's color
+        if (want && !Joined) {
+            RandomizerGhost.ClearEchoes();
+        }
+
+        Joined = want;
+        if (RandomizerSyncManager.WsOpen) {
+            NativeWebSocket.SendText(want ? "ghosts:1" : "ghosts:0");
+            announcedOn = RandomizerSyncManager.WsGeneration;
+            announcedAt = now;
+        }
+
+        if (!want) {
+            DropAll();
+        }
+    }
+
+    // "ghosts:<host>:<pids>" -- on every change and in reply to each announce.
+    public static void OnRoster(string body) {
+        var sep = body.IndexOf(':');
+        if (sep < 0) {
+            return;
+        }
+
+        int host;
+        if (!int.TryParse(body.Substring(0, sep), out host)) {
+            return;
+        }
+
+        var present = new List<int>();
+        foreach (var part in body.Substring(sep + 1).Split(',')) {
+            int pid;
+            if (part.Length > 0 && int.TryParse(part, out pid)) {
+                present.Add(pid);
+            }
+        }
+
+        var changed = host != Host || present.Count != Roster.Count || !present.TrueForAll(Roster.Contains);
+        var wasShared = Roster.Count > 1;
+        Host = host;
+        Roster = present;
+        // every re-announce gets a roster back, so only a changed one is news; the drop to just us is too
+        if (changed && (wasShared || present.Count > 1)) {
+            Randomizer.log("ghost signal: roster host=" + host + " players=" + present.Count);
+        }
+
+        // anyone who left takes their peer and their ghost with them
+        for (var i = Links.Count - 1; i >= 0; i--) {
+            if (!present.Contains(Links[i].PlayerId)) {
+                Drop(Links[i]);
+                Links.RemoveAt(i);
+            }
+        }
+
+        foreach (var pid in new List<int>(Ghosts.Keys)) {
+            if (!present.Contains(pid)) {
+                Forget(pid);
+            }
+        }
+
+        if (!Joined || Me <= 0) {
+            return;
+        }
+
+        // a star has one center: everyone else's links go to the host and nowhere else
+        if (host != Me) {
+            for (var i = Links.Count - 1; i >= 0; i--) {
+                if (Links[i].PlayerId != host) {
+                    Log("dropping the link to " + Links[i].PlayerId +
+                        ", host is " + host);
+                    Drop(Links[i]);
+                    Links.RemoveAt(i);
+                }
+            }
+
+            return;
+        }
+
+        // the host offers to everyone else, one peer connection each
+        foreach (var pid in present) {
+            if (pid != Me && Find(pid) == null) {
+                Open(pid, true);
+            }
+        }
+    }
+
+    // "ghost:<from>:<type>|<b64>|<clips>" -- one description from one player.
+    public static void OnDescription(string body) {
+        // every rejection below is logged: a silent drop leaves the far side waiting forever
+        var sep = body.IndexOf(':');
+        if (sep < 0) {
+            Log("description with no sender, dropped");
+            return;
+        }
+
+        int from;
+        if (!int.TryParse(body.Substring(0, sep), out from)) {
+            Log("description from an unreadable player id, dropped");
+            return;
+        }
+
+        var payload = body.Substring(sep + 1);
+        var bar = payload.IndexOf('|');
+        if (bar < 0) {
+            Log("description from " + from + " has no type, dropped");
+            return;
+        }
+
+        Log("got " + payload.Substring(0, bar) + " from " + from +
+            ", " + payload.Length + " chars, joined " + Joined);
+        // in flight when we left: answering it would open a link nobody wants
+        if (!Joined) {
+            return;
+        }
+
+        var type = payload.Substring(0, bar);
+        // "<b64>|<clips>"; a peer that sends no hash counts as another table
+        var rest = payload.Substring(bar + 1);
+        var tail = rest.IndexOf('|');
+        var clips = tail < 0 ? "unsent" : rest.Substring(tail + 1);
+        var b64 = tail < 0 ? rest : rest.Substring(0, tail);
+        string sdp;
+        try {
+            sdp = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(b64));
+        } catch (Exception) {
+            Log("undecodable description from " + from);
+            return;
+        }
+
+        var link = Find(from);
+        if (type == "offer") {
+            // an offer replaces whatever we had for them: they have restarted their side
+            if (link != null) {
+                Drop(link);
+                Links.Remove(link);
+            }
+
+            link = Open(from, false);
+            if (link == null) {
+                return;
+            }
+        }
+
+        if (link == null) {
+            Log(type + " from " + from + " with no peer waiting");
+            return;
+        }
+
+        link.OtherClips = clips != Clips;
+        if (NativeWebSocket.RtcSetRemote(link.Handle, type, sdp) < 0) {
+            Log(type + " from " + from + " rejected, " +
+                NativeWebSocket.RtcLastError());
+        } else {
+            Log("accepted " + type + " from " + from + " on handle " +
+                link.Handle + (link.OtherClips ? ", clip table " + clips + " is not ours, not animating" : ""));
+        }
+    }
+
+    public static void Update() {
+        if (Links.Count == 0) {
+            return;
+        }
+
+        var now = Time.time;
+        var due = now - LastSent >= SendInterval;
+        // assigned up front: the compiler cannot see that `due` gates the out-parameter call
+        var mine = new Sample();
+        var haveMine = due && RandomizerGhost.SampleLive(out mine);
+        if (due) {
+            // stepped, not reset to now, so a frame a hair short of the interval is not skipped
+            LastSent = Mathf.Max(LastSent + SendInterval, now - SendInterval);
+        }
+
+        for (var i = Links.Count - 1; i >= 0; i--) {
+            var link = Links[i];
+
+            // a closed channel is re-offered here: a quick restart leaves the roster unchanged
+            if (link.Announced && !NativeWebSocket.RtcIsOpen(link.Handle)) {
+                var was = link.PlayerId;
+                var host = link.Offering;
+                Log("channel to " + was + " closed, " +
+                    (host ? "re-offering" : "waiting for a fresh offer"));
+                Drop(link);
+                Links.RemoveAt(i);
+                if (host) {
+                    Open(was, true);
+                }
+
+                continue;
+            }
+
+            // a lost handshake tells neither side: the offerer retries, the answerer waits for the
+            // next offer. Ask the channel, not Announced: a long frame must not fail a live link.
+            var patience = Patience(link);
+            if (!link.Announced && !NativeWebSocket.RtcIsOpen(link.Handle) &&
+                now - link.Since > patience) {
+                var pid = link.PlayerId;
+                var attempt = link.Attempt + 1;
+                Log("peer " + pid + " never connected in " +
+                    patience + "s, state " + NativeWebSocket.RtcGetState(link.Handle) +
+                    "; " + (link.Offering ? "retrying" : "dropping and waiting for an offer"));
+                var offering = link.Offering;
+                var viaRelay = link.ViaRelay;
+                Drop(link);
+                Links.RemoveAt(i);
+                Escalate(pid);
+                Missed(pid, viaRelay);
+                if (offering) {
+                    var fresh = Open(pid, true);
+                    if (fresh != null) {
+                        fresh.Attempt = attempt;
+                    }
+                }
+
+                continue;
+            }
+
+            // non-trickle: the description goes once gathering is complete
+            if (!link.Sent && NativeWebSocket.RtcLocalReady(link.Handle)) {
+                link.Sent = true;
+                var sdp = NativeWebSocket.RtcLocalDescription(link.Handle);
+                NativeWebSocket.SendText("ghost:" + link.PlayerId + ":" +
+                    (link.Offering ? "offer" : "answer") + "|" +
+                    Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sdp)) + "|" + Clips);
+                Log("sent " + (link.Offering ? "offer" : "answer") +
+                    " to " + link.PlayerId + ", " + sdp.Length + " bytes");
+            }
+
+            if (!link.Announced && NativeWebSocket.RtcIsOpen(link.Handle)) {
+                link.Announced = true;
+                Misses.Remove(link.PlayerId);
+                Log("channel open to " + link.PlayerId);
+            }
+
+            while (NativeWebSocket.RtcHasMessage(link.Handle)) {
+                var packet = NativeWebSocket.RtcGetMessage(link.Handle);
+                // a message that cannot be read may not have been popped either: never spin on it
+                if (packet == null) {
+                    break;
+                }
+
+                Sample got;
+                byte who;
+                ushort seq;
+                if (!RandomizerGhostPacket.Decode(packet, packet.Length, out got, out who, out seq) ||
+                    who == Me || !Speaks(link, who)) {
+                    continue;
+                }
+
+                // another table's indices name the wrong clips: it slides, and is relayed unclipped
+                if (link.OtherClips) {
+                    got.Animation = "";
+                    got.AnimationTime = 0f;
+                    RandomizerGhostPacket.Unclip(packet);
+                }
+
+                Feed(who, got);
+                if (Host == Me) {
+                    Relay(packet, link);
+                }
+            }
+
+            if (haveMine && NativeWebSocket.RtcIsOpen(link.Handle)) {
+                var length = RandomizerGhostPacket.Encode(Buffer, mine, (byte)Me, Sequence);
+                NativeWebSocket.RtcSend(link.Handle, Buffer, length);
+            }
+        }
+
+        if (haveMine) {
+            Sequence++;
+        }
+    }
+
+    private static Link Open(int pid, bool offering) {
+        // the relay only for peers a direct attempt failed against: gathering waits on every server
+        var relayed = RelayUrl != null && Relayed.Contains(pid);
+        // an expired credential is asked for again; OnIce re-opens an offer made with the old one
+        if (relayed && Time.realtimeSinceStartup >= RelayExpires && RandomizerSyncManager.WsOpen) {
+            NativeWebSocket.SendText("ghostice:" + pid);
+        }
+
+        var handle = NativeWebSocket.RtcCreate(offering, relayed ? StunServers + "," + RelayUrl : StunServers);
+        if (handle == 0) {
+            Log("could not create a peer for " + pid + ", " +
+                NativeWebSocket.RtcLastError());
+            return null;
+        }
+
+        var link = new Link { Handle = handle, PlayerId = pid, Offering = offering, Since = Time.time, ViaRelay = relayed };
+        Links.Add(link);
+        Log((offering ? "offering to " : "answering ") + pid +
+            ", handle " + handle + ", " + Links.Count + " link(s)" + (relayed ? ", via the relay" : ""));
+        return link;
+    }
+
+    // the third miss in a row, once the relay has had its turn, is a firewall or VPN: said once per peer
+    private static void Missed(int pid, bool viaRelay) {
+        int n;
+        Misses.TryGetValue(pid, out n);
+        Misses[pid] = ++n;
+        if (n >= MissLimit && (viaRelay || RelayUrl == null) && Unreachable.Add(pid)) {
+            Say("Can't show " + RandomizerMW.PlayerName(pid) + "'s ghost!\n(A firewall or VPN is likely blocking the connection.)");
+        }
+    }
+
+    private static float Patience(Link link) {
+        int n;
+        Misses.TryGetValue(link.PlayerId, out n);
+        return RetryAfter[Math.Min(n, RetryAfter.Length - 1)];
+    }
+
+    // Asked once per peer: the server reads it as the report that pid needs relaying.
+    private static void Escalate(int pid) {
+        var first = Relayed.Add(pid);
+        if (first && RandomizerSyncManager.WsOpen) {
+            NativeWebSocket.SendText("ghostice:" + pid);
+        }
+    }
+
+    // "ice:<json>" -- the relay, in the same shape a browser's iceServers takes.
+    public static void OnIce(string body) {
+        JsonValue parsed;
+        try {
+            parsed = JsonValue.Parse(body);
+        } catch (Exception) {
+            Log("unreadable relay config");
+            return;
+        }
+
+        var urls = parsed["urls"];
+        var user = parsed["username"];
+        var secret = parsed["credential"];
+        if (!urls.IsArray || urls.Count == 0 || !urls[0].IsString ||
+            !user.IsString || !secret.IsString) {
+            Log("relay config missing a field");
+            return;
+        }
+
+        var url = urls[0].Str;
+        var scheme = url.IndexOf(':');
+        if (scheme < 0) {
+            Log("relay url has no scheme");
+            return;
+        }
+
+        // libdatachannel url-decodes the userinfo but its grammar ends the username at a
+        // colon, and a TURN username is "<expiry>:<name>". Escape both halves.
+        RelayUrl = url.Substring(0, scheme + 1) + Escape(user.Str) + ":" + Escape(secret.Str) +
+            "@" + url.Substring(scheme + 1);
+        // half the ttl: the server may hand out a credential it has cached a while
+        var ttl = parsed["ttl"];
+        RelayExpires = ttl.IsNumber && ttl.Num > 0
+            ? Time.realtimeSinceStartup + (float)(ttl.Num / 2) : float.MaxValue;
+        Log("relay configured" + (ttl.IsNumber ? ", ttl " + ttl.Num + "s" : ""));
+
+        // whoever we are already failing against should not wait out another retry
+        for (var i = Links.Count - 1; i >= 0; i--) {
+            var link = Links[i];
+            if (!link.Announced && link.Offering && Relayed.Contains(link.PlayerId)) {
+                var pid = link.PlayerId;
+                var attempt = link.Attempt;
+                Drop(link);
+                Links.RemoveAt(i);
+                var fresh = Open(pid, true);
+                if (fresh != null) {
+                    fresh.Attempt = attempt;
+                }
+            }
+        }
+    }
+
+    private static string Escape(string raw) {
+        var built = new StringBuilder(raw.Length + 8);
+        foreach (var c in raw) {
+            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
+                c == '-' || c == '.' || c == '_' || c == '~') {
+                built.Append(c);
+            } else {
+                built.Append('%').Append(((int)c).ToString("X2"));
+            }
+        }
+
+        return built.ToString();
+    }
+
+    private static Link Find(int pid) {
+        foreach (var link in Links) {
+            if (link.PlayerId == pid) {
+                return link;
+            }
+        }
+
+        return null;
+    }
+
+    private static void Drop(Link link) {
+        NativeWebSocket.RtcClose(link.Handle);
+        NativeWebSocket.RtcRelease(link.Handle);
+    }
+
+    private static void DropAll() {
+        foreach (var link in Links) {
+            Drop(link);
+        }
+
+        Links.Clear();
+        Roster.Clear();
+        Relayed.Clear();
+        Misses.Clear();
+        Unreachable.Clear();
+        // credentials are named for the game we just left
+        RelayUrl = null;
+        foreach (var pid in new List<int>(Ghosts.Keys)) {
+            Forget(pid);
+        }
+    }
+
+    // A sample from a player, whichever link carried it. A ghost retired for silence is no
+    // longer showing, so the first packet back brings it with it.
+    private static void Feed(int who, Sample got) {
+        LiveGhostSource ghost;
+        var known = Ghosts.TryGetValue(who, out ghost);
+        var showing = known && RandomizerGhost.Showing(ghost);
+        // a title heartbeat cannot raise a ghost already taken down for standing on the title
+        if (!showing && got.OnTitle) {
+            return;
+        }
+
+        if (!showing) {
+            // no Ori to clone yet (a death, a load): wait for a packet that finds one
+            if (RandomizerGhost.Sprite() == null) {
+                return;
+            }
+
+            ghost = new LiveGhostSource("p" + who, who, RandomizerGhost.InterpolationDelay);
+            Ghosts[who] = ghost;
+            RandomizerGhost.AddLive(ghost);
+            Log("ghost for " + who + (known ? " restored" : " up"));
+        }
+
+        ghost.Accept(got);
+    }
+
+    // Only the host's link carries other players; anyone else speaks for themselves alone.
+    private static bool Speaks(Link link, int who) {
+        return link.PlayerId == Host ? Roster.Contains(who) : who == link.PlayerId;
+    }
+
+    // the host's half of the star: every packet in goes out again on every other open link
+    private static void Relay(byte[] packet, Link from) {
+        foreach (var link in Links) {
+            if (link != from && link.Announced && NativeWebSocket.RtcIsOpen(link.Handle)) {
+                NativeWebSocket.RtcSend(link.Handle, packet, packet.Length);
+            }
+        }
+    }
+
+    private static void Forget(int pid) {
+        LiveGhostSource ghost;
+        if (Ghosts.TryGetValue(pid, out ghost)) {
+            RandomizerGhost.Remove(ghost);
+            Ghosts.Remove(pid);
+        }
+    }
+
+    // "<game>.<player>" -- the player half is who we are on the wire.
+    private static int Me {
+        get {
+            var id = Randomizer.SyncId;
+            if (string.IsNullOrEmpty(id)) {
+                return 0;
+            }
+
+            var parts = id.Split('.');
+            int pid;
+            return parts.Length > 1 && int.TryParse(parts[1], out pid) ? pid : 0;
+        }
+    }
+
+    private static void Say(string message) {
+        Randomizer.showHint(RandomizerUI.Message.InfoMessage(message, 3));
+    }
+
+    // alone there is no one to signal, so nothing here is worth a line
+    private static void Log(string message) {
+        if (Roster.Count > 1) {
+            Randomizer.log("ghost signal: " + message);
+        }
+    }
+
+    private static readonly List<Link> Links = new List<Link>();
+
+    // the players in the last roster; a packet naming anyone else is dropped
+    private static List<int> Roster = new List<int>();
+
+    // peers a direct attempt has already failed against; their next link gets the relay
+    private static readonly HashSet<int> Relayed = new HashSet<int>();
+
+    private static readonly Dictionary<int, int> Misses = new Dictionary<int, int>();
+
+    private static readonly HashSet<int> Unreachable = new HashSet<int>();
+
+    // the relay as one url with its credentials folded in, or null until the server sends one
+    private static string RelayUrl;
+
+    // realtimeSinceStartup past which RelayUrl's credential is asked for again
+    private static float RelayExpires;
+
+    private static string Clips { get { return RandomizerGhostAnimations.Hash.ToString("X8"); } }
+
+    // one ghost per player, keyed by the id their packets carry
+    private static readonly Dictionary<int, LiveGhostSource> Ghosts = new Dictionary<int, LiveGhostSource>();
+
+    private static readonly byte[] Buffer = new byte[RandomizerGhostPacket.MaxSize];
+
+    // which socket the last ghosts: frame went out on, and when
+    private static int announcedOn = -1;
+
+    private static float announcedAt;
+
+    private static int Host;
+
+    private static float LastSent;
+
+    private static ushort Sequence;
+
+}

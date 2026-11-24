@@ -21,6 +21,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
     public Transform FadeOutGroup => FadeOutAnimator.transform;
 
     public void Hide() {
+        RandomizerMapLayers.Closed();
         gameObject.SetActive(false);
     }
 
@@ -63,7 +64,19 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
             RandomizerTooltip = obj.GetComponent<MessageBox>();
             RandomizerTooltip.MessageProvider = null;
             RandomizerTooltip.OverrideText = "Unknown";
+            RandomizerTooltip.gameObject.SetActive(false);
         }
+
+        if (WarpPrompt == null) {
+            var obj = Instantiate(transform.FindChild("legend/player").gameObject);
+            obj.transform.parent = transform.FindChild("legend");
+            WarpPrompt = obj.GetComponent<MessageBox>();
+            WarpPrompt.MessageProvider = null;
+            WarpPrompt.OverrideText = "Unknown";
+            WarpPrompt.gameObject.SetActive(false);
+        }
+
+        RandomizerMapWarp.Preload(this);
 
         if (KeysanityDoorTooltips.Count == 0) {
             for (var i = 0; i < 12; i++) {
@@ -72,6 +85,7 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
                 var doorTTip = obj.GetComponent<MessageBox>();
                 doorTTip.MessageProvider = null;
                 doorTTip.OverrideText = "Unknown";
+                doorTTip.gameObject.SetActive(false);
                 KeysanityDoorTooltips.Add(doorTTip);
             }
         }
@@ -108,6 +122,8 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
         }
 
         if (!GameMapUI.Instance.IsVisible) {
+            RandomizerMapWarp.Closed();
+            RandomizerMapLayers.Closed();
             return;
         }
 
@@ -115,15 +131,22 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
         DebugNavigation.Advance();
         UpdatePlayerPositionMarker();
         UpdateSoulFlamePositionMarker();
+        RandomizerGhostMap.Update(this);
+        RandomizerMapLayers.Update(this);
+        RandomizerMapWarp.Icons(this);
         UpdateCurrentArea();
 
         if (!GameMapUI.Instance.ShowingObjective) {
             var msg = $"#{ObjectiveMessageProvider}#: {RandomizerText.GetObjectiveText()}\n{RandomizerText.MapFilterText}";
-            if (msg.Count(c => c == '\n') > 1) {
-                msg = "\n" + msg; // paddingu paddingu...
+            if (msg != m_objectiveShown) {
+                m_objectiveShown = msg;
+                if (msg.Count(c => c == '\n') > 1) {
+                    msg = "\n" + msg; // paddingu paddingu...
+                }
+
+                ObjectiveText.SetMessage(new MessageDescriptor(msg));
             }
 
-            ObjectiveText.SetMessage(new MessageDescriptor(msg));
             ObjectiveText.gameObject.SetActive(true);
         } else {
             ObjectiveText.gameObject.SetActive(false);
@@ -132,10 +155,19 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
         if (GameMapTransitionManager.Instance.InAreaMapMode) {
             if (Input.Legend.OnPressed) {
                 AreaMapLegend.Toggle();
+                RandomizerMapWarp.Labels();
             }
 
             if (RandomizerRebinding.ToggleMapMode.OnPressed) {
                 RandomizerSettings.CurrentFilter = RandomizerSettings.CurrentFilter.Next();
+                if (!RandomizerLocationManager.HasLogic && RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.InLogic) {
+                    RandomizerSettings.CurrentFilter = RandomizerSettings.CurrentFilter.Next();
+                    RandomizerLocationManager.ShowNoLogicHint = true;
+                }
+                IconManager.ShowAreaIcons();
+            }
+
+            if (RandomizerRebinding.CycleMapLayer.OnPressed && RandomizerMapLayers.Cycle()) {
                 IconManager.ShowAreaIcons();
             }
         }
@@ -166,9 +198,26 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
     private void UpdatePlayerPositionMarker() {
         if (PlayerPositionMarker) {
-            PlayerPositionMarker.transform.localPosition = Navigation.WorldToMapPosition(PlayerMarkerWorldPosition);
+            PlayerPositionMarker.transform.localPosition = MarkerMapPosition(UI.Cameras.Current.Target.position, PlayerPositionMarker.transform);
         }
     }
+
+    // a face marker's place for a character at a world position: its chin on the ground under them, at every zoom and pulse
+    public Vector3 MarkerMapPosition(Vector3 character, Transform marker) {
+        if (marker.childCount == 0 || marker.GetChild(0).childCount == 0) {
+            return Navigation.WorldToMapPosition(character + PlayerPositionOffset + Vector3.up);
+        }
+
+        var scale = marker.GetChild(0);
+        var face = scale.GetChild(0);
+        var chin = (scale.localPosition.y + (face.localPosition.y - FaceChin * face.localScale.y) * scale.localScale.y) * marker.localScale.y;
+        return Navigation.WorldToMapPosition(character + PlayerPositionOffset + Vector3.down * FeetBelow) - Vector3.up * chin;
+    }
+
+    // a standing character's position above the ground; the face's lower end under the sprite's middle, in sprite heights
+    private const float FeetBelow = 0.513f;
+
+    private const float FaceChin = 0.215f;
 
     private void UpdateSoulFlamePositionMarker() {
         if (SoulFlamePositionMarker == null) {
@@ -220,7 +269,12 @@ public class AreaMapUI : MonoBehaviour, ISuspendable {
 
     public Vector3 PlayerPositionOffset;
 
+    // NonSerialized: built scenes have no type tree, so a new serialized field misreads the asset
     [NonSerialized] public MessageBox RandomizerTooltip;
 
+    [NonSerialized] public MessageBox WarpPrompt;
+
     [NonSerialized] public List<MessageBox> KeysanityDoorTooltips = new List<MessageBox>();
+
+    [NonSerialized] private string m_objectiveShown;
 }

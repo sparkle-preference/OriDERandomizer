@@ -3,6 +3,8 @@
 #   git config blame.ignoreRevsFile .git-blame-ignore-revs
 
 
+# dotnet format: unpuff a lambda in RandomizerAction (2026-08-25)
+9aaa91030aaa43ac6aa064d7141f6feaeb395898
 # Use `dotnet format` for some amount of auto-formatting (#52)
 3a106526056bace99a60f1e61c23d3b7b418a726
 # Merge #49 (code style normalization)

@@ -1,0 +1,7 @@
+# Errors typecheck.ps1 expects: artifacts of compiling outside the assembly (types the game keeps
+# internal, the built dll's copies of randomizer types colliding with these sources).
+# Keyed on filename + error code + message; line, column and directory are stripped.
+CustomSettingsScreen.cs: error CS0029: Cannot implicitly convert type 'RandomizerSettings.FloatSetting [RandomizerSettings.cs]' to 'RandomizerSettings.FloatSetting [Assembly-CSharp.dll]'
+RandomizerBootstrap.cs: error CS0122: 'ShowHintAction' is inaccessible due to its protection level
+RandomizerBootstrap.cs: error CS0122: 'ShowHintAction.Duration' is inaccessible due to its protection level
+RandomizerBootstrap.cs: error CS0122: 'ShowHintAction.HintMessage' is inaccessible due to its protection level

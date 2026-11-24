@@ -2,10 +2,8 @@ using CatlikeCoding.TextBox;
 using Game;
 using UnityEngine;
 
-// Version stamp in the bottom-right of the menus, absent during gameplay.
-//
-// The pause screen dims the world in its own camera pass, so the stamp has to
-// follow the menu's layer and camera while the menu is up, not the world's.
+// Version stamp in the menus' bottom-right corner. While a menu is up it follows the menu's layer
+// and camera, since the pause screen dims the world in its own camera pass.
 public class RandomizerVersionLabel : MonoBehaviour {
     // fraction of the hint message's text size
     private const float Scale = 0.1f;
@@ -13,10 +11,10 @@ public class RandomizerVersionLabel : MonoBehaviour {
     // share of the menu camera's visible height
     private const float MenuTextHeight = 0.025f;
 
-    // Viewport fractions in from the bottom-right; the text hangs below its
-    // anchor, so the y inset clears its own height too.
+    // Viewport fractions from the bottom-right to the text's own edges (it sits
+    // above and left of its anchor); the two match in pixels at 16:9.
     private const float InsetX = 0.015f;
-    private const float InsetY = 0.058f;
+    private const float InsetY = 0.025f;
 
     public static void Initialize() {
         Instance = new GameObject("randomizerVersionLabel").AddComponent<RandomizerVersionLabel>();
@@ -116,7 +114,7 @@ public class RandomizerVersionLabel : MonoBehaviour {
         m_textBox.horizontalAnchor = HorizontalAnchorMode.Right;
         m_textBox.verticalAnchor = VerticalAnchorMode.Bottom;
         m_textBox.CreateRendersIfThereAreNone();
-        m_textBox.SetText("v" + Randomizer.VERSION);
+        m_textBox.SetText("v" + Randomizer.DisplayVersion);
         m_textBox.RenderText();
 
         // a clone never runs MessageBoxVisibility, so it keeps the prefab's
@@ -129,9 +127,14 @@ public class RandomizerVersionLabel : MonoBehaviour {
 
     private void Place() {
         // a live entry is the only reliable way to find the menu's own layer
-        var item = UI.MainMenuVisible && UI.Menu != null
-            ? UI.Menu.GetComponentInChildren<CleverMenuItem>()
-            : null;
+        CleverMenuItem item = null;
+        if (UI.MainMenuVisible && UI.Menu != null) {
+            if (m_menuItem == null || !m_menuItem.gameObject.activeInHierarchy) {
+                m_menuItem = UI.Menu.GetComponentInChildren<CleverMenuItem>();
+            }
+
+            item = m_menuItem;
+        }
 
         if (item != null) {
             PlaceInMenu(item);
@@ -190,9 +193,25 @@ public class RandomizerVersionLabel : MonoBehaviour {
         m_label.transform.rotation = camera.transform.rotation;
     }
 
-    // the menu camera is manually driven, so it is disabled and Camera.allCameras
-    // never lists it
+    // The menu camera is disabled (manually driven), so Camera.allCameras never lists it; it does
+    // not move, so the FindObjectsOfTypeAll walk is cached per layer.
     private static Camera MenuCamera(int layer) {
+        if (s_menuCamera != null && s_menuCameraLayer == layer && s_menuCamera.gameObject.activeInHierarchy) {
+            return s_menuCamera;
+        }
+
+        s_menuCamera = FindMenuCamera(layer);
+        s_menuCameraLayer = layer;
+        return s_menuCamera;
+    }
+
+    private static Camera s_menuCamera;
+
+    private static int s_menuCameraLayer = -1;
+
+    private CleverMenuItem m_menuItem;
+
+    private static Camera FindMenuCamera(int layer) {
         Camera best = null;
         foreach (var camera in Resources.FindObjectsOfTypeAll<Camera>()) {
             if (!camera.gameObject.activeInHierarchy || (camera.cullingMask & (1 << layer)) == 0) {

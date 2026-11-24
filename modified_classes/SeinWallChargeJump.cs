@@ -266,19 +266,19 @@ public class SeinWallChargeJump : CharacterState, ISeinReceiver {
 
     public float ChargedJumpStrength;
 
-    public State m_currentState;
+    private State m_currentState;
 
-    public float m_angularElevation;
+    private float m_angularElevation;
 
-    public float m_angularElevationSpeed;
+    private float m_angularElevationSpeed;
 
-    public float m_stateCurrentTime;
+    private float m_stateCurrentTime;
 
-    public float m_angleDirection;
+    private float m_angleDirection;
 
-    public bool m_spriteMirrorLock;
+    private bool m_spriteMirrorLock;
 
-    public SeinCharacter m_sein;
+    private SeinCharacter m_sein;
 
     public HashSet<IAttackable> m_attackablesIgnore = new HashSet<IAttackable>();
 

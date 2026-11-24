@@ -11,6 +11,49 @@ public static class RandomizerText {
         return m_abilityOverrides[ability].NameOverride;
     }
 
+    // Indigo and violet are hard to read so it's a bit of a ROYGB situation. (well more precisely it's BCGYOR)
+    private static readonly string[] RainbowStops = { "4f8cff", "35cdd6", "4fd44f", "ffe94f", "ff8c2b", "ff3b3b" };
+
+    // One gradient, a full rainbow per repeatEvery characters (at least one); ends on a stop.
+    public static string Rainbowify(string text, int repeatEvery = 0) {
+        var stops = RainbowStops.Length;
+        if (repeatEvery > 0 && text.Length > repeatEvery) {
+            stops = Mathf.RoundToInt((float)text.Length / repeatEvery * RainbowStops.Length);
+        }
+
+        var built = new System.Text.StringBuilder("<style color=");
+        for (var i = 0; i < stops; i++) {
+            if (i > 0) {
+                built.Append(',');
+            }
+
+            built.Append(RainbowStops[i % RainbowStops.Length]);
+        }
+
+        return built.Append('>').Append(text).Append("</>").ToString();
+    }
+
+    public static string RainbowifyByChar(string text) {
+        var built = new System.Text.StringBuilder();
+        var i = 0;
+        foreach(var c in text) {
+            if(c.IsWhitespace()) {
+                built.Append(c);
+                continue;
+            }
+            built.Append($"<style color={RainbowStops[i++ % RainbowStops.Length]}>{c}</>");
+        }
+        return built.ToString();
+    }
+
+    public static bool Colorless {
+        get => RandomizerSettings.Accessibility.ColorlessText.Value;
+    }
+
+    public static string Error(string text) {
+        return RandomizerItems.Cue("@" + text + "@", "Error");
+    }
+
     public static RandomizerMessageProvider GetAbilityDescription(AbilityType ability) {
         if (!m_abilityOverrides.ContainsKey(ability)) {
             return null;
@@ -21,39 +64,71 @@ public static class RandomizerText {
 
     public static string MapFilterText {
         get {
-            var text = $"Current Filter ({RandomizerRebinding.ToggleMapMode.FirstBindName()}): *{RandomizerSettings.CurrentFilter.Desc()}*";
-            if (RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.InLogic) {
-                if (RandomizerLocationManager.Areas == null) {
-                    return $"{text}\n@Logic filter unavailable; areas.ori missing@";
-                }
+            string text = null;
+            if (RandomizerLocationManager.HasLogic) {
+                text = $"Current Filter ({RandomizerRebinding.ToggleMapMode.FirstBindName()}): *{RandomizerSettings.CurrentFilter.Desc()}*";
+            } else if (RandomizerLocationManager.ShowNoLogicHint) {
+                text = Error($"Logic Filter not available because {RandomizerLocationManager.NoLogicReason}");
             }
 
-            return text;
+            var layer = RandomizerMapLayers.MistyLayerText;
+            if (text == null || layer == null) {
+                return text ?? layer;
+            }
+
+            return $"{text}\n{layer}";
         }
     }
 
     public static string GetObjectiveText() {
-        if (Randomizer.canFinalEscape(false)) {
-            return "Find and Restore #Mount Horu#!";
+        if (BingoController.Active && !BingoController.Won) {
+            return "Complete your #Bingo# goals!";
         }
 
-        if (Randomizer.ForceTrees) {
-            return "Visit all 10 #Skill Trees#";
+        if (Randomizer.RelicsShort) {
+            return $"Find #Relics# hidden throughout #Nibel#! ({Randomizer.RelicsFound}/{Randomizer.RelicCount})";
         }
 
-        if (Randomizer.WorldTour) {
-            return string.Format("Find all {0} #Relics# hidden throughout Nibel", Randomizer.RelicCount);
+        if (Randomizer.TreesShort) {
+            var visited = RandomizerBonus.SkillTreeProgression();
+            var left = visited < 8 ? null : Unfinished(RandomizerTrackedDataManager.Trees, 1, RandomizerTrackedDataManager.GetTree);
+            if (left == null || left.Count == 0 || left.Count > 2) {
+                return $"Visit every #Skill Tree#! ({visited}/10)";
+            }
+
+            return left.Count == 1
+                ? $"Visit the #{left[0]}# #Skill Tree#!"
+                : $"Visit the #{left[0]}# and #{left[1]}# #Skill Trees#!";
         }
 
-        if (Randomizer.ForceMaps) {
-            return "Restore all 9 #Mapstones#";
+        if (Randomizer.FragsShort) {
+            return $"Find #Warmth Fragments# hidden throughout #Nibel#! ({RandomizerBonus.WarmthFrags()}/{Randomizer.fragKeyFinish})";
         }
 
-        if (Randomizer.fragsEnabled) {
-            return string.Format("Find all {0} #Warmth Fragments# hidden throughout Nibel", Randomizer.fragKeyFinish);
+        if (Randomizer.MapsShort) {
+            var turnedIn = RandomizerBonus.MapStoneProgression();
+            var left = turnedIn < 7 ? null : Unfinished(RandomizerTrackedDataManager.MapZonesByBit, 0, RandomizerTrackedDataManager.GetMapstone);
+            if (left == null || left.Count == 0 || left.Count > 2) {
+                return $"Turn in #Map Stones#! ({turnedIn}/9)";
+            }
+
+            return left.Count == 1
+                ? $"Turn in a #Map Stone# at #{left[0]}#!"
+                : $"Turn in #Map Stones# at #{left[0]}# and #{left[1]}#!";
         }
 
-        return "Continue to search for #Skills# and #Resources#";
+        return "Enter and escape #Mount Horu#!";
+    }
+
+    private static List<string> Unfinished(Dictionary<int, string> names, int first, System.Func<int, bool> done) {
+        var left = new List<string>();
+        foreach (var pair in names) {
+            if (pair.Key >= first && !done(pair.Key)) {
+                left.Add(pair.Value);
+            }
+        }
+
+        return left;
     }
 
     public static RandomizerMessageProvider GetDifficultyName(DifficultyMode mode) {
@@ -80,7 +155,7 @@ public static class RandomizerText {
             new AbilityTextOverrides(null, "Allows Ori to Charge Dash ([ChargeJumpCharge]) to attack enemies or break blue plants and walls")
         }, {
             AbilityType.MapMarkers,
-            new AbilityTextOverrides("Maphacks", "Reveal the entire world map")
+            new AbilityTextOverrides("Drop Efficiency", "Enemies and plants are more likely to drop Health and Energy")
         }, {
             AbilityType.HealthEfficiency,
             new AbilityTextOverrides("Health Efficiency", "Health pickups will restore twice as much Health")

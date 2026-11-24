@@ -6,6 +6,7 @@ public class ReturnToTitleScreenAction : ActionMethod {
             Randomizer.Returning = false;
             Randomizer.Warping = 0;
             RandomizerStatsManager.OnReturnToMenu();
+            PracticeController.OnReturnToTitle();
         } catch (Exception e) {
             Randomizer.LogError("ReturnToTitleScreenAction: " + e.Message);
         }

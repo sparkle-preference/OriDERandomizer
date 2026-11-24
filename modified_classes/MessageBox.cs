@@ -150,19 +150,19 @@ public class MessageBox : MonoBehaviour {
             if (text.StartsWith("PADDING")) {
                 var p = new Queue<string>(text.Split('_'));
                 p.Dequeue();
-                TextBox.paddingBottom = float.Parse(p.Dequeue());
-                TextBox.paddingLeft = float.Parse(p.Dequeue());
-                TextBox.paddingRight = float.Parse(p.Dequeue());
-                TextBox.paddingTop = float.Parse(p.Dequeue());
+                TextBox.paddingBottom = Number(p.Dequeue());
+                TextBox.paddingLeft = Number(p.Dequeue());
+                TextBox.paddingRight = Number(p.Dequeue());
+                TextBox.paddingTop = Number(p.Dequeue());
                 text = string.Join("_", p.ToArray());
             }
 
             if (text.StartsWith("PARAMS")) {
                 var p = new Queue<string>(text.Split('_'));
                 p.Dequeue();
-                TextBox.maxHeight = float.Parse(p.Dequeue());
-                TextBox.width = float.Parse(p.Dequeue());
-                TextBox.TabSize = float.Parse(p.Dequeue());
+                TextBox.maxHeight = Number(p.Dequeue());
+                TextBox.width = Number(p.Dequeue());
+                TextBox.TabSize = Number(p.Dequeue());
                 text = string.Join("_", p.ToArray());
             }
 
@@ -170,10 +170,10 @@ public class MessageBox : MonoBehaviour {
             if (text.StartsWith("BGCOLOR")) {
                 var p = new Queue<string>(text.Split('_'));
                 p.Dequeue();
-                r = float.Parse(p.Dequeue());
-                g = float.Parse(p.Dequeue());
-                b = float.Parse(p.Dequeue());
-                a = float.Parse(p.Dequeue());
+                r = Number(p.Dequeue());
+                g = Number(p.Dequeue());
+                b = Number(p.Dequeue());
+                a = Number(p.Dequeue());
                 text = string.Join("_", p.ToArray());
                 SetBackgroundColor(new Color(r / 510f, g / 510f, b / 510f, a / 510f));
                 m_hasBackgroundColor = true;
@@ -188,6 +188,7 @@ public class MessageBox : MonoBehaviour {
                 }
             }
 
+            text = RandomizerInventory.ResolveSlots(RandomizerRebinding.ResolveBindNames(text));
             if (FormatText) {
                 text = MessageParserUtility.ProcessString(text);
                 TextBox.SetText(text);
@@ -195,10 +196,11 @@ public class MessageBox : MonoBehaviour {
                 TextBox.SetText(text);
             }
         } else if (OverrideText != string.Empty) {
+            var overrideText = RandomizerInventory.ResolveSlots(RandomizerRebinding.ResolveBindNames(OverrideText));
             if (FormatText) {
-                TextBox.SetText(MessageParserUtility.ProcessString(OverrideText));
+                TextBox.SetText(MessageParserUtility.ProcessString(overrideText));
             } else {
-                TextBox.SetText(OverrideText);
+                TextBox.SetText(overrideText);
             }
         }
 
@@ -229,10 +231,15 @@ public class MessageBox : MonoBehaviour {
         }
     }
 
+    // prefix numbers are written with invariant decimals, whatever the player's locale
+    private static float Number(string text) {
+        return float.Parse(text, CultureInfo.InvariantCulture);
+    }
+
     private static readonly Regex StyleTagRegex = new(
         @"(?inx)
         <style
-                (\s+color=(?<color>[0-9a-f]{6,8}))?
+                (\s+color=(?<color>[0-9a-f]{6,8}(,[0-9a-f]{6,8})*))?
                 (\s+font=(?<font>[a-z]+))?
                 (\s+letterspacing=(?<letter_spacing>[-.0-9]+))?
                 (\s+fontscale=(?<font_scale>[-.0-9]+))?
@@ -240,12 +247,54 @@ public class MessageBox : MonoBehaviour {
         >"
     );
 
+    // null for anything unparseable, so the caller drops the style rather than half-applying it
+    private static Color32[] ParseColors(string colorString) {
+        try {
+            var parts = colorString.Split(',');
+            var stops = new Color32[parts.Length];
+            for (var i = 0; i < parts.Length; i++) {
+                var part = parts[i];
+                if (part.Length != 6 && part.Length != 8) {
+                    Randomizer.log($"Invalid font color property: \"{colorString}\"");
+                    return null;
+                }
+
+                var r = byte.Parse(part.Substring(0, 2), NumberStyles.HexNumber);
+                var g = byte.Parse(part.Substring(2, 2), NumberStyles.HexNumber);
+                var b = byte.Parse(part.Substring(4, 2), NumberStyles.HexNumber);
+                var a = part.Length == 8 ? byte.Parse(part.Substring(6, 2), NumberStyles.HexNumber) : (byte)255;
+                stops[i] = new Color32(r, g, b, a);
+            }
+
+            return stops;
+        } catch (Exception e) {
+            Randomizer.log($"Invalid font color property: \"{colorString}\" ({e.Message})");
+            return null;
+        }
+    }
+
+    // the tag regex admits strings float cannot read, such as "-" or "1.2.3"
+    private static bool StyleNumber(string text, out float value) {
+        if (float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value)) {
+            return true;
+        }
+
+        Randomizer.log($"Invalid style number: \"{text}\"");
+        return false;
+    }
+
+    // tags that failed to parse, dropped on later refreshes without another parse or log line
+    private static readonly HashSet<string> RejectedStyles = new HashSet<string>();
+
     private void ProcessStyleTags(TextStyleCollection styleCollection, string message) {
         List<TextStyle> styles = null;
         Dictionary<string, TextFont> fonts = null;
 
         foreach (Match match in StyleTagRegex.Matches(message)) {
             var styleName = match.Groups[0].Value.Substring(1, match.Groups[0].Value.Length - 2);
+            if (RejectedStyles.Contains(styleName)) {
+                continue;
+            }
 
             if (styles == null) {
                 if (styleCollection.styles.Any(s => s.name == styleName)) {
@@ -262,18 +311,16 @@ public class MessageBox : MonoBehaviour {
             var style = new TextStyle { name = styleName };
 
             if (match.Groups["color"] is { Success: true, Value: var colorString }) {
-                if (colorString.Length != 6 && colorString.Length != 8) {
-                    Randomizer.log($"Invalid font color property: \"{colorString}\"");
+                var stops = ParseColors(colorString);
+                if (stops == null) {
+                    RejectedStyles.Add(styleName);
                     continue;
                 }
 
-                var r = byte.Parse(colorString.Substring(0, 2), NumberStyles.HexNumber);
-                var g = byte.Parse(colorString.Substring(2, 2), NumberStyles.HexNumber);
-                var b = byte.Parse(colorString.Substring(4, 2), NumberStyles.HexNumber);
-                var a = colorString.Length == 8 ? byte.Parse(colorString.Substring(6, 2), NumberStyles.HexNumber) : (byte)255;
-
-                style.color = new Color32(r, g, b, a);
+                style.color = stops[0];
                 style.hasColor = true;
+                // one stop is a flat color; more is a ramp the renderer spreads across the run
+                style.gradient = stops.Length > 1 ? stops : null;
             }
 
             if (match.Groups["font"] is { Success: true, Value: var fontName }) {
@@ -281,6 +328,7 @@ public class MessageBox : MonoBehaviour {
 
                 if (!fonts.TryGetValue(fontName, out var textFont)) {
                     Randomizer.log($"Invalid font: \"{fontName}\". Available: {string.Join(", ", fonts.Keys.Select(n => $"'{n}'").ToArray())}");
+                    RejectedStyles.Add(styleName);
                     continue;
                 }
 
@@ -289,17 +337,29 @@ public class MessageBox : MonoBehaviour {
             }
 
             if (match.Groups["letter_spacing"] is { Success: true, Value: var letterSpacing }) {
-                style.letterSpacing = float.Parse(letterSpacing, CultureInfo.InvariantCulture);
+                if (!StyleNumber(letterSpacing, out style.letterSpacing)) {
+                    RejectedStyles.Add(styleName);
+                    continue;
+                }
+
                 style.hasLetterSpacing = true;
             }
 
             if (match.Groups["font_scale"] is { Success: true, Value: var fontScale }) {
-                style.fontScale = float.Parse(fontScale, CultureInfo.InvariantCulture);
+                if (!StyleNumber(fontScale, out style.fontScale)) {
+                    RejectedStyles.Add(styleName);
+                    continue;
+                }
+
                 style.hasFontScale = true;
             }
 
             if (match.Groups["line_scale"] is { Success: true, Value: var lineScale }) {
-                style.lineScale = float.Parse(lineScale, CultureInfo.InvariantCulture);
+                if (!StyleNumber(lineScale, out style.lineScale)) {
+                    RejectedStyles.Add(styleName);
+                    continue;
+                }
+
                 style.hasLineScale = true;
             }
 
@@ -334,6 +394,13 @@ public class MessageBox : MonoBehaviour {
     }
 
     public void SetMessageProvider(MessageProvider messageProvider) {
+        if (m_tinted) {
+            var material = Background().material;
+            material.SetTexture("_MainTex", m_untintedTexture);
+            material.SetColor("_Color", m_untinted);
+            m_tinted = false;
+        }
+
         MessageProvider = messageProvider;
         RefreshText();
     }
@@ -389,20 +456,33 @@ public class MessageBox : MonoBehaviour {
         UberShaderAPI.SetColor(backgroundRenderer, bgColor, true);
     }
 
-    private static Texture2D _hintMessageBackgroundWhite;
-
-    private static Texture2D WhiteBackground {
-        get {
-            if (_hintMessageBackgroundWhite == null) {
-                _hintMessageBackgroundWhite = new Texture2D(0, 0);
-                _hintMessageBackgroundWhite.LoadImage(
-                    RandomizerResources.ReadResource("hintMessageBackgroundWhite.png")
-                );
-            }
-
-            return _hintMessageBackgroundWhite;
+    // This one box in a dark shade of a player's colour; shown again, it comes back plain. The
+    // game's texture is black, so the colour goes on the white copy the randomizer's boxes use.
+    public void TintBackground(Color shade, float strength) {
+        var renderer = Background();
+        if (renderer == null) {
+            return;
         }
+
+        var material = renderer.material;
+        if (!m_tinted) {
+            m_untintedTexture = material.GetTexture("_MainTex");
+            m_untinted = material.GetColor("_Color");
+            m_tinted = true;
+        }
+
+        var dark = Color.Lerp(Color.black, shade, strength);
+        dark.a = m_untinted.a;
+        material.SetTexture("_MainTex", WhiteBackground);
+        material.SetColor("_Color", dark);
     }
+
+    private Renderer Background() {
+        var background = Visibility ? Visibility.transform.FindChild("background/hintMessageBackground") : null;
+        return background ? background.GetComponent<Renderer>() : null;
+    }
+
+    private static Texture2D WhiteBackground => field ??= RandomizerResources.LoadTexture("hintMessageBackgroundWhite.png");
 
     public const float WaitTimeBetweenMessages = 0.3f;
 
@@ -447,6 +527,12 @@ public class MessageBox : MonoBehaviour {
     private MessageDescriptor m_currentMessage;
 
     private bool m_hasBackgroundColor;
+
+    private bool m_tinted;
+
+    private Color m_untinted;
+
+    private Texture m_untintedTexture;
 
     private struct TextFont {
         public BitmapFont Font;

@@ -91,7 +91,12 @@ public class SpitterEnemy : GroundEnemy {
         }
 
         bool flag;
-        if (PlatformMovement.MovingHorizontally && EnemyStopper.InsideEnemyStopper(Position, !FaceLeft ? Vector3.right : Vector3.left, out flag)) {
+        var ahead = !FaceLeft ? Vector3.right : Vector3.left;
+        if (PlatformMovement.GravityAngle != 0f) {
+            ahead = transform.TransformDirection(ahead);
+        }
+
+        if (PlatformMovement.MovingHorizontally && EnemyStopper.InsideEnemyStopper(Position, ahead, out flag)) {
             FaceLeft = !FaceLeft;
             if (Controller.StateMachine.CurrentState == State.RunBack) {
                 Controller.StateMachine.ChangeState(State.SpitterEnemyCharging);
@@ -103,7 +108,7 @@ public class SpitterEnemy : GroundEnemy {
         }
 
         UpdateRotation();
-        if (IsInWater) {
+        if (IsInWater && !RandomizerEnemies.WaterBorn(this)) {
             Drown();
         }
 
@@ -119,9 +124,9 @@ public class SpitterEnemy : GroundEnemy {
         var currentStateTime = Controller.StateMachine.CurrentStateTime;
         if (currentState == State.Thrown) {
             var num = 1f - Mathf.InverseLerp(0.3f, 0.6f, currentStateTime);
-            FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(ThrownDirection) - 90f) * num);
+            FeetTransform.eulerAngles = new Vector3(0f, 0f, (MoonMath.Angle.AngleFromVector(ThrownDirection) - 90f) * num + PlatformMovement.GravityAngle);
         } else {
-            var b = !PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle;
+            var b = (!PlatformMovement.IsOnGround ? 0f : PlatformMovement.GroundAngle) + PlatformMovement.GravityAngle;
             FeetTransform.eulerAngles = new Vector3(0f, 0f, Mathf.LerpAngle(FeetTransform.eulerAngles.z, b, 0.2f));
         }
     }

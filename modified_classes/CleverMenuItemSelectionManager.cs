@@ -107,6 +107,37 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         SuspensionManager.Unregister(this);
     }
 
+    // A row the scroll window is hiding is still somewhere the selection may go, if it could be
+    // chosen once shown; the window follows it there.
+    public static bool Navigable(CleverMenuItem item) {
+        return item.IsActivated ||
+               (RandomizerScrollHide.Hiding(item) && (item.Activated == null || item.Activated.Validate(null)));
+    }
+
+    // The first navigable row at or after index within lo..hi, else the last one before it; -1 if none.
+    public int NavigableFrom(int index, int lo, int hi) {
+        lo = Mathf.Max(lo, 0);
+        hi = Mathf.Min(hi, MenuItems.Count - 1);
+        if (lo > hi) {
+            return -1;
+        }
+
+        index = Mathf.Clamp(index, lo, hi);
+        for (var i = index; i <= hi; i++) {
+            if (Navigable(MenuItems[i])) {
+                return i;
+            }
+        }
+
+        for (var i = index - 1; i >= lo; i--) {
+            if (Navigable(MenuItems[i])) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
     public void MoveSelection(bool forward) {
         var num = Index;
         var num2 = 0;
@@ -116,7 +147,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
                 if (num2++ > MenuItems.Count) {
                     goto IL_43;
                 }
-            } while (!MenuItems[num].IsActivated);
+            } while (!Navigable(MenuItems[num]));
 
             goto IL_93;
             IL_43:
@@ -127,7 +158,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
                 if (num2++ > MenuItems.Count) {
                     goto IL_8C;
                 }
-            } while (!MenuItems[num].IsActivated);
+            } while (!Navigable(MenuItems[num]));
 
             goto IL_93;
             IL_8C:
@@ -139,7 +170,7 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
             return;
         }
 
-        if (MenuItems[num].IsActivated) {
+        if (Navigable(MenuItems[num])) {
             SetCurrentItem(num);
         }
     }
@@ -191,6 +222,12 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void SetIndexToFirst() {
+        var row = EnterRow == null ? -1 : EnterRow();
+        if (row >= 0 && row < MenuItems.Count) {
+            SetCurrentItem(row);
+            return;
+        }
+
         for (var i = 0; i < MenuItems.Count; i++) {
             if (MenuItems[i].IsActivated) {
                 SetCurrentItem(i);
@@ -415,6 +452,11 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     }
 
     public void OnBackPressed() {
+        // a screen with something to ask first answers false and lands the back itself
+        if (BackGuard != null && !BackGuard()) {
+            return;
+        }
+
         OnBackPressedCallback();
         if (BackItem) {
             BackItem.OnPressed();
@@ -512,6 +554,9 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
         cleverMenuItem.ApplyColors();
         MenuItems.Insert(index, cleverMenuItem);
         layout.AddItem(cleverMenuItem, index);
+        // a fresh clone keeps the prefab's leftover opacity; prime it as panel rows are
+        cleverMenuItem.SetOpacity(1f);
+        cleverMenuItem.OnUnhighlight();
     }
 
     public const float HOLD_DELAY = 0.4f;
@@ -533,6 +578,11 @@ public class CleverMenuItemSelectionManager : MonoBehaviour, ISuspendable {
     public Action OptionPressedCallback = delegate { };
 
     public Action OnBackPressedCallback = delegate { };
+
+    public Func<bool> BackGuard;
+
+    // the row SetIndexToFirst (entering the menu) selects instead of the first, or -1
+    public Func<int> EnterRow;
 
     public bool HighlightOnMouseOver = true;
 

@@ -287,6 +287,8 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
         SeinDeathCounter.Count++;
         SeinDeathsManager.OnDeath();
         GameController.Instance.ResumeGameplay();
+        RandomizerGhost.OnDeath(DeathEffectProvider
+            ? DeathEffectProvider.Prefab(new DamageContext(damage)) : null);
         if (DeathEffectProvider) {
             InstantiateDeathEffect(damage);
         }

@@ -7,36 +7,38 @@ using Object = UnityEngine.Object;
 
 public class RandomizerBootstrap {
     public static void Initialize() {
-        Events.Scheduler.OnSceneRootPreEnabled.Add(BootstrapScenePreEnabled);
+        Events.Scheduler.OnSceneLoaded.Add(BootstrapSceneLoaded);
         Events.Scheduler.OnSceneRootEnabledAfterSerialize.Add(BootstrapSceneAfterSerialize);
+        Events.Scheduler.OnGameStartLate.Add(PreloadScenes);
     }
 
     public static void FixedUpdate() {
-        for (var i = 0; i < s_bootstrappedScenesPreEnabled.Count;) {
-            if (Scenes.Manager.GetSceneManagerScene(s_bootstrappedScenesPreEnabled[i]) != null) {
-                i++;
-            } else {
-                s_bootstrappedScenesPreEnabled.RemoveAt(i);
-            }
-        }
+        Forget(s_bootstrappedScenesAfterSerialize);
+    }
 
-        for (var i = 0; i < s_bootstrappedScenesAfterSerialize.Count;) {
-            if (Scenes.Manager.GetSceneManagerScene(s_bootstrappedScenesAfterSerialize[i]) != null) {
+    // a scene that left memory is patched again when it loads
+    private static void Forget(List<string> bootstrapped) {
+        for (var i = 0; i < bootstrapped.Count;) {
+            if (Scenes.Manager.GetSceneManagerScene(bootstrapped[i]) != null) {
                 i++;
             } else {
-                s_bootstrappedScenesAfterSerialize.RemoveAt(i);
+                bootstrapped.RemoveAt(i);
             }
         }
     }
 
-    private static void BootstrapScenePreEnabled(SceneRoot sceneRoot) {
-        if (s_bootstrappedScenesPreEnabled.Contains(sceneRoot.name)) {
-            return;
+    private static void PreloadScenes() {
+        foreach (var scene in Scenes.Manager.AllScenes) {
+            if (scene.Scene == "sunkenGladesIntroSplitB") {
+                // Load glades scene to steal TA animation
+                Scenes.Manager.AdditivelyLoadScene(scene, true);
+            }
         }
+    }
 
-        if (s_bootstrapPreEnabled.ContainsKey(sceneRoot.name)) {
-            s_bootstrappedScenesPreEnabled.Add(sceneRoot.name);
-            s_bootstrapPreEnabled[sceneRoot.name].Invoke(sceneRoot);
+    private static void BootstrapSceneLoaded(SceneRoot sceneRoot) {
+        if (s_bootstrapLoaded.ContainsKey(sceneRoot.name)) {
+            s_bootstrapLoaded[sceneRoot.name].Invoke(sceneRoot);
         }
 
         if (RandomizerEnhancedMode.TextBootstrapScenes.ContainsKey(sceneRoot.name) && (Randomizer.EnhancedMode || Randomizer.EnhancedSeinInSeed)) {
@@ -46,15 +48,30 @@ public class RandomizerBootstrap {
         if (RandomizerEnhancedMode.WaterBootstrapScenes.ContainsKey(sceneRoot.name)) {
             RandomizerEnhancedMode.BootstrapSceneWater(sceneRoot);
         }
+
+        RandomizerDirtyWater.OnScene(sceneRoot);
+
+        if (sceneRoot.name == Randomizer.SpawnScene) {
+            BootstrapRandomSpawnTeleportLocation(sceneRoot);
+        }
+
+        if (RandomizerBootstrapEscapes.BootstrapScenes.ContainsKey(sceneRoot.name)) {
+            RandomizerBootstrapEscapes.BootstrapScenes[sceneRoot.name].Invoke(sceneRoot);
+        }
+
     }
 
     private static void BootstrapSceneAfterSerialize(SceneRoot sceneRoot) {
-        if (s_bootstrappedScenesAfterSerialize.Contains(sceneRoot.name)) {
+        var again = s_bootstrappedScenesAfterSerialize.Contains(sceneRoot.name);
+        if (again && !s_afterSerializeOnEveryEnable.Contains(sceneRoot.name)) {
             return;
         }
 
         if (s_bootstrapAfterSerialize.ContainsKey(sceneRoot.name)) {
-            s_bootstrappedScenesAfterSerialize.Add(sceneRoot.name);
+            if (!again) {
+                s_bootstrappedScenesAfterSerialize.Add(sceneRoot.name);
+            }
+
             s_bootstrapAfterSerialize[sceneRoot.name].Invoke(sceneRoot);
             // We also need to process these functions after serialisation not caused by
             // scene loading, e.g. after death. So connect those hooks.
@@ -86,7 +103,7 @@ public class RandomizerBootstrap {
         }
     }
 
-    private static Transform CloneObject(SceneRoot sceneRoot, Transform obj, string name = null, bool sibling = true) {
+    public static Transform CloneObject(SceneRoot sceneRoot, Transform obj, string name = null, bool sibling = true) {
         // temporarily fiddle with the original object's active status to prevent the clone from instantly awaking if it shouldn't
         var originalActive = obj.gameObject.activeSelf;
         if (!obj.gameObject.activeInHierarchy) {
@@ -218,6 +235,12 @@ public class RandomizerBootstrap {
                 leverSystem.LeverLeftAction = null;
                 leverSystem.LeverMiddleAction = null;
                 leverSystem.LeverRightAction = null;
+
+                // the lever above the gate; the other one is to its right
+                var above = leverSystem.Lever.MoonGuid == new MoonGuid(1108763030, 1147829718, 119937957, 492548545);
+                var message = ScriptableObject.CreateInstance<RandomizerMessageProvider>();
+                message.SetMessage("Pulling this lever doesn't do anything!\n(The door " + (above ? "below" : "to the left") + " is already open)");
+                leverSystem.Lever.gameObject.AddComponent<RandomizerLeverHint>().Message = message;
             } else if (child.name == "gate") {
                 var doorAnimator = child.GetComponent<LegacyTranslateAnimator>();
                 doorAnimator.TimeOffset = doorAnimator.TimeOfLastCurvePoint;
@@ -239,7 +262,6 @@ public class RandomizerBootstrap {
             sequence.Actions.Add(action);
             var action2 = sceneRoot.transform.FindChild("*spiritTreeStorySetup/container/actionSequences/04. returnCameraToPlayerActionSequence/10. Deactivate *seinAbilityRestrictZones").GetComponent<ActionMethod>();
             sequence.Actions.Add(action2);
-            sceneRoot.OnValidate();
         }
     }
 
@@ -425,6 +447,49 @@ public class RandomizerBootstrap {
     private static void BootstrapSunkenGladesSpiritWell(SceneRoot sceneRoot) {
         // forcibly deactivate the collision trigger for the spirit well intro cutscene
         sceneRoot.transform.FindChild("*activatedBySpiritFlame/activated/*spiritWellHintSetup/objectiveSetupTrigger").GetComponent<PlayerCollisionTrigger>().Active = false;
+
+        if (!TeleporterController.TeleportAnywhereEffect) {
+            var teleporterEffect = Object.Instantiate(sceneRoot.transform.Find("savePedestal/teleporterEffect").GetComponent<TimelineSequence>());
+            teleporterEffect.name = "teleportAnywhereEffect";
+            var effectTf = teleporterEffect.transform;
+            effectTf.Find("midFadeIn").localPosition -= new Vector3(0f, 2.1885f, 0f);
+            effectTf.Find("midFadeIn/midTimeline").localScale *= 0.7f;
+            DestroyChild(effectTf, "teleportStartEffect");
+            DestroyChild(effectTf, "midFadeIn/midTimeline/teleportLoopEffect/sharedCircleGlowA", true);
+            DestroyChild(effectTf, "midFadeIn/midTimeline/teleportLoopEffect/sharedCircleGlowA");
+            DestroyChild(effectTf, "midFadeIn/midTimeline/teleportLoopEffect/sharedTeleporterBeamB", true);
+            DestroyChild(effectTf, "midFadeIn/midTimeline/teleportLoopEffect/sharedTeleporterBeamB");
+            DestroyChild(effectTf, "midFadeIn/midTimeline/teleportLoopEffect/sharedTeleporterWaveBs");
+
+            // copy materials as the originals get unloaded with the scene
+            var materialCopies = new Dictionary<Material, Material>();
+            foreach (var renderer in teleporterEffect.GetComponentsInChildren<Renderer>()) {
+                var mats = renderer.sharedMaterials;
+                for (var i = 0; i < mats.Length; i++) {
+                    var mat = mats[i];
+                    if (!materialCopies.TryGetValue(mat, out var matCopy)) {
+                        matCopy = materialCopies[mat] = Object.Instantiate(mat);
+                    }
+
+                    mats[i] = matCopy;
+                }
+
+                renderer.sharedMaterials = mats;
+            }
+
+            TeleporterController.TeleportAnywhereEffect = teleporterEffect;
+        }
+    }
+
+    private static void DestroyChild(Transform tf, string childName, bool immediate = false) {
+        var childTf = tf.Find(childName);
+        if (childTf) {
+            if (immediate) {
+                Object.DestroyImmediate(childTf.gameObject);
+            } else {
+                Object.Destroy(childTf.gameObject);
+            }
+        }
     }
 
     private static void BootstrapMountHoruLaserPuzzle(SceneRoot sceneRoot) {
@@ -462,52 +527,89 @@ public class RandomizerBootstrap {
     }
 
     private static void BootstrapSunkenGladesRunaway(SceneRoot sceneRoot) {
-        // This checks if it is a non-default spawn. TODO replace this with something tidier later.
-        if (!Randomizer.SpawnWith.Contains("WS")) {
+        // This is the start of random spawn. This removes a bunch, but a bunch is recreated at the random spawn scene.
+        if (Randomizer.SpawnScene == null) {
             return;
         }
-
-        var wsLocation = Randomizer.SpawnWith.IndexOf("WS");
-        var offset = 2;
-        if (Randomizer.SpawnWith.Contains("WS/")) {
-            offset = 3;
-        }
-
-        var pieces = Randomizer.SpawnWith.Substring(wsLocation + offset).Split(',');
-        int.TryParse(pieces[0], out var warpX);
-        int.TryParse(pieces[1], out var warpY);
-        var position = new Vector3(warpX, warpY, 0);
-        // This only takes a position, and loads scenes at that position. Doesn't require the metadata.
-        // Definitely not as nice as adding a load to the action sequence, but significantly easier.
-        Scenes.Manager.AdditivelyLoadScenesAtPosition(position, true, false, true);
-
         var actionSequence = sceneRoot.transform.FindChild("*objectiveSetup/objectiveSetupTrigger/objectiveSetupAction").GetComponent<ActionSequence>();
-        var original_list = new List<ActionMethod>(actionSequence.Actions);
-        // Remove from "09. Wait 4 seconds" and onwards.
-        actionSequence.Actions.RemoveRange(8, 9);
+        List<ActionMethod> original_list = new List<ActionMethod>(actionSequence.Actions);
+        // Remove everything after "09. Wait 4 seconds".
+        actionSequence.Actions.RemoveRange(9, 8);
+        // Make it load our desired target scene immediately.
+        var loadAction = actionSequence.gameObject.AddComponent<RandomizerLoadSceneAtPositionAction>();
+        loadAction.MoonGuid = new MoonGuid(312294723, 1208247507, -1126220927, 892221029);
+        loadAction.Position = Randomizer.SpawnPosition;
+        actionSequence.Actions.Insert(0, loadAction);
+        // Make it swap scene faster. 4s to 1s, other 3s added to other scene.
+        var waitAction = (WaitAction)actionSequence.Actions[9];
+        waitAction.Duration = 1f;
         // Hide letterboxes
         actionSequence.Actions.Add(original_list[11]);
-        // Show UI
-        actionSequence.Actions.Add(original_list[15]);
-        // Unlock player input
-        actionSequence.Actions.Add(original_list[10]);
+        // Set the trigger for our new spawn location.
+        var stringTrigger = actionSequence.gameObject.AddComponent<RegisterStringTriggerAction>();
+        stringTrigger.MoonGuid = new MoonGuid(-1155166006, 1231229756, -1377750093, -1595379638);
+        stringTrigger.String = "RandomSpawnStart";
+        actionSequence.Actions.Add(stringTrigger);
         // Warp
         var setPosition = actionSequence.gameObject.AddComponent<SetCharacterPosition>();
-        setPosition.transform.position = position;
+        setPosition.MoonGuid = new MoonGuid(2033807637, 1102752838, 351348109, 1564353675);
+        setPosition.transform.position = Randomizer.SpawnPosition;
         setPosition.Position = setPosition.transform;
-        SetGuidAndSave(sceneRoot, setPosition, new MoonGuid(2033807637, 1102752838, 351348109, 1564353675));
         actionSequence.Actions.Add(setPosition);
-        // create checkpoint -- should be immediately after warp.
-        actionSequence.Actions.Add(original_list[14]);
-        // Wait 4 seconds
-        actionSequence.Actions.Add(original_list[8]);
-        // wait 3.3 sceonds
-        actionSequence.Actions.Add(original_list[12]);
-        // play sound
-        actionSequence.Actions.Add(original_list[13]);
-        // Set user status action.
-        actionSequence.Actions.Add(original_list[16]);
-        sceneRoot.OnValidate();
+        // Remove the fade out.
+        actionSequence.Actions.RemoveAt(4);
+    }
+
+    private static void BootstrapRandomSpawnTeleportLocation(SceneRoot sceneRoot) {
+        // Most of this is recreating timings and actions that were originally in SunkenGladesRunaway.
+        var sequenceObject = new GameObject("randomSpawnSequence");
+        sequenceObject.transform.parent = sceneRoot.transform;
+        // Create the sequence and make it triggered by the new spawn sequence.
+        var sequence = sequenceObject.AddComponent<ActionSequence>();
+        sequence.MoonGuid = new MoonGuid(-575420461, 1101990088, 178133408, 2022995693);
+        var trigger = sequenceObject.AddComponent<TriggerByString>();
+        trigger.MoonGuid = new MoonGuid(596688283, 1150590864, 217824902, 525971548);
+        trigger.Data = new TriggerByString.StringTriggerData { String = "RandomSpawnStart", TriggerEvent = TriggerByString.TriggerEvent.Always };
+        trigger.TriggerOnce = true;
+        trigger.ActionToRun = sequence;
+        // Move the camera to ori. This is done here and not in default spawn scene so that camera bounds are calculated correctly.
+        var cameraAction = sequence.gameObject.AddComponent<RandomizerMoveCameraAction>();
+        cameraAction.MoonGuid = new MoonGuid(364836396, 1208058425, -863601485, -145251505);
+        cameraAction.Position = Randomizer.SpawnPosition;
+        sequence.Actions.Add(cameraAction);
+        // This is the point where in any great magician's act we pull back the curtain! (Hopefully no one peeked and saw glades.)
+        var fadeOut = sequenceObject.AddComponent<FaderBFadeOutAction>();
+        fadeOut.MoonGuid = new MoonGuid(60245356, 1204775850, 1483324304, -1342617812);
+        fadeOut.Duration = 4;
+        sequence.Actions.Add(fadeOut);
+        // Wait 3 seconds of the 4 total.
+        var waitAction = sequenceObject.AddComponent<WaitAction>();
+        waitAction.MoonGuid = new MoonGuid(-1216854977, 1204243132, 2020710590, 1091515233);
+        waitAction.Duration = 3f;
+        sequence.Actions.Add(waitAction);
+        // Unlock player input.
+        var inputLockAction = sequenceObject.AddComponent<LockPlayerInputManualAction>();
+        inputLockAction.MoonGuid = new MoonGuid(-803450664, 1167049334, 1107280285, 72641712);
+        inputLockAction.ShouldLock = false;
+        sequence.Actions.Add(inputLockAction);
+        // Wait 3.3 seconds.
+        var waitObject = new GameObject("WaitAction2");
+        waitObject.transform.parent = sequenceObject.transform;
+        var waitAction2 = waitObject.gameObject.AddComponent<WaitAction>();
+        waitAction2.MoonGuid = new MoonGuid(-1491006181, 1224537196, 1919780772, 1173563805);
+        waitAction2.Duration = 3.3f;
+        sequence.Actions.Add(waitAction2);
+        // Show UI.
+        var showAction = sequenceObject.AddComponent<ShowSeinUIAction>();
+        showAction.MoonGuid = new MoonGuid(1954200174, 1280244692, -1636812609, 1089206021);
+        showAction.ShouldShow = true;
+        sequence.Actions.Add(showAction);
+        // Create Checkpoint.
+        var checkpointAction = sequenceObject.AddComponent<CreateCheckpointAction>();
+        checkpointAction.MoonGuid = new MoonGuid(-960421049, 1184624848, 1067937201, 1937397131);
+        checkpointAction.RespawnPosition = new Vector2(0, 0);
+        checkpointAction.SaveToDisk = true;
+        sequence.Actions.Add(checkpointAction);
     }
 
     private static void BootstrapWallJumpTreeHint(SceneRoot sceneRoot) {
@@ -626,7 +728,139 @@ public class RandomizerBootstrap {
         rhino.RespawnTime = 10f;
     }
 
+    // With dungeons open the lower Ginso miniboss's right door stays open until Ori walks into the room, from
+    // either side, and then shuts with the left one.
+    private static void BootstrapGinsoLowerMinibossDoors(SceneRoot sceneRoot) {
+        if (Randomizer.Inventory.GetRandomizerItem(801) != 0) {
+            return;
+        }
+
+        var setup = sceneRoot.transform.FindChild("ginsoTreeMultiMortar");
+        // the left door's trigger spans the room between the doors, so coming in on the right starts the fight too
+        var trigger = setup.FindChild("doorASetup/triggerCollider");
+        trigger.position = new Vector3(524.4f, 247.5f, trigger.position.z);
+        trigger.localScale = new Vector3(37.2f, 9f, 1f);
+
+        var sequence = setup.FindChild("doorASetup/action").GetComponent<ActionSequence>();
+        // the fight's checkpoint keeps Ori where they stand rather than moving them to the left door
+        foreach (var action in sequence.Actions) {
+            if (action is CreateCheckpointAction) {
+                ((CreateCheckpointAction)action).RespawnPosition = Vector2.zero;
+            }
+        }
+
+        var door = setup.FindChild("mortarEnemySetup/doorSetup/sidewaysDoor");
+        var keyrings = door.FindChild("keyrings");
+        var halves = new LegacyAnimator[] {
+            door.FindChild("puzzleDoorLeftGinso").GetComponent<LegacyTranslateAnimator>(),
+            door.FindChild("puzzleDoorRightGinso").GetComponent<LegacyTranslateAnimator>()
+        };
+        var spins = keyrings.GetComponentsInChildren<LegacyRotateAnimator>(true);
+        var fades = FadeIns(keyrings, RingFade);
+        PinToSpins(setup.FindChild("mortarEnemySetup/doorSetup/*openDoorSequence").GetComponent<ActionSequence>(), keyrings);
+
+        // the right door's own timeline runs alongside the left door's cutscene rather than holding it up
+        var closing = new GameObject("closeRightDoor");
+        closing.transform.parent = sequence.transform;
+        var closeSequence = closing.AddComponent<ActionSequence>();
+        Animate(Step<AnimatorAction>(closeSequence, "close"), door, halves, AnimatorAction.PlayMode.ContinueReversed);
+        // just before the halves meet, the rings slowly fade in, already locked in place
+        var closed = 0f;
+        foreach (var half in halves) {
+            closed = Mathf.Max(closed, half.TimeOfLastCurvePoint / half.Speed);
+        }
+
+        Step<WaitAction>(closeSequence, "wait").Duration = Mathf.Max(0f, closed - RingLead);
+        var show = Step<ActivateAction>(closeSequence, "show");
+        show.Target = keyrings.gameObject;
+        show.Save = false;
+        Animate(Step<AnimatorAction>(closeSequence, "lock"), keyrings, spins, AnimatorAction.PlayMode.StopAtStart);
+        Animate(Step<AnimatorAction>(closeSequence, "fade"), keyrings, fades, AnimatorAction.PlayMode.Restart);
+        ActionSequence.Rename(closeSequence.Actions);
+
+        // right after the left door starts closing
+        sequence.Actions.Insert(3, closeSequence);
+        ActionSequence.Rename(sequence.Actions);
+    }
+
+    // how long before the right door shuts its rings start fading in, and how long they take
+    private const float RingLead = 0.25f;
+
+    private const float RingFade = 2f;
+
+    private static T Step<T>(ActionSequence sequence, string name) where T : ActionMethod {
+        var step = new GameObject(name);
+        step.transform.parent = sequence.transform;
+        var action = step.AddComponent<T>();
+        sequence.Actions.Add(action);
+        return action;
+    }
+
+    private static void Animate(AnimatorAction action, Transform target, LegacyAnimator[] animators, AnimatorAction.PlayMode command) {
+        action.Target = target.gameObject;
+        action.AnimatorsMode = AnimatorAction.FindAnimatorsMode.SpecifyAnimators;
+        action.Animators = animators;
+        action.Command = command;
+    }
+
+    // A fade in on every mesh under root; each keeps its own look until played.
+    private static LegacyAnimator[] FadeIns(Transform root, float seconds) {
+        var fades = new List<LegacyAnimator>();
+        foreach (var mesh in root.GetComponentsInChildren<MeshRenderer>(true)) {
+            var fade = mesh.gameObject.AddComponent<LegacyTransparancyAnimator>();
+            var curve = AnimationCurve.Linear(0f, 0f, seconds, 1f);
+            curve.preWrapMode = WrapMode.ClampForever;
+            curve.postWrapMode = WrapMode.ClampForever;
+            fade.SetAnimationCurve(curve);
+            fade.SampleFirstFrameOnStart = false;
+            fades.Add(fade);
+        }
+
+        return fades.ToArray();
+    }
+
+    // The opening's own spin actions find their animators by object, which would now take the fades along.
+    private static void PinToSpins(ActionSequence opening, Transform keyrings) {
+        foreach (var action in opening.Actions) {
+            var animate = action as AnimatorAction;
+            if (animate == null || animate.Target == null || animate.AnimatorsMode == AnimatorAction.FindAnimatorsMode.SpecifyAnimators
+                    || !animate.Target.transform.IsChildOf(keyrings)) {
+                continue;
+            }
+
+            animate.Animators = animate.AnimatorsMode == AnimatorAction.FindAnimatorsMode.GameObject
+                ? animate.Target.GetComponents<LegacyRotateAnimator>()
+                : animate.Target.GetComponentsInChildren<LegacyRotateAnimator>(true);
+            animate.AnimatorsMode = AnimatorAction.FindAnimatorsMode.SpecifyAnimators;
+        }
+    }
+
     private static void BootstrapGinsoLowerMiniboss(SceneRoot sceneRoot) {
+        var minibossRoom = Rect.MinMaxRect(504f, 235.5f, 545f, 255f);
+        var isInRoom = minibossRoom.Contains(Characters.Sein.Position);
+        if (Randomizer.Inventory.GetRandomizerItem(801) == 0) {
+            var setup = sceneRoot.transform.FindChild("ginsoTreeMultiMortar");
+            var door = setup.FindChild("mortarEnemySetup/doorSetup/sidewaysDoor");
+            var left = door.FindChild("puzzleDoorLeftGinso").GetComponent<LegacyTranslateAnimator>();
+            var right = door.FindChild("puzzleDoorRightGinso").GetComponent<LegacyTranslateAnimator>();
+            var keyrings = door.FindChild("keyrings").gameObject;
+            if (!isInRoom) {
+                // with dungeons open the right door is open whenever Ori is outside the room, fought or not
+                left.StopAndSampleAtEnd();
+                right.StopAndSampleAtEnd();
+                keyrings.active = false;
+            } else if (left.Reversed || left.AtStart) {
+                // the fight's checkpoint catches both doors mid-close; a respawn brings them back already shut
+                setup.FindChild("doorASetup/ginsoTreeBlockingWallA").GetComponent<LegacyTranslateAnimator>().StopAndSampleAtEnd();
+                left.StopAndSampleAtStart();
+                right.StopAndSampleAtStart();
+                keyrings.active = true;
+                foreach (var fade in keyrings.GetComponentsInChildren<LegacyTransparancyAnimator>(true)) {
+                    fade.StopAndSampleAtEnd();
+                }
+            }
+        }
+
         // This makes it so you can't soft-lock if you alt-r out of the lower ginso miniboss 
         // before killing the boss.
         // Check disable alt-r soft-lock fixes.
@@ -637,8 +871,6 @@ public class RandomizerBootstrap {
         var firstDoorAnimator = sceneRoot.transform.FindChild("ginsoTreeMultiMortar/doorASetup/ginsoTreeBlockingWallA").GetComponent<LegacyTranslateAnimator>();
         var firstDoorTrigger = sceneRoot.transform.FindChild("ginsoTreeMultiMortar/doorASetup/triggerCollider").GetComponent<PlayerCollisionStayTrigger>();
         var firstDoorShut = !firstDoorAnimator.AtStart; // Or shutting.
-        var minibossRoom = Rect.MinMaxRect(504f, 235.5f, 545f, 255f);
-        var isInRoom = minibossRoom.Contains(Characters.Sein.Position);
         if (firstDoorShut && !isInRoom) {
             firstDoorAnimator.Stopped = true;
             firstDoorAnimator.Reversed = false;
@@ -775,7 +1007,249 @@ public class RandomizerBootstrap {
         }
     }
 
-    private static Dictionary<string, Action<SceneRoot>> s_bootstrapPreEnabled = new Dictionary<string, Action<SceneRoot>> {
+    private static void BootstrapHoruFieldsPushBlock(SceneRoot sceneRoot) {
+        // This changes the push block cutscene so that it only plays when it will not softlock the game.
+        var pushRockTrigger = sceneRoot.transform.FindChild("*storySetups/*pushRockTrigger");
+        var collisionTrigger = pushRockTrigger.gameObject.GetComponent<GenericCollisionTrigger>();
+        var storySetups = sceneRoot.transform.FindChild("*storySetups");
+
+        var isInZoneCondition = pushRockTrigger.gameObject.AddComponent<SeinInsideZoneCondition>();
+        collisionTrigger.Condition = isInZoneCondition;
+
+        var softlockObject = new GameObject("softlock fix");
+        softlockObject.transform.SetParent(storySetups.transform);
+        // Bounds of where it is safe to play the cutscene.
+        var left = 25f;
+        var right = 180f;
+        var top = 38f;
+        var bottom = -54f;
+        softlockObject.transform.localScale = new Vector3(right - left, top - bottom, 0);
+        softlockObject.transform.position = new Vector3((right + left) / 2, (top + bottom) / 2, 0);
+        isInZoneCondition.Zones = new Transform[1];
+        isInZoneCondition.Zones[0] = softlockObject.transform;
+    }
+
+    private static void BootstrapL4(SceneRoot sceneRoot) {
+        // This disables the rocks that block off access to HoruL4ChaseExp to prevent softlocks.
+        var rocks = sceneRoot.transform.FindChild("*waveSetup/timeline/blockingRock");
+        var lavaSequence = sceneRoot.transform.FindChild("*waveSetup/simpleStompPost/baseAction").GetComponent<ActionSequence>();
+        var deactivateExample = lavaSequence.transform.FindChild("24. Deactivate waveGroup");
+        var deactivateRocks = CloneObject(sceneRoot, deactivateExample, "25. Deactivate Rocks");
+        var deactivateRocksAction = deactivateRocks.GetComponent<ActivateAction>();
+        deactivateRocksAction.Target = rocks.gameObject;
+
+        var softlockFixCondition = deactivateRocks.gameObject.AddComponent<RandomizerCheckInventoryCondition>();
+        softlockFixCondition.comparison = RandomizerCheckInventoryCondition.Comparison.Equal;
+        softlockFixCondition.inventorySlot = 1103;
+        softlockFixCondition.value = 0;
+        softlockFixCondition.defaultResult = true;
+
+        var conditionalAction = deactivateRocks.gameObject.AddComponent<RunActionCondition>();
+        conditionalAction.Action = deactivateRocksAction;
+        conditionalAction.Condition = softlockFixCondition;
+        conditionalAction.MoonGuid = new MoonGuid(-676058480, 1220973407, -919927166, -400007427);
+        lavaSequence.Actions.Add(conditionalAction);
+    }
+
+    // a RespawnTime of 0 is how vanilla spells "never"; the usual enemy gets a minute off screen
+    private static void GiveRespawnTime<T>(Transform root, float seconds) where T : RespawningPlaceholder {
+        foreach (var placeholder in root.GetComponentsInChildren<T>(true)) {
+            placeholder.RespawnTime = seconds;
+        }
+    }
+
+    private static void BootstrapForlornApproach(SceneRoot sceneRoot) {
+        var enemies = sceneRoot.transform.FindChild("enemies");
+        GiveRespawnTime<AcidSlugEnemyPlaceholder>(enemies, 60f);
+        GiveRespawnTime<ShootingSpiderPlaceholder>(enemies, 60f);
+    }
+
+    private static void BootstrapValleyBashCave(SceneRoot sceneRoot) {
+        GiveRespawnTime<AcidSlugEnemyPlaceholder>(sceneRoot.transform.FindChild("enemies"), 60f);
+    }
+
+    private static void BootstrapBlackrootTeleporterFronkey(SceneRoot sceneRoot) {
+        var enemies = sceneRoot.transform.FindChild("enemies/enemiesByDifficulty");
+        // the gate leaves him out of Relaxed, and logic that counts on him has to hold there too
+        enemies.GetComponent<DifficultyCondition>().Easy = true;
+        enemies.FindChild("target/jumperEnemyPlaceholder").GetComponent<JumperEnemyPlaceholder>().RespawnOnTimeout = true;
+
+        // his paths break the rolled boulder, so it has to come back for them
+        var timeline = sceneRoot.transform.FindChild("*boulderSetup/boulderTimeline");
+        var respawn = new GameObject("boulderRespawn");
+        respawn.transform.SetParent(sceneRoot.transform, false);
+        var boulder = respawn.AddComponent<RandomizerBoulderRespawn>();
+        boulder.Boulder = timeline.FindChild("boulder/boulderRotation/boulderStompableAfterChase").GetComponent<EntityDamageReciever>();
+        boulder.WallCollider = timeline.FindChild("wallCollider").gameObject;
+        boulder.Chaser = timeline.FindChild("boulder/boulderRotation/boulderDuringChase").gameObject;
+    }
+
+    private static void BootstrapBlackrootBoulderAfterSerialize(SceneRoot sceneRoot) {
+        var respawn = sceneRoot.GetComponentInChildren<RandomizerBoulderRespawn>();
+        if (respawn != null) {
+            respawn.CheckNow = true;
+        }
+    }
+
+    // Vanilla switches this fronkey off for good once the floor breaks; now he only slows down.
+    private static void BootstrapSpiritTreeFronkey(SceneRoot sceneRoot) {
+        var floor = sceneRoot.transform.FindChild("stompableFloorSunkenGlades/stompableFloorA").GetComponent<StompableFloor>();
+        var deathSequence = floor.transform.FindChild("*deathSequence").GetComponent<ActionSequence>();
+        deathSequence.Actions.Remove(deathSequence.transform.FindChild("03. Deactivate jumpingSootEnemyPlaceholder").GetComponent<ActionMethod>());
+        floor.DamageReciever.OnDeathEvent.Add(delegate { SetSpiritTreeFronkeyRespawn(sceneRoot, true); });
+    }
+
+    // a checkpoint can put the floor back, so this runs after every serialize
+    private static void BootstrapSpiritTreeFronkeyAfterSerialize(SceneRoot sceneRoot) {
+        var floor = sceneRoot.transform.FindChild("stompableFloorSunkenGlades/stompableFloorA").GetComponent<StompableFloor>();
+        SetSpiritTreeFronkeyRespawn(sceneRoot, floor.DamageReciever.NoHealthLeft);
+    }
+
+    // quick and on screen while the floor puzzle wants him, the usual off-screen minute after
+    private static void SetSpiritTreeFronkeyRespawn(SceneRoot sceneRoot, bool floorBroken) {
+        var fronkey = sceneRoot.transform.FindChild("enemies/jumperEnemyPlaceholder").GetComponent<JumperEnemyPlaceholder>();
+        fronkey.RespawnOnScreen = !floorBroken;
+        fronkey.RespawnTime = floorBroken ? 60f : 7f;
+    }
+
+    private static void BootstrapMistyKS1(SceneRoot sceneRoot) {
+        var revisitGo = sceneRoot.transform.Find("*revisitTrigger").gameObject;
+
+        var trigger = revisitGo.GetComponent<PlayerCollisionTrigger>();
+        var worldEventCondition = trigger.Condition;
+        var compoundCondition = revisitGo.AddComponent<CompoundCondition>();
+        compoundCondition.Tests.Add(new() { Conditions = [worldEventCondition] });
+
+        var stateCondition = revisitGo.AddComponent<GetWorldEventCondition>();
+        stateCondition.WorldEvents = Randomizer.MistySim;
+        stateCondition.States = [1];
+        var coordsCondition = revisitGo.AddComponent<RandomizerHasCoordsCondition>();
+        coordsCondition.coordsKey = -10759968;
+        compoundCondition.Tests.Add(new() { Conditions = [stateCondition, coordsCondition] });
+        trigger.Condition = compoundCondition;
+
+        var revisitAction = CreateAction<RandomizerMistySelectStateAction>(sceneRoot, revisitGo.transform, new MoonGuid(260470117, 1866813260, -1226459743, 1638716956));
+        revisitAction.Cases = [new(10, null, 15), new(null, -10440008, 2), new(null, null, 0)];
+        var sequenceActions = revisitGo.GetComponent<ActionSequence>().Actions;
+        Object.Destroy(sequenceActions[0].gameObject);
+        sequenceActions[0] = revisitAction;
+        ActionSequence.Rename(sequenceActions);
+
+        if (Randomizer.MistyState.Value == 1) {
+            // Always supposed to be off during state 1.
+            // Gets reactivated by the vfx when needed.
+            sceneRoot.transform.Find("*forestChangeSetup/*forestChangeTimeline/cameraSettingsZone").gameObject.SetActive(false);
+        }
+    }
+
+    private static void BootstrapMistyBridge(SceneRoot sceneRoot) {
+        var changeTimeline = sceneRoot.transform.Find("*forestChangeSetup/*forestChangeTimeline");
+        var trigger = changeTimeline.Find("trigger").GetComponent<PlayerCollisionTrigger>();
+        trigger.TriggerOnce = false;
+
+        var actionTf = changeTimeline.Find("action");
+        var sequence = actionTf.GetComponent<ActionSequence>();
+
+        var disableTriggerAction = CreateAction<ActivateAction>(sceneRoot, actionTf, new MoonGuid(995522416, -680310442, -1191568504, -767387724));
+        disableTriggerAction.Target = trigger.gameObject;
+        disableTriggerAction.Activate = false;
+        disableTriggerAction.Save = false;
+        sequence.Actions.Insert(0, disableTriggerAction);
+
+        var animatorFixAction = CreateAction<RandomizerMistyAnimationFixAction>(sceneRoot, actionTf, new MoonGuid(588332445, 1378765767, -1259952258, 2068770370));
+        animatorFixAction.Animator = changeTimeline.Find("timelineShakes/shakes/postAnimator").GetComponent<CameraSettingsZoneAnimator>();
+        sequence.Actions.Insert(1, animatorFixAction);
+
+        var toggleStateAction = CreateAction<RandomizerMistySelectStateAction>(sceneRoot, actionTf, new MoonGuid(1196825710, 855396032, -1699969059, 1722915114));
+        toggleStateAction.Cases = [new(3, null, 15), new(15, null, 2), new(2, null, 15)];
+        sequence.Actions.Insert(2, toggleStateAction);
+
+        ActionSequence.Rename(sequence.Actions);
+
+        var revisitObj = new GameObject("*revisitTrigger");
+        var revisitTf = revisitObj.transform;
+        revisitTf.SetParent(changeTimeline, false);
+        revisitTf.position = new Vector3(-917.845f, 4.54f);
+        revisitTf.localScale = new Vector3(17.29f, 16.6f);
+
+        var cutsceneCondition = revisitObj.AddComponent<RandomizerIsTriggerActiveCondition>();
+        cutsceneCondition.Target = sceneRoot.transform.Find("*storySetups/storyTextWithTrigger/triggerCollider").GetComponent<PlayerCollisionTrigger>();
+        cutsceneCondition.Active = false;
+
+        var triggerCondition = revisitObj.AddComponent<IsActiveCondition>();
+        triggerCondition.Target = trigger.gameObject;
+        triggerCondition.Active = false;
+
+        var mistyStateCondition = revisitObj.AddComponent<GetWorldEventCondition>();
+        mistyStateCondition.WorldEvents = Randomizer.MistySim;
+        mistyStateCondition.States = [2, 3, 15];
+
+        var compoundCondition = revisitObj.AddComponent<CompoundCondition>();
+        compoundCondition.Tests = [new() { Conditions = [cutsceneCondition, triggerCondition, mistyStateCondition] }];
+
+        var enableTriggerAction = revisitObj.AddComponent<ActivateAction>();
+        SetGuidAndSave(sceneRoot, enableTriggerAction, new MoonGuid(2006654161, 2069841723, -1304120424, 471054335));
+        enableTriggerAction.Target = trigger.gameObject;
+        enableTriggerAction.Save = false;
+
+        var activateCutsceneTrigger = revisitObj.AddComponent<PlayerCollisionTrigger>();
+        SetGuidAndSave(sceneRoot, activateCutsceneTrigger, new MoonGuid(-2113055654, -1822210313, -1755943464, -1777873911));
+        activateCutsceneTrigger.Condition = compoundCondition;
+        activateCutsceneTrigger.ActionToRun = enableTriggerAction;
+    }
+
+    private static void BootstrapMistyTree(SceneRoot sceneRoot) {
+        var revisitTrigger = sceneRoot.transform.Find("*forestChangeSetup/*forestChangeTimeline/*revisitTrigger").GetComponent<PlayerCollisionTrigger>();
+
+        var stateCondition = revisitTrigger.GetComponent<GetWorldEventCondition>();
+        var pickupCondition = revisitTrigger.gameObject.AddComponent<RandomizerHasCoordsCondition>();
+        pickupCondition.coordsKey = -11880100;
+        var compoundCondition = revisitTrigger.gameObject.AddComponent<CompoundCondition>();
+        compoundCondition.Tests = [new() { Conditions = [stateCondition, pickupCondition] }];
+        revisitTrigger.Condition = compoundCondition;
+
+        var revisitSequence = revisitTrigger.GetComponent<ActionSequence>();
+        var revisitActions = revisitSequence.Actions;
+        var stateAction = CreateAction<RandomizerMistySelectStateAction>(sceneRoot, revisitSequence.transform, new MoonGuid(1284237799, -420134354, -1844507112, -267335023));
+        stateAction.Cases = [new(null, -9120036, 11), new(null, null, 4)];
+        Object.Destroy(revisitActions[0].gameObject);
+        revisitActions[0] = stateAction;
+        ActionSequence.Rename(revisitActions);
+    }
+
+    private static void BootstrapMistySpikeMazeB(SceneRoot sceneRoot) {
+        for (var i = 0; i < sceneRoot.transform.childCount; ++i) {
+            var child = sceneRoot.transform.GetChild(i);
+            var sweAction = child.GetComponent<SetWorldEventAction>();
+            if (sweAction != null && sweAction.State == 12) {
+                Object.Destroy(child.GetComponent<SetWorldEventAction>());
+                var caseAction = child.gameObject.AddComponent<RandomizerMistySelectStateAction>();
+                SetGuidAndSave(sceneRoot, caseAction, new MoonGuid(-656584922, 1977237624, -1108466084, 1406314579));
+                caseAction.Cases = [new(null, -7680144, 12), new(null, null, 5)];
+                child.GetComponent<PlayerCollisionTrigger>().ActionToRun = caseAction;
+                break;
+            }
+        }
+    }
+
+    private static T CreateAction<T>(SceneRoot sceneRoot, Transform parent, MoonGuid guid) where T : SaveSerialize {
+        var go = new GameObject();
+        go.transform.SetParent(parent, false);
+        var action = go.AddComponent<T>();
+        SetGuidAndSave(sceneRoot, action, guid);
+        return action;
+    }
+
+    // the VanillaRespawns seed flag leaves these enemies as shipped
+    private static Action<SceneRoot> UnlessVanillaRespawns(Action<SceneRoot> bootstrap) {
+        return sceneRoot => {
+            if (!Randomizer.VanillaRespawns) {
+                bootstrap(sceneRoot);
+            }
+        };
+    }
+
+    private static Dictionary<string, Action<SceneRoot>> s_bootstrapLoaded = new Dictionary<string, Action<SceneRoot>> {
         { "moonGrottoRopeBridge", BootstrapMoonGrottoBridge },
         { "mountHoruHubMid", BootstrapMountHoruHub },
         { "mountHoruLaserPuzzle", BootstrapMountHoruLaserPuzzle },
@@ -794,22 +1268,41 @@ public class RandomizerBootstrap {
         { "sunkenGladesEnemyIntroductionC", BootstrapRhinoBeforeSein },
         { "sorrowPassForestB", BootstrapMistyPedestal },
         { "ginsoTreeResurrection", BootstrapGinsoUpperMiniboss },
+        { "ginsoTreePuzzles", BootstrapGinsoLowerMinibossDoors },
         { "forlornRuinsC", BootstrapForlornRuinsBridge },
+        { "horuFieldsB", BootstrapHoruFieldsPushBlock },
+        { "mountHoruMovingLaser", BootstrapL4 },
+        { "forlornRuinsKuroHideStreamlined", UnlessVanillaRespawns(BootstrapForlornApproach) },
+        { "westGladesBashCave", UnlessVanillaRespawns(BootstrapValleyBashCave) },
+        { "mangroveFallsDashEscalation", UnlessVanillaRespawns(BootstrapBlackrootTeleporterFronkey) },
+        { "upperGladesSwarmIntroduction", UnlessVanillaRespawns(BootstrapSpiritTreeFronkey) },
+        { "mistyWoodsGetTorch", BootstrapMistyKS1 },
+        { "mistyWoodsRopeBridge", BootstrapMistyBridge },
+        { "mistyWoodsGetClimb", BootstrapMistyTree },
+        { "mistyWoodsGlideMazeB", BootstrapMistySpikeMazeB },
     };
 
-    private static List<string> s_bootstrappedScenesPreEnabled = new List<string>();
-
-    // Generally prefer PreEnabled over AfterSerialize. These functions are run after *every* 
+    // Generally prefer Loaded over AfterSerialize. These functions are run after *every*
     // serialisation of the scene, so after every death and not just the initial load. So don't
     // e.g. unconditionally add things to the scene in these functions, as they will repeat. 
     // But if you need to do things that alter or depend on serialised parts of the scene, 
     // this is the place. Things altered here may be serialised (saved) by the scene. If you 
-    // want to make new serialised scene elements you'll need to use PreEnabled.
+    // want to make new serialised scene elements you'll need to use Loaded.
     private static Dictionary<string, Action<SceneRoot>> s_bootstrapAfterSerialize = new Dictionary<string, Action<SceneRoot>> {
         { "moonGrottoEnemyPuzzle", BootstrapMoonGrottoMiniboss },
         { "sunkenGladesOriRoom", BootstrapSeinRoomWall },
         { "ginsoTreePuzzles", BootstrapGinsoLowerMiniboss },
+        { "upperGladesSwarmIntroduction", UnlessVanillaRespawns(BootstrapSpiritTreeFronkeyAfterSerialize) },
+        { "mangroveFallsDashEscalation", BootstrapBlackrootBoulderAfterSerialize },
+        { "forlornRuinsWindShaftMockupB", RandomizerBootstrapEscapes.GenericResetScene },
+        { "forlornRuinsWindShaftMockupC", RandomizerBootstrapEscapes.GenericResetScene },
+        { "forlornRuinsNestC", RandomizerBootstrapEscapes.GenericResetScene },
+        { "forlornRuinsBackgroundC", RandomizerBootstrapEscapes.GenericResetScene },
     };
 
     private static List<string> s_bootstrappedScenesAfterSerialize = new List<string>();
+
+    // A scene kept in memory for a checkpoint comes back without a reload, as after an Alt+R out of a fight;
+    // these scenes' AfterSerialize patches run again each time it does.
+    private static readonly HashSet<string> s_afterSerializeOnEveryEnable = new HashSet<string> { "ginsoTreePuzzles", "moonGrottoEnemyPuzzle" };
 }

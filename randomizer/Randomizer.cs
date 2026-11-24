@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using B83.Win32;
 using Core;
 using Game;
@@ -12,9 +13,18 @@ using Events = Game.Events;
 using Random = System.Random;
 
 public static class Randomizer {
-    public static string VERSION = "4.2.17";
+    public static string VERSION = "5.0.0";
+
+    // the netcode host this build points at; changing it moves every install (RandomizerSettings)
+    public static string NETCODE_HOST = "bf.orirando.com";
+
+    // 4.9.x is the 5.0 beta: numeric on the wire, "5.0 beta vN" on screen
+    public static bool IsBeta => VERSION.StartsWith("4.9.");
+
+    public static string DisplayVersion => IsBeta ? "5.0 beta v" + VERSION.Substring(4) : VERSION;
 
     public static void initialize() {
+        SaveSoon = false;
         try {
             OHKO = false;
             ZeroXP = false;
@@ -26,8 +36,6 @@ public static class Randomizer {
             SyncId = "";
             ForceMaps = false;
             SyncMode = 4;
-            StringKeyPickupTypes = new List<string> { "TP", "SH", "NO", "WT", "MU", "HN", "WP", "RP", "WS", "TW", "NB" };
-
             RandomizerChaosManager.initialize();
             DamageModifier = 1f;
             GridFactor = 4.0;
@@ -36,15 +44,17 @@ public static class Randomizer {
             PlayedGoodLuckOnce = false;
             MessageProvider = (RandomizerMessageProvider)ScriptableObject.CreateInstance(typeof(RandomizerMessageProvider));
             RandomizerUI.Instance.ClearRecentNotifications();
-            ProgressiveMapStones = true;
             ForceTrees = false;
             CluesMode = false;
             Shards = false;
             WorldTour = false;
             SeedMeta = "";
             SeedFormat = MIN_SEED_FORMAT;
+            PlayerCount = 0;
             MistySim = new WorldEvents();
             MistySim.MoonGuid = new MoonGuid(1061758509, 1206015992, 824243626, -2026069462);
+            // the game's own asset starts at 1, and whoever reads the event first creates it
+            MistySim.DefaultValue = 1;
             TeleportTable = new Hashtable();
             TeleportTable["Forlorn"] = "forlorn";
             TeleportTable["Grotto"] = "moonGrotto";
@@ -63,7 +73,6 @@ public static class Randomizer {
             MessageQueueTime = 0;
             QueueBash = false;
             BashWasQueued = false;
-            BashTap = false;
             GrenadeJumpQueued = false;
             fragsEnabled = false;
             LastTick = 10000000L;
@@ -78,10 +87,12 @@ public static class Randomizer {
             HotColdSaveId = 2000;
             OpenMode = true;
             OpenWorld = false;
+            RandomizerAutoplayer.Reset();
             RandomizerColorManager.Initialize();
             RandomizerRebinding.ParseRebinding();
             RandomizerSettings.ParseSettings();
-            RandomizerExpNames.ParseExpNames();
+            RandomizerCustomNames.ParseExpNames();
+            RandomizerCustomNames.ParsePickupNames();
             RelicZoneLookup = new Dictionary<string, string>();
             RandomizerTrackedDataManager.Initialize();
             RandomizerStatsManager.Initialize();
@@ -91,6 +102,8 @@ public static class Randomizer {
             GrenadeSlot = -1;
             StompSlot = -1;
             StompTriggers = false;
+            AltRDisabled = false;
+            RandomizerSwitch.SeedSilent = false;
             GoalModeFinish = false;
             SpawnWith = "";
             IgnoreEnemyExp = false;
@@ -98,7 +111,6 @@ public static class Randomizer {
             AllowOrbWarps = false;
             NightBerryWarpPosition = new Vector3(-910f, -300f);
             InLogicWarps = false;
-            RandomizerLocationManager.ResetDoorLogic();
             TeleportersLockedByClues = false;
             WarpLogicLocations = new Hashtable();
             Keysanity.Initialize();
@@ -106,6 +118,23 @@ public static class Randomizer {
             RandomizerDeathLink.Reset();
             EnhancedMode = false;
             EnhancedSeinInSeed = false;
+            VanillaRespawns = false;
+            ShareSaves = false;
+            RandomizerEnemies.ResetOptions();
+            RandomizerEnemies.Reset();
+            SpawnPosition = new Vector3(0, 0, 0);
+            SpawnScene = null;
+            ShouldHideGladesStart = false;
+            RandomizerLocationManager.KeyTiers = null;
+
+            // a practice session never reads the seed; its segment brings its own enemy lines
+            if (PracticeController.Active) {
+                RandomizerLocationManager.ClearPickups();
+                BingoController.Active = false;
+                RandomizerBoxes.Seed.Clear();
+                RandomizerBonusSkill.Reset();
+                return;
+            }
 
             if (SeedFilePath == null || IsDefaultSeedFilePath(SeedFilePath)) {
                 SeedFilePath = DefaultSeedFilePath();
@@ -114,8 +143,19 @@ public static class Randomizer {
             var lastLine = "";
             var lastLineNum = -1;
             try {
+                // TODO: delete after 10-02-2026
+                if (File.Exists(SeedFilePath) && RandomizerLeague.RefusesFile(SeedFilePath)) {
+                    log("league: refusing to load " + SeedFilePath + " on a beta build");
+                    MessageQueue.Enqueue(new RandomizerUI.Message(
+                        RandomizerLeague.Refusal, RandomizerUI.Message.ErrorBgColor, 12f));
+                    RandomizerBonusSkill.Reset();
+                    return;
+                }
+
                 if (File.Exists(SeedFilePath)) {
                     var allLines = File.ReadAllLines(SeedFilePath).ToList();
+                    // a header that throws must not leave the last seed's items at their locations
+                    RandomizerLocationManager.ClearPickups();
 
                     lastLine = allLines[0];
                     lastLineNum = 0;
@@ -124,11 +164,18 @@ public static class Randomizer {
                     var s = flagLine[1];
                     var flags = flagLine[0].Split(',');
                     SeedMeta = allLines[0];
+                    RandomizerSyncManager.SeedHead = new[] { allLines[0] };
                     var doBingo = ParseFlags(s, flags);
                     if (doBingo) {
                         Message = "Good luck on your bingo!";
-                        BingoController.Init(allLines[allLines.Count - 1]);
-                        allLines.RemoveAt(allLines.Count - 1);
+                        // goals arrive over the goals: channel; a legacy trailing Goals line still loads
+                        var goalsLine = allLines[allLines.Count - 1];
+                        if (goalsLine.StartsWith("Goals")) {
+                            BingoController.Init(goalsLine);
+                            allLines.RemoveAt(allLines.Count - 1);
+                        } else {
+                            BingoController.Init(null);
+                        }
                     } else {
                         BingoController.Active = false;
                     }
@@ -137,41 +184,36 @@ public static class Randomizer {
                         RandomizerClues.initialize();
                     }
 
+                    RandomizerBoxes.Seed.Clear();
+                    if (!PracticeEditor.Seed) {
+                        SeedBoxes.Current = null;
+                    }
+                    var badLines = 0;
+                    var firstBad = "";
                     foreach (var line in allLines.Skip(1)) {
-                        lastLine = line;
                         lastLineNum += 1;
-
-                        if (line.StartsWith("//")) {
-                            ParseMetaLine(line.Substring(2).Trim());
+                        if (line.Trim().Length == 0) {
                             continue;
                         }
 
-                        var lineParts = line.Split('|');
-                        int.TryParse(lineParts[0], out var coords);
+                        // a bad line costs only itself
+                        try {
+                            ParseSeedLine(line);
+                        } catch (Exception e) {
+                            if (badLines++ == 0) {
+                                firstBad = $"line {lastLineNum + 1}: {e.Message}";
+                            }
 
-                        // field 5 is the Archipelago annotation; absent on
-                        // every non-AP seed and on AP seeds downloaded before
-                        // the room was connected
-                        var apField = lineParts.Length > 4 ? lineParts[4] : null;
-
-                        if (RandomizerMW.IsManifestLine(coords, lineParts[1])) {
-                            // multiworld slot manifest: what our slots hold,
-                            // not a map location
-                            RandomizerMW.AddManifestEntry(coords, lineParts[2], lineParts[3], apField);
-                            continue;
-                        }
-
-                        RandomizerMW.AddApLine(coords, apField, lineParts.Length > 5 ? lineParts[5] : null);
-                        GetDataFromSeedLine(coords, lineParts[1], lineParts[2], lineParts[3]);
-
-                        if (coords == 2) {
-                            SpawnWith = lineParts[1] + lineParts[2];
-                        } else if (lineParts[1] != "EN") {
-                            var repeatable = lineParts[1] == "RP";
-                            RandomizerLocationManager.PlacePickup(coords, lineParts[1], lineParts[2], repeatable);
+                            log($"Couldn't parse \"{line}\" (line {lastLineNum + 1} of {SeedFilePath}): {e.Message}");
                         }
                     }
 
+                    if (badLines > 0) {
+                        var more = badLines > 1 ? $" (and {badLines - 1} more, see randomizer.log)" : "";
+                        printInfo($"Error parsing {SeedFilePath} at {firstBad}{more}", 300);
+                    }
+
+                    RandomizerBoxes.SeedLoaded();
                     HotColdMaps.Sort();
                     HotColdMapsWithFrags.Sort();
                     if (CluesMode) {
@@ -179,22 +221,64 @@ public static class Randomizer {
                     }
 
                     RandomizerLocationManager.InitializeLogic();
-                    if (Characters.Sein) {
-                        RandomizerLocationManager.UpdateReachable();
-                    }
                 } else {
                     printInfo("Error: " + SeedFilePath + " not found");
                     SeedFilePath = DefaultSeedFilePath();
                 }
             } catch (Exception e) {
-                printInfo($"Error parsing {SeedFilePath} at line {lastLineNum}: {e.Message}", 300);
-                log($"Couldn't parse \"{lastLine}\" (line {lastLineNum} of {SeedFilePath}): {e.Message}");
+                printInfo($"Error parsing {SeedFilePath} at line {lastLineNum + 1}: {e.Message}", 300);
+                log($"Couldn't parse \"{lastLine}\" (line {lastLineNum + 1} of {SeedFilePath}): {e.Message}\n{e.StackTrace}");
                 SeedFilePath = DefaultSeedFilePath();
             }
 
             RandomizerBonusSkill.Reset();
         } catch (Exception e) {
             log("init: " + e.Message);
+        }
+    }
+
+    private static void ParseSeedLine(string line) {
+        if (line.StartsWith("//")) {
+            ParseMetaLine(line.Substring(2).Trim());
+            return;
+        }
+
+        if (RandomizerBox.IsLine(line)) {
+            RandomizerBoxes.Seed.Add(RandomizerBox.Parse(line));
+            return;
+        }
+
+        var lineParts = line.Split('|');
+        if (lineParts.Length < 4) {
+            throw new FormatException("expected coords|code|id|zone");
+        }
+
+        int.TryParse(lineParts[0], out var coords);
+
+        // MW lines are only readable under format 2; a format 1 one mis-parses silently
+        if (lineParts[1] == "MW" && SeedFormat < 2) {
+            throw new Exception(
+                "this multiworld seed was made before 5.0 - roll a new one");
+        }
+
+        if (RandomizerMW.IsManifestLine(coords, lineParts[1])) {
+            // multiworld slot manifest: what our slots hold, not a map location
+            RandomizerMW.AddManifestEntry(coords, lineParts[2], lineParts[3]);
+            return;
+        }
+
+        if (lineParts[1] == "MW") {
+            RandomizerMW.AddApLine(coords, lineParts[2]);
+        }
+
+        GetDataFromSeedLine(coords, lineParts[1], lineParts[2], lineParts[3]);
+
+        if (coords == 2) {
+            SpawnWith = lineParts[1] + lineParts[2];
+            GetSpawnInformation();
+        } else if (lineParts[1] != "EN") {
+            var repeatable = lineParts[1] == "RP";
+            RandomizerLocationManager.PlacePickup(coords, lineParts[1], lineParts[2], repeatable);
         }
     }
 
@@ -213,49 +297,117 @@ public static class Randomizer {
             return secondaryPath;
         }
 
-        // change to primaryPath once the website provides .bfr files
-        return secondaryPath;
+        return primaryPath;
     }
 
     public static void InitializeOnce() {
         Events.Scheduler.OnGameSerializeLoad.Add(OnGameSerializeLoad);
 
+        RandomizerSettings.BackupPreV5Files("RandomizerSettings.txt", "RandomizerRebinding.txt", PlayerInputRebinding.KeyRebindingFile);
         RandomizerSettings.ParseSettings();
 
-        // before the location manager starts the logic thread: extracting the
-        // sidecar reads Unity paths only the main thread may touch
+        // main thread only, so before the location manager starts the logic thread
         NativeWebSocket.Load();
 
+        RandomizerLayers.Initialize();
         RandomizerLocationManager.Initialize();
         RandomizerUI.Initialize();
         RandomizerVersionLabel.Initialize();
         RandomizerUpdater.Initialize();
+        PracticeDefaults.Start();
         RandomizerBootstrap.Initialize();
         Inventory = RandomizerInventory.Initialize();
         Keysanity = new RandomizerKeysanity(Inventory);
 
+        unseededRandom = new Random();
+
         UnityDragAndDropHook.InstallHook();
         UnityDragAndDropHook.OnDroppedFiles += OnDroppedFiles;
 
-        unseededRandom = new Random();
+        ReadStartupFile();
     }
 
     public static void OnApplicationQuit() {
+        FlushLog();
         UnityDragAndDropHook.UninstallHook();
     }
 
+    private static void ReadStartupFile() {
+        try {
+            foreach (var line in File.ReadAllLines(SINGLE_USE_STARTUP_FILE, Encoding.UTF8)) {
+                if (line == "") {
+                } else if (line.StartsWith("dropfile:")) {
+                    OnDroppedFiles([line.Substring("dropfile:".Length)], default);
+                } else {
+                    log($"Invalid line in single-use startup file: {line}");
+                }
+            }
+        } catch (FileNotFoundException) {
+            // no file = nothing to do
+        } catch (Exception e) {
+            log($"Error reading single-use startup file: {e}");
+        } finally {
+            try {
+                File.Delete(SINGLE_USE_STARTUP_FILE);
+            } catch (Exception e) {
+                log($"Error deleting single-use startup file: {e}");
+            }
+        }
+    }
+
+    // runs inside the native message hook, so nothing may throw out of it
     public static void OnDroppedFiles(List<string> aFiles, POINT aPos) {
-        if (aFiles.Count > 1) {
-            return;
+        try {
+            if (aFiles == null || aFiles.Count != 1) {
+                return;
+            }
+
+            var filePath = Path.GetFullPath(aFiles[0]);
+            var fileName = Path.GetFileName(filePath);
+            if (fileName.StartsWith("randomizer") && (fileName.EndsWith(".bfr") || fileName.EndsWith(".dat"))) {
+                if (PracticeController.Active) {
+                    printInfo("Reload Seed is off during a practice session", 180);
+                    return;
+                }
+
+                SeedFilePath = aFiles[0];
+                initialize();
+                showSeedInfo();
+            } else if (fileName.EndsWith(PracticeFolder.Extension)) {
+                if (GameStateMachine.Instance?.CurrentState is null or <= GameStateMachine.State.TitleScreen) {
+                    RandomizerCoroutineUtil.Instance.StartCoroutine(PlayPracticeFile(filePath));
+                } else if (Path.GetDirectoryName(filePath) == Path.GetFullPath(PracticeSelect.Folder)) {
+                    var fileStem = Path.GetFileNameWithoutExtension(filePath);
+                    printInfo($"Loaded Practice File \"{fileStem}\". Start it from the main menu.", 180);
+                }
+            }
+        } catch (Exception e) {
+            log("drop: " + e);
+        }
+    }
+
+    private static IEnumerator PlayPracticeFile(string filePath) {
+        while (GameStateMachine.Instance?.CurrentState is null or < GameStateMachine.State.TitleScreen) {
+            yield return null;
         }
 
-        var filePath = aFiles[0];
-        var fileName = filePath.Substring(filePath.LastIndexOf('\\') + 1);
-        if (fileName.StartsWith("randomizer") && (fileName.EndsWith(".bfr") || fileName.EndsWith(".dat"))) {
-            SeedFilePath = aFiles[0];
-            initialize();
-            showSeedInfo();
+        PracticeSelect.Open();
+        yield return null;
+
+        var saveSelectScreen = SaveSlotsUI.Instance;
+        var index = PracticeSelect.Files.FindIndex(f => Path.GetFullPath(f.Path).Equals(filePath, StringComparison.OrdinalIgnoreCase));
+        if (index < 0) {
+            LogError($"Couldn't find or load practice file {Path.GetFileName(filePath)}");
+            yield break;
         }
+
+        // Variant selection doesn't always open without the second selection. (for some reason)
+        saveSelectScreen.SetCurrentItemAndScroll(index);
+        yield return null;
+        saveSelectScreen.SetCurrentItemAndScroll(index);
+        saveSelectScreen.ItemsUI.SnapScroll();
+        saveSelectScreen.CursorLock();
+        PracticeSelect.Choose(saveSelectScreen);
     }
 
     public static void WarpTo(Vector3 position, int warpDelay) {
@@ -274,7 +426,16 @@ public static class Randomizer {
             Characters.Sein.Abilities.Dash.StopDashing();
         }
 
+        if (SafeIsBashing) {
+            Characters.Sein.Abilities.Bash.CancelBash();
+        }
+
         BingoController.OnWarp();
+        // the practice editor's warp in place doesn't leave the escape
+        if (position != Characters.Sein.Position) {
+            FixGinsoEscape();
+        }
+
         Characters.Sein.Position = position;
         Characters.Sein.Speed = new Vector3(0f, 0f);
         Characters.Ori.Position = new Vector3(position.x, position.y + 5);
@@ -296,9 +457,11 @@ public static class Randomizer {
             Characters.Sein.Abilities.Carry.CurrentCarryable.Drop();
         }
 
+        DisableMistyVfxTriggers();
         RandomizerStatsManager.WarpedToStart();
         RandomizerBonusSkill.LastAltR = Characters.Sein.Position;
         BingoController.OnWarp();
+        FixGinsoEscape();
         Returning = true;
         Characters.Sein.Position = new Vector3(189f, -215f);
         Characters.Sein.Speed = new Vector3(0f, 0f);
@@ -306,9 +469,34 @@ public static class Randomizer {
         Scenes.Manager.SetTargetPositions(Characters.Sein.Position);
         UI.Cameras.Current.CameraTarget.SetTargetPosition(Characters.Sein.Position);
         UI.Cameras.Current.MoveCameraToTargetInstantly();
-        var value = World.Events.Find(MistySim).Value;
-        if (value != 1 && value != 8) {
-            World.Events.Find(MistySim).Value = 10;
+        ResetMistyState();
+    }
+
+    public static WorldEventsRuntime MistyState => World.Events.Find(MistySim);
+
+    public static void ResetMistyState() {
+        var state = MistyState;
+        if (state.Value < 3) {
+            state.Value = 1;
+        } else if (state.Value is < 8 or > 10) {
+            state.Value = 10;
+        }
+
+    }
+
+    public static void DisableMistyVfxTriggers() {
+        DisableMistyChangeTrigger("mistyWoodsGetTorch");
+        DisableMistyChangeTrigger("mistyWoodsDocksB");
+        DisableMistyChangeTrigger("mistyWoodsRopeBridge");
+        DisableMistyChangeTrigger("mistyWoodsGetClimb");
+        DisableMistyChangeTrigger("mistyWoodsCeilingClimbing");
+        DisableMistyChangeTrigger("mistyWoodsMortarBash");
+    }
+
+    private static void DisableMistyChangeTrigger(string scene) {
+        var obj = GameObject.Find($"/{scene}/*forestChangeSetup/*forestChangeTimeline/trigger");
+        if (obj != null) {
+            obj.SetActive(false);
         }
     }
 
@@ -361,6 +549,42 @@ public static class Randomizer {
         }
     }
 
+    public static void FixGinsoEscape() {
+        // This fixes the ginso escape after an alt-r.
+        // Check alt-r fix disabled item.
+        if (Characters.Sein.Inventory.GetRandomizerItem(1103) != 0) {
+            return;
+        }
+        var ginsoTreeWorldEvent = new WorldEvents();
+        ginsoTreeWorldEvent.MoonGuid = new MoonGuid(687998245, 1199897005, -1787166542, 576748618);
+        ginsoTreeWorldEvent.DefaultValue = 23;
+        var currentValue = World.Events.Find(ginsoTreeWorldEvent).Value;
+        if (!Randomizer.Inventory.FinishedGinsoEscape && (currentValue == 21 || currentValue == 25)) {
+            World.Events.Find(ginsoTreeWorldEvent).Value = 23;
+            TriggerByString.Register("ResetginsoTreeResurrection");
+            TriggerByString.Register("ResetginsoTreeWaterRisingBackground");
+            TriggerByString.Register("ResetginsoTreeWaterRisingBtm");
+            TriggerByString.Register("ResetginsoTreeWaterRisingMid");
+            TriggerByString.Register("ResetginsoTreeWaterRisingEnd");
+            return;
+        }
+        // If you rekindle and then alt-r you can do it before the values above are set.
+        // So... starting waterless and immediately bailing out.
+        SceneManagerScene scene = Scenes.Manager.GetSceneManagerScene("ginsoTreeResurrection");
+        if (scene != null && scene.SceneRoot != null) {
+            var startSequenceTransform = scene.SceneRoot.transform.FindChild("*heartResurrection/restoringHeartWaterRising/waterSequenceStartAction");
+            var startSequence = startSequenceTransform.gameObject.GetComponent<ActionSequence>();
+            if (startSequence.IsRunning) {
+                World.Events.Find(ginsoTreeWorldEvent).Value = 23;
+                TriggerByString.Register("ResetginsoTreeResurrection");
+                TriggerByString.Register("ResetginsoTreeWaterRisingBackground");
+                TriggerByString.Register("ResetginsoTreeWaterRisingBtm");
+                TriggerByString.Register("ResetginsoTreeWaterRisingMid");
+                TriggerByString.Register("ResetginsoTreeWaterRisingEnd");
+            }
+        }
+    }
+
     //  more reliable hook for game end / credit starts
     public static void onNaruDestroyed() {
         if (Scenes.Manager.CurrentScene.Scene == "theSacrifice" && RandomizerStatsManager.Active) {
@@ -394,6 +618,118 @@ public static class Randomizer {
         MessageQueue.Enqueue(RandomizerUI.Message.InfoMessage(message, frames / 60f));
     }
 
+    // Stays up until something takes it down: for a message the player is meant to answer.
+    public static void pinMessage(string message) {
+        Pinned = message;
+        pinnedBox = null;
+        // the queue's leftover time would hold the box shut for seconds; this cannot wait
+        clearMessage();
+    }
+
+    public static void unpinMessage() {
+        if (Pinned == null) {
+            return;
+        }
+
+        Pinned = null;
+        pinnedBox = null;
+        clearMessage();
+    }
+
+    public static bool MessagePinned { get { return Pinned != null; } }
+
+    // The box is held open rather than shown again: its hide is put off every frame, so it
+    // never replays its arrival. Anything else may take the screen; the pin returns after.
+    private static void HoldPinned() {
+        if (Pinned == null) {
+            return;
+        }
+
+        if (pinnedBox != null && UI.Hints.CurrentHint == pinnedBox && pinnedBox.Visibility != null) {
+            // re-arms the box's hide timer; its show curve has already finished, so nothing moves
+            pinnedBox.Visibility.ShowMessageScreen();
+            return;
+        }
+
+        // a higher hint layer can refuse us the box; do not ask every frame while it does
+        if (Time.unscaledTime - pinnedTry < 0.25f) {
+            return;
+        }
+
+        pinnedTry = Time.unscaledTime;
+        ShowPinned();
+    }
+
+    private static float pinnedTry;
+
+    private static void ShowPinned() {
+        if (!HintsReady) {
+            return;
+        }
+
+        MessageProvider.SetMessage(Bound(Pinned));
+        var hush = Hush();
+        pinnedBox = UI.Hints.Show(MessageProvider, HintLayer.Randomizer, 4f);
+        if (hush != null) {
+            hush.enabled = true;
+        }
+
+        if (pinnedBox != null) {
+            pinnedBox.SetBackgroundColor(RandomizerUI.Message.VanillaBgColor);
+        }
+    }
+
+    private static string Pinned;
+
+    private static MessageBox pinnedBox;
+
+    // [[Bind Name]] in any message becomes the key it is bound to.
+    private static string Bound(string message) {
+        if (message == null || message.IndexOf("[[") < 0) {
+            return message;
+        }
+
+        var open = message.IndexOf("[[");
+        while (open >= 0) {
+            var close = message.IndexOf("]]", open + 2);
+            if (close < 0) {
+                break;
+            }
+
+            var action = message.Substring(open + 2, close - open - 2);
+            message = message.Substring(0, open) + RandomizerRebinding.NameOf(action) + message.Substring(close + 2);
+            open = message.IndexOf("[[");
+        }
+
+        return message;
+    }
+
+    // For a message that is no longer true: off the screen now, and out of the way of the next.
+    public static void clearMessage() {
+        UI.Hints.HideExistingHint(true);
+        MessageQueueTime = 0f;
+    }
+
+    // For a message that comes back again and again: the box, without the noise.
+    public static void printQuiet(string message, int frames) {
+        var note = RandomizerUI.Message.InfoMessage(message, frames / 60f);
+        note.Quiet = true;
+        MessageQueue.Enqueue(note);
+    }
+
+    // The hint box plays a sound as it comes up, off the box's own SoundSource; a component
+    // that is off when the box wakes never gets to.
+    private static SoundSource Hush() {
+        var hint = UI.MessageController == null ? null : UI.MessageController.HintMessage;
+        var sound = hint == null ? null : hint.GetComponent<SoundSource>();
+        if (sound == null || !sound.enabled) {
+            return null;
+        }
+
+        sound.enabled = false;
+        return sound;
+    }
+
     public static void playLastMessage() {
         if (LastMessageCredits) {
             showCredits(Message, 5);
@@ -421,11 +757,34 @@ public static class Randomizer {
         }
     }
 
+    // Flushed once a second by Tick; locked because the logic thread logs too.
+    private static readonly List<string> pendingLog = new List<string>();
+
+    private static readonly object logGate = new object();
+
     public static void log(string message) {
-        var streamWriter = File.AppendText("randomizer.log");
-        streamWriter.WriteLine(DateTime.Now + ": " + message);
-        streamWriter.Flush();
-        streamWriter.Dispose();
+        lock (logGate) {
+            pendingLog.Add(DateTime.Now + ": " + message);
+        }
+    }
+
+    public static void FlushLog() {
+        string[] lines;
+        lock (logGate) {
+            if (pendingLog.Count == 0) {
+                return;
+            }
+
+            lines = pendingLog.ToArray();
+            pendingLog.Clear();
+        }
+
+        try {
+            File.AppendAllText("randomizer.log",
+                string.Join(Environment.NewLine, lines) + Environment.NewLine);
+        } catch (Exception) {
+            // a log line is never worth taking the game down for
+        }
     }
 
     public static bool WindRestored() {
@@ -438,14 +797,38 @@ public static class Randomizer {
         log(message);
     }
 
+    public static void FixedUpdate() {
+        RandomizerBoxes.FixedUpdate();
+    }
+
+    public static void OnGUI() {
+        PracticeEditor.OnGUI();
+    }
+
     public static void Update() {
+        // before anything asks for a key's icon: the game caches a missing cap for the session
+        RandomizerKeyIcons.Register();
+        RandomizerHoldRing.Prepare();
+        PracticeController.Tick();
+        PracticeEditor.Update();
+
+        PracticeSelect.Tick();
+        PracticeServer.Tick();
+        RandomizerBoxes.Update();
+        RandomizerPreloader.Tick();
+        RandomizerDirtyWater.Tick();
+        RandomizerEnemies.Tick();
+        RandomizerMapLayers.Tick();
+        RandomizerGhost.Update();
         UpdateMessages();
         UpdatePendingWin();
         RandomizerDeathLink.Update();
         RandomizerTempResourceUI.EnsureRows();
         Tick();
+        RandomizerSyncManager.Announce();
 
         if (GameStateMachine.Instance?.CurrentState == GameStateMachine.State.Prologue) {
+            RandomizerHints.TryShowPrologueHint();
             return;
         }
 
@@ -457,6 +840,12 @@ public static class Randomizer {
                 SkillTreeManager.Instance.NavigationManager.FadeAnimator.SetParentOpacity(RandomizerSettings.QOL.AbilityMenuOpacity);
                 UberPostProcess.Instance.SetDoBlur(!RandomizerSettings.Accessibility.DisableMenuBlur);
             }
+        }
+
+        // parent opacity multiplies the menu's own fade, so 1.0 leaves the pause menu alone
+        var pauseMenu = InventoryManager.Instance;
+        if (pauseMenu != null && pauseMenu.NavigationManager.IsVisible && pauseMenu.NavigationManager.FadeAnimator) {
+            pauseMenu.NavigationManager.FadeAnimator.SetParentOpacity(RandomizerSettings.QOL.PauseMenuOpacity);
         }
 
         if (Characters.Sein && !Characters.Sein.IsSuspended) {
@@ -482,8 +871,12 @@ public static class Randomizer {
                 RandomizerChaosManager.Update();
             }
 
-            if (Sync) {
+            // A practice save has none of the team's items and stands where its segment starts:
+            // ticking would grant it the team's kit and hand the server that state as the player's.
+            if (Sync && !PracticeController.InPracticeSave) {
                 RandomizerSyncManager.Update();
+            } else {
+                RandomizerSyncManager.Idle();
             }
 
             if (Warping > 0) {
@@ -506,6 +899,10 @@ public static class Randomizer {
                         Warping--;
                     }
 
+                    if (Warping == 0) {
+                        TeleporterController.Landed(null);
+                    }
+
                     if (Warping == 0 && SaveAfterWarp) {
                         GameController.Instance.CreateCheckpoint();
                         RandomizerStatsManager.OnSave(false);
@@ -519,13 +916,42 @@ public static class Randomizer {
                     Returning = false;
                 }
             }
+
+            // a practice save is not the run's to overwrite, nor a death the save to keep
+            if (SaveSoon && Warping == 0 && !GameController.Instance.IsLoadingGame) {
+                SaveSoon = false;
+                if (!PracticeController.InPracticeSave && Characters.Sein.Mortality.Health.Amount > 0f) {
+                    GameController.Instance.CreateCheckpoint();
+                    GameController.Instance.SaveGameController.PerformSave();
+                    GameController.Instance.PerformSaveGameSequence();
+                }
+            }
         }
 
         if (CreditsActive) {
             return;
         }
 
-        if (RandomizerRebinding.ReloadSeed.IsPressed()) {
+        // IsPressed clears its edge only on a call that finds the key up, so a bind skipped on
+        // the frame it was pressed fires on the next one. Read every frame, whoever acts on it.
+        var reload = RandomizerRebinding.ReloadSeed.IsPressed();
+        if (PracticeKeys()) {
+            return;
+        }
+
+        // Editing a segment: every other bind would change the world the boxes are drawn on,
+        // so the practice ones above are all there is.
+        if (PracticeEditor.Active) {
+            return;
+        }
+
+        if (reload) {
+            // a practice session is the seed's guest: throwing it away underneath one is not a run
+            if (PracticeController.Active) {
+                printInfo("Reload Seed is off during a practice session", 180);
+                return;
+            }
+
             initialize();
             if (RandomizerSettings.Dev) {
                 log("Reset and loaded seed: " + SeedMeta);
@@ -536,6 +962,21 @@ public static class Randomizer {
         }
 
         if (Characters.Sein) {
+            if (RandomizerRebinding.GrantTestPickup.IsPressed()) {
+                RandomizerAutoplayer.GrantTestPickup();
+                return;
+            }
+
+            if (RandomizerRebinding.SpawnEcho.IsPressed()) {
+                RandomizerGhost.SpawnEcho();
+                return;
+            }
+
+            if (RandomizerRebinding.ClearAllEchoes.IsPressed()) {
+                RandomizerGhost.ClearEchoes();
+                return;
+            }
+
             if (RandomizerRebinding.ShowStats.IsPressed()) {
                 RandomizerStatsManager.ShowStats(10);
                 if (BingoController.Active) {
@@ -708,8 +1149,7 @@ public static class Randomizer {
         printInfo(message);
     }
 
-    // where the escape says Stomp and Grenade are: the Archipelago hint when
-    // one was bought, otherwise whatever the seed baked (often "MIA")
+    // the bought Archipelago hint if any, else the seed's baked zone (often "MIA")
     public static string StompHint() {
         return RandomizerMW.ApHintOr(StompSlot, StompZone);
     }
@@ -797,8 +1237,13 @@ public static class Randomizer {
             return;
         }
 
-        var seedInfo = "v" + VERSION;
-        seedInfo += "- seed loaded: " + SeedMeta;
+        var seedInfo = "v" + DisplayVersion;
+        seedInfo += "- seed loaded: " + DisplayMeta();
+        // both default files present and nothing handed in: say which one won
+        if (IsDefaultSeedFilePath(SeedFilePath) && File.Exists("randomizer.bfr") && File.Exists("randomizer.dat")) {
+            seedInfo = SeedFilePath + " - " + seedInfo;
+        }
+
         printInfo(seedInfo);
     }
 
@@ -822,10 +1267,7 @@ public static class Randomizer {
         }
     }
 
-    // Win messages wait for the player to be upright and in control: the box is
-    // torn down by the death/respawn sequence, and a death goal wins you the game
-    // at the exact moment you die. Deliberately NOT cleared by initialize(), so a
-    // mid-death alt+L can't eat it; NewGameAction clears it instead.
+    // Held until Ori is upright and in control. Survives initialize(); NewGameAction clears it.
     public static void QueueWinMessage(string message) {
         PendingWinMessage = message;
         WinMessageStableFrames = 0;
@@ -838,8 +1280,7 @@ public static class Randomizer {
 
         var stable = Characters.Sein && Characters.Sein.Active && Characters.Sein.Controller.CanMove
             && !Characters.Sein.IsSuspended && !UI.MainMenuVisible;
-        // count stable frames, not just one: CanMove goes true before the respawn
-        // fade finishes, and a message printed under the fade is a message unseen
+        // a run of stable frames: CanMove returns before the respawn fade ends
         WinMessageStableFrames = stable ? WinMessageStableFrames + 1 : 0;
         if (WinMessageStableFrames >= 60) {
             PrintImmediately(PendingWinMessage, 15, false, true, false);
@@ -847,20 +1288,98 @@ public static class Randomizer {
         }
     }
 
+    // The binds practice keeps for itself. They run before every other bind and are the only
+    // ones left while the editor is up.
+    private static bool PracticeKeys() {
+        if (!Characters.Sein) {
+            return false;
+        }
+
+        if (RandomizerRebinding.OpenPracticeMenu.IsPressed()) {
+            PracticeMenu.Open();
+            return true;
+        }
+
+        if (RandomizerRebinding.CreatePracticeSegment.IsPressed()) {
+            PracticeEditor.Create();
+            return true;
+        }
+
+        if (RandomizerRebinding.CreatePracticeSegmentWithSeed.IsPressed()) {
+            PracticeEditor.Create(true);
+            return true;
+        }
+
+        if (RandomizerRebinding.EditSeedBoxes.IsPressed()) {
+            PracticeEditor.ToggleSeed();
+            return true;
+        }
+
+        if (RandomizerRebinding.OpenPracticeEditorPage.IsPressed()) {
+            if (!PracticeServer.Open()) {
+                printInfo("Refreshed the editor page you already have open", 180);
+            }
+
+            return true;
+        }
+
+        // shares Alt+L with Reload Seed, which is off during a session and in the seed editor anyway
+        if (RandomizerRebinding.RetryPracticeSegment.IsPressed()) {
+            if (PracticeController.Active) {
+                PracticeController.RetryOrStart();
+                return true;
+            }
+
+            if (PracticeEditor.Seed) {
+                PracticeEditor.LeaveUnsaved();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // a hint shown before the game's screen anchors load makes a bare stand-in, and the real ones then destroy themselves
+    private static bool HintsReady {
+        get {
+            if (!screenAnchors) {
+                var found = UnityEngine.Object.FindObjectOfType<OnScreenPositions>();
+                screenAnchors = found && found.TopCenterTransform ? found : null;
+            }
+
+            return screenAnchors;
+        }
+    }
+
+    private static OnScreenPositions screenAnchors;
+
     public static void UpdateMessages() {
         if (MessageQueueTime <= 0f) {
             if (MessageQueue.Count == 0) {
+                HoldPinned();
+                return;
+            }
+
+            if (!HintsReady) {
                 return;
             }
 
             var queueItem = MessageQueue.Dequeue();
-            var message = queueItem.MessageString;
+            var message = Bound(queueItem.MessageString);
             MessageQueueTime += queueItem.BaseDuration * 0.5f;
             MessageBgColor = queueItem.BgColor;
             if (message != "") {
                 MessageProvider.SetMessage(message);
+                var hush = queueItem.Quiet ? Hush() : null;
                 var msgBox = UI.Hints.Show(MessageProvider, HintLayer.Randomizer, queueItem.BaseDuration + 1f);
-                msgBox.SetBackgroundColor(MessageBgColor);
+                if (hush != null) {
+                    hush.enabled = true;
+                }
+
+                // null while a story message or a higher hint layer holds the screen
+                if (msgBox != null) {
+                    msgBox.SetBackgroundColor(MessageBgColor);
+                }
             }
         }
 
@@ -871,6 +1390,7 @@ public static class Randomizer {
         RandomizerBonusSkill.OnDeath();
         RandomizerStatsManager.OnDeath();
         RandomizerDeathLink.OnDeath();
+        PracticeController.OnDeath();
 
         if (IsUsingRandomizerTeleportAnywhere) {
             TeleporterController.Instance.CancelTeleport();
@@ -880,11 +1400,16 @@ public static class Randomizer {
 
     public static void OnGameSerializeLoad() {
         ResetTrackerCount = 0;
+        RandomizerStatsManager.MoveOldBlock();
         // DebugMenuB serializes its own copy of this, so a load can drop what the
         // pickup granted. Only ever turn it on -- the debug menu's own toggle stays
         // usable as the off switch.
         if (Characters.Sein && Characters.Sein.Inventory != null && Characters.Sein.Inventory.GetRandomizerItem(1107) > 0) {
             DebugMenuB.DebugControlsEnabled = true;
+        }
+
+        if (Characters.Sein && Characters.Sein.Inventory != null) {
+            RandomizerEnemies.Want(RandomizerBonusSkill.Pokeball - 1);
         }
 
         if (Scenes.Manager.CurrentScene?.Scene != "titleScreenSwallowsNest") {
@@ -903,8 +1428,15 @@ public static class Randomizer {
         return canFinalEscape(true);
     }
 
+    // goal modes on and not yet met; the Horu gate and the map's objective line share these
+    public static int RelicsFound => get(402);
+    public static bool RelicsShort => WorldTour && RelicsFound < RelicCount;
+    public static bool TreesShort => ForceTrees && RandomizerBonus.SkillTreeProgression() < 10;
+    public static bool FragsShort => fragsEnabled && RandomizerBonus.WarmthFrags() < fragKeyFinish;
+    public static bool MapsShort => ForceMaps && RandomizerBonus.MapStoneProgression() < 9;
+
     public static bool canFinalEscape(bool verbose) {
-        if (fragsEnabled && RandomizerBonus.WarmthFrags() < fragKeyFinish) {
+        if (FragsShort) {
             if (verbose) {
                 printInfo(
                     string.Concat(
@@ -920,18 +1452,15 @@ public static class Randomizer {
             return false;
         }
 
-        if (WorldTour) {
-            var relics = get(402);
-            if (relics < RelicCount) {
-                if (verbose) {
-                    printInfo("Relics (" + relics + "/" + RelicCount + ")");
-                }
-
-                return false;
+        if (RelicsShort) {
+            if (verbose) {
+                printInfo("Relics (" + RelicsFound + "/" + RelicCount + ")");
             }
+
+            return false;
         }
 
-        if (ForceTrees && RandomizerBonus.SkillTreeProgression() < 10) {
+        if (TreesShort) {
             if (verbose) {
                 printInfo("Trees (" + RandomizerBonus.SkillTreeProgression() + "/10)");
             }
@@ -939,7 +1468,7 @@ public static class Randomizer {
             return false;
         }
 
-        if (ForceMaps && RandomizerBonus.MapStoneProgression() < 9) {
+        if (MapsShort) {
             if (verbose) {
                 printInfo("Maps (" + RandomizerBonus.MapStoneProgression() + "/9)");
             }
@@ -1000,15 +1529,20 @@ public static class Randomizer {
             return;
         }
 
-        if (immediate) {
+        // before the UI exists a message can only brick the boot; the log keeps it
+        if (MessageQueue == null || MessageProvider == null) {
+            log(text);
+            return;
+        }
+
+        if (immediate && HintsReady) {
             MessageProvider.SetMessage(text);
-            if (mute) {
-                CachedVolume = Math.Max(GameSettings.Instance.SoundEffectsVolume, CachedVolume);
-                GameSettings.Instance.SoundEffectsVolume = 0f;
-                ResetVolume = 3;
+            var hush = mute ? Hush() : null;
+            UI.Hints.Show(MessageProvider, HintLayer.Randomizer, seconds);
+            if (hush != null) {
+                hush.enabled = true;
             }
 
-            UI.Hints.Show(MessageProvider, HintLayer.Randomizer, seconds);
             if (setMessage) {
                 Message = text;
                 MessageBgColor = RandomizerUI.Message.VanillaBgColor;
@@ -1022,6 +1556,7 @@ public static class Randomizer {
 
     public static void LogError(string errorText) {
         log(errorText);
+        FlushLog();
         PrintImmediately(errorText, 15, false, false, true);
     }
 
@@ -1043,13 +1578,6 @@ public static class Randomizer {
                 }
 
                 BingoController.Tick();
-                if (ResetVolume == 1) {
-                    ResetVolume = 0;
-                    GameSettings.Instance.SoundEffectsVolume = CachedVolume;
-                } else if (ResetVolume > 1) {
-                    ResetVolume--;
-                }
-
                 if (CanWarp > 0) {
                     CanWarp--;
                 }
@@ -1063,6 +1591,7 @@ public static class Randomizer {
                 }
 
                 RandomizerStatsManager.IncTime();
+                FlushLog();
                 if (Scenes.Manager.CurrentScene != null) {
                     var scene = Scenes.Manager.CurrentScene.Scene;
                     if (scene == "thornfeltSwampActTwoStart" && NeedGinsoEscapeCleanup) {
@@ -1109,21 +1638,20 @@ public static class Randomizer {
 
                         RandomizerTrackedDataManager.UpdateBitfields();
                         RandomizerColorManager.UpdateHotColdTarget();
-                        if (Characters.Sein.Position.y > 935f && Inventory.FinishedGinsoEscape && Scenes.Manager.CurrentScene.Scene == "ginsoTreeWaterRisingEnd") {
-                            if (SafeIsBashing) {
-                                Characters.Sein.Abilities.Bash.BashGameComplete(0f);
-                            }
 
-                            Characters.Sein.Position = new Vector3(750f, -120f);
+                        // grant only where a player could: not suspended, not mid-scene-load
+                        RandomizerAutoplayer.Tick();
+                        // a warp it just dropped has unloaded the scene the checks below read
+                        if (Scenes.Manager.CurrentScene == null) {
                             return;
                         }
 
-                        if (get(1106) > 0 && Characters.Sein.Position.y > -235f && Scenes.Manager.CurrentScene.Scene == "forlornRuinsResurrection") {
+                        if (Characters.Sein.Position.y > 935f && Inventory.FinishedGinsoEscape && Scenes.Manager.CurrentScene.Scene == "ginsoTreeWaterRisingEnd") {
                             if (SafeIsBashing) {
-                                Characters.Sein.Abilities.Bash.BashGameComplete(0f);
+                                Characters.Sein.Abilities.Bash.CancelBash();
                             }
 
-                            Characters.Sein.Position = new Vector3(-1350f, -410f);
+                            Characters.Sein.Position = new Vector3(750f, -120f);
                             return;
                         }
 
@@ -1148,7 +1676,8 @@ public static class Randomizer {
                         }
                     }
 
-                    if (RandomizerSyncManager.NetworkFree) {
+                    // the controller is gone for a moment around a warp
+                    if (RandomizerSyncManager.NetworkFree && TeleporterController.Instance != null) {
                         foreach (var gameMapTP in TeleporterController.Instance.Teleporters) {
                             if (gameMapTP.Activated) {
                                 continue;
@@ -1178,10 +1707,13 @@ public static class Randomizer {
                             }
                         }
                     }
+
+                    TeleporterController.RetireGladesRescue();
                 }
             }
         } catch (Exception e2) {
             LogError("Tick: " + e2.Message);
+            log("Tick: " + e2);
         }
     }
 
@@ -1246,8 +1778,9 @@ public static class Randomizer {
                     syncMode = 4;
                 } else if (modeStr == "multiworld") {
                     syncMode = 5;
-                } else {
-                    syncMode = int.Parse(modeStr);
+                } else if (!int.TryParse(modeStr, out syncMode)) {
+                    // the client tells only multiworld apart; SplitShards and Bingo games sync like none
+                    syncMode = 4;
                 }
 
                 SyncMode = syncMode;
@@ -1260,8 +1793,6 @@ public static class Randomizer {
                 ZeroXP = true;
             } else if (flag == "nobonus") {
                 BonusActive = false;
-            } else if (flag == "nonprogressivemapstones") {
-                ProgressiveMapStones = false;
             } else if (flag == "forcetrees") {
                 ForceTrees = true;
             } else if (flag == "forcemaps") {
@@ -1299,6 +1830,12 @@ public static class Randomizer {
                 Keysanity.IsActive = true;
             } else if (flag == "enhanced") {
                 EnhancedMode = true;
+            } else if (flag == "vanillarespawns") {
+                VanillaRespawns = true;
+            } else if (flag == "enemyrando") {
+                RandomizerEnemies.Active = true;
+            } else if (flag.StartsWith("share=") || flag.StartsWith("shared=")) {
+                ShareSaves = flag.Substring(flag.IndexOf('=') + 1).Split('+').Contains("saves");
             }
 
             if (flag == "seintalks") {
@@ -1312,6 +1849,17 @@ public static class Randomizer {
     public static void GetSenseFromSeedLine(int coords, string code, string id, string area) {
         // Prepare sense information, but not for pickups at spawn, and we only need at most 1 addition for each coordinate.
         if (coords == 2) {
+            return;
+        }
+
+        // sense classifies a cross-world line by the item it carries, not by the MW wrapper
+        if (code == "MW" && RandomizerItems.Inner(id, PlayerCount, out var innerCode, out var innerId)) {
+            GetSenseFromSeedLine(coords, innerCode, innerId, area);
+            return;
+        }
+
+        // past EV|5 are plando's world-state switches, which sense has no business finding
+        if (code == "EV" && int.TryParse(id, out var ev) && ev > 5) {
             return;
         }
 
@@ -1344,8 +1892,7 @@ public static class Randomizer {
         }
     }
 
-    // seed metadata: "//Key=Value" lines after the flagline, invisible to the
-    // pickup parse. Unknown keys are ignored, like unknown flags.
+    // "//key: value" or "//key=value" lines after the flagline; unknown keys are ignored
     public static void ParseMetaLine(string meta) {
         // "// SEED_FORMAT: n" -- seed file layout, not a dll version
         if (meta.ToLower().StartsWith("seed_format:")) {
@@ -1353,6 +1900,21 @@ public static class Randomizer {
                 SeedFormat = format;
             }
 
+            return;
+        }
+
+        if (meta.ToLower().StartsWith("players:")) {
+            int.TryParse(meta.Substring("players:".Length).Trim(), out PlayerCount);
+            return;
+        }
+
+        if (meta.ToLower().StartsWith("enemies=")) {
+            RandomizerEnemies.ParseOptions(meta.Substring("enemies=".Length));
+            return;
+        }
+
+        if (meta.ToLower().StartsWith("enemyrolls=")) {
+            RandomizerEnemies.SetRolls(meta.Substring("enemyrolls=".Length));
             return;
         }
 
@@ -1409,7 +1971,8 @@ public static class Randomizer {
             }
         }
 
-        if (CluesMode && code == "EV" && id_number % 2 == 0) {
+        // the dungeon keys are EV 0, 2 and 4
+        if (CluesMode && code == "EV" && id_number % 2 == 0 && id_number >= 0 && id_number <= 4) {
             RandomizerClues.AddClue(area, id_number / 2);
         }
 
@@ -1424,7 +1987,7 @@ public static class Randomizer {
         if (code == "TW") {
             //6399872|TW|Warp to Spirit Cavern AC,-219,-176,SpiritCavernsACWarp|Swamp
             var Pieces = id.Split(',');
-            if (Pieces.Length > 3) {
+            if (Pieces.Length > 3 && !WarpLogicLocations.ContainsKey(Pieces[0])) {
                 WarpLogicLocations.Add(Pieces[0], Pieces[3]);
             }
         }
@@ -1449,7 +2012,7 @@ public static class Randomizer {
             return false;
         }
 
-        var locID = 1560 + RandomizerTrackedDataManager.CoordsMap[coord] / 32;
+        var locID = RandomizerSyncManager.SeenBase + RandomizerTrackedDataManager.CoordsMap[coord] / 32;
         return 0 != (get(locID) >> (RandomizerTrackedDataManager.CoordsMap[coord] % 32)) % 2;
     }
 
@@ -1475,7 +2038,7 @@ public static class Randomizer {
             return;
         }
 
-        var locID = 1560 + RandomizerTrackedDataManager.CoordsMap[coord] / 32;
+        var locID = RandomizerSyncManager.SeenBase + RandomizerTrackedDataManager.CoordsMap[coord] / 32;
         var offset = RandomizerTrackedDataManager.CoordsMap[coord] % 32;
         var current = get(locID);
         // set Seen
@@ -1521,6 +2084,7 @@ public static class Randomizer {
 
     public static void SetupNewGame() {
         Inventory.Clear();
+        RandomizerBoxes.Serialize(null);
         TeleporterController.RemoveCustomTeleporters();
         var spawnHCs = 0;
         var spawnECs = 0;
@@ -1576,6 +2140,31 @@ public static class Randomizer {
         RandomizerLocationManager.UpdateReachable();
     }
 
+    public static void GetSpawnInformation() {
+        if (!Randomizer.SpawnWith.Contains("WS")) {
+            return;
+        }
+        if (Core.Scenes.Manager == null) {
+            return;
+        }
+        var warp = new RandomizerAction(SpawnWith.Substring(0, 2), SpawnWith.Substring(2)).Decompose().FirstOrDefault(a => a.Action == "WS");
+        if (warp == null) {
+            return;
+        }
+        string[] pieces = ((string)warp.Value).Split(',');
+        int warpX;
+        int warpY;
+        if ((pieces.Length < 2) || !int.TryParse(pieces[0], out warpX) || !int.TryParse(pieces[1], out warpY)) {
+            return;
+        }
+
+        SpawnPosition = new Vector3(warpX, warpY, 0);
+        SpawnScene = Core.Scenes.Manager.GetSceneNameAtPosition(SpawnPosition);
+        ShouldHideGladesStart = true;
+    }
+
+    private const string SINGLE_USE_STARTUP_FILE = ".SafeToDelete.RandomizerOneTimeStartupInfo.txt";
+
     public static bool SafeIsBashing => (Characters.Sein.Abilities.Bash && Characters.Sein.Abilities.Bash.IsBashing) || false;
 
     public static RandomizerInventory Inventory { get; private set; }
@@ -1590,18 +2179,28 @@ public static class Randomizer {
     public static bool Chaos;
     public static bool ChaosVerbose;
     public static float DamageModifier;
-    public static bool ProgressiveMapStones;
     public static bool ForceTrees;
     public static string SeedMeta;
+
+    // the header as the player reads it; "balanced" was every seed's fill before 5.0 and says nothing
+    private static string DisplayMeta() {
+        var parts = (SeedMeta ?? "").Split('|');
+        parts[0] = String.Join(",", parts[0].Split(',').Where(f => f.ToLower() != "balanced").ToArray());
+        return String.Join("|", parts);
+    }
 
     // Seed file layout, tracked separately from the dll version: it moves only
     // when the format stops being readable, in either direction.
     public const int MIN_SEED_FORMAT = 1;
 
-    public const int MAX_SEED_FORMAT = 1;
+    public const int MAX_SEED_FORMAT = 2;
 
     // seeds predating the SEED_FORMAT line are format 1
     public static int SeedFormat = MIN_SEED_FORMAT;
+
+    // worlds this seed was rolled for; 0 means the seed never said
+    public static int PlayerCount;
+
     public static Hashtable TeleportTable;
     public static WorldEvents MistySim;
     public static bool Returning;
@@ -1616,13 +2215,11 @@ public static class Randomizer {
     public static bool Sync;
     public static string SyncId;
     public static int SyncMode;
-    public static List<string> StringKeyPickupTypes;
     public static bool ForceMaps;
     public static bool Entrance;
     public static Hashtable DoorTable;
     public static bool QueueBash;
     public static bool BashWasQueued;
-    public static bool BashTap;
     public static bool WorldTour;
     public static bool fragsEnabled;
     public static int fragKeyFinish;
@@ -1667,10 +2264,6 @@ public static class Randomizer {
 
     public static bool CreditsActive;
 
-    public static float CachedVolume;
-
-    public static int ResetVolume;
-
     public static bool LastMessageCredits;
 
     public static bool sacrificeStarted;
@@ -1688,6 +2281,9 @@ public static class Randomizer {
     public static bool DelayedWarp;
 
     public static bool SaveAfterWarp;
+
+    // set by the Save Game pickup, RB|5
+    public static bool SaveSoon;
 
     public static bool IgnoreEnemyExp;
 
@@ -1728,4 +2324,14 @@ public static class Randomizer {
     public static bool EnhancedMode;
 
     public static bool EnhancedSeinInSeed;
+
+    public static bool VanillaRespawns;
+
+    public static bool ShareSaves;
+
+    public static Vector3 SpawnPosition;
+
+    public static string SpawnScene;
+
+    public static bool ShouldHideGladesStart;
 }

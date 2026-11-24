@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Game;
 using Sein.World;
@@ -7,7 +8,7 @@ using Events = Sein.World.Events;
 
 public static class RandomizerSwitch {
     public static void SkillPointPickup() {
-        PickupMessage("Ability Cell");
+        PickupMessage(RandomizerItems.Message("AC", ""));
         if (Randomizer.ZeroXP) {
             return;
         }
@@ -17,39 +18,39 @@ public static class RandomizerSwitch {
     }
 
     public static void MaxEnergyContainerPickup() {
-        PickupMessage("Energy Cell");
-        if (Characters.Sein.Energy.Max == 0f) {
+        PickupMessage(RandomizerItems.Message("EC", ""));
+        var energy = Characters.Sein.Energy;
+        if (energy.Max == 0f) {
             Characters.Sein.SoulFlame.FillSoulFlameBar();
         }
 
-        Characters.Sein.Energy.Max += 1.0f;
-        if (Characters.Sein.Energy.Current < Characters.Sein.Energy.Max) {
-            Characters.Sein.Energy.Current = Characters.Sein.Energy.Max;
-        }
+        energy.Max += 1.0f;
+        energy.Current = Mathf.Max(energy.Current + 1.0f, energy.Max);
     }
 
     public static void ExpOrbPickup(int Value, int coords) {
-        PickupMessage(Value + " " + RandomizerExpNames.ExpName(coords));
+        PickupMessage(Value + " " + RandomizerCustomNames.ExpName(coords));
         if (Randomizer.ZeroXP) {
             return;
         }
 
-        Characters.Sein.Level.GainExperience(RandomizerBonus.ExpWithBonuses(Value, true));
+        var earned = RandomizerStatsManager.PickupZone != "offworld";
+        Characters.Sein.Level.GainExperience(RandomizerBonus.ExpWithBonuses(Value, earned));
     }
 
     public static void KeystonePickup() {
-        PickupMessage("Keystone");
+        PickupMessage(RandomizerItems.Message("KS", ""));
         Characters.Sein.Inventory.CollectKeystones(1);
         Characters.Sein.Inventory.IncRandomizerItem(70, 1);
     }
 
     public static void MaxHealthContainerPickup() {
-        PickupMessage("Health Cell");
+        PickupMessage(RandomizerItems.Message("HC", ""));
         Characters.Sein.Mortality.Health.GainMaxHeartContainer();
     }
 
     public static void MapStonePickup() {
-        PickupMessage("Map Stone");
+        PickupMessage(RandomizerItems.Message("MS", ""));
         Characters.Sein.Inventory.MapStones++;
         Characters.Sein.Inventory.IncRandomizerItem(71, 1);
     }
@@ -59,8 +60,8 @@ public static class RandomizerSwitch {
             case 0:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(414);
-                } else {
-                    PickupMessage("$Bash$", 300);
+                } else if (!RandomizerBonus.HoldsEnhancedFor(0)) {
+                    PickupMessage(RandomizerItems.Message("SK", "0"), 300);
                 }
 
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Bash, true);
@@ -68,8 +69,8 @@ public static class RandomizerSwitch {
             case 2:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(412);
-                } else {
-                    PickupMessage("$Charge Flame$", 300);
+                } else if (!RandomizerBonus.HoldsEnhancedFor(2)) {
+                    PickupMessage(RandomizerItems.Message("SK", "2"), 300);
                 }
 
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.ChargeFlame, true);
@@ -77,8 +78,8 @@ public static class RandomizerSwitch {
             case 3:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(411);
-                } else {
-                    PickupMessage("$Wall Jump$", 300);
+                } else if (!RandomizerBonus.HoldsEnhancedFor(3)) {
+                    PickupMessage(RandomizerItems.Message("SK", "3"), 300);
                 }
 
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.WallJump, true);
@@ -86,8 +87,8 @@ public static class RandomizerSwitch {
             case 4:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(415);
-                } else {
-                    PickupMessage("$Stomp$", 300);
+                } else if (!RandomizerBonus.HoldsEnhancedFor(4)) {
+                    PickupMessage(RandomizerItems.Message("SK", "4"), 300);
                 }
 
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Stomp, true);
@@ -95,8 +96,8 @@ public static class RandomizerSwitch {
             case 5:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(413);
-                } else {
-                    PickupMessage("$Double Jump$", 300);
+                } else if (!RandomizerBonus.HoldsEnhancedFor(5)) {
+                    PickupMessage(RandomizerItems.Message("SK", "5"), 300);
                 }
 
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.DoubleJump, true);
@@ -104,8 +105,8 @@ public static class RandomizerSwitch {
             case 8:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(418);
-                } else {
-                    PickupMessage("$Charge Jump$", 300);
+                } else if (!RandomizerBonus.HoldsEnhancedFor(8)) {
+                    PickupMessage(RandomizerItems.Message("SK", "8"), 300);
                 }
 
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.ChargeJump, true);
@@ -113,8 +114,8 @@ public static class RandomizerSwitch {
             case 12:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(417);
-                } else {
-                    PickupMessage("$Climb$", 300);
+                } else if (!RandomizerBonus.HoldsEnhancedFor(12)) {
+                    PickupMessage(RandomizerItems.Message("SK", "12"), 300);
                 }
 
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Climb, true);
@@ -122,8 +123,8 @@ public static class RandomizerSwitch {
             case 14:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(416);
-                } else {
-                    PickupMessage("$Glide$", 300);
+                } else if (!RandomizerBonus.HoldsEnhancedFor(14)) {
+                    PickupMessage(RandomizerItems.Message("SK", "14"), 300);
                 }
 
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Glide, true);
@@ -131,8 +132,8 @@ public static class RandomizerSwitch {
             case 15:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(410);
-                } else {
-                    PickupMessage("$Spirit Flame$", 300);
+                } else if (!RandomizerBonus.HoldsEnhancedFor(15)) {
+                    PickupMessage(RandomizerItems.Message("SK", "15"), 300);
                 }
 
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.SpiritFlame, true);
@@ -140,8 +141,8 @@ public static class RandomizerSwitch {
             case 50:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(419);
-                } else {
-                    PickupMessage("$Dash$", 300);
+                } else if (!RandomizerBonus.HoldsEnhancedFor(50)) {
+                    PickupMessage(RandomizerItems.Message("SK", "50"), 300);
                 }
 
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Dash, true);
@@ -149,51 +150,92 @@ public static class RandomizerSwitch {
             case 51:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(420);
-                } else {
-                    PickupMessage("$Grenade$", 300);
+                } else if (!RandomizerBonus.HoldsEnhancedFor(51)) {
+                    PickupMessage(RandomizerItems.Message("SK", "51"), 300);
                 }
 
                 Characters.Sein.PlayerAbilities.SetAbility(AbilityType.Grenade, true);
                 break;
         }
 
+        // after SetAbility, so no Enhanced line (Enhanced Mode's, or one held from spawn) comes early
+        RandomizerBonus.AnnounceEnhancedSkill(Ability);
         RandomizerStatsManager.FoundSkill(Ability);
     }
 
     public static void EventPickup(int Value) {
         switch (Value) {
             case 0:
-                PickupMessage("*Water Vein*", 300);
+                PickupMessage(RandomizerItems.Message("EV", "0"), 300);
                 Keys.GinsoTree = true;
                 break;
             case 1:
                 if (Randomizer.EnhancedMode) {
                     RandomizerBonus.UpgradeID(422);
-                } else {
-                    PickupMessage("*Clean Water*", 300);
+                } else if (!RandomizerBonus.HoldsEnhancedWater()) {
+                    PickupMessage(RandomizerItems.Message("EV", "1"), 300);
                 }
 
                 Events.WaterPurified = true;
+                RandomizerBonus.AnnounceEnhancedWater();
                 break;
             case 2:
-                PickupMessage("#Gumon Seal#", 300);
+                PickupMessage(RandomizerItems.Message("EV", "2"), 300);
                 Keys.ForlornRuins = true;
                 break;
             case 3:
-                PickupMessage("#Wind Restored#", 300);
+                PickupMessage(RandomizerItems.Message("EV", "3"), 300);
                 Events.WindRestored = true;
                 break;
             case 4:
-                PickupMessage("@Sunstone@", 300);
+                PickupMessage(RandomizerItems.Message("EV", "4"), 300);
                 Keys.MountHoru = true;
                 break;
             case 5:
-                PickupMessage("@Warmth Returned@", 300);
+                PickupMessage(RandomizerItems.Message("EV", "5"), 300);
                 Events.WarmthReturned = true;
+                break;
+            case 6:
+                PickupMessage(RandomizerItems.Message("EV", "6"), 300);
+                Events.DarknessLifted = true;
+                break;
+            case 7:
+                PickupMessage(RandomizerItems.Message("EV", "7"), 300);
+                Events.GravityActivated = true;
                 break;
         }
 
         RandomizerStatsManager.FoundEvent(Value);
+    }
+
+    // the state EventPickup sets, cleared
+    public static void LoseEvent(int Value) {
+        switch (Value) {
+            case 0:
+                Keys.GinsoTree = false;
+                break;
+            case 1:
+                Events.WaterPurified = false;
+                break;
+            case 2:
+                Keys.ForlornRuins = false;
+                break;
+            case 3:
+                Events.WindRestored = false;
+                break;
+            case 4:
+                Keys.MountHoru = false;
+                break;
+            case 5:
+                Events.WarmthReturned = false;
+                break;
+            case 6:
+                Events.DarknessLifted = false;
+                break;
+            case 7:
+                Events.GravityActivated = false;
+                break;
+        }
     }
 
     public static void TeleportPickup(string Value) {
@@ -242,10 +284,29 @@ public static class RandomizerSwitch {
         }
 
         TeleporterController.Activate(Randomizer.TeleportTable[Value].ToString(), false);
-        PickupMessage(colorChar + Value + " teleporter activated" + colorChar);
+        PickupMessage(RandomizerItems.Message("TP", Value));
     }
 
     public static void GivePickup(RandomizerAction action, int coords, bool found_locally = true) {
+        // a location the seed never filled in: nothing to grant, still counts as collected
+        if (action == null) {
+            var name = RandomizerLocationManager.LocationsByKey.TryGetValue(coords, out var location) ? location.Name : coords.ToString();
+            Randomizer.log($"No Pickup in seed at {name}");
+            Randomizer.PrintImmediately($"No Pickup in seed at {name}", 5, false, false, true);
+            if (found_locally) {
+                Randomizer.OnCoord(coords);
+            }
+
+            return;
+        }
+
+        // Reentrant: a nested grant keeps the outermost pickup's zone.
+        var outerZone = RandomizerStatsManager.PickupZone;
+        granting.Add(new KeyValuePair<RandomizerAction, int>(action, coords));
+        if (outerZone == null) {
+            RandomizerStatsManager.PickupZone = RandomizerStatsManager.ZoneForPickup(coords);
+        }
+
         try {
             switch (action.Action) {
                 case "RP":
@@ -254,7 +315,7 @@ public static class RandomizerSwitch {
                         GivePickup(subpart, coords, false);
                     }
 
-                    SilentMode = false;
+                    SeedSilent = false;
                     break;
                 case "AC":
                     if ((int)action.Value < 0) {
@@ -327,7 +388,7 @@ public static class RandomizerSwitch {
                             if (p[0] == "d") {
                                 int.TryParse(p[1], out duration);
                             } else if (p[0] == "s") {
-                                SilentMode = p[1].Trim().ToLower() == "true";
+                                SeedSilent = p[1].Trim().ToLower() == "true";
                             }
                         }
 
@@ -345,7 +406,7 @@ public static class RandomizerSwitch {
                         relicStr = "$" + relicStr + "$";
                     }
 
-                    PickupMessage((string)action.Value + relicStr, 480);
+                    PickupMessage(RandomizerItems.Cue((string)action.Value, "Relic") + relicStr, 480);
                     break;
                 case "WS":
                 case "WP":
@@ -365,8 +426,17 @@ public static class RandomizerSwitch {
                     break;
                 case "NO":
                     break;
+                case "RI":
+                    RandomizerInventory.Apply((string)action.Value);
+                    break;
+                case "BM":
+                    RandomizerBoxes.EvalBM((string)action.Value);
+                    break;
+                case "BR":
+                    RandomizerInventory.MoveBox((string)action.Value);
+                    break;
                 case "TW":
-                    // TW entries are coord|TW|name,x,y
+                    // TW entries are coord|TW|name,x,y,logicnode
                     var pieces2 = ((string)action.Value).Split(',');
                     int.TryParse(pieces2[1], out var warpX);
                     int.TryParse(pieces2[2], out var warpY);
@@ -383,27 +453,27 @@ public static class RandomizerSwitch {
                     Characters.Sein.Inventory.SetRandomizerItem(82, 1);
                     break;
                 case "MW":
-                    // MW entries are coord|MW|owner,slot,name -- another
-                    // player's item. Nothing to grant locally: the
-                    // found_locally send below tells the server, which flips
-                    // the owner's slot bit and their client self-grants.
+                    // coord|MW|owner,slot,code,id: another player's item, granted by the server, not here
                     var mwPieces = ((string)action.Value).Split(new[] { ',' }, 3);
                     if (RandomizerMW.ApItems.TryGetValue(coords, out var apItem)) {
-                        // Archipelago reserved location: the owner here is our
-                        // own shadow player, so field 5 is the only thing that
-                        // knows who is actually getting this
+                        // AP reserved location: the owner is our shadow, so the recipient field says who gets it
                         if (!RandomizerMW.IsSelf(apItem[0])) {
-                            SentMwPickupMessage($"{RandomizerMW.ApName(apItem[0])}'s {RandomizerMW.ColorWrap(apItem[1])}");
+                            SentMwPickupMessage($"{RandomizerMW.ApName(apItem[0])}'s {RandomizerItems.ColorWrap(apItem[1])}");
                         }
-                        // ours: grant it here so it reads like an in-seed find.
-                        // The room still hands it back; that arrives to find the
-                        // slot already granted and does nothing.
+                        // ours: granted now; the room's later copy finds the slot granted and does nothing
                         else {
                             RandomizerMW.GrantSelfItem(coords);
                         }
-                    } else if (mwPieces.Length == 3) {
-                        var playerName = int.TryParse(mwPieces[0], out var pid) ? RandomizerMW.PlayerName(pid) : $"Player {mwPieces[0]}";
-                        SentMwPickupMessage($"{playerName}'s {RandomizerMW.ColorWrap(mwPieces[2])}");
+                    } else if (RandomizerItems.Inner((string)action.Value, Randomizer.PlayerCount, out var mwCode, out var mwId)) {
+                        var mwItem = RandomizerItems.Name(mwCode, mwId);
+                        var known = int.TryParse(mwPieces[0], out var pid);
+                        // an AP reserved line not scouted yet: its owner is our shadow, not a player
+                        if (known && Randomizer.PlayerCount > 0 && pid > Randomizer.PlayerCount) {
+                            SentMwPickupMessage($"{RandomizerCustomNames.Rename(mwCode, mwId, coords, RandomizerItems.ColorWrap(mwItem))} (Archipelago)");
+                        } else {
+                            var playerName = known ? RandomizerMW.PlayerName(pid) : $"Player {mwPieces[0]}";
+                            SentMwPickupMessage($"{playerName}'s {RandomizerCustomNames.Rename(mwCode, mwId, coords, RandomizerItems.ColorWrap(mwItem))}");
+                        }
                     } else {
                         SentMwPickupMessage("Unknown Foreign Item");
                     }
@@ -411,14 +481,21 @@ public static class RandomizerSwitch {
                     break;
             }
 
-            BingoController.OnItem(action, coords);
+            // pickups typed into pickup.tmp are bench input, not gameplay
+            if (!FromFile) {
+                BingoController.OnItem(action, coords);
+            }
+
             RandomizerTrackedDataManager.UpdateBitfields();
         } catch (Exception e) {
             Randomizer.LogError($"Give Pickup({action}, {coords}): {e.Message}");
+        } finally {
+            RandomizerStatsManager.PickupZone = outerZone;
+            granting.RemoveAt(granting.Count - 1);
         }
 
         if (found_locally && Randomizer.Sync) {
-            RandomizerSyncManager.FoundPickup(action, coords);
+            RandomizerSyncManager.FoundPickup(WireSafe(action), coords);
         }
 
         if (found_locally) {
@@ -426,52 +503,91 @@ public static class RandomizerSwitch {
         }
     }
 
-    public static void LoseHC() {
-        PickupMessage("Health Cell Lost!");
-        Characters.Sein.Mortality.Health.MaxHealth -= 4;
-        if (Characters.Sein.Mortality.Health.Amount > Characters.Sein.Mortality.Health.MaxHealth) {
-            Characters.Sein.Mortality.Health.Amount = Characters.Sein.Mortality.Health.MaxHealth;
+    // RI, BM and BR go out as NO|1, bare or inside a multipickup: servers must not learn invented slot ids
+    private static bool Scripting(string code) {
+        return code == "RI" || code == "BM" || code == "BR";
+    }
+
+    private static RandomizerAction WireSafe(RandomizerAction action) {
+        if (Scripting(action.Action)) {
+            return new RandomizerAction("NO", "1");
         }
+
+        if (action.Action != "MU" && action.Action != "RP") {
+            return action;
+        }
+
+        var value = (string)action.Value;
+        if (!value.Contains("RI/") && !value.Contains("BM/") && !value.Contains("BR/")) {
+            return action;
+        }
+
+        var parts = action.Decompose();
+        return parts.Any(p => Scripting(p.Action))
+            ? RandomizerAction.AsMulti(parts.Select(WireSafe).ToList(), action.Action == "RP")
+            : action;
+    }
+
+    public static void LoseHC() {
+        PickupMessage(RandomizerItems.Message("HC", "-1"));
+        var health = Characters.Sein.Mortality.Health;
+        var overflow = Mathf.Max(health.Amount - health.MaxHealth, 0f);
+        health.MaxHealth -= 4;
+        health.Amount = Mathf.Min(health.Amount, health.MaxHealth + overflow);
     }
 
     public static void LoseEC() {
-        PickupMessage("Energy Cell Lost!");
-        Characters.Sein.Energy.Max--;
-        if (Characters.Sein.Energy.Current > Characters.Sein.Energy.Max) {
-            Characters.Sein.Energy.Current = Characters.Sein.Energy.Max;
-        }
+        PickupMessage(RandomizerItems.Message("EC", "-1"));
+        var energy = Characters.Sein.Energy;
+        var overflow = Mathf.Max(energy.Current - energy.Max, 0f);
+        energy.Max--;
+        energy.Current = Mathf.Min(energy.Current, energy.Max + overflow);
     }
 
     public static void LoseAC() {
-        PickupMessage("Ability Cell Lost!");
+        PickupMessage(RandomizerItems.Message("AC", "-1"));
         Characters.Sein.Level.SkillPoints--;
     }
 
     public static void LoseMS() {
-        PickupMessage("Mapstone Lost!");
+        PickupMessage(RandomizerItems.Message("MS", "-1"));
         Characters.Sein.Inventory.MapStones--;
         Characters.Sein.Inventory.IncRandomizerItem(71, -1);
     }
 
     public static void LoseKS() {
-        PickupMessage("Keystone Lost!");
+        PickupMessage(RandomizerItems.Message("KS", "-1"));
         Characters.Sein.Inventory.Keystones--;
         Characters.Sein.Inventory.IncRandomizerItem(70, -1);
     }
 
 
+    // a caller's squelch around its own grants; seed content never writes it
     public static bool SilentMode;
 
-    // when set, appended to every pickup message; RandomizerMW uses it to
-    // render multiworld grants as "[pickup] from Player N" in one line
+    // the seed's SH s=true: ends when an MU/RP completes or an MW batch is granted
+    public static bool SeedSilent;
+
+    // true only while Autoplayer.Drop grants from pickup.tmp; bingo looks away
+    public static bool FromFile;
+
+    // the pickups being granted, innermost last: each multipickup piece renames its own message
+    private static readonly List<KeyValuePair<RandomizerAction, int>> granting = new List<KeyValuePair<RandomizerAction, int>>();
+
+    // appended to every pickup message while set (RandomizerMW's " from Player N")
     public static string MessageSuffix = null;
 
     public static void PickupMessage(string text, int frames = 120) {
+        if (granting.Count > 0) {
+            var pickup = granting[granting.Count - 1];
+            text = RandomizerCustomNames.Rename(pickup.Key.Action, pickup.Key.ValAsStr(), pickup.Value, text);
+        }
+
         if (MessageSuffix != null) {
             text += MessageSuffix;
         }
 
-        if (SilentMode) {
+        if (SilentMode || SeedSilent) {
             if (RandomizerSettings.Dev) {
                 Randomizer.log(text + " (squelched)");
             }
@@ -483,7 +599,7 @@ public static class RandomizerSwitch {
     }
 
     public static void SentMwPickupMessage(string text, int frames = 120) {
-        if (SilentMode) {
+        if (SilentMode || SeedSilent) {
             if (RandomizerSettings.Dev) {
                 Randomizer.log(text + " (squelched)");
             }

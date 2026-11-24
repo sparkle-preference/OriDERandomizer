@@ -417,6 +417,8 @@ namespace B83.Win32
         private static uint threadId;
         private static IntPtr mainWindow = IntPtr.Zero;
         private static IntPtr m_Hook;
+        // held for as long as the hook is installed: a collected delegate frees the thunk Windows calls
+        private static HookProc m_Callback;
         private static string m_ClassName = "UnityWndClass";
 
         // attribute required for IL2CPP, also has to be a static method
@@ -437,7 +439,8 @@ namespace B83.Win32
                 Window.EnumThreadWindows(threadId, EnumCallback, IntPtr.Zero);
 
             var hModule = WinAPI.GetModuleHandle(null);
-            m_Hook = WinAPI.SetWindowsHookEx(HookType.WH_GETMESSAGE, Callback, hModule, threadId);
+            m_Callback = Callback;
+            m_Hook = WinAPI.SetWindowsHookEx(HookType.WH_GETMESSAGE, m_Callback, hModule, threadId);
             // Allow dragging of files onto the main window. generates the WM_DROPFILES message
             WinAPI.DragAcceptFiles(mainWindow, true);
         }

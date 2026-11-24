@@ -9,12 +9,25 @@ public class OptionsScreen : MenuScreen, ISuspendable {
         SuspensionManager.Register(this);
         var navigation = Navigation;
         navigation.OnBackPressedCallback = (Action)Delegate.Combine(navigation.OnBackPressedCallback, new Action(OnBackPressed));
-        AddSubscreen<ControlsSettingsScreen>("CONTROL OPTIONS", 2);
-        AddSubscreen<AccessibilitySettingsScreen>("ACCESSIBILITY", 3);
-        AddSubscreen<KeybindsScreen>("KEYBINDS", 4);
-        AddSubscreen<MenuKeybindsScreen>("MENU KEYBINDS", 5);
-        AddSubscreen<ControllerBindsScreen>("CONTROLLER BINDS", 6);
-        AddSubscreen<ControllerMenuBindsScreen>("CONTROLLER MENU BINDS", 7);
+        // Vanilla leaves SETTINGS, CONTROLS, LEADERBOARDS. Dropping leaderboards puts
+        // CONTROLS last, so inserting after SETTINGS lands everything in order.
+        var root = GetComponent<CleverMenuItemGroup>();
+        // subscreens swap here, and a fading exit overlaps the one arriving
+        root.HideImmediately = true;
+        root.StayLit = true;
+        RemoveSubscreen(2);
+        AddSubscreen<ControlsSettingsScreen>("CONTROL OPTIONS", 1);
+        AddSubscreen<AccessibilitySettingsScreen>("ACCESSIBILITY/QOL", 2);
+        AddSubscreen<RandoUiScreen>("RANDO UI", 3);
+        AddSubscreen<RandoOptionsScreen>("RANDO OPTIONS", 4);
+        AddSubscreen<RandomizerBindsScreen>("RANDO BINDS", 5);
+        AddSubscreen<KeybindsScreen>("KEYBINDS", 6);
+        AddSubscreen<ControllerBindsScreen>("CONTROLLER BINDS", 7);
+        foreach (var page in root.Options) {
+            if (page.ItemGroup != null) {
+                page.ItemGroup.gameObject.AddComponent<OptionsPageHold>();
+            }
+        }
     }
 
     public void OnDestroy() {
@@ -28,7 +41,9 @@ public class OptionsScreen : MenuScreen, ISuspendable {
         }
     }
 
+    // also runs for every other menu screen shown, which is harmless for the pages
     public override void Hide() {
+        CustomSettingsScreen.MenusClosed();
         Navigation.SetVisible(false);
         foreach (var cleverMenuItemGroupItem in GetComponent<CleverMenuItemGroup>().Options) {
             if (cleverMenuItemGroupItem.ItemGroup) {
@@ -43,6 +58,7 @@ public class OptionsScreen : MenuScreen, ISuspendable {
     }
 
     public override void HideImmediate() {
+        CustomSettingsScreen.MenusClosed();
         Navigation.SetVisibleImmediate(false);
     }
 
@@ -62,10 +78,30 @@ public class OptionsScreen : MenuScreen, ISuspendable {
 
     public bool IsSuspended { get; set; }
 
+    // Drops the nav entry but keeps the screen, which Steam's leaderboard code references. Put it
+    // to sleep first: the group's Awake only deactivates screens still in Options.
+    public void RemoveSubscreen(int index) {
+        var item = Navigation.MenuItems[index];
+        var group = GetComponent<CleverMenuItemGroup>();
+        var option = group.Options.Find(o => o.MenuItem == item);
+        if (option != null && option.ItemGroup != null) {
+            option.ItemGroup.IsActive = false;
+            option.ItemGroup.gameObject.SetActive(false);
+        }
+
+        group.Options.Remove(option);
+        Navigation.MenuItems.RemoveAt(index);
+        var layout = Navigation.transform.FindChild("mainMenuUI").GetComponent<CleverMenuItemLayout>();
+        layout.MenuItems.Remove(item);
+        Destroy(item.gameObject);
+        layout.Sort();
+    }
+
     public void AddSubscreen<TController>(string label, int index) where TController : MonoBehaviour {
         Navigation.AddMenuItem(label, index, Navigation.transform.FindChild("mainMenuUI").GetComponent<CleverMenuItemLayout>(), delegate { });
         var gameObject = Instantiate(transform.FindChild("*settings").gameObject);
-        gameObject.name = "*" + label.ToLower();
+        // a slash in a name reads as a path step to Find
+        gameObject.name = "*" + label.ToLower().Replace('/', ' ');
         gameObject.transform.SetParent(transform);
         Destroy(gameObject.GetComponent<SettingsScreen>());
         gameObject.AddComponent<TController>();

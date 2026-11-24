@@ -26,6 +26,22 @@ public class SaveSlotBackupsManager : MonoBehaviour {
     }
 
     public static void RequestReadBackups(int slotIndex, Action onFinishedReading) {
+        // a segment card's rows are its variants; a highlight clears them, and the
+        // reader appends, so rows that are already up are left alone
+        if (PracticeSelect.Choosing) {
+            var screen = SaveSlotsUI.Instance;
+            var card = screen != null && slotIndex < screen.Items.Count ? screen.Items[slotIndex] : null;
+            if (card != null && card.GetComponentsInChildren<BackupSaveSlotUI>(true).Length == 0) {
+                if (onFinishedReading != null) {
+                    onFinishedReading();
+                }
+
+                PracticeSelect.DecorateRows(slotIndex);
+            }
+
+            return;
+        }
+
         m_instance.m_currentReadingSlot = slotIndex;
         var saveSlotBackup = m_instance.FindByIndex(slotIndex);
         if (saveSlotBackup.IsLoaded) {
@@ -38,6 +54,10 @@ public class SaveSlotBackupsManager : MonoBehaviour {
     }
 
     public static SaveSlotBackup SaveSlotBackupAtIndex(int index) {
+        if (PracticeSelect.Choosing) {
+            return PracticeSelect.Backup(index);
+        }
+
         return m_instance.m_saveSlotBackups[index];
     }
 
@@ -132,7 +152,9 @@ public class SaveSlotBackupsManager : MonoBehaviour {
 
     private void ClearCache() {
         m_saveSlotBackups.Clear();
-        for (var i = 0; i < 50; i++) {
+        // the practice slots live past the fifty the file select shows, and they back
+        // themselves up like any other slot
+        for (var i = 0; i <= PracticeController.LastSlot; i++) {
             m_saveSlotBackups.Add(new SaveSlotBackup(i));
         }
     }

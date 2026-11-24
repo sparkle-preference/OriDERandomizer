@@ -1,5 +1,6 @@
 public class KeybindsScreen : CustomSettingsScreen {
     public override void InitScreen() {
+        AddHeader("GAMEPLAY");
         AddKeybind("Bash", () => PlayerInputRebinding.KeyRebindings.Bash, k => PlayerInputRebinding.KeyRebindings.Bash = k);
         AddKeybind("Charge Jump", () => PlayerInputRebinding.KeyRebindings.ChargeJump, k => PlayerInputRebinding.KeyRebindings.ChargeJump = k);
         AddKeybind("Dash", () => PlayerInputRebinding.KeyRebindings.RightShoulder, k => PlayerInputRebinding.KeyRebindings.RightShoulder = k);
@@ -15,10 +16,58 @@ public class KeybindsScreen : CustomSettingsScreen {
         AddKeybind("Movement Left", () => PlayerInputRebinding.KeyRebindings.HorizontalDigiPadLeft, k => PlayerInputRebinding.KeyRebindings.HorizontalDigiPadLeft = k);
         AddKeybind("Movement Right", () => PlayerInputRebinding.KeyRebindings.HorizontalDigiPadRight, k => PlayerInputRebinding.KeyRebindings.HorizontalDigiPadRight = k);
 
-        // Lower tooltip so it fits under the options
-        var pos = tooltipController.transform.position;
-        pos.y = -3.38f;
-        tooltipController.transform.position = pos;
-        HideLegend();
+        AddHeader("MENUS");
+        AddKeybind("Pause", () => PlayerInputRebinding.KeyRebindings.Start, k => PlayerInputRebinding.KeyRebindings.Start = k);
+        AddKeybind("Cancel", () => PlayerInputRebinding.KeyRebindings.Cancel, k => PlayerInputRebinding.KeyRebindings.Cancel = k);
+        AddKeybind("Proceed", () => PlayerInputRebinding.KeyRebindings.ActionButtonA, k => PlayerInputRebinding.KeyRebindings.ActionButtonA = k);
+        AddKeybind("Menu Up", () => PlayerInputRebinding.KeyRebindings.MenuUp, k => PlayerInputRebinding.KeyRebindings.MenuUp = k);
+        AddKeybind("Menu Down", () => PlayerInputRebinding.KeyRebindings.MenuDown, k => PlayerInputRebinding.KeyRebindings.MenuDown = k);
+        AddKeybind("Menu Left", () => PlayerInputRebinding.KeyRebindings.MenuLeft, k => PlayerInputRebinding.KeyRebindings.MenuLeft = k);
+        AddKeybind("Menu Right", () => PlayerInputRebinding.KeyRebindings.MenuRight, k => PlayerInputRebinding.KeyRebindings.MenuRight = k);
+        AddKeybind("Menu Previous", () => PlayerInputRebinding.KeyRebindings.MenuPageLeft, k => PlayerInputRebinding.KeyRebindings.MenuPageLeft = k);
+        AddKeybind("Menu Next", () => PlayerInputRebinding.KeyRebindings.MenuPageRight, k => PlayerInputRebinding.KeyRebindings.MenuPageRight = k);
+        AddKeybind("Map", () => PlayerInputRebinding.KeyRebindings.Select, k => PlayerInputRebinding.KeyRebindings.Select = k);
+        AddKeybind("Zoom In (Map)", () => PlayerInputRebinding.KeyRebindings.ZoomIn, k => PlayerInputRebinding.KeyRebindings.ZoomIn = k);
+        AddKeybind("Zoom Out (Map)", () => PlayerInputRebinding.KeyRebindings.ZoomOut, k => PlayerInputRebinding.KeyRebindings.ZoomOut = k);
+
+        ScrollAfter(Footer());
+        BindLegend();
     }
+
+    public override string ResetQuestion {
+        get { return "Reset ALL keybinds to default?"; }
+    }
+
+    public override void ResetToDefaults() {
+        Backup(PlayerInputRebinding.KeyRebindingFile);
+        PlayerInputRebinding.SetDefaultKeyBindingSettings();
+        var instance = PlayerInput.Instance;
+        if (instance != null) {
+            instance.RefreshControlScheme();
+        }
+
+        var componentsInChildren = OptionsScreen.Instance.transform.GetComponentsInChildren<KeybindControl>(true);
+        for (var i = 0; i < componentsInChildren.Length; i++) {
+            componentsInChildren[i].Reset();
+        }
+
+        PlayerInputRebinding.WriteKeyRebindSettings();
+        AfterReset(PlayerInputRebinding.KeyRebindingFile);
+    }
+
+    protected override void SnapshotUnlisted() {
+        entered.Take(PlayerInputRebinding.KeyRebindings);
+    }
+
+    protected override bool UnlistedChanged {
+        get { return entered.Differs(PlayerInputRebinding.KeyRebindings); }
+    }
+
+    protected override void RestoreUnlisted() {
+        entered.Restore(PlayerInputRebinding.KeyRebindings);
+    }
+
+    // the whole object, as the reset replaces it: Copy, Focus, Legend and the rest have no row
+    private readonly SettingsSnapshot<PlayerInputRebinding.KeyBindingSettings> entered =
+        new SettingsSnapshot<PlayerInputRebinding.KeyBindingSettings>();
 }

@@ -13,6 +13,7 @@ public class ControllerBindControl : MonoBehaviour {
         UpdateMessageBox();
         SuspensionManager.SuspendAll();
         editing = true;
+        owner.Editing = true;
         exit = 0;
         allButtons = (XboxControllerInput.Button[])Enum.GetValues(typeof(XboxControllerInput.Button));
         buttonsPressed = new bool[allButtons.Length];
@@ -20,7 +21,15 @@ public class ControllerBindControl : MonoBehaviour {
             buttonsPressed[i] = true;
         }
 
-        tooltipProvider.SetMessage("Start: finish editing");
+        back.Reset();
+        tapped = false;
+        // the legend says how to edit; the tooltip names what is being edited
+        owner.BindLegend();
+        Tooltip("Editing binds for " + label + "...");
+    }
+
+    private void Tooltip(string words) {
+        tooltipProvider.SetMessage(words);
         owner.tooltipController.UpdateTooltip();
     }
 
@@ -34,26 +43,60 @@ public class ControllerBindControl : MonoBehaviour {
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape) || (WasPressed(XboxControllerInput.Button.Start) && currentKeys.Count > 0)) {
-            editing = false;
-            SuspensionManager.ResumeAll();
-            SetKeys(currentKeys.ToArray());
-            PlayerInputRebinding.WriteControllerRebindSettings();
-            PlayerInput.Instance.RefreshControlScheme();
-            tooltipProvider.SetMessage(owner.DefaultTooltip);
-            owner.tooltipController.UpdateTooltip();
+        // a button pressed during a Back hold joins the binds; Back itself is no button
+        var pressed = GetPressedButtonAsBind();
+        if (pressed != null && !currentKeys.Contains(pressed.Value)) {
+            back.Join();
+        }
+
+        // A Back hold cancels the edit; a tap finishes it, on release.
+        if (back.Update(CustomSettingsScreen.BackHeld(), Time.unscaledTime)) {
             return;
         }
 
-        var pressedButtonAsBind = GetPressedButtonAsBind();
-        if (pressedButtonAsBind != null && !currentKeys.Contains(pressedButtonAsBind.Value)) {
-            currentKeys.Add(pressedButtonAsBind.Value);
+        // the edit starts empty, so finishing before any button would unbind the action
+        if (tapped && currentKeys.Count == 0) {
+            tapped = false;
+            Cancel();
+            return;
+        }
+
+        if (tapped || (WasPressed(XboxControllerInput.Button.Start) && currentKeys.Count > 0 && !back.Joined)) {
+            tapped = false;
+            editing = false;
+            owner.Editing = false;
+            SuspensionManager.ResumeAll();
+            SetKeys(currentKeys.ToArray());
+            PlayerInputRebinding.WriteControllerRebindSettings();
+            var input = PlayerInput.Instance;
+            if (input != null) {
+                input.RefreshControlScheme();
+            }
+
+            owner.BindLegend();
+            Tooltip(owner.DefaultTooltip);
+            return;
+        }
+
+        if (pressed != null && !currentKeys.Contains(pressed.Value)) {
+            currentKeys.Add(pressed.Value);
             UpdateMessageBox();
         }
 
         foreach (var button in allButtons) {
             buttonsPressed[(int)button] = XboxControllerInput.GetButton(button);
         }
+    }
+
+    // nothing is applied until the edit finishes, so canceling only redraws the row
+    private void Cancel() {
+        editing = false;
+        owner.Editing = false;
+        SuspensionManager.ResumeAll();
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+        owner.BindLegend();
+        Tooltip(owner.DefaultTooltip);
+        owner.HoldMenu();
     }
 
     public void UpdateMessageBox() {
@@ -75,13 +118,15 @@ public class ControllerBindControl : MonoBehaviour {
     public void Reset() {
         messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
         editing = false;
+        owner.Editing = false;
     }
 
     private bool WasPressed(XboxControllerInput.Button button) {
         return !buttonsPressed[(int)button] && XboxControllerInput.GetButton(button);
     }
 
-    private PlayerInputRebinding.ControllerButton ToBind(XboxControllerInput.Button button) {
+    // null for a button no ControllerButton names
+    private PlayerInputRebinding.ControllerButton? ToBind(XboxControllerInput.Button button) {
         switch (button) {
             case XboxControllerInput.Button.ButtonA:
                 return PlayerInputRebinding.ControllerButton.A;
@@ -108,14 +153,15 @@ public class ControllerBindControl : MonoBehaviour {
             case XboxControllerInput.Button.Start:
                 return PlayerInputRebinding.ControllerButton.Start;
             default:
-                return PlayerInputRebinding.ControllerButton.A;
+                return null;
         }
     }
 
     public PlayerInputRebinding.ControllerButton? GetPressedButtonAsBind() {
         foreach (var button in allButtons) {
-            if (WasPressed(button)) {
-                return ToBind(button);
+            var bind = WasPressed(button) ? ToBind(button) : null;
+            if (bind != null) {
+                return bind;
             }
         }
 
@@ -170,8 +216,9 @@ public class ControllerBindControl : MonoBehaviour {
         return null;
     }
 
-    public void Init(Func<PlayerInputRebinding.ControllerButton[]> getKeys, Action<PlayerInputRebinding.ControllerButton[]> setKeys, CustomSettingsScreen owner) {
+    public void Init(Func<PlayerInputRebinding.ControllerButton[]> getKeys, Action<PlayerInputRebinding.ControllerButton[]> setKeys, CustomSettingsScreen owner, string label) {
         this.owner = owner;
+        this.label = label;
         GetKeys = getKeys;
         SetKeys = setKeys;
         messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(getKeys())));
@@ -180,13 +227,53 @@ public class ControllerBindControl : MonoBehaviour {
         tooltipProvider.SetMessage(owner.DefaultTooltip);
         component.Tooltip = tooltipProvider;
         owner.tooltipController.UpdateTooltip();
+        back = new BindHold(p => owner.DrawHold(p), owner.HideHold, key => tapped = true, key => { }, Cancel);
     }
+
+    // the buttons the screen was entered with; Restore puts them back
+    public void Snapshot() {
+        snapshot = (PlayerInputRebinding.ControllerButton[])GetKeys().Clone();
+    }
+
+    public bool Changed {
+        get {
+            if (snapshot == null) {
+                return false;
+            }
+
+            var now = GetKeys();
+            if (now.Length != snapshot.Length) {
+                return true;
+            }
+
+            for (var i = 0; i < now.Length; i++) {
+                if (now[i] != snapshot[i]) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    public void Restore() {
+        if (snapshot == null) {
+            return;
+        }
+
+        SetKeys((PlayerInputRebinding.ControllerButton[])snapshot.Clone());
+        messageBox.SetMessage(new MessageDescriptor(KeyBindingToString(GetKeys())));
+    }
+
+    // this control is taking buttons; owner.Editing only says that *some* control is
+    private bool editing;
+
+    private PlayerInputRebinding.ControllerButton[] snapshot;
 
     public Func<PlayerInputRebinding.ControllerButton[]> GetKeys;
 
     public Action<PlayerInputRebinding.ControllerButton[]> SetKeys;
 
-    public bool editing;
 
     public MessageBox messageBox;
 
@@ -199,6 +286,13 @@ public class ControllerBindControl : MonoBehaviour {
     private XboxControllerInput.Button[] allButtons;
 
     private CustomSettingsScreen owner;
+
+    private string label;
+
+    private BindHold back;
+
+    // a Back tap came up this frame
+    private bool tapped;
 
     private RandomizerMessageProvider tooltipProvider;
 }

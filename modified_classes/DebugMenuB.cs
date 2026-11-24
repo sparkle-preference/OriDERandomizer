@@ -454,6 +454,10 @@ public class DebugMenuB : SaveSerialize {
         list8.Add(new BoolDebugMenuItem("Forlorn Ruins Key", ForlornRuinsKeyGetter, ForlornRuinsKeySetter));
         list8.Add(new BoolDebugMenuItem("Horu Key", HoruKeyGetter, HoruKeySetter));
         list8.Add(new BoolDebugMenuItem("Darkness Lifted", DarknessLiftedGetter, DarknessLiftedSetter));
+        list8.Add(new ActionDebugMenuItem("Edit Seed Boxes", EditSeedBoxes));
+        list8.Add(new ActionDebugMenuItem("Create Practice Segment", CreatePracticeSegment));
+        list8.Add(new BoolDebugMenuItem("Autoplayer", () => RandomizerAutoplayer.On, delegate (bool value) { RandomizerAutoplayer.On = value; }));
+        list8.Add(new ActionDebugMenuItem("Grant Test Pickup", GrantTestPickup));
         if (GameController.Instance.IsTrial) {
             list5.Clear();
             list6.Clear();
@@ -692,6 +696,24 @@ public class DebugMenuB : SaveSerialize {
 
     private bool SkipAction() {
         SkipCutsceneController.Instance.SkipCutscene();
+        return true;
+    }
+
+    private bool EditSeedBoxes() {
+        HideDebugMenu();
+        PracticeEditor.BeginSeed();
+        return true;
+    }
+
+    private bool CreatePracticeSegment() {
+        HideDebugMenu();
+        PracticeEditor.Create();
+        return true;
+    }
+
+    private bool GrantTestPickup() {
+        HideDebugMenu();
+        RandomizerAutoplayer.GrantTestPickup();
         return true;
     }
 

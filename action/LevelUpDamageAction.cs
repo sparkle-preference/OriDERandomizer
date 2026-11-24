@@ -4,7 +4,9 @@ using UnityEngine;
 
 public class LevelUpDamageAction : ActionMethod, ISuspendable {
     public override void Perform(IContext context) {
-        m_active = true;
+        if (!TeleporterController.IsTeleporting) {
+            m_active = true;
+        }
     }
 
     public override void Awake() {

@@ -2,15 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading;
 using UnityEngine;
 
-// Checks for a newer dll on boot and, if the player asks, fetches it and
-// restarts into it. Windows keeps the loaded assembly locked, so a throwaway
-// script does the swap once the game exits.
-//
-// Only the blocking transfer runs off the main thread: Unity paths, quitting
-// and the log are all touched from Update.
+// Offers a newer dll from the main menu and restarts into it; the loaded assembly is locked, so a
+// throwaway script swaps it after exit. Only the blocking transfers run off the main thread.
 public class RandomizerUpdater : MonoBehaviour {
     public static string LatestVersion { get; private set; }
 
@@ -19,6 +16,9 @@ public class RandomizerUpdater : MonoBehaviour {
     // set once the player commits, so the menu item stops responding
     public static bool Busy { get; private set; }
 
+    // its restart question is on the quit prompt, which nothing else may borrow meanwhile
+    public static bool PromptShown { get { return s_okHandler != null; } }
+
     public static string Status { get; private set; }
 
     public static void Initialize() {
@@ -26,8 +26,7 @@ public class RandomizerUpdater : MonoBehaviour {
     }
 
     public void Awake() {
-        // extracting and binding the sidecar reads Unity paths, so it happens
-        // here rather than on the worker
+        // Unity paths and the sidecar extract: main thread only
         s_dataPath = Application.dataPath;
         s_exeDir = string.IsNullOrEmpty(s_dataPath) ? Environment.CurrentDirectory : Path.GetDirectoryName(s_dataPath);
 
@@ -54,8 +53,7 @@ public class RandomizerUpdater : MonoBehaviour {
         }
     }
 
-    // the version check can land either side of the title screen being built,
-    // so the entry is added from Update rather than at bootstrap
+    // the check can land either side of the title screen being built, so Update adds the entry
     public static void BindMainMenu(CleverMenuItemSelectionManager menu, CleverMenuItemSelectionManager exitScreen) {
         s_mainMenu = menu;
         s_exitScreen = exitScreen;
@@ -78,12 +76,10 @@ public class RandomizerUpdater : MonoBehaviour {
                 s_mainMenu.AddMenuItem(s_shownStatus, s_mainMenu.MenuItems.Count - 1, StartUpdate);
                 s_menuItem = s_mainMenu.MenuItems[s_mainMenu.MenuItems.Count - 2];
 
-                // AddMenuItem reparents keeping world scale, so the clone comes
-                // out divided by the menu's own
+                // AddMenuItem reparents keeping world scale, dividing the clone by the menu's own
                 s_menuItem.transform.localScale = template.transform.localScale;
 
-                // PressedCallback only adds to the cloned entry's action, and
-                // MenuItems[0] is "start game"
+                // the clone keeps MenuItems[0]'s "start game" action; PressedCallback only adds to it
                 s_menuItem.Pressed = null;
                 return;
             }
@@ -115,19 +111,24 @@ public class RandomizerUpdater : MonoBehaviour {
         thread.Start();
     }
 
-    private static string Host {
-        get {
-            var endpoint = RandomizerSettings.DevSettings.WsEndpoint;
-            return endpoint == null ? "orirando.com" : endpoint.Value;
-        }
-    }
-
     private static void CheckThread() {
         try {
             var scratch = Path.Combine(Path.GetTempPath(), "orirando_version.txt");
-            var status = NativeWebSocket.HttpDownload($"https://{Host}/version/latest", scratch);
+
+            // two tries: a boot-time TLS request can fail once
+            var status = 0;
+            for (var attempt = 0; attempt < 2; attempt++) {
+                status = NativeWebSocket.HttpDownload($"{RandomizerSyncManager.WebBase()}/version/latest", scratch);
+                if (status == 200) {
+                    break;
+                }
+
+                Log($"updater: version check attempt {attempt + 1} gave {status} "
+                    + $"({NativeWebSocket.GetLastHttpError()})");
+                Thread.Sleep(500);
+            }
+
             if (status != 200) {
-                Log($"updater: version check got {status} ({NativeWebSocket.GetLastHttpError()})");
                 return;
             }
 
@@ -139,8 +140,7 @@ public class RandomizerUpdater : MonoBehaviour {
             }
 
             if (IsSymlink(ManagedDll)) {
-                // a dev install links the assembly at its build output, and
-                // moving a download over that replaces the link
+                // a dev install links the assembly at its build output; moving over it replaces the link
                 Log($"updater: {latest} available, but {ManagedDll} is a link; not offering to update");
                 return;
             }
@@ -156,7 +156,7 @@ public class RandomizerUpdater : MonoBehaviour {
     private void UpdateThread() {
         try {
             var staged = ManagedDll + ".new";
-            var status = NativeWebSocket.HttpDownload($"https://{Host}/dll", staged);
+            var status = NativeWebSocket.HttpDownload($"{RandomizerSyncManager.WebBase()}/dll", staged);
             if (status != 200) {
                 Fail($"download failed ({status}: {NativeWebSocket.GetLastHttpError()})");
                 return;
@@ -179,9 +179,8 @@ public class RandomizerUpdater : MonoBehaviour {
         }
     }
 
-    // Borrows the quit confirmation: it hides the menu for us, and a live
-    // screen's text takes immediately where a fresh clone keeps its prefab
-    // text. Its OK action quits, which is what the swap script waits for.
+    // Borrows the quit confirmation: it hides the menu, takes new text at once, and its OK quits,
+    // which is what the swap script waits for.
     private void ShowRestartPrompt() {
         if (s_exitScreen == null || s_exitScreen.MenuItems.Count < 2) {
             Log("updater: no quit screen to borrow; restarting directly");
@@ -213,8 +212,7 @@ public class RandomizerUpdater : MonoBehaviour {
         }
     }
 
-    // everything borrowed goes back, or the next real quit asks the wrong
-    // question and runs our handler
+    // everything borrowed goes back, or the next real quit asks our question and runs our handler
     private static void RestoreExitScreen() {
         if (s_titleBox != null && s_savedProvider != null) {
             s_titleBox.SetMessageProvider(s_savedProvider);
@@ -267,23 +265,8 @@ public class RandomizerUpdater : MonoBehaviour {
     }
 
     private void SwapAndRestart(string staged) {
-        var exe = Path.Combine(s_exeDir, "oriDE.exe");
         var script = Path.Combine(Path.GetTempPath(), "orirando_update.bat");
-
-        // %~f0 deletes the script as its own last act; cmd reads batch files
-        // line by line, so this is safe once nothing follows it
-        var body = "@echo off\r\n"
-            + ":wait\r\n"
-            + "tasklist /FI \"IMAGENAME eq oriDE.exe\" | find /I \"oriDE.exe\" >nul\r\n"
-            + "if not errorlevel 1 (\r\n"
-            + "  ping -n 2 127.0.0.1 >nul\r\n"
-            + "  goto wait\r\n"
-            + ")\r\n"
-            + $"move /Y \"{staged}\" \"{ManagedDll}\"\r\n"
-            + $"start \"\" /D \"{s_exeDir}\" \"{exe}\"\r\n"
-            + "del \"%~f0\"\r\n";
-
-        File.WriteAllText(script, body);
+        File.WriteAllText(script, UpdateScript(staged, ManagedDll, s_exeDir), new UTF8Encoding(false));
 
         var info = new ProcessStartInfo("cmd.exe", $"/c \"{script}\"");
         info.UseShellExecute = false;
@@ -293,6 +276,27 @@ public class RandomizerUpdater : MonoBehaviour {
 
         Log($"updater: staged {staged}, quitting for restart");
         m_restartPending = true;
+    }
+
+    // UTF-8 without a BOM, read as UTF-8 once chcp has run; a path's % doubles or cmd expands it.
+    // del "%~f0" must stay the last line: cmd reads a batch file line by line
+    private static string UpdateScript(string staged, string dll, string dir) {
+        var exe = Path.Combine(dir, "oriDE.exe");
+        return "@chcp 65001 >nul\r\n"
+            + "@echo off\r\n"
+            + ":wait\r\n"
+            + "tasklist /FI \"IMAGENAME eq oriDE.exe\" | find /I \"oriDE.exe\" >nul\r\n"
+            + "if not errorlevel 1 (\r\n"
+            + "  ping -n 2 127.0.0.1 >nul\r\n"
+            + "  goto wait\r\n"
+            + ")\r\n"
+            + $"move /Y \"{Bat(staged)}\" \"{Bat(dll)}\"\r\n"
+            + $"start \"\" /D \"{Bat(dir)}\" \"{Bat(exe)}\"\r\n"
+            + "del \"%~f0\"\r\n";
+    }
+
+    private static string Bat(string path) {
+        return path.Replace("%", "%%");
     }
 
     // "4.2.15" is newer than "4.2.14"; anything unparseable is not
@@ -341,8 +345,7 @@ public class RandomizerUpdater : MonoBehaviour {
         get { return Path.Combine(s_dataPath, Path.Combine("Managed", "Assembly-CSharp.dll")); }
     }
 
-    // Randomizer.log opens the file per call, so the worker queues instead of
-    // racing the main thread for it
+    // Randomizer.log is main-thread only; workers queue here and Update drains
     private static void Log(string message) {
         lock (s_pending) {
             s_pending.Add(message);

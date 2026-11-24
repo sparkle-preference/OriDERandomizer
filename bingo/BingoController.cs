@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
-using System.Net;
 using Core;
 using Game;
 using Sein.World;
@@ -29,6 +27,7 @@ public static class BingoController {
                 return;
             }
 
+            PollSidecar();
             if (Characters.Sein.Inventory.Keystones > IntGoals["UnspentKeystones"].Value) {
                 IntGoals["UnspentKeystones"].Value = Characters.Sein.Inventory.Keystones;
             }
@@ -55,6 +54,9 @@ public static class BingoController {
 
             if (UpdateTimer > 0) {
                 UpdateTimer--;
+            } else if (!GoalsLoaded) {
+                UpdateTimer = 3;
+                AskGoals();
             } else {
                 PostUpdate();
             }
@@ -110,7 +112,9 @@ public static class BingoController {
                 BoolGoals["FastStompless"].Completed = true;
             } else if (entity.MoonGuid == Drain) {
                 BoolGoals["DrainSwamp"].Completed = true;
-            } else if (entity.MoonGuid == CoreSkipRight || entity.MoonGuid == CoreSkipLeft && damage.Type == DamageType.LevelUp) {
+            } else if (entity.MoonGuid == SpiderSac) {
+                BoolGoals["DropSpiderSac"].Completed = true;
+            } else if ((entity.MoonGuid == CoreSkipRight || entity.MoonGuid == CoreSkipLeft) && damage.Type == DamageType.LevelUp) {
                 if (CoreSkipTimeout > 0) {
                     BoolGoals["CoreSkip"].Completed = true;
                 } else {
@@ -130,6 +134,8 @@ public static class BingoController {
                 IntGoals["KillEnemies"].Value++;
             }
 
+            OnDefeat(entity);
+
             if (SingleGuidSwitchListeners.ContainsKey(entity.MoonGuid)) {
                 SingleGuidSwitchListeners[entity.MoonGuid].Handle();
             }
@@ -139,10 +145,8 @@ public static class BingoController {
         }
     }
 
-    // Two ways to die to a crushing hazard: its own damage collider hits you (the
-    // hazard is the sender) or it squeezes you into geometry (CapsuleCrushDetector
-    // fires, and the sender is Sein's own detector). Both happen in the same room,
-    // so DieTo goals have to ask about both.
+    // A crushing hazard kills two ways: its own collider (the hazard is the sender) or squeezing you
+    // into geometry (CapsuleCrushDetector fires, Sein's detector is the sender). DieTo asks both.
     public static bool KilledBy(Damage damage, MoonGuid guid) {
         return OwnerGuid(Sender(damage)) == guid;
     }
@@ -175,9 +179,7 @@ public static class BingoController {
         return owner == null ? null : owner.MoonGuid;
     }
 
-    // Dumps everything OnDeath below can key off to randomizer.log, for authoring new
-    // DieTo goals. Runs whether or not a bingo game is active, but only for players
-    // holding Mark -- it is the switch for this as much as it is a bonus skill.
+    // Logs everything OnDeath can key off, for authoring DieTo goals: board or not, only while Mark is held.
     public static void DeathDebugLog(Damage damage) {
         if (!RandomizerBonusSkill.HasMark) {
             return;
@@ -251,12 +253,13 @@ public static class BingoController {
             UpdateTimer = Math.Min(UpdateTimer, 3);
             // string log_out ="Killed by:" + damage.Sender.name + " ";
             var currentScene = scene();
-            var test = damage.Sender.FindComponent<Entity>();
             // if(test != null)
             //     log_out += "(entity: " + test.MoonGuid + ")";
 
 
-            var owner = damage.Sender.FindComponent<GuidOwner>();
+            // some damage has no sender; the type-only cases below still apply
+            var sender = Sender(damage);
+            var owner = sender == null ? null : sender.FindComponent<GuidOwner>();
             // if(owner != null)
             // {
             //     log_out += "(owner: " + owner.MoonGuid + ")";
@@ -441,7 +444,9 @@ public static class BingoController {
             }
 
             IntGoals["TotalPickups"].OnChange(2);
-            var piz = "PickupsIn" + RandomizerStatsManager.CurrentZone(true);
+            // the zone the stats credit the pickup to, not the one Ori stands in
+            var zone = RandomizerStatsManager.ZonePrettyNames[RandomizerStatsManager.ZoneForPickup(coords)];
+            var piz = "PickupsIn" + zone.Replace("\t", "");
             if (IntGoals.ContainsKey(piz)) {
                 IntGoals[piz].OnChange(2);
             }
@@ -471,11 +476,14 @@ public static class BingoController {
     }
 
     public static void OnActivateTeleporter(string identifier) {
-        if (!Active || !MultiBoolGoals["ActivateTeleporter"].Subgoals.ContainsKey(identifier)) {
+        // Active can be set before the board arrives, and it may never arrive at all
+        MultiBoolGoal goal;
+        if (!Active || !MultiBoolGoals.TryGetValue("ActivateTeleporter", out goal) ||
+                !goal.Subgoals.ContainsKey(identifier)) {
             return;
         }
 
-        MultiBoolGoals["ActivateTeleporter"][identifier] = true;
+        goal[identifier] = true;
     }
 
     // index = bit position in the journey bitfields, and (+1) the LastTouched value,
@@ -492,6 +500,25 @@ public static class BingoController {
         return from + "-" + to;
     }
 
+    public const int DefeatBaseId = 2639; // one bitfield per enemy kind, bits = zones: 2639-2650
+
+    public static string DefeatKey(string kind, string zone) {
+        return kind + "-" + zone;
+    }
+
+    // a kill counts for the zone Ori is standing in, the one the stats page gives
+    public static void OnDefeat(Entity entity) {
+        var kind = BingoEnemyKinds.KindOf(entity);
+        if (kind == null || !MultiBoolGoals.ContainsKey("Defeat")) {
+            return;
+        }
+
+        var zone = RandomizerStatsManager.CurrentZone(true);
+        if (RandomizerTrackedDataManager.Zones.ContainsValue(zone)) {
+            MultiBoolGoals["Defeat"][DefeatKey(kind, zone)] = true;
+        }
+    }
+
     public static int TeleporterIndex(string identifier) {
         return Array.IndexOf(Teleporters, identifier);
     }
@@ -505,11 +532,8 @@ public static class BingoController {
         return last > 0 && last <= Teleporters.Length ? Teleporters[last - 1] : "";
     }
 
-    // Ori physically entered a well (SavePedestal.Highlight) -- deliberately not
-    // OnTouchTeleporter, which also fires for pickup-granted wells and the spawn
-    // activation of Glades, neither of which is a journey. Touching anything on the
-    // way overwrites the origin, so "without touching any in between" needs no
-    // extra bookkeeping.
+    // Ori physically entered a well (SavePedestal.Highlight), unlike OnTouchTeleporter, which also fires
+    // for granted wells. Each touch overwrites the origin, so "none in between" needs no bookkeeping.
     public static void OnPedestalTouch(string identifier) {
         try {
             if (!Active || Characters.Sein == null) {
@@ -771,9 +795,14 @@ public static class BingoController {
 
     public class BoolMultiSceneGoal : BoolGoal, SceneListener {
         public HashSet<string> Scenes;
+        // the stats zone and scene-name prefixes count too, so a warp into any scene of the area lands
+        public string Zone;
+        public string[] Prefixes;
 
-        public BoolMultiSceneGoal(string name, int id, HashSet<string> scenes) : base(name, id) {
+        public BoolMultiSceneGoal(string name, int id, HashSet<string> scenes, string zone = null, params string[] prefixes) : base(name, id) {
             Scenes = scenes;
+            Zone = zone;
+            Prefixes = prefixes;
             SceneListeners.Add(this);
         }
 
@@ -783,7 +812,8 @@ public static class BingoController {
         }
 
         public void Handle(string scene) {
-            Completed = Completed || Scenes.Contains(scene);
+            Completed = Completed || Scenes.Contains(scene) || (Zone != null && RandomizerStatsManager.CurrentZone() == Zone)
+                || Prefixes.Any(scene.StartsWith);
         }
     }
 
@@ -845,24 +875,10 @@ public static class BingoController {
         }
     }
 
-    // Every ordered pair of spirit wells. Only completed journeys are serialized:
-    // 132 subgoals would otherwise ride along on every update, and the server reads
-    // a missing subgoal as incomplete.
-    public class JourneyGoal : MultiBoolGoal {
-        public JourneyGoal(string name, List<BoolGoal> subgoals) : base(name, subgoals) {
-        }
-
-        public static void mk() {
-            var pairs = new List<BoolGoal>();
-            for (var from = 0; from < Teleporters.Length; from++)
-                for (var to = 0; to < Teleporters.Length; to++) {
-                    if (from != to) {
-                        pairs.Add(new BitfieldBoolGoal(JourneyKey(Teleporters[from], Teleporters[to]), JourneyBaseId + from, to));
-                    }
-                }
-
-            var goal = new JourneyGoal("Journey", pairs);
-            MultiBoolGoals[goal.Name] = goal;
+    // Only completed subgoals are serialized: a hundred-odd subgoals would otherwise ride
+    // along on every update, and the server reads a missing subgoal as incomplete.
+    public class SparseMultiBoolGoal : MultiBoolGoal {
+        public SparseMultiBoolGoal(string name, List<BoolGoal> subgoals) : base(name, subgoals) {
         }
 
         public override string ToJson() {
@@ -878,6 +894,44 @@ public static class BingoController {
             }
 
             return jsonStr.TrimEnd(',') + "}, \"total\": " + count + "}";
+        }
+    }
+
+    // Every ordered pair of spirit wells.
+    public class JourneyGoal : SparseMultiBoolGoal {
+        public JourneyGoal(string name, List<BoolGoal> subgoals) : base(name, subgoals) {
+        }
+
+        public static void mk() {
+            var pairs = new List<BoolGoal>();
+            for (var from = 0; from < Teleporters.Length; from++)
+                for (var to = 0; to < Teleporters.Length; to++) {
+                    if (from != to) {
+                        pairs.Add(new BitfieldBoolGoal(JourneyKey(Teleporters[from], Teleporters[to]), JourneyBaseId + from, to));
+                    }
+                }
+
+            var goal = new JourneyGoal("Journey", pairs);
+            MultiBoolGoals[goal.Name] = goal;
+        }
+    }
+
+    // One bit per (enemy kind, zone): the kind picks the item, the zone the bit. The
+    // server draws both card shapes from these same keys.
+    public class DefeatGoal : SparseMultiBoolGoal {
+        public DefeatGoal(string name, List<BoolGoal> subgoals) : base(name, subgoals) {
+        }
+
+        public static void mk() {
+            var pairs = new List<BoolGoal>();
+            for (var kind = 0; kind < BingoEnemyKinds.Kinds.Length; kind++) {
+                foreach (var zone in RandomizerTrackedDataManager.Zones) {
+                    pairs.Add(new BitfieldBoolGoal(DefeatKey(BingoEnemyKinds.Kinds[kind], zone.Value), DefeatBaseId + kind, zone.Key));
+                }
+            }
+
+            var goal = new DefeatGoal("Defeat", pairs);
+            MultiBoolGoals[goal.Name] = goal;
         }
     }
 
@@ -970,12 +1024,6 @@ public static class BingoController {
         }
     }
 
-    public static void PostCallback(object sender, UploadValuesCompletedEventArgs e) {
-        if ((e.Cancelled || e.Error != null) && e.Error.GetType().Name == "WebException") {
-            UpdateTimer = Math.Min(1, UpdateTimer);
-        }
-    }
-
     public static void Init(string goalLine) {
         try {
             if (!Randomizer.SyncId.Contains(".")) {
@@ -984,11 +1032,19 @@ public static class BingoController {
             }
 
             var idParts = Randomizer.SyncId.Split('.');
-            UpdateUrl = $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/game/{idParts[0]}/player/{idParts[1]}/bingo";
+            UpdateUrl = $"{RandomizerSyncManager.WebBase()}/netcode/game/{idParts[0]}/player/{idParts[1]}/bingo";
+            GoalsUrl = $"{RandomizerSyncManager.WebBase()}/netcode/game/{idParts[0]}/player/{idParts[1]}/goals";
             WsUnsupported = false; // fresh seed, fresh chance (server may have upgraded)
+            GoalsWsUnsupported = false;
+            GoalsGone = false;
+            UpdateGone = false;
+            updateBackoff = FirstUpdateBackoff;
+            // a reload moves the urls; in-flight replies from the old game die here
+            RandomizerSyncManager.SidecarForget(updateHandle);
+            RandomizerSyncManager.SidecarForget(goalsHandle);
+            updateHandle = 0;
+            goalsHandle = 0;
             if (!Active) {
-                UpdateClient = new WebClient();
-                UpdateClient.UploadValuesCompleted += PostCallback;
                 SingleLocListeners = new Dictionary<int, List<SingleLocListener>>();
                 SingleItemListeners = new Dictionary<string, SingleItemListener>();
                 SingleSceneListeners = new Dictionary<string, SingleSceneListener>();
@@ -1002,6 +1058,7 @@ public static class BingoController {
                 BoolGoal.mk("DrownFrog", 2502);
                 BoolGoal.mk("DrainSwamp", 2503);
                 BoolGoal.mk("WilhelmScream", 2504);
+                BoolGoal.mk("DropSpiderSac", 2521);
                 IntGoals = new Dictionary<string, IntGoal>();
                 IntLocsGoal.mk("MapstoneLocs", 2505, new HashSet<int> { -1840228, -4359680, -4440152, -5640092, 1480360, 2999904, 3439744, 5119584, 7959788 });
                 IntGoal.mk("OpenKSDoors", 2506);
@@ -1065,31 +1122,27 @@ public static class BingoController {
                     }
                 );
 
-                // 2300-2399 is the bingo keep-on-death block (RandomizerInventory
-                // .KeptOnDeath). These used to live scattered through 1500-1599
-                // alongside the randomizer's own stats, which is how DeathLink
-                // came to sit on Ginso Escape Fronkey. Take the next free id here
-                // for any future goal that has to survive dying.
+                // 7000-7099: bingo's end of KeptOnDeath; a new goal that must survive dying takes the next id
                 MultiBoolGoal.mk(
                     "DieTo",
                     new List<BoolGoal> {
-                        new BoolGoal("Valley Floor Frogs", 2316),
-                        new BoolGoal("Spidersack Spikes", 2315),
-                        new BoolGoal("Grotto Vault Lasers", 2314),
-                        new BoolGoal("Swamp Swim Crushers", 2313),
-                        new BoolGoal("R1 Door Baneling", 2312),
-                        new BoolGoal("Valley Map Baneling", 2311),
-                        new BoolGoal("Sunstone Lightning", 2310),
-                        new BoolGoal("Lost Grove Laser", 2309),
-                        new BoolGoal("Forlorn Void", 2308),
-                        new BoolGoal("Stomp Rhino", 2307),
-                        new BoolGoal("Horu Fields Acid", 2306),
-                        new BoolGoal("Doorwarp Lava", 2305),
-                        new BoolGoal("Ginso Escape Fronkey", 2304),
-                        new BoolGoal("Blackroot Teleporter Crushers", 2303),
-                        new BoolGoal("NoobSpikes", 2302),
-                        new BoolGoal("Right Forlorn Laser", 2301),
-                        new BoolGoal("Misty Vertical Lasers", 2300)
+                        new BoolGoal("Valley Floor Frogs", 7016),
+                        new BoolGoal("Spidersack Spikes", 7015),
+                        new BoolGoal("Grotto Vault Lasers", 7014),
+                        new BoolGoal("Swamp Swim Crushers", 7013),
+                        new BoolGoal("R1 Door Baneling", 7012),
+                        new BoolGoal("Valley Map Baneling", 7011),
+                        new BoolGoal("Sunstone Lightning", 7010),
+                        new BoolGoal("Lost Grove Laser", 7009),
+                        new BoolGoal("Forlorn Void", 7008),
+                        new BoolGoal("Stomp Rhino", 7007),
+                        new BoolGoal("Horu Fields Acid", 7006),
+                        new BoolGoal("Doorwarp Lava", 7005),
+                        new BoolGoal("Ginso Escape Fronkey", 7004),
+                        new BoolGoal("Blackroot Teleporter Crushers", 7003),
+                        new BoolGoal("NoobSpikes", 7002),
+                        new BoolGoal("Right Forlorn Laser", 7001),
+                        new BoolGoal("Misty Vertical Lasers", 7000)
                     }
                 );
 
@@ -1098,7 +1151,7 @@ public static class BingoController {
                     new List<BoolGoal> {
                         new BoolLocGoal("Ginso Tree", 2530, 5480952),
                         new BoolSceneGoal("Forlorn Ruins", 2531, "forlornRuinsNestC"),
-                        new BoolGoal("Mount Horu", 1599)
+                        new BoolGoal("Mount Horu", 4099)
                     }
                 );
 
@@ -1121,16 +1174,17 @@ public static class BingoController {
                 );
 
                 JourneyGoal.mk();
+                DefeatGoal.mk();
 
                 MultiBoolGoal.mk(
                     "EnterArea",
                     new List<BoolGoal> {
-                        new BoolMultiSceneGoal("Lost Grove", 2543, new HashSet<string> { "southMangroveFallsStoryRoomA", "southMangroveFallsGrenadeEscalationB", "southMangroveFallsGrenadeEscalationBR" }),
-                        new BoolMultiSceneGoal("Misty Woods", 2544, new HashSet<string> { "sorrowPassForestB", "mistyWoodsGetTorch", "mistyWoodsIntro" }),
-                        new BoolMultiSceneGoal("Forlorn Ruins", 2545, new HashSet<string> { "forlornRuinsGravityRoomA", "forlornRuinsGetNightberry", "forlornRuinsGetIceB" }),
-                        new BoolMultiSceneGoal("Sorrow Pass", 2546, new HashSet<string> { "valleyOfTheWindEArt", "valleyOfTheWindLaserShaft", "valleyOfTheWindGauntlet", "valleyOfTheWindTop", "valleyOfTheWindHubR" }),
-                        new BoolMultiSceneGoal("Mount Horu", 2547, new HashSet<string> { "mountHoruHubBottom", "mountHoruHubMid" }),
-                        new BoolMultiSceneGoal("Ginso Tree", 2517, new HashSet<string> { "ginsoTreeSaveRoom", "ginsoEntranceIntro", "ginsoTreeWaterRisingEnd" })
+                        new BoolMultiSceneGoal("Lost Grove", 2543, new HashSet<string> { "southMangroveFallsStoryRoomA", "southMangroveFallsGrenadeEscalationB", "southMangroveFallsGrenadeEscalationBR" }, null, "southMangroveFalls"),
+                        new BoolMultiSceneGoal("Misty Woods", 2544, new HashSet<string> { "sorrowPassForestB", "mistyWoodsGetTorch", "mistyWoodsIntro" }, "mistyWoods"),
+                        new BoolMultiSceneGoal("Forlorn Ruins", 2545, new HashSet<string> { "forlornRuinsGravityRoomA", "forlornRuinsGetNightberry", "forlornRuinsGetIceB" }, "forlornRuins"),
+                        new BoolMultiSceneGoal("Sorrow Pass", 2546, new HashSet<string> { "valleyOfTheWindEArt", "valleyOfTheWindLaserShaft", "valleyOfTheWindGauntlet", "valleyOfTheWindTop", "valleyOfTheWindHubR" }, "sorrowPass"),
+                        new BoolMultiSceneGoal("Mount Horu", 2547, new HashSet<string> { "mountHoruHubBottom", "mountHoruHubMid" }, "mountHoru"),
+                        new BoolMultiSceneGoal("Ginso Tree", 2517, new HashSet<string> { "ginsoTreeSaveRoom", "ginsoEntranceIntro", "ginsoTreeWaterRisingEnd" }, "ginsoTree")
                     }
                 );
 
@@ -1240,9 +1294,73 @@ public static class BingoController {
                 Active = true;
             }
 
-            SetActiveGoals(goalLine.Substring(6));
+            GoalsLoaded = false;
+            if (goalLine != null) {
+                SetActiveGoals(goalLine.Substring(6));
+                GoalsLoaded = true;
+            }
         } catch (Exception e) {
             Randomizer.LogError("BingoController.Init: " + e.Message + " " + e.StackTrace);
+        }
+    }
+
+    public static void LoadGoals(string goalLine) {
+        if (!Active) {
+            return;
+        }
+
+        try {
+            SetActiveGoals(goalLine.StartsWith("Goals") ? goalLine.Substring(6) : goalLine);
+            GoalsLoaded = true;
+        } catch (Exception e) {
+            Randomizer.LogError("BingoController.LoadGoals: " + e.Message);
+        }
+    }
+
+    public static void AskGoals() {
+        if (GoalsGone || RandomizerSyncManager.Refused) {
+            return;
+        }
+
+        if (RandomizerSyncManager.WsOpen && !GoalsWsUnsupported) {
+            NativeWebSocket.SendText("goals:");
+        } else if (RandomizerSyncManager.HttpLaneOpen && goalsHandle == 0) {
+            goalsHandle = NativeWebSocket.HttpBegin("GET", GoalsUrl, null, null);
+        }
+    }
+
+    // completions for the sidecar's bingo and goals requests, at tick cadence
+    private static void PollSidecar() {
+        if (updateHandle != 0) {
+            var status = NativeWebSocket.HttpStatus(updateHandle);
+            if (status != NativeWebSocket.HttpPending) {
+                NativeWebSocket.HttpRelease(updateHandle);
+                updateHandle = 0;
+                OnUpdateStatus(status);
+            }
+        }
+
+        if (goalsHandle != 0) {
+            var status = NativeWebSocket.HttpStatus(goalsHandle);
+            if (status != NativeWebSocket.HttpPending) {
+                var body = status == 200 ? NativeWebSocket.HttpResponse(goalsHandle) : null;
+                NativeWebSocket.HttpRelease(goalsHandle);
+                goalsHandle = 0;
+                if (body != null) {
+                    LoadGoals(body);
+                } else if (status == 404) {
+                    GoalsGone = true;
+                }
+            }
+        }
+    }
+
+    // 404: no board. A bare err is a server without the kind: http for this seed load. Others retry.
+    public static void OnGoalsErr(string what) {
+        if (what.Contains("404")) {
+            GoalsGone = true;
+        } else if (what == "goals") {
+            GoalsWsUnsupported = true;
         }
     }
 
@@ -1255,8 +1373,14 @@ public static class BingoController {
                 if (singleGoal.Contains('-')) {
                     var goalParts = singleGoal.Split('-');
                     ActiveSingleGoals.Add(goalParts[0]);
-                    var count = int.Parse(goalParts[1]);
-                    IntGoals[goalParts[0]].Target = count;
+                    // a goal this dll does not know costs only itself
+                    IntGoal goal;
+                    int count;
+                    if (IntGoals.TryGetValue(goalParts[0], out goal) && int.TryParse(goalParts[1], out count)) {
+                        goal.Target = count;
+                    } else {
+                        Randomizer.log("SAG: unknown int goal " + singleGoal);
+                    }
                 } else {
                     ActiveSingleGoals.Add(singleGoal);
                 }
@@ -1406,48 +1530,63 @@ public static class BingoController {
             jsonFrags.Add(goal.ToJson());
         }
 
-        // no goal tracks this; the board uses it to show whether a journey card is
-        // currently trackable from where the player stands
+        // not a goal: the board shows from it whether a journey card is trackable from here
         jsonFrags.Add("\"LastTouchedTeleporter\": { \"value\": \"" + LastTouchedTeleporter() + "\"}");
         jsonStr += String.Join(",\n", jsonFrags.ToArray()) + "\n}";
         return jsonStr;
     }
 
     public static void PostUpdate() {
+        // a gone game or a refused one sends nothing until Alt+L
+        if (UpdateGone || RandomizerSyncManager.Refused) {
+            return;
+        }
+
         var json = GetJson();
-        // over the websocket when it's up: the server acks with a status
-        // (RandomizerSyncManager routes bingoack/err frames back here).
-        // EscapeDataString throws past ~32k chars; boards run a few KB,
-        // but never let an outlier kill the update path
+        // ws when open (acked by bingoack); EscapeDataString throws past ~32k, so an outlier goes http
         if (RandomizerSyncManager.WsOpen && !WsUnsupported && json.Length < 30000) {
             NativeWebSocket.SendText("bingo:bingoData=" + Uri.EscapeDataString(json) + "&version=" + Randomizer.VERSION);
             UpdateTimer = 15;
-        } else if (!RandomizerSyncManager.WsNoHttp && !UpdateClient.IsBusy) {
-            var values = new NameValueCollection();
-            values["bingoData"] = json;
-            values["version"] = Randomizer.VERSION;
-            UpdateClient.UploadValuesAsync(new Uri(UpdateUrl), values);
-            UpdateTimer = 15;
+        } else if (RandomizerSyncManager.HttpLaneOpen) {
+            if (updateHandle == 0) {
+                updateHandle = NativeWebSocket.HttpBegin("POST", UpdateUrl,
+                    "bingoData=" + RandomizerSyncManager.EscapeLong(json) + "&version=" + Randomizer.VERSION,
+                    RandomizerSyncManager.FormType);
+                UpdateTimer = updateHandle == 0 ? 3 : 15;
+            } else {
+                UpdateTimer = 3;
+            }
         } else {
-            // no transport right now (fallback routes gone, socket mid-
-            // reconnect): try again shortly — the next send carries the
-            // full board state anyway
+            // no transport: try again shortly; every send is a full snapshot
             UpdateTimer = 3;
         }
     }
 
-    // mirrors PostCallback: a failed update retries fast. A LOST frame
-    // (no ack at all) just waits out the 15s cadence — every update is a
-    // full durable snapshot, so nothing is ever missing for long.
+    // a lost frame waits out the 15s cadence (every update is a snapshot)
     public static void OnBingoAck(string status) {
         try {
-            if (int.Parse(status) >= 300) {
-                UpdateTimer = Math.Min(1, UpdateTimer);
-            }
+            OnUpdateStatus(int.Parse(status));
         } catch (Exception e) {
             Randomizer.log("OnBingoAck: " + e.Message);
         }
     }
+
+    // 404: no such bingo game, so updates stop until the seed reloads; other failures back off
+    private static void OnUpdateStatus(int status) {
+        if (status == 404) {
+            UpdateGone = true;
+        } else if (status >= 300 || status <= 0) {
+            UpdateTimer = updateBackoff;
+            updateBackoff = Math.Min(updateBackoff * 2, MaxUpdateBackoff);
+        } else {
+            updateBackoff = FirstUpdateBackoff;
+        }
+    }
+
+    // in ticks, like UpdateTimer
+    private const int FirstUpdateBackoff = 5;
+    private const int MaxUpdateBackoff = 30;
+    private static int updateBackoff = FirstUpdateBackoff;
 
     // the server err'd a bingo frame (predates them): back to http, resend promptly
     public static void OnBingoErr() {
@@ -1456,6 +1595,13 @@ public static class BingoController {
     }
 
     public static bool WsUnsupported;
+    public static bool GoalsWsUnsupported;
+    public static bool GoalsLoaded;
+    public static bool GoalsGone;
+    public static bool UpdateGone;
+    public static string GoalsUrl;
+    private static int updateHandle;
+    private static int goalsHandle;
 
     // these two live on the prefab, so every instance in the game shares them --
     // the scene case is what makes the goal local
@@ -1464,6 +1610,7 @@ public static class BingoController {
 
     public static MoonGuid StomplessRocks = new MoonGuid(-1118019250, 1080908127, 1929144468, -1515713832);
     public static MoonGuid Drain = new MoonGuid(1711549718, 1225123502, -2036372807, 248162391);
+    public static MoonGuid SpiderSac = new MoonGuid(-498376834, 1193417293, 1785650862, 816998872);  // the breakable that lets the sac fall
     public static MoonGuid CoreSkipRight = new MoonGuid(1165644159, 1142717490, -237578866, -2119320164);
     public static MoonGuid CoreSkipLeft = new MoonGuid(1709969197, 1275364087, -792362568, -1385507206);
     public static HashSet<string> Amphibians = new HashSet<string> { "jumperEnemy", "spitterEnemy", "fastSpitterEnemy" };
@@ -1481,8 +1628,14 @@ public static class BingoController {
         return Characters.Sein.Inventory.IncRandomizerItem(item, value);
     }
 
+    // kept on death: the server sends win: only once
+    public static bool Won {
+        get => Characters.Sein != null && get(WonId) > 0;
+        set => set(WonId, value ? 1 : 0);
+    }
+
+    public const int WonId = 4098;
     public static int UpdateTimer = 15;
-    public static WebClient UpdateClient;
     public static string UpdateUrl;
     public static bool Active;
     public static int CoreSkipTimeout;

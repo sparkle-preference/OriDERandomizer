@@ -13,28 +13,32 @@ public class RuntimeWorldMapIcon {
     }
 
     public bool IsVisible(AreaMapUI areaMap) {
+        if (RandomizerMapLayers.Hides(Icon, Position, Guid)) {
+            return false;
+        }
+
         // Sein.
-        if (Guid == new MoonGuid(-550456551, 1312223365, -251340902, -293109681)) {
-            var fronkeyFight = new MoonGuid(686741138, 1236491904, -1735338082, 532353037);
-            var loc = RandomizerLocationManager.LocationsByGuid[fronkeyFight];
-            return !(Characters.Sein.PlayerAbilities.SpiritFlame.HasAbility && loc.Collected);
+        if (Guid == SeinIcon) {
+            RandomizerLocationManager.Location loc;
+            RandomizerLocationManager.LocationsByGuid.TryGetValue(FronkeyFight, out loc);
+            return !(Characters.Sein.PlayerAbilities.SpiritFlame.HasAbility && loc != null && loc.Collected);
         }
 
         // show randomizer pickup icons only if they're reachable and not yet collected
         if (RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.InLogic && RandomizerLocationManager.LocationsByWorldMapGuid.ContainsKey(Guid)) {
             var loc = RandomizerLocationManager.LocationsByWorldMapGuid[Guid];
-            return loc.Reachable && !loc.Collected;
+            return loc.Reachable && !loc.Collected && !RandomizerMapWarp.Hidden(loc);
         }
 
         // There are two Ginso Trees, with apparently different Guids. This is the second one that doesn't get automatically turned off.
-        if (Guid == new MoonGuid(-1906535857, 1336220761, 1768076162, -2078859709)) {
+        if (Guid == SecondGinsoTree) {
             return false;
         }
 
         // This will remove already collected ones from the map.
         if (RandomizerLocationManager.LocationsByWorldMapGuid.ContainsKey(Guid)) {
             var loc = RandomizerLocationManager.LocationsByWorldMapGuid[Guid];
-            return !loc.Collected;
+            return !loc.Collected && !RandomizerMapWarp.Hidden(loc);
         }
 
         return true;
@@ -52,14 +56,13 @@ public class RuntimeWorldMapIcon {
 
         if (m_iconGameObject) {
             m_iconGameObject.SetActive(true);
-            return;
-        }
-
-        if (RandomizerIconType != RandomizerWorldMapIconType.None) {
+        } else if (RandomizerIconType != RandomizerWorldMapIconType.None) {
             InitRandomizerIcon();
         } else {
             InitStandardIcon(Icon);
         }
+
+        RandomizerMapLayers.StyleIcon(m_iconGameObject, Position, Icon, RandomizerIconType, Guid);
     }
 
     private void InitStandardIcon(WorldMapIconType iconType) {
@@ -170,16 +173,11 @@ public class RuntimeWorldMapIcon {
 
     private static Transform inventoryTemplate;
 
-    private static Texture2D PlantTexture {
-        get {
-            if (_plantTexture == null) {
-                _plantTexture = new Texture2D(0, 0);
-                _plantTexture.LoadImage(RandomizerResources.ReadResource("plant.png"));
-            }
+    private static readonly MoonGuid SeinIcon = new MoonGuid(-550456551, 1312223365, -251340902, -293109681);
 
-            return _plantTexture;
-        }
-    }
+    private static readonly MoonGuid FronkeyFight = new MoonGuid(686741138, 1236491904, -1735338082, 532353037);
 
-    private static Texture2D _plantTexture;
+    private static readonly MoonGuid SecondGinsoTree = new MoonGuid(-1906535857, 1336220761, 1768076162, -2078859709);
+
+    private static Texture2D PlantTexture => field ??= RandomizerResources.LoadTexture("plant.png");
 }

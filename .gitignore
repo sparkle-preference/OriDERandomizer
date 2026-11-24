@@ -36,3 +36,14 @@ seed_gen/*.csv
 
 # local build script (dnSpy path is machine-specific)
 /build.bat
+
+# dotnet format / msbuild scratch
+/obj/
+/bin/
+
+# perl -pi leaves these behind
+*.bak
+
+# client_props: Hypothesis examples and scratch seeds
+/client_props/.hypothesis/
+/client_props/work/

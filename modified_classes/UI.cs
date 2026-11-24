@@ -87,6 +87,8 @@ namespace Game {
 
             public static bool IsShowingHint => m_currentHint;
 
+            public static MessageBox CurrentHint => m_currentHint;
+
             public static void HideExistingHint(bool force) {
                 if (m_currentLayer == HintLayer.Randomizer && !force) {
                     return;

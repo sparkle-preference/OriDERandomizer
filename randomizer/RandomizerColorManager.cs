@@ -145,6 +145,16 @@ public static class RandomizerColorManager {
         }
     }
 
+    // UpdateColors skips a suspended Sein, so a frozen start would show plain white; a rotation restarts here
+    public static void ShowFirst() {
+        if (!(customColor || customRotation) || colors.Count == 0 || Randomizer.ColorShift || Characters.Sein == null) {
+            return;
+        }
+
+        colorIndex = 0;
+        Characters.Sein.PlatformBehaviour.Visuals.SpriteRenderer.material.color = colors[0];
+    }
+
     public static void UpdateHotColdTarget() {
         var minimum = float.MaxValue;
         HotColdTarget = new Vector3(5000f, 5000f);

@@ -3,14 +3,32 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using Input = Core.Input;
 
 public static class RandomizerRebinding {
+    // relative, so it lands in the game folder
+    public const string BindsFile = "RandomizerRebinding.txt";
+
+    // the Double Bash line still said Tap; RandomizerSettings imports it and clears this
+    public static bool TapWasBound;
+
+    // A failed write is logged, not thrown: the binds in memory apply either way.
     public static void WriteBindsToFile() {
-        var streamWriter = new StreamWriter("RandomizerRebinding.txt");
+        try {
+            using (var streamWriter = new StreamWriter(BindsFile)) {
+                WriteBinds(streamWriter);
+            }
+        } catch (Exception e) {
+            Randomizer.log("Could not write " + BindsFile + ": " + e.Message);
+        }
+    }
+
+    private static void WriteBinds(StreamWriter streamWriter) {
         streamWriter.WriteLine("Bind syntax: Key1+Key2, Key1+Key3+Key4, ... Syntax errors will load default binds.");
-        streamWriter.WriteLine("Functions are unbound if there is no binding specified.");
+        streamWriter.WriteLine("Alt, Shift, Control, Command and Windows mean either side; name a side to want only that one.");
+        streamWriter.WriteLine("Functions are unbound if the binding is empty or the word Unbound.");
         streamWriter.WriteLine("Supported binds are Unity KeyCodes (https://docs.unity3d.com/ScriptReference/KeyCode.html) and the following actions:");
         streamWriter.WriteLine("Jump, SpiritFlame, Bash, SoulFlame, ChargeJump, Glide, Dash, Grenade, Left, Right, Up, Down, LeftStick, RightStick, Start, Select");
         streamWriter.WriteLine("");
@@ -21,14 +39,18 @@ public static class RandomizerRebinding {
         streamWriter.WriteLine("");
         foreach (var bindparts in rebindMap) {
             if (bindparts.Value.HasBind()) {
-                streamWriter.WriteLine($"{bindparts.Key}: {bindparts.Value}{(bindparts.Key == "Double Bash" && Randomizer.BashTap ? ", Tap" : "")}");
+                streamWriter.WriteLine($"{bindparts.Key}: {bindparts.Value}");
             } else {
-                streamWriter.WriteLine($"{bindparts.Key}: {DefaultBinds[bindparts.Key]}");
+                streamWriter.WriteLine($"{bindparts.Key}: {Unbound}");
             }
         }
+    }
 
-        streamWriter.Flush();
-        streamWriter.Close();
+    // every action to its default, in memory; the caller writes the file
+    public static void UseDefaults() {
+        foreach (var pair in DefaultBinds) {
+            SetBinds(pair.Key, pair.Value);
+        }
     }
 
 
@@ -36,11 +58,12 @@ public static class RandomizerRebinding {
         var dirty = false;
 
         try {
-            if (!File.Exists("RandomizerRebinding.txt")) {
+            if (!File.Exists(BindsFile)) {
+                UseDefaults();
                 WriteBindsToFile();
             }
 
-            var lines = File.ReadAllLines("RandomizerRebinding.txt");
+            var lines = File.ReadAllLines(BindsFile);
             var unseenActions = new ArrayList(DefaultBinds.Keys);
             var writeList = new List<string>();
 
@@ -58,6 +81,9 @@ public static class RandomizerRebinding {
                 } else if (action == "Return to Start") {
                     action = "Warp";
                     dirty = true;
+                } else if (renamed.ContainsKey(action)) {
+                    action = renamed[action];
+                    dirty = true;
                 }
 
                 if (!DefaultBinds.ContainsKey(action)) {
@@ -66,13 +92,22 @@ public static class RandomizerRebinding {
 
                 var bindingString = parts[1].Trim();
                 AssignBind(action, bindingString, writeList);
+                if (rebindMap.ContainsKey(action) && rebindMap[action].Collapse()) {
+                    dirty = true;
+                }
+
+                if (Restore(action, writeList)) {
+                    dirty = true;
+                }
+
                 unseenActions.Remove(action);
             }
 
             // parse step 2: load defaults for missing binds
             foreach (string missingAction in unseenActions) {
                 AssignBind(missingAction, null, writeList);
-                if (missingAction == "Show Keysanity Progress") {
+                // files from before Show Keysanity Progress had Toggle Chaos on its Alt+K
+                if (missingAction == "Show Keysanity Progress" && ToggleChaos.ToString() == "Alt+K") {
                     AssignBind("Toggle Chaos", null, writeList);
                     dirty = true;
                 }
@@ -96,7 +131,7 @@ public static class RandomizerRebinding {
                     writeText += Environment.NewLine + writeAction + ": " + DefaultBinds[writeAction];
                 }
 
-                File.AppendAllText("RandomizerRebinding.txt", writeText);
+                File.AppendAllText(BindsFile, writeText);
             }
 
             if (dirty) {
@@ -104,8 +139,20 @@ public static class RandomizerRebinding {
                 WriteBindsToFile();
             }
         } catch (Exception e) {
-            Randomizer.LogError("Error parsing bindings: " + e.Message);
+            // queued: at boot this runs before the UI can draw a message
+            Randomizer.log("Error parsing bindings: " + e.Message);
+            Randomizer.Print("Error parsing bindings: " + e.Message, 15, false, false, true, false);
         }
+    }
+
+    // a Required action left empty gets its default back
+    private static bool Restore(string action, List<string> writeList) {
+        if (!Required.Contains(action) || !rebindMap.ContainsKey(action) || rebindMap[action].HasBind()) {
+            return false;
+        }
+
+        AssignBind(action, DefaultBinds[action], writeList);
+        return true;
     }
 
     public static void AssignBind(string action, string bindingString, List<string> writeList) {
@@ -127,7 +174,7 @@ public static class RandomizerRebinding {
         try {
             return ParseBinds(action, bindingString);
         } catch (Exception) {
-            Randomizer.printInfo("@" + action + ": failed to parse '" + bindingString + "'. Using default value: '" + defaultBinds + "'@", 240);
+            Randomizer.printInfo(RandomizerText.Error(action + ": failed to parse '" + bindingString + "'. Using default value: '" + defaultBinds + "'"), 240);
             bindingString = defaultBinds;
         }
 
@@ -136,7 +183,13 @@ public static class RandomizerRebinding {
 
     public static KeyCode StringToKeyBinding(string s) {
         if (s != "") {
-            return (KeyCode)Enum.Parse(typeof(KeyCode), s, true);
+            var key = (KeyCode)Enum.Parse(typeof(KeyCode), s, true);
+            // Enum.Parse takes any number, which no key answers to
+            if (!Enum.IsDefined(typeof(KeyCode), key)) {
+                throw new ArgumentException("no key " + s);
+            }
+
+            return key;
         }
 
         return KeyCode.None;
@@ -144,12 +197,15 @@ public static class RandomizerRebinding {
 
     public static BindSet ParseBinds(string action, string bindingString) {
         var binds = new List<SingleBind>();
+        if (String.Equals(bindingString.Trim(), Unbound, StringComparison.OrdinalIgnoreCase)) {
+            return new BindSet(binds);
+        }
 
         foreach (var bind in bindingString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)) {
             var singleBind = new List<SingleInput>();
             foreach (var input in bind.Trim().Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries)) {
                 if (action == "Double Bash" && input.Trim().ToLower() == "tap") {
-                    Randomizer.BashTap = true;
+                    TapWasBound = true;
                 } else {
                     singleBind.Add(new SingleInput(input.Trim()));
                 }
@@ -188,29 +244,83 @@ public static class RandomizerRebinding {
         { "Select", Input.Select }
     };
 
+    // Applies at once; the caller writes the file.
+    public static void SetBinds(string action, string bindingString) {
+        var set = BindNamed(action);
+        if (set == null) {
+            return;
+        }
+
+        set.Binds = ParseBinds(action, bindingString).Binds;
+        set.deprecated_wasPressed = true;
+    }
+
+    public static BindSet BindNamed(string name) {
+        BindSet bind;
+        return rebindMap.TryGetValue(name.Trim(), out bind) ? bind : null;
+    }
+
+    // "[[Map Warp]]" -> its first bind. Must run before the game's parser, which resolves the
+    // "[Grenade]" a game-action bind turns into; unknown names stay as written.
+    public static string ResolveBindNames(string text) {
+        if (String.IsNullOrEmpty(text) || text.IndexOf("[[") < 0) {
+            return text;
+        }
+
+        return bindPattern.Replace(text, match => {
+            var bind = BindNamed(match.Groups[1].Value);
+            return bind == null ? match.Value : bind.FirstBindName();
+        });
+    }
+
+    private static readonly Regex bindPattern = new Regex(@"\[\[([^\[\]]+)\]\]");
+
+    // deliberately empty, which the parse must not refill with the default
+    public const string Unbound = "Unbound";
+
+    // Never left empty: the menu keeps the last bind and the parse restores the default.
+    public static readonly List<string> Required = new List<string> {
+        "Warp", "Map Warp", "Reload Seed"
+    };
+
     public static Dictionary<string, string> DefaultBinds = new Dictionary<string, string> {
-        { "Replay Message", "LeftAlt+T, RightAlt+T" },
-        { "Warp", "LeftAlt+R, RightAlt+R" },
-        { "Reload Seed", "LeftAlt+L, RightAlt+L" },
+        { "Replay Message", "Alt+T" },
+        { "Warp", "Alt+R" },
+        { "Reload Seed", "Alt+L" },
         { "Toggle Chaos", "" },
-        { "Chaos Verbosity", "LeftAlt+V, RightAlt+V" },
-        { "Force Chaos Effect", "LeftAlt+F, RightAlt+F" },
-        { "Show Progress", "LeftAlt+P, RightAlt+P" },
-        { "Color Shift", "LeftAlt+C, RightAlt+C" },
+        { "Chaos Verbosity", "Alt+V" },
+        { "Force Chaos Effect", "Alt+F" },
+        { "Show Progress", "Alt+P" },
+        { "Color Shift", "Alt+C" },
         { "Double Bash", "Grenade" },
         { "Toggle Map Mode", "Grenade" },
+        { "Swap Misty Layouts", "M, _RB" },
+        { "Map Warp", "Bash" },
         { "Grenade Jump", "Grenade+Jump" },
-        { "Show Bonuses", "LeftAlt+B, RightAlt+B" },
-        { "Bonus Switch", "LeftAlt+Q, RightAlt+Q" },
-        { "Bonus Toggle", "LeftAlt+Mouse1, RightAlt+Mouse1" },
+        { "Show Bonuses", "Alt+B" },
+        { "Bonus Switch", "Alt+Q" },
+        { "Bonus Toggle", "Alt+Mouse1" },
         { "Reset Grenade Aim", "" },
         { "Suppress Autofire", "" },
-        { "List Trees", "LeftAlt+Alpha1, RightAlt+Alpha1" },
-        { "List Map Altars", "LeftAlt+Alpha2, RightAlt+Alpha2" },
-        { "List Teleporters", "LeftAlt+Alpha3, RightAlt+Alpha3" },
-        { "List Relics", "LeftAlt+Alpha4, RightAlt+Alpha4" },
-        { "Show Stats", "LeftAlt+Alpha5, RightAlt+Alpha5" },
-        { "Show Keysanity Progress", "LeftAlt+K, RightAlt+K" },
+        { "List Trees", "Alt+Alpha1" },
+        { "List Map Altars", "Alt+Alpha2" },
+        { "List Teleporters", "Alt+Alpha3" },
+        { "List Relics", "Alt+Alpha4" },
+        { "Show Stats", "Alt+Alpha5" },
+        { "Show Keysanity Progress", "Alt+K" },
+        { "Grant Test Pickup", "" },
+        { "Practice Menu", "" },
+        { "Create Practice Segment", "Alt+M" },
+        { "Create Practice Segment With Seed", "" },
+        { "Edit Seed Boxes", "" },
+        { "Open Practice Editor Page", "" },
+        { "Retry Practice Segment", "Alt+L" },
+        { "Spawn Echo", "" },
+        { "Clear All Echoes", "" },
+        { "Menu Skip Backwards", "PageUp" },
+        { "Menu Skip Forwards", "PageDown" },
+        { "Menu Home", "Shift+PageUp" },
+        { "Menu End", "Shift+PageDown" },
         { "Bonus 1", "" },
         { "Bonus 2", "" },
         { "Bonus 3", "" },
@@ -233,6 +343,8 @@ public static class RandomizerRebinding {
     public static BindSet DoubleBash = new BindSet(new List<SingleBind>());
     public static BindSet FreeGrenadeJump = new BindSet(new List<SingleBind>());
     public static BindSet ToggleMapMode = new BindSet(new List<SingleBind>());
+    public static BindSet CycleMapLayer = new BindSet(new List<SingleBind>());
+    public static BindSet MapWarp = new BindSet(new List<SingleBind>());
     public static BindSet ShowBonuses = new BindSet(new List<SingleBind>());
     public static BindSet BonusSwitch = new BindSet(new List<SingleBind>());
     public static BindSet BonusToggle = new BindSet(new List<SingleBind>());
@@ -244,6 +356,20 @@ public static class RandomizerRebinding {
     public static BindSet ListTeleporters = new BindSet(new List<SingleBind>());
     public static BindSet ShowStats = new BindSet(new List<SingleBind>());
     public static BindSet ShowKeysanityProgress = new BindSet(new List<SingleBind>());
+    public static BindSet GrantTestPickup = new BindSet(new List<SingleBind>());
+
+    public static BindSet OpenPracticeMenu = new BindSet(new List<SingleBind>());
+    public static BindSet CreatePracticeSegment = new BindSet(new List<SingleBind>());
+    public static BindSet CreatePracticeSegmentWithSeed = new BindSet(new List<SingleBind>());
+    public static BindSet EditSeedBoxes = new BindSet(new List<SingleBind>());
+    public static BindSet OpenPracticeEditorPage = new BindSet(new List<SingleBind>());
+    public static BindSet RetryPracticeSegment = new BindSet(new List<SingleBind>());
+    public static BindSet SpawnEcho = new BindSet(new List<SingleBind>());
+    public static BindSet ClearAllEchoes = new BindSet(new List<SingleBind>());
+    public static BindSet MenuSkipBackwards = new BindSet(new List<SingleBind>());
+    public static BindSet MenuSkipForwards = new BindSet(new List<SingleBind>());
+    public static BindSet MenuHome = new BindSet(new List<SingleBind>());
+    public static BindSet MenuEnd = new BindSet(new List<SingleBind>());
     public static BindSet Bonus1 = new BindSet(new List<SingleBind>());
     public static BindSet Bonus2 = new BindSet(new List<SingleBind>());
     public static BindSet Bonus3 = new BindSet(new List<SingleBind>());
@@ -254,6 +380,20 @@ public static class RandomizerRebinding {
     public static BindSet Bonus8 = new BindSet(new List<SingleBind>());
     public static BindSet Bonus9 = new BindSet(new List<SingleBind>());
 
+    // the first bind as display text (key caps where there are any), for messages
+    public static string NameOf(string action) {
+        BindSet set;
+        return rebindMap.TryGetValue(action, out set) ? set.FirstBindName() : "<NO BIND>";
+    }
+
+    // old action names; a match marks the file dirty so it is rewritten under the new one
+    private static Dictionary<string, string> renamed = new Dictionary<string, string> {
+        { "Save Select Back 3", "Menu Skip Backwards" },
+        { "Save Select Forward 3", "Menu Skip Forwards" },
+        { "Save Select Back 10", "Menu Home" },
+        { "Save Select Forward 10", "Menu End" },
+    };
+
     private static Dictionary<string, BindSet> rebindMap = new Dictionary<string, BindSet> {
         { "Replay Message", ReplayMessage },
         { "Warp", ReturnToStart },
@@ -263,6 +403,8 @@ public static class RandomizerRebinding {
         { "Double Bash", DoubleBash },
         { "Grenade Jump", FreeGrenadeJump },
         { "Toggle Map Mode", ToggleMapMode },
+        { "Swap Misty Layouts", CycleMapLayer },
+        { "Map Warp", MapWarp },
         { "Show Bonuses", ShowBonuses },
         { "Bonus Switch", BonusSwitch },
         { "Bonus Toggle", BonusToggle },
@@ -274,6 +416,19 @@ public static class RandomizerRebinding {
         { "List Teleporters", ListTeleporters },
         { "Show Stats", ShowStats },
         { "Show Keysanity Progress", ShowKeysanityProgress },
+        { "Grant Test Pickup", GrantTestPickup },
+        { "Practice Menu", OpenPracticeMenu },
+        { "Create Practice Segment", CreatePracticeSegment },
+        { "Create Practice Segment With Seed", CreatePracticeSegmentWithSeed },
+        { "Edit Seed Boxes", EditSeedBoxes },
+        { "Open Practice Editor Page", OpenPracticeEditorPage },
+        { "Retry Practice Segment", RetryPracticeSegment },
+        { "Spawn Echo", SpawnEcho },
+        { "Clear All Echoes", ClearAllEchoes },
+        { "Menu Skip Backwards", MenuSkipBackwards },
+        { "Menu Skip Forwards", MenuSkipForwards },
+        { "Menu Home", MenuHome },
+        { "Menu End", MenuEnd },
         { "Bonus 1", Bonus1 },
         { "Bonus 2", Bonus2 },
         { "Bonus 3", Bonus3 },
@@ -299,13 +454,54 @@ public static class RandomizerRebinding {
             if (input.StartsWith("_")) {
                 Type = ActionType.ControllerButton;
                 Button = (PlayerInputRebinding.ControllerButton)Enum.Parse(typeof(PlayerInputRebinding.ControllerButton), input.Substring(1), true);
+                // Enum.Parse takes any number, which no pad button answers to
+                if (!Enum.IsDefined(typeof(PlayerInputRebinding.ControllerButton), Button)) {
+                    throw new ArgumentException("no controller button " + input);
+                }
             } else if (CoreInputMap.ContainsKey(input)) {
                 Type = ActionType.CoreInput;
                 CoreInput = CoreInputMap[input];
+            } else if (Unside(input) != null) {
+                Type = ActionType.EitherKey;
+                either = Unside(input);
+                Key = StringToKeyBinding("Left" + either);
+                KeyAlt = StringToKeyBinding("Right" + either);
             } else {
                 Type = ActionType.KeyCode;
                 Key = StringToKeyBinding(input);
             }
+        }
+
+        // written without a side, these match either; Unity's names are "Left"/"Right" + these
+        private static readonly string[] Unsided = {
+            "Alt", "Shift", "Control", "Command", "Windows"
+        };
+
+        // the canonical spelling of an unsided modifier, or null for anything else
+        public static string Unside(string input) {
+            if (String.Equals(input, "Ctrl", StringComparison.OrdinalIgnoreCase)) {
+                return "Control";
+            }
+
+            foreach (var name in Unsided) {
+                if (String.Equals(input, name, StringComparison.OrdinalIgnoreCase)) {
+                    return name;
+                }
+            }
+
+            return null;
+        }
+
+        // the unsided name of a sided modifier key, or null for anything else
+        public static string SideOf(KeyCode key) {
+            foreach (var name in Unsided) {
+                if (key == StringToKeyBinding("Left" + name) ||
+                        key == StringToKeyBinding("Right" + name)) {
+                    return name;
+                }
+            }
+
+            return null;
         }
 
         public void FixedUpdate() {
@@ -314,10 +510,18 @@ public static class RandomizerRebinding {
                     Update(CoreInput.Pressed);
                     break;
                 case ActionType.ControllerButton:
-                    Update(PlayerInput.Instance.ControllerButtonToButtonInput(Button).GetButton());
+                    // built on first use: PlayerInput may not exist yet when the file is parsed
+                    if (pad == null && PlayerInput.Instance != null) {
+                        pad = PlayerInput.Instance.ControllerButtonToButtonInput(Button);
+                    }
+
+                    Update(pad != null && pad.GetButton());
                     break;
                 case ActionType.KeyCode:
                     Update(MoonInput.GetKey(Key));
+                    break;
+                case ActionType.EitherKey:
+                    Update(MoonInput.GetKey(Key) || MoonInput.GetKey(KeyAlt));
                     break;
             }
         }
@@ -327,12 +531,25 @@ public static class RandomizerRebinding {
                 case ActionType.CoreInput:
                     return $"[{(coreInputNameRepl.ContainsKey(raw) ? coreInputNameRepl[raw] : raw)}]";
                 case ActionType.ControllerButton:
-                    return "_" + Button;
+                    return PadIcon() ?? "_" + Button;
                 case ActionType.KeyCode:
-                    return Key.ToString();
+                    return RandomizerKeyIcons.Caption(Key);
+                case ActionType.EitherKey:
+                    // the left one of the pair, because a cap for a modifier says no side
+                    return RandomizerKeyIcons.Caption(Key);
                 default:
                     return "";
             }
+        }
+
+        // the game's own icon for the pad button, null where it drew none
+        private string PadIcon() {
+            if (pad == null && PlayerInput.Instance != null) {
+                pad = PlayerInput.Instance.ControllerButtonToButtonInput(Button);
+            }
+
+            var plain = pad as SmartInput.ControllerButtonInput;
+            return plain == null ? null : ButtonIconUtility.IconFor(plain.Button);
         }
 
         public string RawStr() {
@@ -343,6 +560,8 @@ public static class RandomizerRebinding {
                     return $"_{Button}";
                 case ActionType.KeyCode:
                     return $"{Key}";
+                case ActionType.EitherKey:
+                    return either;
                 default:
                     return "";
             }
@@ -351,18 +570,25 @@ public static class RandomizerRebinding {
 
         public KeyCode Key;
 
+        public KeyCode KeyAlt;
+
+        private string either;
+
         private string raw;
 
         public Input.InputButtonProcessor CoreInput;
 
         public PlayerInputRebinding.ControllerButton Button;
 
+        private SmartInput.IButtonInput pad;
+
         public ActionType Type;
 
         public enum ActionType {
             CoreInput,
             ControllerButton,
-            KeyCode
+            KeyCode,
+            EitherKey
         }
     }
 
@@ -401,14 +627,87 @@ public static class RandomizerRebinding {
         public override string ToString() => String.Join(", ", Binds.Select(binds => binds.RawStr()).ToArray());
 
         public string FirstBindName() {
-            if (HasBind()) {
-                return Binds[0].ToString();
-            }
-
-            return "<NO BIND>";
+            return HasBind() ? Binds[0].ToString() : "<NO BIND>";
         }
 
+        // the first bind a player on a pad, or off one, can press; the first of all when none fits
+        public string BindNameFor(bool onPad) {
+            foreach (var bind in Binds) {
+                if (bind.Inputs.All(input => input.Type == SingleInput.ActionType.CoreInput || (input.Type == SingleInput.ActionType.ControllerButton) == onPad)) {
+                    return bind.ToString();
+                }
+            }
+
+            return FirstBindName();
+        }
+
+        // Binds differing only in one modifier's side merge into the unsided form; a lone sided
+        // bind stays sided. True if anything merged, so the file is rewritten.
+        public bool Collapse() {
+            var changed = false;
+            while (CollapseOnce()) {
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        private bool CollapseOnce() {
+            for (var i = 0; i < Binds.Count; i++) {
+                for (var j = i + 1; j < Binds.Count; j++) {
+                    var at = Mirrored(Binds[i], Binds[j]);
+                    if (at < 0) {
+                        continue;
+                    }
+
+                    Binds[i].Inputs[at] = new SingleInput(SingleInput.SideOf(Binds[i].Inputs[at].Key));
+                    Binds.RemoveAt(j);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // The one place two otherwise identical binds hold the two sides of one modifier, or -1.
+        private static int Mirrored(SingleBind a, SingleBind b) {
+            if (a.Inputs.Count != b.Inputs.Count) {
+                return -1;
+            }
+
+            var found = -1;
+            for (var i = 0; i < a.Inputs.Count; i++) {
+                if (a.Inputs[i].RawStr() == b.Inputs[i].RawStr()) {
+                    continue;
+                }
+
+                var side = SingleInput.SideOf(a.Inputs[i].Key);
+                if (found >= 0 || side == null ||
+                        a.Inputs[i].Type != SingleInput.ActionType.KeyCode ||
+                        b.Inputs[i].Type != SingleInput.ActionType.KeyCode ||
+                        side != SingleInput.SideOf(b.Inputs[i].Key)) {
+                    return -1;
+                }
+
+                found = i;
+            }
+
+            return found;
+        }
+
+
         public bool HasBind() => Binds.Count > 0;
+
+        // level; IsPressed() below is the consuming edge
+        public bool Held() {
+            foreach (var bind in Binds) {
+                if (bind.Pressed) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         public bool IsPressed() {
             foreach (var bind in Binds) {

@@ -4,7 +4,6 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 public class SaveSceneManager : MonoBehaviour {
-    // Note: this type is marked as 'beforefieldinit'.
     static SaveSceneManager() {
     }
 
@@ -228,6 +227,26 @@ public class SaveSceneManager : MonoBehaviour {
         }
     }
 
+    public void LoadWithMurderousIntent(SaveScene saveScene) {
+        // This is just the vanilla Load function, i.e. one without the bootstrap callback,
+        // to avoid loops. But also murders things! (Don't worry, they respawn in the correct place.)
+        for (var i = 0; i < saveScene.SaveObjects.Count; i++) {
+            var saveObject = saveScene.SaveObjects[i];
+            var serializable = IdToSaveSerialize(saveObject.Id);
+            try {
+                if (serializable as Component) {
+                    if (serializable is RespawningPlaceholder) {
+                        // Murder.
+                        (serializable as RespawningPlaceholder).DestroyCurrentInstance();
+                    }
+                    saveObject.Data.ReadMode();
+                    serializable.Serialize(saveObject.Data);
+                }
+            } catch (Exception ex) {
+            }
+        }
+    }
+
     public void AddChildSaveSerializables() {
         SaveData.Clear();
         try {
@@ -258,6 +277,7 @@ public class SaveSceneManager : MonoBehaviour {
 
     private Dictionary<MoonGuid, Archive> m_saveCache = new Dictionary<MoonGuid, Archive>();
 
+    // NonSerialized: built scenes have no type tree, so a new serialized field misreads the asset
     [NonSerialized] public Action<SceneRoot> bootstrapHook;
 
     [NonSerialized] public SceneRoot sceneRoot;

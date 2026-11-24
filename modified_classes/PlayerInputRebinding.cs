@@ -56,7 +56,7 @@ public class PlayerInputRebinding {
         }
     }
 
-    private static string KeyRebindingFile => Path.Combine(OutputFolder.PlayerDataFolderPath, keyRebindingFileName);
+    public static string KeyRebindingFile => Path.Combine(OutputFolder.PlayerDataFolderPath, keyRebindingFileName);
 
     public static void GetKeyRebindSettingsFromFile() {
         try {
@@ -109,6 +109,7 @@ public class PlayerInputRebinding {
                 }
             }
         } catch (Exception) {
+            keyFileUnread = true;
             SetDefaultKeyBindingSettings();
         }
     }
@@ -125,7 +126,12 @@ public class PlayerInputRebinding {
     }
 
     public static void WriteKeyRebindSettings() {
-        using (var streamWriter = new StreamWriter(new FileStream(KeyRebindingFile, FileMode.OpenOrCreate))) {
+        if (keyFileUnread) {
+            keyFileUnread = false;
+            CustomSettingsScreen.Backup(KeyRebindingFile);
+        }
+
+        using (var streamWriter = new StreamWriter(new FileStream(KeyRebindingFile, FileMode.Create))) {
             var keyRebindings = m_keyRebindings;
             streamWriter.WriteLine("Keyboard Rebindings");
             streamWriter.WriteLine("--------");
@@ -431,7 +437,7 @@ public class PlayerInputRebinding {
     }
 
     public static void WriteControllerButtonRemappings() {
-        using (var streamWriter = new StreamWriter(new FileStream(ControllerRemappingFile, FileMode.OpenOrCreate))) {
+        using (var streamWriter = new StreamWriter(new FileStream(ControllerRemappingFile, FileMode.Create))) {
             streamWriter.WriteLine("Controller Button Remapping - remaps controller buttons to different DirectInput button IDs");
             streamWriter.WriteLine("Only for DirectInput controllers");
             streamWriter.WriteLine("--------");
@@ -578,6 +584,7 @@ public class PlayerInputRebinding {
                 };
             }
         } catch (Exception) {
+            padFileUnread = true;
             SetDefaultControllerBindingSettings();
         }
     }
@@ -594,7 +601,12 @@ public class PlayerInputRebinding {
     }
 
     public static void WriteControllerRebindSettings() {
-        using (var streamWriter = new StreamWriter(new FileStream(ControllerRebindingFile, FileMode.OpenOrCreate))) {
+        if (padFileUnread) {
+            padFileUnread = false;
+            CustomSettingsScreen.Backup(ControllerRebindingFile);
+        }
+
+        using (var streamWriter = new StreamWriter(new FileStream(ControllerRebindingFile, FileMode.Create))) {
             var controllerRebindings = m_controllerRebindings;
             streamWriter.WriteLine("Controller Rebindings");
             streamWriter.WriteLine("--------");
@@ -804,6 +816,11 @@ public class PlayerInputRebinding {
     public static string controllerInputRebindingsFileName = "ControllerRebindings.txt";
 
     public static ControllerBindingSettings m_controllerRebindings;
+
+    // the file failed to parse, so it is the player's edit: copied aside before the first rewrite
+    private static bool keyFileUnread;
+
+    private static bool padFileUnread;
 
     public class KeyBindingSettings {
         public KeyBindingSettings() {

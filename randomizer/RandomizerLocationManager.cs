@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Game;
+using JetBrains.Annotations;
 using Protogen;
 using UnityEngine;
 
@@ -42,18 +40,30 @@ public class RandomizerLocationManager {
     }
 
     public static void InitializeLogic() {
+        HasLogic = false;
+        NoLogicReason = "Logic hasn't been calculated yet";
+        ShowNoLogicHint = false;
+        DoorsInLogicMask = 0;
+        DoorsInSpendLogicMask = 0;
+        warnedDoors.Clear();
+
         if (!HaveDownloadedAreas) {
             return; //Areas thread hasn't returned yet, skip. It'll run this on its own on completion.
         }
 
         var paths = InitializePaths();
 
-        if (!File.Exists("areas.ori")) {
+        if (paths == null || !File.Exists("areas.ori")) {
             Areas = null;
             s_logicLastUpdated = DateTime.MinValue;
             s_lastLogicPaths = paths;
-            Randomizer.log("No areas.ori found, will not update logic.");
-            RandomizerSettings.CurrentFilter = RandomizerSettings.MapFilterMode.Uncollected;
+            Randomizer.log(paths == null ? "No logic specified for seed, will not update logic." : "No areas.ori found, will not update logic.");
+            NoLogicReason = paths == null ? "the seed doesn't specify logic" : "no logic file (areas.ori) was found";
+            if (RandomizerSettings.CurrentFilter == RandomizerSettings.MapFilterMode.InLogic) {
+                RandomizerSettings.CurrentFilter = RandomizerSettings.MapFilterMode.Uncollected;
+                ShowNoLogicHint = true;
+            }
+
             return;
         }
 
@@ -76,88 +86,115 @@ public class RandomizerLocationManager {
                 location.Reachable = false;
             }
         }
+
+        if (Characters.Sein) {
+            UpdateReachable();
+        }
     }
 
+    [CanBeNull]
     private static HashSet<string> InitializePaths() {
-        var paths = new HashSet<string>();
+        var paths = (HashSet<string>)null;
 
-        var flagLine = Randomizer.SeedMeta.Split(new[] { '|' }, 1)[0];
-        var firstComma = flagLine.IndexOf(',');
-        if (firstComma < 0) {
-            return paths;
-        }
+        var flags = Randomizer.SeedMeta.Split('|')[0].Split(',');
 
-        var preset = flagLine.Substring(0, firstComma);
-
-        if (preset.StartsWith("Sync")) {
-            var secondComma = flagLine.IndexOf(',', firstComma + 1);
-            if (secondComma < 0) {
-                return paths;
-            }
-
-            preset = flagLine.Substring(firstComma + 1, secondComma - firstComma - 1);
-        }
-
-        switch (preset) {
-            case "Casual":
-                paths.Add("casual-core");
-                paths.Add("casual-dboost");
-                break;
-            case "Standard":
-                paths.Add("casual-core");
-                paths.Add("casual-dboost");
-                paths.Add("standard-core");
-                paths.Add("standard-dboost");
-                paths.Add("standard-lure");
-                paths.Add("standard-abilities");
-                break;
-            case "Expert":
-                paths.Add("casual-core");
-                paths.Add("casual-dboost");
-                paths.Add("standard-core");
-                paths.Add("standard-dboost");
-                paths.Add("standard-lure");
-                paths.Add("standard-abilities");
-                paths.Add("expert-core");
-                paths.Add("expert-dboost");
-                paths.Add("expert-lure");
-                paths.Add("expert-abilities");
-                paths.Add("dbash");
-                break;
-            case "Master":
-                paths.Add("casual-core");
-                paths.Add("casual-dboost");
-                paths.Add("standard-core");
-                paths.Add("standard-dboost");
-                paths.Add("standard-lure");
-                paths.Add("standard-abilities");
-                paths.Add("expert-core");
-                paths.Add("expert-dboost");
-                paths.Add("expert-lure");
-                paths.Add("expert-abilities");
-                paths.Add("dbash");
-                paths.Add("master-core");
-                paths.Add("master-dboost");
-                paths.Add("master-lure");
-                paths.Add("master-abilities");
-                paths.Add("gjump");
-                break;
-            default:
-                if (preset.StartsWith("Custom")) {
-                    if (int.TryParse(preset.Remove(0, "Custom".Length), out var pathMask)) {
-                        var newPaths = OriParse.PathMaskToPathSet(pathMask);
-                        if (newPaths != null) {
-                            //Randomizer.log("Got custom pathset: " + OriParse.PathMaskToString(pathMask));
-                            paths = newPaths;
-                        }
-                    }
+        foreach (var flag in flags) {
+            if (PathsForFlag(flag) is { } newPaths) {
+                if (paths != null) {
+                    Randomizer.LogError("More than one logic flag specified, ignoring all but the first");
+                    break;
                 }
 
-                paths.Add("casual-core");
-                break;
+                paths = newPaths;
+            }
+        }
+
+        // the generator walks an EnemyRando seed without lure paths: their enemies may be gone
+        if (paths != null && Array.Exists(flags, f => f.ToLower() == "enemyrando")) {
+            paths.RemoveWhere(p => p.EndsWith("-lure"));
         }
 
         return paths;
+    }
+
+    [CanBeNull]
+    private static HashSet<string> PathsForFlag(string flag) {
+        flag = flag.ToLower();
+        switch (flag) {
+            case "casual":
+                return [
+                    "casual-core",
+                    "casual-dboost",
+                ];
+            case "standard":
+                return [
+                    "casual-core",
+                    "casual-dboost",
+                    "standard-core",
+                    "standard-dboost",
+                    "standard-lure",
+                    "standard-abilities",
+                ];
+            case "expert":
+                return [
+                    "casual-core",
+                    "casual-dboost",
+                    "standard-core",
+                    "standard-dboost",
+                    "standard-lure",
+                    "standard-abilities",
+                    "expert-core",
+                    "expert-dboost",
+                    "expert-lure",
+                    "expert-abilities",
+                    "dbash",
+                ];
+            case "master":
+                return [
+                    "casual-core",
+                    "casual-dboost",
+                    "standard-core",
+                    "standard-dboost",
+                    "standard-lure",
+                    "standard-abilities",
+                    "expert-core",
+                    "expert-dboost",
+                    "expert-lure",
+                    "expert-abilities",
+                    "dbash",
+                    "master-core",
+                    "master-dboost",
+                    "master-lure",
+                    "master-abilities",
+                    "gjump",
+                ];
+            case "glitched":
+                return [
+                    "casual-core",
+                    "casual-dboost",
+                    "standard-core",
+                    "standard-dboost",
+                    "standard-lure",
+                    "standard-abilities",
+                    "expert-core",
+                    "expert-dboost",
+                    "expert-lure",
+                    "expert-abilities",
+                    "dbash",
+                    "glitched",
+                    "timed-level",
+                ];
+            default:
+                if (flag.StartsWith("custom")) {
+                    if (int.TryParse(flag.Remove(0, "custom".Length), out var pathMask)) {
+                        return OriParse.PathMaskToPathSet(pathMask);
+                    }
+                }
+
+                break;
+        }
+
+        return null;
     }
 
     public static RandomizerPickupAction AddPickupAction(GameObject parentObj, string pickupName, string actionName = null) {
@@ -183,6 +220,14 @@ public class RandomizerLocationManager {
         var pickupLocation = LocationsByKey[key];
         pickupLocation.Pickup = new RandomizerAction(action, value);
         pickupLocation.Repeatable = repeatable;
+    }
+
+    // a seed names only the locations it fills; the rest must not keep the last seed's items
+    public static void ClearPickups() {
+        foreach (var location in LocationsByKey.Values) {
+            location.Pickup = null;
+            location.Repeatable = false;
+        }
     }
 
     public static bool IsPickupCollected(MoonGuid pickupGuid) {
@@ -240,31 +285,17 @@ public class RandomizerLocationManager {
         LogicThread.Start();
     }
 
-    // logic init waits on this download, and once the plain-http host is
-    // retired the endpoint may black-hole instead of refusing — a capped
-    // timeout keeps the worst case at a 5s one-time delay before falling
-    // back to the shipped areas.ori
-    private class QuickWebClient : WebClient {
-        protected override WebRequest GetWebRequest(Uri address) {
-            var req = base.GetWebRequest(address);
-            req.Timeout = 5000;
-            return req;
-        }
-    }
-
+    // runs on DLThread: Randomizer.log only, since LogError draws on screen
     public static void DownloadAreas() {
         if (RandomizerSettings.DevSettings.AreasOri) {
+            // areas.ori is only ever swapped for a whole download, never written into
+            const string temp = "areas.ori.tmp";
             try {
-                if (File.Exists("areas.ori")) {
-                    File.Move("areas.ori", "areas.ori.old"); // backup
-                }
-
-                // The logic thread can block, so the sidecar's download is free
-                // here. The session's first TLS request can collide with the
-                // websocket's handshake and fail; a second attempt goes through.
+                // The logic thread can block, so the sidecar's download is free here.
+                // A first TLS request can lose a race with the ws handshake: two tries.
                 var fetched = false;
                 for (var attempt = 0; attempt < 2 && NativeWebSocket.Loaded && NativeWebSocket.HttpAvailable; attempt++) {
-                    var status = NativeWebSocket.HttpDownload(SecureAreasURL(), "areas.ori");
+                    var status = NativeWebSocket.HttpDownload(AreasURL(), temp);
                     if (status == 200) {
                         fetched = true;
                         break;
@@ -276,25 +307,23 @@ public class RandomizerLocationManager {
                 }
 
                 if (!fetched) {
-                    var webClient = new QuickWebClient();
-                    ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
-                    webClient.DownloadFile(AreasURL(), "areas.ori");
-                }
+                    Randomizer.log("areas.ori: no transport could fetch it; keeping the existing file");
+                } else {
+                    if (File.Exists("areas.ori")) {
+                        File.Replace(temp, "areas.ori", null);
+                    } else {
+                        File.Move(temp, "areas.ori");
+                    }
 
-                Randomizer.log($"areas.ori: fetched from {(fetched ? SecureAreasURL() : AreasURL())}");
-
-                if (File.Exists("areas.ori.old")) {
-                    File.Delete("areas.ori.old"); // clean backup
+                    Randomizer.log($"areas.ori: fetched from {AreasURL()}");
                 }
             } catch (Exception e) {
-                Randomizer.LogError($"Failed to download areas.ori: ${e}");
-                if (File.Exists("areas.ori")) {
-                    File.Delete("areas.ori"); // remove broken / failed
-                }
+                Randomizer.log($"Failed to download areas.ori: {e}");
+            }
 
-                if (File.Exists("areas.ori.old")) {
-                    File.Move("areas.ori.old", "areas.ori"); // restore backup
-                }
+            try {
+                File.Delete(temp);
+            } catch (Exception) {
             }
         }
 
@@ -349,6 +378,34 @@ public class RandomizerLocationManager {
             }
         }
 
+        // the spend model's inputs, kept so tiered seeds can tell which warnings only tiers raise
+        Dictionary<string, HashSet<string>> spendPaths = null;
+        var heldKeystones = currentInventory.Keystones;
+        if (KeyTiers != null) {
+            spendPaths = new Dictionary<string, HashSet<string>>();
+            foreach (var kvp in primedPaths) {
+                spendPaths[kvp.Key] = new HashSet<string>(kvp.Value);
+            }
+
+            // tiered seeds: a door is passable once lifetime keystones clear its tier
+            // and never by spending, so the engine's keystone routes are switched off
+            var ksLifetime = Randomizer.Inventory.GetRandomizerItem(70);
+            foreach (var ksDoor in KeystoneDoors.Values) {
+                var pos = DoorWirePos[ksDoor.Source];
+                if (pos >= KeyTiers.Length || KeyTiers[pos] <= 0 || ksLifetime < KeyTiers[pos]) {
+                    continue;
+                }
+
+                if (!primedPaths.ContainsKey(ksDoor.Source)) {
+                    primedPaths[ksDoor.Source] = new HashSet<string>();
+                }
+
+                primedPaths[ksDoor.Source].Add(ksDoor.Destination);
+            }
+
+            currentInventory.Keystones = 0;
+        }
+
         var reachable = OriReachable.Reachable(Areas, currentInventory, spawnNodeName, primedPaths);
 
         if (reachable.Contains("FronkeyFight")) {
@@ -357,42 +414,19 @@ public class RandomizerLocationManager {
             reachable.Add("Sein");
         }
 
-        if (reachable.Contains("ForlornEscape")) {
-            reachable.Add("ForlornEscapePlant");
-        }
-
         foreach (var item in LocationsByName) {
             item.Value.Reachable = reachable.Contains(item.Key);
         }
 
-        // key-lock warning mask. KeyTiers seeds charge per-door tiers against
-        // lifetime keystones (item 70); other seeds ask the engine: a door is
-        // in logic when its opened side is reachable, which already prices
-        // every still-closed door on the cheapest route there (actually-opened
-        // doors are primed free above)
-        var doorMask = 0;
-        var ksCollected = Randomizer.Inventory.GetRandomizerItem(70);
-        foreach (var ksDoor in KeystoneDoors.Values) {
-            if ((keystoneDoorsOpened & (1 << ksDoor.Index)) != 0 || !reachable.Contains(ksDoor.Source)) {
-                continue;
-            }
-
-            var pos = DoorWirePos[ksDoor.Source];
-            if (Randomizer.OpenWorld && pos == 0) {
-                continue; // the Glades door is pre-opened
-            }
-
-            if (KeyTiers != null) {
-                if (pos < KeyTiers.Length && KeyTiers[pos] > 0 && ksCollected >= KeyTiers[pos]) {
-                    doorMask |= 1 << ksDoor.Index;
-                }
-            } else if (reachable.Contains(ksDoor.Destination)) {
-                doorMask |= 1 << ksDoor.Index;
-            }
+        var spendMask = 0;
+        if (KeyTiers != null) {
+            currentInventory.Keystones = heldKeystones;
+            spendMask = DoorMask(OriReachable.Reachable(Areas, currentInventory, spawnNodeName, spendPaths), false);
         }
 
-        DoorsInLogicMask = doorMask;
-        DoorLogicValid = true;
+        DoorsInLogicMask = DoorMask(reachable, KeyTiers != null);
+        DoorsInSpendLogicMask = KeyTiers != null ? spendMask : DoorsInLogicMask;
+        HasLogic = true;
         /* can toggle this on for debugging but logging in a thread is spoopy and the conditionals are more work than overwriting bools
                 {
                     if (reachable.Contains(item.Key))
@@ -419,16 +453,19 @@ public class RandomizerLocationManager {
 
     public static AreaGraph Areas;
 
+    public static bool HasLogic;
+
+    public static string NoLogicReason;
+
+    public static bool ShowNoLogicHint;
+
     public static Thread LogicThread;
 
     public static Thread DLThread;
 
     public static bool HaveDownloadedAreas;
 
-    public static string AreasURL() => $"http://{RandomizerSettings.DevSettings.WebEndpoint.Value}/netcode/areas";
-
-    // WsEndpoint is the canonical host; WebEndpoint is the plain-http one
-    public static string SecureAreasURL() => $"https://{RandomizerSettings.DevSettings.WsEndpoint.Value}/netcode/areas";
+    public static string AreasURL() => $"{RandomizerSyncManager.WebBase()}/netcode/areas";
 
     private static DateTime s_logicLastUpdated = DateTime.MinValue;
 
@@ -450,14 +487,42 @@ public class RandomizerLocationManager {
 
     public static Dictionary<MoonGuid, KeystoneDoor> KeystoneDoors = new Dictionary<MoonGuid, KeystoneDoor>();
 
-    // --- key-lock warnings (non-keysanity): is each unopened door in logic? ---
-    // recomputed with reachability; RAM-only, so nothing can warn before the
-    // first sweep of a loaded save
+    // key-lock warnings (non-keysanity): RAM-only, recomputed with reachability, so nothing
+    // warns before a loaded save's first sweep
     public static int DoorsInLogicMask;
 
-    public static bool DoorLogicValid;
+    // the non-tiered verdict on tiered seeds; equals DoorsInLogicMask elsewhere
+    public static int DoorsInSpendLogicMask;
 
-    // wire order, from the seed's KeyTiers flag (AP exported-keystone seeds)
+    // key-lock warning mask: tiered charges lifetime keystones (item 70) against tiers;
+    // otherwise a door is in logic when its far side is reachable
+    private static int DoorMask(HashSet<string> reachable, bool tiered) {
+        var doorMask = 0;
+        var opened = Randomizer.Inventory.GetRandomizerItem(72);
+        var ksCollected = Randomizer.Inventory.GetRandomizerItem(70);
+        foreach (var ksDoor in KeystoneDoors.Values) {
+            if ((opened & (1 << ksDoor.Index)) != 0 || !reachable.Contains(ksDoor.Source)) {
+                continue;
+            }
+
+            var pos = DoorWirePos[ksDoor.Source];
+            if (Randomizer.OpenWorld && pos == 0) {
+                continue; // the Glades door is pre-opened
+            }
+
+            if (tiered) {
+                if (pos < KeyTiers.Length && KeyTiers[pos] > 0 && ksCollected >= KeyTiers[pos]) {
+                    doorMask |= 1 << ksDoor.Index;
+                }
+            } else if (reachable.Contains(ksDoor.Destination)) {
+                doorMask |= 1 << ksDoor.Index;
+            }
+        }
+
+        return doorMask;
+    }
+
+    // wire order, from the seed's KeyTiers line (AP seeds)
     public static int[] KeyTiers;
 
     private static HashSet<MoonGuid> warnedDoors = new HashSet<MoonGuid>();
@@ -473,12 +538,10 @@ public class RandomizerLocationManager {
 
     private static readonly int[] DoorCosts = { 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4 };
 
-    public static void ResetDoorLogic() {
-        DoorsInLogicMask = 0;
-        DoorLogicValid = false;
-        KeyTiers = null;
-        warnedDoors.Clear();
-    }
+    public static readonly string[] DoorNames = {
+        "Glades Pool", "Lower Spirit Caverns", "Grotto", "Swamp", "Upper Spirit Caverns", "Lower Ginso",
+        "Upper Ginso", "Misty", "Forlorn", "Lower Sorrow", "Mid Sorrow", "Upper Sorrow"
+    };
 
     // keys sunk into opened doors; refunds mean partial fills never count
     public static int SpentKeystones() {
@@ -493,22 +556,24 @@ public class RandomizerLocationManager {
         return spent;
     }
 
-    /// <summary>
-    /// DoorWithSlots.Highlight: doors take one click per key, so this is
-    /// advice ahead of the first click, never a block. Quiet for keysanity
-    /// (its doors can't waste keys), quiet once per door, quiet while the
-    /// player can't pay the door anyway (nothing to waste yet — no latch, so
-    /// it can still fire once they can), and quiet forever on a save that
-    /// has keyduped (the counters stop meaning anything).
-    /// </summary>
+    /// <summary>Advice before a door's first key, never a block: silent under keysanity, once per
+    /// door, while the player can't pay yet, and forever on a keyduped save (item 73).</summary>
     public static void WarnIfDoorOutOfLogic(MoonGuid doorGuid) {
         if (!RandomizerSettings.Customization.KeyLockWarnings.Value || Randomizer.Keysanity.IsActive
-            || !DoorLogicValid || !KeystoneDoors.ContainsKey(doorGuid)) {
+            || !HasLogic || !KeystoneDoors.ContainsKey(doorGuid)) {
             return;
         }
 
         var door = KeystoneDoors[doorGuid];
-        if (IsDoorOpen(doorGuid) || (DoorsInLogicMask & (1 << door.Index)) != 0 || warnedDoors.Contains(doorGuid)) {
+        if (IsDoorOpen(doorGuid) || warnedDoors.Contains(doorGuid)) {
+            return;
+        }
+
+        // a cleared tier is safe from anywhere, so only untiered seeds ask where Ori stands
+        var pos = DoorWirePos[door.Source];
+        if (KeyTiers != null
+                ? pos < KeyTiers.Length && KeyTiers[pos] > 0 && Randomizer.Inventory.GetRandomizerItem(70) >= KeyTiers[pos]
+                : (DoorsInLogicMask & (1 << door.Index)) != 0) {
             return;
         }
 
@@ -526,7 +591,43 @@ public class RandomizerLocationManager {
         }
 
         warnedDoors.Add(doorGuid);
-        Randomizer.printInfo("This door is not currently in logic.\n Opening it at this time might render your seed uncompletable.", 300);
+        var next = NextExpectedDoor(door);
+        if ((DoorsInSpendLogicMask & (1 << door.Index)) != 0) {
+            Randomizer.printInfo("This door is out-of-sequence for your Archipelago World."
+                + (next == null ? "" : $"\n#{next}# is the next in-sequence door.")
+                + "\nOpening this door first may render your multiworld uncompletable.", 480);
+        } else {
+            Randomizer.printInfo("This door is not currently in logic.\n Opening it at this time might render your seed uncompletable."
+                + (next == null ? "" : $"\n(next logically expected door: {next})"), 300);
+        }
+    }
+
+    // tiered seeds only: the cheapest unopened tier, null when that is this door
+    private static string NextExpectedDoor(KeystoneDoor current) {
+        if (KeyTiers == null) {
+            return null;
+        }
+
+        var opened = Randomizer.Inventory.GetRandomizerItem(72);
+        KeystoneDoor best = null;
+        var bestRank = int.MaxValue;
+        foreach (var ksDoor in KeystoneDoors.Values) {
+            if ((opened & (1 << ksDoor.Index)) != 0) {
+                continue;
+            }
+
+            var pos = DoorWirePos[ksDoor.Source];
+            if (pos >= KeyTiers.Length || KeyTiers[pos] <= 0) {
+                continue;
+            }
+
+            if (KeyTiers[pos] < bestRank) {
+                bestRank = KeyTiers[pos];
+                best = ksDoor;
+            }
+        }
+
+        return best == null || best == current ? null : DoorNames[DoorWirePos[best.Source]];
     }
 
     public static Dictionary<MoonGuid, MoonGuid> KeystoneDoorMapGuidToMoonGuid = new Dictionary<MoonGuid, MoonGuid>();
@@ -571,6 +672,18 @@ public class RandomizerLocationManager {
                 return;
             }
 
+            // a practice segment places and counts its own pickups; nothing below applies to it
+            if (PracticeController.Active) {
+                PracticeController.GiveAt(Key);
+                if (Type == LocationType.Map) {
+                    RandomizerTrackedDataManager.SetMapstone(SpecialIndex);
+                } else {
+                    Randomizer.OnCoord(Key);
+                }
+
+                return;
+            }
+
             switch (Type) {
                 case LocationType.Map:
                     RandomizerTrackedDataManager.SetMapstone(SpecialIndex);
@@ -580,7 +693,7 @@ public class RandomizerLocationManager {
                     break;
             }
 
-            if (Type == LocationType.Map && Randomizer.ProgressiveMapStones) {
+            if (Type == LocationType.Map) {
                 ProgressiveMapLocations[RandomizerBonus.MapStoneProgression()].Give();
                 return;
             }
@@ -597,9 +710,6 @@ public class RandomizerLocationManager {
             }
 
             BingoController.OnLoc(Key);
-            if (Key == -7320236) {
-                Randomizer.Inventory.SetRandomizerItem(1106, 1);
-            }
 
             RandomizerSwitch.GivePickup(Pickup, Key);
             UpdateReachable();
@@ -621,11 +731,12 @@ public class RandomizerLocationManager {
 
         public bool Collected => Repeatable ? false : Type == LocationType.Map ? RandomizerTrackedDataManager.GetMapstone(SpecialIndex) : Randomizer.HaveCoord(Key);
 
-        // a self-AP location whose slot is already granted has nothing left to
-        // give, so the in-logic filter should stop showing it even after a
-        // death rolled the coord bit back
-        public bool Touched => Collected || Repeatable && Randomizer.HaveCoord(Key)
-            || RandomizerMW.SelfItemCollected(Key);
+        // nothing left to give; a granted self-AP slot stays spent even after a death rolls the coord bit back
+        public bool Spent => Collected || Repeatable && Randomizer.HaveCoord(Key)
+            || RandomizerMW.SelfItemCollected(Key) || RandomizerMW.ReleasedAway(Pickup);
+
+        // collected at some point, a death since or not: only a marker for the map (mapstones aren't coords)
+        public bool Touched => Spent || Type != LocationType.Map && Randomizer.SeenCoord(Key);
 
         public MoonGuid MoonGuid;
 

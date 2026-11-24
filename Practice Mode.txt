@@ -1,0 +1,159 @@
+Practicing a stretch of the game (practice mode)
+
+
+
+What it is
+===
+A segment is a save file plus rules: where the attempt ends, boxes that kill, hint or give items, an optional loadout, and variants of the same segment with different loadouts or boxes.
+Segments live in the practice folder next to the game (practice/ by default). One you make is a folder there; one someone gives you is a .bfrp file. Drop a .bfrp in the folder to play it.
+The game adds new starter segments to the folder when it starts. Delete or rename one and it won't come back.
+The list shows your own segments first, alphabetically, then the starter ones.
+PRACTICE MODE on the title menu lists them. You race a clock, and a ghost of one of your earlier attempts if you have one.
+
+
+
+Making a segment
+===
+In a normal game, get to the spot you want to practice from and press Alt+M. The current state is saved as a new segment, named New Segment 1, 2, 3 and so on; rename it on the page.
+Or choose NEW SEGMENT at the end of the PRACTICE MODE list: the editor page opens in your browser, you pick one of your saves to start from, and the game opens the new segment in the editor.
+A segment with nothing to end it yet says "Unfinished" and "click to edit" in the list and opens straight in the editor.
+To edit a segment, press Copy on its card (C, or X on a controller), or pause mid-run and choose EDIT PRACTICE SEGMENT. The world freezes and you draw boxes with the mouse.
+A .bfrp you were given only runs until you extract it: hold Copy on its card. It unpacks into a folder of the same name, which takes its place in the list, and the .bfrp moves inside that folder. Editing a .bfrp mid-run (pause menu or page) extracts it too.
+
+Box Edit Window Buttons:
+Save                Save and keep editing
+Save & Retry        Save and restart the attempt
+Reload              Reload from disk, dropping edits since the last save
+Reload & Retry      The same, then restart the attempt
+Undo                Undo the last box drawn, moved or deleted
+Copy Lines          Copy the box lines, to paste into the plando builder
+Open in Browser     Open the segment editor page
+Create Box          Pick a type (item, solid, kill, unsafe or goal) and a shape, then draw
+Adjust Boxes        Drag a box to move it, an edge or corner to resize it
+Delete Boxes        Click a box to delete it
+Edit Variant?       With variants: whether new boxes are shared or belong to the currently active variant
+WASD                Pan the camera
+Right click         Stand Ori at the cursor (loads the scenes there)
+
+Box shapes:
+Rectangle           Drag from corner to corner
+Convex              Click points and the box stretches around all of them; Confirm once there are three. Not for unsafe or goal boxes
+Polygon             Click the corners of an outline in order, then Confirm. Add Loop starts another outline in the same box. Solid boxes only
+Discard throws away the points clicked so far, and Undo Last Point the last one.
+
+Keys (the buttons show theirs too):
+Enter               Save & Retry
+Ctrl+Enter          Reload & Retry
+Z                   Undo, or Undo Last Point while a shape has points down
+Ctrl+C              Copy Lines
+M                   Switch between Create Box and Adjust Boxes
+1 to 5              Create an item, solid, kill, unsafe or goal box
+Ctrl+1 to Ctrl+3    Rectangle, convex or polygon
+C                   Confirm
+L                   Add Loop
+X                   Discard, or with no points down, delete the box under the cursor
+
+The pause menu while editing: BACK TO EDITING, SAVE, RELOAD FROM DISK, EXIT TO PRACTICE MENU, SAVE AND RETRY.
+
+Everything else is on the segment editor page, which opens in your browser the first time you edit: the name, what ends the run, hint text, item boxes, shuffle groups, variants and ghosts.
+Save to game writes it back, and a running attempt uses the new rules at once.
+With "edit boxes on the map" on, its map moves and resizes boxes; on a convex or loop box, right-click a side to add a point or a point to remove it. The shape column turns a box into a rectangle, a convex box or a loop.
+The page can also swap the segment's starting save for another of your saves ("Starts from ... change"); the game reloads from it.
+A save can't say which way Ori faces, so the page has a box to start Ori facing left.
+With "Reset on death" checked, a death restarts the run from 00:00 once Ori respawns.
+Its Placements box takes placement and box lines pasted in or loaded from a file (a whole seed file works) and replaces the segment's list with them.
+The page's map downloads the world map tiles once (about 20 MB) into the practice folder.
+
+
+
+Sharing a segment
+===
+Send the .bfrp in practice/export/. Ending a session that changed a segment writes it there, named after the segment's folder, and the page's Export .bfrp button writes it any time.
+An export carries the segment and the demo; your run history and other ghosts stay in your folder.
+
+
+
+Rules
+===
+The end condition is any combination of a goal box, skills or events held, a pickup count, and locations collected. Every part that is set must hold at once.
+
+Boxes are lines in the segment's placements.bfr, and a seed can carry the same lines; the format is in "Boxes.txt".
+
+Shuffle groups scatter a set of pickups over a set of locations, chosen fresh each attempt.
+Example: 3 keystones over 5 spots puts them in a different 3 of the 5 every attempt.
+
+Variants share the start and the end condition and bring their own loadout, boxes, history and ghosts. A segment with variants always runs one of them.
+The editor page sets the order they're listed in.
+Example: one variant starts with Charge Jump and another with Double Jump, and each keeps its own best time.
+
+
+
+Running a segment
+===
+PRACTICE MODE on the title menu lists your segments. Up and Down pick a variant, Space starts.
+After a three second countdown the clock runs in real time through everything: pauses, deaths, quitting to the menu.
+A segment can open with a briefing (its "about" text on the page); the countdown waits until you press Retry Practice Segment.
+A variant can have its own briefing, shown instead of the segment's.
+Every run is kept in the segment's history.
+
+The pause menu during an attempt:
+RESUME
+RETRY                       Start the attempt over
+EXIT TO PRACTICE MENU       Back to the segment list
+EDIT PRACTICE SEGMENT       Freeze the world and draw boxes
+
+Finishing shows the time against your best (your average, in average mode), the average over every run, and the attempt's deaths, quits and time in menus.
+The menu there: RETRY, PIN GHOST, EXIT TO PRACTICE MENU. It ignores presses for its first half second, so a proceed bound to the scroll wheel can't start a new run by accident.
+
+
+
+Ghosts
+===
+A ghost replays a past attempt alongside you.
+Each variant keeps its fastest and its most recent run, and a pinned one if you pin it at the finish screen or on the page.
+The segment says which one is shown (the pinned run if there is one, else the fastest, by default) and the Practice Ghost setting overrides that.
+A segment can also carry a demo run, which the page's "make demo" copies from one of your ghosts. It races, in its own color, until you have a ghost of your own.
+Average mode records no ghosts.
+
+
+
+Quit to menu
+===
+A segment can allow quitting to the menu mid-attempt ("quit to menu keeps the run" on the page), for practicing your menuing the way you would in a real run.
+Its pause menu is the normal one, and the practice pause is on the Practice Menu bind instead.
+While the run is parked the title menu shows CONTINUE PRACTICE and END PRACTICE RUN, and Escape there asks whether to end it.
+The run's save shows the run's clock at the quit where a file would show its game time.
+
+
+
+Settings and binds
+===
+RandomizerSettings.txt:
+- "Practice Folder": Where segments are kept. A folder name inside the game folder, or a full path. Default: practice
+- "Practice Ghost": Which ghost to race. Segment (whatever the segment says), Fastest, Pinned, Recent or None. Default: Segment
+- "Practice Demo Ghost": Race the segment's demo run alongside your own ghost. Default: False
+- "Practice Timer": The clock in the top right during an attempt. Default: True
+
+RandomizerRebinding.txt:
+Alt+M               Create Practice Segment
+(unbound)           Create Practice Segment With Seed: the same, and the new segment starts with the seed's pickups and boxes
+Alt+L               Retry Practice Segment: start the attempt over, or start after a briefing
+(unbound)           Practice Menu: the practice pause, for quit-to-menu segments
+(unbound)           Open Practice Editor Page: the page, from anywhere in a session
+
+
+
+Editing a seed's boxes
+===
+Outside practice, the Edit Seed Boxes bind (unbound by default) or "Edit Seed Boxes" in the debug menu opens the same editor on the boxes of the seed you have loaded.
+Open in Browser opens a page for giving boxes items and flags.
+Saving writes the boxes into the seed file; the first save keeps a copy of the original next to it (.before-boxes). Save & Continue (Enter) saves and plays on; Reload & Continue (Ctrl+Enter), Alt+L (Retry Practice Segment) or the bind again leaves without saving. Either way you play on from wherever right click left Ori.
+A seed with a Sync flag (an online game) can't be edited this way: remove the flag from the seed's first line if you want to.
+
+
+
+Files
+===
+A segment folder holds segment.json (the rules), save.sav (the start), placements.bfr (the boxes, and what the locations hold), variants/<id>/segment.json and placements.bfr, and runs.csv and ghosts/ per variant. The text files can be edited by hand; Reload in the editor reads them again.
+A .bfrp is the same files in a zip. Its entries must be stored uncompressed: if you zip one by hand, choose Store (no compression), or PRACTICE MODE skips the file.
+The page is the reference for what segment.json can say.

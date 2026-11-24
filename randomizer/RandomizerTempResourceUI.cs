@@ -3,11 +3,8 @@ using System.Collections.Generic;
 using Game;
 using UnityEngine;
 
-// Temporary (over-max) health and energy get their own smaller row directly
-// above each HUD bar: every vanilla fill layer is re-capped at the permanent
-// max, and each row is a clone of the bar's full layer stack (fill + min +
-// glows) driven by only the overflow. Builds lazily from Randomizer.Update;
-// the Temp Row settings apply on file save + reload.
+// Over-max health and energy get their own row above each HUD bar: the vanilla fill layers are
+// capped at the permanent max, and each row clones the bar's layer stack, fed only the overflow.
 public static class RandomizerTempResourceUI {
     private static FloatProviderAnimatorDriver healthFill;
 
@@ -17,9 +14,17 @@ public static class RandomizerTempResourceUI {
 
     private static GameObject energyRow;
 
+    private static GameObject healthInline;
+
+    private static GameObject energyInline;
+
     private static float builtScale;
 
     private static bool errorLogged;
+
+    private static SeinUI searchedHud;
+
+    private static Vector2 lastOverflow;
 
     private static float TempRowScale => RandomizerSettings.Customization.TempRowScale;
 
@@ -29,29 +34,41 @@ public static class RandomizerTempResourceUI {
         }
 
         try {
-            if (RandomizerSettings.Customization.DisableTempResourceRows) {
-                // installed caps return vanilla values while disabled (see the
-                // provider); untouched HUDs stay untouched. Just drop the rows.
-                if (healthRow != null) {
-                    UnityEngine.Object.Destroy(healthRow);
-                    healthRow = null;
+            // rows or the legacy inline copies, never both
+            var legacy = RandomizerSettings.Customization.DisableTempResourceRows;
+            if (legacy) {
+                Drop(ref healthRow);
+                Drop(ref energyRow);
+            } else {
+                Drop(ref healthInline);
+                Drop(ref energyInline);
+            }
+
+            // one search per HUD; a piece still missing is looked for again only when the overflow moves
+            var hud = UI.SeinUI;
+            var overflow = Overflow();
+            var missing = legacy ? healthInline == null || energyInline == null : healthRow == null || energyRow == null;
+            if (hud != null && (!ReferenceEquals(hud, searchedHud) || overflow != lastOverflow && missing)) {
+                searchedHud = hud;
+                FindFills(hud);
+            }
+
+            lastOverflow = overflow;
+
+            if (legacy) {
+                if (healthInline == null && healthFill != null && healthFill.gameObject.activeInHierarchy) {
+                    healthInline = BuildRow(healthFill, false, true);
                 }
 
-                if (energyRow != null) {
-                    UnityEngine.Object.Destroy(energyRow);
-                    energyRow = null;
+                if (energyInline == null && energyFill != null && energyFill.gameObject.activeInHierarchy) {
+                    energyInline = BuildRow(energyFill, true, true);
                 }
 
                 return;
             }
 
-            if (healthFill == null || energyFill == null) {
-                FindFills();
-            }
-
             if (builtScale != TempRowScale && (healthRow != null || energyRow != null)) {
-                // scale changed: tear down, rebuild next pass with the new
-                // size (Destroy lands at end of frame)
+                // scale changed: rebuild next pass (Destroy lands at end of frame)
                 if (healthRow != null) {
                     UnityEngine.Object.Destroy(healthRow);
                 }
@@ -65,12 +82,13 @@ public static class RandomizerTempResourceUI {
                 return;
             }
 
-            if (healthRow == null && healthFill != null) {
-                healthRow = BuildRow(healthFill, false);
+            // a clone of an inactive strip would stay hidden: nothing vanilla ever turns it on
+            if (healthRow == null && healthFill != null && healthFill.gameObject.activeInHierarchy) {
+                healthRow = BuildRow(healthFill, false, false);
             }
 
-            if (energyRow == null && energyFill != null) {
-                energyRow = BuildRow(energyFill, true);
+            if (energyRow == null && energyFill != null && energyFill.gameObject.activeInHierarchy) {
+                energyRow = BuildRow(energyFill, true, false);
             }
 
             builtScale = TempRowScale;
@@ -82,10 +100,28 @@ public static class RandomizerTempResourceUI {
         }
     }
 
+    public static bool InlineReady(bool energy) {
+        return (energy ? energyInline : healthInline) != null;
+    }
+
+    private static void Drop(ref GameObject piece) {
+        if (piece != null) {
+            UnityEngine.Object.Destroy(piece);
+            piece = null;
+        }
+    }
+
+    // over-max health and energy: what the rows show
+    private static Vector2 Overflow() {
+        var health = Characters.Sein.Mortality.Health;
+        var energy = Characters.Sein.Energy;
+        return new Vector2(Mathf.Max(0f, health.Amount - health.MaxHealth), Mathf.Max(0f, energy.Current - energy.Max));
+    }
+
     // find each bar's leading fill strip and cap every fill layer at the
     // permanent max; on later passes (fills already ours) just recover refs
-    private static void FindFills() {
-        foreach (var driver in UnityEngine.Object.FindObjectsOfType<FloatProviderAnimatorDriver>()) {
+    private static void FindFills(SeinUI hud) {
+        foreach (var driver in hud.GetComponentsInChildren<FloatProviderAnimatorDriver>(true)) {
             if (driver.Value is SeinHealthVisualMaxProvider) {
                 healthFill = driver;
                 Cap(driver, false, false, ((SeinHealthVisualMaxProvider)driver.Value).DivideBy);
@@ -98,7 +134,7 @@ public static class RandomizerTempResourceUI {
                 Cap(driver, true, true, ((SeinEnergyMinVisualProvider)driver.Value).DivideBy);
             } else if (driver.Value is RandomizerTempResourceProvider) {
                 var p = (RandomizerTempResourceProvider)driver.Value;
-                if (!p.Overflow && !p.UseMinVisual) {
+                if (!p.Overflow && !p.Inline && !p.UseMinVisual) {
                     if (p.Energy) {
                         energyFill = driver;
                     } else {
@@ -117,34 +153,36 @@ public static class RandomizerTempResourceUI {
         driver.Value = capped;
     }
 
-    private static GameObject BuildRow(FloatProviderAnimatorDriver fill, bool energy) {
+    // inline: legacy mode's copy, the whole bar in place and one queue step behind it
+    private static GameObject BuildRow(FloatProviderAnimatorDriver fill, bool energy, bool inline) {
         var ours = fill.Value as RandomizerTempResourceProvider;
         var divideBy = ours != null ? ours.DivideBy : 1f;
 
         var clone = (GameObject)UnityEngine.Object.Instantiate(fill.gameObject);
-        clone.name = energy ? "randomizerTempEnergyRow" : "randomizerTempHealthRow";
+        clone.name = (energy ? "randomizerTempEnergy" : "randomizerTempHealth") + (inline ? "Inline" : "Row");
 
         var t = clone.transform;
         var orig = fill.transform;
         t.parent = orig.parent;
         t.localRotation = orig.localRotation;
-        t.localScale = orig.localScale * TempRowScale;
+        t.localScale = orig.localScale * (inline ? 1f : TempRowScale);
         t.localPosition = orig.localPosition;
 
         var overflow = clone.AddComponent<RandomizerTempResourceProvider>();
         overflow.Energy = energy;
-        overflow.Overflow = true;
+        overflow.Overflow = !inline;
+        overflow.Inline = inline;
         overflow.DivideBy = divideBy;
         clone.GetComponent<FloatProviderAnimatorDriver>().Value = overflow;
 
-        // base cells are drawn by fill + min + glow layers stacked; a lone
-        // fill clone reads washed out. Clone every driver-bearing sibling
-        // layer except the background slots, all on the overflow value.
+        // a lone fill clone reads washed out: clone every driver-bearing sibling layer but the
+        // background slots, all on the overflow value
         var sources = new List<Renderer> { fill.GetComponent<Renderer>() };
         var targets = new List<Renderer> { clone.GetComponent<Renderer>() };
         for (var i = 0; i < orig.parent.childCount; i++) {
+            // our own clones are siblings too: the new one, and a row or copy not yet destroyed
             var c = orig.parent.GetChild(i);
-            if (c == orig) {
+            if (c == orig || c == t || c.name.StartsWith("randomizerTemp")) {
                 continue;
             }
 
@@ -169,7 +207,16 @@ public static class RandomizerTempResourceUI {
             targets.Add(layer.GetComponent<Renderer>());
         }
 
+        if (inline) {
+            for (var i = 0; i < sources.Count; i++) {
+                if (sources[i] != null && targets[i] != null) {
+                    targets[i].material.renderQueue = sources[i].sharedMaterial.renderQueue - 1;
+                }
+            }
+        }
+
         var anchor = clone.AddComponent<RowAnchor>();
+        anchor.Inline = inline;
         anchor.Strip = orig;
         anchor.StripRenderer = fill.GetComponent<Renderer>();
         anchor.LayerSources = sources.ToArray();
@@ -187,10 +234,8 @@ public static class RandomizerTempResourceUI {
         return clone;
     }
 
-    // keeps a temp row glued above its bar in screen space. The HUD renders
-    // through a manually-driven camera, so screen axes come from the HUD
-    // itself: the line between the two strips is screen-right, its cross with
-    // the strip's plane normal is screen-up — one shared frame for both rows.
+    // Keeps a temp row above its bar in screen space. The HUD camera is manual, so screen-right is
+    // the line between the two strips and screen-up its cross with the strip's normal.
     public class RowAnchor : MonoBehaviour {
         public Transform Strip;
 
@@ -206,8 +251,15 @@ public static class RandomizerTempResourceUI {
 
         public Vector3 EdgeMax;
 
+        public bool Inline;
+
         public void LateUpdate() {
             if (Strip == null || StripRenderer == null) {
+                return;
+            }
+
+            if (Inline) {
+                MirrorAll();
                 return;
             }
 
@@ -217,9 +269,8 @@ public static class RandomizerTempResourceUI {
             var mid = PairMidpoint(Strip);
             var side = Mathf.Sign(Vector3.Dot(Strip.position - mid, right));
 
-            // start on the strip, align the wheelward mesh corner through both
-            // transforms (sign-proof against each bar's rotation/mirror), then
-            // one shared lift for both rows plus the user's outward offset
+            // start on the strip, align the wheelward mesh corner through both transforms (sign-proof
+            // against each bar's rotation and mirror), then add the shared lift and outward offset
             transform.localPosition = BaseLocal;
             var shift = 0f;
             if (EdgeMin != EdgeMax) {
@@ -233,10 +284,12 @@ public static class RandomizerTempResourceUI {
             transform.position += right * (shift + side * height * RandomizerSettings.Customization.TempRowHorizontalOffset)
                 + up * (height * RandomizerSettings.Customization.TempRowSpacing);
 
-            // the HUD's fades (TransparencyAnimator) only write alpha to
-            // renderers cached at startup, never these clones: a row built
-            // mid-fade would keep that alpha forever. Mirror each clone's live
-            // tint (scaled by the brightness setting) and enabled flag.
+            MirrorAll();
+        }
+
+        private void MirrorAll() {
+            // HUD fades never reach these clones, so each mirrors its source's live tint (times
+            // brightness) and enabled flag
             if (LayerSources != null && LayerTargets != null) {
                 for (var i = 0; i < LayerSources.Length && i < LayerTargets.Length; i++) {
                     MirrorTint(LayerSources[i], LayerTargets[i]);

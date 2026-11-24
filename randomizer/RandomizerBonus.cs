@@ -14,8 +14,13 @@ public static class RandomizerBonus {
             ID = -ID;
         }
 
-        if (RandomizerBonusSkill.BonusSkillNames.ContainsKey(ID)) {
-            RandomizerBonusSkill.FoundBonusSkill(ID);
+        if (RandomizerItems.BonusSkillNames.ContainsKey(ID)) {
+            if (flag) {
+                RandomizerBonusSkill.LoseBonusSkill(ID);
+            } else {
+                RandomizerBonusSkill.FoundBonusSkill(ID);
+            }
+
             return;
         }
 
@@ -46,7 +51,7 @@ public static class RandomizerBonus {
         if (ID >= 200 && ID < 260) {
             var abilityId = (ID - 200) % 30;
             var ability = abilities[abilityId];
-            if (ID < 230) {
+            if (ID < 230 && !flag) {
                 ability.Found();
             } else {
                 ability.Lost();
@@ -55,17 +60,62 @@ public static class RandomizerBonus {
             return;
         }
 
+        // 260-267 take EV|(ID - 260) away
+        if (ID >= 260 && ID <= 267) {
+            if (!Characters.Sein || flag) {
+                return;
+            }
+
+            RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", ID.ToString()), 240);
+            RandomizerSwitch.LoseEvent(ID - 260);
+            return;
+        }
+
         switch (ID) {
+            // A pickup that kills: straight to OnKill, since damage can be refused or scaled to nothing.
+            case 3:
+                if (Characters.Sein != null && Characters.Sein.Mortality != null) {
+                    Characters.Sein.Mortality.DamageReciever.OnKill(
+                        new Damage(9000f, Vector2.zero, Characters.Sein.Position,
+                            DamageType.Lava, Characters.Sein.GameObject));
+                }
+
+                return;
+            // Double jumps and air dashes back, as if Ori had landed; nothing is kept.
+            case 4:
+                if (Characters.Sein != null) {
+                    if (Characters.Sein.Abilities.DoubleJump != null) {
+                        Characters.Sein.Abilities.DoubleJump.ResetDoubleJump();
+                    }
+
+                    if (Characters.Sein.Abilities.Dash != null) {
+                        Characters.Sein.Abilities.Dash.ResetDashLimit();
+                    }
+
+                    RandomizerSwitch.PickupMessage("Air Refresh");
+                }
+
+                return;
+            // Save Game: once the pickup it came in has landed, so the save holds that location too
+            case 5:
+                if (!flag) {
+                    Randomizer.SaveSoon = true;
+                }
+
+                return;
             case 0:
                 if (!flag) {
-                    Characters.Sein.Mortality.Health.SetAmount(Characters.Sein.Mortality.Health.MaxHealth + 20);
+                    // tops up to Max + 20, never below an overheal already there
+                    var health = Characters.Sein.Mortality.Health;
+                    health.SetAmount(Mathf.Max(health.Amount, health.MaxHealth + 20));
                     RandomizerSwitch.PickupMessage("Mega Health");
                 }
 
                 break;
             case 1:
                 if (!flag) {
-                    Characters.Sein.Energy.SetCurrent(Characters.Sein.Energy.Max + 5f);
+                    var energy = Characters.Sein.Energy;
+                    energy.SetCurrent(Mathf.Max(energy.Current, energy.Max + 5f));
                     RandomizerSwitch.PickupMessage("Mega Energy");
                 }
 
@@ -90,6 +140,11 @@ public static class RandomizerBonus {
 
                 break;
             case 8:
+                if (flag) {
+                    LoseUpgrade(ID);
+                    break;
+                }
+
                 RandomizerSwitch.PickupMessage("Explosion Power Upgrade");
                 if (!ExplosionPower()) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
@@ -111,6 +166,11 @@ public static class RandomizerBonus {
 
                 break;
             case 10:
+                if (flag) {
+                    LoseUpgrade(ID);
+                    break;
+                }
+
                 RandomizerSwitch.PickupMessage("Extra Air Dash");
                 if (!DoubleAirDash()) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
@@ -118,6 +178,11 @@ public static class RandomizerBonus {
 
                 break;
             case 11:
+                if (flag) {
+                    LoseUpgrade(ID);
+                    break;
+                }
+
                 RandomizerSwitch.PickupMessage("Charge Dash Efficiency");
                 if (!ChargeDashEfficiency()) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
@@ -174,11 +239,11 @@ public static class RandomizerBonus {
                 if (flag) {
                     if (WaterVeinShards() > 0) {
                         Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                        RandomizerSwitch.PickupMessage("*Water Vein Shard (" + WaterVeinShards() + "/3)*");
+                        RandomizerSwitch.PickupMessage(ShardMessage("*", "Water Vein", WaterVeinShards()));
                     }
                 } else {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("*Water Vein Shard (" + WaterVeinShards() + "/3)*", 300);
+                    RandomizerSwitch.PickupMessage(ShardMessage("*", "Water Vein", WaterVeinShards()), 300);
                 }
 
                 Keys.GinsoTree = WaterVeinShards() >= 3;
@@ -191,11 +256,11 @@ public static class RandomizerBonus {
                 if (flag) {
                     if (GumonSealShards() > 0) {
                         Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                        RandomizerSwitch.PickupMessage("#Gumon Seal Shard (" + GumonSealShards() + "/3)#");
+                        RandomizerSwitch.PickupMessage(ShardMessage("#", "Gumon Seal", GumonSealShards()));
                     }
                 } else {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("#Gumon Seal Shard (" + GumonSealShards() + "/3)#", 300);
+                    RandomizerSwitch.PickupMessage(ShardMessage("#", "Gumon Seal", GumonSealShards()), 300);
                 }
 
                 Keys.ForlornRuins = GumonSealShards() >= 3;
@@ -208,11 +273,11 @@ public static class RandomizerBonus {
                 if (flag) {
                     if (SunstoneShards() > 0) {
                         Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                        RandomizerSwitch.PickupMessage("@Sunstone Shard (" + SunstoneShards() + "/3)@");
+                        RandomizerSwitch.PickupMessage(ShardMessage("@", "Sunstone", SunstoneShards()));
                     }
                 } else {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("@Sunstone Shard (" + SunstoneShards() + "/3)@", 300);
+                    RandomizerSwitch.PickupMessage(ShardMessage("@", "Sunstone", SunstoneShards()), 300);
                 }
 
                 Keys.MountHoru = SunstoneShards() >= 3;
@@ -233,6 +298,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
+                RandomizerStatsManager.FragmentFound();
                 RandomizerSwitch.PickupMessage(string.Concat("@Warmth Fragment (", WarmthFrags().ToString(), "/", Randomizer.fragKeyFinish, ")@"), 300);
                 break;
             case 29:
@@ -290,18 +356,26 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                v = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                RandomizerSwitch.PickupMessage("Skill Velocity Upgrade x" + v);
+                if (Characters.Sein.Inventory.GetRandomizerItem(ID) > 0) {
+                    v = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
+                    RandomizerSwitch.PickupMessage("Skill Velocity Upgrade x" + v);
+                }
+
                 break;
             case 34:
                 Characters.Sein.Inventory.SetRandomizerItem(34, 1);
-                RandomizerSwitch.PickupMessage("Return to start disabled!");
+                RandomizerSwitch.PickupMessage("Warps Disabled!");
                 break;
             case 35:
                 Characters.Sein.Inventory.SetRandomizerItem(34, 0);
-                RandomizerSwitch.PickupMessage("Return to start enabled!");
+                RandomizerSwitch.PickupMessage("Warps Enabled!");
                 break;
             case 36:
+                if (flag) {
+                    LoseUpgrade(ID);
+                    break;
+                }
+
                 RandomizerSwitch.PickupMessage("Underwater Skill Usage");
                 Characters.Sein.Inventory.SetRandomizerItem(36, 1);
                 break;
@@ -317,8 +391,11 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                j = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
-                RandomizerSwitch.PickupMessage("Jump Upgrade x" + j);
+                if (Characters.Sein.Inventory.GetRandomizerItem(ID) > 0) {
+                    j = Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
+                    RandomizerSwitch.PickupMessage("Jump Upgrade x" + j);
+                }
+
                 break;
             case 38:
                 if (!flag) {
@@ -341,7 +418,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Wall Jump Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "40"), 240);
                 Characters.Sein.PlayerAbilities.WallJump.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -350,7 +427,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@ChargeFlame Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "41"), 240);
                 Characters.Sein.PlayerAbilities.ChargeFlame.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -359,7 +436,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@DoubleJump Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "42"), 240);
                 Characters.Sein.PlayerAbilities.DoubleJump.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -368,7 +445,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Bash Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "43"), 240);
                 Characters.Sein.PlayerAbilities.Bash.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -377,7 +454,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Stomp Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "44"), 240);
                 Characters.Sein.PlayerAbilities.Stomp.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -386,7 +463,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Glide Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "45"), 240);
                 Characters.Sein.PlayerAbilities.Glide.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -395,7 +472,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Climb Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "46"), 240);
                 Characters.Sein.PlayerAbilities.Climb.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -404,7 +481,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Charge Jump Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "47"), 240);
                 Characters.Sein.PlayerAbilities.ChargeJump.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -413,7 +490,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Dash Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "48"), 240);
                 Characters.Sein.PlayerAbilities.Dash.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -422,7 +499,7 @@ public static class RandomizerBonus {
                     return;
                 }
 
-                RandomizerSwitch.PickupMessage("@Grenade Lost!!@", 240);
+                RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", "49"), 240);
                 Characters.Sein.PlayerAbilities.Grenade.HasAbility = false;
                 Characters.Sein.Prefabs.EnsureRightPrefabsAreThereForAbilities();
                 return;
@@ -456,7 +533,7 @@ public static class RandomizerBonus {
             case 410:
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*p*#i#$r$*i*#t# $F$*l*#a#$m$*e*\nSein's voice has been restored!", 300);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -464,7 +541,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $W$*a*#l#$l$ *J*#u#$m$*p*\nNow comes with bonus Climb! ...yeah, sorry, that's it for this one.", 300);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -472,7 +549,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $F$*l*#a#$m$*e*\nPowerful enough to capture nearby projectiles in its gravity!", 300);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -480,7 +557,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*o*#u#$b$*l*#e# $J$*u*#m#$p$\nLook, we were running out of ideas, so just...have infinite jumps, I guess.", 300);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -488,7 +565,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $B$*a*#s#$h$\nMuch more balanced now that it doesn't require a target.", 300);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -496,7 +573,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $S$*t*#o#$m$*p*\nWhy should we be limited to only stomping downwards?", 300);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -504,7 +581,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*l*#i#$d$*e*\nYou are the wind beneath your wings. Er...feather.", 300);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -512,7 +589,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*l*#i#$m$*b*\nNow comes with protective gear for hazardous surfaces!", 300);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -520,7 +597,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*h*#a#$r$*g*#e# $J$*u*#m#$p$\nYour very aura is now enough to protect from enemies. Or kill them.", 300);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -528,7 +605,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $D$*a*#s#$h$\nBe freed from the limitations of the horizontal axis!", 300);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -536,7 +613,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $G$*r*#e#$n$*a*#d#$e$\nI guess it can break floors and walls now? For some reason?", 300);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -544,7 +621,7 @@ public static class RandomizerBonus {
                 if (!flag) {
                     Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
                     RandomizerBonusSkill.FoundBonusSkill(115);
-                    RandomizerSwitch.PickupMessage("*E*#n#$h$*a*#n#$c$*e*#d# $C$*l*#e#$a$*n* #W#$a$*t*#e#$r$\nIt isn't just clean - it's been cleaned out!", 300);
+                    AnnounceEnhanced(ID, coords);
                 }
 
                 break;
@@ -564,6 +641,20 @@ public static class RandomizerBonus {
                 }
 
                 return;
+            case RandomizerAutoplayer.AutoplayId:
+                if (!flag) {
+                    Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                    RandomizerSwitch.PickupMessage("Autoplayer Enabled");
+                }
+
+                return;
+            case RandomizerAutoplayer.DropFileId:
+                if (!flag) {
+                    Characters.Sein.Inventory.SetRandomizerItem(ID, 1);
+                    RandomizerSwitch.PickupMessage("Pickup Drop Enabled");
+                }
+
+                return;
             default:
                 if (flag) {
                     Characters.Sein.Inventory.IncRandomizerItem(ID, -1);
@@ -577,6 +668,10 @@ public static class RandomizerBonus {
 
     public static bool SenseFragsEnabled => Characters.Sein.Inventory.GetRandomizerItem(1100) > 0;
 
+    // the soul flame button at an ally's ghost link saves there, own link untouched
+    public static bool AllyLinkSaves => Randomizer.ShareSaves || Characters.Sein != null && Characters.Sein.Inventory != null &&
+        Characters.Sein.Inventory.GetRandomizerItem(1110) > 0;
+
     public static bool SenseFragsActive {
         get => SenseFragsEnabled && Characters.Sein.Inventory.GetRandomizerItem(1101) > 0;
         set => Characters.Sein.Inventory.SetRandomizerItem(1101, value ? 1 : 0);
@@ -584,6 +679,14 @@ public static class RandomizerBonus {
 
     public static bool ForlornEscapeHint() {
         return Characters.Sein.Inventory.GetRandomizerItem(81) > 0;
+    }
+
+    // a one-of upgrade (held or not) taken back by its negative id
+    private static void LoseUpgrade(int ID) {
+        if (Characters.Sein.Inventory.GetRandomizerItem(ID) > 0) {
+            Characters.Sein.Inventory.SetRandomizerItem(ID, 0);
+            RandomizerSwitch.PickupMessage(RandomizerItems.Message("RB", (-ID).ToString()));
+        }
     }
 
     public static bool DoubleAirDash() {
@@ -616,6 +719,10 @@ public static class RandomizerBonus {
 
     public static int GumonSealShards() {
         return Characters.Sein.Inventory.GetRandomizerItem(19);
+    }
+
+    private static string ShardMessage(string color, string key, int count) {
+        return RandomizerItems.Cue(color + key + " Shard (" + count + "/3)" + color, "Shard");
     }
 
     public static int SpiritFlameLevel() {
@@ -796,6 +903,89 @@ public static class RandomizerBonus {
         }
     }
 
+    // Each Enhanced's line, said once it and its skill are both held; the name comes from RandomizerItems.
+    private static readonly Dictionary<int, string> EnhancedLines = new Dictionary<int, string> {
+        { 410, "Sein's voice has been restored!" },
+        { 411, "Now comes with bonus Climb! ...yeah, sorry, that's it for this one." },
+        { 412, "Powerful enough to capture nearby projectiles in its gravity!" },
+        { 413, "Look, we were running out of ideas, so just...have infinite jumps, I guess." },
+        { 414, "Much more balanced now that it doesn't require a target." },
+        { 415, "Why should we be limited to only stomping downwards?" },
+        { 416, "You are the wind beneath your wings. Er...feather." },
+        { 417, "Now comes with protective gear for hazardous surfaces!" },
+        { 418, "Your very aura is now enough to protect from enemies. Or kill them." },
+        { 419, "Be freed from the limitations of the horizontal axis!" },
+        { 420, "I guess it can break floors and walls now? For some reason?" },
+        { 422, "It isn't just clean - it's been cleaned out!" },
+    };
+
+    // SK id -> its Enhanced, then each Enhanced -> the ability it needs. Clean Water (422) is an
+    // event and goes through the *Water methods instead.
+    private static readonly Dictionary<int, int> EnhancedForSkill = new Dictionary<int, int> {
+        { 0, 414 }, { 2, 412 }, { 3, 411 }, { 4, 415 }, { 5, 413 },
+        { 8, 418 }, { 12, 417 }, { 14, 416 }, { 15, 410 }, { 50, 419 }, { 51, 420 },
+    };
+
+    private static readonly Dictionary<int, AbilityType> EnhancedNeeds = new Dictionary<int, AbilityType> {
+        { 410, AbilityType.SpiritFlame }, { 411, AbilityType.WallJump }, { 412, AbilityType.ChargeFlame },
+        { 413, AbilityType.DoubleJump }, { 414, AbilityType.Bash }, { 415, AbilityType.Stomp },
+        { 416, AbilityType.Glide }, { 417, AbilityType.Climb }, { 418, AbilityType.ChargeJump },
+        { 419, AbilityType.Dash }, { 420, AbilityType.Grenade },
+    };
+
+    // Its line once the skill it upgrades is in hand, else just its name; a grant with no
+    // location behind it (spawn is 2, none is -1) says nothing, the skill's pickup speaks for both.
+    public static void AnnounceEnhanced(int id, int coords) {
+        if (!Waiting(id)) {
+            Announce(id);
+        } else if (coords != 2 && coords != -1) {
+            RandomizerSwitch.PickupMessage(RandomizerItems.Name("RB", id.ToString()));
+        }
+    }
+
+    // true while the thing this Enhanced upgrades is still missing
+    private static bool Waiting(int id) {
+        AbilityType needs;
+        if (EnhancedNeeds.TryGetValue(id, out needs)) {
+            return !Characters.Sein.PlayerAbilities.HasAbility(needs);
+        }
+
+        return id == 422 && !Sein.World.Events.WaterPurified;
+    }
+
+    // True when this skill's pickup will say its Enhanced line in place of the plain one.
+    // Never for Spirit Flame (15): Sein's own dialogue introduces her.
+    public static bool HoldsEnhancedFor(int skill) {
+        int id;
+        return skill != 15 && EnhancedForSkill.TryGetValue(skill, out id)
+            && Randomizer.Inventory.GetRandomizerItem(id) > 0;
+    }
+
+    public static bool HoldsEnhancedWater() {
+        return Randomizer.Inventory.GetRandomizerItem(422) > 0;
+    }
+
+    // On finding the skill, if its Enhanced came first; a shuffled Spirit Flame in Enhanced Mode always.
+    public static void AnnounceEnhancedSkill(int skill) {
+        if (HoldsEnhancedFor(skill) || (skill == 15 && Randomizer.EnhancedMode)) {
+            Announce(EnhancedForSkill[skill]);
+        }
+    }
+
+    public static void AnnounceEnhancedWater() {
+        if (HoldsEnhancedWater()) {
+            Announce(422);
+        }
+    }
+
+    private static void Announce(int id) {
+        string line;
+        if (EnhancedLines.TryGetValue(id, out line)) {
+            RandomizerSwitch.PickupMessage(
+                RandomizerText.RainbowifyByChar(RandomizerItems.Name("RB", id.ToString())) + "\n" + line, 300);
+        }
+    }
+
     public static bool EnhancedSpiritFlame => Randomizer.Inventory.GetRandomizerItem(410) > 0;
 
     public static bool EnhancedWallJump => Randomizer.Inventory.GetRandomizerItem(411) > 0 && !RandomizerBonusSkill.IsActive(115);
@@ -826,7 +1016,7 @@ public static class RandomizerBonus {
         { 15, "Energy Regeneration" },
         { 12, "Extra Double Jump" },
         { 33, "Skill Velocity Upgrade" },
-        { 37, "Jumpgrade" },
+        { 37, "Jump Upgrade" },
         { 31, "Health Leech" },
         { 32, "Energy Leech" },
         { 36, "Underwater Skill Usage" },
@@ -857,14 +1047,14 @@ public static class RandomizerBonus {
         new Ability("Charge Flame Blast", p => p.ChargeFlameBlast),
         new Ability("Ultra Split Flame", p => p.UltraSplitFlame),
         new Ability("Spirit Magnet", p => p.Magnet),
-        new Ability("Map Markers", p => p.MapMarkers),
-        new Ability("Life Efficiency", p => p.HealthEfficiency),
+        new Ability("Drop Efficiency", p => p.MapMarkers),
+        new Ability("Health Efficiency", p => p.HealthEfficiency),
         new Ability("Ultra Spirit Magnet", p => p.UltraMagnet),
         new Ability("Energy Efficiency", p => p.EnergyEfficiency),
-        new Ability("Ability Markers", p => p.AbilityMarkers),
-        new Ability("Spirit Efficiency", p => p.SoulEfficiency),
-        new Ability("Life Markers", p => p.HealthMarkers),
-        new Ability("Energy Markers", p => p.EnergyMarkers),
+        new Ability("Spirit Efficiency", p => p.AbilityMarkers),
+        new Ability("Spirit Potency", p => p.SoulEfficiency),
+        new Ability("Health Regen (Ability)", p => p.HealthMarkers),
+        new Ability("Energy Regen (Ability)", p => p.EnergyMarkers),
         new Ability("Sense", p => p.Sense),
         new Ability("Rekindle", p => p.Rekindle),
         new Ability("Regroup", p => p.Regroup),

@@ -1,0 +1,164 @@
+using CatlikeCoding.TextBox;
+using Game;
+using UnityEngine;
+
+// The clock (top right) and the finish tally: hint-box clones like the pickup notifications,
+// never UI.Hints, which any menu opening hides.
+public static class PracticeHud {
+    private static GameObject clockObj;
+
+    private static MessageBox clock;
+
+    private static GameObject tallyObj;
+
+    private static MessageBox tally;
+
+    private static string shown;
+
+    // the time to beat, after the clock on its line; fixed for the attempt
+    private static string reference = "";
+
+    // UI units, each box's anchor: the clock's top right, the tally's top center (left column)
+    private static readonly Vector3 ClockAt = new Vector3(6.9f, 3.8f, 0f);
+
+    private static readonly Vector3 TallyAt = new Vector3(-4.2f, 2.4f, 0f);
+
+    // a quit-to-menu run is still running on the title, so its clock stays up there
+    private static bool Parked {
+        get {
+            return PracticeController.Current == PracticeController.Phase.Running
+                && PracticeController.Segment != null && PracticeController.Segment.QuitToMenu;
+        }
+    }
+
+    public static void Tick() {
+        // the finish screen's tally has the time; the clock would say it a second time
+        var wanted = PracticeController.Active && RandomizerSettings.Practice.Timer.Value
+            && !PracticeController.EditPending
+            && PracticeController.Current != PracticeController.Phase.Editing
+            && PracticeController.Current != PracticeController.Phase.Finished
+            && GameController.Instance != null
+            && (!GameController.Instance.GameInTitleScreen || Parked);
+        if (!wanted) {
+            HideClock();
+            return;
+        }
+
+        if (clock == null) {
+            clockObj = Make("practiceClock", AlignmentMode.Right, HorizontalAnchorMode.Right, ClockAt, true, out clock);
+            shown = null;
+        }
+
+        if (clock == null) {
+            return;
+        }
+
+        var text = PracticeController.Clock(PracticeController.Elapsed);
+        if (reference != "") {
+            text += "   " + reference;
+        }
+
+        if (text != shown) {
+            shown = text;
+            clock.SetMessage(new MessageDescriptor(text));
+        }
+    }
+
+    // when the attempt starts and when a run lands
+    public static void Refresh() {
+        reference = "";
+        var file = PracticeController.File;
+        if (file == null) {
+            return;
+        }
+
+        var average = file.Segment["timing"]["mode"].Str == "average";
+        var ms = average ? file.AverageMs() : file.BestMs();
+        reference = ms < 0 ? "first run" : (average ? "avg " : "best ") + PracticeController.Clock(ms);
+    }
+
+    public static void ShowTally(string text) {
+        HideTally();
+        tallyObj = Make("practiceTally", AlignmentMode.Center, HorizontalAnchorMode.Center, TallyAt, false, out tally);
+        if (tally != null) {
+            tally.SetMessage(new MessageDescriptor(text));
+        }
+    }
+
+    public static void HideTally() {
+        Drop(ref tallyObj);
+        tally = null;
+    }
+
+    public static void HideClock() {
+        Drop(ref clockObj);
+        clock = null;
+        shown = null;
+    }
+
+    public static void Hide() {
+        HideClock();
+        HideTally();
+    }
+
+    private static void Drop(ref GameObject obj) {
+        if (obj != null) {
+            Object.Destroy(obj);
+        }
+
+        obj = null;
+    }
+
+    private static GameObject Make(string name, AlignmentMode align, HorizontalAnchorMode anchor, Vector3 at, bool background, out MessageBox box) {
+        box = null;
+        var prefab = UI.MessageController == null ? null : UI.MessageController.HintMessage;
+        if (prefab == null) {
+            return null;
+        }
+
+        // the prefab sleeps through the clone so nothing runs before the clone is set up
+        var wasActive = prefab.activeSelf;
+        prefab.SetActive(false);
+        var obj = (GameObject)InstantiateUtility.Instantiate(prefab);
+        prefab.SetActive(wasActive);
+        obj.name = name;
+        if (RandomizerUI.Instance != null) {
+            obj.transform.parent = RandomizerUI.Instance.transform;
+        }
+
+        // a retry restores a checkpoint, which would take the box with it
+        Object.Destroy(obj.GetComponent<DestroyOnRestoreCheckpoint>());
+        Object.Destroy(obj.GetComponent<SoundSource>());
+        box = obj.GetComponentInChildren<MessageBox>();
+        if (box == null) {
+            Object.Destroy(obj);
+            return null;
+        }
+
+        // no typewriter: the text is whole the moment it is set
+        if (box.WriteOutTextBox != null) {
+            Object.DestroyImmediate(box.WriteOutTextBox);
+            box.WriteOutTextBox = null;
+        }
+
+        // in front of the menu screens
+        box.TextBox.transform.localPosition = new Vector3(0f, 0f, -1f);
+        box.TextBox.alignment = align;
+        box.TextBox.horizontalAnchor = anchor;
+        box.TextBox.verticalAnchor = VerticalAnchorMode.Top;
+        box.SetWaitDuration(float.PositiveInfinity);
+        if (!background) {
+            var plate = box.Visibility.transform.FindChild("background");
+            if (plate != null) {
+                plate.gameObject.SetActive(false);
+            }
+        }
+
+        // shown whole at once: a menu's suspension would hold a fade at nothing
+        box.Visibility.TransitionInDuration = 0.001f;
+        box.transform.position = at;
+        obj.SetActive(true);
+        box.Visibility.Start();
+        return obj;
+    }
+}

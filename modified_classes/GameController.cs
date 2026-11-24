@@ -212,6 +212,7 @@ public class GameController : SaveSerialize, ISuspendable {
         UI.LoadMessageController();
         Systems.Clear();
         Application.targetFrameRate = 60;
+        RandomizerPerf.Apply();
         UberGCManager.CollectProactiveFull();
     }
 
@@ -347,6 +348,10 @@ public class GameController : SaveSerialize, ISuspendable {
         Randomizer.OnApplicationQuit();
     }
 
+    public void OnGUI() {
+        Randomizer.OnGUI();
+    }
+
     public void Update() {
         Randomizer.Update();
 
@@ -390,6 +395,8 @@ public class GameController : SaveSerialize, ISuspendable {
         if (m_lastDebugControlsEnabledValue != DebugMenuB.DebugControlsEnabled) {
             m_lastDebugControlsEnabledValue = DebugMenuB.DebugControlsEnabled;
         }
+
+        Randomizer.FixedUpdate();
 
         if (!IsSuspended) {
             GameTime += Time.deltaTime;
@@ -440,6 +447,10 @@ public class GameController : SaveSerialize, ISuspendable {
     }
 
     public void CreateCheckpoint() {
+        CreateCheckpoint(true);
+    }
+
+    public void CreateCheckpoint(bool callOnPostCreate) {
         SaveGameData saveGameData = Game.Checkpoint.SaveGameData;
         SaveSceneManager.Master.SaveWithoutClearing(saveGameData.Master);
         saveGameData.ApplyPendingScenes();
@@ -451,7 +462,9 @@ public class GameController : SaveSerialize, ISuspendable {
             }
         }
 
-        Game.Checkpoint.Events.OnPostCreate.Call();
+        if (callOnPostCreate) {
+            Game.Checkpoint.Events.OnPostCreate.Call();
+        }
     }
 
     public void ClearCheckpointData() {

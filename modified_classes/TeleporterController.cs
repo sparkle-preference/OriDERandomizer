@@ -35,6 +35,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
             // Remove excess teleporters.
             while (Teleporters.Count > 12 + requiredCustomTeleporterCount) {
+                Teleporters[Teleporters.Count - 1].Hide();
                 Teleporters.RemoveAt(Teleporters.Count - 1);
             }
 
@@ -114,6 +115,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         Instance = null;
         SuspensionManager.Unregister(this);
         Events.Scheduler.OnGameReset.Remove(OnGameReset);
+        DisableTaEffect();
     }
 
     public void OnGameReset() {
@@ -125,6 +127,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public void CancelTeleport() {
+        DisableTaEffect();
         Randomizer.IsUsingRandomizerTeleportAnywhere = false;
         m_isTeleporting = false;
         m_isBlooming = false;
@@ -158,16 +161,20 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public static void Activate(string identifier, bool natural) {
-        if (natural) {
-            RandomizerSyncManager.FoundTP(identifier);
-        }
-
-        BingoController.OnActivateTeleporter(identifier);
+        // need this so we don't spam manual activations
+        var known = RandomizerSyncManager.isTeleporterActivated(identifier, false);
         foreach (var gameMapTeleporter in Instance.Teleporters) {
             if (gameMapTeleporter.Identifier == identifier) {
                 gameMapTeleporter.Activated = true;
             }
         }
+
+        RandomizerStatsManager.TeleporterActivated(identifier);
+        if (natural && !known) {
+            RandomizerSyncManager.FoundTP(identifier);
+        }
+
+        BingoController.OnActivateTeleporter(identifier);
     }
 
     public static void Activate(string identifier) {
@@ -176,11 +183,14 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
     public static void BeginTeleportation(GameMapTeleporter selectedTeleporter) {
         if (Vector3.Distance(selectedTeleporter.WorldPosition, Characters.Sein.Position) < 10f) {
+            Randomizer.IsUsingRandomizerTeleportAnywhere = false;
             return;
         }
 
         BingoController.OnWarp();
-        if (selectedTeleporter.Area.Area.AreaNameString == "Forlorn Ruins") {
+        // null where no area cage covers the spot, as for some custom warps
+        var area = selectedTeleporter.Area;
+        if (area != null && area.Area != null && area.Area.AreaNameString == "Forlorn Ruins") {
             Randomizer.NightBerryWarpPosition = selectedTeleporter.WorldPosition;
             Characters.Sein.Inventory.SetRandomizerItem(82, 1);
         }
@@ -194,6 +204,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         if (!Instance.DontTeleportForAnimationTesting) {
             Scenes.Manager.AdditivelyLoadScenesAtPosition(selectedTeleporter.WorldPosition, true, false, true);
             Instance.m_teleporterTargetPosition = selectedTeleporter.WorldPosition;
+            Instance.m_teleporterTargetName = selectedTeleporter.Identifier;
         }
 
         Instance.m_isTeleporting = true;
@@ -212,8 +223,23 @@ public class TeleporterController : SaveSerialize, ISuspendable {
 
         Characters.Sein.Controller.OnTriggeredAnimationFinished += OnFinishedTeleportingStartAnimation;
         Instance.m_startTime = Time.time;
-        foreach (var savePedestal in SavePedestal.All) {
-            savePedestal.OnBeginTeleporting();
+
+        if (TeleportAnywhereEffect && Randomizer.IsUsingRandomizerTeleportAnywhere) {
+            TeleportAnywhereEffect.gameObject.SetActive(true);
+            TeleportAnywhereEffect.Initialize();
+            TeleportAnywhereEffect.AnimatorDriver.Restart();
+        } else {
+            foreach (var savePedestal in SavePedestal.All) {
+                savePedestal.OnBeginTeleporting();
+            }
+        }
+
+        Randomizer.FixGinsoEscape();
+    }
+
+    private static void DisableTaEffect() {
+        if (TeleportAnywhereEffect) {
+            TeleportAnywhereEffect.gameObject.SetActive(false);
         }
     }
 
@@ -226,6 +252,12 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public void FixedUpdate() {
+        if (!IsTeleporting) {
+            return;
+        }
+
+        TeleportAnywhereEffect.transform.position = Characters.Sein.Position;
+
         if (m_isTeleporting) {
             var time = Time.time;
             var num = 7f;
@@ -254,6 +286,7 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         if (m_isBlooming) {
             m_bloomCurrentTime += !IsSuspended ? Time.deltaTime : 0f;
             if (m_bloomCurrentTime > BloomFadeDuration) {
+                // still m_isBlooming here: the sweep gate reads that as a covered screen
                 OnFadedToBlack();
                 m_isBlooming = false;
             }
@@ -261,6 +294,8 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     }
 
     public void OnFadedToBlack() {
+        DisableTaEffect();
+
         foreach (var savePedestal in SavePedestal.All) {
             savePedestal.OnFinishedTeleporting();
         }
@@ -278,6 +313,13 @@ public class TeleporterController : SaveSerialize, ISuspendable {
             RandomizerBonusSkill.LastAltR = Characters.Sein.Position;
         }
 
+        if (Randomizer.IsUsingRandomizerTeleportAnywhere) {
+            Randomizer.DisableMistyVfxTriggers();
+        }
+
+        // only a cutscene in the scene being left sets these mid-teleport, and its unlock unloads with it
+        GameController.Instance.LockInputByAction = false;
+        Letterbox.ShowLetterboxes = false;
         Characters.Sein.Position = m_teleporterTargetPosition + Vector3.up * 1.6f;
         CameraPivotZone.InstantUpdate();
         Scenes.Manager.UpdatePosition();
@@ -289,15 +331,13 @@ public class TeleporterController : SaveSerialize, ISuspendable {
             Characters.Ori.BackToPlayerController();
         }
 
+        Landed(m_teleporterTargetName);
         GameController.Instance.CreateCheckpoint();
         GameController.Instance.PerformSaveGameSequence();
         RandomizerStatsManager.UsedTeleporter();
 
         if (Randomizer.IsUsingRandomizerTeleportAnywhere) {
-            var value = World.Events.Find(Randomizer.MistySim).Value;
-            if (value != 1 && value != 8) {
-                World.Events.Find(Randomizer.MistySim).Value = 10;
-            }
+            Randomizer.ResetMistyState();
         }
 
         LateStartHook.AddLateStartMethod(OnFinishedTeleporting);
@@ -358,15 +398,56 @@ public class TeleporterController : SaveSerialize, ISuspendable {
         Instance.Teleporters.Add(teleporter);
     }
 
-    public static bool IsTeleporting {
-        get {
-            if (Instance == null) {
-                return false;
-            }
+    // custom warps sit after the twelve wells, as Serialize lays them out
+    public static void RemoveCustomTeleporter(string name) {
+        if (Instance == null || !Instance.customWarps.Remove(name)) {
+            return;
+        }
 
-            return Instance.m_isTeleporting;
+        for (var i = Instance.Teleporters.Count - 1; i >= 12; i--) {
+            if (Instance.Teleporters[i].Identifier == name) {
+                Instance.Teleporters[i].Hide();
+                Instance.Teleporters.RemoveAt(i);
+            }
         }
     }
+
+    // a Glades spawn that warps out before Spirit Flame has no lit well to warp back to
+    private const string GladesRescue = "Glades";
+
+    private static readonly Vector3 GladesRescueSpot = new Vector3(87.78f, -258.22f, 0f);
+
+    private static bool GladesLit() {
+        return Characters.Sein.PlayerAbilities.SpiritFlame.HasAbility ||
+            RandomizerSyncManager.isTeleporterActivated("sunkenGlades", false);
+    }
+
+    // Every warp landing comes through here before its save; target is the well's id, or null.
+    public static void Landed(string target) {
+        if (Instance == null || Characters.Sein == null || PracticeController.Active) {
+            return;
+        }
+
+        if (target == GladesRescue) {
+            RemoveCustomTeleporter(GladesRescue);
+        } else if (!(Randomizer.SpawnWith ?? "").Contains("WS") && !GladesLit() &&
+                RandomizerStatsManager.CurrentZone() != "sunkenGlades" && Instance.customWarps.Add(GladesRescue)) {
+            // lit directly: Activate would report it to sync, stats and bingo as a found well
+            Instance.Teleporters.Add(new GameMapTeleporter(GladesRescue, GladesRescueSpot, true));
+        }
+    }
+
+    // The teleport menu indexes this list, so removal waits for the menus to close.
+    public static void RetireGladesRescue() {
+        if (Instance != null && Characters.Sein != null && !UI.MainMenuVisible &&
+                Instance.customWarps.Contains(GladesRescue) && GladesLit()) {
+            RemoveCustomTeleporter(GladesRescue);
+        }
+    }
+
+    public static bool IsTeleporting => Instance && (Instance.m_isTeleporting || Instance.m_isBlooming);
+
+    public static bool IsBlooming => Instance && Instance.m_isBlooming;
 
     public bool IsSuspended { get; set; }
 
@@ -411,4 +492,8 @@ public class TeleporterController : SaveSerialize, ISuspendable {
     private float m_bloomCurrentTime;
 
     private Vector3 m_teleporterTargetPosition;
+
+    private string m_teleporterTargetName;
+
+    public static TimelineSequence TeleportAnywhereEffect;
 }

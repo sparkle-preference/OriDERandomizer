@@ -1,15 +1,17 @@
 using Game;
 using UnityEngine;
 
-// Feeds the split health/energy display (see RandomizerTempResourceUI): base
-// layers capped at the permanent max, the temp row showing only the over-max
-// (temporary) amount. UseMinVisual mirrors the vanilla Min/Max provider pair.
+// Feeds RandomizerTempResourceUI: base layers capped at the permanent max, temp rows the overflow.
+// UseMinVisual mirrors the vanilla Min/Max provider pair.
 public class RandomizerTempResourceProvider : FloatValueProvider {
     public bool Energy;
 
     public bool Overflow;
 
     public bool UseMinVisual;
+
+    // legacy mode's dimmed copy of the whole bar, drawn behind the capped one
+    public bool Inline;
 
     public float DivideBy = 1f;
 
@@ -34,19 +36,21 @@ public class RandomizerTempResourceProvider : FloatValueProvider {
         }
 
         if (RandomizerSettings.Customization.DisableTempResourceRows) {
-            // vanilla display: base layers uncapped, temp rows empty
-            smoothedInit = false;
-            return (Overflow ? 0f : visual) / DivideBy;
-        }
+            if (Overflow) {
+                smoothedInit = false;
+                return 0f;
+            }
 
-        if (!Overflow) {
+            // inline: the base stops at max when the dimmed copy behind it is up, else draws it all
+            if (!Inline) {
+                return (RandomizerTempResourceUI.InlineReady(Energy) ? Mathf.Min(visual, max) : visual) / DivideBy;
+            }
+        } else if (!Overflow) {
             return Mathf.Min(visual, max) / DivideBy;
         }
 
-        // the temp row tracks true damage in a few frames instead of the slow
-        // vanilla visual settle -- repeated hits must read at a glance. Gains
-        // snap, like the vanilla pickup feel.
-        var target = Mathf.Max(0f, current - max);
+        // the temp row settles on damage in a few frames, not the slow vanilla settle; gains snap
+        var target = Inline ? (current > max ? current : 0f) : Mathf.Max(0f, current - max);
         if (!smoothedInit || target > smoothed) {
             smoothedInit = true;
             smoothed = target;

@@ -232,6 +232,7 @@ public static class RandomizerTrackedDataManager {
     public static bool SetTree(int treeNum) {
         if (!GetTree(treeNum)) {
             TreeBitfield = Characters.Sein.Inventory.IncRandomizerItem(1001, 1 << treeNum);
+            RandomizerStatsManager.TreeActivated(treeNum);
             if (treeNum != 0) {
                 BingoController.OnTree(treeNum);
                 Characters.Sein.Inventory.IncRandomizerItem(27, 1);
@@ -251,6 +252,7 @@ public static class RandomizerTrackedDataManager {
         if (!GetRelic(zone)) {
             Characters.Sein.Inventory.IncRandomizerItem(402, 1);
             RelicBitfield = Characters.Sein.Inventory.IncRandomizerItem(1002, 1 << RelicFound[zone]);
+            RandomizerStatsManager.RelicFound(zone);
             return true;
         }
 
@@ -272,6 +274,7 @@ public static class RandomizerTrackedDataManager {
     public static void SetMapstone(int mapNum) {
         if (!GetMapstone(mapNum)) {
             MapstoneBitfield = Characters.Sein.Inventory.IncRandomizerItem(1003, 1 << mapNum);
+            RandomizerStatsManager.MapstoneTurnedIn(mapNum);
         }
     }
 

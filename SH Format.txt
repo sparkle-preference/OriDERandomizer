@@ -24,7 +24,7 @@ If you are using the website, this is always true.
 If you are manually editing a seed file, and the message pickup is inside an MU or RP pickup, they must be doubled up.
 Example:
 SH|Up/<icon>v</>
-RP/SH/Up//<icon>v<//>
+RP|SH/Up//<icon>v<//>
 
 
 
@@ -42,6 +42,12 @@ Available characters/colors:
 - *blue text*
 - $green text$
 - @red text@
+
+
+
+Slot values
+===
+{n} is replaced with whatever save slot n holds, more information in "RI Format.txt".
 
 
 
@@ -157,6 +163,9 @@ Available styles:
     Example for big purple text: "<style color=b100e8 fontscale=2>"
     Available properties (must be specified in the order listed):
     - "color=rrggbb" or "color=rrggbbaa": Set the text color. rr/gg/bb/aa are two hex digits each.
+        Several colors separated by commas make a gradient, spaced evenly across the styled text
+        and blended per pixel: "<style color=ff0000,ffff00,0000ff>a rainbow</>". Wrapped text starts
+        the gradient again on each line.
     - "font=fontName": Change font. Available fonts:
         - "sakkalMajalla": Default font for most languages.
         - "icons": Icon font (used by "<icon>").

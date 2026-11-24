@@ -239,7 +239,9 @@ public class AreaMapNavigation : MonoBehaviour {
 
     public void HandleRandomizerTooltip() {
         try {
-            Vector2 cursorPositionWorld = MapToWorldPosition(Input.CursorPositionUI);
+            // on a pad the pointer is the scroll centre, same as the well hover
+            Vector2 cursorPositionWorld = RandomizerMapWarp.Pointing()
+                ? MapToWorldPosition(Input.CursorPositionUI) : ScrollPosition;
             RuntimeWorldMapIcon candidate = null;
             string candidateArea = null;
             var candidateDistance = Mathf.Infinity;
@@ -286,6 +288,34 @@ public class AreaMapNavigation : MonoBehaviour {
                 }
             }
 
+            // hints not placed this frame would otherwise sit on the legend row
+            for (var i = doorCount; i < AreaMapUI.Instance.KeysanityDoorTooltips.Count; i++) {
+                if (AreaMapUI.Instance.KeysanityDoorTooltips[i].gameObject.activeSelf) {
+                    AreaMapUI.Instance.KeysanityDoorTooltips[i].gameObject.SetActive(false);
+                }
+            }
+
+            // Peers are considered last and win ties: the thing that moves is the thing you meant.
+            var peer = RandomizerGhostMap.Hover(cursorPositionWorld, ref candidateDistance, out var peerAt, out var peerName);
+
+            // at full zoom the nearest thing takes the cursor; otherwise a well's prompt beats any
+            // tooltip under it, or it could never be reached
+            var beat = ZoomTime >= 2f ? candidateDistance : Mathf.Infinity;
+            if (RandomizerMapWarp.Update(m_areaMapUi, this, cursorPositionWorld, textScale, offset, beat)) {
+                AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(false);
+                return;
+            }
+
+            if (peer) {
+                var peerPosition = WorldToMapPosition(peerAt);
+                peerPosition.y -= offset * 0.6f;
+                AreaMapUI.Instance.RandomizerTooltip.transform.position = peerPosition;
+                AreaMapUI.Instance.RandomizerTooltip.transform.localScale = textScale;
+                AreaMapUI.Instance.RandomizerTooltip.OverrideText = peerName;
+                AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(true);
+                return;
+            }
+
             if (candidate == null) {
                 AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(false);
                 return;
@@ -297,7 +327,8 @@ public class AreaMapNavigation : MonoBehaviour {
             AreaMapUI.Instance.RandomizerTooltip.transform.localScale = textScale;
 
             if (RandomizerLocationManager.LocationsByWorldMapGuid.TryGetValue(candidate.Guid, out var pickupLocation)) {
-                AreaMapUI.Instance.RandomizerTooltip.OverrideText = pickupLocation.FriendlyName;
+                var layerNote = RandomizerMapLayers.LayerNote(candidate.Guid, candidate.Position);
+                AreaMapUI.Instance.RandomizerTooltip.OverrideText = pickupLocation.FriendlyName + (layerNote == null ? "" : $" ({layerNote})");
                 if (DebugMenuB.DebugControlsEnabled && (MoonInput.GetKey(KeyCode.LeftShift) || MoonInput.GetKey(KeyCode.RightShift)) && Input.RightClick.OnPressed) {
                     candidate.Hide();
                     RandomizerLocationManager.GivePickupByWorldMapGuid(candidate.Guid);
@@ -308,9 +339,16 @@ public class AreaMapNavigation : MonoBehaviour {
 
             AreaMapUI.Instance.RandomizerTooltip.gameObject.SetActive(true);
         } catch (Exception e) {
-            Randomizer.log("HandleRandomizerTooltip: " + e.Message);
+            // once and decomposed, so a per-frame throw cannot flood the log or hide its type
+            if (!TooltipComplained) {
+                TooltipComplained = true;
+                Randomizer.log("HandleRandomizerTooltip: " + e.GetType().FullName + ": "
+                    + e.Message + "\n" + e.StackTrace);
+            }
         }
     }
+
+    private static bool TooltipComplained;
 
     public Transform MapPivot;
 

@@ -1,0 +1,2157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Practice segment editor</title>
+<link rel="stylesheet" href="/leaflet.css">
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; background: #14181d; color: #e6e9ee; margin: 0; padding: 20px 24px 70px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 0 0 10px; color: #9fc6ff; text-transform: uppercase; letter-spacing: .08em; }
+  .muted { color: #8b95a3; }
+  section { background: #1c2229; border: 1px solid #2b333d; border-radius: 6px; padding: 14px 16px; margin-bottom: 14px; min-width: 0; }
+  /* a wide page: two sections to a row, the map row on its own */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .cols section { margin-bottom: 0; }
+  .cols + .cols, .cols + section, section + .cols { margin-top: 14px; }
+  @media (max-width: 1300px) { .cols { grid-template-columns: 1fr; } }
+  /* sections sharing one column */
+  .stack { display: grid; gap: 14px; align-content: start; min-width: 0; }
+  .row { margin: 6px 0; }
+  label { display: inline-block; margin: 4px 14px 4px 0; }
+  input[type=text], input[type=number], select { background: #0f1317; color: #e6e9ee; border: 1px solid #3a4553; border-radius: 4px; padding: 4px 6px; }
+  input[type=number] { width: 66px; }
+  table.boxes input[type=number] { width: 54px; -moz-appearance: textfield; }
+  table.boxes input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=color] { vertical-align: middle; }
+  button { background: #2f6fd6; color: #fff; border: 0; border-radius: 4px; padding: 6px 12px; cursor: pointer; margin-right: 6px; }
+  button.quiet { background: #3a4553; }
+  button.danger { background: #8b2f2f; }
+  button.on { background: #2f9e6a; }
+  button.icon { padding: 4px 7px; line-height: 1; }
+  button.icon svg { width: 13px; height: 13px; fill: currentColor; display: block; }
+  button.icon.on { background: #e6e9ee; color: #111; }
+  button:disabled { opacity: .45; cursor: default; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #2b333d; vertical-align: top; }
+  th { color: #8b95a3; font-weight: normal; }
+  td .pick { min-width: 190px; }
+  /* fixed columns line the tables up, flags and gives split the rest; no scrolling wrapper, which would clip a picker's menu */
+  table.boxes { table-layout: fixed; }
+  table.boxes th:nth-child(1) { width: 34px; }
+  table.boxes th:nth-child(n+3):nth-child(-n+6) { width: 70px; }
+  table.boxes th:nth-child(7) { width: 80px; }
+  table.boxes th:nth-child(9) { width: 52px; }
+  table.boxes th:nth-child(n+10) { width: 36px; }
+  table.boxes th:first-child, table.boxes td:first-child { text-align: right; padding-right: 2px; }
+  table.boxes .num { display: inline-block; padding-top: 5px; color: #888; font-size: 12px; font-variant-numeric: tabular-nums; }
+  table.boxes .pick { min-width: 0; }
+  /* every row banded, so the goal's green band sits like the rest */
+  table.boxes tbody tr:nth-child(odd) td { background: #232b34; }
+  table.boxes tbody tr:nth-child(even) td { background: #20272f; }
+  table.boxes tbody tr.goal td { background: #1c3a26; }
+  table.boxes tbody tr.flash td { background: #2f4f7a; transition: background 1.5s; }
+  .chips span { display: inline-block; background: #2b333d; border-radius: 12px; padding: 2px 10px; margin: 2px 4px 2px 0; }
+  .chips span b { cursor: pointer; margin-left: 6px; color: #ff9a9a; }
+  .mapgrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 14px; }
+  #map { height: 520px; background: #121212; border: 1px solid #2b333d; border-radius: 4px; }
+  #map.editing { cursor: move; }
+  .leaflet-container { font: inherit; }
+  .leaflet-tooltip { background: #0f1317; color: #e6e9ee; border: 1px solid #3a4553; }
+  .handle { width: 10px; height: 10px; background: #fff; border: 1px solid #000; border-radius: 2px; }
+  .handle.point { background: #3b8fff; }
+  .map-chip { background: #1c2229; border: 1px solid #3a4553; border-radius: 4px; padding: 3px 9px; cursor: default; }
+  .map-coords { min-width: 11ch; text-align: center; font-variant-numeric: tabular-nums; }
+  .layout-cycle { display: flex; align-items: center; transition: opacity .15s; }
+  .layout-cycle.away { opacity: 0; pointer-events: none; }
+  /* a layout swap dissolves; leaflet's zoom rule is restated so the pictures still zoom with the map */
+  .layout-picture { transition: opacity .35s; }
+  .leaflet-zoom-anim .layout-picture { transition: transform .25s cubic-bezier(0, 0, .25, 1), opacity .35s; }
+  .layout-cycle div { display: flex; flex-direction: column; }
+  .layout-cycle button { margin: 0; padding: 3px 9px; background: #3a4553; border-radius: 3px; }
+  .layout-cycle button + button { margin-top: 1px; }
+  .layout-label { display: inline-grid; margin-left: 3px; }
+  .layout-label > * { grid-area: 1 / 1; text-align: center; }
+  .layout-label > i { visibility: hidden; font-style: normal; }
+  #status { position: fixed; bottom: 0; left: 0; right: 0; background: #0f1317; padding: 10px 24px; border-top: 1px solid #2b333d; }
+  .ok { color: #8fe3a0; } .bad { color: #ff9a9a; }
+  .variant, .group, .boxlist { border: 1px dashed #3a4553; border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
+  details summary { cursor: pointer; color: #9fc6ff; }
+  /* the pickup picker: chips and a typed search over the site's item groups */
+  .pick { position: relative; display: flex; flex-wrap: wrap; align-items: center; vertical-align: middle; min-width: 340px; max-width: 100%; background: #0f1317; border: 1px solid #3a4553; border-radius: 4px; padding: 2px 4px; }
+  .pick > span { min-width: 0; }
+  .pick .chip { display: inline-block; background: #2b333d; border-radius: 12px; padding: 1px 8px; margin: 2px 4px 2px 0; cursor: pointer; overflow-wrap: anywhere; }
+  .pick .chip b { margin-left: 6px; color: #ff9a9a; }
+  .pick input { border: 0; background: transparent; color: inherit; flex: 1 1 60px; min-width: 60px; padding: 3px 4px; outline: none; }
+  .pick .menu { display: none; position: absolute; z-index: 1000; left: 0; right: 0; top: 100%; max-height: 280px; overflow: auto; background: #1c2229; border: 1px solid #3a4553; border-radius: 4px; }
+  .pick .menu.open { display: block; }
+  .pick .grp { color: #8b95a3; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 5px 8px 2px; }
+  .pick .opt { padding: 3px 12px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pick .opt.hi, .pick .opt:hover { background: #2f6fd6; }
+  .pick .opt small { color: #b8c2cf; margin-left: 8px; }
+  .pick .opt.hi small, .pick .opt:hover small { color: #e6e9ee; }
+  td .pick { min-width: 280px; }
+  .pick .chip.odd { background-color: #ffd27f; background-image: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0 2px, transparent 2px 6px); color: #222; }
+  .pick input.odd { color: #ffd27f; box-shadow: inset 0 0 0 1px #ffd27f; }
+  .pick .opt small.odd { color: #ffd27f; }
+  .pick.flags .menu { right: auto; min-width: 100%; width: max-content; }
+  .pick .opt i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .saves .save { padding: 4px 8px; cursor: pointer; border-radius: 4px; }
+  .saves .save:hover { background: #2a323c; }
+  .saves .save.picked { background: #2f6fd6; }
+  #placeText { width: 100%; box-sizing: border-box; font: 12px/1.4 Consolas, monospace; background: #0f1317; color: #e6e9ee; border: 1px solid #3a4553; border-radius: 4px; padding: 6px; }
+  body.nosession .cols, body.nosession > section:not(#createSection), body.nosession #status { display: none; }
+  /* the seed's own boxes: everything a segment has beyond them is hidden */
+  .seedonly { display: none; }
+  body.seedmode .seedonly { display: block; }
+  body.seedmode .segonly { display: none !important; }
+  .seedonly[hidden] { display: none !important; }
+  /* a locked box takes no edits here and no drags on the map; only its lock answers */
+  table.boxes tbody tr.locked td:not(.lockcell) { opacity: .45; pointer-events: none; }
+  /* the plando's Enemies panel: scenes fold, a row picks its marker */
+  #enemyList { max-height: 560px; overflow: auto; }
+  #enemyTools a { color: #9fc6ff; }
+  .enemy-scene { cursor: pointer; display: flex; justify-content: space-between; padding: 4px 8px; margin-top: 2px; background: #232b34; border-radius: 3px; }
+  .enemy-row { display: flex; align-items: center; gap: 8px; padding: 3px 8px; cursor: pointer; }
+  .enemy-row:hover { background: #20272f; }
+  .enemy-row.sel { background: #2f4f7a; }
+  .enemy-row .num { width: 34px; text-align: right; color: #888; font-variant-numeric: tabular-nums; }
+  .enemy-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
+  .enemy-where { flex: 1; color: #b8c2cf; }
+  .enemy-variant button { padding: 1px 6px; margin: 0 4px; }
+  .enemy-variant input[type=number] { width: 60px; }
+  .enemy-marker span { display: block; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #000; }
+  .enemy-marker.sel span { border-color: #fff; }
+</style>
+</head>
+<body>
+<h1 id="title">Practice segment editor</h1>
+<div class="muted" id="path">Talking to the game…</div>
+
+<section id="createSection" hidden>
+  <h2>New segment</h2>
+  <div class="muted">Practice segments start from a saved game. Pick one from your game; everything else is edited once the game has the segment open.</div>
+  <div class="row"><label>Name <input type="text" id="newName" size="40"></label></div>
+  <div id="createSaves" class="saves muted">Loading saves…</div>
+  <div class="row"><button id="create" disabled>Create and open in the game</button> <span class="muted" id="createNote"></span></div>
+</section>
+
+<div class="seedonly muted" style="margin: 10px 0; max-width: 900px">
+  These are the boxes in the seed you have loaded. Give them items and flags here, then <b>Save to game</b>: it writes them
+  into the seed file (the first save keeps a copy of the original next to it). Flags are explained in Boxes.txt.
+  In the game, <b>Adjust Boxes</b> moves and resizes boxes and <b>Copy Lines</b> copies their lines for the plando builder.
+</div>
+
+<details class="segonly" style="margin: 10px 0">
+  <summary>How this works</summary>
+  <div class="muted" style="margin-top:6px; max-width: 900px">
+    <p><b>Practice Segments:</b> A <i>practice segment</i> is a save file plus some rules: where you start, what the end condition is, what pickups are in the world.
+    <b>PRACTICE MODE</b> on the title screen to enter the segment select menu. Pick a segment to <b>run</b> it, or press Copy (<b>C</b> by default) on it to <b>edit</b> it. Unfinished segments jump straight to the editor.
+    A <b>.bfrp</b> someone gave you only runs until you hold Copy on its card to extract it into a folder.</p>
+
+    <p><b>Editor:</b> The editor freezes the world and opens the <b>Edit Boxes</b> window:
+    <b>Create Box</b> draws a box (item, solid, kill, unsafe or goal), <b>Adjust Boxes</b> moves and resizes them, <b>Delete Boxes</b> deletes the one you click, and <b>Undo</b> takes back the last change.
+    <b>WASD</b> pans the view and <b>right click</b> warps Ori to the mouse and loads nearby scenes. <b>Save</b> saves, <b>Reload</b> reloads from disk, 
+    <b>Save &amp; Retry</b> saves and begins a run on the segment, and <b>Open in Browser</b> opens this page.
+    While you are editing, the randomizer's other keybinds are off, and the pause menu is replaced with practice-specific options.</p>
+
+    <p><b>Web Editing Helper:</b> This page allows for advanced configuration of practice segments - QTM compatibility, box options (color, position, visibility, and items), 
+    ending conditions more complicated than a box collider, shuffle groups, the briefing, and variants. (For more info on each of these topics, <s>check out the Practice Mode FAQ</s> bug Eiko in the dev discord to get the FAQ written.) 
+    When you are finished making changes, click <b>Save to game</b> at the bottom of the page.</p>
+
+    <p><b>The map:</b> Pick locations from the zone and location lists or click them on the map to select locations required to finish the segment or to include in a shuffle group.
+    With <i>edit boxes on the map</i> on, drag a box to move it and its corners to resize it.</p>
+
+    <p><b>Misc Info:</b> A run ends when ALL of its end conditions are satisfied and needs to have at least one. The Retry Practice Segment Randomizer Bind (default Alt+L) restarts an attempt, and dismisses an open briefing if one exists. Quitting to menu ends a practice run unless it is QTM-enabled - ending a QTM-enabled run can be done from the main menu. Segments you make are folders in <span id="folder">[Your Ori Install]\practice</span>. To share one, send its <b>export\&lt;name&gt;.bfrp</b>: it is written when a session that changed the segment ends, or by <b>Export .bfrp</b> below. Exports keep the demo ghost but not your runs.</p>
+  </div>
+</details>
+
+<div class="cols">
+<section id="segmentSection" class="segonly">
+  <h2>Segment</h2>
+  <div class="row"><label>Name <input type="text" id="name" size="40" title="Segment name (Changing this will rename the folder)"></label></div>
+  <div class="row"><label>Timing
+    <select id="mode"><option value="best">best time (ghosts on)</option><option value="average">average time (no ghosts)</option></select>
+  </label>
+  <label>Ghost shown
+    <select id="showGhost"><option value="">pinned, else fastest, else demo</option><option value="fastest">fastest</option><option value="pinned">pinned</option><option value="recent">most recent</option><option value="none">none</option></select>
+  </label></div>
+  <div class="row"><label><input type="checkbox" id="qtm"> QTM enabled.</label> <label><input type="checkbox" id="faceLeft"> Ori starts facing left.</label> <label><input type="checkbox" id="resetOnDeath"> Reset on death.</label></div>
+  <div class="row"><label style="display:block">Briefing <span class="muted">shown once a session before the first run; the player presses retry to start. A variant's own replaces it</span><br>
+    <textarea id="about" rows="3" cols="60" placeholder="what this segment is for"></textarea></label></div>
+  <div class="row">Starts from <span id="baseInfo" class="muted">the segment's save</span> <button class="quiet" id="changeSave">change</button></div>
+  <div id="changeSaves" class="saves" hidden></div>
+</section>
+
+<section class="segonly">
+  <h2>End condition(s) <span class="muted">(need at least 1)</span></h2>
+  <div class="row">Goal box <span id="goalBox" class="muted">none</span> <span class="muted">— edit it in the Boxes table, or draw one in the game</span></div>
+  <div class="row">Items held <span id="endItems"></span></div>
+  <div class="row">Pickup count <input type="number" id="count" min="0" placeholder="any"> <span class="muted">blank for none</span></div>
+  <div class="row">Locations <span id="locChips" class="chips"></span> <button class="quiet" id="pickEnd">pick</button></div>
+</section>
+</div>
+
+<section>
+  <h2>Locations and boxes</h2>
+  <div class="mapgrid">
+    <div id="map"></div>
+    <div>
+      <div class="segonly">
+      <div class="row">Locations go to <select id="locTarget"></select></div>
+      <div class="row">Zone <select id="zone"></select></div>
+      <div class="row">Location <select id="loc"></select> <button class="quiet" id="addLoc">add</button></div>
+      <div class="row"><input type="text" id="locSearch" placeholder="search every zone" size="26"> <span class="muted">dims the map to the matches</span></div>
+      <div class="row muted">Or click a marker. Clicking a box jumps to its row.</div>
+      <div id="targetChips" class="chips"></div>
+      </div>
+      <div class="row" style="margin-top:14px"><button class="quiet" id="editBoxes">edit boxes on the map</button> <span class="muted">drag a box to move it, a corner to resize it; on a convex or loop box, right-click a side to add a point or a point to remove it</span></div>
+      <div id="tileStatus" class="muted"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Boxes</h2>
+  <div class="muted segonly">Drawn boxes appear here after a save in the game; the goal box is part of the end condition. The eye hides a box in game. Flags are explained in Boxes.txt, which comes with the randomizer.</div>
+  <div id="sharedBoxes">
+    <div class="row" id="sharedHead" hidden>Shared <span class="muted">every variant has these</span></div>
+    <div class="row"><button class="quiet" id="addBox">add box</button> <button class="quiet segonly" id="addGoal">add goal box</button>
+      <button class="quiet" id="lockAll" title="Lock every box: no edits, no dragging. Locks are this page's, kept in this browser.">lock all</button>
+      <button class="quiet" id="unlockAll">unlock all</button></div>
+    <table id="boxes" class="boxes"><thead><tr><th title="The number BM|n uses">#</th><th>flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>shape</th><th>gives</th><th></th><th></th><th></th><th></th></tr></thead><tbody></tbody></table>
+  </div>
+  <div id="variantBoxes" class="segonly"></div>
+</section>
+
+<section id="enemySection" class="seedonly" hidden>
+  <h2>Enemies <span class="muted" id="enemyCount"></span></h2>
+  <div class="muted" id="enemyNote"></div>
+  <div class="row" id="enemyTools" hidden>
+    <button class="quiet" id="enemyReset" title="Reset all enemy location assignments to default.">reset all</button>
+    <input type="text" id="enemyFilter" placeholder="filter by scene, coordinates or kind" size="34">
+    <label><input type="checkbox" id="enemyMarkers" checked> on the map</label>
+    <a id="enemyVariants" target="_blank" rel="noopener noreferrer" title="Lists each enemy variant and their base stats">variant list</a>
+  </div>
+  <div id="enemyList"></div>
+</section>
+
+<div class="cols segonly">
+<section>
+  <h2>Variants</h2>
+  <div id="variants"></div>
+  <button class="quiet" id="addVariant">add variant</button>
+  <div class="muted">A segment with variants always runs one of them: they share the start and the end condition, and each keeps its own loadout, boxes, history and ghosts. Its boxes are under Boxes. The arrows set their order; the game stacks them the same way, the bottom one nearest the card.</div>
+</section>
+
+<div class="stack">
+<section>
+  <h2>Shuffle groups</h2>
+  <div id="groups"></div>
+  <button class="quiet" id="addGroup">add group</button>
+  <div class="muted">Each attempt scatters the group's pickups over as many of its locations, chosen fresh.</div>
+</section>
+
+<section>
+  <h2>Ghosts <span class="muted" id="ghostVariant"></span></h2>
+  <div id="ghosts" class="muted">none</div>
+  <div class="row"><button class="quiet" id="pinGhost">pin the most recent run</button></div>
+  <div class="muted">A pinned run is raced instead of the fastest until it is removed. The demo is a run you ship with the segment: exports keep it, and players race it until they have a ghost of their own.</div>
+</section>
+</div>
+</div>
+
+<section class="segonly">
+  <h2>Placements</h2>
+  <div class="row">List of <select id="placeTarget"></select> <button class="quiet" id="placePick">load a file</button><input type="file" id="placeFile" accept=".bfr,.dat,.txt" hidden></div>
+  <textarea id="placeText" rows="10" spellcheck="false" placeholder="-1560188|SK|0|Swamp"></textarea>
+  <div class="row"><button class="quiet" id="placeReplace">Replace placements</button> <span class="muted">Placement and box lines; a whole seed file works too. This replaces the list, boxes included.</span></div>
+</section>
+
+<div id="status">
+  <button id="save">Save to game</button>
+  <button class="quiet" id="reload">Reload from game</button>
+  <button class="quiet" id="export" hidden>Export .bfrp</button>
+  <span id="message" class="muted"></span>
+</div>
+
+<script src="/leaflet.js"></script>
+<script>
+(function () {
+  var state = { segment: null, variants: {}, catalog: null, map: null, markers: {}, shapes: [], handles: [], selectedBox: null, target: 'end', playing: '', editing: false, ghosts: [] };
+  var $ = function (id) { return document.getElementById(id); };
+  var say = function (text, cls) { var m = $('message'); m.textContent = text; m.className = cls || 'muted'; m.title = ''; };
+
+  function api(url, opts) {
+    return fetch(url, Object.assign({ cache: 'no-store' }, opts || {})).then(function (r) {
+      return r.json().then(function (j) {
+        if (!r.ok) { var e = new Error(j.error || r.status); e.status = r.status; e.body = j; throw e; }
+        return j;
+      });
+    });
+  }
+
+  function load() {
+    say('Loading…');
+    return api('/api/catalog').then(function (c) { state.catalog = c; return api('/api/segment'); }).then(function (s) {
+      if (s.folder) { $('folder').textContent = shortPath(s.folder, 60); $('folder').title = s.folder; }
+      document.body.classList.toggle('nosession', !s.session);
+      state.seed = !!s.seed;
+      document.body.classList.toggle('seedmode', state.seed);
+      $('title').textContent = state.seed ? 'Seed box editor' : 'Practice segment editor';
+      $('createSection').hidden = !!s.session;
+      if (!s.session) {
+        $('path').textContent = s.awaiting ? 'The game is waiting for a starting save. Pick one below.'
+          : s.choosing ? 'No segment is open. Make one below and the game starts it in the editor.'
+          : 'No practice session is running. Make a segment below, or start one from PRACTICE MODE in the game.';
+        say('');
+        return renderCreate(s);
+      }
+      $('path').textContent = state.seed ? 'Boxes in ' + s.path + (s.editing ? '  (editing in the game)' : '')
+        : s.path + (s.variant ? '  (playing variant ' + s.variant + ')' : '') + (s.given ? '  (a .bfrp: saving here extracts it to a folder)' : '');
+      $('export').hidden = state.seed || !s.export; $('export').title = s.export || '';
+      state.segment = s.segment; state.variants = s.variants || {}; state.playing = s.variant || '';
+      state.path = s.path || ''; loadLocks();
+      $('name').value = state.name = s.name || '';
+      state.base = s.base || null; state.placements = s.placements || {};
+      // a save names the revision it was made from; a stale one merges against these two copies
+      state.rev = s.rev; state.loaded = JSON.stringify({ segment: s.segment, variants: state.variants });
+      boxLists(state).forEach(function (l) { l.boxes.forEach(settle); });
+      loadEnemies(state.seed ? s.enemies : null);
+      render(); if (!state.seed) renderPlacements(); state.shown = JSON.stringify(collect()); say('Loaded.', 'ok');
+      return state.seed ? null : loadGhosts();
+    }).catch(function (e) { say('Could not reach the game: ' + e.message, 'bad'); });
+  }
+
+  // a long path keeps its drive and as many of its last folders as fit
+  function shortPath(p, max) {
+    var sep = p.indexOf('\\') >= 0 ? '\\' : '/', parts = p.split(sep);
+    if (p.length <= max || parts.length < 3) return p;
+    var tail = [parts.pop()];
+    while (parts.length > 2 && (parts[0] + sep + '...' + sep + parts[parts.length - 1] + sep + tail.join(sep)).length <= max) tail.unshift(parts.pop());
+    return parts[0] + sep + '...' + sep + tail.join(sep);
+  }
+
+  function clock(seconds) {
+    var h = Math.floor(seconds / 3600), m = Math.floor(seconds / 60) % 60, s = seconds % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(s).padStart(2, '0');
+  }
+  function describe(h) {
+    return h.area + ' · ' + h.completion + '% · ' + clock(h.seconds) + ' · ' + h.difficulty + ' · ' + h.health + '/' + h.maxHealth + ' health cells, ' + h.energy + '/' + h.maxEnergy + ' energy cells';
+  }
+
+  // the game's saves as rows to pick from; onPick gets the header, slot included
+  function saveList(root, onPick) {
+    root.textContent = 'Loading saves…';
+    return api('/api/saves').then(function (r) {
+      root.innerHTML = ''; root.classList.remove('muted');
+      if (!r.saves.length) { root.textContent = 'The game has no saves yet.'; return; }
+      var picked = null;
+      r.saves.forEach(function (h) {
+        var row = document.createElement('div'); row.className = 'save';
+        row.textContent = 'Slot ' + (h.slot + 1) + ' · ' + describe(h);
+        row.onclick = function () {
+          if (picked) picked.classList.remove('picked');
+          picked = row; row.classList.add('picked');
+          onPick(h);
+        };
+        root.appendChild(row);
+      });
+    }).catch(function (e) { root.textContent = 'Could not list the saves: ' + e.message; });
+  }
+
+  // the game's waiting prompt can be canceled in the game too, so poll until it goes away
+  var awaitTimer = null;
+  function awaitCancel(awaiting) {
+    if (awaitTimer) { clearTimeout(awaitTimer); awaitTimer = null; }
+    if (!awaiting) return;
+    var tick = function () {
+      api('/api/segment').then(function (s) {
+        if (s.session) return load();
+        if (s.awaiting) { awaitTimer = setTimeout(tick, 1500); return; }
+        $('path').textContent = 'The game stopped waiting for a save. Make the segment here and start it from PRACTICE MODE.';
+      }).catch(function () { awaitTimer = setTimeout(tick, 3000); });
+    };
+    awaitTimer = setTimeout(tick, 1500);
+  }
+
+  var newSlot = null;
+  function renderCreate(s) {
+    if (!$('newName').value) $('newName').value = s.suggestedName || '';
+    awaitCancel(s.awaiting);
+    newSlot = null; $('create').disabled = true; $('createNote').textContent = 'pick a save';
+    return saveList($('createSaves'), function (h) { newSlot = h.slot; $('create').disabled = false; $('createNote').textContent = 'from slot ' + (h.slot + 1) + ', ' + h.area; });
+  }
+  $('create').onclick = function () {
+    if (newSlot === null) return;
+    $('create').disabled = true; say('Creating…');
+    api('/api/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slot: newSlot, name: $('newName').value.trim() }) })
+      .then(function (r) {
+        if (!r.started) { say('Created ' + r.path + '. Start it from PRACTICE MODE in the game; it opens in the editor.', 'ok'); $('create').disabled = false; return; }
+        say('Created ' + r.path + '. The game is loading it into the editor…', 'ok');
+        return waitForSession(20);
+      })
+      .catch(function (e) { say('Could not create it: ' + e.message, 'bad'); $('create').disabled = false; });
+  };
+  // the game loads for a few seconds before the segment is open to edit
+  function waitForSession(tries) {
+    return api('/api/segment').then(function (s) {
+      if (s.session) return load();
+      if (tries <= 0) { say('The game has not opened the segment yet; reload once it has.', 'bad'); return; }
+      return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return waitForSession(tries - 1); });
+    });
+  }
+
+  function renderBase() {
+    $('baseInfo').textContent = state.base ? describe(state.base) : "the segment's own save";
+  }
+  $('changeSave').onclick = function () {
+    var list = $('changeSaves');
+    list.hidden = !list.hidden;
+    if (list.hidden) return;
+    saveList(list, function (h) {
+      if (!confirm('Start this segment from slot ' + (h.slot + 1) + ' (' + h.area + ') from now on? A running attempt reloads from it.')) return;
+      say('Replacing the starting save…');
+      api('/api/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slot: h.slot }) })
+        .then(function (r) {
+          list.hidden = true;
+          say(r.restarted ? 'Starting save replaced; the game is reloading from it.'
+            : 'Starting save replaced; the segment starts from it next time you run it.', 'ok');
+          return new Promise(function (ok) { setTimeout(ok, r.restarted ? 2500 : 300); });
+        })
+        .then(load)
+        .catch(function (e) { say('Could not replace the save: ' + e.message, 'bad'); });
+    });
+  };
+
+  function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : Math.round(n * 100) / 100; }
+
+  // ---- pickups: the site's item table and names ---------------------------------
+  var GROUPS = {
+    "Skills": [
+      { label: "Bash", value: "SK|0" }, { label: "Charge Flame", value: "SK|2" }, { label: "Wall Jump", value: "SK|3" },
+      { label: "Stomp", value: "SK|4" }, { label: "Double Jump", value: "SK|5" }, { label: "Charge Jump", value: "SK|8" },
+      { label: "Climb", value: "SK|12" }, { label: "Glide", value: "SK|14" }, { label: "Spirit Flame", value: "SK|15" },
+      { label: "Dash", value: "SK|50" }, { label: "Grenade", value: "SK|51" }
+    ],
+    "Cells/Stones": [
+      { label: "Health Cell", value: "HC|1" }, { label: "Energy Cell", value: "EC|1" }, { label: "Ability Cell", value: "AC|1" },
+      { label: "Keystone", value: "KS|1" }, { label: "Mapstone", value: "MS|1" }
+    ],
+    "Teleporters": [
+      { label: "Grotto TP", value: "TP|Grotto" }, { label: "Grove TP", value: "TP|Grove" }, { label: "Forlorn TP", value: "TP|Forlorn" },
+      { label: "Valley TP", value: "TP|Valley" }, { label: "Sorrow TP", value: "TP|Sorrow" }, { label: "Swamp TP", value: "TP|Swamp" },
+      { label: "Ginso TP", value: "TP|Ginso" }, { label: "Horu TP", value: "TP|Horu" }, { label: "Blackroot TP", value: "TP|Blackroot" }
+    ],
+    "Events": [
+      { label: "Water Vein", value: "EV|0" }, { label: "Clean Water", value: "EV|1" }, { label: "Gumon Seal", value: "EV|2" },
+      { label: "Wind Restored", value: "EV|3" }, { label: "Sunstone", value: "EV|4" }, { label: "Warmth Returned", value: "EV|5" },
+      { label: "Darkness Lifted", value: "EV|6" }, { label: "Forlorn Energy Restored", value: "EV|7" }
+    ],
+    "Upgrades": [
+      { label: "Mega Health", value: "RB|0", desc: "Restores health to full, then grants 5 temporary health." },
+      { label: "Mega Energy", value: "RB|1", desc: "Restores energy to full, then grants 5 temporary energy." },
+      { label: "Mini Health", value: "RB|38", desc: "Restores health to full, then grants 1 temporary health. Stacks." },
+      { label: "Mini Energy", value: "RB|39", desc: "Restores energy to full, then grants 1 temporary energy. Stacks." },
+      { label: "Air Refresh", value: "RB|4", desc: "Double jumps and air dashes back, as if Ori had landed." },
+      { label: "Save Game", value: "RB|5", desc: "Saves the game when collected." },
+      { label: "Attack Upgrade", value: "RB|6", desc: "Increases Spirit Flame's damage and maximum number of targets by 1. Stacks." },
+      { label: "Spirit Light Efficiency", value: "RB|9", desc: "Doubles all incoming experience." },
+      { label: "Extra Air Dash", value: "RB|10", desc: "Grants a second Air Dash." },
+      { label: "Charge Dash Efficiency", value: "RB|11", desc: "Reduces the cost of Charge Dash to .5 energy." },
+      { label: "Extra Double Jump", value: "RB|12", desc: "Grants an extra Double Jump. Stacks." },
+      { label: "Health Regeneration", value: "RB|13", desc: "Restores 1 health per 60 seconds. Stacks." },
+      { label: "Energy Regeneration", value: "RB|15", desc: "Restores 1 energy per 60 seconds. Stacks." },
+      { label: "Water Vein Shard", value: "RB|17" }, { label: "Gumon Seal Shard", value: "RB|19" }, { label: "Sunstone Shard", value: "RB|21" },
+      { label: "Warmth Fragment", value: "RB|28" },
+      { label: "Bleeding", value: "RB|30", desc: "Removes 1 health per 60 seconds. Stacks." },
+      { label: "Health Drain", value: "RB|31", desc: "Restores health equal to 5% of the damage dealt." },
+      { label: "Energy Drain", value: "RB|32", desc: "Restores energy equal to 5% of the damage dealt." },
+      { label: "Skill Velocity Upgrade", value: "RB|33", desc: "Faster Dash, Bash, Stomp, Climb and Charge Jump. Stacks." },
+      { label: "Disable Alt+R", value: "RB|34" }, { label: "Enable Alt+R", value: "RB|35" },
+      { label: "Underwater Skill Usage", value: "RB|36", desc: "Dash and Grenade work underwater." },
+      { label: "Jump Upgrade", value: "RB|37", desc: "Higher jumps, wall jumps and double jumps. Stacks." },
+      { label: "Remove Wall Jump", value: "RB|40" }, { label: "Remove Charge Flame", value: "RB|41" }, { label: "Remove Double Jump", value: "RB|42" },
+      { label: "Remove Bash", value: "RB|43" }, { label: "Remove Stomp", value: "RB|44" }, { label: "Remove Glide", value: "RB|45" },
+      { label: "Remove Climb", value: "RB|46" }, { label: "Remove Charge Jump", value: "RB|47" }, { label: "Remove Dash", value: "RB|48" },
+      { label: "Remove Grenade", value: "RB|49" }, { label: "Stompnade Hint", value: "RB|81" }, { label: "Enable Frag Sense", value: "RB|1100" },
+      { label: "Polarity Shift", value: "RB|101", desc: "On use: swap health and energy." },
+      { label: "Gravity Swap", value: "RB|102", desc: "Toggle: inverts gravity." },
+      { label: "Extreme Speed", value: "RB|103", desc: "Toggle: much faster horizontal speed." },
+      { label: "Teleport: Last AltR", value: "RB|104" }, { label: "Teleport: Soul Link", value: "RB|105" }, { label: "Respec", value: "RB|106" },
+      { label: "Level Explosion", value: "RB|107" }, { label: "Timewarp", value: "RB|109" }, { label: "Invincibility", value: "RB|110" },
+      { label: "Wither", value: "RB|111", desc: "On use: kills Ori." }, { label: "Bash/Stomp Damage", value: "RB|113" },
+      { label: "Quick Flame", value: "RB|200" }, { label: "Spark Flame", value: "RB|201" }, { label: "Charge Flame Burn", value: "RB|202" },
+      { label: "Split Flame", value: "RB|203" }, { label: "Ultra Light Burst", value: "RB|204" }, { label: "Cinder Flame", value: "RB|205" },
+      { label: "Ultra Stomp", value: "RB|206" }, { label: "Rapid Flame", value: "RB|207" }, { label: "Charge Flame Blast", value: "RB|208" },
+      { label: "Ultra Split Flame", value: "RB|209" }, { label: "Spirit Magnet", value: "RB|210" }, { label: "Map Markers", value: "RB|211" },
+      { label: "Life Efficiency", value: "RB|212" }, { label: "Ultra Spirit Magnet", value: "RB|213" }, { label: "Energy Efficiency", value: "RB|214" },
+      { label: "Spirit Efficiency", value: "RB|215" }, { label: "Spirit Potency", value: "RB|216" }, { label: "Life Regen (Ability)", value: "RB|217" },
+      { label: "Energy Regen (Ability)", value: "RB|218" }, { label: "Sense", value: "RB|219" }, { label: "Rekindle", value: "RB|220" },
+      { label: "Regroup", value: "RB|221" }, { label: "Charge Flame Efficiency", value: "RB|222" }, { label: "Air Dash", value: "RB|223" },
+      { label: "Ultra Soul Link", value: "RB|224" }, { label: "Charge Dash", value: "RB|225" }, { label: "Water Breath", value: "RB|226" },
+      { label: "Soul Link Efficiency", value: "RB|227" }, { label: "Triple Jump", value: "RB|228" }, { label: "Ultra Defense", value: "RB|229" },
+      { label: "Remove Quick Flame", value: "RB|230" }, { label: "Remove Spark Flame", value: "RB|231" }, { label: "Remove Charge Flame Burn", value: "RB|232" },
+      { label: "Remove Split Flame", value: "RB|233" }, { label: "Remove Ultra Light Burst", value: "RB|234" }, { label: "Remove Cinder Flame", value: "RB|235" },
+      { label: "Remove Ultra Stomp", value: "RB|236" }, { label: "Remove Rapid Flame", value: "RB|237" }, { label: "Remove Charge Flame Blast", value: "RB|238" },
+      { label: "Remove Ultra Split Flame", value: "RB|239" }, { label: "Remove Spirit Magnet", value: "RB|240" }, { label: "Remove Map Markers", value: "RB|241" },
+      { label: "Remove Life Efficiency", value: "RB|242" }, { label: "Remove Ultra Spirit Magnet", value: "RB|243" }, { label: "Remove Energy Efficiency", value: "RB|244" },
+      { label: "Remove Spirit Efficiency", value: "RB|245" }, { label: "Remove Spirit Potency", value: "RB|246" }, { label: "Remove Life Regen (Ability)", value: "RB|247" },
+      { label: "Remove Energy Regen (Ability)", value: "RB|248" }, { label: "Remove Sense", value: "RB|249" }, { label: "Remove Rekindle", value: "RB|250" },
+      { label: "Remove Regroup", value: "RB|251" }, { label: "Remove Charge Flame Efficiency", value: "RB|252" }, { label: "Remove Air Dash", value: "RB|253" },
+      { label: "Remove Ultra Soul Link", value: "RB|254" }, { label: "Remove Charge Dash", value: "RB|255" }, { label: "Remove Water Breath", value: "RB|256" },
+      { label: "Remove Soul Link Efficiency", value: "RB|257" }, { label: "Remove Triple Jump", value: "RB|258" }, { label: "Remove Ultra Defense", value: "RB|259" },
+      { label: "Remove Water Vein", value: "RB|260" }, { label: "Remove Clean Water", value: "RB|261" }, { label: "Remove Gumon Seal", value: "RB|262" },
+      { label: "Remove Wind Restored", value: "RB|263" }, { label: "Remove Sunstone", value: "RB|264" }, { label: "Remove Warmth Returned", value: "RB|265" },
+      { label: "Remove Darkness Lifted", value: "RB|266" }, { label: "Remove Forlorn Energy Restored", value: "RB|267" }
+    ],
+    // typed in: picking one loads it into the box for editing
+    "Misc": [
+      { label: "15 Experience", value: "EX|15", edit: true },
+      { label: 'Print "Your text here"', value: "SH|Your text here", edit: true },
+      { label: "Warp to 0,0", value: "WP|0,0", edit: true },
+      { label: "Warp (forced) to 0,0", value: "WP|0,0,force", edit: true },
+      { label: "Warp to 0,0 and save", value: "WS|0,0", edit: true }
+    ]
+  };
+  var LABELS = {};
+  Object.keys(GROUPS).forEach(function (g) { GROUPS[g].forEach(function (o) { if (!o.edit) LABELS[o.value] = o.label; }); });
+
+  function decompose(code, id) {
+    if (code === 'NO' && id === '1') return [];
+    if (code !== 'MU' && code !== 'RP' && code !== 'RG') return [[code, id]];
+    if (!id) return [];
+    var parts = [], first = null, part = '';
+    for (var i = 0; i < id.length; i++) {
+      var c = id[i];
+      if (c === '/') {
+        if (i < id.length - 1 && id[i + 1] === '/') { part += '/'; i++; }
+        else if (first === null) { first = part; part = ''; }
+        else { parts.push([first, part]); first = null; part = ''; }
+      } else part += c;
+    }
+    if (first !== null) parts.push([first, part]);
+    return parts;
+  }
+
+  function pickupName(code, id) {
+    id = String(id == null ? '' : id);
+    if (LABELS[code + '|' + id]) return LABELS[code + '|' + id];
+    switch (code) {
+      case 'MU': case 'RP': case 'RG':
+        var names = decompose(code, id).map(function (p) { return pickupName(p[0], p[1]); });
+        return (code === 'RP' ? 'Repeatable: ' : code === 'RG' ? 'One of: ' : '') + names.join(', ');
+      case 'TP': return id + ' TP';
+      case 'EX': return id + ' Experience';
+      case 'HC': return 'Health Cell'; case 'AC': return 'Ability Cell'; case 'EC': return 'Energy Cell';
+      case 'KS': return 'Keystone'; case 'MS': return 'Mapstone';
+      case 'SH': return 'Print "' + id + '"';
+      case 'WT': return id === '*' ? 'Random Relic' : 'Relic: ' + id;
+      case 'WS': case 'WP':
+        if (id === '*') return 'Random Warp';
+        var forced = /,force$/.test(id);
+        return 'Warp' + (forced ? ' (forced)' : '') + ' to ' + id.replace(/,force$/, '') + (code === 'WS' ? ' and save' : '');
+      case 'NO': return 'Nothing';
+      default: return code + '|' + id;
+    }
+  }
+  function nameOf(str) { if (!str) return ''; var bar = str.indexOf('|'); return bar < 0 ? str : pickupName(str.slice(0, bar), str.slice(bar + 1)); }
+  function splitCode(str) { if (!str) return []; var bar = str.indexOf('|'); if (bar < 0) return [str]; return decompose(str.slice(0, bar), str.slice(bar + 1)).map(function (p) { return p[0] + '|' + p[1]; }); }
+  function joinCodes(list) {
+    if (!list.length) return '';
+    if (list.length === 1) return list[0];
+    return 'MU|' + list.map(function (v) { return v.replace(/\//g, '//'); }).join('/').replace(/\|/g, '/');
+  }
+  function validCode(text) { return /^[A-Za-z]{2}\|.+$/.test(text.trim()); }
+
+  // A picker over the item groups with typed search and free-form codes, holding a
+  // list of codes; cfg.get() reads it, cfg.set(list) stores it.
+  function pickSelect(cfg) {
+    var root = document.createElement('span'); root.className = 'pick';
+    var chips = document.createElement('span');
+    var input = document.createElement('input'); input.type = 'text'; input.placeholder = placeholder();
+    var menu = document.createElement('div'); menu.className = 'menu';
+    root.appendChild(chips); root.appendChild(input); root.appendChild(menu);
+    var hi = -1, shown = [], dragFrom = null;
+
+    function placeholder() { return (typeof cfg.placeholder === 'function' ? cfg.placeholder() : cfg.placeholder) || 'type to search items'; }
+    function list() { return cfg.get() || []; }
+    function commit(l) { cfg.set(l); drawChips(); }
+    function drawChips() {
+      chips.innerHTML = '';
+      list().forEach(function (v, i) {
+        var s = document.createElement('span'); s.className = 'chip'; s.textContent = nameOf(v); s.title = v;
+        var b = document.createElement('b'); b.textContent = '×';
+        b.onclick = function (ev) { ev.stopPropagation(); var l = list().slice(); l.splice(i, 1); commit(l); };
+        s.onclick = function () { var l = list().slice(); l.splice(i, 1); commit(l); input.value = v; input.focus(); open(); };
+        // dropping a chip on another puts it at that chip's place, as the plando editor does
+        s.draggable = true;
+        s.ondragstart = function (ev) { dragFrom = i; ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', v); };
+        s.ondragover = function (ev) { if (dragFrom !== null) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; } };
+        s.ondrop = function (ev) {
+          ev.preventDefault(); ev.stopPropagation();
+          var from = dragFrom; dragFrom = null;
+          if (from === null || from === i) return;
+          var l = list().slice(); l.splice(i, 0, l.splice(from, 1)[0]); commit(l);
+        };
+        s.ondragend = function () { dragFrom = null; };
+        s.appendChild(b); chips.appendChild(s);
+      });
+      input.placeholder = list().length ? '' : placeholder();
+    }
+    function add(value) { var l = list().slice(); l.push(value); commit(l); input.value = ''; close(); input.focus(); }
+    function open() {
+      var q = input.value.trim().toLowerCase();
+      menu.innerHTML = ''; shown = []; hi = -1;
+      (cfg.groups || Object.keys(GROUPS)).forEach(function (g) {
+        var hits = GROUPS[g].filter(function (o) { return !q || o.label.toLowerCase().indexOf(q) >= 0 || o.value.toLowerCase().indexOf(q) >= 0; });
+        if (!hits.length) return;
+        var h = document.createElement('div'); h.className = 'grp'; h.textContent = g; menu.appendChild(h);
+        hits.forEach(function (o) {
+          var d = document.createElement('div'); d.className = 'opt'; d.textContent = o.label;
+          var code = document.createElement('small'); code.textContent = o.value; d.appendChild(code);
+          if (o.desc) d.title = o.desc;
+          d.onmousedown = function (ev) { ev.preventDefault(); choose(o); };
+          menu.appendChild(d); shown.push({ el: d, opt: o });
+        });
+      });
+      if (q && validCode(input.value) && !cfg.groups) {
+        var h2 = document.createElement('div'); h2.className = 'grp'; h2.textContent = 'as typed'; menu.appendChild(h2);
+        var d2 = document.createElement('div'); d2.className = 'opt'; d2.textContent = nameOf(input.value.trim());
+        var o2 = { label: input.value.trim(), value: input.value.trim() };
+        d2.onmousedown = function (ev) { ev.preventDefault(); choose(o2); };
+        menu.appendChild(d2); shown.push({ el: d2, opt: o2 });
+      }
+      menu.classList.toggle('open', shown.length > 0);
+    }
+    function close() { menu.classList.remove('open'); hi = -1; }
+    function choose(o) { if (o.edit) { input.value = o.value; open(); } else add(o.value); }
+    function highlight(n) {
+      if (!shown.length) return;
+      hi = (n + shown.length) % shown.length;
+      shown.forEach(function (s, i) { s.el.classList.toggle('hi', i === hi); });
+      shown[hi].el.scrollIntoView({ block: 'nearest' });
+    }
+    input.onfocus = open;
+    input.oninput = open;
+    input.onblur = function () { setTimeout(close, 120); };
+    input.onkeydown = function (ev) {
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); if (!menu.classList.contains('open')) open(); highlight(hi + 1); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); highlight(hi - 1); }
+      else if (ev.key === 'Enter') {
+        ev.preventDefault();
+        if (hi >= 0 && shown[hi]) choose(shown[hi].opt);
+        else if (validCode(input.value)) add(input.value.trim());
+        else if (shown.length === 1) choose(shown[0].opt);
+      }
+      else if (ev.key === 'Escape') close();
+      else if (ev.key === 'Backspace' && input.value === '' && list().length) { var l = list().slice(); l.pop(); commit(l); }
+    };
+    root.onclick = function () { input.focus(); };
+    root.refresh = drawChips;
+    drawChips();
+    return root;
+  }
+
+  // A box's flags as chips, with a menu of the usual ones; cfg.get(), cfg.set(list) and cfg.describe(flag).
+  function flagSelect(cfg) {
+    var root = document.createElement('span'); root.className = 'pick flags';
+    var chips = document.createElement('span');
+    var input = document.createElement('input'); input.type = 'text';
+    var menu = document.createElement('div'); menu.className = 'menu';
+    root.appendChild(chips); root.appendChild(input); root.appendChild(menu);
+    var hi = -1, shown = [];
+
+    function list() { return cfg.get(); }
+    function has(f) { return list().some(function (x) { return x.toLowerCase() === f.toLowerCase(); }); }
+    function commit(l) { cfg.set(l); draw(); }
+    function draw() {
+      chips.innerHTML = '';
+      list().forEach(function (f, i) {
+        var s = document.createElement('span'); s.className = 'chip'; s.textContent = f;
+        var d = cfg.describe(f), color = DEFAULT_COLOR[f.toLowerCase()];
+        s.title = d.text;
+        if (d.warn) s.classList.add('odd');
+        if (color) { s.style.backgroundColor = color; s.style.color = '#222'; }
+        var b = document.createElement('b'); b.textContent = '×';
+        b.onclick = function (ev) { ev.stopPropagation(); var l = list(); l.splice(i, 1); commit(l); };
+        s.onclick = function () { var l = list(); l.splice(i, 1); commit(l); input.value = f; input.focus(); };
+        s.appendChild(b); chips.appendChild(s);
+      });
+      input.placeholder = list().length ? '' : 'flags';
+    }
+    // a typed tombstone (or none, its old name) would delete the box
+    function add(f) {
+      f = (f === undefined ? input.value : f).trim(); if (!f) return;
+      var why = f.toLowerCase() === 'tombstone' || f.toLowerCase() === 'none' ? 'To delete the box, use its ×.' : /[,|]/.test(f) ? 'One flag at a time, without , or |' : '';
+      if (why) { input.classList.add('odd'); input.title = why; return; }
+      input.value = ''; close();
+      if (!has(f)) { var l = list(); l.push(f); commit(l); }
+    }
+    function line(text, what, warn, color) {
+      var d = document.createElement('div'); d.className = 'opt';
+      if (color) { var sw = document.createElement('i'); sw.style.background = color; d.appendChild(sw); }
+      d.appendChild(document.createTextNode(text));
+      if (what) { var w = document.createElement('small'); w.textContent = what; if (warn) w.className = 'odd'; d.appendChild(w); }
+      return d;
+    }
+    function offer(d, entry) { d.onmousedown = function (ev) { ev.preventDefault(); pick(entry); }; entry.el = d; return entry; }
+    // a completion that more can follow goes to the text box; anything else is added
+    function pick(entry) { if (entry.fill) { input.value = entry.flag; input.focus(); open(); } else add(entry.flag); }
+    function known(f) { return has(f) || SUGGEST.some(function (o) { return o[0].toLowerCase() === f.toLowerCase(); }); }
+    // A flag that's whole as typed keeps the usual lines first, so Enter adds it; one that isn't
+    // puts its completions first.
+    function open() {
+      var typed = input.value.trim(), q = typed.toLowerCase(), own = [], usual = [], next = [];
+      menu.innerHTML = ''; shown = []; hi = -1;
+      if (typed && !known(typed)) { var d0 = cfg.describe(typed); own.push(offer(line('add ' + typed, d0.text, d0.warn), { flag: typed })); }
+      var usualBy = {};
+      SUGGEST.forEach(function (o) {
+        if (has(o[0]) || (q && o[0].toLowerCase().indexOf(q) < 0)) return;
+        var x = offer(line(o[0], o[1], false, DEFAULT_COLOR[o[0]]), { flag: o[0] });
+        usual.push(x); usualBy[o[0].toLowerCase()] = x;
+      });
+      // a completion the menu already has keeps that line, moved to the completion's place
+      flagCompletions(typed).forEach(function (c) {
+        var mine = usualBy[c.value.toLowerCase()];
+        if (c.next) next.push(offer(line(c.value + '<' + c.next.hint + '>', c.next.fallback ? c.next.fallback + ' if left out' : ''), { flag: c.value, fill: true }));
+        else if (mine) { next.push(mine); usual.splice(usual.indexOf(mine), 1); }
+        else if (!known(c.value)) next.push(offer(line(c.value, lower(describeFlag(c.value).text)), { flag: c.value, fill: c.fill }));
+      });
+      var whole = typed && !cfg.describe(typed).warn;
+      (whole ? own.concat(usual, next) : next.concat(usual, own)).forEach(function (x) { menu.appendChild(x.el); shown.push(x); });
+      menu.classList.toggle('open', shown.length > 0);
+      if (typed) highlight(0);
+    }
+    function close() { menu.classList.remove('open'); hi = -1; }
+    function highlight(n) {
+      if (!shown.length) return;
+      hi = (n + shown.length) % shown.length;
+      shown.forEach(function (x, i) { x.el.classList.toggle('hi', i === hi); });
+      shown[hi].el.scrollIntoView({ block: 'nearest' });
+    }
+    input.onkeydown = function (ev) {
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); if (!menu.classList.contains('open')) open(); highlight(hi + 1); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); highlight(hi - 1); }
+      else if (ev.key === 'Enter') { ev.preventDefault(); if (hi >= 0 && shown[hi]) pick(shown[hi]); else add(); }
+      else if (ev.key === 'Escape') close();
+      else if (ev.key === 'Backspace' && input.value === '' && list().length) { var l = list(); l.pop(); commit(l); }
+    };
+    // a typed comma adds what came before it; leaving the field adds what is typed
+    input.oninput = function () {
+      input.classList.remove('odd'); input.title = '';
+      if (/,$/.test(input.value)) add(input.value.slice(0, -1)); else open();
+    };
+    input.onfocus = open;
+    input.onblur = function () { setTimeout(close, 120); add(); };
+    root.onclick = function () { input.focus(); };
+    root.refresh = draw;
+    draw();
+    return root;
+  }
+
+  // ---- the map -----------------------------------------------------------------
+  // the site's projection: two teleporters pin game units to map pixels
+  function gameCrs() {
+    var swampT = { x: 493.719818, y: -74.31961 }, gladesT = { x: 109.90181, y: -257.681549 };
+    var swampM = { x: 15258, y: 9587 }, gladesM = { x: 11897, y: 11185 };
+    var map1 = gladesM, map2 = swampM, game1 = gladesT, game2 = swampT;
+    var mapRight = 20480, mapBottom = 14592, tile = 256, maxZoom = 7;
+    var gameLeft = game2.x - ((map2.x / (map2.x - map1.x)) * (game2.x - game1.x));
+    var gameTop = game2.y - ((map2.y / (map2.y - map1.y)) * (game2.y - game1.y));
+    var gameRight = mapRight / map1.x * (game1.x - gameLeft) + gameLeft;
+    var gameBottom = mapBottom / map1.y * (game1.y - gameTop) + gameTop;
+    var tileX = (Math.pow(2, maxZoom) * tile) / mapRight * (gameRight - gameLeft);
+    var tileY = (Math.pow(2, maxZoom) * tile) / mapBottom * (gameBottom - gameTop);
+    var scaleX = tile / tileX, scaleY = tile / tileY;
+    var originX = (0 - gameLeft) / (game1.x - gameLeft) * map1.x / Math.pow(2, maxZoom);
+    var originY = (0 + gameTop) / (gameTop - game1.y) * map1.y / Math.pow(2, maxZoom);
+    return L.extend({}, L.CRS.Simple, { transformation: new L.Transformation(scaleX + 0.0001, originX + 0, scaleY - 0.0005, originY - 0.2) });
+  }
+
+  function initMap() {
+    if (state.map || typeof L === 'undefined') return;
+    var map = L.map('map', { crs: gameCrs(), zoomControl: false, minZoom: 2, maxZoom: 9, attributionControl: false });
+    // corners as on the site's maps: zoom top right, the cursor's coordinates top left
+    L.control.zoom({ position: 'topright' }).addTo(map);
+    var coords = L.DomUtil.create('div', 'map-chip map-coords');
+    coords.textContent = '0, 0';
+    var Coords = L.Control.extend({ options: { position: 'topleft' }, onAdd: function () { return coords; } });
+    map.addControl(new Coords());
+    // the site's pyramid is 20480 x 14592 px at zoom 7: no tile is asked for outside it
+    var pyramid = L.latLngBounds(map.unproject([0, 14592], 7), map.unproject([20480, 0], 7));
+    L.tileLayer('/tiles/{z}/{x}/{y}.png', { noWrap: true, maxNativeZoom: 6, maxZoom: 9, tileSize: 256, bounds: pyramid }).addTo(map);
+    var start = state.segment && state.segment.start;
+    if (start && typeof start.x === 'number' && typeof start.y === 'number') map.setView([start.y, start.x], 6);
+    else map.setView([-240, 120], 5);
+    state.map = map;
+    var zoneColor = {};
+    var palette = ['#7fd1ff', '#ffb36b', '#9be37f', '#ff8fb1', '#e0c26b', '#c59bff', '#6bf0dc', '#ff7f7f', '#b8b8ff', '#ffd27f'];
+    state.catalog.locations.forEach(function (loc) {
+      if (!(loc.zone in zoneColor)) zoneColor[loc.zone] = palette[Object.keys(zoneColor).length % palette.length];
+      var m = L.circleMarker([loc.y, loc.x], { radius: 5, weight: 1, color: '#000', fillColor: zoneColor[loc.zone], fillOpacity: 0.9 }).addTo(map);
+      m.bindTooltip(asText(loc.name + ' (' + loc.zone + ')'), { direction: 'top', offset: [0, -6] });
+      m.on('click', function () { if (!state.editing && pickable(loc)) toggleLocation(loc.key); });
+      state.markers[loc.key] = m;
+    });
+    map.on('mousemove', function (ev) { coords.textContent = ev.latlng.lng.toFixed(1) + ', ' + ev.latlng.lat.toFixed(1); });
+    pollTiles();
+    initLayers(map);
+  }
+
+  // ---- map layers: the game's Misty layouts and escape maps, drawn over the tiles ----
+  // hides the tiles' own Misty picture, so it sits where the tiles draw Misty, not at world coords
+  var COVER_BOUNDS = [[-39.57, -1092.94], [26.93, -594.44]];
+
+  function parseSheet(set, text) {
+    var sheet = { set: set, order: [], bounds: {}, names: {}, whole: {} };
+    function rect(pic, r) { sheet.bounds[pic] = [[+r[1], +r[0]], [+r[3], +r[2]]]; }
+    text.split('\n').forEach(function (line) {
+      var p = line.trim().split(/\s+/);
+      if (/^\d+$/.test(p[0])) { sheet.order.push(p[0]); rect(p[0], p.slice(1, 5)); }
+      else if (p[0] === 'picture') rect(p[1], p.slice(2, 6));
+      else if (p[0] === 'name') sheet.names[p[1]] = p.slice(2).join(' ');
+      else if (p[0] === 'whole') sheet.whole[p[2]] = p[1];
+    });
+    return sheet;
+  }
+
+  function loadImage(url) {
+    return new Promise(function (done, fail) { var img = new Image(); img.onload = function () { done(img); }; img.onerror = fail; img.src = url; });
+  }
+
+  function layerStem(set, pic) { return set + '_' + (pic.length < 2 ? '0' + pic : pic); }
+
+  // the game tells these two apart by the save; with no save they are one picture, shown once
+  var MERGED = { drop: '8', keep: '9', name: 'Completed' };
+
+  // only while the manifest says they are the same files: if they ever differ, both names return
+  function mergeSame(sheet, manifest) {
+    var sums = {};
+    manifest.split('\n').forEach(function (line) { var p = line.trim().split(/\s+/); if (p[1]) sums[p[0]] = p[1]; });
+    function files(layer) { return ['.jpg', '_alpha.png'].map(function (end) { return sums[layerStem(sheet.set, sheet.whole[layer] || layer) + end]; }); }
+    var kept = files(MERGED.keep);
+    if (!files(MERGED.drop).every(function (sum, i) { return sum && sum === kept[i]; })) return;
+    sheet.order = sheet.order.filter(function (layer) { return layer !== MERGED.drop; });
+    sheet.names[MERGED.keep] = MERGED.name;
+  }
+
+  // a layer is a JPEG plus a gray mask: one decoded image with the mask as its alpha
+  function layerPicture(set, pic) {
+    var file = '/maplayers/' + layerStem(set, pic);
+    return Promise.all([loadImage(file + '.jpg'), loadImage(file + '_alpha.png')]).then(function (pair) {
+      var canvas = document.createElement('canvas'), w = canvas.width = pair[0].naturalWidth, h = canvas.height = pair[0].naturalHeight;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(pair[1], 0, 0, w, h);
+      var mask = ctx.getImageData(0, 0, w, h).data;
+      ctx.drawImage(pair[0], 0, 0);
+      var pixels = ctx.getImageData(0, 0, w, h);
+      for (var i = 0; i < mask.length; i += 4) pixels.data[i + 3] = mask[i];
+      ctx.putImageData(pixels, 0, 0);
+      return new Promise(function (done) { canvas.toBlob(done); });
+    }).then(function (blob) { return loadImage(URL.createObjectURL(blob)); });
+  }
+
+  function initLayers(map) {
+    // over the tiles, under every box and marker
+    map.createPane('layers').style.zIndex = 250;
+    function sheet(set) {
+      return fetch('/maplayers/' + set + '_layers.txt', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+        .then(function (text) { return parseSheet(set, text); });
+    }
+    function draw(s, pic, opacity) {
+      return layerPicture(s.set, pic).then(function (img) { return L.imageOverlay(img, s.bounds[pic], { pane: 'layers', zIndex: 2, opacity: opacity, className: 'layout-picture' }).addTo(map); });
+    }
+    ['forlorn_escape', 'horu_escape'].forEach(function (set) {
+      sheet(set).then(function (s) { return draw(s, s.order[0], 1); }).catch(function () {});
+    });
+    var manifest = fetch('/maplayers/manifest.txt', { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; });
+    Promise.all([sheet('misty'), manifest]).then(function (got) {
+      var misty = got[0];
+      mergeSame(misty, got[1]);
+      if (!misty.order.length) return;
+      var stored = null;
+      try { stored = localStorage.getItem('misty_layout'); } catch (e) {}
+      // a choice of the merged-away layout is a choice of the one that stands for it
+      if (stored === MERGED.drop && misty.order.indexOf(stored) < 0) stored = MERGED.keep;
+      var count = misty.order.length, at = Math.max(0, misty.order.indexOf(stored)), drawn = {}, shown = null, cover = null, label;
+      var area = L.latLngBounds(misty.bounds[misty.order[0]]);
+      Object.keys(misty.bounds).forEach(function (pic) { area.extend(L.latLngBounds(misty.bounds[pic])); });
+      // the page has no save to read, so a layout shows its fullest picture
+      function picture(i) { return misty.whole[misty.order[i]] || misty.order[i]; }
+      // every layout stays on the map, hidden, so a step is a fade between two loaded pictures
+      function layer(pic) {
+        return drawn[pic] = drawn[pic] || draw(misty, pic, 0).catch(function (e) { delete drawn[pic]; throw e; });
+      }
+      function show() {
+        var i = at;
+        layer(picture(i)).then(function (l) {
+          // a later press may have moved on while this one loaded
+          if (i !== at) return;
+          if (!cover) cover = L.imageOverlay('/misty_cover.png', COVER_BOUNDS, { pane: 'layers', zIndex: 1 }).addTo(map);
+          if (shown && shown !== l) shown.setOpacity(0);
+          shown = l.setOpacity(1);
+          // the name moves with the picture, never ahead of it
+          label.textContent = misty.names[misty.order[i]] || misty.order[i];
+        }).catch(function () {});
+      }
+      // the rest, one at a time and in order from the one shown, so a press finds its picture in
+      function fetchAhead(n) {
+        if (n >= count) return;
+        var next = function () { fetchAhead(n + 1); };
+        layer(picture((at + n) % count)).then(next, next);
+      }
+      function step(by) {
+        at = (at + by + count) % count;
+        try { localStorage.setItem('misty_layout', misty.order[at]); } catch (e) {}
+        show();
+      }
+      var Cycle = L.Control.extend({
+        options: { position: 'topleft' },
+        onAdd: function () {
+          var el = L.DomUtil.create('div', 'layout-cycle away');
+          var stack = L.DomUtil.create('div', '', el);
+          var back = L.DomUtil.create('button', '', stack), next = L.DomUtil.create('button', '', stack);
+          back.type = next.type = 'button';
+          back.textContent = '▲'; back.title = 'Previous Misty layout';
+          next.textContent = '▼'; next.title = 'Next Misty layout';
+          back.onclick = function () { step(-1); };
+          next.onclick = function () { step(1); };
+          var box = L.DomUtil.create('span', 'map-chip layout-label', el);
+          box.title = 'Currently displayed Misty layout';
+          // every name shares the one cell, unseen, so the box is always as wide as the longest
+          misty.order.forEach(function (l) { L.DomUtil.create('i', '', box).textContent = misty.names[l] || l; });
+          label = L.DomUtil.create('span', 'layout-name', box);
+          label.textContent = misty.names[misty.order[at]] || misty.order[at];
+          // a double click on an arrow would zoom the map under it
+          L.DomEvent.disableClickPropagation(el);
+          // only while Misty is in view
+          var look = function () { L.DomUtil[map.getBounds().intersects(area) ? 'removeClass' : 'addClass'](el, 'away'); };
+          map.on('move', look);
+          look();
+          return el;
+        }
+      });
+      map.addControl(new Cycle());
+      show();
+      fetchAhead(1);
+    }).catch(function () {});
+  }
+
+  function pollTiles() {
+    api('/api/tiles').then(function (t) {
+      var el = $('tileStatus');
+      if (t.total && t.have < t.total) { el.textContent = 'map: ' + t.have + '/' + t.total + ' tiles cached' + (t.running ? '…' : ''); if (t.running) setTimeout(pollTiles, 3000); }
+      else if (t.note && t.note !== 'map cached') el.textContent = t.note;
+      else el.textContent = 'map cached for offline use';
+    }).catch(function () {});
+  }
+
+  function currentList() {
+    if (state.target === 'end') { var end = state.segment.end = state.segment.end || {}; return end.locations = end.locations || []; }
+    var g = (state.segment.shuffle || [])[parseInt(state.target, 10)]; if (!g) return [];
+    return g.among = g.among || [];
+  }
+
+  function toggleLocation(key) {
+    var list = currentList(); var i = list.indexOf(key);
+    if (i >= 0) list.splice(i, 1); else list.push(key);
+    render();
+  }
+
+  // the game flags what it can honor: an ending needs a coord or turn-in it records, a shuffle spot a pickup it gives
+  function pickable(loc) { return state.target === 'end' ? loc.ends : loc.shuffles; }
+
+  function matches(loc) {
+    var q = $('locSearch').value.trim().toLowerCase();
+    return !q || (loc.name + ' ' + loc.zone + ' ' + loc.type).toLowerCase().indexOf(q) >= 0;
+  }
+
+  var DEFAULT_COLOR = { goal: '#8fe3a0', kill: '#ff6b6b', solid: '#9aa0aa', item: '#40c0ff', ritem: '#7fd8ff' };
+  var NAMES = { ritem: 'repeat item' };
+  // the flags menu, presets first; goal still loads and shows, but isn't offered
+  var SUGGEST = [['kill', 'box kills Ori'], ['item', 'grants an item once'], ['solid', 'box with collision'],
+    ['ritem', 'grants an item repeatedly'], ['once', 'box toggles off when collected'], ['unsafe', 'saves disabled inside box'],
+    ['unlit', 'box ignores lighting (prevents ghosting during movement)'],
+    ['on=Tick','grant 60 times a second while inside box'], ['on=Tick/60/60', 'grant once a second while inside box'],
+    ['on=Frame', 'grant every frame while inside box'],
+    ['damage=1', 'box damages entities touching it'], ['renderDepth=-99', 'draw box over terrain'],
+    ['parallaxDepth=10', 'box scrolls like background art']];
+  // the flags the game reads; any other is kept, and the game logs it
+  var FLAGS = ['once', 'on', 'damage', 'solid', 'unsafe', 'unlit', 'renderdepth', 'parallaxdepth', 'goal', 'kill', 'item', 'ritem', 'tombstone'];
+  var VALUED = ['on', 'damage', 'renderdepth', 'parallaxdepth'];
+  var FLAG_TEXT = { kill: 'box kills Ori', item: 'grants an item once', solid: 'box with collision', ritem: 'grants an item repeatedly',
+    once: 'box toggles off when collected', unsafe: 'saves disabled inside box', unlit: 'box ignores lighting (prevents ghosting during movement)',
+    goal: 'ends a practice segment' };
+  var TRIGGER_TEXT = { Enter: 'grants when Ori enters the box', Tick: 'grants 60 times a second while Ori is inside',
+    Frame: 'grants every frame while Ori is inside' };
+  // the game's DamageType names, which it matches case-insensitively
+  var DAMAGE_TYPES = ['Acid', 'Bash', 'Bat', 'ChargeFlame', 'Crush', 'Drowning', 'Enemy', 'Explosion', 'Grenade', 'GrenadeSplatter',
+    'Heat', 'HitSurface', 'Ice', 'Laser', 'Lava', 'LevelUp', 'NightBerryDied', 'Nova', 'Projectile', 'SlugSpike',
+    'Spikes', 'SpiritFlame', 'SpiritFlameSplatter', 'Stomp', 'StompBlast', 'Water'];
+  // the parts after a value flag's "=", in order, and what the game uses for one left out; more: the names that
+  // take the parts after them, where not every name does; whole: a whole number counts as a finished part
+  var FLAG_PARTS = {
+    on: [{ names: ['Enter', 'Tick', 'Frame'], more: ['Tick'] }, { hint: 'delay in ticks', fallback: '1', whole: integer },
+      { names: ['never'], hint: 'repeat in ticks, or never', fallback: '1', whole: integer }],
+    damage: [{ hint: 'amount' }, { names: DAMAGE_TYPES, hint: 'damage type', fallback: 'Spikes' },
+      { names: ['All', 'Player'], hint: 'target', fallback: 'All' }, { names: ['Normal', 'Extended'], hint: 'hitboxes', fallback: 'Extended' }]
+  };
+  // Completions for a value flag being typed, as the plando builder's flag_completions (boxes.js): its current part's
+  // names, prefix matches first, then the next part once this one is whole. fill marks one that more can follow.
+  function flagCompletions(text) {
+    var eq = text.indexOf('='), parts = eq < 0 ? null : FLAG_PARTS[text.slice(0, eq).trim().toLowerCase()];
+    var typed = text.slice(eq + 1).split('/'), at = typed.length - 1;
+    if (!parts || !parts[at]) return [];
+    var part = parts[at], partial = typed[at].trim().toLowerCase(), head = text.slice(0, text.length - typed[at].length), out = [];
+    // an empty part with no names to offer shows its hint instead
+    if (!part.names && !partial) return [{ value: text, fill: true, next: part }];
+    var named = part.names ? part.names.filter(function (n) { return n.toLowerCase() === partial; })[0] : undefined;
+    var whole = !!named || (part.whole ? part.whole(typed[at]) : !part.names && numeric(typed[at]));
+    var goesOn = function (n) { return !!parts[at + 1] && (!part.more || part.more.indexOf(n) >= 0); };
+    // a whole name still offers the longer ones it starts (Stomp, StompBlast)
+    if (part.names) {
+      var hits = part.names.filter(function (n) { return n.toLowerCase().indexOf(partial) === 0; })
+        .concat(part.names.filter(function (n) { return n.toLowerCase().indexOf(partial) > 0; }))
+        .filter(function (n) { return n.toLowerCase() !== partial; });
+      out = hits.map(function (n) { return { value: head + n, fill: goesOn(n) }; });
+    }
+    if (whole && goesOn(named)) out.push({ value: text + '/', fill: true, next: parts[at + 1] });
+    return out;
+  }
+  var KILL_GIVES = 'Won\'t kill Ori (grants an item)';
+  function capital(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+  function lower(t) { return t.charAt(0).toLowerCase() + t.slice(1); }
+  function oneOf(names, t) { return names.filter(function (n) { return n.toLowerCase() === t.trim().toLowerCase(); })[0]; }
+  // what the game's float parse takes: no exponents, no hex
+  function numeric(t) { return /^[+-]?(\d+\.?\d*|\.\d+)$/.test(t.trim()); }
+  // a whole number that fits an int, as int.TryParse takes one
+  function integer(t) { return /^[+-]?\d+$/.test(t.trim()) && Math.abs(Number(t)) <= 2147483647; }
+  // a count of physics ticks, with the seconds it comes to
+  function ticks(n) { return n + ' tick' + (n === 1 ? '' : 's') + ' (' + Math.round(n / 60 * 100) / 100 + ' s)'; }
+  // on=Enter, on=Frame, or on=Tick/<delay>/<repeat>, as describe_trigger (boxes.js): ticks or never, 1 when left out
+  function describeTrigger(value, bad) {
+    var parts = value.split('/'), when = oneOf(Object.keys(TRIGGER_TEXT), parts[0]);
+    if (!when) return bad('One of: Enter, Tick, Frame');
+    if (when !== 'Tick') return parts.length > 1 ? bad(when + ' takes no delay or repeat') : { text: capital(TRIGGER_TEXT[when]) };
+    if (parts.length > 3) return bad('Tick takes a delay and a repeat at most: Tick/30/60');
+    // the game collects once its countdown is at or below 0, so 0 and below act as 1
+    function count(p) { return p === undefined ? 1 : /^\s*never\s*$/i.test(p) ? Infinity : integer(p) ? Math.max(1, Number(p)) : NaN; }
+    var delay = count(parts[1]), repeat = count(parts[2]);
+    if (isNaN(delay)) return bad('The delay is a whole number of ticks, or never: ' + parts[1]);
+    if (isNaN(repeat)) return bad('The repeat is a whole number of ticks, or never: ' + parts[2]);
+    if (delay === Infinity) return { text: 'Never grants' };
+    if (delay === 1 && repeat === 1) return { text: capital(TRIGGER_TEXT.Tick) };
+    var first = delay === 1 ? 'Grants as soon as Ori is inside' : 'Grants after ' + ticks(delay) + ' inside';
+    var then = repeat === Infinity ? 'then not again until Ori leaves and comes back' : repeat === 1 ? 'then every tick' : 'then every ' + ticks(repeat);
+    return { text: first + ', ' + then };
+  }
+  // What a flag does, or with warn, why the game won't do what it says: its bad values are
+  // the game's own parse errors, which it only logs.
+  function describeFlag(f) {
+    var eq = f.indexOf('='), name = (eq < 0 ? f : f.slice(0, eq)).trim(), value = eq < 0 ? '' : f.slice(eq + 1).trim(), key = name.toLowerCase();
+    function bad(t) { return { text: t, warn: true }; }
+    if (FLAGS.indexOf(key) < 0) return bad('Unknown flag (will be ignored)');
+    if (VALUED.indexOf(key) >= 0 && !value) return bad('Needs a value: ' + name + '=...');
+    if (key === 'on') return describeTrigger(value, bad);
+    if (key === 'renderdepth' || key === 'parallaxdepth') {
+      var low = key === 'renderdepth' ? -99 : -19, high = key === 'renderdepth' ? 399 : 4979;
+      if (!numeric(value) || Number(value) < low || Number(value) > high) return bad(name + ' takes a number from ' + low + ' to ' + high);
+      return { text: key === 'renderdepth' ? 'Draws the box at depth ' + value + '; lower is further in front' : 'Box moves as if it was at depth ' + value + ' (lower is nearer)' };
+    }
+    if (key === 'damage') {
+      var parts = value.split('/');
+      if (!numeric(parts[0])) return bad('Damage needs an amount first: ' + name + '=1');
+      var kind = parts.length > 1 ? oneOf(DAMAGE_TYPES, parts[1]) : 'Spikes';
+      if (!kind) return bad('Not a damage type: ' + parts[1]);
+      var who = parts.length > 2 ? oneOf(['All', 'Player'], parts[2]) : 'All';
+      if (!who) return bad('Target must be All or Player');
+      var hits = parts.length > 3 ? oneOf(['Normal', 'Extended'], parts[3]) : 'Extended';
+      if (!hits || parts.length > 4) return bad('The hitboxes are Normal or Extended');
+      return { text: 'Does ' + parts[0] + ' ' + kind + ' damage to ' + (who === 'All' ? 'anything' : 'Ori and grenades') + ' inside the box' + (hits === 'Normal' ? ', by normal hitboxes' : '') };
+    }
+    return { text: FLAG_TEXT[key] ? capital(FLAG_TEXT[key]) : '' };
+  }
+  // a deleted box keeps its line so later boxes keep their BM|n numbers; none is the tombstone's old name
+  function settle(b) { if (hasFlag(b, 'none')) { b.flags = 'tombstone'; b.box = [0, 0, 0, 0]; delete b.shape; } }
+
+  // ---- shaped boxes: b.shape is the line's third field, read as the game does (the plando builder's boxes.js) ----
+  var SHAPE_WORDS = { convex: 'convex', loop: 'loop', orientedloop: 'orientedLoop', previewloop: 'previewLoop' };
+  // {kind, loops of [x, y]}, or null where the game throws: every loop needs three points, a last x alone is dropped
+  function parseShape(text) {
+    var parts = (text || '').split(','), kind = parts[0].toLowerCase(), loops = [[]];
+    if (!SHAPE_WORDS.hasOwnProperty(kind)) return null;
+    for (var k = 1; k < parts.length;) {
+      if (kind !== 'convex' && parts[k].toLowerCase() === 'loop') { loops.push([]); k++; }
+      else if (k === parts.length - 1) break;
+      else if (!numeric(parts[k]) || !numeric(parts[k + 1])) return null;
+      else { loops[loops.length - 1].push([Number(parts[k]), Number(parts[k + 1])]); k += 2; }
+    }
+    return kind !== 'previewloop' && loops.some(function (l) { return l.length < 3; }) ? null : { kind: kind, loops: loops };
+  }
+  function writeShape(read) {
+    return SHAPE_WORDS[read.kind] + read.loops.map(function (l) { return l.map(function (p) { return ',' + num(p[0]) + ',' + num(p[1]); }).join(''); }).join(',loop');
+  }
+  // '', 'convex' or 'loop'; an orientedLoop or previewLoop is a loop
+  function shapeKind(b) { var read = b.shape ? parseShape(b.shape) : null; return !read ? '' : read.kind === 'convex' ? 'convex' : 'loop'; }
+  // an orientedLoop's loops fill as one, by nonzero winding, so a loop wound against another cuts a hole
+  function windsTogether(b) { var read = b.shape ? parseShape(b.shape) : null; return !!read && read.kind === 'orientedloop'; }
+  function signedArea(ring) { return ring.reduce(function (s, p, k) { var q = ring[(k + 1) % ring.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0) / 2; }
+  // the hull's corners in order, by Andrew's monotone chain
+  function hull(points) {
+    var sorted = points.slice().sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    function turn(o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); }
+    function half(list) {
+      var out = [];
+      list.forEach(function (p) {
+        while (out.length > 1 && turn(out[out.length - 2], out[out.length - 1], p) <= 0) out.pop();
+        out.push(p);
+      });
+      return out.slice(0, -1);
+    }
+    return sorted.length < 3 ? sorted : half(sorted).concat(half(sorted.reverse()));
+  }
+  // What a shaped box covers, as rings of [lat, lng]: a convex box's hull, or each loop. A loop fills even-odd
+  // and the game unions the loops, so they are drawn one apiece.
+  function ringsOf(b) {
+    var read = b.shape ? parseShape(b.shape) : null;
+    if (!read) return [];
+    var rings = read.kind === 'convex' ? [hull(read.loops[0])] : read.loops.filter(function (l) { return l.length; });
+    return rings.map(function (ring) { return ring.map(function (p) { return [p[1], p[0]]; }); });
+  }
+  // what L.polygon draws: a face per ring, or one face holding every ring of an orientedLoop
+  function facesOf(b) { var rings = ringsOf(b); return windsTogether(b) && rings.length ? [rings] : rings; }
+  // The box (dx, dy) from where the shape `from` had it: every point moves by whole hundredths, so it keeps
+  // its shape, and its corners follow in place.
+  function shiftShape(b, from, dx, dy) {
+    var read = parseShape(from); if (!read) return;
+    var mx = num(dx), my = num(dy);
+    setShape(b, { kind: read.kind, loops: read.loops.map(function (l) { return l.map(function (p) { return [p[0] + mx, p[1] + my]; }); }) });
+  }
+  // b.shape rewritten from its points, its corners following in place: the map finds a box by its corners array
+  function setShape(b, read) {
+    b.shape = writeShape(read);
+    var points = [].concat.apply([], parseShape(b.shape).loops);
+    if (!points.length) return;
+    var xs = points.map(function (p) { return p[0]; }), ys = points.map(function (p) { return p[1]; });
+    b.box[0] = Math.min.apply(null, xs); b.box[1] = Math.min.apply(null, ys); b.box[2] = Math.max.apply(null, xs); b.box[3] = Math.max.apply(null, ys);
+  }
+  // the spot on a segment nearest (x, y), and how far off that is
+  function onto(a, b, x, y) {
+    var dx = b[0] - a[0], dy = b[1] - a[1], len = dx * dx + dy * dy;
+    var t = len ? Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / len)) : 0;
+    var px = a[0] + t * dx, py = a[1] + t * dy;
+    return { x: px, y: py, d: Math.sqrt((x - px) * (x - px) + (y - py) * (y - py)) };
+  }
+  // The side of a shaped box nearest (x, y): the spot on it, how far off (d), and where a point there goes.
+  // A convex box's sides are its hull's and its points have no order, so a new one goes last.
+  function nearestSide(b, x, y) {
+    var read = b.shape ? parseShape(b.shape) : null; if (!read) return null;
+    var convex = read.kind === 'convex', best = null;
+    (convex ? [hull(read.loops[0])] : read.loops).forEach(function (ring, loop) {
+      ring.forEach(function (p, k) {
+        var spot = onto(p, ring[(k + 1) % ring.length], x, y);
+        if (!best || spot.d < best.d) { spot.loop = loop; spot.k = convex ? read.loops[0].length : k + 1; best = spot; }
+      });
+    });
+    return best;
+  }
+  // a loop keeps three points: at three, removing one removes the loop, and a box's only loop stays (false)
+  function removePoint(b, loop, k) {
+    var read = parseShape(b.shape);
+    if (read.loops[loop].length > 3) read.loops[loop].splice(k, 1);
+    else if (read.loops.length > 1) read.loops.splice(loop, 1);
+    else return false;
+    setShape(b, read);
+    return true;
+  }
+  // a convex box's points on its hull's outline, to a hundredth: one inside moves nothing when dragged
+  function tidyShape(b) {
+    var read = b.shape ? parseShape(b.shape) : null; if (!read || read.kind !== 'convex') return;
+    var h = hull(read.loops[0]);
+    var kept = read.loops[0].filter(function (p) { return h.some(function (a, k) { return onto(a, h[(k + 1) % h.length], p[0], p[1]).d <= 0.01; }); });
+    if (kept.length >= 3 && kept.length < read.loops[0].length) setShape(b, { kind: 'convex', loops: [kept] });
+  }
+  // The same ground as another kind: '' is the rectangle around it, a convex is the hull of every point,
+  // a loop is the outline it had. A box too flat to have a hull stays as it is.
+  function reshape(b, kind) {
+    if (kind === shapeKind(b)) return;
+    if (!kind) { delete b.shape; return; }
+    var c = b.box, x1 = Math.min(c[0], c[2]), y1 = Math.min(c[1], c[3]), x2 = Math.max(c[0], c[2]), y2 = Math.max(c[1], c[3]);
+    var read = b.shape ? parseShape(b.shape) : null;
+    var rings = !read ? [[[x1, y1], [x2, y1], [x2, y2], [x1, y2]]] : read.kind === 'convex' ? [hull(read.loops[0])] : read.loops;
+    if (kind === 'convex') rings = [hull([].concat.apply([], rings))];
+    if (rings.every(function (ring) { return ring.length >= 3; })) setShape(b, { kind: kind, loops: rings });
+  }
+  // a loop box with one more loop: a small triangle past its right side, wound with the box's net turn so it adds ground
+  function addLoop(b) {
+    var read = parseShape(b.shape), c = b.box, tri = [[c[2] + 1, c[1]], [c[2] + 3, c[1]], [c[2] + 2, c[1] + 2]];
+    read.loops.push(read.loops.reduce(function (s, l) { return s + signedArea(l); }, 0) < 0 ? tri.reverse() : tri);
+    setShape(b, read);
+  }
+  // what only a rectangle does, and what a loop box does only when solid: it has no inside to touch
+  var RECT_ONLY = { unsafe: 'Unsafe boxes must be rectangular', goal: 'Goal boxes must be rectangular' };
+  var NEEDS_INSIDE = ['kill', 'damage', 'once', 'item', 'ritem'];
+  // a chip on this box: it warns where the box can't honor the flag
+  function describeOn(b, f) {
+    var key = f.split('=')[0].trim().toLowerCase(), kind = shapeKind(b);
+    if (kind && RECT_ONLY[key]) return { text: RECT_ONLY[key], warn: true };
+    if (kind === 'loop' && !hasFlag(b, 'solid') && NEEDS_INSIDE.indexOf(key) >= 0 && (b.give || !/item$/.test(key)))
+      return { text: 'Loop boxes must be solid', warn: true };
+    return key === 'kill' && b.give ? { text: KILL_GIVES, warn: true } : describeFlag(f);
+  }
+  // colors travel as rrggbb; none is an invisible box
+  function hidden(b) { return b.color === 'none' || b.color === '0'; }
+  // every flag counts the same; the list keeps the order it was written in
+  function flagsOf(b) { return (b.flags || '').split(',').map(function (f) { return f.trim(); }).filter(Boolean); }
+  function hasFlag(b, flag) { return flagsOf(b).some(function (f) { return f.toLowerCase() === flag; }); }
+  function setFlags(b, l) { b.flags = l.join(','); }
+  function gone(b) { return hasFlag(b, 'tombstone'); }
+  // in game each preset flag sets the color in turn, so the last one shows
+  function presetOf(b) { return flagsOf(b).map(function (f) { return f.toLowerCase(); }).filter(function (f) { return DEFAULT_COLOR[f]; }).pop() || ''; }
+  function colorOf(b) {
+    var preset = presetOf(b);
+    return b.color && !hidden(b) ? '#' + b.color.replace('#', '').slice(0, 6) : (DEFAULT_COLOR[preset] || DEFAULT_COLOR.item);
+  }
+  function boxLabel(b) {
+    var preset = presetOf(b);
+    if (preset === 'item' || preset === 'ritem') return (preset === 'ritem' ? 'repeat item box: ' : 'item box: ') + (nameOf(b.give) || 'nothing yet');
+    return (preset ? (NAMES[preset] || preset) + ' box' : 'box') + (b.give ? ': ' + nameOf(b.give) : '');
+  }
+
+  // every box on the map, with where it lives: the goal, the shared list, each variant's.
+  // Labels carry the BM|n number the tables show; "shared" only means something beside variants.
+  function allBoxes() {
+    var out = [];
+    var end = state.segment.end || {};
+    var num = function (n) { return n === null ? '' : '(#' + n + ') '; };
+    if (end.box && end.box.length === 4) out.push({ b: { flags: 'goal', box: end.box, color: (end.goal || {}).color }, label: num(goalAt()) + 'goal box', rowId: 'box-shared-goal', owner: 'shared' });
+    var shared = state.segment.boxes || [], sharedNums = boxNumbers(shared, 'shared');
+    var where = Object.keys(state.variants).length ? ' · shared' : '';
+    shared.forEach(function (b, i) { if (!gone(b)) out.push({ b: b, label: num(sharedNums[i]) + boxLabel(b) + where, rowId: 'box-shared-' + i, owner: 'shared', locked: locked('shared', i) }); });
+    Object.keys(state.variants).forEach(function (id) {
+      var boxes = state.variants[id].boxes || [], nums = boxNumbers(boxes, id);
+      boxes.forEach(function (b, i) { if (!gone(b)) out.push({ b: b, label: num(nums[i]) + boxLabel(b) + ' · variant ' + id, rowId: 'box-' + id + '-' + i, owner: id, locked: locked(id, i) }); });
+    });
+    return out;
+  }
+
+  function styleMarkers() { styleLocations(); rebuildShapes(); }
+
+  // Move or recolor one box's own layers; rebuildShapes is the slow path. Matched by the
+  // coords array, since allBoxes() makes fresh entries (the goal's too) on every call.
+  function shapeFor(coords) {
+    for (var i = 0; i < state.shapes.length; i++)
+      if (state.shapes[i].entry.b.box === coords) return state.shapes[i];
+    return null;
+  }
+  function moveBox(coords) {
+    var s = shapeFor(coords);
+    if (!s) return rebuildShapes();
+    if (s.redraw) s.redraw(); else s.layers[0].setBounds(bounds(coords));
+  }
+  // a shaped box's outlines, where its points are now
+  function drawShaped(s) {
+    var faces = facesOf(s.entry.b);
+    s.faces.forEach(function (f, k) { if (faces[k]) f.setLatLngs(faces[k]); });
+  }
+  // a drag already knows its box: those four inputs are the whole table update
+  function syncRow(entry) {
+    var row = document.getElementById(entry.rowId); if (!row) return;
+    var inputs = row.querySelectorAll('input[type=number]'), b = entry.b.box;
+    for (var k = 0; k < 4 && k < inputs.length; k++) inputs[k].value = b[k];
+    if (entry.rowId === 'box-shared-goal') $('goalBox').textContent = b.join(', ');
+  }
+  function recolorBox(coords) {
+    var s = shapeFor(coords);
+    if (!s) return rebuildShapes();
+    s.faces.forEach(function (f) { f.setStyle({ color: boxColor(s.entry), dashArray: hidden(s.entry.b) ? '4 4' : null }); });
+  }
+  // a variant's box wears the variant color unless it was given one of its own
+  function boxColor(entry) {
+    return entry.owner !== 'shared' && !entry.b.color ? '#c59bff' : colorOf(entry.b);
+  }
+
+  function styleLocations() {
+    var end = (state.segment.end || {}).locations || [];
+    var groups = state.segment.shuffle || [];
+    state.catalog.locations.forEach(function (loc) {
+      var m = state.markers[loc.key]; if (!m) return;
+      var inEnd = end.indexOf(loc.key) >= 0, inGroup = groups.some(function (g) { return (g.among || []).indexOf(loc.key) >= 0; });
+      var dim = (matches(loc) ? 1 : 0.15) * (state.editing ? 0.5 : 1);
+      m.setStyle({ radius: inEnd || inGroup ? 8 : 5, color: inEnd ? '#8fe3a0' : (inGroup ? '#ffd27f' : '#000'), weight: inEnd || inGroup ? 3 : 1, opacity: dim, fillOpacity: 0.9 * dim });
+    });
+  }
+
+  function rebuildShapes() {
+    state.shapes.forEach(function (s) { s.layers.forEach(function (l) { state.map.removeLayer(l); }); }); state.shapes = [];
+    // locked boxes go underneath and let clicks through, so they never block the boxes around them
+    var entries = allBoxes();
+    entries.filter(function (e) { return e.locked; }).concat(entries.filter(function (e) { return !e.locked; })).forEach(function (entry) {
+      var b = entry.b.box; if (!b || b.length !== 4) return;
+      var look = { color: boxColor(entry), weight: 2, opacity: entry.locked ? 0.5 : 1, fillOpacity: entry.locked ? 0.05 : state.editing ? 0.3 : 0.15,
+        dashArray: hidden(entry.b) ? '4 4' : null, interactive: !entry.locked };
+      // a shape this page can't read still shows, as the rectangle around it
+      var drawn = facesOf(entry.b);
+      if (windsTogether(entry.b)) look.fillRule = 'nonzero';
+      var faces = drawn.length ? drawn.map(function (face) { return L.polygon(face, look).addTo(state.map); }) : [L.rectangle(bounds(b), look).addTo(state.map)];
+      var shape = { entry: entry, layers: faces.slice(), faces: faces };
+      if (drawn.length) shape.redraw = function () { drawShaped(shape); };
+      state.shapes.push(shape);
+      if (entry.locked) return;
+      faces.forEach(function (f) { f.bindTooltip(asText(entry.label), { sticky: true }); });
+      if (state.editing) attachEditing(shape);
+      else faces.forEach(function (f) { f.on('click', function () { jumpTo(entry.rowId); }); });
+    });
+    drawHandles();
+  }
+  // The points of the shaped box last clicked, as handles: drag one to move it, right-click it to remove it.
+  // Only that box shows its points, or a screen of shaped boxes is all handles.
+  function drawHandles() {
+    state.handles.forEach(function (h) { state.map.removeLayer(h); }); state.handles = [];
+    var shape = null;
+    state.shapes.forEach(function (s) { if (s.entry.b === state.selectedBox && !s.entry.locked && shapeKind(s.entry.b)) shape = s; });
+    if (!state.editing || !shape) return;
+    var b = shape.entry.b;
+    parseShape(b.shape).loops.forEach(function (l, loop) {
+      l.forEach(function (p, k) {
+        var h = L.marker([p[1], p[0]], { draggable: true, icon: L.divIcon({ className: 'handle point', iconSize: [10, 10] }) }).addTo(state.map);
+        h.on('drag', function (ev) {
+          var at = ev.target.getLatLng(), read = parseShape(b.shape);
+          read.loops[loop][k] = [at.lng, at.lat];
+          setShape(b, read); drawShaped(shape);
+        });
+        h.on('dragend', function () { tidyShape(b); drawShaped(shape); drawHandles(); syncRow(shape.entry); });
+        h.on('contextmenu', function () { if (removePoint(b, loop, k)) { rebuildShapes(); syncRow(shape.entry); } });
+        state.handles.push(h);
+      });
+    });
+  }
+  // Leaflet sets a string tooltip as HTML, and labels carry text from shared files
+  function asText(text) { var s = document.createElement('span'); s.textContent = text; return s; }
+  function bounds(b) { return [[Math.min(b[1], b[3]), Math.min(b[0], b[2])], [Math.max(b[1], b[3]), Math.max(b[0], b[2])]]; }
+  function jumpTo(rowId) {
+    var row = document.getElementById(rowId); if (!row) return;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600);
+  }
+
+  // drag a box to move it, a corner to resize it; the table catches up on release. A shaped box's points are drawHandles'.
+  function attachEditing(shape) {
+    var b = shape.entry.b.box, rect = shape.faces[0], shaped = !!shape.redraw;
+    var map = state.map;
+    function normalize() {
+      if (shaped) return;
+      var x1 = num(Math.min(b[0], b[2])), x2 = num(Math.max(b[0], b[2])), y1 = num(Math.min(b[1], b[3])), y2 = num(Math.max(b[1], b[3]));
+      b[0] = x1; b[1] = y1; b[2] = x2; b[3] = y2;
+    }
+    function redraw() {
+      if (shaped) return drawShaped(shape);
+      rect.setBounds(bounds(b)); shape.layers.slice(1).forEach(function (h, k) { h.setLatLng(cornerLatLng(k)); });
+    }
+    shape.redraw = redraw;   // so a number typed in the table moves this box and nothing else
+    function cornerLatLng(k) { var xs = [b[0], b[2], b[2], b[0]], ys = [b[1], b[1], b[3], b[3]]; return [ys[k], xs[k]]; }
+    for (var k = 0; k < 4 && !shaped; k++) (function (k) {
+      var h = L.marker(cornerLatLng(k), { draggable: true, icon: L.divIcon({ className: 'handle', iconSize: [10, 10] }) }).addTo(map);
+      h.on('drag', function (ev) {
+        var p = ev.target.getLatLng();
+        if (k === 0) { b[0] = p.lng; b[1] = p.lat; } else if (k === 1) { b[2] = p.lng; b[1] = p.lat; }
+        else if (k === 2) { b[2] = p.lng; b[3] = p.lat; } else { b[0] = p.lng; b[3] = p.lat; }
+        rect.setBounds(bounds(b));
+      });
+      h.on('dragend', function () { normalize(); redraw(); syncRow(shape.entry); });
+      shape.layers.push(h);
+    })(k);
+    var start = null, from = null, fromShape = null;
+    shape.faces.forEach(function (face) {
+      face.on('mousedown', function (ev) {
+        if (ev.originalEvent.button) return;
+        L.DomEvent.stop(ev);
+        map.dragging.disable();
+        start = ev.latlng; from = b.slice(); fromShape = shape.entry.b.shape;
+        state.selectedBox = shape.entry.b; drawHandles();
+        map.on('mousemove', move); map.on('mouseup', stop);
+        L.DomEvent.on(document, 'mouseup', stop);
+      });
+      // a right click within ten pixels of a shaped box's side puts a point on it
+      if (shaped) face.on('contextmenu', function (ev) {
+        var eb = shape.entry.b, side = nearestSide(eb, ev.latlng.lng, ev.latlng.lat);
+        var pixel = Math.abs(map.containerPointToLatLng([1, 0]).lng - map.containerPointToLatLng([0, 0]).lng);
+        if (!side || side.d > 10 * pixel) return;
+        var read = parseShape(eb.shape);
+        read.loops[side.loop].splice(side.k, 0, [side.x, side.y]);
+        setShape(eb, read);
+        state.selectedBox = eb; redraw(); drawHandles(); syncRow(shape.entry);
+      });
+    });
+    function move(ev) {
+      if (!start) return;
+      var dx = ev.latlng.lng - start.lng, dy = ev.latlng.lat - start.lat;
+      if (shaped) { shiftShape(shape.entry.b, fromShape, dx, dy); drawHandles(); }
+      else { b[0] = from[0] + dx; b[2] = from[2] + dx; b[1] = from[1] + dy; b[3] = from[3] + dy; }
+      redraw();
+    }
+    function stop() {
+      if (!start) return;
+      start = null; map.off('mousemove', move); map.off('mouseup', stop); L.DomEvent.off(document, 'mouseup', stop);
+      map.dragging.enable();
+      normalize(); redraw(); syncRow(shape.entry);
+    }
+  }
+  $('editBoxes').onclick = function () {
+    state.editing = !state.editing;
+    $('editBoxes').classList.toggle('on', state.editing);
+    $('editBoxes').textContent = state.editing ? 'done editing boxes' : 'edit boxes on the map';
+    $('map').classList.toggle('editing', state.editing);
+    if (state.map) styleMarkers();
+  };
+
+  // ---- rendering ---------------------------------------------------------------
+  function render() {
+    var seg = state.segment;
+    $('about').value = seg.about || '';
+    var timing = seg.timing || {};
+    $('mode').value = timing.mode === 'average' ? 'average' : 'best';
+    $('showGhost').value = timing.showGhost || '';
+    $('qtm').checked = !!seg.qtm_enabled;
+    $('faceLeft').checked = !!seg.faceLeft;
+    $('resetOnDeath').checked = !!seg.resetOnDeath;
+    renderBase();
+    var end = seg.end = seg.end || {};
+    $('goalBox').textContent = end.box && end.box.length === 4 ? end.box.join(', ') : 'none';
+    $('count').value = typeof end.count === 'number' ? end.count : '';
+    var items = $('endItems'); items.innerHTML = '';
+    // the game checks skills and events, nothing else
+    items.appendChild(pickSelect({ get: function () { return end.items || []; }, set: function (l) { end.items = l; }, placeholder: 'skills and events the run must hold', groups: ['Skills', 'Events'] }));
+    renderTargets();
+    renderChips($('locChips'), end.locations || [], locName);
+    renderLocationPicker();
+    renderBoxLists();
+    $('addGoal').style.display = end.box && end.box.length === 4 ? 'none' : '';
+    renderGroups();
+    renderVariants();
+    initMap();
+    if (state.map) styleMarkers();
+  }
+
+  function renderChips(el, list, nameFor) {
+    el.innerHTML = '';
+    list.forEach(function (id) {
+      var s = document.createElement('span'); s.textContent = nameFor(id);
+      var b = document.createElement('b'); b.textContent = '×'; b.onclick = function () { var l = list.indexOf(id); if (l >= 0) list.splice(l, 1); render(); };
+      s.appendChild(b); el.appendChild(s);
+    });
+  }
+
+  function locName(key) {
+    var locs = state.catalog.locations;
+    for (var i = 0; i < locs.length; i++) if (locs[i].key === key) return locs[i].name + ' (' + locs[i].zone + ')';
+    return String(key);
+  }
+
+  function renderTargets() {
+    var sel = $('locTarget'); var keep = state.target; sel.innerHTML = '';
+    var add = function (v, t) { var o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+    add('end', 'the end condition');
+    (state.segment.shuffle || []).forEach(function (g, i) { add(String(i), 'shuffle group ' + (i + 1)); });
+    sel.value = keep; if (sel.value !== keep) { state.target = 'end'; sel.value = 'end'; }
+    sel.onchange = function () { state.target = sel.value; render(); };
+  }
+
+  // zone then location, in the catalog's order; a search spans every zone
+  function renderLocationPicker() {
+    var zones = [], byZone = {};
+    state.catalog.locations.filter(pickable).forEach(function (loc) { if (!byZone[loc.zone]) { byZone[loc.zone] = []; zones.push(loc.zone); } byZone[loc.zone].push(loc); });
+    var zone = $('zone'), keepZone = zone.value; zone.innerHTML = '';
+    zones.forEach(function (z) { var o = document.createElement('option'); o.value = z; o.textContent = z; zone.appendChild(o); });
+    zone.value = keepZone; if (!zone.value) zone.value = zones[0] || '';
+    var q = $('locSearch').value.trim();
+    zone.disabled = !!q;
+    var locSel = $('loc'), keepLoc = locSel.value; locSel.innerHTML = '';
+    var pool = (q ? state.catalog.locations.filter(matches) : (byZone[zone.value] || [])).filter(pickable);
+    var chosen = currentList();
+    pool.forEach(function (loc) {
+      var o = document.createElement('option'); o.value = String(loc.key);
+      o.textContent = loc.name + '  (' + loc.x + ', ' + loc.y + ')' + (q ? '  ' + loc.zone : '') + (chosen.indexOf(loc.key) >= 0 ? '  ✓' : '');
+      locSel.appendChild(o);
+    });
+    locSel.value = keepLoc; if (!locSel.value && pool.length) locSel.value = String(pool[0].key);
+    zone.onchange = function () { renderLocationPicker(); };
+    locSel.onchange = function () { var m = state.markers[parseInt(locSel.value, 10)]; if (m) m.openTooltip(); };
+    renderChips($('targetChips'), chosen, locName);
+  }
+  $('addLoc').onclick = function () { var key = parseInt($('loc').value, 10); if (isNaN(key)) return; var list = currentList(); if (list.indexOf(key) < 0) list.push(key); render(); };
+  // per keystroke: the boxes have not moved, only which locations are dimmed
+  $('locSearch').oninput = function () { renderLocationPicker(); if (state.map) styleLocations(); };
+  $('pickEnd').onclick = function () { state.target = 'end'; render(); $('map').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+
+  var EYE = '<svg viewBox="0 0 576 512"><path d="M572.52 241.4C518.29 135.59 410.93 64 288 64S57.68 135.64 3.48 241.41a32.35 32.35 0 0 0 0 29.19C57.71 376.41 165.07 448 288 448s230.32-71.64 284.52-177.41a32.35 32.35 0 0 0 0-29.19zM288 400a144 144 0 1 1 144-144 143.93 143.93 0 0 1-144 144zm0-240a95.31 95.31 0 0 0-25.31 3.79 47.85 47.85 0 0 1-66.9 66.9A95.78 95.78 0 1 0 288 160z"/></svg>';
+  var EYE_OFF = '<svg viewBox="0 0 640 512"><path d="M320 400c-75.85 0-137.25-58.71-142.9-133.11L72.2 185.82c-13.79 17.3-26.48 35.59-36.72 55.59a32.35 32.35 0 0 0 0 29.19C89.71 376.41 197.07 448 320 448c26.91 0 52.87-4 77.89-10.46L346 397.39a144.13 144.13 0 0 1-26 2.61zm313.82 58.1l-110.55-85.44a331.25 331.25 0 0 0 81.25-102.07 32.35 32.35 0 0 0 0-29.19C550.29 135.59 442.93 64 320 64a308.15 308.15 0 0 0-147.32 37.7L45.46 3.37A16 16 0 0 0 23 6.18L3.37 31.45A16 16 0 0 0 6.18 53.9l588.36 454.73a16 16 0 0 0 22.46-2.81l19.64-25.27a16 16 0 0 0-2.82-22.45zm-183.72-142l-39.3-30.38A94.75 94.75 0 0 0 416 256a94.76 94.76 0 0 0-121.31-92.21A47.65 47.65 0 0 1 304 192a46.64 46.64 0 0 1-1.54 10l-73.61-56.89A142.31 142.31 0 0 1 320 112a143.92 143.92 0 0 1 144 144c0 21.63-5.29 41.79-13.9 60.11z"/></svg>';
+
+  var LOCK = '<svg viewBox="0 0 448 512"><path d="M400 224h-24v-72C376 68.2 307.8 0 224 0S72 68.2 72 152v72H48c-26.5 0-48 21.5-48 48v192c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V272c0-26.5-21.5-48-48-48zm-104 0H152v-72c0-39.7 32.3-72 72-72s72 32.3 72 72v72z"/></svg>';
+  var UNLOCK = '<svg viewBox="0 0 576 512"><path d="M423.5 0C339.5.3 272 69.5 272 153.5V224H48c-26.5 0-48 21.5-48 48v192c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V272c0-26.5-21.5-48-48-48h-48v-71.1c0-39.6 31.7-72.5 71.3-72.9 40-.4 72.7 32.1 72.7 72v80c0 13.3 10.7 24 24 24h32c13.3 0 24-10.7 24-24v-80C576 68 507.5-.3 423.5 0z"/></svg>';
+
+  // ---- box locks: this page's own, kept in this browser per seed or segment, by list and box number ----
+  function loadLocks() {
+    state.locks = {};
+    try { state.locks = JSON.parse(localStorage.getItem('box-locks:' + state.path) || '{}') || {}; } catch (e) {}
+  }
+  function saveLocks() { try { localStorage.setItem('box-locks:' + state.path, JSON.stringify(state.locks)); } catch (e) {} }
+  function locked(owner, i) { return !!(state.locks || {})[owner + ':' + i]; }
+  function setLock(owner, i, on) { if (on) state.locks[owner + ':' + i] = true; else delete state.locks[owner + ':' + i]; saveLocks(); }
+  // a row inserted at `from` moves the locks at and after it down one, so they stay on their boxes
+  function shiftLocks(owner, from) {
+    var moved = {};
+    Object.keys(state.locks).forEach(function (k) {
+      var cut = k.lastIndexOf(':'), n = parseInt(k.slice(cut + 1), 10);
+      moved[k.slice(0, cut) === owner && n >= from ? owner + ':' + (n + 1) : k] = true;
+    });
+    state.locks = moved; saveLocks();
+  }
+  function lockEvery(on) {
+    boxLists(state).forEach(function (l) { l.boxes.forEach(function (b, i) { if (!gone(b)) setLock(l.id || 'shared', i, on); }); });
+    render();
+  }
+  $('lockAll').onclick = function () { lockEvery(true); };
+  $('unlockAll').onclick = function () { lockEvery(false); };
+
+  // where the goal box goes back among the shared lines: its old place, or last if the page added it
+  function goalAt() {
+    var end = state.segment.end || {}, n = (state.segment.boxes || []).length;
+    if (!end.box || end.box.length !== 4) return -1;
+    return end.goal && typeof end.goal.at === 'number' ? Math.max(0, Math.min(end.goal.at, n)) : n;
+  }
+  // the numbers BM|n uses: the shared lines with the goal back in place, then a variant's own, which drop their goal boxes
+  function boxNumbers(boxes, owner) {
+    var at = goalAt();
+    if (owner === 'shared') return boxes.map(function (b, i) { return at >= 0 && i >= at ? i + 1 : i; });
+    var next = (state.segment.boxes || []).length + (at >= 0 ? 1 : 0);
+    return boxes.map(function (b) { return hasFlag(b, 'goal') && !gone(b) ? null : next++; });
+  }
+  function numCell(n) {
+    var s = document.createElement('span'); s.className = 'num';
+    s.textContent = n === null ? '' : n;
+    s.title = n === null ? 'Ignored: variants share the segment\'s goal box' : 'BM|' + n;
+    return s;
+  }
+
+  // the shared table leads with the goal box, which is really the end condition's
+  function renderBoxes(tbody, boxes, owner, withGoal) {
+    tbody.innerHTML = '';
+    var end = state.segment.end || {};
+    var nums = boxNumbers(boxes, owner);
+    if (withGoal && end.box && end.box.length === 4) {
+      var tr0 = document.createElement('tr'); tr0.id = 'box-shared-goal'; tr0.className = 'goal';
+      tr0.appendChild(td(numCell(goalAt())));
+      var goalFlags = document.createElement('span'); goalFlags.className = 'chips';
+      flagsOf({ flags: (end.goal || {}).flags || 'goal' }).forEach(function (f) {
+        var s = document.createElement('span'); s.textContent = f;
+        if (DEFAULT_COLOR[f]) { s.style.background = DEFAULT_COLOR[f]; s.style.color = '#222'; }
+        goalFlags.appendChild(s);
+      });
+      tr0.appendChild(td(goalFlags));
+      for (var g = 0; g < 4; g++) (function (g) { tr0.appendChild(td(numInput(end.box[g], function (v) { end.box[g] = v; moveBox(end.box); $('goalBox').textContent = end.box.join(', '); }))); })(g);
+      tr0.appendChild(td(document.createElement('span')));
+      var ends = document.createElement('span'); ends.className = 'muted'; ends.textContent = 'ends the run'; tr0.appendChild(td(ends));
+      tr0.appendChild(td(document.createElement('span'))); tr0.appendChild(td(document.createElement('span')));
+      var clear = document.createElement('button'); clear.className = 'danger icon'; clear.innerHTML = '&times;'; clear.title = 'Remove the goal box';
+      // a goal the file placed leaves a tombstone in its line, so the boxes after it keep their numbers
+      clear.onclick = function () {
+        var at = end.goal && typeof end.goal.at === 'number' ? end.goal.at : null;
+        if (at !== null) {
+          var list = state.segment.boxes = state.segment.boxes || [];
+          var row = Math.max(0, Math.min(at, list.length));
+          list.splice(row, 0, { flags: 'tombstone', box: [0, 0, 0, 0] });
+          shiftLocks('shared', row);
+        }
+        delete end.box; delete end.goal; render();
+      };
+      tr0.appendChild(td(clear));
+      tbody.appendChild(tr0);
+    }
+    boxes.map(function (b, i) { return [b, i]; }).reverse().forEach(function (pair) {
+      var b = pair[0], i = pair[1];
+      if (typeof b.flags !== 'string') b.flags = '';
+      if (gone(b)) return;
+      var tr = document.createElement('tr'); tr.id = 'box-' + owner + '-' + i;
+      tr.appendChild(td(numCell(nums[i])));
+      var coords = b.box && b.box.length === 4 ? b.box : [0, 0, 0, 0];
+      b.box = coords;
+      var flags = flagSelect({ get: function () { return flagsOf(b); }, set: function (l) { setFlags(b, l); drawEye(); gives.refresh(); rebuildShapes(); },
+        describe: function (f) { return describeOn(b, f); } });
+      var gives = pickSelect({ get: function () { return splitCode(b.give); }, set: function (l) { b.give = joinCodes(l); flags.refresh(); rebuildShapes(); },
+        placeholder: function () { return hasFlag(b, 'kill') ? 'kills Ori' : 'what it gives; a message is SH|text'; } });
+      tr.appendChild(td(flags));
+      for (var k = 0; k < 4; k++) (function (k) {
+        var input = numInput(coords[k], function (v) {
+          // a shaped box keeps its size: its low corner moves all of it
+          if (b.shape) { shiftShape(b, b.shape, k === 0 ? v - coords[0] : 0, k === 1 ? v - coords[1] : 0); syncRow({ rowId: tr.id, b: b }); }
+          else coords[k] = v;
+          moveBox(coords);
+        });
+        if (b.shape && k > 1) { input.readOnly = true; input.title = 'Non-rectangular boxes must be edited on the map'; }
+        tr.appendChild(td(input));
+      })(k);
+      var pick = document.createElement('select');
+      pick.title = 'Shape: a rectangle, the hull around its points (convex), or outlines drawn point by point (loop)';
+      [['', 'rect'], ['convex', 'convex'], ['loop', 'loop']].concat(shapeKind(b) === 'loop' ? [['add', '+ loop']] : []).forEach(function (o) {
+        var opt = document.createElement('option'); opt.value = o[0]; opt.textContent = o[1]; pick.appendChild(opt);
+      });
+      pick.value = shapeKind(b);
+      pick.onchange = function () { if (pick.value === 'add') addLoop(b); else reshape(b, pick.value); state.selectedBox = b; render(); };
+      tr.appendChild(td(pick));
+      tr.appendChild(td(gives));
+      // any box can wear its own color; its flags pick the default
+      var color = document.createElement('input'); color.type = 'color'; color.title = b.color ? 'own color' : 'the default for its flags';
+      color.onchange = function () { b.color = color.value.replace('#', ''); recolorBox(coords); };
+      tr.appendChild(td(color));
+      // invisible: it still works, nobody sees it
+      var hide = document.createElement('button'); hide.className = 'quiet icon';
+      var drawEye = function () {
+        hide.innerHTML = hidden(b) ? EYE_OFF : EYE; hide.classList.toggle('on', hidden(b));
+        hide.title = hidden(b) ? 'Invisible in game. Click to make it visible.' : 'Visible in game. Click to make it invisible (it stays dashed here).';
+        color.value = colorOf(b); color.disabled = hidden(b);
+      };
+      drawEye();
+      hide.onclick = function () { if (hidden(b)) delete b.color; else b.color = 'none'; drawEye(); recolorBox(coords); };
+      tr.appendChild(td(hide));
+      var lock = document.createElement('button');
+      var lockCell = td(lock); lockCell.className = 'lockcell';
+      tr.appendChild(lockCell);
+      var del = document.createElement('button'); del.className = 'danger icon'; del.innerHTML = '&times;'; del.title = 'Remove this box';
+      del.onclick = function () { if (state.lastBox === b) state.lastBox = null; boxes[i] = { flags: 'tombstone', box: [0, 0, 0, 0] }; render(); };
+      tr.appendChild(td(del));
+      // a lock changes this row and the map only, so it skips the full render
+      function drawLock() {
+        var isLocked = locked(owner, i);
+        lock.className = 'quiet icon' + (isLocked ? ' on' : '');
+        lock.innerHTML = isLocked ? LOCK : UNLOCK;
+        lock.title = isLocked ? 'Locked: no edits, no dragging. Click to unlock.' : 'Unlocked. Click to lock: no edits, no dragging, no corners.';
+        tr.classList.toggle('locked', isLocked);
+        tr.querySelectorAll('input, button, select, textarea').forEach(function (el) { if (el !== lock) el.disabled = isLocked; });
+        if (!isLocked) drawEye();
+      }
+      lock.onclick = function () { setLock(owner, i, !locked(owner, i)); drawLock(); rebuildShapes(); };
+      drawLock();
+      tbody.appendChild(tr);
+    });
+  }
+
+  // the shared list and each variant's, every one bounded once there are variants
+  function renderBoxLists() {
+    var ids = shownIds();
+    $('sharedBoxes').classList.toggle('boxlist', ids.length > 0);
+    $('sharedHead').hidden = ids.length === 0;
+    renderBoxes($('boxes').querySelector('tbody'), state.segment.boxes || (state.segment.boxes = []), 'shared', true);
+    $('boxes').hidden = !$('boxes').querySelector('tbody').rows.length;
+    var root = $('variantBoxes'); root.innerHTML = '';
+    ids.forEach(function (id) {
+      var v = state.variants[id];
+      var part = document.createElement('div'); part.className = 'boxlist';
+      var head = document.createElement('div'); head.className = 'row';
+      head.appendChild(asText('Variant ' + (v.name || id) + (id === state.playing ? ' (running) ' : ' ')));
+      var note = document.createElement('span'); note.className = 'muted'; note.textContent = 'only this variant has these';
+      head.appendChild(note);
+      part.appendChild(head);
+      var add = document.createElement('button'); add.className = 'quiet'; add.textContent = 'add box'; add.style.margin = '6px 0'; add.onclick = function () { v.boxes.push(freshBox()); render(); };
+      part.appendChild(add);
+      var table = document.createElement('table'); table.className = 'boxes';
+      table.innerHTML = '<thead><tr><th title="The number BM|n uses">#</th><th>flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>shape</th><th>gives</th><th></th><th></th><th></th><th></th></tr></thead><tbody></tbody>';
+      renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id, false);
+      table.hidden = !table.querySelector('tbody').rows.length;
+      part.appendChild(table);
+      root.appendChild(part);
+    });
+  }
+
+  function td(child) { var c = document.createElement('td'); c.appendChild(child); return c; }
+  function numInput(v, on) { var n = document.createElement('input'); n.type = 'number'; n.step = '0.01'; n.value = v; n.onchange = function () { on(num(n.value)); }; return n; }
+
+  function renderGroups() {
+    var root = $('groups'); root.innerHTML = '';
+    var groups = state.segment.shuffle || [];
+    groups.forEach(function (g, i) {
+      var box = document.createElement('div'); box.className = 'group';
+      var head = document.createElement('div'); head.className = 'row'; head.textContent = 'Group ' + (i + 1) + '  gives ';
+      head.appendChild(pickSelect({ get: function () { return g.give || []; }, set: function (l) { g.give = l; }, placeholder: 'pickups to scatter' }));
+      var pick = document.createElement('button'); pick.className = 'quiet'; pick.textContent = 'pick locations'; pick.style.marginLeft = '8px';
+      pick.onclick = function () { state.target = String(i); render(); $('map').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+      head.appendChild(pick);
+      var del = document.createElement('button'); del.className = 'danger'; del.textContent = 'remove'; del.onclick = function () { groups.splice(i, 1); if (state.target !== 'end') state.target = 'end'; render(); };
+      head.appendChild(del);
+      box.appendChild(head);
+      var chips = document.createElement('div'); chips.className = 'chips';
+      renderChips(chips, g.among || (g.among = []), locName);
+      box.appendChild(chips);
+      var note = document.createElement('div'); note.className = 'muted'; note.textContent = (g.give || []).length + ' pickup(s) over ' + (g.among || []).length + ' location(s)';
+      box.appendChild(note);
+      root.appendChild(box);
+    });
+  }
+
+  function loadGhosts() {
+    return api('/api/ghosts').then(function (g) {
+      state.ghosts = g.ghosts || [];
+      $('ghostVariant').textContent = state.playing ? '(variant ' + state.playing + ')' : '';
+      var root = $('ghosts'); root.innerHTML = '';
+      // pinning copies the most recent run, so there has to be one
+      $('pinGhost').disabled = !state.ghosts.some(function (gh) { return gh.slot === 'recent'; });
+      if (!state.ghosts.length) { root.textContent = 'no ghosts stored yet'; return; }
+      state.ghosts.forEach(function (gh) {
+        var row = document.createElement('div');
+        row.appendChild(document.createTextNode(gh.slot + ': ' + (gh.seconds != null ? gh.seconds.toFixed(2) + ' s, ' + gh.samples + ' samples' : gh.bytes + ' bytes') + ' '));
+        if (gh.slot !== 'demo') {
+          var demo = document.createElement('button'); demo.className = 'quiet'; demo.textContent = 'make demo';
+          demo.onclick = function () { api('/api/ghost/demo?from=' + encodeURIComponent(gh.slot), { method: 'POST' }).then(loadGhosts).then(function () { say('The ' + gh.slot + ' run is the demo now.', 'ok'); }).catch(function (e) { say(e.message, 'bad'); }); };
+          row.appendChild(demo);
+        }
+        var del = document.createElement('button'); del.className = 'danger'; del.textContent = 'remove';
+        del.onclick = function () { api('/api/ghost/' + encodeURIComponent(gh.slot), { method: 'DELETE' }).then(loadGhosts).then(function () { say('Ghost ' + gh.slot + ' removed.', 'ok'); }).catch(function (e) { say(e.message, 'bad'); }); };
+        row.appendChild(del); root.appendChild(row);
+      });
+    }).catch(function (e) { $('ghosts').textContent = e.message; });
+  }
+  $('pinGhost').onclick = function () { api('/api/ghost/pin', { method: 'POST' }).then(loadGhosts).then(function () { say('Pinned the most recent run.', 'ok'); }).catch(function (e) { say(e.message, 'bad'); }); };
+
+  // the game's order: variantOrder's ids as listed, then the rest alphabetically (BfrpFile.Variants)
+  function variantIds() {
+    var seen = {}, low = function (s) { return s.toLowerCase(); };
+    var listed = (state.segment.variantOrder || []).filter(function (id) {
+      var keep = typeof id === 'string' && state.variants.hasOwnProperty(id) && !seen[id];
+      if (keep) seen[id] = true;
+      return keep;
+    });
+    return listed.concat(Object.keys(state.variants).filter(function (id) { return !seen[id]; })
+      .sort(function (a, b) { return low(a) < low(b) ? -1 : low(a) > low(b) ? 1 : 0; }));
+  }
+  // as the chooser shows them: its rows stack up from the card, so the game's first comes last
+  function shownIds() { return variantIds().reverse(); }
+  function moveVariant(id, by) {
+    var ids = variantIds(), to = ids.indexOf(id) + by;
+    if (to < 0 || to >= ids.length) return;
+    ids.splice(ids.indexOf(id), 1); ids.splice(to, 0, id);
+    state.segment.variantOrder = ids; render();
+  }
+
+  function renderVariants() {
+    var root = $('variants'); root.innerHTML = '';
+    var ids = variantIds();
+    shownIds().forEach(function (id) {
+      var v = state.variants[id], at = ids.indexOf(id);
+      var box = document.createElement('div'); box.className = 'variant';
+      var head = document.createElement('div');
+      [['↑', 'move up', 1], ['↓', 'move down', -1]].forEach(function (m) {
+        var b = document.createElement('button'); b.className = 'quiet'; b.textContent = m[0]; b.title = m[1]; b.style.marginRight = '4px';
+        b.disabled = at + m[2] < 0 || at + m[2] >= ids.length;
+        b.onclick = function () { moveVariant(id, m[2]); };
+        head.appendChild(b);
+      });
+      head.appendChild(document.createTextNode('Variant ' + id + (id === state.playing ? ' (running) ' : '  ') + ' name '));
+      var name = document.createElement('input'); name.type = 'text'; name.size = 30; name.value = v.name || ''; name.onchange = function () { v.name = name.value; renderBoxLists(); };
+      head.appendChild(name);
+      if (id !== state.playing) {
+        var del = document.createElement('button'); del.className = 'danger'; del.textContent = 'remove variant'; del.style.marginLeft = '8px';
+        del.onclick = function () { if (!confirm('Remove variant ' + id + ' with its history and ghosts?')) return; api('/api/variant/' + encodeURIComponent(id), { method: 'DELETE' }).then(load).then(function () { say('Variant ' + id + ' removed.', 'ok'); }).catch(function (e) { say(e.message, 'bad'); }); };
+        head.appendChild(del);
+      }
+      box.appendChild(head);
+      var inv = document.createElement('div'); inv.className = 'row'; inv.appendChild(document.createTextNode('Starting items '));
+      inv.appendChild(pickSelect({ get: function () { return v.inventory || []; }, set: function (l) { v.inventory = l; }, placeholder: 'given at the start' }));
+      box.appendChild(inv);
+      var brief = document.createElement('label'); brief.className = 'row'; brief.style.display = 'block'; brief.appendChild(document.createTextNode('Briefing'));
+      var about = document.createElement('textarea'); about.rows = 2; about.cols = 60; about.value = v.about || ''; about.placeholder = "blank shows the segment's briefing";
+      about.onchange = function () { var t = about.value.trim(); if (t) v.about = t; else delete v.about; };
+      brief.appendChild(document.createElement('br')); brief.appendChild(about);
+      box.appendChild(brief);
+      root.appendChild(box);
+    });
+  }
+
+  // a new box lands where the map is looking, so it can be dragged into place
+  function lookingAt() {
+    var c = state.map ? state.map.getCenter() : { lng: 0, lat: 0 };
+    return [num(c.lng - 2), num(c.lat - 2), num(c.lng + 2), num(c.lat + 2)];
+  }
+  // with the flags of the box added before it
+  function freshBox() {
+    var last = state.lastBox, b = { box: lookingAt(), flags: last ? last.flags : 'kill' };
+    state.lastBox = b;
+    return b;
+  }
+  // render() redraws these from state, so an edit has to reach state before the next redraw
+  ['about', 'mode', 'showGhost', 'qtm', 'faceLeft', 'resetOnDeath', 'count'].forEach(function (id) { $(id).addEventListener('change', collect); });
+  $('addBox').onclick = function () { (state.segment.boxes = state.segment.boxes || []).push(freshBox()); render(); };
+  $('addGoal').onclick = function () { var end = state.segment.end = state.segment.end || {}; end.box = lookingAt(); render(); };
+  $('addGroup').onclick = function () { (state.segment.shuffle = state.segment.shuffle || []).push({ give: [], among: [] }); state.target = String(state.segment.shuffle.length - 1); render(); };
+  $('addVariant').onclick = function () {
+    var name = prompt('Variant name'); if (!name) return;
+    var id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'variant';
+    // the id is a folder name, and Windows keeps these for devices
+    if (/^(con|prn|aux|nul|com\d|lpt\d)$/.test(id)) id += '-v';
+    while (state.variants[id]) id += '-2';
+    state.variants[id] = { name: name, inventory: [], boxes: [] };
+    render();
+  };
+
+  function collect() {
+    var seg = state.segment;
+    seg.version = seg.version || 1;
+    var about = $('about').value.trim();
+    if (about) { seg.about = about; } else { delete seg.about; }
+    if (seg.variantOrder) seg.variantOrder = variantIds();
+    if (seg.variantOrder && !seg.variantOrder.length) delete seg.variantOrder;
+    seg.timing = seg.timing || {};
+    seg.timing.mode = $('mode').value;
+    if ($('showGhost').value) seg.timing.showGhost = $('showGhost').value; else delete seg.timing.showGhost;
+    if ($('qtm').checked) seg.qtm_enabled = true; else delete seg.qtm_enabled;
+    if ($('faceLeft').checked) seg.faceLeft = true; else delete seg.faceLeft;
+    if ($('resetOnDeath').checked) seg.resetOnDeath = true; else delete seg.resetOnDeath;
+    seg.end = seg.end || {};
+    var count = $('count').value.trim();
+    if (count === '') delete seg.end.count; else seg.end.count = parseInt(count, 10);
+    ['items', 'locations'].forEach(function (k) { if (seg.end[k] && seg.end[k].length === 0) delete seg.end[k]; });
+    (seg.boxes || []).forEach(tidy);
+    if (seg.boxes && seg.boxes.length === 0) delete seg.boxes;
+    if (seg.shuffle && seg.shuffle.length === 0) delete seg.shuffle;
+    Object.keys(state.variants).forEach(function (id) { (state.variants[id].boxes || []).forEach(tidy); });
+    // only a name typed here renames: an untouched box leaves the folder as it is
+    var name = state.seed ? '' : $('name').value.trim();
+    var doc = { segment: seg, variants: state.variants, name: name === state.name ? '' : name };
+    var rolls = enemy.rolls && rollsLine(enemy.rolls);
+    if (rolls && rolls !== enemy.loaded) doc.enemyRolls = rolls;
+    return doc;
+  }
+  function tidy(b) { delete b.text; delete b.repeat; }
+
+  function put(doc, rev) {
+    return api('/api/segment', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ segment: doc.segment, variants: doc.variants, name: doc.name, enemyRolls: doc.enemyRolls, rev: rev }) });
+  }
+  // a rename that failed still saved everything else
+  function saved(reply, words) {
+    return load().then(function () {
+      if (reply && reply.renameError) say('Saved but not renamed: ' + reply.renameError, 'bad');
+      else say(words, 'ok');
+    });
+  }
+  $('save').onclick = function () {
+    say('Saving…');
+    var mine = collect();
+    put(mine, state.rev)
+      .then(function (reply) { return saved(reply, state.seed ? 'Saved to the seed file.' : 'Saved. A running attempt uses the new rules now; a changed start needs a retry.'); })
+      .catch(function (e) { if (e.status === 409) return saveOver(mine, e.body); say('Save failed: ' + e.message, 'bad'); });
+  };
+
+  // The game changed the segment since this page loaded it: boxes added on both sides are merged, anything else asks.
+  function saveOver(mine, current) {
+    var ours = added(JSON.parse(state.shown), mine), theirs = added(JSON.parse(state.loaded), current);
+    var merged = ours && theirs && union(current, ours, theirs);
+    if (!merged) return offerReload();
+    merged.name = mine.name;
+    merged.enemyRolls = mine.enemyRolls;
+    return put(merged, current.rev)
+      .then(function (reply) { return saved(reply, 'Saved, keeping the boxes added in the game meanwhile.'); })
+      .catch(function (e) { if (e.status === 409) return offerReload(); say('Save failed: ' + e.message, 'bad'); });
+  }
+  function offerReload() {
+    if (confirm('The game changed this segment since this page loaded it. Reload it from the game? Changes made here since then are lost.')) return load();
+    say('Not saved: the game changed this segment since this page loaded it.', 'bad');
+  }
+
+  // json with its keys sorted, so equal values compare equal
+  function canon(v) {
+    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+    if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map(function (k) { return JSON.stringify(k) + ':' + canon(v[k]); }).join(',') + '}';
+    return JSON.stringify(v);
+  }
+  function boxLists(doc) {
+    return [{ id: '', boxes: doc.segment.boxes || [] }].concat(Object.keys(doc.variants || {}).sort().map(function (id) { return { id: id, boxes: doc.variants[id].boxes || [] }; }));
+  }
+  function withoutBoxes(doc) {
+    var d = JSON.parse(JSON.stringify({ segment: doc.segment, variants: doc.variants || {} }));
+    delete d.segment.boxes; if (d.segment.end) { delete d.segment.end.box; delete d.segment.end.goal; }
+    Object.keys(d.variants).forEach(function (id) { delete d.variants[id].boxes; });
+    return canon(d);
+  }
+  // What `to` adds to `from` when boxes added is all that differs: the goal and each list's new boxes; else null.
+  function added(from, to) {
+    if (withoutBoxes(from) !== withoutBoxes(to)) return null;
+    var goalFrom = (from.segment.end || {}).box, goalTo = (to.segment.end || {}).box;
+    if (goalFrom && canon(goalFrom) !== canon(goalTo)) return null;
+    var out = { goal: goalFrom ? null : goalTo || null, lists: [] }, before = boxLists(from), after = boxLists(to);
+    for (var i = 0; i < after.length; i++) {
+      var keys = after[i].boxes.map(canon), used = keys.map(function () { return false; });
+      for (var j = 0; j < before[i].boxes.length; j++) {
+        var at = -1, key = canon(before[i].boxes[j]);
+        for (var k = 0; k < keys.length && at < 0; k++) if (!used[k] && keys[k] === key) at = k;
+        if (at < 0) return null;
+        used[at] = true;
+      }
+      out.lists.push({ id: after[i].id, boxes: after[i].boxes.filter(function (b, n) { return !used[n]; }) });
+    }
+    return out;
+  }
+  // the game's copy with this page's new boxes added; a box both sides added is kept once
+  function union(current, ours, theirs) {
+    if (ours.goal && theirs.goal && canon(ours.goal) !== canon(theirs.goal)) return null;
+    var doc = JSON.parse(JSON.stringify({ segment: current.segment, variants: current.variants || {} }));
+    if (ours.goal) { doc.segment.end = doc.segment.end || {}; doc.segment.end.box = ours.goal; }
+    ours.lists.forEach(function (list, i) {
+      var into = list.id === '' ? (doc.segment.boxes = doc.segment.boxes || []) : (doc.variants[list.id].boxes = doc.variants[list.id].boxes || []);
+      var twice = theirs.lists[i].boxes.map(canon);
+      list.boxes.forEach(function (b) { var at = twice.indexOf(canon(b)); if (at >= 0) twice.splice(at, 1); else into.push(b); });
+    });
+    return doc;
+  }
+  $('reload').onclick = load;
+
+  // edits on the page the game has not saved, which an export or a placements swap would leave out
+  function dirty() { return !!state.shown && JSON.stringify(collect()) !== state.shown; }
+
+  $('export').onclick = function () {
+    if (dirty()) { say('Save to game first: the export takes what the game has saved.', 'bad'); return; }
+    say('Exporting…');
+    api('/api/export', { method: 'POST' })
+      .then(function (r) { say('Exported to ' + r.path, 'ok'); })
+      .catch(function (e) { say('Export failed: ' + e.message, 'bad'); });
+  };
+
+  // ---- placements: pasted or read from a local file, then sent as the whole list -----
+  function renderPlacements() {
+    var sel = $('placeTarget'), keep = sel.value;
+    sel.innerHTML = '';
+    var add = function (v, t) { var o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+    add('', 'the segment');
+    shownIds().forEach(function (id) { add(id, 'variant ' + (state.variants[id].name || id)); });
+    sel.value = keep; if (sel.value !== keep) sel.value = '';
+    $('placeText').value = state.placements[sel.value] || '';
+  }
+  $('placeTarget').onchange = function () { $('placeText').value = state.placements[$('placeTarget').value] || ''; };
+  $('placePick').onclick = function () { $('placeFile').value = ''; $('placeFile').click(); };
+  $('placeFile').onchange = function () {
+    var f = $('placeFile').files[0]; if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () { $('placeText').value = reader.result; say('Loaded ' + f.name + '. Replace placements to send it to the game.'); };
+    reader.onerror = function () { say('Could not read ' + f.name, 'bad'); };
+    reader.readAsText(f);
+  };
+  function boxCount(text) { return (text || '').split('\n').filter(function (l) { return /^\s*BX\|/i.test(l); }).length; }
+  $('placeReplace').onclick = function () {
+    if (dirty()) { say('Save to game first: the page has changes the game has not saved.', 'bad'); return; }
+    var variant = $('placeTarget').value, text = $('placeText').value;
+    var lost = boxCount(state.placements[variant]) - boxCount(text);
+    // box numbers are positional, so a list with fewer boxes renumbers what BM| lines point at
+    if (lost > 0 && !confirm('The new list has ' + lost + ' fewer box line(s) than the one in the game. Replace it anyway?')) return;
+    say('Replacing placements…');
+    api('/api/placements', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ variant: variant, text: text, rev: state.rev }) })
+      .then(function (r) {
+        return load().then(function () {
+          var skipped = r.skipped || [];
+          say('Placements replaced: ' + r.kept + ' line(s)' + (skipped.length ? '; left out ' + skipped.length + ' the game cannot use, ' + skipped[0]
+            + (skipped.length > 1 ? ' (hover for the rest)' : '') : '') + '.', skipped.length ? 'bad' : 'ok');
+          $('message').title = skipped.join('\n');
+        });
+      })
+      .catch(function (e) { if (e.status === 409) return offerReload(); say('Could not replace them: ' + e.message, 'bad'); });
+  };
+
+  // ---- enemies: the plando's Enemies panel, for a seed with a //EnemyRolls= line ----------
+  // The site's table (positions included) must be this build's version; rolls index its placements.
+  var ROLLS = '//EnemyRolls=';
+  var KIND_COLORS = { Bonus: '#bbbbbb', Fronkeys: '#8bc34a', Frogs: '#2e7d32', Slimes: '#9c27b0', Banelings: '#ff5722', DropSlugs: '#795548',
+    Worms: '#ff9800', Rhinos: '#b71c1c', Birds: '#03a9f4', Elementals: '#ffeb3b', Swarms: '#78909c', Spiders: '#e91e63', Fish: '#00bcd4', Sharks: '#3f51b5' };
+  var enemy = { info: null, table: null, rolls: null, loaded: null, selected: null, open: {}, markers: [], cache: {} };
+
+  function loadEnemies(info) {
+    enemy.info = info || null; enemy.table = null; enemy.rolls = null; enemy.loaded = null;
+    drawEnemyMarkers();
+    $('enemySection').hidden = !info;
+    $('enemyTools').hidden = true; $('enemyList').innerHTML = ''; $('enemyCount').textContent = '';
+    if (!info) return;
+    $('enemyVariants').href = info.site + '/enemies.txt';
+    $('enemyNote').textContent = 'Loading the enemy table from ' + info.site + '…';
+    var got = enemy.cache[info.site] ? Promise.resolve(enemy.cache[info.site])
+      : fetch(info.site + '/enemies.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    got.then(function (t) {
+      if (enemy.info !== info) return;
+      enemy.cache[info.site] = t;
+      if (t.version !== info.version) {
+        $('enemyNote').textContent = info.site + ' has enemy table ' + t.version + ' and this game has ' + info.version + ', so enemies can\'t be edited here.';
+        return;
+      }
+      var table = prepare(t), rolls = parseRolls(info.rolls, table);
+      if (!rolls) { $('enemyNote').textContent = 'This seed\'s //EnemyRolls= line doesn\'t match the enemy table, so enemies can\'t be edited here.'; return; }
+      enemy.table = table; enemy.rolls = rolls; enemy.loaded = rollsLine(rolls);
+      $('enemyNote').textContent = 'After Save to game, each enemy changes the next time it spawns.';
+      $('enemyTools').hidden = false;
+      renderEnemies(); drawEnemyMarkers();
+    }).catch(function (e) {
+      if (enemy.info === info) $('enemyNote').textContent = 'Could not load the enemy table from ' + info.site + ' (' + e.message + ').';
+    });
+  }
+
+  function prepare(t) {
+    var table = { version: t.version, kinds: t.kinds, byKind: {} };
+    table.placements = t.placements.map(function (p, i) { return Object.assign({ i: i }, p); });
+    table.variants = t.variants.map(function (v, i) { return Object.assign({ i: i }, v); });
+    table.variants.forEach(function (v) { (table.byKind[v.kind] = table.byKind[v.kind] || []).push(v); });
+    return table;
+  }
+  // "b<N>": the game reads bonus N when the placeholder spawns and takes variant N - 1
+  function parseRolls(line, table) {
+    if (typeof line !== 'string' || line.toLowerCase().indexOf(ROLLS.toLowerCase()) !== 0) return null;
+    var body = line.slice(ROLLS.length), colon = body.indexOf(':');
+    if (colon < 0 || body.slice(0, colon) !== table.version) return null;
+    var rolls = body.slice(colon + 1).split(',').map(function (r) { return r === '' ? null : /^b\d+$/.test(r) ? r : parseInt(r, 10); });
+    var ok = rolls.length === table.placements.length && rolls.every(function (r) { return r === null || typeof r === 'string' || (r >= 0 && r < table.variants.length); });
+    return ok ? rolls : null;
+  }
+  function rollsLine(rolls) { return ROLLS + enemy.table.version + ':' + rolls.map(function (r) { return r === null ? '' : r; }).join(','); }
+  function isBonus(r) { return typeof r === 'string'; }
+  function bonusId(r) { return parseInt(r.slice(1), 10); }
+  function rollKind(p, r) { return r === null ? p.kind : isBonus(r) ? 'Bonus' : enemy.table.variants[r].kind; }
+  // what may stand at a spot by the table alone; the server's finer rules are the author's to mind
+  function kindsFor(p) {
+    return enemy.table.kinds.filter(function (k) {
+      return k.spots.indexOf(p.spot) >= 0 || (p.spot === 'rhino' && k.spots.indexOf('floor') >= 0) || (k.name === 'DropSlugs' && p.ceiling);
+    }).map(function (k) { return k.name; });
+  }
+  function randomVariant(kind) { var vs = enemy.table.byKind[kind]; return vs[Math.floor(Math.random() * vs.length)].i; }
+  function nextVariant(r, step) {
+    var vs = enemy.table.byKind[enemy.table.variants[r].kind], at = 0;
+    vs.forEach(function (v, k) { if (v.i === r) at = k; });
+    return vs[(at + step + vs.length) % vs.length].i;
+  }
+  function sceneLabel(scene) { return scene.replace(/([a-z])([A-Z0-9])/g, '$1 $2').replace(/^./, function (c) { return c.toUpperCase(); }); }
+  function enemyLabel(p) { return sceneLabel(p.scene) + ' (' + p.x + ', ' + p.y + ')'; }
+  function enemyTip(p) {
+    var r = enemy.rolls[p.i];
+    return enemyLabel(p) + ': ' + (isBonus(r) ? 'from bonus ' + bonusId(r) : rollKind(p, r) + (r === null ? '' : ' #' + (r + 1)));
+  }
+
+  function setRoll(i, r) { enemy.rolls[i] = r; renderEnemies(); restyleEnemy(i); }
+  function selectEnemy(i, fromMap) {
+    var was = enemy.selected; enemy.selected = i;
+    renderEnemies();
+    if (was !== null) restyleEnemy(was);
+    restyleEnemy(i);
+    if (fromMap) { var row = document.getElementById('enemy-' + i); if (row) row.scrollIntoView({ block: 'nearest' }); }
+  }
+
+  function renderEnemies() {
+    var t = enemy.table, root = $('enemyList'); root.innerHTML = '';
+    if (!t) return;
+    var changed = enemy.rolls.filter(function (r) { return r !== null; }).length;
+    $('enemyCount').textContent = changed ? changed + ' changed' : '';
+    $('enemyReset').disabled = !changed;
+    var q = $('enemyFilter').value.trim().toLowerCase();
+    var shown = t.placements.filter(function (p) { return !q || enemyLabel(p).toLowerCase().indexOf(q) >= 0 || rollKind(p, enemy.rolls[p.i]).toLowerCase().indexOf(q) >= 0; });
+    var scenes = [];
+    shown.forEach(function (p) { if (!scenes.length || scenes[scenes.length - 1].scene !== p.scene) scenes.push({ scene: p.scene, rows: [] }); scenes[scenes.length - 1].rows.push(p); });
+    var selScene = enemy.selected !== null ? t.placements[enemy.selected].scene : null;
+    scenes.forEach(function (s) {
+      var open = q || enemy.open[s.scene] || s.scene === selScene;
+      var moved = s.rows.filter(function (p) { return enemy.rolls[p.i] !== null; }).length;
+      var head = document.createElement('div'); head.className = 'enemy-scene';
+      head.appendChild(asText((open ? '▾ ' : '▸ ') + sceneLabel(s.scene)));
+      var count = asText((moved ? moved + ' changed of ' : '') + s.rows.length); count.className = 'muted'; head.appendChild(count);
+      head.onclick = function () { enemy.open[s.scene] = !open; renderEnemies(); };
+      root.appendChild(head);
+      if (open) s.rows.forEach(function (p) { root.appendChild(enemyRow(p)); });
+    });
+    if (!shown.length) root.appendChild(asText('No placeholders match.'));
+  }
+
+  function enemyRow(p) {
+    var r = enemy.rolls[p.i], kind = rollKind(p, r);
+    var row = document.createElement('div'); row.className = 'enemy-row' + (p.i === enemy.selected ? ' sel' : ''); row.id = 'enemy-' + p.i;
+    row.onclick = function () { selectEnemy(p.i, false); };
+    var n = asText(String(p.i)); n.className = 'num'; n.title = 'placeholder ' + p.i; row.appendChild(n);
+    var sw = document.createElement('span'); sw.className = 'enemy-swatch'; sw.style.background = KIND_COLORS[kind] || '#fff'; row.appendChild(sw);
+    var where = asText('(' + p.x + ', ' + p.y + ') ' + p.spot + (p.arena ? ' (purple door)' : '')); where.className = 'enemy-where'; where.title = p.scene; row.appendChild(where);
+    var sel = document.createElement('select');
+    var add = function (value, label) { var o = document.createElement('option'); o.value = value; o.textContent = label; sel.appendChild(o); };
+    add('vanilla', 'Vanilla (' + p.kind + ')');
+    kindsFor(p).forEach(function (k) { add(k, k); });
+    add('bonus', 'Dynamic (RB id)');
+    var want = r === null ? 'vanilla' : isBonus(r) ? 'bonus' : kind;
+    sel.value = want;
+    // a seed may roll a kind the table's spot rules wouldn't offer here
+    if (sel.value !== want) { add(want, want); sel.value = want; }
+    sel.onclick = function (ev) { ev.stopPropagation(); };
+    sel.onchange = function () {
+      if (sel.value === 'vanilla') setRoll(p.i, null);
+      else if (sel.value === 'bonus') setRoll(p.i, isBonus(r) ? r : 'b100');
+      else if (rollKind(p, r) !== sel.value || r === null) setRoll(p.i, randomVariant(sel.value));
+    };
+    row.appendChild(sel);
+    var v = document.createElement('span'); v.className = 'enemy-variant';
+    if (isBonus(r)) {
+      v.title = 'The value of this bonus id is used to pick the enemy variant (as long as it is a valid variant number).';
+      v.appendChild(asText('RB|'));
+      var id = document.createElement('input'); id.type = 'number'; id.min = '0'; id.value = bonusId(r);
+      id.onclick = function (ev) { ev.stopPropagation(); };
+      id.onchange = function () { var k = parseInt(id.value, 10); setRoll(p.i, isNaN(k) || k < 0 ? 'b0' : 'b' + k); };
+      v.appendChild(id);
+    } else if (r !== null) {
+      v.title = 'Select enemy variant (changes health, damage, and occasionally the visuals.)';
+      var step = function (d, text) {
+        var b = document.createElement('button'); b.className = 'quiet'; b.textContent = text;
+        b.onclick = function (ev) { ev.stopPropagation(); setRoll(p.i, nextVariant(r, d)); };
+        return b;
+      };
+      v.appendChild(step(-1, '◀')); v.appendChild(asText('#' + (r + 1))); v.appendChild(step(1, '▶'));
+    }
+    row.appendChild(v);
+    return row;
+  }
+
+  function enemyIcon(kind, selected) {
+    return L.divIcon({ className: 'enemy-marker' + (selected ? ' sel' : ''), iconSize: [14, 14], html: '<span style="background:' + (KIND_COLORS[kind] || '#fff') + '"></span>' });
+  }
+  function drawEnemyMarkers() {
+    enemy.markers.forEach(function (m) { state.map.removeLayer(m); }); enemy.markers = [];
+    if (!state.map || !enemy.table || !$('enemyMarkers').checked) return;
+    enemy.table.placements.forEach(function (p) {
+      var m = L.marker([p.y, p.x], { icon: enemyIcon(rollKind(p, enemy.rolls[p.i]), p.i === enemy.selected), opacity: enemy.rolls[p.i] === null ? 0.6 : 1 }).addTo(state.map);
+      m.bindTooltip(asText(enemyTip(p)), { direction: 'top', offset: [0, -6] });
+      m.on('click', function () { selectEnemy(p.i, true); });
+      enemy.markers.push(m);
+    });
+  }
+  function restyleEnemy(i) {
+    var m = enemy.markers[i], p = enemy.table && enemy.table.placements[i]; if (!m || !p) return;
+    m.setIcon(enemyIcon(rollKind(p, enemy.rolls[i]), i === enemy.selected));
+    m.setOpacity(enemy.rolls[i] === null ? 0.6 : 1);
+    m.setTooltipContent(asText(enemyTip(p)));
+  }
+  $('enemyFilter').oninput = renderEnemies;
+  $('enemyMarkers').onchange = drawEnemyMarkers;
+  $('enemyReset').onclick = function () { enemy.rolls = enemy.rolls.map(function () { return null; }); renderEnemies(); drawEnemyMarkers(); };
+
+  // checking in keeps this tab the game's editor pane, which the game reloads instead of opening another
+  var pane = Math.random().toString(36).slice(2);
+  var paneNew = true;
+  var paneTitle = document.title;
+  function checkIn() {
+    var see = document.hasFocus && document.hasFocus();
+    return api('/api/pane?id=' + pane + (paneNew ? '&new=1' : '') + (see ? '&see=1' : '')).then(function (r) {
+      paneNew = false;
+      if (r.reload) { turned(); window.scrollTo(0, 0); load(); }
+    }).catch(function () { });
+  }
+  // a background tab cannot raise itself, so it marks its title until it is looked at
+  function turned() {
+    try { window.focus(); } catch (e) { }
+    if (document.hasFocus && document.hasFocus()) return;
+    document.title = '\u2190 ' + paneTitle;
+    var clear = function () { document.title = paneTitle; window.removeEventListener('focus', clear); };
+    window.addEventListener('focus', clear);
+  }
+  setInterval(checkIn, 2000);
+  checkIn();
+  load();
+})();
+</script>
+</body>
+</html>
