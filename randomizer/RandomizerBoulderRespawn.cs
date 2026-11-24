@@ -1,7 +1,7 @@
 using Game;
 using UnityEngine;
 
-// Restores the broken Blackroot boulder while that well is unactivated, never with Ori in the cave behind it.
+// Restores the broken Blackroot boulder while that well is unactivated, never with Ori in the cave behind it or near the well.
 public class RandomizerBoulderRespawn : MonoBehaviour {
     public EntityDamageReciever Boulder;
     public GameObject WallCollider;
@@ -12,6 +12,9 @@ public class RandomizerBoulderRespawn : MonoBehaviour {
 
     // the cave and the spot the boulder rests on
     private static readonly Rect s_cave = Rect.MinMaxRect(420f, -331f, 441f, -300f);
+
+    // from the well out to where the resting boulder leaves the screen on the climb
+    private const float WellReach = 35f;
 
     // a load can leave a broken boulder inactive at full health, so health alone can't tell
     private bool Broken => !Chaser.activeSelf && !Boulder.gameObject.activeSelf;
@@ -31,7 +34,9 @@ public class RandomizerBoulderRespawn : MonoBehaviour {
         }
 
         CheckNow = false;
-        if (s_cave.Contains(Characters.Sein.Position) || WellActivated()) {
+        var well = Well();
+        if (well == null || well.Activated || s_cave.Contains(Characters.Sein.Position)
+                || Vector2.Distance(well.WorldPosition, Characters.Sein.Position) < WellReach) {
             return;
         }
 
@@ -40,17 +45,17 @@ public class RandomizerBoulderRespawn : MonoBehaviour {
         WallCollider.SetActive(true);
     }
 
-    private static bool WellActivated() {
+    private static GameMapTeleporter Well() {
         if (TeleporterController.Instance == null) {
-            return true;
+            return null;
         }
 
         foreach (var well in TeleporterController.Instance.Teleporters) {
             if (well.Identifier == "mangroveFalls") {
-                return well.Activated;
+                return well;
             }
         }
 
-        return true;
+        return null;
     }
 }
