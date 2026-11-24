@@ -20,8 +20,14 @@ public static class RandomizerMW {
         public string Code;
         public string Id;
         public string Zone;
+        // an Archipelago game holds the item; plain multiworld names no holder
+        public bool Exported;
         // who to credit when there is no slot to look up
         public string Sender;
+    }
+
+    public static bool Exported(int slot) {
+        return Manifest.TryGetValue(slot, out var entry) && entry.Exported;
     }
 
     public static Dictionary<int, ManifestEntry> Manifest = new Dictionary<int, ManifestEntry>();
@@ -362,6 +368,7 @@ public static class RandomizerMW {
 
             // holder is empty in plain multiworld, where the finder already is whose world it is
             var holder = parts[1];
+            entry.Exported = !string.IsNullOrEmpty(holder);
             var who = string.IsNullOrEmpty(holder) ? $"P{entry.Finder}" : holder;
             var clue = string.IsNullOrEmpty(zone) ? who : $"{who} {zone}";
 

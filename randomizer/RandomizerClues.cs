@@ -49,7 +49,7 @@ public static class RandomizerClues {
         var slot = SlotFor(i);
         // An exported key's baked zone is only the pre-export roll, so it is not worth showing
         // once the key is in hand and no hint will be bought to correct it.
-        if (Held(i) && slot >= 0 && !RandomizerMW.HasApHint(slot)) {
+        if (Held(i) && RandomizerMW.Exported(slot) && !RandomizerMW.HasApHint(slot)) {
             return "Archipelago";
         }
 
