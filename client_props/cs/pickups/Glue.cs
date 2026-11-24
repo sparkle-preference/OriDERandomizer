@@ -26,6 +26,7 @@ static class PickupsGlue {
         RandomizerInventory.Now = () => Clock;
         Pos = null;
         RandomizerInventory.OriPosition = () => Pos;
+        RandomizerInventory.Held = action => false;
     }
 
     // where {Pos.x} and {Pos.y} find Ori; null is no Ori in the world
@@ -53,6 +54,12 @@ static class PickupsGlue {
     }
 
     public static void Fix(bool[] fixedBoxes) { RandomizerBoxes.Fixed = fixedBoxes; }
+
+    // the actions held, by index into RandomizerInventory.Actions
+    public static void Hold(int[] actions) {
+        var held = new HashSet<int>(actions);
+        RandomizerInventory.Held = held.Contains;
+    }
 
     public static void CountTick() { RandomizerInventory.CountTick(); }
 

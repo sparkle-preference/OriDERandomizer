@@ -13,7 +13,7 @@ from hypothesis import event, given, settings, strategies as st
 from client_props.base import CLIENT, HERE, examples
 from client_props.cs_bridge import outcome, slice_bridge
 from client_props.strategies.pickups import (BROKEN_RULES, INT_MAX, INT_MIN, EDGE_SLOTS, EDGE_VALUES, any_code, any_id,
-                                             box_offsets, box_rotations, boxes, br_stmt, fixed_boxes, degrees, eight_places, emitted, hundredths, inventory,
+                                             ACTIONS, box_offsets, box_rotations, boxes, br_stmt, fixed_boxes, held_actions, degrees, eight_places, emitted, hundredths, inventory,
                                              legacy_value_expr, mw_line, name_query, name_rules, ori_at, ri_stmt, slot_id,
                                              slot_message, value_expr)
 from pickups import Event, MultiworldItem, Pickup, Skill, Teleporter, Upgrade
@@ -292,6 +292,10 @@ class Names(Quiet):
                 differs.add((code, id))
         self.assertEqual(differs, {(c, i) for c, i in server_pickups() if wording_differs(c, i)})
 
+    def test_only_codes_that_remove_read_a_minus_as_a_removal(self):
+        for code, id in [("SH", "-1"), ("SH", "-5 apples"), ("KS", "-1"), ("RB", "-6"), ("EX", "-15"), ("TW", "-1,2,3,Node")]:
+            self.assertEqual(name(code, id).lower(), Pickup.name(code, id).lower(), (code, id))
+
     @settings(max_examples=examples(400))
     @given(emitted())
     def test_every_pickup_the_server_emits_constructs_and_names(self, cip):
@@ -370,18 +374,31 @@ HUNDREDTH = UNIT // 100
 TICK_SLOT = 11000
 
 
+# a box read's part after the dot, as the client's BoxPart names it
+BOX_PARTS = {"X": "x", "Y": "y", "XI": "i", "YI": "j", "R": "r"}
+
+
+def action_index(name):
+    """Which of ACTIONS name is, any case, or None."""
+    return next((i for i, a in enumerate(ACTIONS) if name.upper() == a.upper()), None)
+
+
 def _read_atom(inner):
-    """("s", slot) for {n}, ("t", None) for {T}, ("o", 0 or 1) for {Pos.x} or {Pos.y}; ("b", box), ("x", box) or
-    ("y", box) for {Bn}, {Bn.x}, {Bn.y}."""
+    """("s", slot) for {n}, ("t", None) for {T}, ("o", 0 or 1) for {Pos.x} or {Pos.y}, ("a", action) for {[Jump]} and
+    the like; ("b", box) for {Bn}, or BOX_PARTS's kind and the box for a read with a dot."""
     if inner in ("T", "t"):
         return "t", None
     if len(inner) == 5 and inner[:4].upper() == "POS." and inner[4] in "xXyY":
         return "o", int(inner[4] in "yY")
+    if len(inner) > 1 and inner[0] == "[" and inner[-1] == "]":
+        if action_index(cs_trim(inner[1:-1])) is None:
+            raise Refused
+        return "a", action_index(cs_trim(inner[1:-1]))
     if len(inner) > 1 and inner[0] in "Bb":
         dot = inner.find(".")
         num, part = (inner[1:], "") if dot < 0 else (inner[1:dot], inner[dot + 1:])
-        if re.fullmatch("[0-9]+\0*", num) and int(num.rstrip("\0")) <= INT_MAX and (dot < 0 or part.lower() in ("x", "y")):
-            return ("b" if dot < 0 else part.lower()), int(num.rstrip("\0"))
+        if re.fullmatch("[0-9]+\0*", num) and int(num.rstrip("\0")) <= INT_MAX and (dot < 0 or part.upper() in BOX_PARTS):
+            return ("b" if dot < 0 else BOX_PARTS[part.upper()]), int(num.rstrip("\0"))
         raise Refused
     n = cs_int(inner)
     if n is None:
@@ -569,14 +586,14 @@ def show(h):
 class Model:
     """RI Format.txt and the comments in RandomizerInventory, as Python: one instance per expression.
 
-    Numbers are exact integers in units of 1e-8; boxes are (x, y, deleted, off), corners in hundredths; offsets
+    Numbers are exact integers in units of 1e-8; boxes are (x, y, deleted, off), middles in hundredths; offsets
     are each moved box's (x, y) in hundredths; ori is Ori's (x, y) in hundredths, or None for no Ori; rotations
-    are each turned box's turn in hundredths of a degree; fixed holds the goal and unsafe boxes."""
+    are each turned box's turn in hundredths of a degree; fixed holds the goal and unsafe boxes; held the actions held."""
 
-    def __init__(self, inv, boxes=(), offsets=None, ori=None, rotations=None, fixed=()):
+    def __init__(self, inv, boxes=(), offsets=None, ori=None, rotations=None, fixed=(), held=()):
         self.inv, self.errors, self.logs, self.masks, self.moves = dict(inv), 0, 0, [], []
         self.boxes, self.offsets, self.ori = list(boxes), dict(offsets or {}), ori
-        self.rotations, self.fixed = dict(rotations or {}), set(fixed)
+        self.rotations, self.fixed, self.held = dict(rotations or {}), set(fixed), set(held)
         self.now, self.complained = 0, {}
 
     def complain(self, key):
@@ -593,9 +610,13 @@ class Model:
         x, y, gone, off = self.boxes[n]
         if part == "b":
             return 0 if gone or off else UNIT
+        if part == "r":
+            return self.rotations.get(n, 0) * HUNDREDTH
         if not (abs(x) < 10 ** 9 and abs(y) < 10 ** 9):
             self.complain("{B%d}" % n)
             return 0
+        if part in "ij":
+            return (x if part == "i" else y) * HUNDREDTH
         dx, dy = self.offsets.get(n, (0, 0))
         return (x + dx if part == "x" else y + dy) * HUNDREDTH
 
@@ -633,7 +654,7 @@ class Model:
         elif kind in "st":
             v = self.read(TICK_SLOT if kind == "t" else n) * UNIT
         else:
-            v = self.read_ori(n) if kind == "o" else self.read_box(n, kind)
+            v = self.read_ori(n) if kind == "o" else (UNIT if n in self.held else 0) if kind == "a" else self.read_box(n, kind)
         return -v if minus else v
 
     def sum(self, s):
@@ -768,26 +789,29 @@ class Model:
                 return str(self.read(TICK_SLOT))
             if len(name) == 5 and name[0] in "Pp":
                 return show(self.read_ori(int(name[4] in "yY")) // HUNDREDTH)
+            if name[0] == "[":
+                return "1" if action_index(name[1:-1]) in self.held else "0"
             if name[0] in "Bb":
                 dot = name.find(".")
                 num = name[1:] if dot < 0 else name[1:dot]
                 if not re.fullmatch("[0-9]+", num) or int(num) > INT_MAX:
                     self.logs += 1
                     return "0"
-                return show(self.read_box(int(num), "b" if dot < 0 else name[dot + 1].lower()) // HUNDREDTH)
+                return show(self.read_box(int(num), "b" if dot < 0 else BOX_PARTS[name[dot + 1:].upper()]) // HUNDREDTH)
             slot = cs_int(name)
             if slot is None:
                 self.logs += 1
                 return "0"
             return str(self.read(slot))
-        return re.sub(r"\{(-?\d+|[Bb]\d+(?:\.[XxYy])?|[Tt]|[Pp][Oo][Ss]\.[XxYy])\}", one, text)
+        actions = "|".join("".join("[%s%s]" % (c.upper(), c.lower()) for c in a) for a in ACTIONS)
+        return re.sub(r"\{(-?\d+|[Bb]\d+(?:\.(?:[XxYy][Ii]?|[Rr]))?|[Tt]|[Pp][Oo][Ss]\.[XxYy]|\[(?:" + actions + r")\])\}", one, text)
 
 
 def errors():
     return len(B.get("Randomizer.Errors"))
 
 
-def reset(inv, bxs=(), moved=None, at=None, turned=None, fixed=()):
+def reset(inv, bxs=(), moved=None, at=None, turned=None, fixed=(), held=()):
     B.call("PickupsGlue.Reset", inv)
     if bxs:
         B.call("PickupsGlue.Boxes", *([b[i] for b in bxs] for i in range(4)))
@@ -799,6 +823,8 @@ def reset(inv, bxs=(), moved=None, at=None, turned=None, fixed=()):
         B.call("PickupsGlue.SetRotations", list(turned), list(turned.values()))
     if fixed:
         B.call("PickupsGlue.Fix", list(fixed))
+    if held:
+        B.call("PickupsGlue.Hold", sorted(held))
 
 
 def offsets():
@@ -850,20 +876,20 @@ class SlotExpressions(Quiet):
         self.assertFalse(B.call("RandomizerInventory.Writable", EXTRA_ITEMS_APPLIED))
 
     @settings(max_examples=examples(600))
-    @given(value_expr(), inventory, boxes, box_offsets, ori_at)
-    def test_parse_value_matches_the_format(self, text, inv, bxs, moved, at):
-        reset(inv, bxs, moved, at)
-        model = Model(inv, bxs, moved, at)
+    @given(value_expr(), inventory, boxes, box_offsets, ori_at, box_rotations, held_actions)
+    def test_parse_value_matches_the_format(self, text, inv, bxs, moved, at, turned, held):
+        reset(inv, bxs, moved, at, turned, held=held)
+        model = Model(inv, bxs, moved, at, turned, held=held)
         want = model.parse_value(text)
         event("parses" if want is not None else "refused")
         self.assertEqual(B.call("RandomizerInventory.ParseValue", text), (want is not None, [want or 0]))
         self.assertEqual(errors(), model.errors)
 
     @settings(max_examples=examples(600))
-    @given(value_expr(), inventory, boxes, box_offsets, ori_at)
-    def test_a_number_matches_the_format(self, text, inv, bxs, moved, at):
-        reset(inv, bxs, moved, at)
-        model = Model(inv, bxs, moved, at)
+    @given(value_expr(), inventory, boxes, box_offsets, ori_at, box_rotations, held_actions)
+    def test_a_number_matches_the_format(self, text, inv, bxs, moved, at, turned, held):
+        reset(inv, bxs, moved, at, turned, held=held)
+        model = Model(inv, bxs, moved, at, turned, held=held)
         want = model.number(text)
         event("a number" if want is None or want % UNIT == 0 else "a fraction")
         if want is not None and parse_slot_value(text)[2]:
@@ -1025,6 +1051,22 @@ class SlotExpressions(Quiet):
             B.call("RandomizerInventory.MoveBox", text)
             self.assertEqual((offsets(), snapshot(), errors()), ({}, {}, 0 if text.startswith("1=") else 1), text)
 
+    def test_box_and_action_read_examples(self):
+        self.assertEqual(B.get("RandomizerInventory.Actions"), ACTIONS)
+        bxs = [(10050, -4000, False, False), (0, 0, True, False)]
+        reset({}, bxs, {0: (150, -50)}, turned={0: 9050}, held={0, 2, 7})
+        for text, want in [("{B0.x}", "102"), ("{B0.xi}", "100.5"), ("{b0.YI}", "-40"), ("{B0.y}", "-40.5"),
+                           ("{B0.r}", "90.5"), ("{B1.r}", "0"), ("{[Jump]}", "1"), ("{[BASH]}", "1"), ("{ [ dash ] }", "1"),
+                           ("{[Grenade]}", "0"), ("{[Jump]}+{[Bash]}*2+{[Glide]}", "3")]:
+            ok, value, _ = B.call("PickupsGlue.Evaluate", text)
+            self.assertEqual((ok, Decimal(value)), ("ok", Decimal(want)), text)
+        self.assertEqual(B.call("RandomizerInventory.ResolveSlots", "{[Jump]}{[Glide]} at {B0.r} {Jump} {[Jumps]}"),
+                         "10 at 90.5 {Jump} {[Jumps]}")
+        self.assertEqual(B.call("RandomizerInventory.HighestBoxRead", "{B3.xi} {b5.R} {B9.z}"), 5)
+        self.assertEqual(errors(), 0)
+        for text in ["{Jump}", "{Bash}", "{[Jumps]}", "{[]}", "{[Jump}", "{[Jump]]}"]:
+            self.assertEqual(B.call("PickupsGlue.Evaluate", text)[0], "refused", text)
+
     def test_a_box_turn_example(self):
         bxs = [(10050, -4000, False, False), (0, 0, True, False), (0, 0, False, False)]
         for text, was, moved, turned in [
@@ -1114,10 +1156,10 @@ class SlotExpressions(Quiet):
         self.assertEqual(errors(), model.errors)
 
     @settings(max_examples=examples(400))
-    @given(slot_message, inventory, boxes, box_offsets, ori_at)
-    def test_a_message_reads_the_slots_it_names(self, text, inv, bxs, moved, at):
-        reset(inv, bxs, moved, at)
-        model = Model(inv, bxs, moved, at)
+    @given(slot_message, inventory, boxes, box_offsets, ori_at, box_rotations, held_actions)
+    def test_a_message_reads_the_slots_it_names(self, text, inv, bxs, moved, at, turned, held):
+        reset(inv, bxs, moved, at, turned, held=held)
+        model = Model(inv, bxs, moved, at, turned, held=held)
         self.assertEqual(B.call("RandomizerInventory.ResolveSlots", text), model.resolve(text))
         self.assertEqual(errors(), model.errors)
         self.assertEqual(len(B.get("Randomizer.Logs")), model.logs)

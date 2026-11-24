@@ -456,10 +456,10 @@ public class RandomizerInventory : SaveSerialize {
         }
     }
 
-    // [+|-] a number with up to eight decimals, {n}, {Bn}, {Bn.x}, {Bn.y}, {T}, {Pos.x}, {Pos.y}, sin(math) or cos(math)
+    // [+|-] a number with up to eight decimals, {n}, a box read, {T}, {Pos.x}, {Pos.y}, {[Jump]} and the like, sin(math) or cos(math)
     private sealed class Atom {
-        // 'n' a number, 's' a slot, 'b' a box's on/off, 'x' or 'y' its corner, 't' the tick count,
-        // 'o' Ori's position (id 0 x, 1 y), 'f' sin or cos of inner
+        // 'n' a number, 's' a slot, a box read's BoxPart, 't' the tick count, 'o' Ori's position (id 0 x, 1 y),
+        // 'a' whether Actions[id] is held, 'f' sin or cos of inner
         private char kind = 'n';
         private bool minus;
         private int id;
@@ -558,12 +558,23 @@ public class RandomizerInventory : SaveSerialize {
                 return;
             }
 
+            if (inner.Length > 1 && inner[0] == '[' && inner[inner.Length - 1] == ']') {
+                var name = inner.Substring(1, inner.Length - 2).Trim();
+                id = Array.FindIndex(Actions, a => Is(name, a));
+                if (id < 0) {
+                    throw r.Fail("no game action called " + name);
+                }
+
+                kind = 'a';
+                return;
+            }
+
             if (inner.Length > 1 && (inner[0] == 'B' || inner[0] == 'b')) {
                 var dot = inner.IndexOf('.');
-                var part = dot < 0 ? "" : inner.Substring(dot + 1);
+                var part = dot < 0 ? 'b' : BoxPart(inner.Substring(dot + 1));
                 if (int.TryParse(dot < 0 ? inner.Substring(1) : inner.Substring(1, dot - 1), NumberStyles.None, CultureInfo.InvariantCulture, out id)
-                    && (dot < 0 || Is(part, "x") || Is(part, "y"))) {
-                    kind = dot < 0 ? 'b' : char.ToLowerInvariant(part[0]);
+                    && part != '\0') {
+                    kind = part;
                     return;
                 }
             } else if (int.TryParse(inner, NumberStyles.Integer, CultureInfo.InvariantCulture, out id)) {
@@ -571,7 +582,7 @@ public class RandomizerInventory : SaveSerialize {
                 return;
             }
 
-            throw r.Fail("expected {slot}, {Bn}, {Bn.x}, {Bn.y}, {T}, {Pos.x} or {Pos.y}");
+            throw r.Fail("expected {slot}, {Bn}, {Bn.x}, {Bn.y}, {Bn.xi}, {Bn.yi}, {Bn.r}, {T}, {Pos.x}, {Pos.y} or an action like {[Jump]}");
         }
 
         public bool Eval(out decimal value, out string problem) {
@@ -588,6 +599,7 @@ public class RandomizerInventory : SaveSerialize {
                     's' => Read(id),
                     't' => Read(TickSlot),
                     'o' => ReadOri(id),
+                    'a' => Held(id) ? 1 : 0,
                     _ => ReadBox(id, kind),
                 };
             }
@@ -599,7 +611,7 @@ public class RandomizerInventory : SaveSerialize {
 
     public static Func<Vector2?> OriPosition = () => Characters.Sein ? (Vector2?)Characters.Sein.Position : null;
 
-    // {Pos.x} and {Pos.y}: Ori's position, rounded to hundredths like a box's corner
+    // {Pos.x} and {Pos.y}: Ori's position, rounded to hundredths like a box's middle
     public static decimal ReadOri(int part) {
         var at = OriPosition();
         if (at == null) {
@@ -610,7 +622,13 @@ public class RandomizerInventory : SaveSerialize {
         return Math.Round((decimal)(part == 0 ? at.Value.x : at.Value.y), 2, MidpointRounding.AwayFromZero);
     }
 
-    // {Bn} is 1 while box n is on; {Bn.x} and {Bn.y} its middle, moves included
+    // the part after a box read's dot: 'x', 'y', 'i' for xi, 'j' for yi, 'r', or '\0' for none of them
+    private static char BoxPart(string part) {
+        return Is(part, "x") ? 'x' : Is(part, "y") ? 'y' : Is(part, "xi") ? 'i' : Is(part, "yi") ? 'j' : Is(part, "r") ? 'r' : '\0';
+    }
+
+    // {Bn} is 1 while box n is on; {Bn.x} and {Bn.y} its middle, moves included; {Bn.xi} and {Bn.yi} where its line
+    // puts the middle; {Bn.r} its turn in degrees
     public static decimal ReadBox(int box, char part) {
         if (!RandomizerBoxes.Exists(box)) {
             Complain("{B" + box + "}", "{B" + box + "}: this seed has no box " + box);
@@ -621,14 +639,43 @@ public class RandomizerInventory : SaveSerialize {
             return RandomizerBoxes.IsOn(box) ? 1 : 0;
         }
 
+        if (part == 'r') {
+            return RandomizerBoxes.Rotation(box) / 100m;
+        }
+
         if (!RandomizerBoxes.Middle(box, out var x, out var y)) {
-            Complain("{B" + box + "}", "{B" + box + "." + part + "}: box " + box + " is too far out to read");
+            Complain("{B" + box + "}", "{B" + box + "}: box " + box + " is too far out to read");
             return 0;
+        }
+
+        if (part is 'i' or 'j') {
+            return (part == 'i' ? x : y) / 100m;
         }
 
         RandomizerBoxes.Offset(box, out var dx, out var dy);
         return (part == 'x' ? x + dx : y + dy) / 100m;
     }
+
+    // {[Jump]} and the rest: 1 while that action's input is held; vanilla reads Dash and Grenade off the shoulder buttons,
+    // and climbing off Glide
+    public static readonly string[] Actions = ["Jump", "SpiritFlame", "Bash", "SoulFlame", "ChargeJump", "Glide", "Grab", "Dash", "Grenade", "Left", "Right", "Up", "Down", "Climb"];
+
+    public static Func<int, bool> Held = action => (action switch {
+        0 => Core.Input.Jump,
+        1 => Core.Input.SpiritFlame,
+        2 => Core.Input.Bash,
+        3 => Core.Input.SoulFlame,
+        4 => Core.Input.ChargeJump,
+        5 => Core.Input.Glide,
+        6 => Core.Input.Grab,
+        7 => Core.Input.RightShoulder,
+        8 => Core.Input.LeftShoulder,
+        9 => Core.Input.Left,
+        10 => Core.Input.Right,
+        11 => Core.Input.Up,
+        12 => Core.Input.Down,
+        _ => Core.Input.Glide,
+    }).IsPressed;
 
     private sealed class Reader {
         public readonly string Text;
@@ -756,9 +803,10 @@ public class RandomizerInventory : SaveSerialize {
 
     private const string Operators = "+-*/%";
 
-    private static readonly Regex SlotRef = new Regex(@"\{(-?\d+|[Bb]\d+(?:\.[XxYy])?|[Tt]|[Pp][Oo][Ss]\.[XxYy])\}");
+    private static readonly Regex SlotRef = new Regex(@"\{(-?\d+|[Bb]\d+(?:\.(?:[XxYy][Ii]?|[Rr]))?|[Tt]|[Pp][Oo][Ss]\.[XxYy]|\[(?:"
+        + string.Join("|", Actions.Select(a => string.Concat(a.Select(c => "[" + char.ToUpperInvariant(c) + char.ToLowerInvariant(c) + "]")))) + @")\])\}");
 
-    // {n} in a message is whatever slot n holds, {Bn} and {Bn.x} what box n reads, {T} and {Pos.x} the same as in math
+    // {n} in a message is whatever slot n holds, {Bn} and {Bn.x} what box n reads, {T}, {Pos.x} and {[Jump]} the same as in math
     public static string ResolveSlots(string text) {
         if (text == null || text.IndexOf('{') < 0) {
             return text;
@@ -774,6 +822,10 @@ public class RandomizerInventory : SaveSerialize {
                 return Show(ReadOri(name[4] is 'x' or 'X' ? 0 : 1));
             }
 
+            if (name[0] == '[') {
+                return Held(Array.FindIndex(Actions, a => Is(name.Substring(1, name.Length - 2), a))) ? "1" : "0";
+            }
+
             int id;
             if (name[0] == 'B' || name[0] == 'b') {
                 var dot = name.IndexOf('.');
@@ -782,7 +834,7 @@ public class RandomizerInventory : SaveSerialize {
                     return "0";
                 }
 
-                return Show(ReadBox(id, dot < 0 ? 'b' : char.ToLowerInvariant(name[dot + 1])));
+                return Show(ReadBox(id, dot < 0 ? 'b' : BoxPart(name.Substring(dot + 1))));
             }
 
             if (!int.TryParse(name, out id)) {
@@ -794,7 +846,7 @@ public class RandomizerInventory : SaveSerialize {
         });
     }
 
-    private static readonly Regex BoxRead = new Regex(@"\{\s*[Bb]([0-9]+)(?:\.[XxYy])?\s*\}");
+    private static readonly Regex BoxRead = new Regex(@"\{\s*[Bb]([0-9]+)(?:\.(?:[XxYy][Ii]?|[Rr]))?\s*\}");
 
     // the highest box a {Bn} read in text names, or -1
     public static int HighestBoxRead(string text) {

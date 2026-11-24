@@ -103,6 +103,9 @@ public static class RandomizerItems {
         "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "260", "261", "262", "263", "264", "265", "266", "267"
     };
 
+    // the codes whose grant takes one away on a negative id; the server's REMOVES_ON_NEGATIVE
+    private static readonly HashSet<string> RemovesOnNegative = new HashSet<string> { "HC", "EC", "AC", "KS", "MS", "RB", "EX" };
+
     private static readonly HashSet<string> KeyEvents = new HashSet<string> { "Water Vein", "Gumon Seal", "Sunstone" };
     private static readonly HashSet<string> WorldEvents = new HashSet<string> { "Clean Water", "Wind Restored", "Warmth Returned" };
 
@@ -169,7 +172,7 @@ public static class RandomizerItems {
         // a negative id removes one instead of granting it; "Remove X" is the
         // wording the server and the RB table already use
         int signed;
-        if (!string.IsNullOrEmpty(id) && id[0] == '-' && int.TryParse(id, out signed) && signed < 0) {
+        if (RemovesOnNegative.Contains(code) && !string.IsNullOrEmpty(id) && id[0] == '-' && int.TryParse(id, out signed) && signed < 0) {
             return "Remove " + Name(code, (-signed).ToString());
         }
 
@@ -223,7 +226,7 @@ public static class RandomizerItems {
         // "X Lost!" is what the player wants told to them as it happens; a log
         // or a map wants Name's third-person "Remove X" instead
         int signed;
-        if (!string.IsNullOrEmpty(id) && id[0] == '-' && int.TryParse(id, out signed) && signed < 0) {
+        if (RemovesOnNegative.Contains(code) && !string.IsNullOrEmpty(id) && id[0] == '-' && int.TryParse(id, out signed) && signed < 0) {
             return Name(code, (-signed).ToString()) + " Lost!";
         }
 

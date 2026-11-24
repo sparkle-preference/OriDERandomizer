@@ -10,6 +10,11 @@ survives a death. RI and BM take the same {n} on the right of an =.
 {T} counts the game's ticks on this save, 60 a second, and a death sets it back like a
 slot. {Pos.x} and {Pos.y} read Ori's position. Both work anywhere {n} does.
 
+{[Jump]} reads 1 while Jump is held and 0 otherwise. The same goes for {[SpiritFlame]}, {[Bash]},
+{[SoulFlame]}, {[ChargeJump]}, {[Glide]}, {[Grab]}, {[Dash]}, {[Grenade]}, {[Left]}, {[Right]}, {[Up]}
+and {[Down]}. {[Climb]} is the same as {[Glide]}, the button Ori climbs with.
+- BM|4={[Glide]} -> box 4 is on only while Glide is held
+
 RI and BM also take math on the right of an =: numbers (up to eight decimals) and {n}
 joined by + - * / %, with * / % going first. Division drops the remainder. Math takes no
 parentheses. A slot holds whole numbers, so an RI that comes out fractional is rounded,
@@ -37,7 +42,8 @@ In a multipickup, / is written //: MU|RI/27000={20000}//2/SH/Halved
 Boxes
 ===
 Box n is the seed's nth BX line, counting from 0. {Bn} reads 1 while box n is on and 0
-while it is off; {Bn.x} and {Bn.y} read its middle. They work anywhere {n} does.
+while it is off; {Bn.x} and {Bn.y} read its middle, and {Bn.xi} and {Bn.yi} where its line
+puts the middle. {Bn.r} reads its turn in degrees, from 0 up to 360. They work anywhere {n} does.
 A box's middle is its balance point: the center of a rectangle, and turning doesn't move it.
 
 BR (Box Relocate) relocates a box by its middle and turns it, preserving its size. Turns are in

@@ -140,18 +140,27 @@ def decimal_literal(draw):
         draw(st.sampled_from("0123456789")) for _ in range(places)) + draw(pad)
 
 
+# the client's RandomizerInventory.Actions, in order
+ACTIONS = ["Jump", "SpiritFlame", "Bash", "SoulFlame", "ChargeJump", "Glide", "Grab", "Dash", "Grenade", "Left", "Right",
+           "Up", "Down", "Climb"]
+
+
 @st.composite
 def box_read(draw):
-    """{Bn}, {Bn.x} or {Bn.y}, any case, some on boxes the fake seed lacks."""
+    """{Bn}, {Bn.x}, {Bn.y}, {Bn.xi}, {Bn.yi} or {Bn.r}, any case, some on boxes the fake seed lacks."""
     n = draw(st.one_of(st.integers(0, 7), st.sampled_from(["-1", "+2", "4500", "99999999999"])))
-    part = draw(st.sampled_from(["", "", ".x", ".y", ".X", ".Y", ".z", "."]))
+    part = draw(st.sampled_from(["", "", ".x", ".y", ".X", ".Y", ".z", ".", ".xi", ".yI", ".XI", ".r", ".R", ".ri", ".i", ".xj"]))
     return draw(pad) + "{" + draw(pad) + draw(st.sampled_from("Bb")) + str(n) + part + draw(pad) + "}" + draw(pad)
 
 
 @st.composite
 def special_read(draw):
-    """{T}, {Pos.x} or {Pos.y}, any case on every letter, now and then misspelled."""
-    name = draw(st.sampled_from(["T", "t", "Pos.x", "Pos.y", "pos.X", "POS.y", "pOs.Y", "Pos.z", "Pos", "T1", "Pos. x"]))
+    """{T}, {Pos.x}, {Pos.y} or an action like {[Jump]}, any case on every letter, now and then misspelled."""
+    action = st.sampled_from(ACTIONS + ["Jumps", "Spirit Flame", "B", "Ba", "Bash1", "Dash.x", ""]).flatmap(
+        lambda a: word_case.map(lambda c: c(a)))
+    name = draw(st.one_of(
+        st.sampled_from(["T", "t", "Pos.x", "Pos.y", "pos.X", "POS.y", "pOs.Y", "Pos.z", "Pos", "T1", "Pos. x"]),
+        action.flatmap(lambda a: st.sampled_from(["[%s]", "[%s]", "[ %s ]", "%s", "[%s", "%s]", "[[%s]]"]).map(lambda f: f % a))))
     return draw(pad) + "{" + draw(pad) + name + draw(pad) + "}" + draw(pad)
 
 
@@ -305,7 +314,10 @@ slot_message = st.lists(st.one_of(
     st.text(st.sampled_from("ab {}-0123456789\N{ARABIC-INDIC DIGIT ZERO}\N{ARABIC-INDIC DIGIT THREE}"
                             "\N{DEVANAGARI DIGIT ZERO}\N{FULLWIDTH DIGIT ONE}"), max_size=6),
     st.builds("{{{}}}".format, slot_id),
-    st.sampled_from(["{T}", "{t}", "{ T}", "{Pos.x}", "{pOs.Y}", "{POS.X}", "{Pos.z}", "{Pos}"]),
+    st.sampled_from(["{T}", "{t}", "{ T}", "{Pos.x}", "{pOs.Y}", "{POS.X}", "{Pos.z}", "{Pos}", "{[Jump]}", "{[BASH]}", "{[dash]}",
+                     "{[gReNaDe]}", "{[ Jump]}", "{[Jumps]}", "{Jump}", "{Bash1}", "{[]}", "{[Jump}"]),
     st.builds("{{{}{}{}}}".format, st.sampled_from("Bbx"), st.one_of(st.integers(-1, 7), st.just("\N{ARABIC-INDIC DIGIT THREE}")),
-              st.sampled_from(["", ".x", ".Y", ".z"])),
+              st.sampled_from(["", ".x", ".Y", ".z", ".xi", ".YI", ".r", ".R", ".ri"])),
 ), max_size=5).map("".join)
+# which actions are held, by index into ACTIONS
+held_actions = st.sets(st.integers(0, len(ACTIONS) - 1), max_size=4)
