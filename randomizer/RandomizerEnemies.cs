@@ -917,8 +917,7 @@ public static class RandomizerEnemies {
         hit = default(RaycastHit);
         var best = float.MaxValue;
         foreach (var candidate in Physics.RaycastAll(origin, direction, reach, ~0, QueryTriggerInteraction.Ignore)) {
-            var go = candidate.collider.gameObject;
-            if (go.GetComponentInParent<Entity>() != null || go.GetComponentInParent<Projectile>() != null || go.GetComponentInParent<SeinCharacter>() != null) {
+            if (!IsLevel(candidate.collider)) {
                 continue;
             }
 
@@ -929,6 +928,11 @@ public static class RandomizerEnemies {
         }
 
         return best < float.MaxValue;
+    }
+
+    public static bool IsLevel(Collider collider) {
+        var go = collider.gameObject;
+        return go.GetComponentInParent<Entity>() == null && go.GetComponentInParent<Projectile>() == null && go.GetComponentInParent<SeinCharacter>() == null;
     }
 
     private static bool SurfaceNear(Vector3 position, float reach, out Vector3 toward) {
@@ -989,8 +993,9 @@ public static class RandomizerEnemies {
 
         entity.transform.position += down * (hit.distance - (entity is MortarWormEnemy ? WormLift : 0f));
         if (slug != null) {
-            typeof(TraceGroundMovement).GetField("m_floorNormal", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(slug.Movement, hit.normal);
+            RandomizerSlugGrip.FloorNormal.SetValue(slug.Movement, hit.normal);
             entity.transform.eulerAngles = new Vector3(0f, 0f, MoonMath.Angle.AngleFromVector(Vector3.Cross(Vector3.back, hit.normal)));
+            slug.Movement.gameObject.AddComponent<RandomizerSlugGrip>().Slug = slug;
         }
     }
 
@@ -1366,6 +1371,69 @@ public class RandomizerEnemyGrip : MonoBehaviour {
             Walker.transform.rotation = Quaternion.identity;
             Destroy(this);
         }
+    }
+}
+
+// A rolled slime that loses its surface goes back to where it last touched and turns: its spot has no enemy stoppers.
+public class RandomizerSlugGrip : MonoBehaviour {
+    public SlugEnemy Slug;
+    public int Turns;
+
+    public static float LostTime = 0.25f;
+    public static readonly FieldInfo FloorNormal = typeof(TraceGroundMovement).GetField("m_floorNormal", BindingFlags.Instance | BindingFlags.NonPublic);
+
+    private bool m_touching;
+    private bool m_held;
+    private float m_lost;
+    private Vector3 m_position;
+    private Quaternion m_rotation;
+    private Vector3 m_normal;
+
+    public void OnCollisionStay(Collision collision) {
+        if (RandomizerEnemies.IsLevel(collision.collider)) {
+            m_touching = true;
+        }
+    }
+
+    public void OnCollisionEnter(Collision collision) {
+        OnCollisionStay(collision);
+    }
+
+    public void FixedUpdate() {
+        if (Slug == null) {
+            Destroy(this);
+            return;
+        }
+
+        // a suspended slug stands still and may sleep, so lost contact then means nothing
+        if (Slug.Movement.IsSuspended) {
+            m_touching = false;
+            m_lost = 0f;
+            return;
+        }
+
+        if (m_touching) {
+            m_touching = false;
+            m_held = true;
+            m_lost = 0f;
+            m_position = transform.position;
+            m_rotation = transform.rotation;
+            m_normal = Slug.Movement.Up;
+            return;
+        }
+
+        m_lost += Time.fixedDeltaTime;
+        if (!m_held || m_lost < LostTime) {
+            return;
+        }
+
+        transform.position = m_position;
+        transform.rotation = m_rotation;
+        FloorNormal.SetValue(Slug.Movement, m_normal);
+        Slug.Movement.Kickback.Stop();
+        Slug.FaceLeft = !Slug.FaceLeft;
+        m_lost = 0f;
+        Turns++;
     }
 }
 
