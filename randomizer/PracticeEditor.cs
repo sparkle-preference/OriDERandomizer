@@ -374,7 +374,12 @@ public static class PracticeEditor {
         }
     }
 
+    private static bool menuWasOpen;
+
     public static void Update() {
+        var underMenu = UI.MainMenuVisible || menuWasOpen;
+        menuWasOpen = UI.MainMenuVisible;
+
         if (Active && showWindow && UI.SeinUI) {
             // The window opens over the map stone count and can be moved over the keystone count.
             // SeinUI enables them again every fixed update.
@@ -398,14 +403,16 @@ public static class PracticeEditor {
             return;
         }
 
-        HandleKeys();
+        if (!underMenu) {
+            HandleKeys();
+        }
 
         // Unfortunately OnGUI runs after Update, so we can't consume/block any events there
         var mousePos = Input.mousePosition;
         mousePos.y = Screen.height - mousePos.y;
         var guiRect = showWindow ? guiWindowRect : guiButtonRect;
         guiRect = new Rect(guiRect.min * guiScale, guiRect.size * guiScale);
-        var overGui = guiRect.Contains(mousePos) || UI.MainMenuVisible;
+        var overGui = guiRect.Contains(mousePos) || underMenu;
 
         // Core.Input *must* be used from FixedUpdate, while Input *must* be used from Update,
         // otherwise edges (pressed/released this frame) don't always work.
