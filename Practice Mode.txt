@@ -39,7 +39,19 @@ Box shapes:
 Rectangle           Drag from corner to corner
 Convex              Click points and the box stretches around all of them; Confirm once there are three. Not for unsafe or goal boxes
 Polygon             Click the corners of an outline in order, then Confirm. Add Loop starts another outline in the same box. Solid boxes only
-Discard throws away the points clicked so far.
+Discard throws away the points clicked so far, and Undo Last Point the last one.
+
+Keys (the buttons show theirs too):
+Enter               Save & Retry
+Ctrl+Enter          Reload & Retry
+Z                   Undo, or Undo Last Point while a shape has points down
+Ctrl+C              Copy Lines
+M                   Switch between Create Box and Adjust Boxes
+1 to 5              Create an item, solid, kill, unsafe or goal box
+Ctrl+1 to Ctrl+3    Rectangle, convex or polygon
+C                   Confirm
+L                   Add Loop
+X                   Discard, or with no points down, delete the box under the cursor
 
 The pause menu while editing: BACK TO EDITING, SAVE, RELOAD FROM DISK, EXIT TO PRACTICE MENU, SAVE AND RETRY.
 
@@ -135,13 +147,13 @@ Editing a seed's boxes
 ===
 Outside practice, the Edit Seed Boxes bind (unbound by default) or "Edit Seed Boxes" in the debug menu opens the same editor on the boxes of the seed you have loaded.
 Open in Browser opens a page for giving boxes items and flags.
-Saving writes the boxes into the seed file; the first save keeps a copy of the original next to it (.before-boxes). Save & Continue saves and plays on; Reload & Continue, Alt+L (Retry Practice Segment) or the bind again leaves without saving. Either way you play on from wherever right click left Ori.
+Saving writes the boxes into the seed file; the first save keeps a copy of the original next to it (.before-boxes). Save & Continue (Enter) saves and plays on; Reload & Continue (Ctrl+Enter), Alt+L (Retry Practice Segment) or the bind again leaves without saving. Either way you play on from wherever right click left Ori.
 A seed with a Sync flag (an online game) can't be edited this way: remove the flag from the seed's first line if you want to.
 
 
 
 Files
 ===
-A segment folder holds segment.json (the rules), save.sav (the start), placements.bfr (the boxes, and what the locations hold), variants/<id>/segment.json and placements.bfr, and runs.csv and ghosts/ per variant. The text files can be edited by hand; Ctrl+R in the editor reads them again.
+A segment folder holds segment.json (the rules), save.sav (the start), placements.bfr (the boxes, and what the locations hold), variants/<id>/segment.json and placements.bfr, and runs.csv and ghosts/ per variant. The text files can be edited by hand; Reload in the editor reads them again.
 A .bfrp is the same files in a zip. Its entries must be stored uncompressed: if you zip one by hand, choose Store (no compression), or PRACTICE MODE skips the file.
 The page is the reference for what segment.json can say.
