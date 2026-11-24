@@ -537,6 +537,9 @@ public class RandomizerBox {
 
     public RandomizerBoxPrefab? UnityObject;
 
+    // what a BR turn spins about: the outline's area centroid, relative to Rect.center
+    public Vector2 Pivot;
+
     public int BoxNumber = -1;
 
     public const string Prefix = "BX|";
@@ -594,19 +597,46 @@ public static class RandomizerBoxes {
     }
 
     public static void SetOffset(int box, int x, int y) {
+        Place(box, x, y, Rotation(box));
+    }
+
+    public static void Place(int box, int x, int y, int turn) {
         if (x == 0 && y == 0) {
             Offsets.Remove(box);
         } else {
             Offsets[box] = (x, y);
         }
 
+        if (turn == 0) {
+            Rotations.Remove(box);
+        } else {
+            Rotations[box] = turn;
+        }
+
         Moved(box);
     }
 
-    // version 2 adds the offsets; a version 1 save has every box unmoved
+    // each turned box's counterclockwise turn in hundredths of a degree, 1 to 35999; saved with the box data
+    private static readonly Dictionary<int, int> Rotations = [];
+
+    public static int Rotation(int box) {
+        return Rotations.TryGetValue(box, out var turn) ? turn : 0;
+    }
+
+    public static void SetRotation(int box, int turn) {
+        Offset(box, out var x, out var y);
+        Place(box, x, y, turn);
+    }
+
+    // a goal or unsafe box is tested as an upright rect, so it can't turn
+    public static bool CanTurn(int box) {
+        return !LoadedBoxes[box].Goal && !LoadedBoxes[box].Unsafe;
+    }
+
+    // version 2 adds the offsets and 3 the turns; an older save has every box unmoved and upright
     public static void Serialize(Archive? ar) {
         if (ar != null && !ar.Reading) {
-            ar.Serialize(2);
+            ar.Serialize(3);
             ar.Serialize(ActiveBoxes.Count);
             foreach (var (boxNr, activeState) in ActiveBoxes) {
                 ar.Serialize(boxNr);
@@ -620,6 +650,12 @@ public static class RandomizerBoxes {
                 ar.Serialize(y);
             }
 
+            ar.Serialize(Rotations.Count);
+            foreach (var (boxNr, turn) in Rotations) {
+                ar.Serialize(boxNr);
+                ar.Serialize(turn);
+            }
+
             return;
         }
 
@@ -627,6 +663,7 @@ public static class RandomizerBoxes {
         ActiveThisTick.Clear();
         CollectEachUpdate.Clear();
         Offsets.Clear();
+        Rotations.Clear();
         if (ar != null) {
             Read(ar);
         }
@@ -640,7 +677,7 @@ public static class RandomizerBoxes {
 
     private static void Read(Archive ar) {
         var serializedVersion = ar.Serialize(0);
-        if (serializedVersion is not (1 or 2)) {
+        if (serializedVersion is not (1 or 2 or 3)) {
             Randomizer.LogError($"Error reading saved box states. SerializedVersion has invalid value '{serializedVersion}'");
             return;
         }
@@ -665,6 +702,16 @@ public static class RandomizerBoxes {
             var boxNr = ar.Serialize(0);
             var x = ar.Serialize(0);
             Offsets[boxNr] = (x, ar.Serialize(0));
+        }
+
+        if (serializedVersion < 3) {
+            return;
+        }
+
+        var turned = ar.Serialize(0);
+        for (var i = 0; i < turned; i++) {
+            var boxNr = ar.Serialize(0);
+            Rotations[boxNr] = ar.Serialize(0);
         }
     }
 
@@ -850,6 +897,8 @@ public static class RandomizerBoxes {
 
         cleared |= Offsets.Count > 0;
         Offsets.Clear();
+        cleared |= Rotations.Count > 0;
+        Rotations.Clear();
         cleared |= ActiveBoxes.Count > 0;
         ActiveBoxes.Clear();
         ActiveThisTick.Clear();
@@ -872,16 +921,18 @@ public static class RandomizerBoxes {
         return !it.Deleted && (it.BoxNumber < 0 || !IsOff(it.BoxNumber));
     }
 
-    // the top-left corner its line gives, in hundredths; false past what a move can reach
-    public static bool Corner(int box, out long x, out long y) {
-        var rect = LoadedBoxes[box].Rect;
+    // the middle its line gives, in hundredths; false past what a move can reach
+    public static bool Middle(int box, out long x, out long y) {
+        var it = LoadedBoxes[box];
+        var mx = (double)it.Rect.center.x + it.Pivot.x;
+        var my = (double)it.Rect.center.y + it.Pivot.y;
         x = y = 0;
-        if (!(Math.Abs(rect.xMin) < 1e7f && Math.Abs(rect.yMax) < 1e7f)) {
+        if (!(Math.Abs(mx) < 1e7 && Math.Abs(my) < 1e7)) {
             return false;
         }
 
-        x = (long)Math.Round(rect.xMin * 100.0);
-        y = (long)Math.Round(rect.yMax * 100.0);
+        x = (long)Math.Round(mx * 100.0);
+        y = (long)Math.Round(my * 100.0);
         return true;
     }
 

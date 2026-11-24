@@ -151,6 +151,27 @@ public static class RandomizerBoxGeometry {
         }
     }
 
+    // the outline's area centroid in world units, relative to Compute's offset; holes wind the other way and subtract
+    public static Vector2 Centroid(Paths64 outline) {
+        double twiceArea = 0, x = 0, y = 0;
+        foreach (var path in outline) {
+            for (var i = 0; i < path.Count; i++) {
+                var p = path[i];
+                var q = path[(i + 1) % path.Count];
+                var cross = (double)p.X * q.Y - (double)q.X * p.Y;
+                twiceArea += cross;
+                x += (p.X + (double)q.X) * cross;
+                y += (p.Y + (double)q.Y) * cross;
+            }
+        }
+
+        if (Math.Abs(twiceArea) < 1) {
+            return Vector2.zero;
+        }
+
+        return new Vector2((float)(x / (3 * twiceArea) * ScaleDown), (float)(y / (3 * twiceArea) * ScaleDown));
+    }
+
     public static List<object>? ToRawShape(BoxShapeType shapeType, Paths64 paths, Vector2 offset) {
         if (shapeType == BoxShapeType.PreviewPolygon) {
             return null;

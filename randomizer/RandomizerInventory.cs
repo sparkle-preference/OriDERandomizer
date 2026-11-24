@@ -39,7 +39,8 @@ public class RandomizerInventory : SaveSerialize {
         }
     }
 
-    // BR|n=x,y puts box n's top-left corner at (x, y), rounded to hundredths; += and -= move it, bare BR|n puts it back
+    // BR|n=x,y,r puts box n's middle at (x, y), turned r degrees counterclockwise, each rounded to hundredths;
+    // += and -= add to all three, a value left out or empty is 0, and bare BR|n puts the box back
     public static void MoveBox(string text) {
         text ??= "";
         var key = "BR|" + text;
@@ -61,32 +62,43 @@ public class RandomizerInventory : SaveSerialize {
             return;
         }
 
-        RandomizerBoxes.Offset(n, out var wasX, out var wasY);
-        decimal x = 0, y = 0;
+        decimal x = 0, y = 0, turn = 0;
         if (eq >= 0) {
-            var xy = text.Substring(eq + 1);
-            var comma = xy.IndexOf(',');
-            if (comma < 0) {
-                Complain(key, key + ":a move is BR|n=x,y, BR|n+=x,y or BR|n-=x,y");
+            var fields = text.Substring(eq + 1).Split(',');
+            if (fields.Length > 3 || fields.All(f => f.Trim().Length == 0)) {
+                Complain(key, key + ":a move is BR|n=x,y,r, BR|n+=x,y,r or BR|n-=x,y,r");
                 return;
             }
 
-            if (!Evaluate(xy.Substring(0, comma), out var dx, out var problem)
-                || !Evaluate(xy.Substring(comma + 1), out var dy, out problem)) {
-                Complain(key, key + ":" + problem);
-                return;
+            var hundredths = new decimal[3];
+            for (var i = 0; i < fields.Length; i++) {
+                if (fields[i].Trim().Length == 0) {
+                    continue;
+                }
+
+                if (!Evaluate(fields[i], out var value, out var problem)) {
+                    Complain(key, key + ":" + problem);
+                    return;
+                }
+
+                hundredths[i] = Math.Round(value * 100, MidpointRounding.AwayFromZero);
             }
 
-            if (!RandomizerBoxes.Corner(n, out var cornerX, out var cornerY)) {
+            if (!RandomizerBoxes.Middle(n, out var middleX, out var middleY)) {
                 Complain(key, key + ":box " + n + " is too far out to move");
                 return;
             }
 
+            RandomizerBoxes.Offset(n, out var wasX, out var wasY);
             var sign = op == '-' ? -1 : 1;
-            var hx = Math.Round(dx * 100, MidpointRounding.AwayFromZero);
-            var hy = Math.Round(dy * 100, MidpointRounding.AwayFromZero);
-            x = op == '=' ? hx - cornerX : wasX + sign * hx;
-            y = op == '=' ? hy - cornerY : wasY + sign * hy;
+            x = op == '=' ? hundredths[0] - middleX : wasX + sign * hundredths[0];
+            y = op == '=' ? hundredths[1] - middleY : wasY + sign * hundredths[1];
+            turn = (op == '=' ? hundredths[2] : RandomizerBoxes.Rotation(n) + sign * hundredths[2]) % 36000;
+            turn = turn < 0 ? turn + 36000 : turn;
+            if (turn != 0 && !RandomizerBoxes.CanTurn(n)) {
+                Complain(key, key + ":a goal or unsafe box can't turn");
+                return;
+            }
         }
 
         if (x < int.MinValue || x > int.MaxValue || y < int.MinValue || y > int.MaxValue) {
@@ -94,7 +106,7 @@ public class RandomizerInventory : SaveSerialize {
             return;
         }
 
-        RandomizerBoxes.SetOffset(n, (int)x, (int)y);
+        RandomizerBoxes.Place(n, (int)x, (int)y, (int)turn);
     }
 
     public int GetRandomizerItem(int code) {
@@ -598,7 +610,7 @@ public class RandomizerInventory : SaveSerialize {
         return Math.Round((decimal)(part == 0 ? at.Value.x : at.Value.y), 2, MidpointRounding.AwayFromZero);
     }
 
-    // {Bn} is 1 while box n is on; {Bn.x} and {Bn.y} its top-left corner, moves included
+    // {Bn} is 1 while box n is on; {Bn.x} and {Bn.y} its middle, moves included
     public static decimal ReadBox(int box, char part) {
         if (!RandomizerBoxes.Exists(box)) {
             Complain("{B" + box + "}", "{B" + box + "}: this seed has no box " + box);
@@ -609,7 +621,7 @@ public class RandomizerInventory : SaveSerialize {
             return RandomizerBoxes.IsOn(box) ? 1 : 0;
         }
 
-        if (!RandomizerBoxes.Corner(box, out var x, out var y)) {
+        if (!RandomizerBoxes.Middle(box, out var x, out var y)) {
             Complain("{B" + box + "}", "{B" + box + "." + part + "}: box " + box + " is too far out to read");
             return 0;
         }

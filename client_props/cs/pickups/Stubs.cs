@@ -32,20 +32,20 @@ static class RandomizerBoxes {
 
     public static void Serialize(Archive ar) { }
 
-    // a fake seed's boxes: top-left corners in hundredths, and which are deleted or off
-    public static long[] CornerX = new long[0], CornerY = new long[0];
+    // a fake seed's boxes: middles in hundredths, and which are deleted or off
+    public static long[] MiddleX = new long[0], MiddleY = new long[0];
     public static bool[] Gone = new bool[0], Off = new bool[0];
     public static List<int> Moves = new List<int>();
 
-    public static bool Exists(int box) { return box >= 0 && box < CornerX.Length; }
+    public static bool Exists(int box) { return box >= 0 && box < MiddleX.Length; }
 
     public static bool Deleted(int box) { return Gone[box]; }
 
     public static bool IsOn(int box) { return !Gone[box] && !Off[box]; }
 
-    public static bool Corner(int box, out long x, out long y) {
-        x = CornerX[box];
-        y = CornerY[box];
+    public static bool Middle(int box, out long x, out long y) {
+        x = MiddleX[box];
+        y = MiddleY[box];
         return System.Math.Abs(x) < 1000000000 && System.Math.Abs(y) < 1000000000;
     }
 
@@ -59,13 +59,31 @@ static class RandomizerBoxes {
         y = at != null ? at[1] : 0;
     }
 
-    public static void SetOffset(int box, int x, int y) {
+    public static void Place(int box, int x, int y, int turn) {
         if (x == 0 && y == 0) {
             Offsets.Remove(box);
         } else {
             Offsets[box] = new[] { x, y };
         }
 
+        if (turn == 0) {
+            Rotations.Remove(box);
+        } else {
+            Rotations[box] = turn;
+        }
+
         Moved(box);
     }
+
+    public static Dictionary<int, int> Rotations = new Dictionary<int, int>();
+
+    // the goal and unsafe boxes of a fake seed
+    public static bool[] Fixed = new bool[0];
+
+    public static int Rotation(int box) {
+        int turn;
+        return Rotations.TryGetValue(box, out turn) ? turn : 0;
+    }
+
+    public static bool CanTurn(int box) { return box >= Fixed.Length || !Fixed[box]; }
 }

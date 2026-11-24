@@ -32,16 +32,18 @@ public class RandomizerBoxPrefab : MonoBehaviour {
         gameObject.SetActive(!Box.IsOff && RandomizerBoxes.Enabled);
     }
 
-    // everything the box owns hangs off this transform, so moving it moves them all
+    // everything the box owns hangs off this transform, so moving or turning it moves them all; a turn keeps the pivot still
     public void Place() {
-        transform.position = (RandomizerBoxes.ShowingLines ? Box.Rect : Box.CurrentRect).center;
+        var lines = RandomizerBoxes.ShowingLines;
+        var turn = Quaternion.Euler(0f, 0f, lines ? 0f : RandomizerBoxes.Rotation(Box.BoxNumber) / 100f);
+        transform.rotation = turn;
+        transform.position = (lines ? Box.Rect : Box.CurrentRect).center + Box.Pivot - (Vector2)(turn * Box.Pivot);
     }
 
     private void Init(RandomizerBox box) {
         Box = box;
         var rect = box.Rect;
-
-        Place();
+        box.Pivot = Vector2.zero;
 
         var fillColor = (Color)box.Color;
         var edgeColor = fillColor;
@@ -56,6 +58,8 @@ public class RandomizerBoxPrefab : MonoBehaviour {
                 box.SimplifiedShape = simplifiedShape;
             }
         }
+
+        Place();
 
         if (box.Invisible) {
             renderer.enabled = false;
@@ -137,6 +141,8 @@ public class RandomizerBoxPrefab : MonoBehaviour {
             simplifiedShape = null;
             return;
         }
+
+        Box.Pivot = RandomizerBoxGeometry.Centroid(shape.Outline);
 
         visualMesh = CreateVisualMesh(shape, z, fillColor, edgeColor);
         colliderMesh = CreateColliderMesh(shape.Outline);

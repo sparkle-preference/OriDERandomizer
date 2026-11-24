@@ -219,16 +219,17 @@ def value_expr(draw):
 
 @st.composite
 def br_stmt(draw):
-    """A BR value: n, n=x,y, n+=x,y or n-=x,y, mostly on the fake seed's boxes."""
+    """A BR value: n, or n=x,y,r with = += or -=, values left out or empty, mostly on the fake seed's boxes."""
     n = draw(st.one_of(st.integers(0, 7).map(str), st.sampled_from(["-1", " 3 ", "x", "4500"])))
     if draw(st.integers(0, 5)) == 0:
         return draw(_mangle(n))
     op = draw(st.sampled_from(["", "", "+", "-"]))
-    xy = draw(value_expr()) + draw(st.sampled_from([",", ",", ",", "", ",,"])) + draw(value_expr())
+    value = st.one_of(value_expr(), value_expr(), st.sampled_from(["", " ", "90", "-90", "360", "720.004", "359.995"]))
+    xy = ",".join(draw(st.lists(value, min_size=1, max_size=4)))
     return draw(_mangle(n + draw(pad) + op + "=" + xy))
 
 
-# a fake seed's boxes: top-left corners in hundredths, deleted, off
+# a fake seed's boxes: middles in hundredths, deleted, off
 boxes = st.lists(st.tuples(
     st.one_of(st.integers(-500000, 500000), st.sampled_from([0, 999999999, -999999999, 10 ** 9])),
     st.one_of(st.integers(-500000, 500000), st.sampled_from([0, 999999999, -10 ** 9])),
@@ -236,6 +237,11 @@ boxes = st.lists(st.tuples(
 # moved boxes' offsets in hundredths; moving a box back removes its entry, so none sits at (0, 0)
 offset = st.one_of(st.integers(-10 ** 6, 10 ** 6), st.sampled_from([INT_MAX, INT_MIN]))
 box_offsets = st.dictionaries(st.integers(0, 7), st.tuples(offset, offset).filter(lambda xy: xy != (0, 0)), max_size=4)
+# turned boxes' turns in hundredths of a degree; an upright box has no entry
+box_rotations = st.dictionaries(st.integers(0, 7), st.one_of(st.integers(1, 35999), st.sampled_from([1, 9000, 35999])),
+                                max_size=4)
+# which of the fake seed's boxes are goal or unsafe boxes
+fixed_boxes = st.lists(st.booleans(), max_size=8)
 # Ori's position in hundredths, or None for no Ori; seven digits at most, which C#'s float-to-decimal keeps
 hundredths = st.one_of(st.sampled_from([0, 1, -1, 5, -5, 50, -50, 9999999, -9999999]), st.integers(-9999999, 9999999))
 ori_at = st.one_of(st.none(), st.tuples(hundredths, hundredths))

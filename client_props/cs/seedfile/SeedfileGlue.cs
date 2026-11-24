@@ -361,7 +361,9 @@ public static class SeedfileGlue {
         RandomizerBoxGeometry.ColliderVertices(shape.Outline, out var walls, out var wallTriangles);
         Func<UnityEngine.Vector2, UnityEngine.Vector2> same = p => p;
         var raw = RandomizerBoxGeometry.ToRawShape(box.ShapeType, shape.Outline, offset) ?? box.SimplifiedShape;
+        var centroid = RandomizerBoxGeometry.Centroid(shape.Outline);
         return new Dictionary<string, object> {
+            { "centroid", new List<double> { centroid.x + (double)offset.x, centroid.y + (double)offset.y } },
             { "outline", world(shape.Outline) },
             { "edge", world(shape.EdgeTriangles) },
             { "fill", world(shape.FillTriangles) },

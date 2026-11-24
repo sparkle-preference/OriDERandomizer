@@ -38,10 +38,10 @@ The shape of the box. The possible shapes are (described in more detail below):
 - Polygon
 - Oriented Polygon
 
-BR|n moves box n during the game, keeping its size; {Bn.x} and {Bn.y} read where its top-left corner is,
+BR|n moves or turns box n during the game, keeping its size; {Bn.x} and {Bn.y} read where its middle is,
 and {Bn} whether it is on. See RI Format.txt.
 
-If the box is not a rectangle, {Bn.x} and {Bn.y} refer to the top-left corner of the bounding rect.
+A box's middle is its balance point, which for a rectangle is its center.
 
 
 

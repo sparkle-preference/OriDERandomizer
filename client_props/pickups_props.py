@@ -13,7 +13,7 @@ from hypothesis import event, given, settings, strategies as st
 from client_props.base import CLIENT, HERE, examples
 from client_props.cs_bridge import outcome, slice_bridge
 from client_props.strategies.pickups import (BROKEN_RULES, INT_MAX, INT_MIN, EDGE_SLOTS, EDGE_VALUES, any_code, any_id,
-                                             box_offsets, boxes, br_stmt, degrees, eight_places, emitted, hundredths, inventory,
+                                             box_offsets, box_rotations, boxes, br_stmt, fixed_boxes, degrees, eight_places, emitted, hundredths, inventory,
                                              legacy_value_expr, mw_line, name_query, name_rules, ori_at, ri_stmt, slot_id,
                                              slot_message, value_expr)
 from pickups import Event, MultiworldItem, Pickup, Skill, Teleporter, Upgrade
@@ -570,11 +570,13 @@ class Model:
     """RI Format.txt and the comments in RandomizerInventory, as Python: one instance per expression.
 
     Numbers are exact integers in units of 1e-8; boxes are (x, y, deleted, off), corners in hundredths; offsets
-    are each moved box's (x, y) in hundredths; ori is Ori's (x, y) in hundredths, or None for no Ori."""
+    are each moved box's (x, y) in hundredths; ori is Ori's (x, y) in hundredths, or None for no Ori; rotations
+    are each turned box's turn in hundredths of a degree; fixed holds the goal and unsafe boxes."""
 
-    def __init__(self, inv, boxes=(), offsets=None, ori=None):
+    def __init__(self, inv, boxes=(), offsets=None, ori=None, rotations=None, fixed=()):
         self.inv, self.errors, self.logs, self.masks, self.moves = dict(inv), 0, 0, [], []
         self.boxes, self.offsets, self.ori = list(boxes), dict(offsets or {}), ori
+        self.rotations, self.fixed = dict(rotations or {}), set(fixed)
         self.now, self.complained = 0, {}
 
     def complain(self, key):
@@ -714,6 +716,7 @@ class Model:
             self.masks.append(slot)
 
     def move_box(self, text):
+        """x, y, r: the middle in hundredths and the turn in hundredths of a degree, kept in [0, 360)."""
         key = "BR|" + text
         eq = text.find("=")
         name = cs_trim(text if eq < 0 else text[:eq])
@@ -725,25 +728,34 @@ class Model:
             return self.complain(key)
         if self.boxes[n][2]:
             return
-        x, y = 0, 0
+        x, y, turn = 0, 0, 0
         if eq >= 0:
-            xy = text[eq + 1:]
-            comma = xy.find(",")
-            dx = None if comma < 0 else self.number(xy[:comma])
-            dy = None if dx is None else self.number(xy[comma + 1:])
-            cx, cy = self.boxes[n][:2]
-            if dy is None or not (abs(cx) < 10 ** 9 and abs(cy) < 10 ** 9):
+            fields = text[eq + 1:].split(",")
+            if len(fields) > 3 or all(not cs_trim(f) for f in fields):
                 return self.complain(key)
-            hx, hy = round_away(dx, HUNDREDTH), round_away(dy, HUNDREDTH)
+            h = [0, 0, 0]
+            for i, f in enumerate(fields):
+                if cs_trim(f):
+                    v = self.number(f)
+                    if v is None:
+                        return self.complain(key)
+                    h[i] = round_away(v, HUNDREDTH)
+            mx, my = self.boxes[n][:2]
+            if not (abs(mx) < 10 ** 9 and abs(my) < 10 ** 9):
+                return self.complain(key)
             wx, wy = self.offsets.get(n, (0, 0))
             sign = -1 if op == "-" else 1
-            x, y = (hx - cx, hy - cy) if op == "=" else (wx + sign * hx, wy + sign * hy)
+            x, y = (h[0] - mx, h[1] - my) if op == "=" else (wx + sign * h[0], wy + sign * h[1])
+            turn = (h[2] if op == "=" else self.rotations.get(n, 0) + sign * h[2]) % 36000
+            if turn and n in self.fixed:
+                return self.complain(key)
         if not (INT_MIN <= x <= INT_MAX and INT_MIN <= y <= INT_MAX):
             return self.complain(key)
-        if (x, y) == (0, 0):
-            self.offsets.pop(n, None)
-        else:
-            self.offsets[n] = (x, y)
+        for table, value in ((self.offsets, (x, y)), (self.rotations, turn)):
+            if value in ((0, 0), 0):
+                table.pop(n, None)
+            else:
+                table[n] = value
         self.moves.append(n)
 
     def resolve(self, text):
@@ -775,7 +787,7 @@ def errors():
     return len(B.get("Randomizer.Errors"))
 
 
-def reset(inv, bxs=(), moved=None, at=None):
+def reset(inv, bxs=(), moved=None, at=None, turned=None, fixed=()):
     B.call("PickupsGlue.Reset", inv)
     if bxs:
         B.call("PickupsGlue.Boxes", *([b[i] for b in bxs] for i in range(4)))
@@ -783,10 +795,18 @@ def reset(inv, bxs=(), moved=None, at=None):
         B.call("PickupsGlue.SetOffsets", list(moved), [x for x, _ in moved.values()], [y for _, y in moved.values()])
     if at is not None:
         B.call("PickupsGlue.Ori", at[0] / 100, at[1] / 100)
+    if turned:
+        B.call("PickupsGlue.SetRotations", list(turned), list(turned.values()))
+    if fixed:
+        B.call("PickupsGlue.Fix", list(fixed))
 
 
 def offsets():
     return {n: (x, y) for n, x, y in B.call("PickupsGlue.Offsets")}
+
+
+def rotations():
+    return {int(k): v for k, v in B.call("PickupsGlue.Rotations").items()}
 
 
 def typed(u):
@@ -968,13 +988,13 @@ class SlotExpressions(Quiet):
     @settings(max_examples=examples(300))
     @given(st.lists(st.one_of(ri_stmt().map(lambda t: ("RI", t)), br_stmt().map(lambda t: ("BR", t))), min_size=1, max_size=3),
            st.lists(st.tuples(st.integers(0, 2), st.sampled_from([0, 0, 1000, 4999, 5000])), max_size=8), inventory, boxes,
-           box_offsets, ori_at)
-    def test_the_error_cap_matches_the_format(self, pool, picks, inv, bxs, moved, at):
+           box_offsets, ori_at, box_rotations, fixed_boxes)
+    def test_the_error_cap_matches_the_format(self, pool, picks, inv, bxs, moved, at, turned, fixed):
         if any(code == "RI" and the_extra_items_counter(statement_slot(text)) for code, text in pool):
             event("masked: the extra items counter")
             return
-        reset(inv, bxs, moved, at)
-        model = Model(inv, bxs, moved, at)
+        reset(inv, bxs, moved, at, turned, fixed)
+        model = Model(inv, bxs, moved, at, turned, [i for i, f in enumerate(fixed) if f])
         for k, ms in picks:
             code, text = pool[k % len(pool)]
             B.call("PickupsGlue.Tick", ms)
@@ -983,6 +1003,7 @@ class SlotExpressions(Quiet):
             (model.apply if code == "RI" else model.move_box)(text)
         self.assertEqual(snapshot(), model.inv)
         self.assertEqual(offsets(), model.offsets)
+        self.assertEqual(rotations(), model.rotations)
         self.assertEqual(errors(), model.errors)
 
     def test_a_box_move_example(self):
@@ -998,10 +1019,32 @@ class SlotExpressions(Quiet):
             self.assertEqual(offsets(), {} if want is None else {0: want}, text)
             self.assertEqual(model.offsets, offsets(), text)
             self.assertEqual((snapshot(), errors()), ({}, 0), text)
-        for text in ["1=5,5", "7=1,1", "0=1", "0=1,0.5x", "0=99999999,0", "0=sin(1/0),0"]:
+        for text in ["1=5,5", "7=1,1", "0=1x", "0=1,0.5x", "0=99999999,0", "0=sin(1/0),0", "0=sin(1/0)", "0=", "0=,,",
+                     "0=1,2,3,4", "0+=1,,,"]:
             reset({}, bxs)
             B.call("RandomizerInventory.MoveBox", text)
             self.assertEqual((offsets(), snapshot(), errors()), ({}, {}, 0 if text.startswith("1=") else 1), text)
+
+    def test_a_box_turn_example(self):
+        bxs = [(10050, -4000, False, False), (0, 0, True, False), (0, 0, False, False)]
+        for text, was, moved, turned in [
+                ("0=100.5,-40,90", 0, None, 9000), ("0+=,,45", 9000, (5, 5), 13500), ("0-=,,45", 4500, (5, 5), None),
+                ("0-=0,0,1", 0, (5, 5), 35900), ("0=100.5,-40", 9000, None, None), ("0=100.5,-40,720.005", 0, None, 1),
+                ("0=100.5,-40,720.004", 0, None, None), ("0+=1", 9000, (105, 5), 9000), ("0+=,,sin(30)*10", 35900, (5, 5), 400),
+                ("0=1,2,-90", 0, (-9950, 4200), 27000), ("0=,,90", 0, (-10050, 4000), 9000), ("0", 9000, None, None)]:
+            was = {0: was} if was else None
+            reset({}, bxs, {0: (5, 5)}, turned=was)
+            model = Model({}, bxs, {0: (5, 5)}, rotations=was)
+            model.move_box(text)
+            B.call("RandomizerInventory.MoveBox", text)
+            self.assertEqual((offsets(), rotations()), ({} if moved is None else {0: moved}, {} if turned is None else {0: turned}), text)
+            self.assertEqual((model.offsets, model.rotations, model.moves), (offsets(), rotations(), B.get("RandomizerBoxes.Moves")), text)
+            self.assertEqual(errors(), 0, text)
+        for text, fixed, errs, moved in [("1=,,90", [], 0, {}), ("2=0,0,90", [False, False, True], 1, {}),
+                                         ("2+=1,1", [False, False, True], 0, {2: (100, 100)}), ("2=,,1x", [False, False, True], 1, {})]:
+            reset({}, bxs, fixed=fixed)
+            B.call("RandomizerInventory.MoveBox", text)
+            self.assertEqual((offsets(), rotations(), errors()), (moved, {}, errs), text)
 
     @settings(max_examples=examples(400))
     @given(st.sampled_from(["", "+", "-"]), eight_places, eight_places, boxes.filter(len), box_offsets)
@@ -1019,14 +1062,15 @@ class SlotExpressions(Quiet):
         self.assertEqual((offsets(), snapshot(), errors()), ({4500: (100, 200)}, {}, 0))
 
     @settings(max_examples=examples(600))
-    @given(br_stmt(), inventory, boxes, box_offsets, ori_at)
-    def test_a_box_move_matches_the_format(self, text, inv, bxs, moved, at):
-        reset(inv, bxs, moved, at)
-        model = Model(inv, bxs, moved, at)
+    @given(br_stmt(), inventory, boxes, box_offsets, ori_at, box_rotations, fixed_boxes)
+    def test_a_box_move_matches_the_format(self, text, inv, bxs, moved, at, turned, fixed):
+        reset(inv, bxs, moved, at, turned, fixed)
+        model = Model(inv, bxs, moved, at, turned, [i for i, f in enumerate(fixed) if f])
         model.move_box(text)
         event("refused" if model.errors else "moved" if model.moves else "left alone")
         B.call("RandomizerInventory.MoveBox", text)
         self.assertEqual(offsets(), model.offsets)
+        self.assertEqual(rotations(), model.rotations)
         self.assertEqual(snapshot(), model.inv)
         self.assertEqual(errors(), model.errors)
         self.assertEqual(B.get("RandomizerBoxes.Moves"), model.moves)

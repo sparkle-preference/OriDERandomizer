@@ -1012,6 +1012,30 @@ class BoxGeometry(unittest.TestCase):
             if clear_of(g["outline"], p):
                 self.assertEqual(in_triangles(again["mesh"], p), in_triangles(g["mesh"], p), p)
 
+    @settings(max_examples=examples(150))
+    @given(SF.drawn_shapes())
+    def test_a_box_turns_about_its_outline_s_area_centroid(self, shape):
+        g = geometry(shape[0])
+        if g is None:
+            return
+        twice = sum(a[0] * b[1] - b[0] * a[1] for a, b in sides(g["outline"]))
+        if abs(twice) < 1e-3:
+            event("masked: a shape with no area")
+            return
+        want = [sum((a[k] + b[k]) * (a[0] * b[1] - b[0] * a[1]) for a, b in sides(g["outline"])) / (3 * twice)
+                for k in (0, 1)]
+        for got, w in zip(g["centroid"], want):
+            self.assertAlmostEqual(got, w, delta=1e-4 * (1 + abs(w)))
+
+    def test_a_turn_s_middle_is_the_balance_point_not_the_points_average(self):
+        for field, want in [("convex,2,2,6,2,6,4,2,4", (4, 3)),
+                            ("loop,0,0,10,0,10,10,0,10,0,0,6,6,6,8,8,8,8,6,6,6", (472 / 96, 472 / 96)),
+                            ("loop,0,0,4,0,4,1,1,1,1,4,0,4", (19 / 14, 19 / 14)),
+                            ("convex,0,0,4,0,4,1,3,1,2,1,1,1,0,1", (2, 0.5))]:
+            got = geometry(field)["centroid"]
+            for g, w in zip(got, want):
+                self.assertAlmostEqual(g, w, places=3, msg=field)
+
     def test_a_hole_survives_the_in_game_editor_rewriting_the_shape(self):
         g = geometry("loop,0,0,10,0,10,10,0,10,0,0,3,3,3,7,7,7,7,3,3,3")
         self.assertEqual(covered(geometry(g["rewrite"])), covered(g))

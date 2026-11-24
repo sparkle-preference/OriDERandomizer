@@ -18,6 +18,8 @@ static class PickupsGlue {
         RandomizerBoxes.Masks.Clear();
         RandomizerBoxes.Moves.Clear();
         RandomizerBoxes.Offsets.Clear();
+        RandomizerBoxes.Rotations.Clear();
+        RandomizerBoxes.Fixed = new bool[0];
         Boxes(new long[0], new long[0], new bool[0], new bool[0]);
         RandomizerInventory.ForgetComplaints();
         Clock = 0;
@@ -42,6 +44,16 @@ static class PickupsGlue {
         }
     }
 
+    public static Dictionary<int, int> Rotations() { return new Dictionary<int, int>(RandomizerBoxes.Rotations); }
+
+    public static void SetRotations(int[] boxes, int[] turns) {
+        for (var i = 0; i < boxes.Length; i++) {
+            RandomizerBoxes.Rotations[boxes[i]] = turns[i];
+        }
+    }
+
+    public static void Fix(bool[] fixedBoxes) { RandomizerBoxes.Fixed = fixedBoxes; }
+
     public static void CountTick() { RandomizerInventory.CountTick(); }
 
     // the milliseconds the error cap sees; tests move it by hand
@@ -50,8 +62,8 @@ static class PickupsGlue {
     public static void Tick(int ms) { Clock += ms; }
 
     public static void Boxes(long[] xs, long[] ys, bool[] gone, bool[] off) {
-        RandomizerBoxes.CornerX = xs;
-        RandomizerBoxes.CornerY = ys;
+        RandomizerBoxes.MiddleX = xs;
+        RandomizerBoxes.MiddleY = ys;
         RandomizerBoxes.Gone = gone;
         RandomizerBoxes.Off = off;
     }
