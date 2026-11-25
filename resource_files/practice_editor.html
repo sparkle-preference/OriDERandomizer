@@ -51,6 +51,7 @@
   table.boxes tbody tr:nth-child(even) td { background: #20272f; }
   table.boxes tbody tr.goal td { background: #1c3a26; }
   table.boxes tbody tr.flash td { background: #2f4f7a; transition: background 1.5s; }
+  table.boxes tbody tr.stub { height: var(--row-guess, 41px); }
   .chips span { display: inline-block; background: #2b333d; border-radius: 12px; padding: 2px 10px; margin: 2px 4px 2px 0; }
   .chips span b { cursor: pointer; margin-left: 6px; color: #ff9a9a; }
   .mapgrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 14px; }
@@ -1283,35 +1284,56 @@
     });
   }
 
+  // everything a box's layers are drawn from: a shape whose look is unchanged keeps its layers
+  function shapeLook(entry) {
+    var b = entry.b;
+    return JSON.stringify([b.box, b.shape || '', boxColor(entry), hidden(b), !!entry.locked, state.editing, entry.label, entry.rowId]);
+  }
+  function dropLayers(s) { s.layers.forEach(function (l) { state.map.removeLayer(l); }); }
   function rebuildShapes() {
-    state.shapes.forEach(function (s) { s.layers.forEach(function (l) { state.map.removeLayer(l); }); }); state.shapes = [];
+    var old = new Map(), shapes = [], firstNew = -1;
+    state.shapes.forEach(function (s) { old.set(s.entry.b.box, s); });
     // locked boxes go underneath and let clicks through, so they never block the boxes around them
     var entries = allBoxes();
     entries.filter(function (e) { return e.locked; }).concat(entries.filter(function (e) { return !e.locked; })).forEach(function (entry) {
       var b = entry.b.box; if (!b || b.length !== 4) return;
+      var sig = shapeLook(entry), kept = old.get(b);
+      if (kept && kept.sig === sig) { old.delete(b); shapes.push(kept); return; }
+      if (firstNew < 0) firstNew = shapes.length;
       var look = { color: boxColor(entry), weight: 2, opacity: entry.locked ? 0.5 : 1, fillOpacity: entry.locked ? 0.05 : state.editing ? 0.3 : 0.15,
         dashArray: hidden(entry.b) ? '4 4' : null, interactive: !entry.locked };
       // a shape this page can't read still shows, as the rectangle around it
       var drawn = facesOf(entry.b);
       if (windsTogether(entry.b)) look.fillRule = 'nonzero';
       var faces = drawn.length ? drawn.map(function (face) { return L.polygon(face, look).addTo(state.map); }) : [L.rectangle(bounds(b), look).addTo(state.map)];
-      var shape = { entry: entry, layers: faces.slice(), faces: faces };
+      var shape = { entry: entry, layers: faces.slice(), faces: faces, sig: sig };
       if (drawn.length) shape.redraw = function () { drawShaped(shape); };
-      state.shapes.push(shape);
+      shapes.push(shape);
       if (entry.locked) return;
       faces.forEach(function (f) { f.bindTooltip(asText(entry.label), { sticky: true }); });
       if (state.editing) attachEditing(shape);
       else faces.forEach(function (f) { f.on('click', function () { jumpTo(entry.rowId); }); });
     });
+    old.forEach(dropLayers);
+    state.shapes = shapes;
+    // a new layer lands on top, so the ones after it are lifted back over it
+    if (firstNew >= 0) shapes.slice(firstNew + 1).forEach(function (s) { s.faces.forEach(function (f) { f.bringToFront(); }); });
     drawHandles();
   }
-  // The points of the shaped box last clicked, as handles: drag one to move it, right-click it to remove it.
-  // Only that box shows its points, or a screen of shaped boxes is all handles.
+  // a deleted box's layers go, and nothing else changes
+  function dropShape(coords) {
+    var s = shapeFor(coords); if (!s) return;
+    dropLayers(s); state.shapes.splice(state.shapes.indexOf(s), 1);
+    if (s.entry.b === state.selectedBox) { state.selectedBox = null; drawHandles(); }
+  }
+  // Only the box last clicked shows handles: a rectangle's corners, or a shaped box's points (right-click one to remove it).
+  // The goal matches by its corners array, since its entry is new each render.
   function drawHandles() {
     state.handles.forEach(function (h) { state.map.removeLayer(h); }); state.handles = [];
-    var shape = null;
-    state.shapes.forEach(function (s) { if (s.entry.b === state.selectedBox && !s.entry.locked && shapeKind(s.entry.b)) shape = s; });
+    var shape = null, sel = state.selectedBox;
+    state.shapes.forEach(function (s) { s.corners = null; if (sel && (s.entry.b === sel || s.entry.b.box === sel.box) && !s.entry.locked) shape = s; });
     if (!state.editing || !shape) return;
+    if (!shapeKind(shape.entry.b)) return shape.drawCorners();
     var b = shape.entry.b;
     parseShape(b.shape).loops.forEach(function (l, loop) {
       l.forEach(function (p, k) {
@@ -1332,7 +1354,14 @@
   function bounds(b) { return [[Math.min(b[1], b[3]), Math.min(b[0], b[2])], [Math.max(b[1], b[3]), Math.max(b[0], b[2])]]; }
   function jumpTo(rowId) {
     var row = document.getElementById(rowId); if (!row) return;
+    fillRow(row);
     row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // rows filled on the way can move it, so once the scroll stops it finishes the trip
+    var landed = false, land = function () {
+      if (landed) return; landed = true; removeEventListener('scrollend', land);
+      var r = row.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) row.scrollIntoView({ block: 'center' });
+    };
+    addEventListener('scrollend', land); setTimeout(land, 2000);
     row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 1600);
   }
 
@@ -1347,21 +1376,25 @@
     }
     function redraw() {
       if (shaped) return drawShaped(shape);
-      rect.setBounds(bounds(b)); shape.layers.slice(1).forEach(function (h, k) { h.setLatLng(cornerLatLng(k)); });
+      rect.setBounds(bounds(b)); (shape.corners || []).forEach(function (h, k) { h.setLatLng(cornerLatLng(k)); });
     }
     shape.redraw = redraw;   // so a number typed in the table moves this box and nothing else
     function cornerLatLng(k) { var xs = [b[0], b[2], b[2], b[0]], ys = [b[1], b[1], b[3], b[3]]; return [ys[k], xs[k]]; }
-    for (var k = 0; k < 4 && !shaped; k++) (function (k) {
-      var h = L.marker(cornerLatLng(k), { draggable: true, icon: L.divIcon({ className: 'handle', iconSize: [10, 10] }) }).addTo(map);
-      h.on('drag', function (ev) {
-        var p = ev.target.getLatLng();
-        if (k === 0) { b[0] = p.lng; b[1] = p.lat; } else if (k === 1) { b[2] = p.lng; b[1] = p.lat; }
-        else if (k === 2) { b[2] = p.lng; b[3] = p.lat; } else { b[0] = p.lng; b[3] = p.lat; }
-        rect.setBounds(bounds(b));
+    // drawHandles' part for a rectangle
+    shape.drawCorners = function () {
+      shape.corners = [0, 1, 2, 3].map(function (k) {
+        var h = L.marker(cornerLatLng(k), { draggable: true, icon: L.divIcon({ className: 'handle', iconSize: [10, 10] }) }).addTo(map);
+        h.on('drag', function (ev) {
+          var p = ev.target.getLatLng();
+          if (k === 0) { b[0] = p.lng; b[1] = p.lat; } else if (k === 1) { b[2] = p.lng; b[1] = p.lat; }
+          else if (k === 2) { b[2] = p.lng; b[3] = p.lat; } else { b[0] = p.lng; b[3] = p.lat; }
+          rect.setBounds(bounds(b));
+        });
+        h.on('dragend', function () { normalize(); redraw(); syncRow(shape.entry); });
+        state.handles.push(h);
+        return h;
       });
-      h.on('dragend', function () { normalize(); redraw(); syncRow(shape.entry); });
-      shape.layers.push(h);
-    })(k);
+    };
     var start = null, from = null, fromShape = null;
     shape.faces.forEach(function (face) {
       face.on('mousedown', function (ev) {
@@ -1535,9 +1568,46 @@
     return s;
   }
 
+  // a row whose box, number and lock are unchanged is reused as it stands, typing included
+  var builtRows = new WeakMap();
+  function placeRows(tbody, rows) {
+    var keep = new Set(rows);
+    Array.prototype.slice.call(tbody.rows).forEach(function (r) { if (!keep.has(r)) { tbody.removeChild(r); unwatch(r); } });
+    rows.forEach(function (r, k) { if (tbody.rows[k] !== r) tbody.insertBefore(r, tbody.rows[k] || null); });
+  }
+  // rows away from the screen are one empty cell, as tall as they were or as the first row measured (--row-guess)
+  var rowFill = new WeakMap(), rowMeasured = false;
+  var rowWatch = typeof IntersectionObserver === 'function' ? new IntersectionObserver(function (seen) {
+    seen.forEach(function (e) {
+      var tr = e.target, h = e.boundingClientRect.height;
+      if (e.isIntersecting) fillRow(tr);
+      // a row being typed in keeps its cells
+      else if (!tr.classList.contains('stub') && !tr.contains(document.activeElement)) stubRow(tr, h);
+    });
+  }, { rootMargin: '800px 0px' }) : null;
+  function unwatch(tr) { if (rowWatch) rowWatch.unobserve(tr); }
+  function fillRow(tr) {
+    if (!tr.classList.contains('stub')) return;
+    tr.classList.remove('stub'); tr.style.height = ''; tr.textContent = '';
+    rowFill.get(tr)();
+  }
+  function stubRow(tr, h) {
+    tr.textContent = ''; tr.classList.add('stub'); tr.classList.remove('locked'); tr.style.height = h > 0 ? h + 'px' : '';
+    tr.insertCell().colSpan = 12;
+  }
+  // new rows near the screen get their cells now rather than a frame later
+  function revealRows(fresh, rows) {
+    if (!rowWatch) return fresh.forEach(fillRow);
+    var near = fresh.filter(function (tr) { var r = tr.getBoundingClientRect(); return r.bottom > -800 && r.top < innerHeight + 800; });
+    near.forEach(fillRow);
+    var h = !rowMeasured && near.length ? near[0].getBoundingClientRect().height : 0;
+    if (h > 0) { rowMeasured = true; document.documentElement.style.setProperty('--row-guess', h + 'px'); }
+    rows.forEach(function (tr) { if (rowFill.has(tr)) rowWatch.observe(tr); });
+  }
+
   // the shared table leads with the goal box, which is really the end condition's
   function renderBoxes(tbody, boxes, owner, withGoal) {
-    tbody.innerHTML = '';
+    var rows = [], fresh = [];
     var end = state.segment.end || {};
     var nums = boxNumbers(boxes, owner);
     if (withGoal && end.box && end.box.length === 4) {
@@ -1567,74 +1637,89 @@
         delete end.box; delete end.goal; render();
       };
       tr0.appendChild(td(clear));
-      tbody.appendChild(tr0);
+      rows.push(tr0);
     }
     boxes.map(function (b, i) { return [b, i]; }).reverse().forEach(function (pair) {
       var b = pair[0], i = pair[1];
       if (typeof b.flags !== 'string') b.flags = '';
       if (gone(b)) return;
-      var tr = document.createElement('tr'); tr.id = 'box-' + owner + '-' + i;
-      tr.appendChild(td(numCell(nums[i])));
       var coords = b.box && b.box.length === 4 ? b.box : [0, 0, 0, 0];
       b.box = coords;
-      var flags = flagSelect({ get: function () { return flagsOf(b); }, set: function (l) { setFlags(b, l); drawEye(); gives.refresh(); rebuildShapes(); },
-        describe: function (f) { return describeOn(b, f); } });
-      var gives = pickSelect({ get: function () { return splitCode(b.give); }, set: function (l) { b.give = joinCodes(l); flags.refresh(); rebuildShapes(); },
-        placeholder: function () { return hasFlag(b, 'kill') ? 'kills Ori' : 'what it gives; a message is SH|text'; } });
-      tr.appendChild(td(flags));
-      for (var k = 0; k < 4; k++) (function (k) {
-        var input = numInput(coords[k], function (v) {
-          // a shaped box keeps its size: its low corner moves all of it
-          if (b.shape) { shiftShape(b, b.shape, k === 0 ? v - coords[0] : 0, k === 1 ? v - coords[1] : 0); syncRow({ rowId: tr.id, b: b }); }
-          else coords[k] = v;
-          moveBox(coords);
+      var sig = owner + ':' + i + ':' + nums[i] + ':' + locked(owner, i) + ':' + JSON.stringify(b), kept = builtRows.get(b);
+      if (kept && kept.sig === sig) { rows.push(kept.tr); return; }
+      var tr = document.createElement('tr'); tr.id = 'box-' + owner + '-' + i;
+      builtRows.set(b, { tr: tr, sig: sig });
+      rowFill.set(tr, fill); stubRow(tr, 0);
+      fresh.push(tr); rows.push(tr);
+      function fill() {
+        tr.appendChild(td(numCell(nums[i])));
+        var flags = flagSelect({ get: function () { return flagsOf(b); }, set: function (l) { setFlags(b, l); drawEye(); gives.refresh(); rebuildShapes(); },
+          describe: function (f) { return describeOn(b, f); } });
+        var gives = pickSelect({ get: function () { return splitCode(b.give); }, set: function (l) { b.give = joinCodes(l); flags.refresh(); rebuildShapes(); },
+          placeholder: function () { return hasFlag(b, 'kill') ? 'kills Ori' : 'what it gives; a message is SH|text'; } });
+        tr.appendChild(td(flags));
+        for (var k = 0; k < 4; k++) (function (k) {
+          var input = numInput(coords[k], function (v) {
+            // a shaped box keeps its size: its low corner moves all of it
+            if (b.shape) { shiftShape(b, b.shape, k === 0 ? v - coords[0] : 0, k === 1 ? v - coords[1] : 0); syncRow({ rowId: tr.id, b: b }); }
+            else coords[k] = v;
+            moveBox(coords);
+          });
+          if (b.shape && k > 1) { input.readOnly = true; input.title = 'Non-rectangular boxes must be edited on the map'; }
+          tr.appendChild(td(input));
+        })(k);
+        var pick = document.createElement('select');
+        pick.title = 'Shape: a rectangle, the hull around its points (convex), or outlines drawn point by point (loop)';
+        [['', 'rect'], ['convex', 'convex'], ['loop', 'loop']].concat(shapeKind(b) === 'loop' ? [['add', '+ loop']] : []).forEach(function (o) {
+          var opt = document.createElement('option'); opt.value = o[0]; opt.textContent = o[1]; pick.appendChild(opt);
         });
-        if (b.shape && k > 1) { input.readOnly = true; input.title = 'Non-rectangular boxes must be edited on the map'; }
-        tr.appendChild(td(input));
-      })(k);
-      var pick = document.createElement('select');
-      pick.title = 'Shape: a rectangle, the hull around its points (convex), or outlines drawn point by point (loop)';
-      [['', 'rect'], ['convex', 'convex'], ['loop', 'loop']].concat(shapeKind(b) === 'loop' ? [['add', '+ loop']] : []).forEach(function (o) {
-        var opt = document.createElement('option'); opt.value = o[0]; opt.textContent = o[1]; pick.appendChild(opt);
-      });
-      pick.value = shapeKind(b);
-      pick.onchange = function () { if (pick.value === 'add') addLoop(b); else reshape(b, pick.value); state.selectedBox = b; render(); };
-      tr.appendChild(td(pick));
-      tr.appendChild(td(gives));
-      // any box can wear its own color; its flags pick the default
-      var color = document.createElement('input'); color.type = 'color'; color.title = b.color ? 'own color' : 'the default for its flags';
-      color.onchange = function () { b.color = color.value.replace('#', ''); recolorBox(coords); };
-      tr.appendChild(td(color));
-      // invisible: it still works, nobody sees it
-      var hide = document.createElement('button'); hide.className = 'quiet icon';
-      var drawEye = function () {
-        hide.innerHTML = hidden(b) ? EYE_OFF : EYE; hide.classList.toggle('on', hidden(b));
-        hide.title = hidden(b) ? 'Invisible in game. Click to make it visible.' : 'Visible in game. Click to make it invisible (it stays dashed here).';
-        color.value = colorOf(b); color.disabled = hidden(b);
-      };
-      drawEye();
-      hide.onclick = function () { if (hidden(b)) delete b.color; else b.color = 'none'; drawEye(); recolorBox(coords); };
-      tr.appendChild(td(hide));
-      var lock = document.createElement('button');
-      var lockCell = td(lock); lockCell.className = 'lockcell';
-      tr.appendChild(lockCell);
-      var del = document.createElement('button'); del.className = 'danger icon'; del.innerHTML = '&times;'; del.title = 'Remove this box';
-      del.onclick = function () { if (state.lastBox === b) state.lastBox = null; boxes[i] = { flags: 'tombstone', box: [0, 0, 0, 0] }; render(); };
-      tr.appendChild(td(del));
-      // a lock changes this row and the map only, so it skips the full render
-      function drawLock() {
-        var isLocked = locked(owner, i);
-        lock.className = 'quiet icon' + (isLocked ? ' on' : '');
-        lock.innerHTML = isLocked ? LOCK : UNLOCK;
-        lock.title = isLocked ? 'Locked: no edits, no dragging. Click to unlock.' : 'Unlocked. Click to lock: no edits, no dragging, no corners.';
-        tr.classList.toggle('locked', isLocked);
-        tr.querySelectorAll('input, button, select, textarea').forEach(function (el) { if (el !== lock) el.disabled = isLocked; });
-        if (!isLocked) drawEye();
+        pick.value = shapeKind(b);
+        pick.onchange = function () { if (pick.value === 'add') addLoop(b); else reshape(b, pick.value); state.selectedBox = b; render(); };
+        tr.appendChild(td(pick));
+        tr.appendChild(td(gives));
+        // any box can wear its own color; its flags pick the default
+        var color = document.createElement('input'); color.type = 'color'; color.title = b.color ? 'own color' : 'the default for its flags';
+        color.onchange = function () { b.color = color.value.replace('#', ''); recolorBox(coords); };
+        tr.appendChild(td(color));
+        // invisible: it still works, nobody sees it
+        var hide = document.createElement('button'); hide.className = 'quiet icon';
+        var drawEye = function () {
+          hide.innerHTML = hidden(b) ? EYE_OFF : EYE; hide.classList.toggle('on', hidden(b));
+          hide.title = hidden(b) ? 'Invisible in game. Click to make it visible.' : 'Visible in game. Click to make it invisible (it stays dashed here).';
+          color.value = colorOf(b); color.disabled = hidden(b);
+        };
+        drawEye();
+        hide.onclick = function () { if (hidden(b)) delete b.color; else b.color = 'none'; drawEye(); recolorBox(coords); };
+        tr.appendChild(td(hide));
+        var lock = document.createElement('button');
+        var lockCell = td(lock); lockCell.className = 'lockcell';
+        tr.appendChild(lockCell);
+        var del = document.createElement('button'); del.className = 'danger icon'; del.innerHTML = '&times;'; del.title = 'Remove this box';
+        del.onclick = function () {
+          if (state.lastBox === b) state.lastBox = null;
+          boxes[i] = { flags: 'tombstone', box: [0, 0, 0, 0] };
+          // a variant's goal box has no number and its tombstone takes one, so the numbers after it move
+          if (owner !== 'shared' && hasFlag(b, 'goal')) return render();
+          var table = tr.closest('table'); tr.remove(); unwatch(tr); table.hidden = !table.tBodies[0].rows.length;
+          dropShape(coords);
+        };
+        tr.appendChild(td(del));
+        // a lock changes this row and the map only, so it skips the full render
+        function drawLock() {
+          var isLocked = locked(owner, i);
+          lock.className = 'quiet icon' + (isLocked ? ' on' : '');
+          lock.innerHTML = isLocked ? LOCK : UNLOCK;
+          lock.title = isLocked ? 'Locked: no edits, no dragging. Click to unlock.' : 'Unlocked. Click to lock: no edits, no dragging, no corners.';
+          tr.classList.toggle('locked', isLocked);
+          tr.querySelectorAll('input, button, select, textarea').forEach(function (el) { if (el !== lock) el.disabled = isLocked; });
+          if (!isLocked) drawEye();
+        }
+        lock.onclick = function () { setLock(owner, i, !locked(owner, i)); drawLock(); rebuildShapes(); };
+        drawLock();
       }
-      lock.onclick = function () { setLock(owner, i, !locked(owner, i)); drawLock(); rebuildShapes(); };
-      drawLock();
-      tbody.appendChild(tr);
     });
+    placeRows(tbody, rows);
+    revealRows(fresh, rows);
   }
 
   // the shared list and each variant's, every one bounded once there are variants
@@ -1644,7 +1729,9 @@
     $('sharedHead').hidden = ids.length === 0;
     renderBoxes($('boxes').querySelector('tbody'), state.segment.boxes || (state.segment.boxes = []), 'shared', true);
     $('boxes').hidden = !$('boxes').querySelector('tbody').rows.length;
-    var root = $('variantBoxes'); root.innerHTML = '';
+    var root = $('variantBoxes');
+    Array.prototype.forEach.call(root.querySelectorAll('tbody tr'), unwatch);
+    root.innerHTML = '';
     ids.forEach(function (id) {
       var v = state.variants[id];
       var part = document.createElement('div'); part.className = 'boxlist';
@@ -1657,10 +1744,11 @@
       part.appendChild(add);
       var table = document.createElement('table'); table.className = 'boxes';
       table.innerHTML = '<thead><tr><th title="The number BM|n uses">#</th><th>flags</th><th>x1</th><th>y1</th><th>x2</th><th>y2</th><th>shape</th><th>gives</th><th></th><th></th><th></th><th></th></tr></thead><tbody></tbody>';
-      renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id, false);
-      table.hidden = !table.querySelector('tbody').rows.length;
+      // on the page first, so its rows can tell whether they're on screen
       part.appendChild(table);
       root.appendChild(part);
+      renderBoxes(table.querySelector('tbody'), v.boxes || (v.boxes = []), id, false);
+      table.hidden = !table.querySelector('tbody').rows.length;
     });
   }
 
@@ -1960,7 +2048,7 @@
   var ROLLS = '//EnemyRolls=';
   var KIND_COLORS = { Bonus: '#bbbbbb', Fronkeys: '#8bc34a', Frogs: '#2e7d32', Slimes: '#9c27b0', Banelings: '#ff5722', DropSlugs: '#795548',
     Worms: '#ff9800', Rhinos: '#b71c1c', Birds: '#03a9f4', Elementals: '#ffeb3b', Swarms: '#78909c', Spiders: '#e91e63', Fish: '#00bcd4', Sharks: '#3f51b5' };
-  var enemy = { info: null, table: null, rolls: null, loaded: null, selected: null, open: {}, markers: [], cache: {} };
+  var enemy = { info: null, table: null, rolls: null, loaded: null, selected: null, open: {}, groups: {}, markers: [], cache: {} };
 
   function loadEnemies(info) {
     enemy.info = info || null; enemy.table = null; enemy.rolls = null; enemy.loaded = null;
@@ -2029,34 +2117,58 @@
     return enemyLabel(p) + ': ' + (isBonus(r) ? 'from bonus ' + bonusId(r) : rollKind(p, r) + (r === null ? '' : ' #' + (r + 1)));
   }
 
-  function setRoll(i, r) { enemy.rolls[i] = r; renderEnemies(); restyleEnemy(i); }
+  // the list is rebuilt only when rows come or go: a roll redraws its row, a selection moves a class
+  function setRoll(i, r) {
+    var p = enemy.table.placements[i], row = document.getElementById('enemy-' + i), group = enemy.groups[i];
+    enemy.rolls[i] = r; restyleEnemy(i);
+    if (!row || !group || !shows(p, enemyQuery())) return renderEnemies();
+    row.parentNode.replaceChild(enemyRow(p), row);
+    countChanged(); group.count.textContent = sceneCount(group.rows);
+  }
   function selectEnemy(i, fromMap) {
-    var was = enemy.selected; enemy.selected = i;
-    renderEnemies();
+    var was = enemy.selected, at = enemy.table.placements; enemy.selected = i;
+    var row = document.getElementById('enemy-' + i);
+    // a scene open only for the old selection folds
+    var folds = was !== null && at[was].scene !== at[i].scene && !enemyQuery() && !enemy.open[at[was].scene];
+    if (row && !folds) {
+      var old = was !== null && document.getElementById('enemy-' + was);
+      if (old) old.classList.remove('sel');
+      row.classList.add('sel');
+    } else renderEnemies();
     if (was !== null) restyleEnemy(was);
     restyleEnemy(i);
-    if (fromMap) { var row = document.getElementById('enemy-' + i); if (row) row.scrollIntoView({ block: 'nearest' }); }
+    if (fromMap) { row = document.getElementById('enemy-' + i); if (row) row.scrollIntoView({ block: 'nearest' }); }
   }
 
-  function renderEnemies() {
-    var t = enemy.table, root = $('enemyList'); root.innerHTML = '';
-    if (!t) return;
+  function enemyQuery() { return $('enemyFilter').value.trim().toLowerCase(); }
+  function shows(p, q) { return !q || enemyLabel(p).toLowerCase().indexOf(q) >= 0 || rollKind(p, enemy.rolls[p.i]).toLowerCase().indexOf(q) >= 0; }
+  function sceneCount(rows) {
+    var moved = rows.filter(function (p) { return enemy.rolls[p.i] !== null; }).length;
+    return (moved ? moved + ' changed of ' : '') + rows.length;
+  }
+  function countChanged() {
     var changed = enemy.rolls.filter(function (r) { return r !== null; }).length;
     $('enemyCount').textContent = changed ? changed + ' changed' : '';
     $('enemyReset').disabled = !changed;
-    var q = $('enemyFilter').value.trim().toLowerCase();
-    var shown = t.placements.filter(function (p) { return !q || enemyLabel(p).toLowerCase().indexOf(q) >= 0 || rollKind(p, enemy.rolls[p.i]).toLowerCase().indexOf(q) >= 0; });
+  }
+  function renderEnemies() {
+    var t = enemy.table, root = $('enemyList'); root.innerHTML = '';
+    enemy.groups = {};
+    if (!t) return;
+    countChanged();
+    var q = enemyQuery();
+    var shown = t.placements.filter(function (p) { return shows(p, q); });
     var scenes = [];
     shown.forEach(function (p) { if (!scenes.length || scenes[scenes.length - 1].scene !== p.scene) scenes.push({ scene: p.scene, rows: [] }); scenes[scenes.length - 1].rows.push(p); });
     var selScene = enemy.selected !== null ? t.placements[enemy.selected].scene : null;
     scenes.forEach(function (s) {
       var open = q || enemy.open[s.scene] || s.scene === selScene;
-      var moved = s.rows.filter(function (p) { return enemy.rolls[p.i] !== null; }).length;
       var head = document.createElement('div'); head.className = 'enemy-scene';
       head.appendChild(asText((open ? '▾ ' : '▸ ') + sceneLabel(s.scene)));
-      var count = asText((moved ? moved + ' changed of ' : '') + s.rows.length); count.className = 'muted'; head.appendChild(count);
+      var count = asText(sceneCount(s.rows)); count.className = 'muted'; head.appendChild(count);
       head.onclick = function () { enemy.open[s.scene] = !open; renderEnemies(); };
       root.appendChild(head);
+      s.rows.forEach(function (p) { enemy.groups[p.i] = { count: count, rows: s.rows }; });
       if (open) s.rows.forEach(function (p) { root.appendChild(enemyRow(p)); });
     });
     if (!shown.length) root.appendChild(asText('No placeholders match.'));
