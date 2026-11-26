@@ -971,6 +971,15 @@ class Bfrp(unittest.TestCase):
         old = [] if text is None else csv_runs(text)
         self.assertEqual(B.call("PracticeGlue.Runs", out), old + [["2026-10-29 12:34:56", pickups, ms]])
 
+    @settings(max_examples=examples(100))
+    @given(st.none() | csv_rows.map(lambda r: "\n".join(r)), st.integers(-2**31, 2**31 - 1),
+           st.integers(-2**63, 2**63 - 1))
+    def test_a_reset_is_kept_but_never_read_as_a_run(self, text, pickups, ms):
+        raw = None if text is None else text.encode("utf-8")
+        out = B.call("PracticeGlue.AppendReset", raw, "2026-10-29 12:34:56", pickups, ms)
+        self.assertEqual(B.call("PracticeGlue.Runs", out), [] if text is None else csv_runs(text))
+        self.assertTrue(bytes(out).decode("utf-8").endswith("\n2026-10-29 12:34:56,%d,%d,reset\n" % (pickups, ms)))
+
     @unittest.expectedFailure
     def test_save_never_renumbers_boxes(self):
         with scratch() as d:

@@ -88,6 +88,7 @@ public static class PracticeController {
         // parsed before anything changes, so a segment that will not parse leaves things as they were
         var segment = PracticeSegment.Parse(file, variant);
         var placements = PracticeSegment.ResolvePlacements(file, variant);
+        Abandon();
         File = file;
         File.Variant = variant;
         Segment = segment;
@@ -243,6 +244,7 @@ public static class PracticeController {
     }
 
     public static void End() {
+        Abandon();
         ExportIfEdited();
         DropBriefing();
         RandomizerBoxes.Use(null);
@@ -304,6 +306,7 @@ public static class PracticeController {
 
     // everything the player sees goes now; End waits for the title, which unloads the practice save
     private static void EndAtTitle() {
+        Abandon();
         DropBriefing();
         ResetGhosts();
         PracticeEditor.Stop();
@@ -681,6 +684,20 @@ public static class PracticeController {
         Vector2 at = Characters.Sein.Position;
         if (Segment.Met(at)) {
             Finish();
+        }
+    }
+
+    // a run past its countdown that ends any way but the finish
+    private static void Abandon() {
+        if (Current != Phase.Running || File == null) {
+            return;
+        }
+
+        try {
+            File.AppendReset(DateTime.Now, Get(Touched), (long)Elapsed);
+            File.Save();
+        } catch (Exception e) {
+            Randomizer.LogError("practice: could not record the reset: " + e.Message);
         }
     }
 

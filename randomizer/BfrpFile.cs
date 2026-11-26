@@ -403,6 +403,15 @@ public class BfrpFile {
     }
 
     public void AppendRun(DateTime when, int pickups, long ms) {
+        AppendRow(when, pickups, ms, "");
+    }
+
+    // An attempt left unfinished. The fourth field keeps it out of Runs here and in older clients, which keep the line.
+    public void AppendReset(DateTime when, int pickups, long ms) {
+        AppendRow(when, pickups, ms, ",reset");
+    }
+
+    private void AppendRow(DateTime when, int pickups, long ms, string tail) {
         var raw = store.Get(Where(Variant, RunsEntry));
         var text = raw == null ? "date,pickups,ms\n" : Encoding.UTF8.GetString(raw);
         if (!text.EndsWith("\n")) {
@@ -411,7 +420,7 @@ public class BfrpFile {
 
         text += when.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
             + "," + pickups.ToString(CultureInfo.InvariantCulture)
-            + "," + ms.ToString(CultureInfo.InvariantCulture) + "\n";
+            + "," + ms.ToString(CultureInfo.InvariantCulture) + tail + "\n";
         store.Set(Where(Variant, RunsEntry), Encoding.UTF8.GetBytes(text));
     }
 

@@ -74,7 +74,7 @@ public static class PracticeHud {
 
         var average = file.Segment["timing"]["mode"].Str == "average";
         var ms = average ? file.AverageMs() : file.BestMs();
-        reference = ms < 0 ? "first run" : (average ? "avg " : "best ") + PracticeController.Clock(ms);
+        reference = ms < 0 ? "" : "(" + (average ? "avg " : "best ") + PracticeController.Clock(ms) + ")";
     }
 
     public static void ShowTally(string text) {

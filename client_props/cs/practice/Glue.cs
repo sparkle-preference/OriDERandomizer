@@ -266,6 +266,16 @@ static class PracticeGlue {
         return Store(file).Get(BfrpFile.RunsEntry);
     }
 
+    public static byte[] AppendReset(byte[] csv, string date, int pickups, long ms) {
+        var file = Scratch();
+        if (csv != null) {
+            Store(file).Set(BfrpFile.RunsEntry, csv);
+        }
+
+        file.AppendReset(DateTime.ParseExact(date, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture), pickups, ms);
+        return Store(file).Get(BfrpFile.RunsEntry);
+    }
+
     public static bool Parses(string line) {
         try {
             RandomizerBox.Parse(line);
