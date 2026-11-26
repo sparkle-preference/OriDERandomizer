@@ -201,6 +201,8 @@ public static class RandomizerEnemies {
             KeepStomp(settings, savedSettings);
         }
 
+        KeepTurn(settings, target.GetType().GetField("Settings")?.GetValue(target));
+
         var t = maker.transform;
         var pose = new[] { t.position, t.eulerAngles, t.localScale };
         if (maker != target) {
@@ -766,6 +768,17 @@ public static class RandomizerEnemies {
         } else if (field.FieldType == typeof(float)) {
             field.SetValue(settings, Mathf.Max((float)field.GetValue(settings), (float)field.GetValue(vanilla)));
         }
+    }
+
+    // a worm turns as its spot's worm did, and always at a spot that never held one: a fixed facing belongs to the spot
+    private static void KeepTurn(object settings, object spot) {
+        var field = settings.GetType().GetField("CanTurnAround");
+        if (field == null) {
+            return;
+        }
+
+        var spotField = spot == null ? null : spot.GetType().GetField("CanTurnAround");
+        field.SetValue(settings, spotField == null || (bool)spotField.GetValue(spot));
     }
 
     // exp is the spot's own enemy's, give or take a fifth
