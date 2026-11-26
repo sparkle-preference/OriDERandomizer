@@ -17,6 +17,9 @@ static class Randomizer {
 
     public static StubInventory Inventory = new StubInventory();
 
+    // a segment's enemy lines reach the seed's meta parser, which the seedfile slice covers
+    public static void ParseMetaLine(string meta) { }
+
     public static void Clear() {
         Errors.Clear();
         Logged.Clear();
@@ -35,6 +38,14 @@ class StubInventory {
     public int SetRandomizerItem(int id, int value) { return value; }
 
     public int IncRandomizerItem(int id, int value) { return value; }
+}
+
+static class RandomizerEnemies {
+    public static bool Active;
+
+    public static void ResetOptions() { }
+
+    public static void Reset() { }
 }
 
 // the source RandomizerBox and RandomizerAction can't be handed to the dll's copies of these

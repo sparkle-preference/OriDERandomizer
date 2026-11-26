@@ -428,19 +428,19 @@ def a_name_numbered_the_largest_int(names):
     return any(segment_number(n) == 2**31 - 1 for n in names)
 
 
-EXPORT_NAMES = ["segment.json", "save.sav", "runs.csv", "placements.bfr", "ghosts/pinned.ghost", "ghosts/best.ghost",
+EXPORT_NAMES = ["segment.json", "save.sav", "runs.csv", "placements.bfr", "ghosts/pinned.ghost", "ghosts/demo.ghost", "ghosts/best.ghost",
                 "ghosts/old/x.ghost", "ghosts/notes.txt", "variants/v/segment.json", "variants/v/runs.csv",
-                "variants/v/ghosts/pinned.ghost", "variants/v/ghosts/last.ghost", "variants/runs.csv", "runs.csv.bak"]
+                "variants/v/ghosts/pinned.ghost", "variants/v/ghosts/demo.ghost", "variants/v/ghosts/last.ghost", "variants/runs.csv", "runs.csv.bak"]
 
 
 def exported(entry):
-    """BfrpFile.Exported's rule: no run history, and of the ghosts only the pinned one, at the root or in a variant."""
+    """BfrpFile.Exported's rule: no run history, and of the ghosts only the demo, at the root or in a variant."""
     own = entry
     if own.startswith("variants/"):
         slash = own.find("/", len("variants/"))
         own = own if slash < 0 else own[slash + 1:]
     ghost = own.startswith("ghosts/") and own.endswith(".ghost") and "/" not in own[len("ghosts/"):]
-    return own != "runs.csv" and (not ghost or own == "ghosts/pinned.ghost")
+    return own != "runs.csv" and (not ghost or own == "ghosts/demo.ghost")
 
 
 class Folder(unittest.TestCase):
