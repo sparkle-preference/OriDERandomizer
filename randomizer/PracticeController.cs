@@ -186,6 +186,20 @@ public static class PracticeController {
             return;
         }
 
+        // a menu left up (an SA's ability tree) would hand Ori the countdown: it closes first, and the retry follows a frame later
+        if (Game.UI.MainMenuVisible && Game.UI.Menu != null) {
+            Game.UI.Menu.HideMenuScreen(true);
+            retryFrame = Time.frameCount + 1;
+            return;
+        }
+
+        RetryNow();
+    }
+
+    private static int retryFrame = -1;
+
+    private static void RetryNow() {
+        retryFrame = -1;
         // in the editor it runs what is on disk, dropping unsaved edits as Reload does
         if (PracticeEditor.Active && !PracticeEditor.Reload()) {
             return;
@@ -538,6 +552,12 @@ public static class PracticeController {
     // every frame; the clock is real time, so a stutter costs what it costs
     public static void Tick() {
         if (!Active) {
+            retryFrame = -1;
+            return;
+        }
+
+        if (retryFrame >= 0 && Time.frameCount >= retryFrame) {
+            RetryNow();
             return;
         }
 

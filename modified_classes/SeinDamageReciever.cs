@@ -222,6 +222,7 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
     }
 
     public void OnRestoreCheckpoint() {
+        restores++;
         SpriteMaterialTintColor(new Color(0f, 0f, 0f, 0f));
         CameraFrustumOptimizer.ForceUpdate();
         if (m_died) {
@@ -313,19 +314,28 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
     }
 
     public IEnumerator OnKillRoutine() {
+        var restoresAtDeath = restores;
         var deathDuration = DeathDuration;
         for (var t = 0f; t < deathDuration; t += !Sein.IsSuspended ? Time.deltaTime : 0f) {
-            if (Characters.Sein == null) {
+            if (Characters.Sein == null || restores != restoresAtDeath) {
                 yield break;
             }
 
             yield return new WaitForFixedUpdate();
         }
 
+        if (restores != restoresAtDeath) {
+            yield break;
+        }
+
         if (DifficultyController.Instance.Difficulty == DifficultyMode.OneLife) {
             InstantiateUtility.Instantiate(GameOverScreen, Vector3.zero, Quaternion.identity);
         } else {
-            UI.Fader.Fade(DeathFadeInDuration, 0f, DeathFadeOutDuration, OnKillFadeInComplete, null);
+            UI.Fader.Fade(DeathFadeInDuration, 0f, DeathFadeOutDuration, () => {
+                if (restores == restoresAtDeath) {
+                    OnKillFadeInComplete();
+                }
+            }, null);
         }
 
         yield return new WaitForSeconds(DeathFadeInDuration);
@@ -366,6 +376,9 @@ public class SeinDamageReciever : CharacterState, IDamageReciever, ISeinReceiver
     private float m_invincibleToEnemiesTimeRemaining;
 
     private bool m_died;
+
+    // A restore after a death (a practice retry loads one) has already respawned Ori: that death's routine stands down.
+    private static int restores;
 
     public GameObject GameOverScreen;
 
