@@ -17,6 +17,10 @@ public class RuntimeWorldMapIcon {
             return false;
         }
 
+        if (RandomizerIconType == RandomizerWorldMapIconType.EntranceDoor) {
+            return RandomizerEntrances.IconShown(Guid);
+        }
+
         // Sein.
         if (Guid == SeinIcon) {
             RandomizerLocationManager.Location loc;
@@ -123,7 +127,31 @@ public class RuntimeWorldMapIcon {
             case RandomizerWorldMapIconType.Experience:
                 InitStandardIcon(WorldMapIconType.Experience);
                 break;
+            case RandomizerWorldMapIconType.EntranceDoor:
+                InitEntranceDoorIcon();
+                break;
         }
+    }
+
+    // the pickup template's square mesh wearing the map altar's static material: the pickup shader
+    // pulses and turns its icon, and the texture carries its own glow, so the glow children go too
+    private void InitEntranceDoorIcon() {
+        InitStandardIcon(WorldMapIconType.HealthUpgrade);
+        m_iconGameObject.name = "entranceDoorMapIcon(Clone)";
+        // about 0.75 of a pickup icon's height
+        m_iconGameObject.transform.localScale *= 1.215f;
+        // the icon's bottom edge sits on the door's point
+        var height = m_iconGameObject.GetComponent<MeshFilter>().sharedMesh.bounds.size.y * m_iconGameObject.transform.localScale.y;
+        m_iconGameObject.transform.localPosition += new Vector3(0f, height / 2f, 0f);
+        foreach (Transform child in m_iconGameObject.transform) {
+            child.gameObject.SetActive(false);
+        }
+
+        var icon = m_iconGameObject.GetComponent<Renderer>();
+        var altar = AreaMapUI.Instance.IconManager.GetIcon(WorldMapIconType.Mapstone).GetComponent<Renderer>();
+        icon.sharedMaterial = new Material(altar.sharedMaterial);
+        UberShaderAPI.SetMainTexture(icon, EntranceDoorTexture, true);
+        UberShaderAPI.SetColor(icon, Color.white * 0.5f, true);
     }
 
     private void CreateIconFromInventory(string name, float scale) {
@@ -180,4 +208,6 @@ public class RuntimeWorldMapIcon {
     private static readonly MoonGuid SecondGinsoTree = new MoonGuid(-1906535857, 1336220761, 1768076162, -2078859709);
 
     private static Texture2D PlantTexture => field ??= RandomizerResources.LoadTexture("plant.png");
+
+    private static Texture2D EntranceDoorTexture => field ??= RandomizerResources.LoadTexture("entrance_door.png");
 }

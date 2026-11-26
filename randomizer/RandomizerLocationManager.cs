@@ -45,6 +45,7 @@ public class RandomizerLocationManager {
         ShowNoLogicHint = false;
         DoorsInLogicMask = 0;
         DoorsInSpendLogicMask = 0;
+        RandomizerEntrances.ReachableMask = 0;
         warnedDoors.Clear();
 
         if (!HaveDownloadedAreas) {
@@ -77,10 +78,15 @@ public class RandomizerLocationManager {
             }
         }
 
-        if (s_logicLastUpdated == DateTime.MinValue || File.GetLastWriteTime("areas.ori") > s_logicLastUpdated || !paths.SetEquals(s_lastLogicPaths)) {
-            Areas = OriParse.Parse("areas.ori", paths);
+        var entrance = Randomizer.Entrance;
+        var shards = Randomizer.Shards;
+        if (s_logicLastUpdated == DateTime.MinValue || File.GetLastWriteTime("areas.ori") > s_logicLastUpdated || !paths.SetEquals(s_lastLogicPaths)
+                || entrance != s_lastLogicEntrance || shards != s_lastLogicShards) {
+            Areas = OriParse.Parse("areas.ori", paths, entrance ? RandomizerEntrances.Names : null, shards);
             s_logicLastUpdated = File.GetLastWriteTime("areas.ori");
             s_lastLogicPaths = paths;
+            s_lastLogicEntrance = entrance;
+            s_lastLogicShards = shards;
 
             foreach (var location in LocationsByName.Values) {
                 location.Reachable = false;
@@ -366,6 +372,11 @@ public class RandomizerLocationManager {
             primedPaths[ksDoor.Source].Add(ksDoor.Destination);
         }
 
+        var entrance = Randomizer.Entrance;
+        if (entrance) {
+            RandomizerEntrances.PrimeKnownDoors(primedPaths, Areas);
+        }
+
         if (Randomizer.InLogicWarps) {
             foreach (var teleporter in TeleporterController.Instance.Teleporters) {
                 if (Randomizer.WarpLogicLocations.Contains(teleporter.Identifier)) {
@@ -417,6 +428,8 @@ public class RandomizerLocationManager {
         foreach (var item in LocationsByName) {
             item.Value.Reachable = reachable.Contains(item.Key);
         }
+
+        RandomizerEntrances.ReachableMask = entrance ? RandomizerEntrances.MaskOf(reachable) : 0;
 
         var spendMask = 0;
         if (KeyTiers != null) {
@@ -470,6 +483,10 @@ public class RandomizerLocationManager {
     private static DateTime s_logicLastUpdated = DateTime.MinValue;
 
     private static HashSet<string> s_lastLogicPaths;
+
+    private static bool s_lastLogicEntrance;
+
+    private static bool s_lastLogicShards;
 
     private static Dictionary<string, string> stupidBullshit = new Dictionary<string, string> {
         { "-159,-114,force", "SpiritTreeRefined" },
@@ -799,5 +816,163 @@ public class RandomizerLocationManager {
         public MoonGuid MoonGuid;
 
         public MoonGuid MapGuid;
+    }
+}
+
+// Entrance-shuffle doors in the plando builder's DOORS order (generator.py doors_inner, doors_outer, then R1);
+// bit i of TouchedId is door i, and the server reads the bits in this order.
+public static class RandomizerEntrances {
+    // kept on death: a door seen through stays known after a rollback
+    public const int TouchedId = 4093;
+
+    public static readonly EntranceDoor[] Doors = {
+        new EntranceDoor("GinsoInnerDoor", 522, 1),
+        new EntranceDoor("ForlornInnerDoor", -717, -408),
+        new EntranceDoor("HoruInnerDoor", 68, 169),
+        new EntranceDoor("L1InnerDoor", -24, 369),
+        new EntranceDoor("L2InnerDoor", -13, 301),
+        new EntranceDoor("L3InnerDoor", -28, 244),
+        new EntranceDoor("L4InnerDoor", -12, 188),
+        new EntranceDoor("R2InnerDoor", 163, 266),
+        new EntranceDoor("R3InnerDoor", 171, 218),
+        new EntranceDoor("R4InnerDoor", 144, 151),
+        new EntranceDoor("HoruEscapeInnerDoor", -242, 489),
+        new EntranceDoor("GinsoOuterDoor", 527, -43),
+        new EntranceDoor("ForlornOuterDoor", -668, -246),
+        new EntranceDoor("HoruOuterDoor", -78, 2),
+        new EntranceDoor("L1OuterDoor", 20, 371),
+        new EntranceDoor("L2OuterDoor", 13, 293),
+        new EntranceDoor("L3OuterDoor", 18, 248),
+        new EntranceDoor("L4OuterDoor", 14, 191),
+        new EntranceDoor("R2OuterDoor", 128, 288),
+        new EntranceDoor("R3OuterDoor", 126, 245),
+        new EntranceDoor("R4OuterDoor", 126, 196),
+        new EntranceDoor("HoruEscapeOuterDoor", 18, 100),
+        new EntranceDoor("R1OuterDoor", 125, 382),
+        new EntranceDoor("R1InnerDoor", 153, 413),
+    };
+
+    public static readonly string[] Names = Array.ConvertAll(Doors, door => door.Name);
+
+    // every seed sends R1 Outer to R1 Inner, so it counts as touched and its bit stays clear
+    private const int R1Outer = 22;
+
+    // door nodes the last logic sweep reached, bit i = door i
+    public static volatile int ReachableMask;
+
+    private static readonly Dictionary<MoonGuid, int> IconDoors = IconGuids();
+
+    // Door.get_key() in generator.py: the grid EnterDoor matches positions on
+    public static int GridKey(int x, int y) => (int)(Math.Floor(x / 4.0) * 4.0) * 10000 + (int)(Math.Floor(y / 4.0) * 4.0);
+
+    private static int Touched => Randomizer.Inventory.GetRandomizerItem(TouchedId);
+
+    private static bool IsTouched(int door, int touched) => door == R1Outer || (touched & (1 << door)) != 0;
+
+    private static int Mark(int touched, int door) => door == R1Outer ? touched : touched | (1 << door);
+
+    private static bool HasLine(int door) => Randomizer.DoorTable != null && Randomizer.DoorTable.ContainsKey(Doors[door].Key);
+
+    // a door's EN target as a table door: -1 for no line, or for a target off every door's exact coords
+    private static int TargetOf(int door) {
+        if (!HasLine(door)) {
+            return -1;
+        }
+
+        var at = (Vector3)Randomizer.DoorTable[Doors[door].Key];
+        return Array.FindIndex(Doors, d => d.X == at.x && d.Y == at.y);
+    }
+
+    // EnterDoor resolved key to a door: its far side is known too when that door's own line leads back
+    public static void Used(int key) {
+        var door = Array.FindIndex(Doors, d => d.Key == key);
+        if (door < 0) {
+            return;
+        }
+
+        var before = Touched;
+        var after = Mark(before, door);
+        var far = TargetOf(door);
+        if (far >= 0 && TargetOf(far) == door) {
+            after = Mark(after, far);
+        }
+
+        if (after != before) {
+            Randomizer.Inventory.SetRandomizerItem(TouchedId, after);
+            RandomizerLocationManager.UpdateReachable();
+        }
+    }
+
+    // a touched door's edge, when its line names a table door; Reachable throws on a primed target off the graph
+    public static void PrimeKnownDoors(Dictionary<string, HashSet<string>> primedPaths, AreaGraph graph) {
+        var touched = Touched;
+        for (var door = 0; door < Doors.Length; door++) {
+            var far = IsTouched(door, touched) ? TargetOf(door) : -1;
+            if (far < 0 || !graph.OutgoingConnections.ContainsKey(Doors[door].Name) || !graph.OutgoingConnections.ContainsKey(Doors[far].Name)) {
+                continue;
+            }
+
+            if (!primedPaths.ContainsKey(Doors[door].Name)) {
+                primedPaths[Doors[door].Name] = new HashSet<string>();
+            }
+
+            primedPaths[Doors[door].Name].Add(Doors[far].Name);
+        }
+    }
+
+    public static int MaskOf(HashSet<string> reachable) {
+        var mask = 0;
+        for (var door = 0; door < Doors.Length; door++) {
+            if (reachable.Contains(Doors[door].Name)) {
+                mask |= 1 << door;
+            }
+        }
+
+        return mask;
+    }
+
+    // on guids no location has, so door icons never reach pickup counts, stats or bingo
+    public static IEnumerable<RandomizerWorldMapIconManager.RandomizerWorldMapIcon> MapIcons() {
+        for (var door = 0; door < Doors.Length; door++) {
+            yield return new RandomizerWorldMapIconManager.RandomizerWorldMapIcon(RandomizerWorldMapIconType.EntranceDoor,
+                new Vector3(Doors[door].X, Doors[door].Y), IconGuid(door)) { Slot = WorldMapIconType.EnergyGateOpen };
+        }
+    }
+
+    private static MoonGuid IconGuid(int door) => new MoonGuid(0x456E7472, door, 0, 0);
+
+    private static Dictionary<MoonGuid, int> IconGuids() {
+        var guids = new Dictionary<MoonGuid, int>();
+        for (var door = 0; door < Doors.Length; door++) {
+            guids[IconGuid(door)] = door;
+        }
+
+        return guids;
+    }
+
+    // an untouched door with a line shows; the In Logic filter also wants its node reachable
+    public static bool IconShown(MoonGuid guid) {
+        if (!Randomizer.Entrance || !IconDoors.TryGetValue(guid, out var door) || IsTouched(door, Touched) || !HasLine(door)) {
+            return false;
+        }
+
+        return RandomizerSettings.CurrentFilter != RandomizerSettings.MapFilterMode.InLogic || (ReachableMask & (1 << door)) != 0;
+    }
+
+    public class EntranceDoor {
+        public EntranceDoor(string name, int x, int y) {
+            Name = name;
+            X = x;
+            Y = y;
+            Key = GridKey(x, y);
+        }
+
+        public readonly string Name;
+
+        public readonly int X;
+
+        public readonly int Y;
+
+        public readonly int Key;
     }
 }

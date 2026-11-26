@@ -950,6 +950,11 @@ public static class RandomizerSyncManager {
             sb.Append("&dl=").Append(deaths);
         }
 
+        // entrance doors used, bit i = RandomizerEntrances door i; absent on other seeds
+        if (Randomizer.Entrance) {
+            sb.Append("&ent=").Append(Characters.Sein.Inventory.GetRandomizerItem(RandomizerEntrances.TouchedId));
+        }
+
         return sb.ToString();
     }
 

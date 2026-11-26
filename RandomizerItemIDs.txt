@@ -379,6 +379,7 @@ Enhanced mode -- April Fools :)
 4090 - (Archipelago) DeathLink deaths
 4091 - (Archipelago) DeathLink linked deaths
 4092 - (Archipelago) DeathLink last seen token
+4093 - Entrance doors used (bitfield, RandomizerEntrances.Doors order; sent in the tick as ent=)
 
 4098 - Bingo won (the server's win: signal arrived)
 4099 - Finished Horu Escape

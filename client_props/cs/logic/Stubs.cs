@@ -47,6 +47,13 @@ namespace ProtogenStubs {
         public static bool GinsoTree, ForlornRuins, MountHoru;
     }
 
+    public static class RandomizerBonus {
+        public static int WaterVein, GumonSeal, Sunstone;
+        public static int WaterVeinShards() { return WaterVein; }
+        public static int GumonSealShards() { return GumonSeal; }
+        public static int SunstoneShards() { return Sunstone; }
+    }
+
     public class Teleporter {
         public bool Activated;
         public string Identifier;

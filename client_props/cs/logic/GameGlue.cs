@@ -30,6 +30,15 @@ public static class GameGlue {
         return rows;
     }
 
+    // RandomizerEntrances.Doors as [name, x, y, key] rows, in table order
+    public static List<List<object>> EntranceDoors() {
+        var rows = new List<List<object>>();
+        foreach (var door in RandomizerEntrances.Doors) {
+            rows.Add(new List<object> { door.Name, door.X, door.Y, door.Key });
+        }
+        return rows;
+    }
+
     // name -> Key for every RandomizerLocationData.All line, read as Initialize reads it; a throw reads as "!" + its type
     public static Dictionary<string, string> LocationKeys() {
         var keys = new Dictionary<string, string>();

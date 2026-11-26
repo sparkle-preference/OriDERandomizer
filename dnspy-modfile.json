@@ -488,6 +488,7 @@
         "resource_files/.sidecar_ver",
         "resource_files/cacert.pem",
         "resource_files/plant.png",
+        "resource_files/entrance_door.png",
         "resource_files/color_wheel.png",
         "resource_files/color_reticle.png",
         "resource_files/key_caps.png",

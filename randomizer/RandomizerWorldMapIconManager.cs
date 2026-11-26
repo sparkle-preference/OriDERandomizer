@@ -1,7 +1,8 @@
+using System.Linq;
 using UnityEngine;
 
 public class RandomizerWorldMapIconManager {
-    public static readonly RandomizerWorldMapIcon[] Icons = {
+    public static readonly RandomizerWorldMapIcon[] Icons = new[] {
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.WaterVein, new Vector3(503.9977f, -246.8492f), "WaterVein"),
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.CleanWater, new Vector3(524.7007f, 573.2695f), "GinsoEscapeExit"),
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.WindRestored, new Vector3(-733.6296f, -229.0052f), "ForlornEscape"),
@@ -54,12 +55,15 @@ public class RandomizerWorldMapIconManager {
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Keystone, new Vector3(-768f, -144f), "MistyKeystone4"),
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.Experience, new Vector3(-671.9f, -39.4f), "MistyGrenade"),
         new RandomizerWorldMapIcon(RandomizerWorldMapIconType.GumonSeal, new Vector3(-720f, -24f), "GumonSeal")
-    };
+    }.Concat(RandomizerEntrances.MapIcons()).ToArray();
 
     public class RandomizerWorldMapIcon {
         public MoonGuid Guid;
         public RandomizerWorldMapIconType Type;
         public Vector3 Position;
+
+        // the game's type for the icon: a HealthUpgrade still on the map keeps a save from counting as 100%
+        public WorldMapIconType Slot = WorldMapIconType.HealthUpgrade;
 
         public RandomizerWorldMapIcon(RandomizerWorldMapIconType type, Vector3 position, MoonGuid guid) {
             Guid = guid;

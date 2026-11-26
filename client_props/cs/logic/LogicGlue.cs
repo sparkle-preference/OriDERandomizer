@@ -71,7 +71,33 @@ public static class LogicGlue {
 
     // every conn as [source, destination, requirement]; a null endpoint reads as null
     public static List<List<string>> Conns(string file, List<string> sets) {
-        return Graph(file, sets).Connections.Select(c => new List<string> {
+        return Rows(Graph(file, sets));
+    }
+
+    // Conns as an Entrance seed parses them, doors being its shuffled door table
+    public static List<List<string>> EntranceConns(string file, List<string> sets, List<string> doors) {
+        return Rows(OriParse.Parse(file, new HashSet<string>(sets), doors));
+    }
+
+    // EntranceConns on a Shards seed
+    public static List<List<string>> EntranceShardConns(string file, List<string> sets, List<string> doors) {
+        return Rows(OriParse.Parse(file, new HashSet<string>(sets), doors, true));
+    }
+
+    // the shard tokens FromCharacter grants for these counts (Water Vein, Gumon Seal, Sunstone)
+    public static List<string> ShardTokens(int waterVein, int gumonSeal, int sunstone) {
+        RandomizerBonus.WaterVein = waterVein;
+        RandomizerBonus.GumonSeal = gumonSeal;
+        RandomizerBonus.Sunstone = sunstone;
+        try {
+            return Inventory.FromCharacter().Unlocks.Where(u => OriParse.ShardTeleporters.ContainsValue(u)).OrderBy(u => u).ToList();
+        } finally {
+            RandomizerBonus.WaterVein = RandomizerBonus.GumonSeal = RandomizerBonus.Sunstone = 0;
+        }
+    }
+
+    static List<List<string>> Rows(AreaGraph graph) {
+        return graph.Connections.Select(c => new List<string> {
             c.Source == null ? null : c.Source.Name,
             c.Destination == null ? null : c.Destination.Name,
             c.Requirement.ToString(),

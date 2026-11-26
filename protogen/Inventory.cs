@@ -171,6 +171,18 @@ namespace Protogen {
                 currentInventory.Unlocks.Add("HoruKey");
             }
 
+            if (RandomizerBonus.WaterVeinShards() >= 2) {
+                currentInventory.Unlocks.Add("TwoWaterVeinShards");
+            }
+
+            if (RandomizerBonus.GumonSealShards() >= 2) {
+                currentInventory.Unlocks.Add("TwoGumonSealShards");
+            }
+
+            if (RandomizerBonus.SunstoneShards() >= 2) {
+                currentInventory.Unlocks.Add("TwoSunstoneShards");
+            }
+
             foreach (var teleporter in TeleporterController.Instance.Teleporters) {
                 if (teleporter.Activated) {
                     switch (teleporter.Identifier) {

@@ -13,6 +13,7 @@ from client_props.strategies.logic import (EVENTS, PATHSETS, PRESETS, SKILLS, SP
                                            helds, path_sets, preset_paths)
 from enums import KeyMode, LogicPath, Variation, presets
 from reachable import Map, PlayerState, initial_area_by_spawn
+from seedbuilder.entrances import SHARD_TELEPORTERS
 from seedbuilder import generator
 from seedbuilder.generator import SPAWN_SPOTS, keysanity_map, warp_targets2
 from seedbuilder.oriparse import get_areas, get_path_tags, hardest_pathset_from_tags
@@ -475,6 +476,80 @@ class Parse(unittest.TestCase):
     def test_a_path_line_before_any_conn_is_no_conn(self):
         text = "home: SunkenGladesRunaway\n\tcasual Free\n"
         self.assertEqual(B.call("LogicGlue.Dangling", text, preset_paths("Casual")), [])
+
+
+# --- entrance shuffle ---
+
+KEY_DOORS = {"GinsoKey": "GinsoOuterDoor", "ForlornKey": "ForlornOuterDoor", "HoruKey": "HoruOuterDoor"}
+
+
+def entrance_doors():
+    """RandomizerEntrances.Doors as [name, x, y, key] rows."""
+    return G.call("GameGlue.EntranceDoors")
+
+
+def generator_doors():
+    """generator.py's (name, x, y) doors: doors_inner, doors_outer, then R1 Outer and Inner from randomize_entrances."""
+    with open(os.path.join(SERVER, "seedbuilder", "generator.py"), encoding="utf-8") as f:
+        r1 = {n: (int(x), int(y)) for n, x, y in re.findall(r'Door\("(R1\w+Door)", (-?\d+), (-?\d+)\)', f.read())}
+    return list(generator.doors_inner) + list(generator.doors_outer) + [(n,) + r1[n] for n in ("R1OuterDoor", "R1InnerDoor")]
+
+
+def entrance_view(conns, doors):
+    """Plain-parse conns as an Entrance world builds them: keysOnlyForDoors, then randomize_entrances' strip."""
+    out = []
+    for s, d, req in conns:
+        if s in doors and ("OuterDoor" in d or "InnerDoor" in d):
+            continue
+        kept = [p for p in req.split(", ") if not (p in KEY_DOORS and (d != KEY_DOORS[p] or "InnerDoor" in s))]
+        out.append((s, d, tuple(sorted(kept))))
+    return sorted(out)
+
+
+class Entrance(unittest.TestCase):
+    def test_the_door_table_is_the_generators(self):
+        want = [(n, x, y, generator.Door(n, x, y).get_key()) for n, x, y in generator_doors()]
+        self.assertEqual([tuple(row) for row in entrance_doors()], want)
+        self.assertEqual(len({row[3] for row in want}), len(want))
+
+    def test_every_table_door_is_a_logic_node(self):
+        nodes = set(B.call("LogicGlue.Nodes", AREAS, preset_paths("Casual")))
+        self.assertEqual(sorted(row[0] for row in entrance_doors() if row[0] not in nodes), [])
+
+    @settings(max_examples=examples(12))
+    @given(any_paths())
+    def test_an_entrance_parse_drops_door_conns_and_keys_away_from_their_doors(self, paths):
+        doors = [row[0] for row in entrance_doors()]
+        plain = B.call("LogicGlue.Conns", AREAS, list(paths))
+        got = sorted((s, d, tuple(sorted(req.split(", ")))) for s, d, req in
+                     B.call("LogicGlue.EntranceConns", AREAS, list(paths), doors))
+        self.assertEqual(got, entrance_view(plain, set(doors)))
+
+    def test_a_dungeon_key_gates_only_its_own_outer_door_from_outside(self):
+        doors = [row[0] for row in entrance_doors()]
+        gated = set()
+        for s, d, req in B.call("LogicGlue.EntranceConns", AREAS, list(PATHSETS), doors):
+            self.assertFalse(s in doors and ("OuterDoor" in d or "InnerDoor" in d), (s, d))
+            for key in set(req.split(", ")) & set(KEY_DOORS):
+                self.assertEqual((d, "InnerDoor" in s), (KEY_DOORS[key], False), (s, d, req))
+                gated.add(key)
+        self.assertEqual(gated, set(KEY_DOORS))
+
+    def test_a_shards_seed_puts_two_shards_on_each_dungeon_teleporter(self):
+        doors = [row[0] for row in entrance_doors()]
+
+        def rows(conns):
+            return sorted((s, d, tuple(sorted(req.split(", ")))) for s, d, req in conns)
+        tokens = {t: token for t, (token, _) in SHARD_TELEPORTERS.items()}
+        plain = rows(B.call("LogicGlue.EntranceConns", AREAS, list(PATHSETS), doors))
+        want = sorted((s, d, tuple(sorted(req + ((tokens[d],) if s == "TeleporterNetwork" and d in tokens else ()))))
+                      for s, d, req in plain)
+        self.assertEqual(rows(B.call("LogicGlue.EntranceShardConns", AREAS, list(PATHSETS), doors)), want)
+        self.assertEqual(sum(s == "TeleporterNetwork" and d in tokens for s, d, _ in plain), 3)
+
+    def test_two_of_a_dungeons_shards_grant_its_teleporters_token(self):
+        self.assertEqual(B.call("LogicGlue.ShardTokens", 1, 2, 3), ["TwoGumonSealShards", "TwoSunstoneShards"])
+        self.assertEqual(B.call("LogicGlue.ShardTokens", 0, 0, 0), [])
 
 
 # --- names both sides must share ---

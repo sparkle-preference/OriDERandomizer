@@ -25,7 +25,7 @@ public class AreaMapIconManager : MonoBehaviour {
                 if (runtimeWorldMapIcon == null && !collected) {
                     var worldMapIcon = new GameWorldArea.WorldMapIcon {
                         Guid = icon.Guid,
-                        Icon = WorldMapIconType.HealthUpgrade,
+                        Icon = icon.Slot,
                         IsSecret = false,
                         Position = icon.Position
                     };
@@ -35,7 +35,7 @@ public class AreaMapIconManager : MonoBehaviour {
                         }
                     );
                 } else if (runtimeWorldMapIcon != null) {
-                    runtimeWorldMapIcon.Icon = collected ? WorldMapIconType.Invisible : WorldMapIconType.HealthUpgrade;
+                    runtimeWorldMapIcon.Icon = collected ? WorldMapIconType.Invisible : icon.Slot;
                 }
             }
 

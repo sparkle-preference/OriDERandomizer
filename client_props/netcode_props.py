@@ -467,6 +467,20 @@ class SeenLayout(unittest.TestCase):
         self.assertEqual(form["version"], VERSION)
         self.assertNotIn("aph", form)
         self.assertNotIn("dl", form)
+        self.assertNotIn("ent", form)
+
+    @settings(max_examples=examples(30), deadline=None)
+    @given(st.integers(0, 2**24 - 1))
+    def test_the_tick_form_carries_entrance_doors_only_on_entrance_seeds(self, touched):
+        from ws import _qs
+        fresh()
+        B.call("NetGlue.SetItem", B.get("RandomizerEntrances.TouchedId"), touched)
+        self.assertNotIn("ent", _qs(B.call("RandomizerSyncManager.TickPayload")))
+        B.set("Randomizer.Entrance", True)
+        try:
+            self.assertEqual(_qs(B.call("RandomizerSyncManager.TickPayload"))["ent"], str(touched))
+        finally:
+            B.set("Randomizer.Entrance", False)
 
 
 # --- totality ---

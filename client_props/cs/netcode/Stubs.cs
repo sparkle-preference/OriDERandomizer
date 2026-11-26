@@ -89,7 +89,7 @@ public class KeysanityStub {
 
 public static class Randomizer {
     public static string VERSION = "0.0.0";
-    public static bool ChaosVerbose, CluesMode, CreditsActive, ForceTrees, Shards, Sync, WorldTour, fragsEnabled;
+    public static bool ChaosVerbose, CluesMode, CreditsActive, Entrance, ForceTrees, Shards, Sync, WorldTour, fragsEnabled;
     public static float DamageModifier = 1f;
     public static int PlayerCount, SyncMode, fragKeyFinish, GrenadeSlot = -1, StompSlot = -1;
     public static string SyncId = "", GrenadeZone, StompZone;

@@ -9,5 +9,6 @@ public enum RandomizerWorldMapIconType {
     SkillTree,
     GumonSeal,
     Keystone,
-    Experience
+    Experience,
+    EntranceDoor
 }

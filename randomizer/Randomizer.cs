@@ -1486,14 +1486,14 @@ public static class Randomizer {
 
         var num = (int)(Math.Floor((int)position.x / GridFactor) * GridFactor) * 10000 + (int)(Math.Floor((int)position.y / GridFactor) * GridFactor);
         if (DoorTable.ContainsKey(num)) {
-            Characters.Sein.Position = (Vector3)DoorTable[num];
+            UseDoor(num);
             return;
         }
 
         for (var i = -1; i <= 1; i++) {
             for (var j = -1; j <= 1; j++) {
                 if (DoorTable.ContainsKey(num + (int)GridFactor * (10000 * i + j))) {
-                    Characters.Sein.Position = (Vector3)DoorTable[num + (int)GridFactor * (10000 * i + j)];
+                    UseDoor(num + (int)GridFactor * (10000 * i + j));
                     return;
                 }
             }
@@ -1502,13 +1502,18 @@ public static class Randomizer {
         for (var k = -2; k <= 2; k += 4) {
             for (var l = -1; l <= 1; l++) {
                 if (DoorTable.ContainsKey(num + (int)GridFactor * (10000 * k + l))) {
-                    Characters.Sein.Position = (Vector3)DoorTable[num + (int)GridFactor * (10000 * k + l)];
+                    UseDoor(num + (int)GridFactor * (10000 * k + l));
                     return;
                 }
             }
         }
 
         printInfo("Error using door at " + (int)position.x + ", " + (int)position.y);
+    }
+
+    private static void UseDoor(int key) {
+        Characters.Sein.Position = (Vector3)DoorTable[key];
+        RandomizerEntrances.Used(key);
     }
 
     public static int ordHash(string s) {

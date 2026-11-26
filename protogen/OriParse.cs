@@ -5,7 +5,8 @@ using System.Linq;
 
 namespace Protogen {
     public static class OriParse {
-        public static AreaGraph Parse(string filename, HashSet<string> logicSets) {
+        // entranceDoors: the shuffled doors of an Entrance seed, null on any other seed; shards: its key mode is Shards
+        public static AreaGraph Parse(string filename, HashSet<string> logicSets, ICollection<string> entranceDoors = null, bool shards = false) {
             var nodeDictionary = new Dictionary<string, Node>();
             var connections = new List<Connection>();
             Node currentHome = null;
@@ -62,6 +63,10 @@ namespace Protogen {
                 }
             }
 
+            if (entranceDoors != null) {
+                connections = EntranceShuffled(connections, entranceDoors, shards);
+            }
+
             for (var i = 1; i <= 9; i++) {
                 var adjustedCount = i == 9 ? 11 : i == 8 ? 9 : i;
                 var node = new Node("Map" + i, NodeType.Pickup);
@@ -75,6 +80,52 @@ namespace Protogen {
                 connections
             );
         }
+
+        // generator.py keysOnlyForDoors and randomize_entrances: a dungeon key gates only its own outer door
+        // from a home outside it, and a shuffled door keeps no conn to any door
+        private static List<Connection> EntranceShuffled(List<Connection> connections, ICollection<string> doors, bool shards) {
+            var kept = new List<Connection>();
+            foreach (var conn in connections) {
+                if (conn.Source == null || conn.Destination == null) {
+                    kept.Add(conn);
+                    continue;
+                }
+
+                var home = conn.Source.Name;
+                var target = conn.Destination.Name;
+                if (doors.Contains(home) && (target.Contains("OuterDoor") || target.Contains("InnerDoor"))) {
+                    continue;
+                }
+
+                foreach (var key in DungeonKeyDoors) {
+                    if (target != key.Value || home.Contains("InnerDoor")) {
+                        conn.Requirement.Unlocks.Remove(key.Key);
+                    }
+                }
+
+                string token;
+                if (shards && home == "TeleporterNetwork" && ShardTeleporters.TryGetValue(target, out token)) {
+                    conn.Requirement.Unlocks.Add(token);
+                }
+
+                kept.Add(conn);
+            }
+
+            return kept;
+        }
+
+        // generator.py's Entrance + Shards teleporters: each also wants two of its dungeon's shards (Inventory grants the token)
+        public static readonly Dictionary<string, string> ShardTeleporters = new Dictionary<string, string> {
+            { "GinsoTeleporter", "TwoWaterVeinShards" },
+            { "ForlornTeleporter", "TwoGumonSealShards" },
+            { "HoruTeleporter", "TwoSunstoneShards" },
+        };
+
+        private static readonly Dictionary<string, string> DungeonKeyDoors = new Dictionary<string, string> {
+            { "GinsoKey", "GinsoOuterDoor" },
+            { "ForlornKey", "ForlornOuterDoor" },
+            { "HoruKey", "HoruOuterDoor" },
+        };
 
         private static Inventory ParseRequirement(IEnumerable<string> requirements) {
             var resultInventory = new Inventory();
