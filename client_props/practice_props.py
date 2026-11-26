@@ -1,6 +1,7 @@
 """Practice containers: segment.json, the .bfrp zip and its folder form, the practice folder, defaults, seed boxes."""
 import contextlib
 import csv
+import hashlib
 import io
 import json
 import math
@@ -709,6 +710,76 @@ class Defaults(unittest.TestCase):
         for n in calls:
             self.assertEqual(B.call("PracticeFolder.SafeName", n), n)
             self.assertNotIn(n.lower(), ledgered)
+
+
+    def test_upgrade_swaps_only_retired_demos_and_only_once(self):
+        old, other, mine, new = b"old demo", b"old other", b"my demo", b"new demo"
+        retired = [hashlib.sha1(old).hexdigest(), hashlib.sha1(other).hexdigest()]
+
+        def seg(extra):
+            return dict({"segment.json": b'{"name":"x"}', "save.sav": b"\x01"}, **extra)
+
+        def zipped(entries):
+            out = io.BytesIO()
+            with zipfile.ZipFile(out, "w", zipfile.ZIP_STORED) as z:
+                for name, data in entries.items():
+                    z.writestr(name, data)
+            return out.getvalue()
+
+        def entries(path):
+            with zipfile.ZipFile(path) as z:
+                return {i.filename: z.read(i) for i in z.infolist()}
+
+        variants = {"variants/a/segment.json": b"{}", "variants/b/segment.json": b"{}"}
+        with scratch() as d:
+            folder = os.path.join(d, "practice")
+            os.makedirs(folder)
+            with open(os.path.join(folder, ".defaults"), "w", encoding="utf-8", newline="") as f:
+                f.write("Root\nVariants\nMine\nFolder\nDown\nSame\n")
+            local = {
+                "Root": seg({"ghosts/demo.ghost": old, "ghosts/fastest.ghost": b"fast", "runs.csv": b"2026-11-24 10:00:00,0,1234\n"}),
+                "Variants": seg(dict(variants, **{"variants/a/ghosts/demo.ghost": other, "variants/b/ghosts/demo.ghost": mine})),
+                "Mine": seg({"ghosts/demo.ghost": mine}),
+                "Down": seg({"ghosts/demo.ghost": old}),
+                "Same": seg({"ghosts/demo.ghost": old}),
+                "Stray": seg({"ghosts/demo.ghost": old}),
+            }
+            for name, files in local.items():
+                with open(os.path.join(folder, name + ".bfrp"), "wb") as f:
+                    f.write(zipped(files))
+            write_tree(os.path.join(folder, "Folder"), list(seg({"ghosts/demo.ghost": old}).items()))
+            serve = {
+                "Root": zipped(seg({"ghosts/demo.ghost": new})),
+                "Variants": zipped(seg(dict(variants, **{"variants/a/ghosts/demo.ghost": new, "variants/b/ghosts/demo.ghost": new}))),
+                "Mine": zipped(seg({"ghosts/demo.ghost": new})),
+                "Folder": zipped(seg({"ghosts/demo.ghost": new})),
+                "Same": zipped(seg({"ghosts/demo.ghost": old})),
+                "Stray": zipped(seg({"ghosts/demo.ghost": new})),
+            }
+            before = tree_of(folder)
+            changed, calls = B.call("PracticeGlue.Upgrade", folder, retired, serve)
+            self.assertEqual(sorted(changed), ["Root", "Variants"])
+            # only delivered .bfrp files holding a retired demo are fetched at all
+            self.assertEqual(sorted(calls), ["Down", "Root", "Same", "Variants"])
+
+            root = entries(os.path.join(folder, "Root.bfrp"))
+            self.assertEqual(root["ghosts/demo.ghost"], new)
+            self.assertEqual(root["ghosts/fastest.ghost"], b"fast")
+            self.assertEqual(root["runs.csv"], local["Root"]["runs.csv"])
+            both = entries(os.path.join(folder, "Variants.bfrp"))
+            self.assertEqual(both["variants/a/ghosts/demo.ghost"], new)
+            self.assertEqual(both["variants/b/ghosts/demo.ghost"], mine)
+            after = tree_of(folder)
+            for name in ("Mine.bfrp", "Down.bfrp", "Same.bfrp", "Stray.bfrp", ".defaults"):
+                self.assertEqual(after[name], before[name], name)
+            self.assertEqual({n: v for n, v in after.items() if n.startswith("Folder/")},
+                             {n: v for n, v in before.items() if n.startswith("Folder/")})
+            self.assertEqual([n for n in after if ".bfrp-tmp" in n.lower()], [])
+
+            again, calls2 = B.call("PracticeGlue.Upgrade", folder, retired, serve)
+            self.assertEqual(again, [])
+            self.assertEqual(sorted(calls2), ["Down", "Same"])
+            self.assertEqual(B.call("PracticeGlue.Upgrade", folder, [], serve), [[], []])
 
 
 # --- bfrp ---

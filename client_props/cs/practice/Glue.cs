@@ -194,6 +194,24 @@ static class PracticeGlue {
         return new List<object> { added, calls };
     }
 
+    // serve[name]: the .bfrp the server hands out; a name it lacks is a 404
+    public static List<object> Upgrade(string folder, List<string> retired, Dictionary<string, byte[]> serve) {
+        var calls = new List<string>();
+        Func<string, string, int> download = (name, to) => {
+            calls.Add(name);
+            byte[] data;
+            if (!serve.TryGetValue(name, out data)) {
+                File.WriteAllBytes(to, Encoding.UTF8.GetBytes("not found"));
+                return 404;
+            }
+
+            File.WriteAllBytes(to, data);
+            return 200;
+        };
+        var changed = PracticeDefaults.Upgrade(folder, new HashSet<string>(retired), download);
+        return new List<object> { changed, calls };
+    }
+
     // --- bfrp ---
 
     // the root's boxes, then each variant's, as [variant, [[line, deleted]...]]

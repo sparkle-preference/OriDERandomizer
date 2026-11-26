@@ -55,7 +55,13 @@ public static class PracticeDefaults {
                 listed = offered;
             }
 
-            Sync(folder, offered, (name, to) => NativeWebSocket.HttpDownload(url + "/" + Uri.EscapeDataString(name + PracticeFolder.Extension), to));
+            Func<string, string, int> download = (name, to) =>
+                NativeWebSocket.HttpDownload(url + "/" + Uri.EscapeDataString(name + PracticeFolder.Extension), to);
+            Sync(folder, offered, download);
+            // a session in progress would save its own copy of the file over the swap
+            if (!PracticeController.Active) {
+                Upgrade(folder, Retired(url + "-retired"), download);
+            }
         } catch (Exception e) {
             Randomizer.log("practice defaults: " + e.Message);
         }
@@ -88,6 +94,104 @@ public static class PracticeDefaults {
         }
 
         return added;
+    }
+
+    // SHA-1s, lowercase hex, of demo ghosts the server once shipped and has since replaced; none when unreachable
+    private static HashSet<string> Retired(string url) {
+        var retired = new HashSet<string>();
+        var list = Path.Combine(Path.GetTempPath(), "orirando_practice_retired.txt");
+        try {
+            File.Delete(list);
+            if (NativeWebSocket.HttpDownload(url, list) == 200 && File.Exists(list)) {
+                foreach (var line in File.ReadAllLines(list, Encoding.UTF8)) {
+                    var hash = line.Trim().ToLowerInvariant();
+                    if (hash.Length == 40 && hash.All(c => (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) {
+                        retired.Add(hash);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Randomizer.log("practice defaults: retired demos: " + e.Message);
+        } finally {
+            try {
+                File.Delete(list);
+            } catch (Exception) {
+            }
+        }
+
+        return retired;
+    }
+
+    // Each delivered .bfrp whose demo ghost is on the retired list takes the server's current one. A demo the
+    // player made is on no such list, so it stays, and a swapped one no longer matches. Returns the names changed.
+    public static List<string> Upgrade(string folder, ICollection<string> retired, Func<string, string, int> download) {
+        var changed = new List<string>();
+        if (retired.Count == 0) {
+            return changed;
+        }
+
+        foreach (var name in Delivered(Path.Combine(folder, Ledger))) {
+            var path = Path.Combine(folder, name + PracticeFolder.Extension);
+            if (!File.Exists(path)) {
+                continue;
+            }
+
+            var part = Path.Combine(folder, name + FolderStore.TempSuffix);
+            try {
+                if (Stale(BfrpFile.Load(path), retired).Count == 0) {
+                    continue;
+                }
+
+                var status = download(name, part);
+                if (status != 200) {
+                    Randomizer.log($"practice defaults: {name} gave {status}");
+                    continue;
+                }
+
+                var fresh = BfrpFile.Load(part);
+                // read again just before writing, to keep anything saved while the download ran
+                var mine = BfrpFile.Load(path);
+                var swapped = false;
+                foreach (var variant in Stale(mine, retired)) {
+                    var demo = fresh.GetGhost(variant, BfrpFile.DemoGhost);
+                    if (demo != null && !retired.Contains(Sha1(demo))) {
+                        mine.SetGhost(variant, BfrpFile.DemoGhost, demo);
+                        swapped = true;
+                    }
+                }
+
+                if (swapped) {
+                    mine.Save();
+                    changed.Add(name);
+                    Randomizer.log("practice defaults: new demo ghosts in " + name);
+                }
+            } catch (Exception e) {
+                Randomizer.log("practice defaults: " + name + ": " + e.Message);
+            } finally {
+                try {
+                    File.Delete(part);
+                } catch (Exception) {
+                }
+            }
+        }
+
+        return changed;
+    }
+
+    // the variants ("" for the root) whose demo ghost is retired
+    private static List<string> Stale(BfrpFile file, ICollection<string> retired) {
+        var variants = file.Variants;
+        variants.Insert(0, "");
+        return variants.Where(variant => {
+            var demo = file.GetGhost(variant, BfrpFile.DemoGhost);
+            return demo != null && retired.Contains(Sha1(demo));
+        }).ToList();
+    }
+
+    public static string Sha1(byte[] data) {
+        using (var sha = System.Security.Cryptography.SHA1.Create()) {
+            return BitConverter.ToString(sha.ComputeHash(data)).Replace("-", "").ToLowerInvariant();
+        }
     }
 
     // fetched beside its final name and moved in once it loads, so the chooser never lists half a file
