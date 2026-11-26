@@ -28,9 +28,17 @@ public static class RandomizerGhost {
         public Vector2 SoulLink;
         // a menu is up on their side
         public bool InMenu;
+        // which menu, while InMenu: MenuPause, MenuMap or MenuTree
+        public int Menu;
+        // their skill tree, one bit per skill in lane order; only filled while the tree is up
+        public uint Skills;
         // no Ori to sample: they are on the title screen
         public bool OnTitle;
     }
+
+    public const int MenuPause = 0;
+    public const int MenuMap = 1;
+    public const int MenuTree = 2;
 
     public static void Update() {
         try {
@@ -453,6 +461,7 @@ public static class RandomizerGhost {
         var charger = Charger();
         Vector2 bashTarget;
         var bashAngle = BashAim(clip == null ? null : clip.name, out bashTarget);
+        var menu = MenuOpen();
         sample = new Sample {
             Charge = charger == null ? 0 : (charger.IsCharged ? 2 : (charger.IsCharging ? 1 : 0)),
             BashAngle = bashAngle,
@@ -462,6 +471,8 @@ public static class RandomizerGhost {
             Triple = OnLastAirJump(),
             SoulLink = SoulLinkAt(),
             InMenu = UI.MainMenuVisible,
+            Menu = menu,
+            Skills = menu == MenuTree ? SkillBits() : 0u,
             Time = at,
             Position = sprite.position,
             Rotation = sprite.rotation,
@@ -473,6 +484,72 @@ public static class RandomizerGhost {
         Held = sample;
         Have = true;
         return true;
+    }
+
+    private static int MenuOpen() {
+        var menu = UI.Menu;
+        if (menu == null || !menu.MainMenuVisible) {
+            return MenuPause;
+        }
+
+        switch (menu.CurrentScreen) {
+            case MenuScreenManager.Screens.SkillTree:
+                return MenuTree;
+            case MenuScreenManager.Screens.WorldMap:
+                return MenuMap;
+            default:
+                return MenuPause;
+        }
+    }
+
+    // The skill menu's three lanes (red, purple, aqua), each from its first skill to its last.
+    private static readonly System.Func<PlayerAbilities, CharacterAbility>[] TreeOrder = {
+        p => p.QuickFlame, p => p.SparkFlame, p => p.ChargeFlameBurn, p => p.SplitFlameUpgrade,
+        p => p.GrenadeUpgrade, p => p.CinderFlame, p => p.StompUpgrade, p => p.RapidFire,
+        p => p.ChargeFlameBlast, p => p.UltraSplitFlame,
+        p => p.Magnet, p => p.MapMarkers, p => p.HealthEfficiency, p => p.UltraMagnet,
+        p => p.EnergyEfficiency, p => p.AbilityMarkers, p => p.SoulEfficiency, p => p.HealthMarkers,
+        p => p.EnergyMarkers, p => p.Sense,
+        p => p.Rekindle, p => p.Regroup, p => p.ChargeFlameEfficiency, p => p.AirDash,
+        p => p.UltraSoulFlame, p => p.ChargeDash, p => p.WaterBreath, p => p.SoulFlameEfficiency,
+        p => p.DoubleJumpUpgrade, p => p.UltraDefense
+    };
+
+    public const int TreeSkills = 30;
+
+    internal static uint SkillBits() {
+        var sein = Characters.Sein;
+        var abilities = sein == null ? null : sein.PlayerAbilities;
+        if (abilities == null) {
+            return 0u;
+        }
+
+        var bits = 0u;
+        for (var i = 0; i < TreeOrder.Length; i++) {
+            var ability = TreeOrder[i](abilities);
+            if (ability != null && ability.HasAbility) {
+                bits |= 1u << i;
+            }
+        }
+
+        return bits;
+    }
+
+    // The skill leveled between two samples, or -1. Both must be on the tree: one that only
+    // just opened it shows what it already had, not what it just bought.
+    internal static int Leveled(Sample before, Sample after) {
+        if (!before.InMenu || !after.InMenu || before.Menu != MenuTree || after.Menu != MenuTree) {
+            return -1;
+        }
+
+        var gained = after.Skills & ~before.Skills;
+        for (var bit = TreeSkills - 1; bit >= 0; bit--) {
+            if ((gained & (1u << bit)) != 0) {
+                return bit;
+            }
+        }
+
+        return -1;
     }
 
     // Death switches Ori off without destroying it, so Sprite() keeps handing back the corpse.
@@ -534,6 +611,8 @@ public static class RandomizerGhost {
         sample.Time = at;
         sample.OnTitle = true;
         sample.InMenu = false;
+        sample.Menu = MenuPause;
+        sample.Skills = 0u;
         sample.Died = false;
         sample.Charge = 0;
         sample.Triple = false;
@@ -949,6 +1028,7 @@ public static class RandomizerGhost {
         var worstClipTime = 0f;
         var wrongNames = 0;
         var wrongLinks = 0;
+        var wrongMenus = 0;
         var headerFaults = 0;
         var bytes = 0;
 
@@ -979,13 +1059,19 @@ public static class RandomizerGhost {
                     (!float.IsNaN(sample.SoulLink.x) && (back.SoulLink - sample.SoulLink).magnitude > 0.001f)) {
                 wrongLinks++;
             }
+
+            if (back.InMenu != sample.InMenu || (sample.InMenu && back.Menu != sample.Menu) ||
+                    (sample.InMenu && sample.Menu == MenuTree && back.Skills != sample.Skills)) {
+                wrongMenus++;
+            }
         }
 
         Randomizer.log("ghost codec: " + samples.Count + " samples, " +
             (bytes / (float)samples.Count).ToString("F1") + " bytes mean; worst position " +
             worstPosition.ToString("F4") + ", worst rotation " + worstRotation.ToString("F2") +
             " deg, worst clip time " + worstClipTime.ToString("F4") + "s; " + wrongNames +
-            " names wrong, " + wrongLinks + " links wrong, " + headerFaults + " headers wrong; table " +
+            " names wrong, " + wrongLinks + " links wrong, " + wrongMenus + " menus wrong, " +
+            headerFaults + " headers wrong; table " +
             RandomizerGhostAnimations.Names.Length + " clips, hash " +
             RandomizerGhostAnimations.Hash.ToString("X8"));
     }

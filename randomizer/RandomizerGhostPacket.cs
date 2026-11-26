@@ -12,12 +12,13 @@ using Sample = RandomizerGhost.Sample;
 //   f32  t              u8   roll                             f32 aimX, aimY
 //   f32  x, y                                                 u8  wallAngle
 //                                                             f32 soulX, soulY   (flags2)
+//                                                             u32 skills         (flags2)
 //
-// 22 bytes for ordinary movement, 48 (MaxSize) with every optional field present.
+// 22 bytes for ordinary movement, 52 (MaxSize) with every optional field present.
 public static class RandomizerGhostPacket {
     public const byte Version = 1;
 
-    public const int MaxSize = 48;
+    public const int MaxSize = 52;
 
     private const int FaceLeft = 1 << 0;
     private const int Charging = 1 << 1;
@@ -31,6 +32,9 @@ public static class RandomizerGhostPacket {
     private const int SoulLinked = 1 << 0;
     private const int InMenu = 1 << 1;
     private const int OnTitle = 1 << 2;
+    // which menu, while InMenu; neither is the pause menu
+    private const int OnMap = 1 << 3;
+    private const int OnTree = 1 << 4;
 
     // Ori's sprite mirrors by turning 180 degrees about Y, not by a negative scale.
     private static readonly Quaternion Flip = Quaternion.Euler(0f, 180f, 0f);
@@ -51,6 +55,8 @@ public static class RandomizerGhostPacket {
         if (!float.IsNaN(sample.SoulLink.x)) { flags2 |= SoulLinked; }
         if (sample.InMenu) { flags2 |= InMenu; }
         if (sample.OnTitle) { flags2 |= OnTitle; }
+        if (sample.InMenu && sample.Menu == RandomizerGhost.MenuMap) { flags2 |= OnMap; }
+        if (sample.InMenu && sample.Menu == RandomizerGhost.MenuTree) { flags2 |= OnTree; }
 
         var at = 0;
         into[at++] = Version;
@@ -84,6 +90,10 @@ public static class RandomizerGhostPacket {
         if ((flags2 & SoulLinked) != 0) {
             at = F32(into, at, sample.SoulLink.x);
             at = F32(into, at, sample.SoulLink.y);
+        }
+
+        if ((flags2 & OnTree) != 0) {
+            at = U32(into, at, sample.Skills);
         }
 
         return at;
@@ -127,6 +137,8 @@ public static class RandomizerGhostPacket {
         sample.Died = (flags & Dead) != 0;
         sample.InMenu = (flags2 & InMenu) != 0;
         sample.OnTitle = (flags2 & OnTitle) != 0;
+        sample.Menu = (flags2 & OnTree) != 0 ? RandomizerGhost.MenuTree
+            : ((flags2 & OnMap) != 0 ? RandomizerGhost.MenuMap : RandomizerGhost.MenuPause);
 
         sample.BashAngle = float.NaN;
         sample.BashTarget = new Vector2(float.NaN, float.NaN);
@@ -163,6 +175,11 @@ public static class RandomizerGhostPacket {
             }
 
             sample.SoulLink = new Vector2(sx, sy);
+        }
+
+        if ((flags2 & OnTree) != 0 && at + 4 <= length) {
+            sample.Skills = (uint)(from[at] | (from[at + 1] << 8) | (from[at + 2] << 16) | (from[at + 3] << 24));
+            at += 4;
         }
 
         return true;

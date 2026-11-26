@@ -99,6 +99,7 @@ public static class PracticeController {
 
         awaitingStart = false;
         Randomizer.unpinMessage();
+        PracticeBriefingOverlay.Hide();
         RandomizerBoxes.Use(Segment.Boxes);
         Placements = placements;
         ResetGhosts();
@@ -200,6 +201,8 @@ public static class PracticeController {
             awaitingStart = false;
             Randomizer.unpinMessage();
         }
+
+        PracticeBriefingOverlay.Hide();
     }
 
     // once a session, not once an attempt
@@ -605,8 +608,13 @@ public static class PracticeController {
                     Randomizer.pinMessage(Segment.About + "\n\npress [[Retry Practice Segment]] to start");
                 }
 
+                PracticeBriefingOverlay.Show();
                 return;
             }
+
+            // the overlay: full on the briefing, fading over every countdown, gone by GO, hidden under a menu
+            PracticeBriefingOverlay.Tick(Game.UI.MainMenuVisible ? 0f
+                : (awaitingStart ? 1f : Countdown / CountdownSeconds));
 
             // suspension is counted, so the world stays frozen under a menu; only the numbers hold
             if (Game.UI.MainMenuVisible) {
@@ -631,6 +639,7 @@ public static class PracticeController {
             }
 
             if (Countdown <= 0f) {
+                PracticeBriefingOverlay.Hide();
                 Current = Phase.Running;
                 // the run starts uncharged, whatever the countdown let through
                 Uncharge();

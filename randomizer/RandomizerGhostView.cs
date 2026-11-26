@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using CatlikeCoding.TextBox;
 using Core;
 using Game;
 using UnityEngine;
@@ -78,13 +77,15 @@ public class RandomizerGhostView {
         Drop(ref AimObject);
         Drop(ref WallObject);
         Drop(ref LinkObject);
-        Drop(ref LabelObject);
+        if (Badge != null) {
+            Badge.Drop();
+            Badge = null;
+        }
+
         GhostTransform = null;
         GhostAnimator = null;
         ArrowPivot = null;
         AimRenderer = null;
-        LabelBox = null;
-        Labelled = null;
     }
 
     // Hiding is SetActive: it stops the animator, and transforms still apply while inactive.
@@ -97,12 +98,6 @@ public class RandomizerGhostView {
         if (!hidden) {
             // a corpse stays down: Dead only acts when the death flag changes
             GhostObject.SetActive(!DeadShown);
-            if (LabelObject != null) {
-                LabelObject.SetActive(Labelled != null);
-                LabelFresh = true;
-                LabelAlpha = 0f;
-            }
-
             // the animator missed everything it slept through, so make the next Pose re-seat it
             Posed = null;
         }
@@ -133,9 +128,13 @@ public class RandomizerGhostView {
         // faded out where it stood: now it can stop costing anything
         if (Veil <= 0f && Hidden && !Leaving && GhostObject.activeSelf) {
             GhostObject.SetActive(false);
-            if (LabelObject != null) {
-                LabelObject.SetActive(false);
+            if (Badge != null) {
+                Badge.Hide();
             }
+        }
+
+        if (Badge != null && GhostTransform != null && !(Hidden && Veil <= 0f)) {
+            Badge.Step(GhostTransform.position, Faded * Veil, FadeIn, FadeOut);
         }
     }
 
@@ -153,10 +152,6 @@ public class RandomizerGhostView {
         var faded = new Color(Shade.r, Shade.g, Shade.b, Shade.a * alpha);
         foreach (var renderer in GhostObject.GetComponentsInChildren<Renderer>(true)) {
             UberShaderAPI.SetColor(renderer, faded, true);
-        }
-
-        if (LabelObject != null) {
-            Paint(LabelObject, alpha * LabelAlpha);
         }
     }
 
@@ -188,6 +183,11 @@ public class RandomizerGhostView {
             Cursor++;
             if (!reseek && !Hidden && RandomizerGhost.Began(samples[Cursor], samples[Cursor - 1])) {
                 Effects(samples[Cursor], VelocityAt(samples, Cursor));
+            }
+
+            var leveled = reseek ? -1 : RandomizerGhost.Leveled(samples[Cursor - 1], samples[Cursor]);
+            if (leveled >= 0 && !Hidden) {
+                BadgeFor().Flash(leveled);
             }
         }
 
@@ -482,15 +482,10 @@ public class RandomizerGhostView {
         LinkObject.transform.position = where;
     }
 
-    // Seconds this ghost has stood under "..."; the coordinator takes it down after a while.
+    // Seconds this ghost has stood on the title; the coordinator takes it down after a while.
     public float TitleFor { get { return TitleSince < 0f ? 0f : Time.time - TitleSince; } }
 
     private float TitleSince = -1f;
-
-    // what a peer in a menu wears; a static so the glyph can be tried live
-    internal static string PauseGlyph = "II";
-
-    private const float LabelHeight = 0.8f;
 
     // Every way of not being there takes this beat; coming back takes the shorter one.
     // Statics, so both can be tuned live.
@@ -498,114 +493,27 @@ public class RandomizerGhostView {
 
     internal static float FadeIn = 0.05f;
 
-    // the label's height in world units, whatever size the hint text comes at
-    private const float LabelSize = 1f;
-
-    // A word over the head for a peer who is not really there: "..." on the title, a pause mark
-    // in a menu. Followed by position, so Ori's flip and scale stay out of it.
+    // A peer who is not really there wears where they are instead: the title, the map, the skill
+    // tree, or any other menu.
     private void Status(Sample from) {
-        var text = from.OnTitle ? "..." : (from.InMenu ? PauseGlyph : null);
-        if (text == null && (LabelObject == null || !LabelObject.activeSelf)) {
+        var kind = from.OnTitle ? RandomizerGhostBadge.Kind.Title
+            : !from.InMenu ? RandomizerGhostBadge.Kind.None
+            : from.Menu == RandomizerGhost.MenuTree ? RandomizerGhostBadge.Kind.Tree
+            : from.Menu == RandomizerGhost.MenuMap ? RandomizerGhostBadge.Kind.Map
+            : RandomizerGhostBadge.Kind.Pause;
+        if (kind == RandomizerGhostBadge.Kind.None && Badge == null) {
             return;
         }
 
-        if (LabelObject == null && !MakeLabel()) {
-            return;
-        }
-
-        if (!LabelObject.activeSelf) {
-            LabelObject.SetActive(true);
-            LabelFresh = true;
-            LabelAlpha = 0f;
-            Paint(LabelObject, 0f);
-        }
-
-        // TextBox resets its text when it comes up, so ours waits for the frame after
-        if (LabelFresh) {
-            LabelFresh = false;
-            Labelled = null;
-            return;
-        }
-
-        if (text != null && Labelled != text) {
-            Labelled = text;
-            LabelBox.SetText(text);
-            LabelBox.RenderText();
-            var height = LabelBox.boundsTop - LabelBox.boundsBottom;
-            if (height > 0.001f) {
-                LabelObject.transform.localScale = Vector3.one * (LabelSize / height);
-            }
-        }
-
-        var beat = text == null ? FadeOut : FadeIn;
-        LabelAlpha = Mathf.MoveTowards(LabelAlpha, text == null ? 0f : 1f, Time.deltaTime / beat);
-        var alpha = Faded * Veil * LabelAlpha;
-        if (Mathf.Abs(alpha - LabelPainted) > 0.001f) {
-            LabelPainted = alpha;
-            Paint(LabelObject, alpha);
-        }
-        if (LabelAlpha <= 0f) {
-            Labelled = null;
-            LabelObject.SetActive(false);
-            return;
-        }
-
-        LabelObject.transform.position = GhostTransform.position + Vector3.up * LabelHeight;
-        LabelObject.transform.rotation = Quaternion.identity;
+        BadgeFor().Show(kind, from.Skills);
     }
 
-    private void Paint(GameObject target, float alpha) {
-        foreach (var renderer in target.GetComponentsInChildren<Renderer>(true)) {
-            renderer.enabled = true;
-            UberShaderAPI.SetColor(renderer, new Color(Shade.r, Shade.g, Shade.b, alpha), true);
-        }
-    }
-
-    private bool MakeLabel() {
-        var controller = UI.MessageController;
-        var hint = controller == null ? null : controller.HintMessage;
-        var text = hint == null ? null : hint.transform.FindChild("text");
-        if (text == null) {
-            return false;
+    private RandomizerGhostBadge BadgeFor() {
+        if (Badge == null) {
+            Badge = new RandomizerGhostBadge(Shade, GhostObject == null ? null : GhostObject.GetComponentInChildren<Renderer>());
         }
 
-        // cloned while inactive, so the clone does not wake up as the hint's own text
-        var wasActive = hint.activeSelf;
-        hint.SetActive(false);
-        var clone = Object.Instantiate(text.gameObject) as GameObject;
-        hint.SetActive(wasActive);
-        if (clone == null) {
-            return false;
-        }
-
-        clone.name = "ghostStatus";
-        clone.transform.parent = null;
-        Object.DontDestroyOnLoad(clone);
-        // the hint's layer is the gui camera's; the ghost is in the world
-        var art = LayerMask.NameToLayer("art");
-        foreach (var child in clone.GetComponentsInChildren<Transform>(true)) {
-            child.gameObject.layer = art;
-        }
-
-        // that component sizes a message background this label does not have
-        var sizer = clone.GetComponent<ScaleToTextBox>();
-        if (sizer != null) {
-            Object.Destroy(sizer);
-        }
-
-        LabelBox = clone.GetComponent<TextBox>();
-        if (LabelBox == null) {
-            Object.Destroy(clone);
-            return false;
-        }
-
-        LabelBox.alignment = AlignmentMode.Center;
-        LabelBox.horizontalAnchor = HorizontalAnchorMode.Center;
-        LabelBox.verticalAnchor = VerticalAnchorMode.Bottom;
-        LabelBox.CreateRendersIfThereAreNone();
-        LabelObject = clone;
-        LabelObject.SetActive(false);
-        return true;
+        return Badge;
     }
 
     private void Effects(Sample sample, Vector3 velocity) {
@@ -764,18 +672,7 @@ public class RandomizerGhostView {
 
     private GameObject LinkObject;
 
-    private GameObject LabelObject;
-
-    private TextBox LabelBox;
-
-    // the text on the label, null while it is hidden
-    private string Labelled;
-
-    private bool LabelFresh;
-
-    private float LabelAlpha;
-
-    private float LabelPainted = -1f;
+    private RandomizerGhostBadge Badge;
 
     // 1 on screen, 0 not there: the cull, the warp and the retire all ride this one alpha
     private float Veil;
