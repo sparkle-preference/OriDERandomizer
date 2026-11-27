@@ -29,8 +29,7 @@ public class RandomizerGhostBadge {
     // the tree's lines and dots past their own color; their opacity is already full
     internal static float TreeBrightness = 1.2f;
 
-    // The game's red lane shades from orange to near pure red, which all but vanishes this small. Below 0 it
-    // is drawn as the menu has it; otherwise every red is pulled to this hue (degrees), lines, rings and glow.
+    // below 0 the red lane is drawn as the menu has it; otherwise every red is pulled to this hue (degrees)
     internal static float RedHue = 20f;
 
     // the red lane alone, past its own color, once its hue is pulled
