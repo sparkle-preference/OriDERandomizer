@@ -50,7 +50,7 @@ static class GhostGlue {
             { "bash", s.BashAngle }, { "bx", s.BashTarget.x }, { "by", s.BashTarget.y },
             { "ax", s.GrenadeAim.x }, { "ay", s.GrenadeAim.y }, { "wall", s.WallAim },
             { "triple", s.Triple }, { "died", s.Died }, { "sx", s.SoulLink.x }, { "sy", s.SoulLink.y },
-            { "menu", s.InMenu }, { "title", s.OnTitle },
+            { "menu", s.InMenu }, { "title", s.OnTitle }, { "menuKind", s.Menu }, { "skills", (long)s.Skills },
         };
     }
 

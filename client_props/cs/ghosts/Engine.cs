@@ -76,9 +76,17 @@ public static class RandomizerGhost {
         public Vector2 SoulLink;
         public bool InMenu;
         public bool OnTitle;
+        public int Menu;
+        public uint Skills;
     }
 
     internal const float InterpolationDelay = 0.12f;
+
+    public const int MenuPause = 0;
+    public const int MenuMap = 1;
+    public const int MenuTree = 2;
+
+    internal static readonly Color Tint = new Color(0.55f, 0.8f, 1f, 0.35f);
 
     // every named clip lasts one second; no name, no clip
     internal static float Duration(string name) { return string.IsNullOrEmpty(name) ? 0f : 1f; }

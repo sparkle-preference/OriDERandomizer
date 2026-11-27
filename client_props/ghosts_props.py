@@ -95,7 +95,7 @@ def euler(ey, ez):
 def model_decode(b):
     """The wire format as documented in RandomizerGhostPacket.cs, read from exactly these bytes."""
     n = len(b)
-    if n < 22 or n > 48 or b[0] != 1:
+    if n < 22 or n > 52 or b[0] != 1:
         return None
     t, x, y = struct.unpack_from("<fff", b, 4)
     if not finite(t, x, y):
@@ -108,6 +108,7 @@ def model_decode(b):
            "anim": anim, "animTime": f32(clip_time / 255.0) if anim else 0.0,
            "charge": 2 if flags & 4 else (1 if flags & 2 else 0),
            "triple": bool(flags & 64), "died": bool(flags & 128), "menu": bool(flags2 & 2), "title": bool(flags2 & 4),
+           "menuKind": 2 if flags2 & 16 else (1 if flags2 & 8 else 0), "skills": 0,
            "bash": NAN, "bx": NAN, "by": NAN, "ax": NAN, "ay": NAN, "wall": NAN, "sx": NAN, "sy": NAN}
     at = 22
     # an optional field cut short is skipped, and the next one is read from the same place
@@ -131,6 +132,9 @@ def model_decode(b):
         if not finite(sx, sy):
             return None
         out.update(sx=sx, sy=sy)
+        at += 8
+    if flags2 & 16 and at + 4 <= n:
+        out["skills"] = struct.unpack_from("<I", b, at)[0]
     return out
 
 
@@ -328,7 +332,7 @@ def to_sample(s):
         "WallAim": NAN if s["wall"] is None else s["wall"],
         "Triple": s["triple"], "Died": s["died"],
         "SoulLink": {"x": s["soul"][0], "y": s["soul"][1]} if s["soul"] else nan2,
-        "InMenu": s["menu"], "OnTitle": s["title"],
+        "InMenu": s["menu"], "OnTitle": s["title"], "Menu": s["menuKind"], "Skills": s["skills"],
     }
 
 
@@ -367,11 +371,14 @@ class Packets(unittest.TestCase):
         assume(not left_facing_past_120(s))
         packet = B.call("GhostGlue.Encode", to_sample(s), s["player"], s["seq"])
         self.assertEqual(len(packet), 22 + 9 * bool(s["bash"]) + 8 * bool(s["aim"]) + (s["wall"] is not None)
-                         + 8 * bool(s["soul"]))
+                         + 8 * bool(s["soul"]) + 4 * (s["menu"] and s["menuKind"] == 2))
         d = B.call("GhostGlue.Decode", packet, len(packet))
         self.assertIsNotNone(d)
         for key in ("player", "seq", "t", "x", "y", "triple", "died", "menu", "title"):
             self.assertEqual(d[key], s[key], key)
+        # the map and tree ride only on a menu sample, and the skills only on the tree
+        self.assertEqual(d["menuKind"], s["menuKind"] if s["menu"] else 0)
+        self.assertEqual(d["skills"], s["skills"] if s["menu"] and s["menuKind"] == 2 else 0)
         nan2 = (NAN, NAN)
         self.assertTrue(same(d["ax"], (s["aim"] or nan2)[0]) and same(d["ay"], (s["aim"] or nan2)[1]))
         self.assertTrue(same(d["sx"], (s["soul"] or nan2)[0]) and same(d["sy"], (s["soul"] or nan2)[1]))
@@ -423,7 +430,7 @@ class Packets(unittest.TestCase):
     def test_a_left_facing_sprite_rolled_past_a_third_of_a_turn_decodes_to_its_own_rotation(self):
         s = {"t": 1.0, "x": 0.0, "y": 0.0, "left": True, "roll": 180.0, "anim": "run", "animTime": 0.0, "charge": 0,
              "bash": None, "aim": None, "wall": None, "triple": False, "died": False, "soul": None, "menu": False,
-             "title": False}
+             "title": False, "menuKind": 0, "skills": 0}
         packet = B.call("GhostGlue.Encode", to_sample(s), 1, 0)
         decoded = decoded_rotation(B.call("GhostGlue.Decode", packet, len(packet)))
         self.assertLessEqual(turn_between(to_sample(s)["Rotation"], decoded), STEP)

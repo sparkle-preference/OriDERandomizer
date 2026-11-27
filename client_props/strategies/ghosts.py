@@ -29,6 +29,7 @@ def samples(names):
             "triple": st.booleans(), "died": st.booleans(),
             "soul": maybe(pairs),
             "menu": st.booleans(), "title": st.booleans(),
+            "menuKind": st.sampled_from([0, 1, 2]), "skills": st.integers(0, 2**32 - 1),
             "player": st.integers(0, 255), "seq": st.integers(0, 65535),
         })
     return st.one_of(shaped(False), shaped(False), shaped(True))
