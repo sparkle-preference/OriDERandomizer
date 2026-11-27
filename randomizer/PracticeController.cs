@@ -714,7 +714,8 @@ public static class PracticeController {
         }
 
         try {
-            File.AppendReset(DateTime.Now, Get(Touched), (long)Elapsed);
+            // the count without Ori, who is gone when the run is left from the title
+            File.AppendReset(DateTime.Now, touchedKeys.Count, (long)Elapsed);
             File.Save();
         } catch (Exception e) {
             Randomizer.LogError("practice: could not record the reset: " + e.Message);
